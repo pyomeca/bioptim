@@ -8,11 +8,11 @@ from biorbd_optim.dynamics import Dynamics
 
 # --- Options --- #
 # Model path
-biorbd_model = biorbd.Model("../models/eocar.bioMod")
+biorbd_model = biorbd.Model("eocar.bioMod")
 
 # Results path
-optimization_name = "eocarBiorbd"
-results_path = "../Results/"
+optimization_name = "eocar"
+results_path = "Results/"
 control_results_file_name = results_path + "Controls" + optimization_name + ".txt"
 state_results_file_name = results_path + "States" + optimization_name + ".txt"
 
