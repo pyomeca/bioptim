@@ -20,6 +20,11 @@ class OdeSolver (enum.Enum):
 class Variable:
     @staticmethod
     def variable_torque_driven(nlp):
+        """
+        Catches name from model and gives it to each states and controls.
+        :param nlp: includes all parameters, states, controls, model, objective functions, constraints, limits, etc.
+        :return: nothing, but names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu)
+        """
         dof_names = nlp.model.nameDof()
         q = MX()
         q_dot = MX()
