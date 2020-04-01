@@ -175,6 +175,9 @@ class OptimalControlProgram:
         self.V_bounds.max[offset:offset + self.nx] = X_bounds.last_node_max
         self.V_init.init[offset:offset + self.nx] = X_init.init
 
+        self.V_init.regulation(nV)
+        self.V_bounds.regulation(nV)
+
     def solve(self):
         # NLP
         nlp = {"x": self.V,
