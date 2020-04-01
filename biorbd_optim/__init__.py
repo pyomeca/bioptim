@@ -48,7 +48,7 @@ class Variable:
         nlp.x = vertcat(q, q_dot)
 
         for i in range(nlp.model.nbMuscleTotal()):
-            nlp.u = vertcat(nlp.u, MX.sym("Tau_for_muscle" + muscle_names[i].to_string()))
+            nlp.u = vertcat(nlp.u, MX.sym("Tau_for_muscle_" + muscle_names[i].to_string()))
         for i in range(nlp.model.nbGeneralizedTorque()):
             nlp.u = vertcat(nlp.u, MX.sym("Tau_" + dof_names[i].to_string()))
 
