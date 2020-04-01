@@ -44,6 +44,11 @@ class Variable:
 
 
 class OptimalControlProgram:
+    """
+    Constructor calls __prepare_dynamics and __define_multiple_shooting_nodes methods.
+
+    To solve problem you have to call : OptimalControlProgram().solve()
+    """
     def __init__(self, biorbd_model,
                  variable_type,
                  dynamics_func, ode_solver, number_shooting_points, final_time,
@@ -53,18 +58,20 @@ class OptimalControlProgram:
                  constraints,
                  is_cyclic_constraint=False, is_cyclic_objective=False):
         """
-        Main class includes settings, states, controls and some methods to prepare CasaDi to solve.
-        Some methods are called in this class and in others class and files.
-        :param biorbd_model: model taken from a .bioMod file. Include degrees of freedom, markers, segments etc.
-        :param variable_type: name of a method available in Variable class (from this file).
-        :param dynamics_func: name of a method available in Dynamics class (from dynamics.py file).
-        :param ode_solver: name of ode chosen to solve, available in OdeSolver enum class (from this file).
-        :param number_shooting_points: subdivision number.
-        :param final_time: simulation time in seconds.
-        :param objective_functions: tuple of tuple of objectives functions name's and weights (objective_functions.py)
-        :param X_bounds: object of the class Bounds, include min and max for all nodes and degrees of freedom of states.
-        :param U_bounds: object of the class Bounds, include bounds for all nodes and degrees of freedom of controls.
-        :param constraints: tuple of constraints, instant (which node(s)) and tuple of geometric structures used.
+        Prepare CasaDi to solve a problem, defines some parameters, dynamic problem and ode solver.
+        Defines also all constraints including continuity constraints.
+        Defines the sum of all objective functions weight.
+
+        :param biorbd_model: Biorbd model loaded from the biorbd.Model() function
+        :param variable_type: A selected method handler of the class biorbd_optim.Variable.
+        :param dynamics_func: A selected method handler of the class dynamics.Dynamics.
+        :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
+        :param number_shooting_points: Subdivision number.
+        :param final_time: Simulation time in seconds.
+        :param objective_functions: Tuple of tuple of objectives functions name's and weights.
+        :param X_bounds: Instance of the class Bounds.
+        :param U_bounds: Instance of the class Bounds.
+        :param constraints: Tuple of constraints, instant (which node(s)) and tuple of geometric structures used.
         """
         self.model = biorbd_model
 
