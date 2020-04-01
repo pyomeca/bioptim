@@ -118,6 +118,12 @@ class OptimalControlProgram:
             func(self, weight=weight)
 
     def __prepare_dynamics(self, biorbd_model, dynamics_func, ode_solver):
+        """
+        Builds CasaDI dynamics function.
+        :param biorbd_model:Biorbd model loaded from the biorbd.Model() function
+        :param dynamics_func: A selected method handler of the class dynamics.Dynamics.
+        :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
+        """
         states = MX.sym("x", self.nx, 1)
         controls = MX.sym("p", self.nu, 1)
         dynamics = casadi.Function("ForwardDyn",
