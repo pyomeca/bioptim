@@ -9,7 +9,8 @@ class ObjectiveFunction:
 
     @staticmethod
     def minimize_states(nlp, weight=1):
-        raise RuntimeError("minimize_states objective function not implemented yet")
+        for i in range(nlp.ns):
+            nlp.J += casadi.dot(nlp.X[i], nlp.X[i]) * nlp.dt * nlp.dt * weight
 
     @staticmethod
     def minimize_muscle(nlp, weight=1):
