@@ -32,7 +32,7 @@ def prepare_nlp():
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
     # Dynamics
-    variable_type = biorbd_optim.Variable.variable_torque_driven
+    variable_type = biorbd_optim.Variable.torque_driven
     dynamics_func = Dynamics.forward_dynamics_torque_driven
 
     # Constraints
