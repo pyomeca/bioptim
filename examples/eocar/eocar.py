@@ -71,6 +71,10 @@ def prepare_nlp():
 
     U_bounds = biorbd_optim.Bounds()
     U_init = biorbd_optim.InitialConditions()
+    for i in range(biorbd_model.nbMuscleTotal()):
+        U_bounds.min.append(0)
+        U_bounds.max.append(1)
+        U_init.init.append(0.5)
     for i in range(biorbd_model.nbGeneralizedTorque()):
         U_bounds.min.append(-100)
         U_bounds.max.append(100)
