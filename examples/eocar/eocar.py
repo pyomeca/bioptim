@@ -12,7 +12,7 @@ from biorbd_optim.dynamics import Dynamics
 def prepare_nlp():
     # --- Options --- #
     # Model path
-    biorbd_model = biorbd.Model("eocar.bioMod")
+    biorbd_model = biorbd.Model("/home/iornaith/Documents/GitKraken/ViolonOptimal/ViolinOptimalControl/models/Bras.bioMod")
 
     # Results path
     optimization_name = "eocar"
@@ -29,10 +29,10 @@ def prepare_nlp():
     is_cyclic_objective = False
 
     # Add objective functions
-    objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
+    objective_functions = ((ObjectiveFunction.minimize_torque, 100), (ObjectiveFunction.minimize_muscle, 100),)
 
     # Dynamics
-    variable_type = biorbd_optim.Variable.torque_driven
+    variable_type = biorbd_optim.Variable.muscles_and_torque_driven
     dynamics_func = Dynamics.forward_dynamics_torque_driven
 
     # Constraints
