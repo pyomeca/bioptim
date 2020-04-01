@@ -1,5 +1,3 @@
-import sys
-
 import biorbd
 from matplotlib import pyplot as plt
 
@@ -9,10 +7,10 @@ from biorbd_optim.constraints import Constraint
 from biorbd_optim.dynamics import Dynamics
 
 
-def prepare_nlp():
+def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     # --- Options --- #
     # Model path
-    biorbd_model = biorbd.Model("eocar.bioMod")
+    biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Results path
     optimization_name = "eocar"
