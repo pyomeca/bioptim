@@ -8,7 +8,7 @@ from biorbd_optim.dynamics import Dynamics
 
 # --- Options --- #
 # Model path
-biorbd_model = biorbd.Model("eocar.bioMod")
+biorbd_model = biorbd.Model("examples/eocar/eocar.bioMod")
 
 # Results path
 optimization_name = "eocar"

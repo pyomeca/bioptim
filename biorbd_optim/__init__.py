@@ -24,9 +24,8 @@ class Variable:
     @staticmethod
     def variable_torque_driven(nlp):
         """
-        Catches names from the model and gives it to each states and controls.
-        :param nlp: includes all parameters, states, controls, model, objective functions, constraints, limits, etc.
-        :return: nothing, but names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu)
+        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu)
+        :param nlp: An OptimalControlProgram class.
         """
         dof_names = nlp.model.nameDof()
         q = MX()
