@@ -38,7 +38,7 @@ class Variable:
     @staticmethod
     def muscles_and_torque_driven(nlp):
         dof_names = nlp.model.nameDof()
-        muscleNames = nlp.model.muscleNames()
+        muscle_names = nlp.model.muscleNames()
         q = MX()
         q_dot = MX()
         for i in range(nlp.model.nbQ()):
@@ -48,7 +48,7 @@ class Variable:
         nlp.x = vertcat(q, q_dot)
 
         for i in range(nlp.model.nbMuscleTotal()):
-            nlp.u = vertcat(nlp.u, MX.sym("Tau_" + muscleNames[i].to_string()))
+            nlp.u = vertcat(nlp.u, MX.sym("Tau_for_muscle" + muscle_names[i].to_string()))
         for i in range(nlp.model.nbGeneralizedTorque()):
             nlp.u = vertcat(nlp.u, MX.sym("Tau_" + dof_names[i].to_string()))
 
