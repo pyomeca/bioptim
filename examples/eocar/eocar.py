@@ -8,7 +8,7 @@ from biorbd_optim.dynamics import Dynamics
 
 # --- Options --- #
 # Model path
-biorbd_model = biorbd.Model("examples/eocar/eocar.bioMod")
+biorbd_model = biorbd.Model("eocar.bioMod")
 
 # Results path
 optimization_name = "eocar"
@@ -28,7 +28,7 @@ is_cyclic_objective = False
 objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
 # Dynamics
-variable_type = biorbd_optim.Variable.variable_torque_driven
+variable_type = biorbd_optim.Variable.torque_driven
 dynamics_func = Dynamics.forward_dynamics_torque_driven
 
 # Constraints

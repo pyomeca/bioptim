@@ -222,7 +222,7 @@ class Bounds(PathCondition):
         Organises bounds of states or controls
         There are 3 groups of nodes :
         1. First node
-        2. Intermediates (= all nodes without first and last nodes)
+        2. Intermediates (= all nodes except first and last nodes)
         3. Last node
         Each group have 2 lists of bounds : one of minimum and one of maximum values.
 
