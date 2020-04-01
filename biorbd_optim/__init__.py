@@ -19,7 +19,7 @@ class OdeSolver (enum.Enum):
 
 class Variable:
     @staticmethod
-    def variable_torque_driven(nlp):
+    def torque_driven(nlp):
         dof_names = nlp.model.nameDof()
         q = MX()
         q_dot = MX()
@@ -29,6 +29,26 @@ class Variable:
             q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string()))
         nlp.x = vertcat(q, q_dot)
 
+        for i in range(nlp.model.nbGeneralizedTorque()):
+            nlp.u = vertcat(nlp.u, MX.sym("Tau_" + dof_names[i].to_string()))
+
+        nlp.nx = nlp.x.rows()
+        nlp.nu = nlp.u.rows()
+
+    @staticmethod
+    def muscles_and_torque_driven(nlp):
+        dof_names = nlp.model.nameDof()
+        muscleNames = nlp.model.muscleNames()
+        q = MX()
+        q_dot = MX()
+        for i in range(nlp.model.nbQ()):
+            q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string()))
+        for i in range(nlp.model.nbQdot()):
+            q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string()))
+        nlp.x = vertcat(q, q_dot)
+
+        for i in range(nlp.model.nbMuscleTotal()):
+            nlp.u = vertcat(nlp.u, MX.sym("Tau_" + muscleNames[i].to_string()))
         for i in range(nlp.model.nbGeneralizedTorque()):
             nlp.u = vertcat(nlp.u, MX.sym("Tau_" + dof_names[i].to_string()))
 
