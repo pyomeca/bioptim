@@ -14,7 +14,7 @@ install:
   - conda env update -n root -f environment.yml
 
 script:
-  - black --check biorbd_optim/
+#  - black --check biorbd_optim/
   - pytest -v --color=yes --cov=biorbd_optim tests
 
 after_success:
