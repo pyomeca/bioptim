@@ -179,6 +179,10 @@ class OptimalControlProgram:
         self.V_bounds.regulation(nV)
 
     def solve(self):
+        """
+        Gives to CasaDI stats, controls, constraints, sum of all objective functions and theirs bounds.
+        Gives others parameters to control how solver works.
+        """
         # NLP
         nlp = {"x": self.V,
                "f": self.J,
