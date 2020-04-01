@@ -20,7 +20,6 @@ state_results_file_name = results_path + "States" + optimization_name + ".txt"
 number_shooting_points = 30
 final_time = 2
 ode_solver = biorbd_optim.OdeSolver.RK
-velocity_max = 15
 is_cyclic_constraint = False
 is_cyclic_objective = False
 
@@ -31,13 +30,25 @@ objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 variable_type = biorbd_optim.Variable.torque_driven
 dynamics_func = Dynamics.forward_dynamics_torque_driven
 
-# Constraints
+# Geometric constraints
 constraints = ((Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
                (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),)
 
-# Define path constraint
+# Path constraint
+velocity_max = 15
 X_bounds = biorbd_optim.Bounds()
 X_init = biorbd_optim.InitialConditions()
+
+# First node states bounds
+X_bounds.first_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+X_bounds.first_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+
+# Last node states bounds
+X_bounds.last_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+X_bounds.last_node_min[3] = 1
+X_bounds.first_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+
+# Gets bounds from biorbd model #
 ranges = []
 for i in range(biorbd_model.nbSegment()):
     segRanges = biorbd_model.segment(i).ranges()
@@ -45,32 +56,27 @@ for i in range(biorbd_model.nbSegment()):
         ranges.append(biorbd_model.segment(i).ranges()[j])
 
 for i in range(biorbd_model.nbQ()):
-    X_bounds.first_node_min.append(0)
-    X_bounds.first_node_max.append(0)
     X_bounds.min.append(ranges[i].min())
     X_bounds.max.append(ranges[i].max())
-    if i == 3:
-        X_bounds.last_node_min.append(1.57)
-        X_bounds.last_node_max.append(1.57)
-    else:
-        X_bounds.last_node_min.append(0)
-        X_bounds.last_node_max.append(0)
-    X_init.init.append(0)
-for i in range(biorbd_model.nbQdot()):
-    X_bounds.first_node_min.append(0)
-    X_bounds.first_node_max.append(0)
-    X_bounds.min.append(-velocity_max)
-    X_bounds.max.append(velocity_max)
-    X_bounds.last_node_min.append(0)
-    X_bounds.last_node_max.append(0)
-    X_init.init.append(0)
+
+# Path constraint velocity
+X_bounds.min.extend([-velocity_max] * (biorbd_model.nbQdot()))
+X_bounds.max.extend([velocity_max] * (biorbd_model.nbQdot()))
+
+# Init
+X_init.init = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+
+# Define control path constraint
+torque_min = -100
+torque_max = 100
+torque_init = 0
 
 U_bounds = biorbd_optim.Bounds()
 U_init = biorbd_optim.InitialConditions()
 for i in range(biorbd_model.nbGeneralizedTorque()):
-    U_bounds.min.append(-100)
-    U_bounds.max.append(100)
-    U_init.init.append(0)
+    U_bounds.min.append(torque_min)
+    U_bounds.max.append(torque_max)
+    U_init.init.append(torque_init)
 # ------------- #
 
 # --- Solve the program --- #
@@ -80,6 +86,10 @@ nlp = biorbd_optim.OptimalControlProgram(
     constraints, is_cyclic_constraint=is_cyclic_constraint, is_cyclic_objective=is_cyclic_objective)
 
 sol = nlp.solve()
+# ------------- #
+
+
+# --- Plot the solution --- #
 for idx in range(biorbd_model.nbQ()):
     plt.figure()
     q = sol["x"][0*biorbd_model.nbQ()+idx::3*biorbd_model.nbQ()]
@@ -89,3 +99,4 @@ for idx in range(biorbd_model.nbQ()):
     plt.plot(q_dot)
     plt.plot(u)
 plt.show()
+# ------------- #
