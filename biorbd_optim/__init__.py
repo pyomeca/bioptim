@@ -22,7 +22,7 @@ class Variable:
     Includes methods suitable for several situations
     """
     @staticmethod
-    def variable_torque_driven(nlp):
+    def torque_driven(nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu)
         :param nlp: An OptimalControlProgram class.
