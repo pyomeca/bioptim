@@ -220,9 +220,11 @@ class PathCondition:
 
 
 class Bounds(PathCondition):
+    """
+    Organises bounds of states("X"), controls("U") and "V".
+    """
     def __init__(self):
         """
-        Organises bounds of states or controls
         There are 3 groups of nodes :
         1. First node
         2. Intermediates (= all nodes except first and last nodes)
@@ -244,6 +246,7 @@ class Bounds(PathCondition):
         """
         Detects if bounds are not correct (wrong size of list: different than degrees of freedom).
         Detects if first or last nodes are not complete, in that case they have same bounds than intermediates nodes.
+        :param nb_elements: Length of each list.
         """
         self.regulation_private(self.min, nb_elements, "Bound min")
         self.regulation_private(self.max, nb_elements, "Bound max")
@@ -280,7 +283,6 @@ class InitialConditions(PathCondition):
 
     def regulation(self, nb_elements):
         """
-        In this order :
         Detects if initial values are not given, in that case "0" is given for all degrees of freedom.
         Detects if initial values are not correct (wrong size of list: different than degrees of freedom).
         Detects if first or last nodes are not complete, in that case they have same  values than intermediates nodes.
