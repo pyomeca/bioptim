@@ -148,6 +148,14 @@ class OptimalControlProgram:
             self.dynamics = casadi.integrator("integrator", "cvodes", ode, ode_opt)
 
     def __define_multiple_shooting_nodes(self, X_init, U_init, X_bounds, U_bounds):
+        """
+        For each node, puts X_bounds and U_bounds in V_bounds.
+        Links X and U with V.
+        :param X_init: Instance of the class InitialConditions.
+        :param U_init: Instance of the class InitialConditions.
+        :param X_bounds: Instance of the class Bounds.
+        :param U_bounds: Instance of the class Bounds.
+        """
         nV = self.nx * (self.ns + 1) + self.nu * self.ns
         self.V = MX.sym("V", nV)
         self.V_bounds.min = [0] * nV
