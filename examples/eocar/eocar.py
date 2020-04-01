@@ -49,11 +49,18 @@ def prepare_nlp():
             ranges.append(biorbd_model.segment(i).ranges()[j])
 
     for i in range(biorbd_model.nbQ()):
-        X_bounds.first_node_min.append(0)
-        X_bounds.first_node_max.append(0)
+        if i == 0:
+            X_bounds.first_node_min.append(ranges[i].min())
+            X_bounds.first_node_max.append(ranges[i].max())
+        else:
+            X_bounds.first_node_min.append(0)
+            X_bounds.first_node_max.append(0)
         X_bounds.min.append(ranges[i].min())
         X_bounds.max.append(ranges[i].max())
-        if i == 3:
+        if i == 0:
+            X_bounds.last_node_min.append(ranges[i].min())
+            X_bounds.last_node_max.append(ranges[i].max())
+        elif i == 2:
             X_bounds.last_node_min.append(1.57)
             X_bounds.last_node_max.append(1.57)
         else:
