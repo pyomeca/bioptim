@@ -56,7 +56,7 @@ class Constraint:
     @staticmethod
     def __markers_to_pair(nlp, X, idx_marker):
         """
-        Adds the constraint that the two markers must be merged at the desired instant(s).
+        Adds the constraint that the two markers must be coincided at the desired instant(s).
         :param nlp: An OptimalControlProgram class.
         :param X: List of instant(s).
         :param idx_marker: Tuple of indices of two markers.

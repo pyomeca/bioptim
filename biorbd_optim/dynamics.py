@@ -6,8 +6,8 @@ class Dynamics:
     @staticmethod
     def forward_dynamics_torque_driven(states, controls, model):
         """
-        :param states: MX.sym form CasaDI.
-        :param controls: MX.sym form CasaDI.
+        :param states: MX.sym from CasADi.
+        :param controls: MX.sym from CasADi.
         :param model: Biorbd model loaded from the biorbd.Model() function.
         :return: Vertcat of derived states.
         """
