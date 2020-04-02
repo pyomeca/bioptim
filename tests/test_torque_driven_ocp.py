@@ -9,7 +9,7 @@ import numpy as np
 # Load eocar
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "eocar", str(PROJECT_FOLDER) + "/examples/eocar/eocar.py"
+    "eocar", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/eocar.py"
 )
 eocar = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(eocar)
@@ -17,7 +17,7 @@ spec.loader.exec_module(eocar)
 
 def test_eocar():
     nlp = eocar.prepare_nlp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/eocar/eocar.bioMod"
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/eocar.bioMod"
     )
     sol = nlp.solve()
 
