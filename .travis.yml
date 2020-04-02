@@ -16,7 +16,7 @@ install:
 script:
   - black --check biorbd_optim/
   - python setup.py install
-  - pytest -v --color=yes --cov=biorbd_optim tests
+  - pytest -v --color=yes
 
 notifications:
   email:
