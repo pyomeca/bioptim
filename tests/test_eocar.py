@@ -15,7 +15,7 @@ eocar = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(eocar)
 
 
-def test_oecar():
+def test_eocar():
     nlp = eocar.prepare_nlp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/eocar/eocar.bioMod"
     )
