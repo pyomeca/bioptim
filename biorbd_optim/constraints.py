@@ -9,6 +9,7 @@ class Constraint:
         """
         Different conditions between biorbd geometric structures.
         """
+
         MARKERS_TO_PAIR = 0
 
     @staticmethod
@@ -21,6 +22,7 @@ class Constraint:
         END: last node only.
         ALL: obvious.
         """
+
         START = 0
         MID = 1
         INTERMEDIATES = 2
@@ -39,10 +41,12 @@ class Constraint:
                 x = [nlp.X[0]]
             elif elem[1] == Constraint.Instant.MID:
                 if nlp.ns % 2 == 0:
-                    raise(ValueError("Number of shooting points must be odd to use MID"))
-                x = [nlp.X[nlp.ns//2+1]]
+                    raise (
+                        ValueError("Number of shooting points must be odd to use MID")
+                    )
+                x = [nlp.X[nlp.ns // 2 + 1]]
             elif elem[1] == Constraint.Instant.INTERMEDIATES:
-                x = nlp.X[1:nlp.ns-1]
+                x = nlp.X[1 : nlp.ns - 1]
             elif elem[1] == Constraint.Instant.END:
                 x = [nlp.X[nlp.ns]]
             elif elem[1] == Constraint.Instant.ALL:
@@ -62,8 +66,8 @@ class Constraint:
         :param idx_marker: Tuple of indices of two markers.
         """
         for x in X:
-            marker1 = nlp.model.marker(x[:nlp.model.nbQ()], idx_marker[0]).to_mx()
-            marker2 = nlp.model.marker(x[:nlp.model.nbQ()], idx_marker[1]).to_mx()
+            marker1 = nlp.model.marker(x[: nlp.model.nbQ()], idx_marker[0]).to_mx()
+            marker2 = nlp.model.marker(x[: nlp.model.nbQ()], idx_marker[1]).to_mx()
             nlp.g = vertcat(nlp.g, marker1 - marker2)
             for i in range(3):
                 nlp.g_bounds.min.append(0)
@@ -82,7 +86,7 @@ class Constraint:
             end_node = nlp.dynamics.call({"x0": nlp.X[k], "p": nlp.U[k]})["xf"]
 
             # Save continuity constraints
-            nlp.g = vertcat(nlp.g, end_node - nlp.X[k+1])
+            nlp.g = vertcat(nlp.g, end_node - nlp.X[k + 1])
             for i in range(nlp.nx):
                 nlp.g_bounds.min.append(0)
                 nlp.g_bounds.max.append(0)

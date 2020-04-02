@@ -5,6 +5,7 @@ channels:
 - default
 dependencies:
 - python
+- numpy
 - ipopt
 - casadi
 #- biorbd

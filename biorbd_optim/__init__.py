@@ -6,11 +6,12 @@ from casadi import MX, vertcat
 from .constraints import Constraint
 
 
-class OdeSolver (enum.Enum):
+class OdeSolver(enum.Enum):
     """
     Four models to solve.
     RK is pretty much good balance.
     """
+
     COLLOCATION = 0
     RK = 1
     CVODES = 2
@@ -21,6 +22,7 @@ class Variable:
     """
     Includes methods suitable for several situations
     """
+
     @staticmethod
     def torque_driven(nlp):
         """
@@ -55,7 +57,9 @@ class Variable:
         nlp.x = vertcat(q, q_dot)
 
         for i in range(nlp.model.nbMuscleTotal()):
-            nlp.u = vertcat(nlp.u, MX.sym("Tau_for_muscle_" + muscle_names[i].to_string()))
+            nlp.u = vertcat(
+                nlp.u, MX.sym("Tau_for_muscle_" + muscle_names[i].to_string())
+            )
         for i in range(nlp.model.nbGeneralizedTorque()):
             nlp.u = vertcat(nlp.u, MX.sym("Tau_" + dof_names[i].to_string()))
 
@@ -69,14 +73,24 @@ class OptimalControlProgram:
 
     To solve problem you have to call : OptimalControlProgram().solve()
     """
-    def __init__(self, biorbd_model,
-                 variable_type,
-                 dynamics_func, ode_solver, number_shooting_points, final_time,
-                 objective_functions,
-                 X_init, U_init,
-                 X_bounds, U_bounds,
-                 constraints,
-                 is_cyclic_constraint=False, is_cyclic_objective=False):
+
+    def __init__(
+        self,
+        biorbd_model,
+        variable_type,
+        dynamics_func,
+        ode_solver,
+        number_shooting_points,
+        final_time,
+        objective_functions,
+        X_init,
+        U_init,
+        X_bounds,
+        U_bounds,
+        constraints,
+        is_cyclic_constraint=False,
+        is_cyclic_objective=False,
+    ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
         Defines also all constraints including continuity constraints.
@@ -146,17 +160,16 @@ class OptimalControlProgram:
         """
         states = MX.sym("x", self.nx, 1)
         controls = MX.sym("p", self.nu, 1)
-        dynamics = casadi.Function("ForwardDyn",
-                                   [states, controls],
-                                   [dynamics_func(states, controls, biorbd_model)],
-                                   ["states", "controls"],
-                                   ["statesdot"]).expand()
-        ode = {"x": self.x,
-               "p": self.u,
-               "ode": dynamics(self.x, self.u)}
+        dynamics = casadi.Function(
+            "ForwardDyn",
+            [states, controls],
+            [dynamics_func(states, controls, biorbd_model)],
+            ["states", "controls"],
+            ["statesdot"],
+        ).expand()
+        ode = {"x": self.x, "p": self.u, "ode": dynamics(self.x, self.u)}
 
-        ode_opt = {"t0": 0,
-                   "tf": self.dt}
+        ode_opt = {"t0": 0, "tf": self.dt}
         if ode_solver == OdeSolver.RK or ode_solver == OdeSolver.COLLOCATION:
             ode_opt["number_of_finite_elements"] = 5
 
@@ -181,33 +194,33 @@ class OptimalControlProgram:
         self.V_bounds.min = [0] * nV
         self.V_bounds.max = [0] * nV
         self.V_init.init = [0] * nV
-    
+
         offset = 0
         for k in range(self.ns):
-            self.X.append(self.V.nz[offset:offset + self.nx])
+            self.X.append(self.V.nz[offset : offset + self.nx])
             if k == 0:
-                self.V_bounds.min[offset:offset + self.nx] = X_bounds.first_node_min
-                self.V_bounds.max[offset:offset + self.nx] = X_bounds.first_node_max
+                self.V_bounds.min[offset : offset + self.nx] = X_bounds.first_node_min
+                self.V_bounds.max[offset : offset + self.nx] = X_bounds.first_node_max
             else:
-                self.V_bounds.min[offset:offset + self.nx] = X_bounds.min
-                self.V_bounds.max[offset:offset + self.nx] = X_bounds.max
-            self.V_init.init[offset:offset + self.nx] = X_init.init
+                self.V_bounds.min[offset : offset + self.nx] = X_bounds.min
+                self.V_bounds.max[offset : offset + self.nx] = X_bounds.max
+            self.V_init.init[offset : offset + self.nx] = X_init.init
             offset += self.nx
-    
-            self.U.append(self.V.nz[offset:offset + self.nu])
+
+            self.U.append(self.V.nz[offset : offset + self.nu])
             if k == 0:
-                self.V_bounds.min[offset:offset + self.nu] = U_bounds.first_node_min
-                self.V_bounds.max[offset:offset + self.nu] = U_bounds.first_node_max
+                self.V_bounds.min[offset : offset + self.nu] = U_bounds.first_node_min
+                self.V_bounds.max[offset : offset + self.nu] = U_bounds.first_node_max
             else:
-                self.V_bounds.min[offset:offset + self.nu] = U_bounds.min
-                self.V_bounds.max[offset:offset + self.nu] = U_bounds.max
-            self.V_init.init[offset:offset + self.nu] = U_init.init
+                self.V_bounds.min[offset : offset + self.nu] = U_bounds.min
+                self.V_bounds.max[offset : offset + self.nu] = U_bounds.max
+            self.V_init.init[offset : offset + self.nu] = U_init.init
             offset += self.nu
-    
-        self.X.append(self.V.nz[offset:offset + self.nx])
-        self.V_bounds.min[offset:offset + self.nx] = X_bounds.last_node_min
-        self.V_bounds.max[offset:offset + self.nx] = X_bounds.last_node_max
-        self.V_init.init[offset:offset + self.nx] = X_init.init
+
+        self.X.append(self.V.nz[offset : offset + self.nx])
+        self.V_bounds.min[offset : offset + self.nx] = X_bounds.last_node_min
+        self.V_bounds.max[offset : offset + self.nx] = X_bounds.last_node_max
+        self.V_init.init[offset : offset + self.nx] = X_init.init
 
         self.V_init.regulation(nV)
         self.V_bounds.regulation(nV)
@@ -218,25 +231,25 @@ class OptimalControlProgram:
         Gives others parameters to control how solver works.
         """
         # NLP
-        nlp = {"x": self.V,
-               "f": self.J,
-               "g": self.g}
+        nlp = {"x": self.V, "f": self.J, "g": self.g}
 
-        opts = {"ipopt.tol": 1e-6,
-                "ipopt.max_iter": 1000,
-                "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
-                "ipopt.limited_memory_max_history":  50,
-                "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
-                }
+        opts = {
+            "ipopt.tol": 1e-6,
+            "ipopt.max_iter": 1000,
+            "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
+            "ipopt.limited_memory_max_history": 50,
+            "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
+        }
         solver = casadi.nlpsol("nlpsol", "ipopt", nlp, opts)
 
         # Bounds and initial guess
-        arg = {"lbx": self.V_bounds.min,
-               "ubx": self.V_bounds.max,
-               "lbg": self.g_bounds.min,
-               "ubg": self.g_bounds.max,
-               "x0": self.V_init.init,
-               }
+        arg = {
+            "lbx": self.V_bounds.min,
+            "ubx": self.V_bounds.max,
+            "lbg": self.g_bounds.min,
+            "ubg": self.g_bounds.max,
+            "x0": self.V_init.init,
+        }
 
         # Solve the problem
         return solver.call(arg)
@@ -247,6 +260,7 @@ class PathCondition:
     Parent class of Bounds and InitialConditions.
     Uses only for methods overloading.
     """
+
     @staticmethod
     def regulation(var, nb_elements):
         pass
@@ -261,6 +275,7 @@ class Bounds(PathCondition):
     """
     Organizes bounds of states("X"), controls("U") and "V".
     """
+
     def __init__(self):
         """
         There are 3 groups of nodes :
@@ -299,8 +314,12 @@ class Bounds(PathCondition):
         if len(self.last_node_max) == 0:
             self.last_node_max = self.max
 
-        self.regulation_private(self.first_node_min, nb_elements, "Bound first node min")
-        self.regulation_private(self.first_node_max, nb_elements, "Bound first node max")
+        self.regulation_private(
+            self.first_node_min, nb_elements, "Bound first node min"
+        )
+        self.regulation_private(
+            self.first_node_max, nb_elements, "Bound first node max"
+        )
         self.regulation_private(self.last_node_min, nb_elements, "Bound last node min")
         self.regulation_private(self.last_node_max, nb_elements, "Bound last node max")
 
@@ -336,4 +355,3 @@ class InitialConditions(PathCondition):
 
         self.regulation_private(self.first_node_init, nb_elements, "First node init")
         self.regulation_private(self.last_node_init, nb_elements, "Last node init")
-
