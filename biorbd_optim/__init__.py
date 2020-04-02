@@ -58,7 +58,7 @@ class OptimalControlProgram:
                  constraints,
                  is_cyclic_constraint=False, is_cyclic_objective=False):
         """
-        Prepare CasaDi to solve a problem, defines some parameters, dynamic problem and ode solver.
+        Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
         Defines also all constraints including continuity constraints.
         Defines the sum of all objective functions weight.
 
@@ -68,7 +68,7 @@ class OptimalControlProgram:
         :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
         :param number_shooting_points: Subdivision number.
         :param final_time: Simulation time in seconds.
-        :param objective_functions: Tuple of tuple of objectives functions name's and weights.
+        :param objective_functions: Tuple of tuple of objectives functions handler's and weights.
         :param X_bounds: Instance of the class Bounds.
         :param U_bounds: Instance of the class Bounds.
         :param constraints: Tuple of constraints, instant (which node(s)) and tuple of geometric structures used.
@@ -151,10 +151,10 @@ class OptimalControlProgram:
         """
         For each node, puts X_bounds and U_bounds in V_bounds.
         Links X and U with V.
-        :param X_init: Instance of the class InitialConditions.
-        :param U_init: Instance of the class InitialConditions.
-        :param X_bounds: Instance of the class Bounds.
-        :param U_bounds: Instance of the class Bounds.
+        :param X_init: Instance of the class InitialConditions for the states.
+        :param U_init: Instance of the class InitialConditions for the controls.
+        :param X_bounds: Instance of the class Bounds for the states.
+        :param U_bounds: Instance of the class Bounds for the controls.
         """
         nV = self.nx * (self.ns + 1) + self.nu * self.ns
         self.V = MX.sym("V", nV)
@@ -194,7 +194,7 @@ class OptimalControlProgram:
 
     def solve(self):
         """
-        Gives to CasaDI stats, controls, constraints, sum of all objective functions and theirs bounds.
+        Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
         """
         # NLP
@@ -239,7 +239,7 @@ class PathCondition:
 
 class Bounds(PathCondition):
     """
-    Organises bounds of states("X"), controls("U") and "V".
+    Organizes bounds of states("X"), controls("U") and "V".
     """
     def __init__(self):
         """
