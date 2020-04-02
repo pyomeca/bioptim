@@ -34,8 +34,10 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     dynamics_func = Dynamics.forward_dynamics_torque_driven
 
     # Constraints
-    constraints = ((Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
-                   (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),)
+    constraints = (
+        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
+        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
+    )
 
     # Path constraint
     X_bounds = biorbd_optim.Bounds()
@@ -44,7 +46,12 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     # Gets bounds from biorbd model
     ranges = []
     for i in range(biorbd_model.nbSegment()):
-        ranges.extend([biorbd_model.segment(i).ranges()[j] for j in range(len(biorbd_model.segment(i).ranges()))])
+        ranges.extend(
+            [
+                biorbd_model.segment(i).ranges()[j]
+                for j in range(len(biorbd_model.segment(i).ranges()))
+            ]
+        )
     X_bounds.min = [ranges[i].min() for i in range(biorbd_model.nbQ())]
     X_bounds.max = [ranges[i].max() for i in range(biorbd_model.nbQ())]
 
@@ -59,7 +66,6 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     X_bounds.last_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
     X_bounds.last_node_max[0] = X_bounds.max[0]
     X_bounds.last_node_max[2] = 1.57
-
 
     # Path constraint velocity
     velocity_max = 15
@@ -82,12 +88,24 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     # ------------- #
 
     return biorbd_optim.OptimalControlProgram(
-        biorbd_model, variable_type, dynamics_func, ode_solver, number_shooting_points, final_time,
-        objective_functions, X_init, U_init, X_bounds, U_bounds,
-        constraints, is_cyclic_constraint=is_cyclic_constraint, is_cyclic_objective=is_cyclic_objective)
+        biorbd_model,
+        variable_type,
+        dynamics_func,
+        ode_solver,
+        number_shooting_points,
+        final_time,
+        objective_functions,
+        X_init,
+        U_init,
+        X_bounds,
+        U_bounds,
+        constraints,
+        is_cyclic_constraint=is_cyclic_constraint,
+        is_cyclic_objective=is_cyclic_objective,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     nlp = prepare_nlp()
 
     # --- Solve the program --- #
@@ -95,9 +113,9 @@ if __name__ == '__main__':
 
     for idx in range(nlp.model.nbQ()):
         plt.figure()
-        q = sol["x"][0*nlp.model.nbQ()+idx::3*nlp.model.nbQ()]
-        q_dot = sol["x"][1*nlp.model.nbQ()+idx::3*nlp.model.nbQ()]
-        u = sol["x"][2*nlp.model.nbQ()+idx::3*nlp.model.nbQ()]
+        q = sol["x"][0 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
+        q_dot = sol["x"][1 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
+        u = sol["x"][2 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
         plt.plot(q)
         plt.plot(q_dot)
         plt.plot(u)

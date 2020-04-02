@@ -11,8 +11,8 @@ class Dynamics:
         :param model: Biorbd model loaded from the biorbd.Model() function.
         :return: Vertcat of derived states.
         """
-        q = states[:model.nbQ()]
-        qdot = states[model.nbQ():]
+        q = states[: model.nbQ()]
+        qdot = states[model.nbQ() :]
         tau = controls
 
         qddot = biorbd.Model.ForwardDynamics(model, q, qdot, tau).to_mx()
@@ -41,4 +41,3 @@ class Dynamics:
         #
         #     qddot = biorbd.Model.ForwardDynamics(model, Q, QDot, Tau).to_mx()
         #     return vertcat(qdot, qddot)
-
