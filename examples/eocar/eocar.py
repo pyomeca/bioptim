@@ -35,7 +35,6 @@ constraints = ((Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1
                (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),)
 
 # Path constraint
-velocity_max = 15
 X_bounds = biorbd_optim.Bounds()
 X_init = biorbd_optim.InitialConditions()
 
@@ -48,35 +47,31 @@ X_bounds.last_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
 X_bounds.last_node_min[3] = 1
 X_bounds.first_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
 
-# Gets bounds from biorbd model #
+# Gets bounds from biorbd model
 ranges = []
 for i in range(biorbd_model.nbSegment()):
-    segRanges = biorbd_model.segment(i).ranges()
-    for j in range(len(segRanges)):
-        ranges.append(biorbd_model.segment(i).ranges()[j])
-
-for i in range(biorbd_model.nbQ()):
-    X_bounds.min.append(ranges[i].min())
-    X_bounds.max.append(ranges[i].max())
+    ranges.extend([biorbd_model.segment(i).ranges()[j] for j in range(len(biorbd_model.segment(i).ranges()))])
+X_bounds.min = [ranges[i].min() for i in range(biorbd_model.nbQ())]
+X_bounds.max = [ranges[i].max() for i in range(biorbd_model.nbQ())]
 
 # Path constraint velocity
+velocity_max = 15
 X_bounds.min.extend([-velocity_max] * (biorbd_model.nbQdot()))
 X_bounds.max.extend([velocity_max] * (biorbd_model.nbQdot()))
 
-# Init
+# Initial guess
 X_init.init = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
 
 # Define control path constraint
 torque_min = -100
 torque_max = 100
 torque_init = 0
-
 U_bounds = biorbd_optim.Bounds()
 U_init = biorbd_optim.InitialConditions()
-for i in range(biorbd_model.nbGeneralizedTorque()):
-    U_bounds.min.append(torque_min)
-    U_bounds.max.append(torque_max)
-    U_init.init.append(torque_init)
+
+U_bounds.min = [torque_min for _ in range(biorbd_model.nbGeneralizedTorque())]
+U_bounds.max = [torque_max for _ in range(biorbd_model.nbGeneralizedTorque())]
+U_init.init = [torque_init for _ in range(biorbd_model.nbGeneralizedTorque())]
 # ------------- #
 
 # --- Solve the program --- #
