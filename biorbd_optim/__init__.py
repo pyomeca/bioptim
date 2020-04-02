@@ -42,6 +42,26 @@ class Variable:
         nlp.nx = nlp.x.rows()
         nlp.nu = nlp.u.rows()
 
+    @staticmethod
+    def muscles_and_torque_driven(nlp):
+        dof_names = nlp.model.nameDof()
+        muscle_names = nlp.model.muscleNames()
+        q = MX()
+        q_dot = MX()
+        for i in range(nlp.model.nbQ()):
+            q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string()))
+        for i in range(nlp.model.nbQdot()):
+            q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string()))
+        nlp.x = vertcat(q, q_dot)
+
+        for i in range(nlp.model.nbMuscleTotal()):
+            nlp.u = vertcat(nlp.u, MX.sym("Tau_for_muscle_" + muscle_names[i].to_string()))
+        for i in range(nlp.model.nbGeneralizedTorque()):
+            nlp.u = vertcat(nlp.u, MX.sym("Tau_" + dof_names[i].to_string()))
+
+        nlp.nx = nlp.x.rows()
+        nlp.nu = nlp.u.rows()
+
 
 class OptimalControlProgram:
     """

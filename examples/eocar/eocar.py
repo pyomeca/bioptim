@@ -1,3 +1,5 @@
+import sys
+
 import biorbd
 from matplotlib import pyplot as plt
 
@@ -95,3 +97,4 @@ for idx in range(biorbd_model.nbQ()):
     plt.plot(u)
 plt.show()
 # ------------- #
+
