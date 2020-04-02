@@ -18,8 +18,15 @@ class OdeSolver (enum.Enum):
 
 
 class Variable:
+    """
+    Includes methods suitable for several situations
+    """
     @staticmethod
     def torque_driven(nlp):
+        """
+        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu)
+        :param nlp: An OptimalControlProgram class.
+        """
         dof_names = nlp.model.nameDof()
         q = MX()
         q_dot = MX()
@@ -58,7 +65,9 @@ class Variable:
 
 class OptimalControlProgram:
     """
+    Constructor calls __prepare_dynamics and __define_multiple_shooting_nodes methods.
 
+    To solve problem you have to call : OptimalControlProgram().solve()
     """
     def __init__(self, biorbd_model,
                  variable_type,
@@ -69,16 +78,20 @@ class OptimalControlProgram:
                  constraints,
                  is_cyclic_constraint=False, is_cyclic_objective=False):
         """
+        Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
+        Defines also all constraints including continuity constraints.
+        Defines the sum of all objective functions weight.
 
-        :param biorbd_model:
-        :param variable_type:
-        :param dynamics_func:
-        :param ode_solver:
-        :param number_shooting_points:
-        :param final_time:
-        :param X_bounds:
-        :param U_bounds:
-        :param constraints:
+        :param biorbd_model: Biorbd model loaded from the biorbd.Model() function
+        :param variable_type: A selected method handler of the class biorbd_optim.Variable.
+        :param dynamics_func: A selected method handler of the class dynamics.Dynamics.
+        :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
+        :param number_shooting_points: Subdivision number.
+        :param final_time: Simulation time in seconds.
+        :param objective_functions: Tuple of tuple of objectives functions handler's and weights.
+        :param X_bounds: Instance of the class Bounds.
+        :param U_bounds: Instance of the class Bounds.
+        :param constraints: Tuple of constraints, instant (which node(s)) and tuple of geometric structures used.
         """
         self.model = biorbd_model
 
@@ -125,6 +138,12 @@ class OptimalControlProgram:
             func(self, weight=weight)
 
     def __prepare_dynamics(self, biorbd_model, dynamics_func, ode_solver):
+        """
+        Builds CasaDI dynamics function.
+        :param biorbd_model: Biorbd model loaded from the biorbd.Model() function.
+        :param dynamics_func: A selected method handler of the class dynamics.Dynamics.
+        :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
+        """
         states = MX.sym("x", self.nx, 1)
         controls = MX.sym("p", self.nu, 1)
         dynamics = casadi.Function("ForwardDyn",
@@ -149,6 +168,14 @@ class OptimalControlProgram:
             self.dynamics = casadi.integrator("integrator", "cvodes", ode, ode_opt)
 
     def __define_multiple_shooting_nodes(self, X_init, U_init, X_bounds, U_bounds):
+        """
+        For each node, puts X_bounds and U_bounds in V_bounds.
+        Links X and U with V.
+        :param X_init: Instance of the class InitialConditions for the states.
+        :param U_init: Instance of the class InitialConditions for the controls.
+        :param X_bounds: Instance of the class Bounds for the states.
+        :param U_bounds: Instance of the class Bounds for the controls.
+        """
         nV = self.nx * (self.ns + 1) + self.nu * self.ns
         self.V = MX.sym("V", nV)
         self.V_bounds.min = [0] * nV
@@ -182,7 +209,14 @@ class OptimalControlProgram:
         self.V_bounds.max[offset:offset + self.nx] = X_bounds.last_node_max
         self.V_init.init[offset:offset + self.nx] = X_init.init
 
+        self.V_init.regulation(nV)
+        self.V_bounds.regulation(nV)
+
     def solve(self):
+        """
+        Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
+        Gives others parameters to control how solver works.
+        """
         # NLP
         nlp = {"x": self.V,
                "f": self.J,
@@ -209,6 +243,10 @@ class OptimalControlProgram:
 
 
 class PathCondition:
+    """
+    Parent class of Bounds and InitialConditions.
+    Uses only for methods overloading.
+    """
     @staticmethod
     def regulation(var, nb_elements):
         pass
@@ -220,7 +258,20 @@ class PathCondition:
 
 
 class Bounds(PathCondition):
+    """
+    Organizes bounds of states("X"), controls("U") and "V".
+    """
     def __init__(self):
+        """
+        There are 3 groups of nodes :
+        1. First node
+        2. Intermediates (= all nodes except first and last nodes)
+        3. Last node
+        Each group have 2 lists of bounds : one of minimum and one of maximum values.
+
+        For X and Y bounds, lists have the number of degree of freedom elements.
+        For V bounds, lists have number of degree of freedom elements * number of shooting points.
+        """
         self.min = []
         self.first_node_min = []
         self.last_node_min = []
@@ -230,6 +281,11 @@ class Bounds(PathCondition):
         self.last_node_max = []
 
     def regulation(self, nb_elements):
+        """
+        Detects if bounds are not correct (wrong size of list: different than degrees of freedom).
+        Detects if first or last nodes are not complete, in that case they have same bounds than intermediates nodes.
+        :param nb_elements: Length of each list.
+        """
         self.regulation_private(self.min, nb_elements, "Bound min")
         self.regulation_private(self.max, nb_elements, "Bound max")
 
@@ -251,11 +307,24 @@ class Bounds(PathCondition):
 
 class InitialConditions(PathCondition):
     def __init__(self):
+        """
+        Organises initial values (for solver)
+        There are 3 groups of nodes :
+        1. First node
+        2. Intermediates (= all nodes without first and last nodes)
+        3. Last node
+        Each group have a list of initial values.
+        """
         self.first_node_init = []
         self.init = []
         self.last_node_init = []
 
     def regulation(self, nb_elements):
+        """
+        Detects if initial values are not given, in that case "0" is given for all degrees of freedom.
+        Detects if initial values are not correct (wrong size of list: different than degrees of freedom).
+        Detects if first or last nodes are not complete, in that case they have same  values than intermediates nodes.
+        """
         if len(self.init) == 0:
             self.init = [0] * nb_elements
         self.regulation_private(self.init, nb_elements, "Init")
