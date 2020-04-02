@@ -30,56 +30,55 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
     # Dynamics
-    variable_type = biorbd_optim.Variable.variable_torque_driven
+    variable_type = biorbd_optim.Variable.torque_driven
     dynamics_func = Dynamics.forward_dynamics_torque_driven
 
     # Constraints
     constraints = ((Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
                    (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),)
 
-    # Define path constraint
+    # Path constraint
     X_bounds = biorbd_optim.Bounds()
     X_init = biorbd_optim.InitialConditions()
+
+    # Gets bounds from biorbd model
     ranges = []
     for i in range(biorbd_model.nbSegment()):
-        segRanges = biorbd_model.segment(i).ranges()
-        for j in range(len(segRanges)):
-            ranges.append(biorbd_model.segment(i).ranges()[j])
+        ranges.extend([biorbd_model.segment(i).ranges()[j] for j in range(len(biorbd_model.segment(i).ranges()))])
+    X_bounds.min = [ranges[i].min() for i in range(biorbd_model.nbQ())]
+    X_bounds.max = [ranges[i].max() for i in range(biorbd_model.nbQ())]
 
-    for i in range(biorbd_model.nbQ()):
-        if i == 0:
-            X_bounds.first_node_min.append(ranges[i].min())
-            X_bounds.first_node_max.append(ranges[i].max())
-        else:
-            X_bounds.first_node_min.append(0)
-            X_bounds.first_node_max.append(0)
-        X_bounds.min.append(ranges[i].min())
-        X_bounds.max.append(ranges[i].max())
-        if i == 0:
-            X_bounds.last_node_min.append(ranges[i].min())
-            X_bounds.last_node_max.append(ranges[i].max())
-        elif i == 2:
-            X_bounds.last_node_min.append(1.57)
-            X_bounds.last_node_max.append(1.57)
-        else:
-            X_bounds.last_node_min.append(0)
-            X_bounds.last_node_max.append(0)
-        X_init.init.append(0)
-    for i in range(biorbd_model.nbQdot()):
-        X_bounds.first_node_min.append(0)
-        X_bounds.first_node_max.append(0)
-        X_bounds.min.append(-velocity_max)
-        X_bounds.max.append(velocity_max)
-        X_bounds.last_node_min.append(0)
-        X_bounds.last_node_max.append(0)
-        X_init.init.append(0)
+    X_bounds.first_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+    X_bounds.first_node_min[0] = X_bounds.min[0]
+    X_bounds.first_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+    X_bounds.first_node_max[0] = X_bounds.max[0]
 
+    X_bounds.last_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+    X_bounds.last_node_min[0] = X_bounds.min[0]
+    X_bounds.last_node_min[2] = 1.57
+    X_bounds.last_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+    X_bounds.last_node_max[0] = X_bounds.max[0]
+    X_bounds.last_node_max[2] = 1.57
+
+
+    # Path constraint velocity
+    velocity_max = 15
+    X_bounds.min.extend([-velocity_max] * (biorbd_model.nbQdot()))
+    X_bounds.max.extend([velocity_max] * (biorbd_model.nbQdot()))
+
+    # Initial guess
+    X_init.init = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+
+    # Define control path constraint
+    torque_min = -100
+    torque_max = 100
+    torque_init = 0
     U_bounds = biorbd_optim.Bounds()
     U_init = biorbd_optim.InitialConditions()
-    for i in range(biorbd_model.nbGeneralizedTorque()):
-        U_bounds.min.append(-100)
-        U_bounds.max.append(100)
-        U_init.init.append(0)
+
+    U_bounds.min = [torque_min for _ in range(biorbd_model.nbGeneralizedTorque())]
+    U_bounds.max = [torque_max for _ in range(biorbd_model.nbGeneralizedTorque())]
+    U_init.init = [torque_init for _ in range(biorbd_model.nbGeneralizedTorque())]
     # ------------- #
 
     return biorbd_optim.OptimalControlProgram(
