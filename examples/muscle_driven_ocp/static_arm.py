@@ -30,8 +30,8 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod"):
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
     # Dynamics
-    variable_type = biorbd_optim.Variable.torque_driven
-    dynamics_func = Dynamics.forward_dynamics_torque_driven
+    variable_type = biorbd_optim.Variable.muscle_and_torque_driven
+    dynamics_func = Dynamics.forward_dynamics_torque_muscle_driven
 
     # Constraints
     constraints = (

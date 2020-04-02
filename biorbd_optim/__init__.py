@@ -45,7 +45,7 @@ class Variable:
         nlp.nu = nlp.u.rows()
 
     @staticmethod
-    def muscles_and_torque_driven(nlp):
+    def muscle_and_torque_driven(nlp):
         dof_names = nlp.model.nameDof()
         muscle_names = nlp.model.muscleNames()
         q = MX()
