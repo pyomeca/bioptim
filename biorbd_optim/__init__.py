@@ -19,53 +19,34 @@ class OdeSolver(enum.Enum):
     NO_SOLVER = 3
 
 
-class Variable:
-    """
-    Includes methods suitable for several situations
-    """
-
-    @staticmethod
-    def torque_driven(nlp):
+class Mapping:
+    def __init__(self, expand_idx, reduce_idx, sign_to_oppose_for_expanded=()):
         """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu)
-        :param nlp: An OptimalControlProgram class.
+
         """
-        dof_names = nlp.model.nameDof()
-        q = MX()
-        q_dot = MX()
-        for i in range(nlp.model.nbQ()):
-            q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string()))
-        for i in range(nlp.model.nbQdot()):
-            q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string()))
-        nlp.x = vertcat(q, q_dot)
+        self.expand_idx = expand_idx
+        self.nb_expanded = len(self.expand_idx)
+        self.reduce_idx = reduce_idx
+        self.nb_reduced = len(self.reduce_idx)
+        self.sign_to_oppose = sign_to_oppose_for_expanded
 
-        for i in range(nlp.model.nbGeneralizedTorque()):
-            nlp.u = vertcat(nlp.u, MX.sym("Tau_" + dof_names[i].to_string()))
+    def expand(self, obj):
+        """
+        Docstring à compléter, récupère des variables symétrisées qu'elle signe et renvoie non sym
+        """
 
-        nlp.nx = nlp.x.rows()
-        nlp.nu = nlp.u.rows()
+        obj_expanded = obj[self.expand_idx]
+        obj_expanded[self.sign_to_oppose] *= -1
+        return obj_expanded
 
-    @staticmethod
-    def muscles_and_torque_driven(nlp):
-        dof_names = nlp.model.nameDof()
-        muscle_names = nlp.model.muscleNames()
-        q = MX()
-        q_dot = MX()
-        for i in range(nlp.model.nbQ()):
-            q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string()))
-        for i in range(nlp.model.nbQdot()):
-            q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string()))
-        nlp.x = vertcat(q, q_dot)
-
-        for i in range(nlp.model.nbMuscleTotal()):
-            nlp.u = vertcat(
-                nlp.u, MX.sym("Tau_for_muscle_" + muscle_names[i].to_string())
-            )
-        for i in range(nlp.model.nbGeneralizedTorque()):
-            nlp.u = vertcat(nlp.u, MX.sym("Tau_" + dof_names[i].to_string()))
-
-        nlp.nx = nlp.x.rows()
-        nlp.nu = nlp.u.rows()
+    def reduce(self, obj):
+        """
+        Docstring à compléter, récupère des variables non symétrisées qu'elle signe et renvoie sym
+        """
+        obj_reduced = obj
+        obj_reduced[self.sign_to_oppose] *= -1
+        obj_reduced = obj_reduced[self.reduce_idx]
+        return obj_reduced
 
 
 class OptimalControlProgram:
@@ -89,8 +70,9 @@ class OptimalControlProgram:
         X_bounds,
         U_bounds,
         constraints,
-        is_cyclic_constraint=False,
-        is_cyclic_objective=False,
+            dof_mapping,
+            is_cyclic_constraint=False,
+            is_cyclic_objective=False,
         show_online_optim=False
     ):
         """
@@ -123,6 +105,7 @@ class OptimalControlProgram:
         self.u = MX()
         self.nx = -1
         self.nu = -1
+        self.dof_mapping = dof_mapping
         variable_type(self)
 
         X_init.regulation(self.nx)
@@ -165,12 +148,13 @@ class OptimalControlProgram:
         :param dynamics_func: A selected method handler of the class dynamics.Dynamics.
         :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
         """
+
         states = MX.sym("x", self.nx, 1)
         controls = MX.sym("p", self.nu, 1)
         dynamics = casadi.Function(
             "ForwardDyn",
             [states, controls],
-            [dynamics_func(states, controls, biorbd_model)],
+            [dynamics_func(states, controls, self)],
             ["states", "controls"],
             ["statesdot"],
         ).expand()
@@ -204,30 +188,30 @@ class OptimalControlProgram:
 
         offset = 0
         for k in range(self.ns):
-            self.X.append(self.V.nz[offset : offset + self.nx])
+            self.X.append(self.V.nz[offset: offset + self.nx])
             if k == 0:
-                self.V_bounds.min[offset : offset + self.nx] = X_bounds.first_node_min
-                self.V_bounds.max[offset : offset + self.nx] = X_bounds.first_node_max
+                self.V_bounds.min[offset: offset + self.nx] = X_bounds.first_node_min
+                self.V_bounds.max[offset: offset + self.nx] = X_bounds.first_node_max
             else:
-                self.V_bounds.min[offset : offset + self.nx] = X_bounds.min
-                self.V_bounds.max[offset : offset + self.nx] = X_bounds.max
-            self.V_init.init[offset : offset + self.nx] = X_init.init
+                self.V_bounds.min[offset: offset + self.nx] = X_bounds.min
+                self.V_bounds.max[offset: offset + self.nx] = X_bounds.max
+            self.V_init.init[offset: offset + self.nx] = X_init.init
             offset += self.nx
 
-            self.U.append(self.V.nz[offset : offset + self.nu])
+            self.U.append(self.V.nz[offset: offset + self.nu])
             if k == 0:
-                self.V_bounds.min[offset : offset + self.nu] = U_bounds.first_node_min
-                self.V_bounds.max[offset : offset + self.nu] = U_bounds.first_node_max
+                self.V_bounds.min[offset: offset + self.nu] = U_bounds.first_node_min
+                self.V_bounds.max[offset: offset + self.nu] = U_bounds.first_node_max
             else:
-                self.V_bounds.min[offset : offset + self.nu] = U_bounds.min
-                self.V_bounds.max[offset : offset + self.nu] = U_bounds.max
-            self.V_init.init[offset : offset + self.nu] = U_init.init
+                self.V_bounds.min[offset: offset + self.nu] = U_bounds.min
+                self.V_bounds.max[offset: offset + self.nu] = U_bounds.max
+            self.V_init.init[offset: offset + self.nu] = U_init.init
             offset += self.nu
 
-        self.X.append(self.V.nz[offset : offset + self.nx])
-        self.V_bounds.min[offset : offset + self.nx] = X_bounds.last_node_min
-        self.V_bounds.max[offset : offset + self.nx] = X_bounds.last_node_max
-        self.V_init.init[offset : offset + self.nx] = X_init.init
+        self.X.append(self.V.nz[offset: offset + self.nx])
+        self.V_bounds.min[offset: offset + self.nx] = X_bounds.last_node_min
+        self.V_bounds.max[offset: offset + self.nx] = X_bounds.last_node_max
+        self.V_init.init[offset: offset + self.nx] = X_init.init
 
         self.V_init.regulation(nV)
         self.V_bounds.regulation(nV)
@@ -237,6 +221,7 @@ class OptimalControlProgram:
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
         """
+
         # NLP
         nlp = {"x": self.V, "f": self.J, "g": self.g}
 
@@ -261,6 +246,9 @@ class OptimalControlProgram:
 
         # Solve the problem
         return solver.call(arg)
+
+    def show(self):
+        pass
 
 
 class PathCondition:
@@ -363,3 +351,4 @@ class InitialConditions(PathCondition):
 
         self.regulation_private(self.first_node_init, nb_elements, "First node init")
         self.regulation_private(self.last_node_init, nb_elements, "Last node init")
+
