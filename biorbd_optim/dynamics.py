@@ -18,23 +18,19 @@ class Dynamics:
         qddot = biorbd.Model.ForwardDynamics(model, q, qdot, tau).to_mx()
         return vertcat(qdot, qddot)
 
+    @staticmethod
     def forward_dynamics_torque_muscle_driven(states, controls, model):
-        muscles_states = []
-
-        for k in range (model.nbMuscleTotal()):
-            muscles_states.append(biorbd.StateDynamics)
-
         q = states[:model.nbQ()]
         qdot = states[model.nbQ():]
+        muscles_states = biorbd.VecBiorbdMuscleStateDynamics(model.nbMuscleTotal())
+        muscles_activations = controls[:model.nbMuscleTotal()]
+        residual_tau = controls[model.nbMuscleTotal():]
 
-        if model.nbMuscleTotal() > 0:
-            for k in range (model.nbMuscleTotal()):
-                muscles_states[k].setActivation(biorbd.StateDynamics, controls[k])
-            Tau = model.muscularJointTorque(muscles_states, true, Q, QDot)
-        else:
-            Tau.setZero()
+        for k in range(model.nbMuscleTotal()):
+            muscles_states[k].setActivation(muscles_activations[k])
+        muscles_tau = model.muscularJointTorque(muscles_states, q, qdot).to_mx()
 
-        Tau += controls
+        tau = muscles_tau + residual_tau
 
-        qddot = biorbd.Model.ForwardDynamics(model, Q, QDot, Tau).to_mx()
+        qddot = biorbd.Model.ForwardDynamics(model, q, qdot, tau).to_mx()
         return vertcat(qdot, qddot)
