@@ -17,7 +17,8 @@ spec.loader.exec_module(eocar)
 
 def test_eocar():
     nlp = eocar.prepare_nlp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/eocar.bioMod"
+        biorbd_model_path=str(PROJECT_FOLDER)
+        + "/examples/torque_driven_ocp/eocar.bioMod"
     )
     sol = nlp.solve()
 

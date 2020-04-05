@@ -102,7 +102,7 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
         constraints,
         is_cyclic_constraint=is_cyclic_constraint,
         is_cyclic_objective=is_cyclic_objective,
-        show_online_optim=show_online_optim
+        show_online_optim=show_online_optim,
     )
 
 
