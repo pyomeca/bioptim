@@ -1,7 +1,7 @@
 import enum
 
 import casadi
-from casadi import MX, vertcat
+from casadi import MX
 
 from .constraints import Constraint
 from .variable import Variable
