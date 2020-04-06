@@ -7,26 +7,28 @@ from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.variable import Variable
 
 
-def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod"):
+
+def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Results path
-    optimization_name = "jumper"
+    optimization_name = "eocar"
     results_path = "Results/"
     control_results_file_name = results_path + "Controls" + optimization_name + ".txt"
     state_results_file_name = results_path + "States" + optimization_name + ".txt"
 
     # Problem parameters
-    number_shooting_points = 60
-    final_time = 5
+    number_shooting_points = 30
+    final_time = 2
     ode_solver = biorbd_optim.OdeSolver.RK
+    velocity_max = 15
     is_cyclic_constraint = False
     is_cyclic_objective = False
-    dof_mapping = Mapping([0, 1, 2, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7],
-                          [0, 1, 2, 3, 4, 7, 8, 9],
-                          [5])
+    dof_mapping = Mapping([0, 1, 2, 1, 2],
+                          [0, 1, 2],
+                          [3, 4])
 
     # Add objective functions
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
@@ -46,34 +48,41 @@ def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod"):
     X_bounds = biorbd_optim.Bounds()
     X_init = biorbd_optim.InitialConditions()
 
-    pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0.8, -0.9, 0.47]
-    # Initialize X_bounds (filled later)
-    X_bounds.min = [0] * dof_mapping.nb_reduced
-    X_bounds.max = [0] * dof_mapping.nb_reduced
-    X_bounds.first_node_min = [0] * 2 * dof_mapping.nb_reduced
-    X_bounds.first_node_max = [0] * 2 * dof_mapping.nb_reduced
-    X_bounds.last_node_min = [0] * 2 * dof_mapping.nb_reduced
-    X_bounds.last_node_max = [0] * 2 * dof_mapping.nb_reduced
+    # Gets bounds from biorbd model
+    ranges = []
+    for i in range(biorbd_model.nbSegment()):
+        ranges.extend(
+            [
+                biorbd_model.segment(i).ranges()[j]
+                for j in range(len(biorbd_model.segment(i).ranges()))
+            ]
+        )
+    X_bounds.min = [ranges[i].min() for i in dof_mapping.reduce_idx]
+    X_bounds.max = [ranges[i].max() for i in dof_mapping.reduce_idx]
 
-    for i in range(dof_mapping.nb_reduced):
-        X_bounds.min[i] = -3.14
-        X_bounds.max[i] = +3.14
-        X_bounds.first_node_min[i] = pose_at_first_node[i]
-        X_bounds.first_node_max[i] = pose_at_first_node[i]
-        X_bounds.last_node_min[i] = pose_at_first_node[i]
-        X_bounds.last_node_max[i] = pose_at_first_node[i]
+    X_bounds.first_node_min = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.first_node_min[0] = X_bounds.min[0]
+    X_bounds.first_node_max = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.first_node_max[0] = X_bounds.max[0]
+
+    X_bounds.last_node_min = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.last_node_min[0] = X_bounds.min[0]
+    X_bounds.last_node_min[2] = 3.14
+    X_bounds.last_node_max = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.last_node_max[0] = X_bounds.max[0]
+    X_bounds.last_node_max[2] = 3.14
 
     # Path constraint velocity
-    velocity_max = 20
+    velocity_max = 15
     X_bounds.min.extend([-velocity_max] * dof_mapping.nb_reduced)
     X_bounds.max.extend([velocity_max] * dof_mapping.nb_reduced)
 
     # Initial guess
-    X_init.init = pose_at_first_node + [0] * dof_mapping.nb_reduced
+    X_init.init = [0] * 2 * dof_mapping.nb_reduced
 
     # Define control path constraint
-    torque_min = -4000
-    torque_max = 4000
+    torque_min = -100
+    torque_max = 100
     torque_init = 0
     U_bounds = biorbd_optim.Bounds()
     U_init = biorbd_optim.InitialConditions()
@@ -108,12 +117,12 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = nlp.solve()
 
-    for idx in range(nlp.model.nbQ()):
-        plt.figure()
-        q = sol["x"][0 * nlp.model.nbQ() + idx:: 3 * nlp.model.nbQ()]
-        q_dot = sol["x"][1 * nlp.model.nbQ() + idx:: 3 * nlp.model.nbQ()]
-        u = sol["x"][2 * nlp.model.nbQ() + idx:: 3 * nlp.model.nbQ()]
-        plt.plot(q)
-        plt.plot(q_dot)
-        plt.plot(u)
-    #plt.show()
+    # for idx in range(nlp.model.nbQ()):
+    #     plt.figure()
+    #     q = sol["x"][0 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
+    #     q_dot = sol["x"][1 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
+    #     u = sol["x"][2 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
+    #     plt.plot(q)
+    #     plt.plot(q_dot)
+    #     plt.plot(u)
+    # plt.show()

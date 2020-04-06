@@ -12,10 +12,16 @@ class Dynamics:
         :return: Vertcat of derived states.
         """
         nq = len(nlp.dof_mapping.reduce_idx)
+        #print(nq)
+        print(len(nlp.dof_mapping.expand_idx))
         q = nlp.dof_mapping.expand(states[:nq])
         qdot_reduced = states[nq:]
+        print(q.size())
+        #print(qdot_reduced.size())
         qdot = nlp.dof_mapping.expand(qdot_reduced)
+        print(qdot.size())
         tau = nlp.dof_mapping.expand(controls)
+        print(tau.size())
 
         qddot = biorbd.Model.ForwardDynamics(nlp.model, q, qdot, tau).to_mx()
         qddot_reduced = nlp.dof_mapping.reduce(qddot)
