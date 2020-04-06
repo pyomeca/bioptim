@@ -2,6 +2,7 @@ import time
 
 import biorbd
 import biorbd_optim
+from biorbd_optim.variable import Variable
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.dynamics import Dynamics
@@ -30,7 +31,7 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
     # Dynamics
-    variable_type = biorbd_optim.Variable.torque_driven
+    variable_type = Variable.torque_driven
     dynamics_func = Dynamics.forward_dynamics_torque_driven
 
     # Constraints
