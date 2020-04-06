@@ -1,13 +1,18 @@
+import numpy as np
 import biorbd
+import BiorbdViz
 from matplotlib import pyplot as plt
 import biorbd_optim
 from biorbd_optim import Mapping
 from biorbd_optim.dynamics import Dynamics
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.variable import Variable
+from biorbd_optim.constraints import Constraint
 
 
-def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod"):
+def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod",
+                show_online_optim=False,
+                use_symmetry=True):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -19,34 +24,41 @@ def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod"):
     state_results_file_name = results_path + "States" + optimization_name + ".txt"
 
     # Problem parameters
-    number_shooting_points = 60
-    final_time = 5
+    number_shooting_points = 20
+    final_time = 0.5
     ode_solver = biorbd_optim.OdeSolver.RK
     is_cyclic_constraint = False
     is_cyclic_objective = False
-    dof_mapping = Mapping([0, 1, 2, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7],
-                          [0, 1, 2, 3, 4, 7, 8, 9],
-                          [5])
+    if use_symmetry:
+        dof_mapping = Mapping([0, 1, 2, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7],
+                              [0, 1, 2, 3, 4, 7, 8, 9],
+                              [5])
+    else:
+        dof_mapping = Mapping(range(13), range(13))
 
     # Add objective functions
-    objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
+    objective_functions = ((ObjectiveFunction.minimize_torque, 1),
+                           )
 
     # Dynamics
     variable_type = Variable.torque_driven
     dynamics_func = Dynamics.forward_dynamics_torque_driven
 
     # Constraints
-    constraints = ()
-    # constraints = (
-    #     (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
-    #     (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
-    # )
+    if use_symmetry:
+        constraints = ()
+    else:
+        constraints = ((Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.All, (3, 5, -1)),
+                       )
 
     # Path constraint
     X_bounds = biorbd_optim.Bounds()
     X_init = biorbd_optim.InitialConditions()
 
-    pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0.8, -0.9, 0.47]
+    if use_symmetry:
+        pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0.8, -0.9, 0.47]
+    else:
+        pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0, -1.4, 0.8, -0.9, 0.47, 0.8, -0.9, 0.47]
     # Initialize X_bounds (filled later)
     X_bounds.min = [0] * dof_mapping.nb_reduced
     X_bounds.max = [0] * dof_mapping.nb_reduced
@@ -57,7 +69,7 @@ def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod"):
 
     for i in range(dof_mapping.nb_reduced):
         X_bounds.min[i] = -3.14
-        X_bounds.max[i] = +3.14
+        X_bounds.max[i] = 3.14
         X_bounds.first_node_min[i] = pose_at_first_node[i]
         X_bounds.first_node_max[i] = pose_at_first_node[i]
         X_bounds.last_node_min[i] = pose_at_first_node[i]
@@ -99,21 +111,24 @@ def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod"):
         dof_mapping,
         is_cyclic_constraint=is_cyclic_constraint,
         is_cyclic_objective=is_cyclic_objective,
+        show_online_optim=show_online_optim
     )
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp()
+    nlp = prepare_nlp(show_online_optim=False)
 
     # --- Solve the program --- #
     sol = nlp.solve()
 
-    for idx in range(nlp.model.nbQ()):
-        plt.figure()
-        q = sol["x"][0 * nlp.model.nbQ() + idx:: 3 * nlp.model.nbQ()]
-        q_dot = sol["x"][1 * nlp.model.nbQ() + idx:: 3 * nlp.model.nbQ()]
-        u = sol["x"][2 * nlp.model.nbQ() + idx:: 3 * nlp.model.nbQ()]
-        plt.plot(q)
-        plt.plot(q_dot)
-        plt.plot(u)
-    #plt.show()
+    all_q = np.ndarray((nlp.ns+1, nlp.model.nbQ()))
+    cmp = 0
+    for idx in nlp.dof_mapping.expand_idx:
+        q = sol["x"][0 * nlp.nbQ + idx:: 3 * nlp.nbQ]
+        all_q[:, cmp:cmp+1] = np.array(q)
+        cmp += 1
+
+    # np.save("Results", all_q)
+    b = BiorbdViz.BiorbdViz(loaded_model=nlp.model)
+    b.load_movement(all_q)
+    b.exec()
