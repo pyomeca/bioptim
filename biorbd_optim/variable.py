@@ -24,6 +24,9 @@ class Variable:
         for i in nlp.dof_mapping.reduce_idx:
             nlp.u = vertcat(nlp.u, MX.sym("Tau_" + dof_names[i].to_string()))
 
+        nlp.nbQ = nlp.dof_mapping.nb_reduced
+        nlp.nbQdot = nlp.dof_mapping.nb_reduced
+        nlp.nbTau = nlp.dof_mapping.nb_reduced
         nlp.nx = nlp.x.rows()
         nlp.nu = nlp.u.rows()
 
