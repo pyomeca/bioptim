@@ -4,6 +4,7 @@ import casadi
 from casadi import MX, vertcat
 
 from .constraints import Constraint
+from .plot import AnimateCallback
 
 
 class OdeSolver(enum.Enum):
@@ -90,6 +91,7 @@ class OptimalControlProgram:
         constraints,
         is_cyclic_constraint=False,
         is_cyclic_objective=False,
+        show_online_optim=False,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -150,6 +152,11 @@ class OptimalControlProgram:
         self.J = 0
         for (func, weight) in objective_functions:
             func(self, weight=weight)
+
+        if show_online_optim:
+            self.show_online_optim_callback = AnimateCallback(self)
+        else:
+            self.show_online_optim_callback = None
 
     def __prepare_dynamics(self, biorbd_model, dynamics_func, ode_solver):
         """
@@ -239,6 +246,7 @@ class OptimalControlProgram:
             "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
             "ipopt.limited_memory_max_history": 50,
             "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
+            "iteration_callback": self.show_online_optim_callback,
         }
         solver = casadi.nlpsol("nlpsol", "ipopt", nlp, opts)
 
