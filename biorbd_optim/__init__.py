@@ -4,6 +4,7 @@ import casadi
 from casadi import MX, vertcat
 
 from .constraints import Constraint
+from .variable import Variable
 from .plot import AnimateCallback
 from .mapping import Mapping
 
@@ -76,8 +77,16 @@ class OptimalControlProgram:
         self.u = MX()
         self.nx = -1
         self.nu = -1
-        self.dof_mapping = dof_mapping
-        variable_type(self)
+        self.variable_type = variable_type
+        if dof_mapping is None:
+            if self.variable_type == Variable.torque_driven:
+                self.dof_mapping = Mapping(range(self.model.nbQ()), range(self.model.nbQ()))
+            else:
+                raise RuntimeError("This Variable has no default dof_mapping")
+        else:
+            self.dof_mapping = dof_mapping
+        self.nbQ = -1
+        self.variable_type(self)
 
         X_init.regulation(self.nx)
         X_bounds.regulation(self.nx)
