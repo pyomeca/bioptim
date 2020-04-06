@@ -70,10 +70,10 @@ class OptimalControlProgram:
         X_bounds,
         U_bounds,
         constraints,
-            dof_mapping,
-            is_cyclic_constraint=False,
-            is_cyclic_objective=False,
-        show_online_optim=False
+        dof_mapping,
+        show_online_optim=False,
+        is_cyclic_objective=False,
+        is_cyclic_constraint=False
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -231,7 +231,7 @@ class OptimalControlProgram:
             "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
             "ipopt.limited_memory_max_history": 50,
             "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
-            "iteration_callback": self.show_online_optim_callback
+            "iteration_callback": self.show_online_optim_callback,
         }
         solver = casadi.nlpsol("nlpsol", "ipopt", nlp, opts)
 
