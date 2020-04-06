@@ -5,6 +5,7 @@ from casadi import MX, vertcat
 
 from .constraints import Constraint
 from .plot import AnimateCallback
+from .mapping import Mapping
 
 
 class OdeSolver(enum.Enum):
@@ -17,36 +18,6 @@ class OdeSolver(enum.Enum):
     RK = 1
     CVODES = 2
     NO_SOLVER = 3
-
-
-class Mapping:
-    def __init__(self, expand_idx, reduce_idx, sign_to_oppose_for_expanded=()):
-        """
-
-        """
-        self.expand_idx = expand_idx
-        self.nb_expanded = len(self.expand_idx)
-        self.reduce_idx = reduce_idx
-        self.nb_reduced = len(self.reduce_idx)
-        self.sign_to_oppose = sign_to_oppose_for_expanded
-
-    def expand(self, obj):
-        """
-        Docstring à compléter, récupère des variables symétrisées qu'elle signe et renvoie non sym
-        """
-
-        obj_expanded = obj[self.expand_idx]
-        obj_expanded[self.sign_to_oppose] *= -1
-        return obj_expanded
-
-    def reduce(self, obj):
-        """
-        Docstring à compléter, récupère des variables non symétrisées qu'elle signe et renvoie sym
-        """
-        obj_reduced = obj
-        obj_reduced[self.sign_to_oppose] *= -1
-        obj_reduced = obj_reduced[self.reduce_idx]
-        return obj_reduced
 
 
 class OptimalControlProgram:
@@ -70,7 +41,7 @@ class OptimalControlProgram:
         X_bounds,
         U_bounds,
         constraints,
-        dof_mapping,
+        dof_mapping=None,
         show_online_optim=False,
         is_cyclic_objective=False,
         is_cyclic_constraint=False

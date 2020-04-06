@@ -1,7 +1,7 @@
 import biorbd
 from matplotlib import pyplot as plt
 import biorbd_optim
-from biorbd_optim import Mapping
+from biorbd_optim.mapping import Mapping
 from biorbd_optim.dynamics import Dynamics
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.variable import Variable
