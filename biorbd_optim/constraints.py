@@ -65,9 +65,11 @@ class Constraint:
         :param X: List of instant(s).
         :param idx_marker: Tuple of indices of two markers.
         """
+        nq = nlp.dof_mapping.nb_reduced
         for x in X:
-            marker1 = nlp.model.marker(x[: nlp.model.nbQ()], idx_marker[0]).to_mx()
-            marker2 = nlp.model.marker(x[: nlp.model.nbQ()], idx_marker[1]).to_mx()
+            q = nlp.dof_mapping.expand(x[:nq])
+            marker1 = nlp.model.marker(q, idx_marker[0]).to_mx()
+            marker2 = nlp.model.marker(q, idx_marker[1]).to_mx()
             nlp.g = vertcat(nlp.g, marker1 - marker2)
             for i in range(3):
                 nlp.g_bounds.min.append(0)

@@ -4,6 +4,8 @@ from matplotlib import pyplot as plt
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 import numpy as np
 
+from .variable import Variable
+
 
 class AnimateCallback(Callback):
     def __init__(self, nlp, opts={}):
@@ -57,129 +59,76 @@ class AnimateCallback(Callback):
             self.nlp = nlp
 
         def __call__(self, pipe):
-            print("starting plotter...")
-
             self.pipe = pipe
-            self.fig_state, self.axes_state = plt.subplots(
-                3, self.nlp.model.nbQ(), figsize=(10, 6)
-            )
-            self.axes_state = self.axes_state.flatten()
-            self.axes_state[1].set_title("q")
-            self.axes_state[self.nlp.model.nbQ() + 1].set_title("q_dot")
-            self.axes_state[2 * self.nlp.model.nbQ() + 1].set_title("tau")
 
             self.t = np.linspace(0, self.nlp.tf, self.nlp.ns + 1)
+            if self.nlp.variable_type == Variable.torque_driven:
+                self.fig_state, self.axes = plt.subplots(
+                    3, self.nlp.nbQ, figsize=(10, 6)
+                )
+                self.axes = self.axes.flatten()
+                mid_column_idx = int(self.nlp.nbQ / 2)
+                self.axes[mid_column_idx].set_title("q")
+                self.axes[self.nlp.nbQ + mid_column_idx].set_title("q_dot")
+                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_title(
+                    "tau"
+                )
+            else:
+                raise RuntimeError("Plot is not ready for this type of variable")
 
-            for i in range(self.nlp.model.nbQ()):
-                self.axes_state[i].plot(self.t, np.zeros((self.nlp.ns + 1, 1)))
-                self.axes_state[i].grid(color="k", linestyle="--", linewidth=0.5)
-                self.axes_state[i].set_xlim(0, self.nlp.tf)
+            for i, ax in enumerate(self.axes):
+                if i < self.nlp.nbQ + self.nlp.nbQdot:
+                    ax.plot(self.t, np.zeros((self.nlp.ns + 1, 1)))
+                else:
+                    ax.step(self.t, np.zeros((self.nlp.ns + 1, 1)), where="post")
+                ax.grid(color="k", linestyle="--", linewidth=0.5)
+                ax.set_xlim(0, self.nlp.tf)
 
-                self.axes_state[self.nlp.model.nbQ() + i].plot(
-                    self.t, np.zeros((self.nlp.ns + 1, 1))
+            if self.nlp.variable_type == Variable.torque_driven:
+                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_xlabel(
+                    "time (s)"
                 )
-                self.axes_state[self.nlp.model.nbQ() + i].grid(
-                    color="k", linestyle="--", linewidth=0.5
-                )
-                self.axes_state[self.nlp.model.nbQ() + i].set_xlim(0, self.nlp.tf)
-
-                self.plot_control(
-                    self.axes_state[2 * self.nlp.model.nbQ() + i],
-                    np.zeros((self.nlp.ns, 1)),
-                )
-                self.axes_state[2 * self.nlp.model.nbQ() + i].grid(
-                    color="k", linestyle="--", linewidth=0.5
-                )
-                self.axes_state[2 * self.nlp.model.nbQ() + i].set_xlim(0, self.nlp.tf)
-                self.axes_state[2 * self.nlp.model.nbQ() + i].set_xlabel("time (s)")
 
             timer = self.fig_state.canvas.new_timer(interval=100)
             timer.add_callback(self.call_back)
             timer.start()
 
-            print("...plot is ready")
             plt.tight_layout()
             plt.show()
 
         def call_back(self):
             while self.pipe.poll():
                 arg = self.pipe.recv()
-                for i in range(self.nlp.model.nbQ()):
-                    q, q_dot, u = self.get_states(arg, i)
-
-                    y_range = np.max(q) - np.min(q)
-                    y_mean = y_range / 2 + np.min(q)
-                    y_range = (np.max([y_range, np.pi / 2]) + y_range * 0.1) / 2
-                    self.axes_state[i].set_ylim(y_mean - y_range, y_mean + y_range)
-                    self.axes_state[i].set_yticks(
-                        np.arange(
-                            np.round(y_mean - y_range, 1),
-                            np.round(y_mean + y_range, 1),
-                            step=np.round(
-                                (y_mean + y_range - (y_mean - y_range)) / 4, 1
-                            ),
-                        )
-                    )
-                    lines_state = self.axes_state[i].get_lines()
-                    lines_state[0].set_ydata(np.array(q))
-
-                    y_range = np.max(q_dot) - np.min(q_dot)
-                    y_mean = y_range / 2 + np.min(q_dot)
-                    y_range = (np.max([y_range, np.pi]) + y_range * 0.1) / 2
-                    self.axes_state[self.nlp.model.nbQ() + i].set_ylim(
-                        y_mean - y_range, y_mean + y_range
-                    )
-                    self.axes_state[self.nlp.model.nbQ() + i].set_yticks(
-                        np.arange(
-                            np.round(y_mean - y_range, 1),
-                            np.round(y_mean + y_range, 1),
-                            step=np.round(
-                                (y_mean + y_range - (y_mean - y_range)) / 4, 1
-                            ),
-                        )
-                    )
-                    lines_state_dot = self.axes_state[
-                        self.nlp.model.nbQ() + i
-                    ].get_lines()
-                    lines_state_dot[0].set_ydata(np.array(q_dot))
-
-                    y_range = np.max(u) - np.min(u)
-                    y_mean = y_range / 2 + np.min(u)
-                    y_range = (np.max([y_range, 2]) + y_range * 0.1) / 2
-                    self.axes_state[2 * self.nlp.model.nbQ() + i].set_ylim(
-                        y_mean - y_range, y_mean + y_range
-                    )
-                    self.axes_state[2 * self.nlp.model.nbQ() + i].set_yticks(
-                        np.arange(
-                            np.round(y_mean - y_range, 1),
-                            np.round(y_mean + y_range, 1),
-                            step=np.round(
-                                (y_mean + y_range - (y_mean - y_range)) / 4, 1
-                            ),
-                        )
-                    )
-                    self.plot_control(
-                        self.axes_state[2 * self.nlp.model.nbQ() + i], np.array(u)
-                    )
+                if self.nlp.variable_type == Variable.torque_driven:
+                    for i in range(self.nlp.nbQ):
+                        q, q_dot, tau = self.__get_data(arg, i)
+                        self.__update_plot(i, q)
+                        self.__update_plot(i + self.nlp.nbQ, q_dot)
+                        self.__update_plot(i + self.nlp.nbQ + self.nlp.nbQdot, tau)
             self.fig_state.canvas.draw()
             return True
 
-        def get_states(self, V, idx):
-            q = V[0 * self.nlp.model.nbQ() + idx :: 3 * self.nlp.model.nbQ()]
-            q_dot = V[1 * self.nlp.model.nbQ() + idx :: 3 * self.nlp.model.nbQ()]
-            u = V[2 * self.nlp.model.nbQ() + idx :: 3 * self.nlp.model.nbQ()]
-            return q, q_dot, u
+        def __get_data(self, V, idx):
+            if self.nlp.variable_type == Variable.torque_driven:
+                q = np.array(V[0 * self.nlp.nbQ + idx :: 3 * self.nlp.nbQ])
+                q_dot = np.array(V[1 * self.nlp.nbQdot + idx :: 3 * self.nlp.nbQdot])
+                tau = np.ndarray((self.nlp.ns + 1, 1))
+                tau[0 : self.nlp.ns, :] = np.array(
+                    V[2 * self.nlp.nbTau + idx :: 3 * self.nlp.nbTau]
+                )
+                tau[-1, :] = tau[-2, :]
+            return q, q_dot, tau
 
-        def plot_control(self, ax, x):
-            lines = ax.get_lines()
-            if len(lines) == 0:
-                for n in range(self.nlp.ns - 1):
-                    ax.plot(
-                        [self.t[n], self.t[n + 1], self.t[n + 1]],
-                        [x[n], x[n], x[n + 1]],
-                        "r-",
-                    )
-            else:
-                for n in range(self.nlp.ns - 1):
-                    lines[n].set_xdata([self.t[n], self.t[n + 1], self.t[n + 1]])
-                    lines[n].set_ydata([x[n], x[n], x[n + 1]])
+        def __update_plot(self, i, y):
+            y_range = np.max(y) - np.min(y)
+            y_mean = y_range / 2 + np.min(y)
+            y_range = (np.max([y_range, np.pi / 2]) + y_range * 0.1) / 2
+            self.axes[i].set_ylim(y_mean - y_range, y_mean + y_range)
+            self.axes[i].set_yticks(
+                np.arange(
+                    np.round(y_mean - y_range, 1),
+                    np.round(y_mean + y_range, 1),
+                    step=np.round((y_mean + y_range - (y_mean - y_range)) / 4, 1),
+                )
+            )
+            self.axes[i].get_lines()[0].set_ydata(np.array(y))

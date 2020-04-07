@@ -1,10 +1,12 @@
 import enum
 
 import casadi
-from casadi import MX, vertcat
+from casadi import MX
 
 from .constraints import Constraint
+from .variable import Variable
 from .plot import AnimateCallback
+from .mapping import Mapping
 
 
 class OdeSolver(enum.Enum):
@@ -17,55 +19,6 @@ class OdeSolver(enum.Enum):
     RK = 1
     CVODES = 2
     NO_SOLVER = 3
-
-
-class Variable:
-    """
-    Includes methods suitable for several situations
-    """
-
-    @staticmethod
-    def torque_driven(nlp):
-        """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu)
-        :param nlp: An OptimalControlProgram class.
-        """
-        dof_names = nlp.model.nameDof()
-        q = MX()
-        q_dot = MX()
-        for i in range(nlp.model.nbQ()):
-            q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string()))
-        for i in range(nlp.model.nbQdot()):
-            q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string()))
-        nlp.x = vertcat(q, q_dot)
-
-        for i in range(nlp.model.nbGeneralizedTorque()):
-            nlp.u = vertcat(nlp.u, MX.sym("Tau_" + dof_names[i].to_string()))
-
-        nlp.nx = nlp.x.rows()
-        nlp.nu = nlp.u.rows()
-
-    @staticmethod
-    def muscles_and_torque_driven(nlp):
-        dof_names = nlp.model.nameDof()
-        muscle_names = nlp.model.muscleNames()
-        q = MX()
-        q_dot = MX()
-        for i in range(nlp.model.nbQ()):
-            q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string()))
-        for i in range(nlp.model.nbQdot()):
-            q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string()))
-        nlp.x = vertcat(q, q_dot)
-
-        for i in range(nlp.model.nbMuscleTotal()):
-            nlp.u = vertcat(
-                nlp.u, MX.sym("Tau_for_muscle_" + muscle_names[i].to_string())
-            )
-        for i in range(nlp.model.nbGeneralizedTorque()):
-            nlp.u = vertcat(nlp.u, MX.sym("Tau_" + dof_names[i].to_string()))
-
-        nlp.nx = nlp.x.rows()
-        nlp.nu = nlp.u.rows()
 
 
 class OptimalControlProgram:
@@ -89,9 +42,10 @@ class OptimalControlProgram:
         X_bounds,
         U_bounds,
         constraints,
-        is_cyclic_constraint=False,
-        is_cyclic_objective=False,
+        dof_mapping=None,
         show_online_optim=False,
+        is_cyclic_objective=False,
+        is_cyclic_constraint=False,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -123,7 +77,18 @@ class OptimalControlProgram:
         self.u = MX()
         self.nx = -1
         self.nu = -1
-        variable_type(self)
+        self.variable_type = variable_type
+        if dof_mapping is None:
+            if self.variable_type == Variable.torque_driven:
+                self.dof_mapping = Mapping(
+                    range(self.model.nbQ()), range(self.model.nbQ())
+                )
+            else:
+                raise RuntimeError("This Variable has no default dof_mapping")
+        else:
+            self.dof_mapping = dof_mapping
+        self.nbQ = -1
+        self.variable_type(self)
 
         X_init.regulation(self.nx)
         X_bounds.regulation(self.nx)
@@ -165,12 +130,13 @@ class OptimalControlProgram:
         :param dynamics_func: A selected method handler of the class dynamics.Dynamics.
         :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
         """
+
         states = MX.sym("x", self.nx, 1)
         controls = MX.sym("p", self.nu, 1)
         dynamics = casadi.Function(
             "ForwardDyn",
             [states, controls],
-            [dynamics_func(states, controls, biorbd_model)],
+            [dynamics_func(states, controls, self)],
             ["states", "controls"],
             ["statesdot"],
         ).expand()
@@ -237,6 +203,7 @@ class OptimalControlProgram:
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
         """
+
         # NLP
         nlp = {"x": self.V, "f": self.J, "g": self.g}
 
@@ -261,6 +228,9 @@ class OptimalControlProgram:
 
         # Solve the problem
         return solver.call(arg)
+
+    def show(self):
+        pass
 
 
 class PathCondition:

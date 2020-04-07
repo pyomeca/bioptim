@@ -1,11 +1,10 @@
-import time
-
 import biorbd
 import biorbd_optim
-from biorbd_optim.variable import Variable
-from biorbd_optim.objective_functions import ObjectiveFunction
+from biorbd_optim.mapping import Mapping
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.dynamics import Dynamics
+from biorbd_optim.objective_functions import ObjectiveFunction
+from biorbd_optim.variable import Variable
 
 
 def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
@@ -20,12 +19,13 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     state_results_file_name = results_path + "States" + optimization_name + ".txt"
 
     # Problem parameters
-    number_shooting_points = 1000
-    final_time = 60
+    number_shooting_points = 30
+    final_time = 2
     ode_solver = biorbd_optim.OdeSolver.RK
     velocity_max = 15
     is_cyclic_constraint = False
     is_cyclic_objective = False
+    dof_mapping = Mapping([0, 1, 2, 1, 2], [0, 1, 2], [3, 4])
 
     # Add objective functions
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
@@ -53,28 +53,25 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
                 for j in range(len(biorbd_model.segment(i).ranges()))
             ]
         )
-    X_bounds.min = [ranges[i].min() for i in range(biorbd_model.nbQ())]
-    X_bounds.max = [ranges[i].max() for i in range(biorbd_model.nbQ())]
+    X_bounds.min = [ranges[i].min() for i in dof_mapping.reduce_idx]
+    X_bounds.min.extend([-velocity_max] * dof_mapping.nb_reduced)
+    X_bounds.max = [ranges[i].max() for i in dof_mapping.reduce_idx]
+    X_bounds.max.extend([velocity_max] * dof_mapping.nb_reduced)
 
-    X_bounds.first_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.first_node_min[0] = X_bounds.min[0]
-    X_bounds.first_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.first_node_max[0] = X_bounds.max[0]
+    X_bounds.first_node_min = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.first_node_min[0] = ranges[0].min()
+    X_bounds.first_node_max = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.first_node_max[0] = ranges[0].max()
 
-    X_bounds.last_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.last_node_min[0] = X_bounds.min[0]
-    X_bounds.last_node_min[2] = 1.57
-    X_bounds.last_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.last_node_max[0] = X_bounds.max[0]
-    X_bounds.last_node_max[2] = 1.57
-
-    # Path constraint velocity
-    velocity_max = 15
-    X_bounds.min.extend([-velocity_max] * (biorbd_model.nbQdot()))
-    X_bounds.max.extend([velocity_max] * (biorbd_model.nbQdot()))
+    X_bounds.last_node_min = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.last_node_min[0] = ranges[0].min()
+    X_bounds.last_node_min[2] = 2
+    X_bounds.last_node_max = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.last_node_max[0] = ranges[0].max()
+    X_bounds.last_node_max[2] = 2
 
     # Initial guess
-    X_init.init = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+    X_init.init = [0] * 2 * dof_mapping.nb_reduced
 
     # Define control path constraint
     torque_min = -100
@@ -83,9 +80,9 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     U_bounds = biorbd_optim.Bounds()
     U_init = biorbd_optim.InitialConditions()
 
-    U_bounds.min = [torque_min for _ in range(biorbd_model.nbGeneralizedTorque())]
-    U_bounds.max = [torque_max for _ in range(biorbd_model.nbGeneralizedTorque())]
-    U_init.init = [torque_init for _ in range(biorbd_model.nbGeneralizedTorque())]
+    U_bounds.min = [torque_min for _ in range(dof_mapping.nb_reduced)]
+    U_bounds.max = [torque_max for _ in range(dof_mapping.nb_reduced)]
+    U_init.init = [torque_init for _ in range(dof_mapping.nb_reduced)]
     # ------------- #
 
     return biorbd_optim.OptimalControlProgram(
@@ -101,6 +98,7 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
         X_bounds,
         U_bounds,
         constraints,
+        dof_mapping,
         is_cyclic_constraint=is_cyclic_constraint,
         is_cyclic_objective=is_cyclic_objective,
         show_online_optim=show_online_optim,
@@ -108,10 +106,7 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp(show_online_optim=True)
+    nlp = prepare_nlp(show_online_optim=False)
 
-    # --- Solve the program and show --- #
+    # --- Solve the program --- #
     sol = nlp.solve()
-
-    # Admire the graph for 10 more seconds
-    time.sleep(10)
