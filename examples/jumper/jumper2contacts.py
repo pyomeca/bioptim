@@ -1,7 +1,5 @@
 import numpy as np
 import biorbd
-import BiorbdViz
-from matplotlib import pyplot as plt
 import biorbd_optim
 from biorbd_optim import Mapping
 from biorbd_optim.dynamics import Dynamics
@@ -144,7 +142,7 @@ if __name__ == "__main__":
         all_q[:, cmp : cmp + 1] = np.array(q)
         cmp += 1
 
-    # np.save("Results", all_q)
+    import BiorbdViz
     b = BiorbdViz.BiorbdViz(loaded_model=nlp.model)
     b.load_movement(all_q)
     b.exec()
