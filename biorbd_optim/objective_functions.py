@@ -9,8 +9,7 @@ class ObjectiveFunction:
         for i in range(nlp.ns):
             nlp.J += (
                 casadi.dot(
-                    nlp.U[i][n_mus:n_mus + n_tau],
-                    nlp.U[i][n_mus:n_mus + n_tau],
+                    nlp.U[i][n_mus : n_mus + n_tau], nlp.U[i][n_mus : n_mus + n_tau],
                 )
                 * nlp.dt
                 * nlp.dt

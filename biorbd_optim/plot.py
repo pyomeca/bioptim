@@ -4,7 +4,8 @@ from matplotlib import pyplot as plt
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 import numpy as np
 
-from .variable import Variable
+from .problem_type import ProblemType
+
 
 class AnimateCallback(Callback):
     def __init__(self, nlp, opts={}):
@@ -61,7 +62,7 @@ class AnimateCallback(Callback):
             self.pipe = pipe
 
             self.t = np.linspace(0, self.nlp.tf, self.nlp.ns + 1)
-            if self.nlp.variable_type == Variable.torque_driven:
+            if self.nlp.problem_type == ProblemType.torque_driven:
                 self.fig_state, self.axes = plt.subplots(
                     3, self.nlp.nbQ, figsize=(10, 6)
                 )
@@ -69,7 +70,9 @@ class AnimateCallback(Callback):
                 mid_column_idx = int(self.nlp.nbQ / 2)
                 self.axes[mid_column_idx].set_title("q")
                 self.axes[self.nlp.nbQ + mid_column_idx].set_title("q_dot")
-                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_title("tau")
+                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_title(
+                    "tau"
+                )
             else:
                 raise RuntimeError("Plot is not ready for this type of variable")
 
@@ -81,8 +84,10 @@ class AnimateCallback(Callback):
                 ax.grid(color="k", linestyle="--", linewidth=0.5)
                 ax.set_xlim(0, self.nlp.tf)
 
-            if self.nlp.variable_type == Variable.torque_driven:
-                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_xlabel("time (s)")
+            if self.nlp.problem_type == ProblemType.torque_driven:
+                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_xlabel(
+                    "time (s)"
+                )
 
             timer = self.fig_state.canvas.new_timer(interval=100)
             timer.add_callback(self.call_back)
@@ -94,7 +99,7 @@ class AnimateCallback(Callback):
         def call_back(self):
             while self.pipe.poll():
                 arg = self.pipe.recv()
-                if self.nlp.variable_type == Variable.torque_driven:
+                if self.nlp.problem_type == ProblemType.torque_driven:
                     for i in range(self.nlp.nbQ):
                         q, q_dot, tau = self.__get_data(arg, i)
                         self.__update_plot(i, q)
@@ -104,11 +109,13 @@ class AnimateCallback(Callback):
             return True
 
         def __get_data(self, V, idx):
-            if self.nlp.variable_type == Variable.torque_driven:
+            if self.nlp.problem_type == ProblemType.torque_driven:
                 q = np.array(V[0 * self.nlp.nbQ + idx :: 3 * self.nlp.nbQ])
                 q_dot = np.array(V[1 * self.nlp.nbQdot + idx :: 3 * self.nlp.nbQdot])
-                tau = np.ndarray((self.nlp.ns+1, 1))
-                tau[0:self.nlp.ns, :] = np.array(V[2 * self.nlp.nbTau + idx :: 3 * self.nlp.nbTau])
+                tau = np.ndarray((self.nlp.ns + 1, 1))
+                tau[0 : self.nlp.ns, :] = np.array(
+                    V[2 * self.nlp.nbTau + idx :: 3 * self.nlp.nbTau]
+                )
                 tau[-1, :] = tau[-2, :]
             return q, q_dot, tau
 
@@ -121,9 +128,7 @@ class AnimateCallback(Callback):
                 np.arange(
                     np.round(y_mean - y_range, 1),
                     np.round(y_mean + y_range, 1),
-                    step=np.round(
-                        (y_mean + y_range - (y_mean - y_range)) / 4, 1
-                    ),
+                    step=np.round((y_mean + y_range - (y_mean - y_range)) / 4, 1),
                 )
             )
             self.axes[i].get_lines()[0].set_ydata(np.array(y))
