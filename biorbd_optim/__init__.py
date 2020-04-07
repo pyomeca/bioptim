@@ -34,7 +34,7 @@ class OptimalControlProgram:
         biorbd_model,
         problem_type,
         number_shooting_points,
-        final_time,
+        phase_time,
         objective_functions,
         X_init,
         U_init,
@@ -56,12 +56,14 @@ class OptimalControlProgram:
         :param problem_type: A selected method handler of the class problem_type.ProblemType.
         :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
         :param number_shooting_points: Subdivision number.
-        :param final_time: Simulation time in seconds.
+        :param phase_time: Simulation time in seconds.
         :param objective_functions: Tuple of tuple of objectives functions handler's and weights.
         :param X_bounds: Instance of the class Bounds.
         :param U_bounds: Instance of the class Bounds.
         :param constraints: Tuple of constraints, instant (which node(s)) and tuple of geometric structures used.
         """
+
+        self.nb_phases = len(biorbd_model)
         if isinstance(biorbd_model, str):
             self.model = biorbd.Model(biorbd_model)
         elif isinstance(biorbd_model, biorbd.biorbd.Model):
@@ -73,8 +75,8 @@ class OptimalControlProgram:
 
         # Define some aliases
         self.ns = number_shooting_points
-        self.tf = final_time
-        self.dt = final_time / max(number_shooting_points, 1)
+        self.tf = phase_time
+        self.dt = phase_time / max(number_shooting_points, 1)
         self.is_cyclic_constraint = is_cyclic_constraint
         self.is_cyclic_objective = is_cyclic_objective
 
@@ -124,6 +126,11 @@ class OptimalControlProgram:
             self.show_online_optim_callback = AnimateCallback(self)
         else:
             self.show_online_optim_callback = None
+
+    @staticmethod
+    def __convert_to_tuple(param):
+        if not isinstance(param, (list, tuple)):
+            return param,
 
     def __prepare_dynamics(self):
         """
