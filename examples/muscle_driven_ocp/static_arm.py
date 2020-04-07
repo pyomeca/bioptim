@@ -6,7 +6,7 @@ import biorbd_optim
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.dynamics import Dynamics
-
+from biorbd_optim.problem_type import ProblemType
 
 def prepare_nlp(biorbd_model_path="arm26.bioMod"):
     # --- Options --- #
@@ -22,7 +22,6 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod"):
     # Problem parameters
     number_shooting_points = 30
     final_time = 2
-    ode_solver = biorbd_optim.OdeSolver.RK
     velocity_max = 15
     is_cyclic_constraint = False
     is_cyclic_objective = False
@@ -31,7 +30,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod"):
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
     # Dynamics
-    variable_type = biorbd_optim.Variable.muscle_and_torque_driven
+    variable_type = ProblemType.muscles_and_torque_driven
     dynamics_func = Dynamics.forward_dynamics_torque_muscle_driven
 
     # Constraints
@@ -96,11 +95,11 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod"):
     U_init.init.extend([torque_init for _ in range(biorbd_model.nbGeneralizedTorque())])
     # ------------- #
 
+
+
     return biorbd_optim.OptimalControlProgram(
         biorbd_model,
         variable_type,
-        dynamics_func,
-        ode_solver,
         number_shooting_points,
         final_time,
         objective_functions,
@@ -114,9 +113,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod"):
     )
 
 
-def multi_plots():
-    nlp = prepare_nlp()
-    sol = nlp.solve()
+def multi_plots(nlp):
 
     step = nlp.nu + nlp.nx
     npy_fichier = sol["x"]
@@ -158,47 +155,10 @@ def multi_plots():
             cmp += 1
     plt.show()
 
-# if m.nbMuscleTotal() > 0:
-#     plt.figure("Activations")
-#     cmp = 0
-#     if muscle_plot_mapping is None:
-#         for i in range(m.nbMuscleGroups()):
-#             for j in range(m.muscleGroup(i).nbMuscles()):
-#                 plt.subplot(3, 6, cmp + 1)
-#                 utils.plot_piecewise_constant(t_final, all_u[cmp, :])
-#                 plt.title(m.muscleGroup(i).muscle(j).name().to_string())
-#                 plt.ylim((0, 1))
-#                 cmp += 1
-#     else:
-#         nb_row = np.max(muscle_plot_mapping, axis=0)[3] + 1
-#         nb_col = np.max(muscle_plot_mapping, axis=0)[4] + 1
-#         created_axes = [None] * nb_col * nb_row
-#         for muscle_map in muscle_plot_mapping:
-#             i_axis = muscle_map[3] * nb_col + muscle_map[4]
-#             if created_axes[i_axis]:
-#                 plt.sca(created_axes[i_axis])
-#             else:
-#                 created_axes[i_axis] = plt.subplot(nb_row, nb_col, i_axis + 1)
-#             utils.plot_piecewise_constant(t_final, all_u[muscle_map[0], :])
-#             # plt.title(m.muscleGroup(map[1]).muscle(map[2]).name().getString())
-#             plt.title(muscle_plot_names[muscle_map[5]])
-#             plt.ylim((0, 1))
-#         plt.tight_layout(w_pad=-1.0, h_pad=-1.0)
-#
-# plt.show()
-#
-#     plt.plot(q, label='Position')
-#     plt.plot(q_dot, label='Vitesse')
-#     plt.plot(u_muscle, label='Controls Muscles')
-#     plt.plot(u_torque, label='Controls Torques')
-#     plt.legend()
-#     plt.show()
-
-
 
 if __name__ == "__main__":
-    #nlp = prepare_nlp()
+    nlp = prepare_nlp()
 
     # --- Solve the program --- #
-    #sol = nlp.solve()
-    multi_plots()
+    sol = nlp.solve()
+    multi_plots(nlp)
