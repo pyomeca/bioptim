@@ -72,6 +72,11 @@ def prepare_nlp(
         ]
     X_bounds = [Bounds(), Bounds()]
 
+    for i in range(dof_mapping.nb_reduced):
+        X_bounds.first_node_min[i] = pose_at_first_node[i]
+        X_bounds.first_node_max[i] = pose_at_first_node[i]
+        X_bounds.last_node_min[i] = pose_at_first_node[i]
+        X_bounds.last_node_max[i] = pose_at_first_node[i]
     for i, bounds in enumerate(X_bounds):
         # Initialize X_bounds (filled later)
         nb_reduced = dof_mapping[i].nb_reduced
@@ -102,8 +107,8 @@ def prepare_nlp(
         init.init = pose_at_first_node + [0] * nb_reduced
 
     # Define control path constraint
-    torque_min = -4000
-    torque_max = 4000
+    torque_min = -1000
+    torque_max = 1000
     torque_init = 0
     U_bounds = [Bounds(), Bounds()]
     for bounds in X_bounds:
