@@ -72,43 +72,30 @@ def prepare_nlp(
             -0.9,
             0.47,
         ]
-    # Initialize X_bounds (partially filled later)
-    X_bounds.min = [
-        -10,
-        -10,
-        -30,
-        -0.1,
-        -1.7,
-        -0.4,
-        -2.3,
-        -1,
-        -20,
-        -20,
-        -15,
-        -17,
-        -17,
-        -10,
-        -13,
-        -17,
-    ]
-    X_bounds.max = [
-        10,
-        10,
-        30,
-        0.1,
-        3.1,
-        2.6,
-        -0.05,
-        0.7,
-        20,
-        20,
-        15,
-        13,
-        17,
-        8,
-        20,
-        17,
-    ]
+
+    # Gets bounds from biorbd model
+    QRanges = []
+    QDotRanges = []
+    for i in range(biorbd_model.nbSegment()):
+        QRanges.extend(
+            [
+                biorbd_model.segment(i).QRanges()[j]
+                for j in range(len(biorbd_model.segment(i).QRanges()))
+            ]
+        )
+        QDotRanges.extend(
+            [
+                biorbd_model.segment(i).QDotRanges()[j]
+                for j in range(len(biorbd_model.segment(i).QDotRanges()))
+            ]
+        )
+
+    # Initialize X_bounds
+    X_bounds.min = [QRanges[i].min() for i in dof_mapping.reduce_idx] \
+                   + [QDotRanges[i].min() for i in dof_mapping.reduce_idx]
+    X_bounds.max = [QRanges[i].max() for i in dof_mapping.reduce_idx] \
+                   + [QDotRanges[i].max() for i in dof_mapping.reduce_idx]
+
     X_bounds.first_node_min = [0] * 2 * dof_mapping.nb_reduced
     X_bounds.first_node_max = [0] * 2 * dof_mapping.nb_reduced
     X_bounds.last_node_min = [0] * 2 * dof_mapping.nb_reduced
