@@ -6,6 +6,7 @@ import numpy as np
 
 from .variable import Variable
 
+
 class AnimateCallback(Callback):
     def __init__(self, nlp, opts={}):
         Callback.__init__(self)
@@ -69,7 +70,9 @@ class AnimateCallback(Callback):
                 mid_column_idx = int(self.nlp.nbQ / 2)
                 self.axes[mid_column_idx].set_title("q")
                 self.axes[self.nlp.nbQ + mid_column_idx].set_title("q_dot")
-                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_title("tau")
+                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_title(
+                    "tau"
+                )
             else:
                 raise RuntimeError("Plot is not ready for this type of variable")
 
@@ -82,7 +85,9 @@ class AnimateCallback(Callback):
                 ax.set_xlim(0, self.nlp.tf)
 
             if self.nlp.variable_type == Variable.torque_driven:
-                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_xlabel("time (s)")
+                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_xlabel(
+                    "time (s)"
+                )
 
             timer = self.fig_state.canvas.new_timer(interval=100)
             timer.add_callback(self.call_back)
@@ -107,8 +112,10 @@ class AnimateCallback(Callback):
             if self.nlp.variable_type == Variable.torque_driven:
                 q = np.array(V[0 * self.nlp.nbQ + idx :: 3 * self.nlp.nbQ])
                 q_dot = np.array(V[1 * self.nlp.nbQdot + idx :: 3 * self.nlp.nbQdot])
-                tau = np.ndarray((self.nlp.ns+1, 1))
-                tau[0:self.nlp.ns, :] = np.array(V[2 * self.nlp.nbTau + idx :: 3 * self.nlp.nbTau])
+                tau = np.ndarray((self.nlp.ns + 1, 1))
+                tau[0 : self.nlp.ns, :] = np.array(
+                    V[2 * self.nlp.nbTau + idx :: 3 * self.nlp.nbTau]
+                )
                 tau[-1, :] = tau[-2, :]
             return q, q_dot, tau
 
@@ -121,9 +128,7 @@ class AnimateCallback(Callback):
                 np.arange(
                     np.round(y_mean - y_range, 1),
                     np.round(y_mean + y_range, 1),
-                    step=np.round(
-                        (y_mean + y_range - (y_mean - y_range)) / 4, 1
-                    ),
+                    step=np.round((y_mean + y_range - (y_mean - y_range)) / 4, 1),
                 )
             )
             self.axes[i].get_lines()[0].set_ydata(np.array(y))

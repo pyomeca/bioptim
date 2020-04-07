@@ -25,9 +25,7 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     velocity_max = 15
     is_cyclic_constraint = False
     is_cyclic_objective = False
-    dof_mapping = Mapping([0, 1, 2, 1, 2],
-                          [0, 1, 2],
-                          [3, 4])
+    dof_mapping = Mapping([0, 1, 2, 1, 2], [0, 1, 2], [3, 4])
 
     # Add objective functions
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
@@ -103,7 +101,7 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
         dof_mapping,
         is_cyclic_constraint=is_cyclic_constraint,
         is_cyclic_objective=is_cyclic_objective,
-        show_online_optim=show_online_optim
+        show_online_optim=show_online_optim,
     )
 
 
@@ -112,4 +110,3 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     sol = nlp.solve()
-

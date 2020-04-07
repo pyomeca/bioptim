@@ -45,7 +45,7 @@ class OptimalControlProgram:
         dof_mapping=None,
         show_online_optim=False,
         is_cyclic_objective=False,
-        is_cyclic_constraint=False
+        is_cyclic_constraint=False,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -80,7 +80,9 @@ class OptimalControlProgram:
         self.variable_type = variable_type
         if dof_mapping is None:
             if self.variable_type == Variable.torque_driven:
-                self.dof_mapping = Mapping(range(self.model.nbQ()), range(self.model.nbQ()))
+                self.dof_mapping = Mapping(
+                    range(self.model.nbQ()), range(self.model.nbQ())
+                )
             else:
                 raise RuntimeError("This Variable has no default dof_mapping")
         else:
@@ -168,30 +170,30 @@ class OptimalControlProgram:
 
         offset = 0
         for k in range(self.ns):
-            self.X.append(self.V.nz[offset: offset + self.nx])
+            self.X.append(self.V.nz[offset : offset + self.nx])
             if k == 0:
-                self.V_bounds.min[offset: offset + self.nx] = X_bounds.first_node_min
-                self.V_bounds.max[offset: offset + self.nx] = X_bounds.first_node_max
+                self.V_bounds.min[offset : offset + self.nx] = X_bounds.first_node_min
+                self.V_bounds.max[offset : offset + self.nx] = X_bounds.first_node_max
             else:
-                self.V_bounds.min[offset: offset + self.nx] = X_bounds.min
-                self.V_bounds.max[offset: offset + self.nx] = X_bounds.max
-            self.V_init.init[offset: offset + self.nx] = X_init.init
+                self.V_bounds.min[offset : offset + self.nx] = X_bounds.min
+                self.V_bounds.max[offset : offset + self.nx] = X_bounds.max
+            self.V_init.init[offset : offset + self.nx] = X_init.init
             offset += self.nx
 
-            self.U.append(self.V.nz[offset: offset + self.nu])
+            self.U.append(self.V.nz[offset : offset + self.nu])
             if k == 0:
-                self.V_bounds.min[offset: offset + self.nu] = U_bounds.first_node_min
-                self.V_bounds.max[offset: offset + self.nu] = U_bounds.first_node_max
+                self.V_bounds.min[offset : offset + self.nu] = U_bounds.first_node_min
+                self.V_bounds.max[offset : offset + self.nu] = U_bounds.first_node_max
             else:
-                self.V_bounds.min[offset: offset + self.nu] = U_bounds.min
-                self.V_bounds.max[offset: offset + self.nu] = U_bounds.max
-            self.V_init.init[offset: offset + self.nu] = U_init.init
+                self.V_bounds.min[offset : offset + self.nu] = U_bounds.min
+                self.V_bounds.max[offset : offset + self.nu] = U_bounds.max
+            self.V_init.init[offset : offset + self.nu] = U_init.init
             offset += self.nu
 
-        self.X.append(self.V.nz[offset: offset + self.nx])
-        self.V_bounds.min[offset: offset + self.nx] = X_bounds.last_node_min
-        self.V_bounds.max[offset: offset + self.nx] = X_bounds.last_node_max
-        self.V_init.init[offset: offset + self.nx] = X_init.init
+        self.X.append(self.V.nz[offset : offset + self.nx])
+        self.V_bounds.min[offset : offset + self.nx] = X_bounds.last_node_min
+        self.V_bounds.max[offset : offset + self.nx] = X_bounds.last_node_max
+        self.V_init.init[offset : offset + self.nx] = X_init.init
 
         self.V_init.regulation(nV)
         self.V_bounds.regulation(nV)
@@ -331,4 +333,3 @@ class InitialConditions(PathCondition):
 
         self.regulation_private(self.first_node_init, nb_elements, "First node init")
         self.regulation_private(self.last_node_init, nb_elements, "Last node init")
-

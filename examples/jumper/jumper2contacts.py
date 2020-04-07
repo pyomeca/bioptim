@@ -10,9 +10,11 @@ from biorbd_optim.variable import Variable
 from biorbd_optim.constraints import Constraint
 
 
-def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod",
-                show_online_optim=False,
-                use_symmetry=True):
+def prepare_nlp(
+    biorbd_model_path="jumper2contacts.bioMod",
+    show_online_optim=False,
+    use_symmetry=True,
+):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -30,15 +32,14 @@ def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod",
     is_cyclic_constraint = False
     is_cyclic_objective = False
     if use_symmetry:
-        dof_mapping = Mapping([0, 1, 2, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7],
-                              [0, 1, 2, 3, 4, 7, 8, 9],
-                              [5])
+        dof_mapping = Mapping(
+            [0, 1, 2, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7], [0, 1, 2, 3, 4, 7, 8, 9], [5]
+        )
     else:
         dof_mapping = Mapping(range(13), range(13))
 
     # Add objective functions
-    objective_functions = ((ObjectiveFunction.minimize_torque, 1),
-                           )
+    objective_functions = ((ObjectiveFunction.minimize_torque, 1),)
 
     # Dynamics
     variable_type = Variable.torque_driven
@@ -48,8 +49,9 @@ def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod",
     if use_symmetry:
         constraints = ()
     else:
-        constraints = ((Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.All, (3, 5, -1)),
-                       )
+        constraints = (
+            (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.All, (3, 5, -1)),
+        )
 
     # Path constraint
     X_bounds = biorbd_optim.Bounds()
@@ -58,7 +60,21 @@ def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod",
     if use_symmetry:
         pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0.8, -0.9, 0.47]
     else:
-        pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0, -1.4, 0.8, -0.9, 0.47, 0.8, -0.9, 0.47]
+        pose_at_first_node = [
+            0,
+            0,
+            -0.5336,
+            0,
+            1.4,
+            0,
+            -1.4,
+            0.8,
+            -0.9,
+            0.47,
+            0.8,
+            -0.9,
+            0.47,
+        ]
     # Initialize X_bounds (filled later)
     X_bounds.min = [0] * dof_mapping.nb_reduced
     X_bounds.max = [0] * dof_mapping.nb_reduced
@@ -111,7 +127,7 @@ def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod",
         dof_mapping,
         is_cyclic_constraint=is_cyclic_constraint,
         is_cyclic_objective=is_cyclic_objective,
-        show_online_optim=show_online_optim
+        show_online_optim=show_online_optim,
     )
 
 
@@ -121,11 +137,11 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = nlp.solve()
 
-    all_q = np.ndarray((nlp.ns+1, nlp.model.nbQ()))
+    all_q = np.ndarray((nlp.ns + 1, nlp.model.nbQ()))
     cmp = 0
     for idx in nlp.dof_mapping.expand_idx:
-        q = sol["x"][0 * nlp.nbQ + idx:: 3 * nlp.nbQ]
-        all_q[:, cmp:cmp+1] = np.array(q)
+        q = sol["x"][0 * nlp.nbQ + idx :: 3 * nlp.nbQ]
+        all_q[:, cmp : cmp + 1] = np.array(q)
         cmp += 1
 
     # np.save("Results", all_q)
