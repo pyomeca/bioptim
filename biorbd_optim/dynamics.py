@@ -4,19 +4,23 @@ import biorbd
 
 class Dynamics:
     @staticmethod
-    def forward_dynamics_torque_driven(states, controls, model):
+    def forward_dynamics_torque_driven(states, controls, nlp):
         """
         :param states: MX.sym from CasADi.
         :param controls: MX.sym from CasADi.
-        :param model: Biorbd model loaded from the biorbd.Model() function.
+        :param nlp: Instance of an OptimalControlProgram class
         :return: Vertcat of derived states.
         """
-        q = states[: model.nbQ()]
-        qdot = states[model.nbQ() :]
-        tau = controls
+        nq = nlp.dof_mapping.nb_reduced
+        q = nlp.dof_mapping.expand(states[:nq])
+        qdot_reduced = states[nq:]
+        qdot = nlp.dof_mapping.expand(qdot_reduced)
+        tau = nlp.dof_mapping.expand(controls)
 
-        qddot = biorbd.Model.ForwardDynamics(model, q, qdot, tau).to_mx()
-        return vertcat(qdot, qddot)
+        qddot = biorbd.Model.ForwardDynamics(nlp.model, q, qdot, tau).to_mx()
+        qddot_reduced = nlp.dof_mapping.reduce(qddot)
+
+        return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
     def forward_dynamics_torque_muscle_driven(states, controls, model):

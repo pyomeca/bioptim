@@ -1,5 +1,6 @@
+import time
+
 import biorbd
-from matplotlib import pyplot as plt
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.problem_type import ProblemType
@@ -9,7 +10,7 @@ from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, InitialConditions
 
 
-def prepare_nlp(biorbd_model_path="eocar.bioMod"):
+def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -21,8 +22,8 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     state_results_file_name = results_path + "States" + optimization_name + ".txt"
 
     # Problem parameters
-    number_shooting_points = 30
-    final_time = 2
+    number_shooting_points = 1000
+    final_time = 60
     velocity_max = 15
     is_cyclic_constraint = False
     is_cyclic_objective = False
@@ -99,24 +100,15 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
         constraints,
         is_cyclic_constraint=is_cyclic_constraint,
         is_cyclic_objective=is_cyclic_objective,
+        show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp()
+    nlp = prepare_nlp(show_online_optim=True)
 
-    # --- Solve the program --- #
+    # --- Solve the program and show --- #
     sol = nlp.solve()
 
-    for idx in range(nlp.model.nbQ()):
-        plt.figure()
-        q = sol["x"][0 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
-        q_dot = sol["x"][1 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
-        u = sol["x"][2 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
-        plt.plot(q, label=nlp.x[idx*2])
-        plt.plot(q_dot, label=nlp.x[1+idx*2])
-        plt.plot(u, label=nlp.u[idx])
-        plt.title("Degree of freedom " + str(idx))
-
-    plt.legend()
-    plt.show()
+    # Admire the graph for 10 more seconds
+    time.sleep(10)

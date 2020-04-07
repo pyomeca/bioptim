@@ -4,17 +4,12 @@ import casadi
 class ObjectiveFunction:
     @staticmethod
     def minimize_torque(nlp, weight=1):
+        n_tau = nlp.dof_mapping.nb_reduced
+        n_mus = nlp.model.nbMuscleTotal()
         for i in range(nlp.ns):
             nlp.J += (
                 casadi.dot(
-                    nlp.U[i][
-                        nlp.model.nbMuscleTotal() : nlp.model.nbMuscleTotal()
-                        + nlp.model.nbGeneralizedTorque()
-                    ],
-                    nlp.U[i][
-                        nlp.model.nbMuscleTotal() : nlp.model.nbMuscleTotal()
-                        + nlp.model.nbGeneralizedTorque()
-                    ],
+                    nlp.U[i][n_mus : n_mus + n_tau], nlp.U[i][n_mus : n_mus + n_tau],
                 )
                 * nlp.dt
                 * nlp.dt

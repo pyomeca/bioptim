@@ -1,5 +1,4 @@
 import biorbd
-from matplotlib import pyplot as plt
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.problem_type import ProblemType
@@ -9,7 +8,7 @@ from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, InitialConditions
 
 
-def prepare_nlp(biorbd_model_path="eocar.bioMod"):
+def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -26,6 +25,7 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     velocity_max = 15
     is_cyclic_constraint = False
     is_cyclic_objective = False
+    dof_mapping = Mapping([0, 1, 2, 1, 2], [0, 1, 2], [3, 4])
 
     # Add objective functions
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
@@ -52,27 +52,25 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
                 for j in range(len(biorbd_model.segment(i).ranges()))
             ]
         )
-    X_bounds.min = [ranges[i].min() for i in range(biorbd_model.nbQ())]
-    X_bounds.max = [ranges[i].max() for i in range(biorbd_model.nbQ())]
+    X_bounds.min = [ranges[i].min() for i in dof_mapping.reduce_idx]
+    X_bounds.min.extend([-velocity_max] * dof_mapping.nb_reduced)
+    X_bounds.max = [ranges[i].max() for i in dof_mapping.reduce_idx]
+    X_bounds.max.extend([velocity_max] * dof_mapping.nb_reduced)
 
-    X_bounds.first_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.first_node_min[0] = X_bounds.min[0]
-    X_bounds.first_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.first_node_max[0] = X_bounds.max[0]
+    X_bounds.first_node_min = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.first_node_min[0] = ranges[0].min()
+    X_bounds.first_node_max = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.first_node_max[0] = ranges[0].max()
 
-    X_bounds.last_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.last_node_min[0] = X_bounds.min[0]
-    X_bounds.last_node_min[2] = 1.57
-    X_bounds.last_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.last_node_max[0] = X_bounds.max[0]
-    X_bounds.last_node_max[2] = 1.57
-
-    # Path constraint velocity
-    X_bounds.min.extend([-velocity_max] * (biorbd_model.nbQdot()))
-    X_bounds.max.extend([velocity_max] * (biorbd_model.nbQdot()))
+    X_bounds.last_node_min = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.last_node_min[0] = ranges[0].min()
+    X_bounds.last_node_min[2] = 2
+    X_bounds.last_node_max = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.last_node_max[0] = ranges[0].max()
+    X_bounds.last_node_max[2] = 2
 
     # Initial guess
-    X_init.init = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+    X_init.init = [0] * 2 * dof_mapping.nb_reduced
 
     # Define control path constraint
     torque_min = -100
@@ -81,9 +79,9 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     U_bounds = Bounds()
     U_init = InitialConditions()
 
-    U_bounds.min = [torque_min for _ in range(biorbd_model.nbGeneralizedTorque())]
-    U_bounds.max = [torque_max for _ in range(biorbd_model.nbGeneralizedTorque())]
-    U_init.init = [torque_init for _ in range(biorbd_model.nbGeneralizedTorque())]
+    U_bounds.min = [torque_min for _ in range(dof_mapping.nb_reduced)]
+    U_bounds.max = [torque_max for _ in range(dof_mapping.nb_reduced)]
+    U_init.init = [torque_init for _ in range(dof_mapping.nb_reduced)]
     # ------------- #
 
     return OptimalControlProgram(
@@ -97,26 +95,15 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
         X_bounds,
         U_bounds,
         constraints,
+        dof_mapping=dof_mapping,
         is_cyclic_constraint=is_cyclic_constraint,
         is_cyclic_objective=is_cyclic_objective,
+        show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp()
+    nlp = prepare_nlp(show_online_optim=False)
 
     # --- Solve the program --- #
     sol = nlp.solve()
-
-    for idx in range(nlp.model.nbQ()):
-        plt.figure()
-        q = sol["x"][0 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
-        q_dot = sol["x"][1 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
-        u = sol["x"][2 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
-        plt.plot(q, label=nlp.x[idx*2])
-        plt.plot(q_dot, label=nlp.x[1+idx*2])
-        plt.plot(u, label=nlp.u[idx])
-        plt.title("Degree of freedom " + str(idx))
-
-    plt.legend()
-    plt.show()
