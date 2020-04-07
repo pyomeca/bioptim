@@ -41,7 +41,7 @@ class ProblemType:
 
     @staticmethod
     def muscles_and_torque_driven(nlp):
-        nlp.dynamics_func = Dynamics.forward_dynamics_torque_driven
+        nlp.dynamics_func = Dynamics.forward_dynamics_torque_muscle_driven
 
         dof_names = nlp.model.nameDof()
         muscle_names = nlp.model.muscleNames()
