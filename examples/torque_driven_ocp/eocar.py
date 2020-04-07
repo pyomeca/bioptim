@@ -3,7 +3,6 @@ from matplotlib import pyplot as plt
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.mapping import Mapping
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, InitialConditions
