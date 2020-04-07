@@ -1,10 +1,12 @@
 import biorbd
 from matplotlib import pyplot as plt
 
-import biorbd_optim
+from biorbd_optim import OptimalControlProgram
+from biorbd_optim.problem_type import ProblemType
+from biorbd_optim.mapping import Mapping
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
-from biorbd_optim.dynamics import Dynamics
+from biorbd_optim.path_conditions import Bounds, InitialConditions
 
 
 def prepare_nlp(biorbd_model_path="eocar.bioMod"):
@@ -21,7 +23,6 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     # Problem parameters
     number_shooting_points = 30
     final_time = 2
-    ode_solver = biorbd_optim.OdeSolver.RK
     velocity_max = 15
     is_cyclic_constraint = False
     is_cyclic_objective = False
@@ -30,8 +31,7 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
     # Dynamics
-    variable_type = biorbd_optim.Variable.torque_driven
-    dynamics_func = Dynamics.forward_dynamics_torque_driven
+    variable_type = ProblemType.torque_driven
 
     # Constraints
     constraints = (
@@ -40,8 +40,8 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     )
 
     # Path constraint
-    X_bounds = biorbd_optim.Bounds()
-    X_init = biorbd_optim.InitialConditions()
+    X_bounds = Bounds()
+    X_init = InitialConditions()
 
     # Gets bounds from biorbd model
     ranges = []
@@ -68,7 +68,6 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     X_bounds.last_node_max[2] = 1.57
 
     # Path constraint velocity
-    velocity_max = 15
     X_bounds.min.extend([-velocity_max] * (biorbd_model.nbQdot()))
     X_bounds.max.extend([velocity_max] * (biorbd_model.nbQdot()))
 
@@ -79,19 +78,17 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod"):
     torque_min = -100
     torque_max = 100
     torque_init = 0
-    U_bounds = biorbd_optim.Bounds()
-    U_init = biorbd_optim.InitialConditions()
+    U_bounds = Bounds()
+    U_init = InitialConditions()
 
     U_bounds.min = [torque_min for _ in range(biorbd_model.nbGeneralizedTorque())]
     U_bounds.max = [torque_max for _ in range(biorbd_model.nbGeneralizedTorque())]
     U_init.init = [torque_init for _ in range(biorbd_model.nbGeneralizedTorque())]
     # ------------- #
 
-    return biorbd_optim.OptimalControlProgram(
+    return OptimalControlProgram(
         biorbd_model,
         variable_type,
-        dynamics_func,
-        ode_solver,
         number_shooting_points,
         final_time,
         objective_functions,
