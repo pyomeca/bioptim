@@ -108,7 +108,7 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp(show_online_optim=False)
+    nlp = prepare_nlp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = nlp.solve()

@@ -1,6 +1,5 @@
 import numpy as np
 import biorbd
-import BiorbdViz
 from matplotlib import pyplot as plt
 import biorbd_optim
 from biorbd_optim import Mapping
@@ -24,7 +23,7 @@ def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod",
     state_results_file_name = results_path + "States" + optimization_name + ".txt"
 
     # Problem parameters
-    number_shooting_points = 20
+    number_shooting_points = 30
     final_time = 0.5
     ode_solver = biorbd_optim.OdeSolver.RK
     is_cyclic_constraint = False
@@ -59,33 +58,26 @@ def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod",
         pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0.8, -0.9, 0.47]
     else:
         pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0, -1.4, 0.8, -0.9, 0.47, 0.8, -0.9, 0.47]
-    # Initialize X_bounds (filled later)
-    X_bounds.min = [0] * dof_mapping.nb_reduced
-    X_bounds.max = [0] * dof_mapping.nb_reduced
+    # Initialize X_bounds (partially filled later)
+    X_bounds.min = [-10, -10, -30, -0.1, -1.7, -0.4, -2.3, -1, -20, -20, -15, -17, -17, -10, -13, -17]
+    X_bounds.max = [10, 10, 30, 0.1, 3.1, 2.6, -0.05, 0.7, 20, 20, 15, 13, 17, 8, 20, 17]
     X_bounds.first_node_min = [0] * 2 * dof_mapping.nb_reduced
     X_bounds.first_node_max = [0] * 2 * dof_mapping.nb_reduced
     X_bounds.last_node_min = [0] * 2 * dof_mapping.nb_reduced
     X_bounds.last_node_max = [0] * 2 * dof_mapping.nb_reduced
 
     for i in range(dof_mapping.nb_reduced):
-        X_bounds.min[i] = -3.14
-        X_bounds.max[i] = 3.14
         X_bounds.first_node_min[i] = pose_at_first_node[i]
         X_bounds.first_node_max[i] = pose_at_first_node[i]
         X_bounds.last_node_min[i] = pose_at_first_node[i]
         X_bounds.last_node_max[i] = pose_at_first_node[i]
 
-    # Path constraint velocity
-    velocity_max = 20
-    X_bounds.min.extend([-velocity_max] * dof_mapping.nb_reduced)
-    X_bounds.max.extend([velocity_max] * dof_mapping.nb_reduced)
-
     # Initial guess
     X_init.init = pose_at_first_node + [0] * dof_mapping.nb_reduced
 
     # Define control path constraint
-    torque_min = -4000
-    torque_max = 4000
+    torque_min = -1000
+    torque_max = 1000
     torque_init = 0
     U_bounds = biorbd_optim.Bounds()
     U_init = biorbd_optim.InitialConditions()
@@ -116,7 +108,7 @@ def prepare_nlp(biorbd_model_path="jumper2contacts.bioMod",
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp(show_online_optim=False)
+    nlp = prepare_nlp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = nlp.solve()
@@ -128,6 +120,7 @@ if __name__ == "__main__":
         all_q[:, cmp:cmp+1] = np.array(q)
         cmp += 1
 
+    import BiorbdViz
     # np.save("Results", all_q)
     b = BiorbdViz.BiorbdViz(loaded_model=nlp.model)
     b.load_movement(all_q)
