@@ -3,7 +3,6 @@ from matplotlib import pyplot as plt
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.mapping import Mapping
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, InitialConditions
@@ -116,7 +115,7 @@ if __name__ == "__main__":
         plt.plot(q, label=nlp.x[idx*2])
         plt.plot(q_dot, label=nlp.x[1+idx*2])
         plt.plot(u, label=nlp.u[idx])
-        plt.title("Degree of freedom " + str(idx))
+        plt.title("DoF : " + nlp.model.nameDof()[idx].to_string())
 
     plt.legend()
     plt.show()

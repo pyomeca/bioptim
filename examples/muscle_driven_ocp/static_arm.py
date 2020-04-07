@@ -1,4 +1,5 @@
 import biorbd
+import numpy as np
 from matplotlib import pyplot as plt
 
 import biorbd_optim
@@ -35,8 +36,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod"):
 
     # Constraints
     constraints = (
-        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 2)),
-        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
+        #(Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
     )
 
     # Path constraint
@@ -114,18 +114,91 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod"):
     )
 
 
-if __name__ == "__main__":
+def multi_plots():
     nlp = prepare_nlp()
-
-    # --- Solve the program --- #
     sol = nlp.solve()
 
-    for idx in range(nlp.model.nbQ()):
-        plt.figure()
-        q = sol["x"][0 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
-        q_dot = sol["x"][1 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
-        u = sol["x"][2 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
-        plt.plot(q)
-        plt.plot(q_dot)
-        plt.plot(u)
+    step = nlp.nu + nlp.nx
+    npy_fichier = sol["x"]
+    # for k in range (nlp.ns):
+    #     npy_fichier.append(sol["x"][k*step])
+    #     npy_fichier.append(sol["x"][k*step+1])
+    #     npy_fichier.append(sol["x"][k*step+2])
+    #     npy_fichier.append(sol["x"][k*step+3])
+    #     npy_fichier.append(sol["x"][k*step+4])
+    #     npy_fichier.append(sol["x"][k*step+5])
+    np.save("static_arm", np.array(npy_fichier))
+
+    muscles = []
+
+    plt.figure("States - Torques - Muscles")
+    for i in range(nlp.model.nbQ()):
+        plt.subplot(nlp.model.nbQ(), 5, 1 + (5 * i))
+        plt.plot(sol["x"][i:: step])
+        plt.title("Q - " + str(i))
+
+    for i in range(nlp.model.nbQdot()):
+        plt.subplot(nlp.model.nbQdot(), 5, 2 + (5 * i))
+        plt.plot(sol["x"][i + nlp.model.nbQ():: step])
+        plt.title("Qdot - " + str(i))
+
+    for i in range(nlp.model.nbGeneralizedTorque()):
+        plt.subplot(nlp.model.nbGeneralizedTorque(), 5, 3 + (5 * i))
+        plt.plot(sol["x"][i + nlp.nx:: step])
+        plt.title("Torque - " + str(i))
+
+    cmp = 0
+    for i in range(nlp.model.nbMuscleGroups()):
+        for j in range(nlp.model.muscleGroup(i).nbMuscles()):
+
+            plt.subplot(nlp.model.muscleGroup(i).nbMuscles(), 5, 4 + i + (5 * j))
+            plt.plot(sol["x"][nlp.nx + nlp.model.nbGeneralizedTorque() + cmp:: step])
+            plt.title(nlp.model.muscleNames()[cmp].to_string())
+
+            cmp += 1
     plt.show()
+
+# if m.nbMuscleTotal() > 0:
+#     plt.figure("Activations")
+#     cmp = 0
+#     if muscle_plot_mapping is None:
+#         for i in range(m.nbMuscleGroups()):
+#             for j in range(m.muscleGroup(i).nbMuscles()):
+#                 plt.subplot(3, 6, cmp + 1)
+#                 utils.plot_piecewise_constant(t_final, all_u[cmp, :])
+#                 plt.title(m.muscleGroup(i).muscle(j).name().to_string())
+#                 plt.ylim((0, 1))
+#                 cmp += 1
+#     else:
+#         nb_row = np.max(muscle_plot_mapping, axis=0)[3] + 1
+#         nb_col = np.max(muscle_plot_mapping, axis=0)[4] + 1
+#         created_axes = [None] * nb_col * nb_row
+#         for muscle_map in muscle_plot_mapping:
+#             i_axis = muscle_map[3] * nb_col + muscle_map[4]
+#             if created_axes[i_axis]:
+#                 plt.sca(created_axes[i_axis])
+#             else:
+#                 created_axes[i_axis] = plt.subplot(nb_row, nb_col, i_axis + 1)
+#             utils.plot_piecewise_constant(t_final, all_u[muscle_map[0], :])
+#             # plt.title(m.muscleGroup(map[1]).muscle(map[2]).name().getString())
+#             plt.title(muscle_plot_names[muscle_map[5]])
+#             plt.ylim((0, 1))
+#         plt.tight_layout(w_pad=-1.0, h_pad=-1.0)
+#
+# plt.show()
+#
+#     plt.plot(q, label='Position')
+#     plt.plot(q_dot, label='Vitesse')
+#     plt.plot(u_muscle, label='Controls Muscles')
+#     plt.plot(u_torque, label='Controls Torques')
+#     plt.legend()
+#     plt.show()
+
+
+
+if __name__ == "__main__":
+    #nlp = prepare_nlp()
+
+    # --- Solve the program --- #
+    #sol = nlp.solve()
+    multi_plots()
