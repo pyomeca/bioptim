@@ -1,13 +1,12 @@
 import numpy as np
 import biorbd
-import BiorbdViz
-from matplotlib import pyplot as plt
-import biorbd_optim
-from biorbd_optim import Mapping
-from biorbd_optim.dynamics import Dynamics
+
+from biorbd_optim import OptimalControlProgram
+from biorbd_optim.problem_type import ProblemType
+from biorbd_optim.mapping import Mapping
 from biorbd_optim.objective_functions import ObjectiveFunction
-from biorbd_optim.variable import Variable
 from biorbd_optim.constraints import Constraint
+from biorbd_optim.path_conditions import Bounds, InitialConditions
 
 
 def prepare_nlp(
@@ -28,7 +27,6 @@ def prepare_nlp(
     # Problem parameters
     number_shooting_points = 20
     final_time = 0.5
-    ode_solver = biorbd_optim.OdeSolver.RK
     is_cyclic_constraint = False
     is_cyclic_objective = False
     if use_symmetry:
@@ -42,8 +40,7 @@ def prepare_nlp(
     objective_functions = ((ObjectiveFunction.minimize_torque, 1),)
 
     # Dynamics
-    variable_type = Variable.torque_driven
-    dynamics_func = Dynamics.forward_dynamics_torque_driven
+    problem_type = ProblemType.torque_driven
 
     # Constraints
     if use_symmetry:
@@ -54,8 +51,8 @@ def prepare_nlp(
         )
 
     # Path constraint
-    X_bounds = biorbd_optim.Bounds()
-    X_init = biorbd_optim.InitialConditions()
+    X_bounds = Bounds()
+    X_init = InitialConditions()
 
     if use_symmetry:
         pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0.8, -0.9, 0.47]
@@ -103,19 +100,17 @@ def prepare_nlp(
     torque_min = -4000
     torque_max = 4000
     torque_init = 0
-    U_bounds = biorbd_optim.Bounds()
-    U_init = biorbd_optim.InitialConditions()
+    U_bounds = Bounds()
+    U_init = InitialConditions()
 
     U_bounds.min = [torque_min for _ in range(dof_mapping.nb_reduced)]
     U_bounds.max = [torque_max for _ in range(dof_mapping.nb_reduced)]
     U_init.init = [torque_init for _ in range(dof_mapping.nb_reduced)]
     # ------------- #
 
-    return biorbd_optim.OptimalControlProgram(
+    return OptimalControlProgram(
         biorbd_model,
-        variable_type,
-        dynamics_func,
-        ode_solver,
+        problem_type,
         number_shooting_points,
         final_time,
         objective_functions,
@@ -124,7 +119,7 @@ def prepare_nlp(
         X_bounds,
         U_bounds,
         constraints,
-        dof_mapping,
+        dof_mapping=dof_mapping,
         is_cyclic_constraint=is_cyclic_constraint,
         is_cyclic_objective=is_cyclic_objective,
         show_online_optim=show_online_optim,
@@ -132,7 +127,7 @@ def prepare_nlp(
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp(show_online_optim=False)
+    nlp = prepare_nlp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = nlp.solve()
@@ -144,7 +139,8 @@ if __name__ == "__main__":
         all_q[:, cmp : cmp + 1] = np.array(q)
         cmp += 1
 
-    # np.save("Results", all_q)
+    import BiorbdViz
+
     b = BiorbdViz.BiorbdViz(loaded_model=nlp.model)
     b.load_movement(all_q)
     b.exec()
