@@ -43,9 +43,9 @@ class OptimalControlProgram:
         constraints,
         ode_solver=OdeSolver.RK,
         dof_mapping=None,
-        show_online_optim=False,
         is_cyclic_objective=False,
         is_cyclic_constraint=False,
+        show_online_optim=False,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -63,36 +63,32 @@ class OptimalControlProgram:
         :param constraints: Tuple of constraints, instant (which node(s)) and tuple of geometric structures used.
         """
 
-        self.nb_phases = len(biorbd_model)
         if isinstance(biorbd_model, str):
-            self.model = biorbd.Model(biorbd_model)
+            biorbd_model = [biorbd.Model(biorbd_model)]
         elif isinstance(biorbd_model, biorbd.biorbd.Model):
-            self.model = biorbd_model
+            biorbd_model = [biorbd_model]
+        elif isinstance(biorbd_model, (list, tuple)):
+            biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
         else:
             raise RuntimeError(
                 "biorbd_model must either be a string or an instance of biorbd.Model()"
             )
+        self.nb_phases = len(biorbd_model)
+        self.nlp = [{} for _ in range(self.nb_phases)]
+        self.__add_to_nlp("model", biorbd_model, False)
 
         # Define some aliases
-        self.ns = number_shooting_points
-        self.tf = phase_time
-        self.dt = phase_time / max(number_shooting_points, 1)
+        self.__add_to_nlp("ns", number_shooting_points, False)
+        self.__add_to_nlp("tf", phase_time, False)
+        self.__add_to_nlp("dt", [phase_time[i] / max(number_shooting_points[i], 1) for i in range(self.nb_phases)], False)
         self.is_cyclic_constraint = is_cyclic_constraint
         self.is_cyclic_objective = is_cyclic_objective
 
         # Compute problem size
-        self.x = MX()
-        self.u = MX()
-        self.nx = -1
-        self.nu = -1
-        self.nbQ = -1
-        self.nbQdot = -1
-        self.nbTau = -1
-        self.nbMuscleTotal = -1
-        self.dynamics_func = None
-        self.dof_mapping = dof_mapping
-        self.problem_type = problem_type
-        self.problem_type(self)
+        self.__add_to_nlp("dof_mapping", dof_mapping, dof_mapping is None)
+        self.__add_to_nlp("problem_type", problem_type, False)
+        for i in range(self.nb_phases):
+            self.nlp[i]["problem_type"] = self.nlp[i]["problem_type"](self.nlp[i])
 
         X_init.regulation(self.nx)
         X_bounds.regulation(self.nx)
@@ -128,10 +124,22 @@ class OptimalControlProgram:
         else:
             self.show_online_optim_callback = None
 
-    @staticmethod
-    def __convert_to_tuple(param):
-        if not isinstance(param, (list, tuple)):
-            return param,
+    def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one):
+        if isinstance(param, (list, tuple)):
+            if len(param) != self.nb_phases:
+                raise RuntimeError("Param size does not correspond to the number of phases")
+            else:
+                for i in range(self.nb_phases):
+                    self.nlp[i][param_name] = param[i]
+        else:
+            if self.nb_phases == 1:
+                self.nlp[0] = param
+            else:
+                if duplicate_if_size_is_one:
+                    for i in range(self.nb_phases):
+                        self.nlp[i][param_name] = param
+                else:
+                    raise RuntimeError("Param must be a list or tuple when number of phase is not equal to 1")
 
     def __prepare_dynamics(self):
         """
