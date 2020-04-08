@@ -1,5 +1,6 @@
 from .mapping import Mapping
 
+
 class PathCondition:
     """
     Parent class of Bounds and InitialConditions.
@@ -14,6 +15,9 @@ class PathCondition:
     def regulation_private(var, nb_elements, type):
         if len(var) != nb_elements:
             raise RuntimeError(f"Invalid number of {type}")
+
+    def expand(self, other):
+        pass
 
 
 class Bounds(PathCondition):
@@ -32,13 +36,13 @@ class Bounds(PathCondition):
         For X and Y bounds, lists have the number of degree of freedom elements.
         For V bounds, lists have number of degree of freedom elements * number of shooting points.
         """
-        self.min = min_bound
-        self.first_node_min = min_bound
-        self.last_node_min = min_bound
+        self.min = list(min_bound)
+        self.first_node_min = list(min_bound)
+        self.last_node_min = list(min_bound)
 
-        self.max = max_bound
-        self.first_node_max = max_bound
-        self.last_node_max = max_bound
+        self.max = list(max_bound)
+        self.first_node_max = list(max_bound)
+        self.last_node_max = list(max_bound)
 
     def regulation(self, nb_elements):
         """
@@ -67,6 +71,15 @@ class Bounds(PathCondition):
         )
         self.regulation_private(self.last_node_min, nb_elements, "Bound last node min")
         self.regulation_private(self.last_node_max, nb_elements, "Bound last node max")
+
+    def expand(self, other):
+        self.min += other.min
+        self.first_node_min += other.first_node_min
+        self.last_node_min += other.last_node_min
+
+        self.max += other.max
+        self.first_node_max += other.first_node_max
+        self.last_node_max += other.last_node_max
 
 
 class QAndQDotBounds(Bounds):
@@ -101,9 +114,9 @@ class InitialConditions(PathCondition):
         3. Last node
         Each group have a list of initial values.
         """
-        self.first_node_init = initial_guess
-        self.init = initial_guess
-        self.last_node_init = initial_guess
+        self.first_node_init = list(initial_guess)
+        self.init = list(initial_guess)
+        self.last_node_init = list(initial_guess)
 
     def regulation(self, nb_elements):
         """
@@ -122,3 +135,8 @@ class InitialConditions(PathCondition):
 
         self.regulation_private(self.first_node_init, nb_elements, "First node init")
         self.regulation_private(self.last_node_init, nb_elements, "Last node init")
+
+    def expand(self, other):
+        self.init += other.init
+        self.first_node_init += other.first_node_init
+        self.last_node_init += other.last_node_init

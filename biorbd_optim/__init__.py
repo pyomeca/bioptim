@@ -2,7 +2,7 @@ import enum
 
 import biorbd
 import casadi
-from casadi import MX
+from casadi import MX, vertcat
 
 from .constraints import Constraint
 from .problem_type import ProblemType
@@ -90,24 +90,33 @@ class OptimalControlProgram:
         for i in range(self.nb_phases):
             self.nlp[i]["problem_type"] = self.nlp[i]["problem_type"](self.nlp[i])
 
-        X_init.regulation(self.nx)
-        X_bounds.regulation(self.nx)
-        U_init.regulation(self.nu)
-        U_bounds.regulation(self.nu)
+        # Prepare path constraints
+        self.__add_to_nlp("X_bounds", X_bounds, False)
+        self.__add_to_nlp("U_bounds", U_bounds, False)
+        for i in range(self.nb_phases):
+            self.nlp[i]["X_bounds"].regulation(self.nlp[i]["nx"])
+            self.nlp[i]["U_bounds"].regulation(self.nlp[i]["nu"])
+
+        # Prepare initial guesses
+        self.__add_to_nlp("X_init", X_init, False)
+        self.__add_to_nlp("U_init", U_init, False)
+        for i in range(self.nb_phases):
+            self.nlp[i]["X_init"].regulation(self.nlp[i]["nx"])
+            self.nlp[i]["U_init"].regulation(self.nlp[i]["nu"])
 
         # Variables and constraint for the optimization program
-        self.X = []
-        self.U = []
-        self.V = MX()
-        self.V_init = InitialConditions()
+        self.V = MX.sym("V", 0, 0)
         self.V_bounds = Bounds()
-        self.g = []
-        self.g_bounds = Bounds()
-        self.__define_multiple_shooting_nodes(X_init, U_init, X_bounds, U_bounds)
+        self.V_init = InitialConditions()
+        for i in range(self.nb_phases):
+            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i])
 
         # Define dynamic problem
-        self.ode_solver = ode_solver
-        self.__prepare_dynamics()
+        g = []
+        g_bounds = Bounds()
+        self.__add_to_nlp("ode_solver", ode_solver, True)
+        for i in range(self.nb_phases):
+            self.__prepare_dynamics(self.nlp[i])
         Constraint.continuity_constraint(self)
 
         # Constraint functions
@@ -141,79 +150,85 @@ class OptimalControlProgram:
                 else:
                     raise RuntimeError("Param must be a list or tuple when number of phase is not equal to 1")
 
-    def __prepare_dynamics(self):
+    @staticmethod
+    def __prepare_dynamics(nlp):
         """
         Builds CasaDI dynamics function.
         :param dynamics_func: A selected method handler of the class dynamics.Dynamics.
         :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
         """
 
-        states = MX.sym("x", self.nx, 1)
-        controls = MX.sym("p", self.nu, 1)
+        states = MX.sym("x", nlp["nx"], 1)
+        controls = MX.sym("p", nlp["nu"], 1)
         dynamics = casadi.Function(
             "ForwardDyn",
             [states, controls],
-            [self.dynamics_func(states, controls, self)],
+            [nlp["dynamics_func"](states, controls, nlp)],
             ["states", "controls"],
             ["statesdot"],
         ).expand()
-        ode = {"x": self.x, "p": self.u, "ode": dynamics(self.x, self.u)}
+        ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
 
-        ode_opt = {"t0": 0, "tf": self.dt}
-        if self.ode_solver == OdeSolver.RK or self.ode_solver == OdeSolver.COLLOCATION:
+        ode_opt = {"t0": 0, "tf": nlp["dt"]}
+        if nlp["ode_solver"] == OdeSolver.RK or nlp["ode_solver"] == OdeSolver.COLLOCATION:
             ode_opt["number_of_finite_elements"] = 5
 
-        if self.ode_solver == OdeSolver.RK:
-            self.dynamics = casadi.integrator("integrator", "rk", ode, ode_opt)
-        elif self.ode_solver == OdeSolver.COLLOCATION:
-            self.dynamics = casadi.integrator("integrator", "collocation", ode, ode_opt)
-        elif self.ode_solver == OdeSolver.CVODES:
-            self.dynamics = casadi.integrator("integrator", "cvodes", ode, ode_opt)
+        if nlp["ode_solver"] == OdeSolver.RK:
+            nlp["dynamics"] = casadi.integrator("integrator", "rk", ode, ode_opt)
+        elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
+            nlp["dynamics"] = casadi.integrator("integrator", "collocation", ode, ode_opt)
+        elif nlp["ode_solver"] == OdeSolver.CVODES:
+            nlp["dynamics"] = casadi.integrator("integrator", "cvodes", ode, ode_opt)
 
-    def __define_multiple_shooting_nodes(self, X_init, U_init, X_bounds, U_bounds):
+    def __define_multiple_shooting_nodes_per_phase(self, nlp):
         """
         For each node, puts X_bounds and U_bounds in V_bounds.
         Links X and U with V.
-        :param X_init: Instance of the class InitialConditions for the states.
-        :param U_init: Instance of the class InitialConditions for the controls.
-        :param X_bounds: Instance of the class Bounds for the states.
-        :param U_bounds: Instance of the class Bounds for the controls.
+        :param nlp: The nlp problem
         """
-        nV = self.nx * (self.ns + 1) + self.nu * self.ns
-        self.V = MX.sym("V", nV)
-        self.V_bounds.min = [0] * nV
-        self.V_bounds.max = [0] * nV
-        self.V_init.init = [0] * nV
+        X = []
+        U = []
+
+        nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
+        V = MX.sym("V", nV)
+        V_bounds = Bounds([0] * nV, [0] * nV)
+        V_init = InitialConditions([0] * nV)
 
         offset = 0
-        for k in range(self.ns):
-            self.X.append(self.V.nz[offset : offset + self.nx])
+        for k in range(nlp["ns"]):
+            X.append(V.nz[offset : offset + nlp["nx"]])
             if k == 0:
-                self.V_bounds.min[offset : offset + self.nx] = X_bounds.first_node_min
-                self.V_bounds.max[offset : offset + self.nx] = X_bounds.first_node_max
+                V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].first_node_min
+                V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].first_node_max
             else:
-                self.V_bounds.min[offset : offset + self.nx] = X_bounds.min
-                self.V_bounds.max[offset : offset + self.nx] = X_bounds.max
-            self.V_init.init[offset : offset + self.nx] = X_init.init
-            offset += self.nx
+                V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].min
+                V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].max
+            V_init.init[offset : offset + nlp["nx"]] = nlp["X_init"].init
+            offset += nlp["nx"]
 
-            self.U.append(self.V.nz[offset : offset + self.nu])
+            U.append(V.nz[offset : offset + nlp["nu"]])
             if k == 0:
-                self.V_bounds.min[offset : offset + self.nu] = U_bounds.first_node_min
-                self.V_bounds.max[offset : offset + self.nu] = U_bounds.first_node_max
+                V_bounds.min[offset : offset + nlp["nu"]] = nlp["U_bounds"].first_node_min
+                V_bounds.max[offset : offset + nlp["nu"]] = nlp["U_bounds"].first_node_max
             else:
-                self.V_bounds.min[offset : offset + self.nu] = U_bounds.min
-                self.V_bounds.max[offset : offset + self.nu] = U_bounds.max
-            self.V_init.init[offset : offset + self.nu] = U_init.init
-            offset += self.nu
+                V_bounds.min[offset : offset + nlp["nu"]] = nlp["U_bounds"].min
+                V_bounds.max[offset : offset + nlp["nu"]] = nlp["U_bounds"].max
+            V_init.init[offset : offset + nlp["nu"]] = nlp["U_init"].init
+            offset += nlp["nu"]
 
-        self.X.append(self.V.nz[offset : offset + self.nx])
-        self.V_bounds.min[offset : offset + self.nx] = X_bounds.last_node_min
-        self.V_bounds.max[offset : offset + self.nx] = X_bounds.last_node_max
-        self.V_init.init[offset : offset + self.nx] = X_init.init
+        X.append(V.nz[offset : offset + nlp["nx"]])
+        V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].last_node_min
+        V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].last_node_max
+        V_init.init[offset : offset + nlp["nx"]] = nlp["X_init"].init
 
-        self.V_init.regulation(nV)
-        self.V_bounds.regulation(nV)
+        V_bounds.regulation(nV)
+        V_init.regulation(nV)
+
+        nlp["X"] = X
+        nlp["U"] = U
+        self.V = vertcat(self.V, V)
+        self.V_bounds.expand(V_bounds)
+        self.V_init.expand(V_init)
 
     def solve(self):
         """

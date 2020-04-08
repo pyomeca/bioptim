@@ -76,7 +76,7 @@ def prepare_nlp(
     pose_at_first_node += [0] * nb_reduced  # Add Qdot
 
     # Initialize X_bounds
-    X_bounds = [QAndQDotBounds(m) for m in biorbd_model]
+    X_bounds = [QAndQDotBounds(biorbd_model[i], dof_mapping[i]) for i in range(len(biorbd_model))]
     X_bounds[0].first_node_min = pose_at_first_node
     X_bounds[0].first_node_max = pose_at_first_node
     X_bounds[0].last_node_min = pose_at_first_node
