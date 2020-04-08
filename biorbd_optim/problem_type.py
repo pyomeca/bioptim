@@ -18,7 +18,7 @@ class ProblemType:
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_driven
 
         if nlp["dof_mapping"] is None:
-            nlp["dof_mapping"] = Mapping(range(nlp.model.nbQ()), range(nlp.model.nbQ()))
+            nlp["dof_mapping"] = Mapping(range(nlp["model"].nbQ()), range(nlp["model"].nbQ()))
 
         dof_names = nlp["model"].nameDof()
         q = MX()
@@ -39,7 +39,7 @@ class ProblemType:
 
         nlp["nbQ"] = nlp["dof_mapping"].nb_reduced
         nlp["nbQdot"] = nlp["dof_mapping"].nb_reduced
-        nlp["nbQtau"] = nlp["dof_mapping"].nb_reduced
+        nlp["nbTau"] = nlp["dof_mapping"].nb_reduced
         nlp["nbMuscle"] = 0
 
     @staticmethod
@@ -53,6 +53,6 @@ class ProblemType:
             u = vertcat(
                 u, MX.sym("Tau_for_muscle_" + muscle_names[i].to_string())
             )
-        nlp["u"] = vertcat(u, nlp["u"])
+        nlp["u"] = vertcat(nlp["u"], u)
 
         nlp["nbMuscle"] = nlp.model.nbMuscleTotal()

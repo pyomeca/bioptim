@@ -80,7 +80,7 @@ class OptimalControlProgram:
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
         self.__add_to_nlp("tf", phase_time, False)
-        self.__add_to_nlp("dt", [phase_time[i] / max(number_shooting_points[i], 1) for i in range(self.nb_phases)], False)
+        self.__add_to_nlp("dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False)
         self.is_cyclic_constraint = is_cyclic_constraint
         self.is_cyclic_objective = is_cyclic_objective
 
@@ -88,7 +88,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("dof_mapping", dof_mapping, dof_mapping is None)
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
-            self.nlp[i]["problem_type"] = self.nlp[i]["problem_type"](self.nlp[i])
+            self.nlp[i]["problem_type"](self.nlp[i])
 
         # Prepare path constraints
         self.__add_to_nlp("X_bounds", X_bounds, False)
@@ -105,28 +105,41 @@ class OptimalControlProgram:
             self.nlp[i]["U_init"].regulation(self.nlp[i]["nu"])
 
         # Variables and constraint for the optimization program
-        self.V = MX.sym("V", 0, 0)
+        self.V = []
         self.V_bounds = Bounds()
         self.V_init = InitialConditions()
         for i in range(self.nb_phases):
             self.__define_multiple_shooting_nodes_per_phase(self.nlp[i])
 
         # Define dynamic problem
-        g = []
-        g_bounds = Bounds()
         self.__add_to_nlp("ode_solver", ode_solver, True)
         for i in range(self.nb_phases):
             self.__prepare_dynamics(self.nlp[i])
+
+        # Prepare constraints
+        self.g = []
+        self.g_bounds = Bounds()
         Constraint.continuity_constraint(self)
 
-        # Constraint functions
-        self.constraints = constraints
-        Constraint.add_constraints(self)
+        if self.nb_phases == 1:
+            if isinstance(constraints, (list, tuple)) and isinstance(constraints[0], (list, tuple)) and not isinstance(constraints[0][0], (list, tuple)):
+                constraints = constraints,
+        self.__add_to_nlp("constraints", constraints, False)
+        for i in range(self.nb_phases):
+            Constraint.add_constraints(self, self.nlp[i])
 
         # Objective functions
         self.J = 0
-        for (func, weight) in objective_functions:
-            func(self, weight=weight)
+        if self.nb_phases == 1:
+            if isinstance(objective_functions, (list, tuple)) and isinstance(objective_functions[0], (list, tuple)) and not isinstance(objective_functions[0][0], (list, tuple)):
+                objective_functions = objective_functions,
+        self.__add_to_nlp("objective_functions", objective_functions, False)
+        for i in range(self.nb_phases):
+            for (func, params) in self.nlp[i]["objective_functions"]:
+                if isinstance(params, dict):
+                    func(self, self.nlp[i], **params)
+                else:
+                    func(self, self.nlp[i], params)
 
         if show_online_optim:
             self.show_online_optim_callback = AnimateCallback(self)
@@ -142,7 +155,7 @@ class OptimalControlProgram:
                     self.nlp[i][param_name] = param[i]
         else:
             if self.nb_phases == 1:
-                self.nlp[0] = param
+                self.nlp[0][param_name] = param
             else:
                 if duplicate_if_size_is_one:
                     for i in range(self.nb_phases):

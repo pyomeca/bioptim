@@ -3,34 +3,36 @@ import casadi
 
 class ObjectiveFunction:
     @staticmethod
-    def minimize_torque(nlp, weight=1):
-        n_tau = nlp.dof_mapping.nb_reduced
-        n_mus = nlp.model.nbMuscleTotal()
-        for i in range(nlp.ns):
-            nlp.J += (
+    def minimize_torque(ocp, nlp, weight=1):
+        n_tau = nlp["nbTau"]
+
+        for i in range(nlp["ns"]):
+            ocp.J += (
                 casadi.dot(
-                    nlp.U[i][n_mus : n_mus + n_tau], nlp.U[i][n_mus : n_mus + n_tau],
+                    nlp["U"][i][: n_tau], nlp["U"][i][: n_tau],
                 )
-                * nlp.dt
-                * nlp.dt
+                * nlp["dt"]
+                * nlp["dt"]
                 * weight
             )
 
     @staticmethod
-    def minimize_states(nlp, weight=1):
-        for i in range(nlp.ns):
-            nlp.J += casadi.dot(nlp.X[i], nlp.X[i]) * nlp.dt * nlp.dt * weight
+    def minimize_states(ocp, nlp, weight=1):
+        for i in range(nlp["ns"]):
+            ocp.J += casadi.dot(nlp["X"][i], nlp["X"][i]) * nlp["dt"] * nlp["dt"] * weight
 
     @staticmethod
-    def minimize_muscle(nlp, weight=1):
-        for i in range(nlp.ns):
-            nlp.J += (
+    def minimize_muscle(ocp, nlp, weight=1):
+        n_tau = nlp["nbTau"]
+        nb_muscle = nlp["nbMuscle"]
+        for i in range(nlp["ns"]):
+            ocp.J += (
                 casadi.dot(
-                    nlp.U[i][: nlp.model.nbMuscleTotal()],
-                    nlp.U[i][: nlp.model.nbMuscleTotal()],
+                    nlp["U"][i][n_tau : n_tau],
+                    nlp["U"][i][n_tau : n_tau + nb_muscle],
                 )
-                * nlp.dt
-                * nlp.dt
+                * nlp["dt"]
+                * nlp["dt"]
                 * weight
             )
 

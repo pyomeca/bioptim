@@ -39,8 +39,8 @@ def prepare_nlp(
     dof_mapping = dof_mapping, dof_mapping
 
     # Add objective functions
-    objective_functions = ((ObjectiveFunction.minimize_torque, 1),
-                           (ObjectiveFunction.minimize_states, 1),), \
+    objective_functions = ((ObjectiveFunction.minimize_torque, {"weight": 1}),
+                           (ObjectiveFunction.minimize_states, {"weight": 1}),), \
                           ((ObjectiveFunction.minimize_states, 1),)
 
     # Dynamics
@@ -115,19 +115,19 @@ def prepare_nlp(
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp(show_online_optim=True)
+    ocp = prepare_nlp(show_online_optim=False)
 
     # --- Solve the program --- #
-    sol = nlp.solve()
-
-    all_q = np.ndarray((nlp.ns + 1, nlp.model.nbQ()))
-    cmp = 0
-    for idx in nlp.dof_mapping.expand_idx:
-        q = sol["x"][0 * nlp.nbQ + idx :: 3 * nlp.nbQ]
-        all_q[:, cmp : cmp + 1] = np.array(q)
-        cmp += 1
-
-    import BiorbdViz
-    b = BiorbdViz.BiorbdViz(loaded_model=nlp.model)
-    b.load_movement(all_q)
-    b.exec()
+    sol = ocp.solve()
+    #
+    # all_q = np.ndarray((ocp.ns + 1, nlp.model.nbQ()))
+    # cmp = 0
+    # for idx in nlp.dof_mapping.expand_idx:
+    #     q = sol["x"][0 * nlp.nbQ + idx :: 3 * nlp.nbQ]
+    #     all_q[:, cmp : cmp + 1] = np.array(q)
+    #     cmp += 1
+    #
+    # import BiorbdViz
+    # b = BiorbdViz.BiorbdViz(loaded_model=nlp.model)
+    # b.load_movement(all_q)
+    # b.exec()

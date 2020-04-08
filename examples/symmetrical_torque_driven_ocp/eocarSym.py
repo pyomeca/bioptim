@@ -8,7 +8,7 @@ from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, InitialConditions
 
 
-def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
+def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -103,7 +103,7 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp(show_online_optim=True)
+    ocp = prepare_ocp(show_online_optim=True)
 
     # --- Solve the program --- #
-    sol = nlp.solve()
+    sol = ocp.solve()

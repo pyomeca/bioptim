@@ -28,10 +28,10 @@ class Dynamics:
         q = nlp["dof_mapping"].expand(states[:nq])
         qdot_reduced = states[nq:]
         qdot = nlp["dof_mapping"].expand(qdot_reduced)
-        residual_tau = nlp["dof_mapping"].expand(controls[nlp["nbMuscle"] :])
+        residual_tau = nlp["dof_mapping"].expand(controls[: nlp["nbTau"]])
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
-        muscles_activations = controls[: nlp["nbMuscle"]]
+        muscles_activations = controls[nlp["nbTau"] :]
 
         for k in range(nlp["nbMuscle"]):
             muscles_states[k].setActivation(muscles_activations[k])
