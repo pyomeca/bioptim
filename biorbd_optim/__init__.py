@@ -88,6 +88,7 @@ class OptimalControlProgram:
         self.nbQ = -1
         self.nbQdot = -1
         self.nbTau = -1
+        self.nbMuscleTotal = -1
         self.dynamics_func = None
         self.dof_mapping = dof_mapping
         self.problem_type = problem_type

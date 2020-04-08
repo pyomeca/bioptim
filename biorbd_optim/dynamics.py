@@ -22,26 +22,22 @@ class Dynamics:
 
         return vertcat(qdot_reduced, qddot_reduced)
 
-        # def forward_dynamics_torque_muscle_driven(states, controls, model):
-        #     muscles_states = []
-        #
-        #     for k in range (model.nbMuscleTotal()):
-        #         muscles_states.append(StateDynamics())
-        #
-        #
-        #     q = states[:model.nbQ()]
-        #     qdot = states[model.nbQ():]
-        #
-        #     if model.nbMuscleTotal() > 0:
-        #         for k in range (model.nbMuscleTotal()):
-        #             muscles_states[k].setActivation(controls[k])
-        #         Tau = model.muscularJointTorque(muscles_states, true, Q, QDot);
-        #
-        #     else:
-        #         Tau.setZero();
-        #
-        #     Tau += controls
-        #
-        #
-        #     qddot = biorbd.Model.ForwardDynamics(model, Q, QDot, Tau).to_mx()
-        #     return vertcat(qdot, qddot)
+    @staticmethod
+    def forward_dynamics_torque_muscle_driven(states, controls, nlp):
+        nq = nlp.dof_mapping.nb_reduced
+        q = nlp.dof_mapping.expand(states[:nq])
+        qdot_reduced = states[nq:]
+        qdot = nlp.dof_mapping.expand(qdot_reduced)
+        residual_tau = nlp.dof_mapping.expand(controls[nlp.nbMuscleTotal :])
+
+        muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp.nbMuscleTotal)
+        muscles_activations = controls[: nlp.nbMuscleTotal]
+
+        for k in range(nlp.nbMuscleTotal):
+            muscles_states[k].setActivation(muscles_activations[k])
+        muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
+
+        tau = muscles_tau + residual_tau
+
+        qddot = biorbd.Model.ForwardDynamics(nlp.model, q, qdot, tau).to_mx()
+        return vertcat(qdot, qddot)

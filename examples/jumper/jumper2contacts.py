@@ -70,7 +70,36 @@ def prepare_nlp(
             -0.9,
             0.47,
         ]
-    X_bounds = [Bounds(), Bounds()]
+
+    # Gets bounds from biorbd model
+    QRanges = []
+    QDotRanges = []
+    for i in range(biorbd_model.nbSegment()):
+        QRanges.extend(
+            [
+                biorbd_model.segment(i).QRanges()[j]
+                for j in range(len(biorbd_model.segment(i).QRanges()))
+            ]
+        )
+        QDotRanges.extend(
+            [
+                biorbd_model.segment(i).QDotRanges()[j]
+                for j in range(len(biorbd_model.segment(i).QDotRanges()))
+            ]
+        )
+
+    # Initialize X_bounds
+    X_bounds.min = [QRanges[i].min() for i in dof_mapping.reduce_idx] + [
+        QDotRanges[i].min() for i in dof_mapping.reduce_idx
+    ]
+    X_bounds.max = [QRanges[i].max() for i in dof_mapping.reduce_idx] + [
+        QDotRanges[i].max() for i in dof_mapping.reduce_idx
+    ]
+
+    X_bounds.first_node_min = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.first_node_max = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.last_node_min = [0] * 2 * dof_mapping.nb_reduced
+    X_bounds.last_node_max = [0] * 2 * dof_mapping.nb_reduced
 
     for i, bounds in enumerate(X_bounds):
         # Initialize X_bounds (filled later)
