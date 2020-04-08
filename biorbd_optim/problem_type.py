@@ -56,3 +56,43 @@ class ProblemType:
         nlp["u"] = vertcat(nlp["u"], u)
 
         nlp["nbMuscle"] = nlp.model.nbMuscleTotal()
+
+    @staticmethod
+    def get_data_from_V(ocp, V, num_phase=None):
+        if num_phase is None:
+            num_phase = range(ocp.nlp)
+        elif isinstance(num_phase, int):
+            num_phase = [num_phase]
+
+        for i in num_phase:
+            nlp = ocp.nlp[i]
+            if (
+                nlp["problem_type"] == ProblemType.torque_driven
+                or nlp["problem_type"] == ProblemType.muscles_and_torque_driven
+            ):
+                q.append(np.ndarray((self.ns, self.nbQ)))
+                q_dot = np.ndarray((self.ns, self.nbQdot))
+                tau = np.ndarray((self.ns, self.nbTau))
+                for idx in range(self.nbQ):
+                    q[:, idx] = np.array(V[idx :: self.nx + self.nu]).squeeze()
+                    q_dot[:, idx] = np.array(
+                        V[self.nbQ + idx :: self.nx + self.nu]
+                    ).squeeze()
+                    tau[: self.ns, idx] = np.array(
+                        V[self.ns + idx :: self.nx + self.nu]
+                    )
+                tau[-1, :] = tau[-2, :]
+                if self.problem_type == ProblemType.muscles_and_torque_driven:
+                    muscle = np.ndarray((self.ns + self.ocp.nb_phases, self.nbMuscle))
+                    for idx in range(self.nbMuscle):
+                        muscle[: self.ns, :] = np.array(
+                            V[self.ns + self.nbTau + idx :: self.nx + self.nu]
+                        )
+                    muscle[-1, :] = muscle[-2, :]
+                    return q, q_dot, tau, muscle
+                else:
+                    return q, q_dot, tau
+            else:
+                raise RuntimeError(
+                    "plot.__get_data not implemented yet for this problem_type"
+                )

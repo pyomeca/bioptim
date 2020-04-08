@@ -1,4 +1,3 @@
-import numpy as np
 import biorbd
 
 from biorbd_optim import OptimalControlProgram
@@ -9,34 +8,30 @@ from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
 
 
-def prepare_nlp(
-    biorbd_model_path="jumper2contacts.bioMod",
-    show_online_optim=False,
-    use_symmetry=True,
+def prepare_ocp(
+    show_online_optim=False, use_symmetry=True,
 ):
     # --- Options --- #
     # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path)
+    biorbd_model = (
+        biorbd.Model("jumper2contacts.bioMod"),
+        biorbd.Model("jumper1contacts.bioMod"),
+    )
+    nb_phases = len(biorbd_model)
     torque_min, torque_max, torque_init = -1000, 1000, 0
-
-    # Results path
-    optimization_name = "jumper"
-    results_path = "Results/"
-    control_results_file_name = results_path + "Controls" + optimization_name + ".txt"
-    state_results_file_name = results_path + "States" + optimization_name + ".txt"
 
     # Problem parameters
     number_shooting_points = [20, 20]
     phase_time = [0.5, 0.5]
-    is_cyclic_constraint = False
-    is_cyclic_objective = False
     if use_symmetry:
         dof_mapping = Mapping(
             [0, 1, 2, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7], [0, 1, 2, 3, 4, 7, 8, 9], [5]
         )
+        dof_mapping = dof_mapping, dof_mapping
     else:
-        dof_mapping = Mapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
-    dof_mapping = dof_mapping, dof_mapping
+        dof_mapping = [
+            Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model
+        ]
 
     # Add objective functions
     objective_functions = (
@@ -85,12 +80,11 @@ def prepare_nlp(
             -0.9,
             0.47,
         ]
-    pose_at_first_node += [0] * nb_reduced  # Add Qdot
+    pose_at_first_node += [0] * nb_reduced  # Adds Qdot
 
     # Initialize X_bounds
     X_bounds = [
-        QAndQDotBounds(biorbd_model[i], dof_mapping[i])
-        for i in range(len(biorbd_model))
+        QAndQDotBounds(biorbd_model[i], dof_mapping[i]) for i in range(nb_phases)
     ]
     X_bounds[0].first_node_min = pose_at_first_node
     X_bounds[0].first_node_max = pose_at_first_node
@@ -135,14 +129,12 @@ def prepare_nlp(
         U_bounds,
         constraints,
         dof_mapping=dof_mapping,
-        is_cyclic_constraint=is_cyclic_constraint,
-        is_cyclic_objective=is_cyclic_objective,
         show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_nlp(show_online_optim=False)
+    ocp = prepare_ocp(show_online_optim=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()

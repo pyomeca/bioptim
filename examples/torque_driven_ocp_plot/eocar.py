@@ -14,12 +14,6 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
-    # Results path
-    optimization_name = "eocar"
-    results_path = "Results/"
-    control_results_file_name = results_path + "Controls" + optimization_name + ".txt"
-    state_results_file_name = results_path + "States" + optimization_name + ".txt"
-
     # Problem parameters
     number_shooting_points = 1000
     final_time = 60
@@ -71,6 +65,7 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
         X_bounds,
         U_bounds,
         constraints,
+        show_online_optim=show_online_optim,
     )
 
 

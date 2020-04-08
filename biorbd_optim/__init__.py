@@ -8,6 +8,7 @@ from .constraints import Constraint
 from .problem_type import ProblemType
 from .plot import AnimateCallback
 from .path_conditions import Bounds, InitialConditions
+from .dynamics import Dynamics
 
 
 class OdeSolver(enum.Enum):
@@ -76,7 +77,7 @@ class OptimalControlProgram:
                 "biorbd_model must either be a string or an instance of biorbd.Model()"
             )
         self.nb_phases = len(biorbd_model)
-        self.nlp = [{} for _ in range(self.nb_phases)]
+        self.nlp = [{}] * self.nb_phases
         self.__add_to_nlp("model", biorbd_model, False)
 
         # Define some aliases
@@ -122,8 +123,17 @@ class OptimalControlProgram:
 
         # Define dynamic problem
         self.__add_to_nlp("ode_solver", ode_solver, True)
+        states = MX.sym("x", self.nlp[0]["nx"], 1)
+        controls = MX.sym("u", self.nlp[0]["nu"], 1)
         for i in range(self.nb_phases):
-            self.__prepare_dynamics(self.nlp[i])
+            if (
+                self.nlp[0]["nx"] != self.nlp[i]["nx"]
+                or self.nlp[0]["nu"] != self.nlp[i]["nu"]
+            ):
+                raise RuntimeError(
+                    "Dynamics with different nx or nu is not supported yet"
+                )
+            self.__prepare_dynamics(self.nlp[i], states, controls)
 
         # Prepare constraints
         self.g = []
@@ -167,7 +177,7 @@ class OptimalControlProgram:
         if isinstance(param, (list, tuple)):
             if len(param) != self.nb_phases:
                 raise RuntimeError(
-                    "Param size does not correspond to the number of phases"
+                    param_name + " size does not correspond to the number of phases"
                 )
             else:
                 for i in range(self.nb_phases):
@@ -181,26 +191,26 @@ class OptimalControlProgram:
                         self.nlp[i][param_name] = param
                 else:
                     raise RuntimeError(
-                        "Param must be a list or tuple when number of phase is not equal to 1"
+                        param_name
+                        + " must be a list or tuple when number of phase is not equal to 1"
                     )
 
     @staticmethod
-    def __prepare_dynamics(nlp):
+    def __prepare_dynamics(nlp, states_sym, controls_sym):
         """
         Builds CasaDI dynamics function.
         :param dynamics_func: A selected method handler of the class dynamics.Dynamics.
         :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
         """
 
-        states = MX.sym("x", nlp["nx"], 1)
-        controls = MX.sym("p", nlp["nu"], 1)
         dynamics = casadi.Function(
             "ForwardDyn",
-            [states, controls],
-            [nlp["dynamics_func"](states, controls, nlp)],
-            ["states", "controls"],
-            ["statesdot"],
+            [states_sym, controls_sym],
+            [nlp["dynamics_func"](states_sym, controls_sym, nlp)],
+            ["x", "u"],
+            ["xdot"],
         ).expand()
+
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
 
         ode_opt = {"t0": 0, "tf": nlp["dt"]}

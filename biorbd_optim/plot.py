@@ -121,13 +121,13 @@ class AnimateCallback(Callback):
             while self.pipe.poll():
                 arg = self.pipe.recv()
                 if self.problem_type == ProblemType.torque_driven:
-                    q, q_dot, tau = self.__get_data(arg)
+                    q, q_dot, tau = ProblemType.get_data_from_V(arg)
                     for i in range(self.nlp.nbQ):
                         self.__update_plot(i, q)
                         self.__update_plot(i + self.nlp.nbQ, q_dot)
                         self.__update_plot(i + self.nlp.nbQ + self.nlp.nbQdot, tau)
                 elif self.nlp.problem_type == ProblemType.muscles_and_torque_driven:
-                    q, q_dot, tau, muscle = self.__get_data(arg)
+                    q, q_dot, tau, muscle = ProblemType.get_data_from_V(arg)
                     for i in range(self.nlp.nbQ):
                         self.__update_plot(i, q)
                         self.__update_plot(i + self.nlp.nbQ, q_dot)
@@ -135,38 +135,6 @@ class AnimateCallback(Callback):
                         # self.__update_plot(i + self.nlp.nbQ + self.nlp.nbQdot + self.nlp.nbTau, muscle)
             self.fig_state.canvas.draw()
             return True
-
-        def __get_data(self, V):
-            if (
-                self.problem_type == ProblemType.torque_driven
-                or self.problem_type == ProblemType.muscles_and_torque_driven
-            ):
-                q = np.ndarray((self.ns, self.nbQ))
-                q_dot = np.ndarray((self.ns, self.nbQdot))
-                tau = np.ndarray((self.ns, self.nbTau))
-                for idx in range(self.nbQ):
-                    q[:, idx] = np.array(V[idx :: self.nx + self.nu]).squeeze()
-                    q_dot[:, idx] = np.array(
-                        V[self.nbQ + idx :: self.nx + self.nu]
-                    ).squeeze()
-                    tau[: self.ns, idx] = np.array(
-                        V[self.ns + idx :: self.nx + self.nu]
-                    )
-                tau[-1, :] = tau[-2, :]
-                if self.problem_type == ProblemType.muscles_and_torque_driven:
-                    muscle = np.ndarray((self.ns + self.ocp.nb_phases, self.nbMuscle))
-                    for idx in range(self.nbMuscle):
-                        muscle[: self.ns, :] = np.array(
-                            V[self.ns + self.nbTau + idx :: self.nx + self.nu]
-                        )
-                    muscle[-1, :] = muscle[-2, :]
-                    return q, q_dot, tau, muscle
-                else:
-                    return q, q_dot, tau
-            else:
-                raise RuntimeError(
-                    "plot.__get_data not implemented yet for this problem_type"
-                )
 
         def __update_plot(self, i, y):
             y_range = np.max(y) - np.min(y)
