@@ -83,7 +83,7 @@ class Bounds(PathCondition):
 
 
 class QAndQDotBounds(Bounds):
-    def __init__(self,  biorbd_model, dof_mapping=None):
+    def __init__(self, biorbd_model, dof_mapping=None):
         if not dof_mapping:
             dof_mapping = Mapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
 

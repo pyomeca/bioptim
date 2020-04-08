@@ -39,9 +39,13 @@ def prepare_nlp(
     dof_mapping = dof_mapping, dof_mapping
 
     # Add objective functions
-    objective_functions = ((ObjectiveFunction.minimize_torque, {"weight": 1}),
-                           (ObjectiveFunction.minimize_states, {"weight": 1}),), \
-                          ((ObjectiveFunction.minimize_states, 1),)
+    objective_functions = (
+        (
+            (ObjectiveFunction.minimize_torque, {"weight": 1}),
+            (ObjectiveFunction.minimize_states, {"weight": 1}),
+        ),
+        ((ObjectiveFunction.minimize_states, 1),),
+    )
 
     # Dynamics
     problem_type = ProblemType.torque_driven, ProblemType.torque_driven
@@ -50,7 +54,15 @@ def prepare_nlp(
     if use_symmetry:
         constraints = (), ()
     else:
-        constraints = ((Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.All, (3, 5, -1)),),
+        constraints = (
+            (
+                (
+                    Constraint.Type.PROPORTIONAL_CONTROL,
+                    Constraint.Instant.All,
+                    (3, 5, -1),
+                ),
+            ),
+        )
 
     # Path constraint
     if use_symmetry:
@@ -76,7 +88,10 @@ def prepare_nlp(
     pose_at_first_node += [0] * nb_reduced  # Add Qdot
 
     # Initialize X_bounds
-    X_bounds = [QAndQDotBounds(biorbd_model[i], dof_mapping[i]) for i in range(len(biorbd_model))]
+    X_bounds = [
+        QAndQDotBounds(biorbd_model[i], dof_mapping[i])
+        for i in range(len(biorbd_model))
+    ]
     X_bounds[0].first_node_min = pose_at_first_node
     X_bounds[0].first_node_max = pose_at_first_node
     X_bounds[0].last_node_min = pose_at_first_node
@@ -87,13 +102,25 @@ def prepare_nlp(
     X_bounds[1].last_node_max = pose_at_first_node
 
     # Initial guess
-    X_init = [InitialConditions(pose_at_first_node), InitialConditions(pose_at_first_node)]
+    X_init = [
+        InitialConditions(pose_at_first_node),
+        InitialConditions(pose_at_first_node),
+    ]
 
     # Define control path constraint
-    U_bounds = [Bounds(min_bound=[torque_min] * nb_reduced, max_bound=[torque_max] * nb_reduced),
-                Bounds(min_bound=[torque_min] * nb_reduced, max_bound=[torque_max] * nb_reduced)]
+    U_bounds = [
+        Bounds(
+            min_bound=[torque_min] * nb_reduced, max_bound=[torque_max] * nb_reduced
+        ),
+        Bounds(
+            min_bound=[torque_min] * nb_reduced, max_bound=[torque_max] * nb_reduced
+        ),
+    ]
 
-    U_init = [InitialConditions([torque_init] * nb_reduced), InitialConditions([torque_init] * nb_reduced)]
+    U_init = [
+        InitialConditions([torque_init] * nb_reduced),
+        InitialConditions([torque_init] * nb_reduced),
+    ]
     # ------------- #
 
     return OptimalControlProgram(

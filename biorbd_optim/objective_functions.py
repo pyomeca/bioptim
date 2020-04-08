@@ -8,9 +8,7 @@ class ObjectiveFunction:
 
         for i in range(nlp["ns"]):
             ocp.J += (
-                casadi.dot(
-                    nlp["U"][i][: n_tau], nlp["U"][i][: n_tau],
-                )
+                casadi.dot(nlp["U"][i][:n_tau], nlp["U"][i][:n_tau],)
                 * nlp["dt"]
                 * nlp["dt"]
                 * weight
@@ -19,7 +17,9 @@ class ObjectiveFunction:
     @staticmethod
     def minimize_states(ocp, nlp, weight=1):
         for i in range(nlp["ns"]):
-            ocp.J += casadi.dot(nlp["X"][i], nlp["X"][i]) * nlp["dt"] * nlp["dt"] * weight
+            ocp.J += (
+                casadi.dot(nlp["X"][i], nlp["X"][i]) * nlp["dt"] * nlp["dt"] * weight
+            )
 
     @staticmethod
     def minimize_muscle(ocp, nlp, weight=1):
@@ -28,8 +28,7 @@ class ObjectiveFunction:
         for i in range(nlp["ns"]):
             ocp.J += (
                 casadi.dot(
-                    nlp["U"][i][n_tau : n_tau],
-                    nlp["U"][i][n_tau : n_tau + nb_muscle],
+                    nlp["U"][i][n_tau:n_tau], nlp["U"][i][n_tau : n_tau + nb_muscle],
                 )
                 * nlp["dt"]
                 * nlp["dt"]

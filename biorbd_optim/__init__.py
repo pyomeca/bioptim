@@ -68,7 +68,9 @@ class OptimalControlProgram:
         elif isinstance(biorbd_model, biorbd.biorbd.Model):
             biorbd_model = [biorbd_model]
         elif isinstance(biorbd_model, (list, tuple)):
-            biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
+            biorbd_model = [
+                biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model
+            ]
         else:
             raise RuntimeError(
                 "biorbd_model must either be a string or an instance of biorbd.Model()"
@@ -80,7 +82,14 @@ class OptimalControlProgram:
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
         self.__add_to_nlp("tf", phase_time, False)
-        self.__add_to_nlp("dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False)
+        self.__add_to_nlp(
+            "dt",
+            [
+                self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1)
+                for i in range(self.nb_phases)
+            ],
+            False,
+        )
         self.is_cyclic_constraint = is_cyclic_constraint
         self.is_cyclic_objective = is_cyclic_objective
 
@@ -122,8 +131,12 @@ class OptimalControlProgram:
         Constraint.continuity_constraint(self)
 
         if self.nb_phases == 1:
-            if isinstance(constraints, (list, tuple)) and isinstance(constraints[0], (list, tuple)) and not isinstance(constraints[0][0], (list, tuple)):
-                constraints = constraints,
+            if (
+                isinstance(constraints, (list, tuple))
+                and isinstance(constraints[0], (list, tuple))
+                and not isinstance(constraints[0][0], (list, tuple))
+            ):
+                constraints = (constraints,)
         self.__add_to_nlp("constraints", constraints, False)
         for i in range(self.nb_phases):
             Constraint.add_constraints(self, self.nlp[i])
@@ -131,8 +144,12 @@ class OptimalControlProgram:
         # Objective functions
         self.J = 0
         if self.nb_phases == 1:
-            if isinstance(objective_functions, (list, tuple)) and isinstance(objective_functions[0], (list, tuple)) and not isinstance(objective_functions[0][0], (list, tuple)):
-                objective_functions = objective_functions,
+            if (
+                isinstance(objective_functions, (list, tuple))
+                and isinstance(objective_functions[0], (list, tuple))
+                and not isinstance(objective_functions[0][0], (list, tuple))
+            ):
+                objective_functions = (objective_functions,)
         self.__add_to_nlp("objective_functions", objective_functions, False)
         for i in range(self.nb_phases):
             for (func, params) in self.nlp[i]["objective_functions"]:
@@ -149,7 +166,9 @@ class OptimalControlProgram:
     def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one):
         if isinstance(param, (list, tuple)):
             if len(param) != self.nb_phases:
-                raise RuntimeError("Param size does not correspond to the number of phases")
+                raise RuntimeError(
+                    "Param size does not correspond to the number of phases"
+                )
             else:
                 for i in range(self.nb_phases):
                     self.nlp[i][param_name] = param[i]
@@ -161,7 +180,9 @@ class OptimalControlProgram:
                     for i in range(self.nb_phases):
                         self.nlp[i][param_name] = param
                 else:
-                    raise RuntimeError("Param must be a list or tuple when number of phase is not equal to 1")
+                    raise RuntimeError(
+                        "Param must be a list or tuple when number of phase is not equal to 1"
+                    )
 
     @staticmethod
     def __prepare_dynamics(nlp):
@@ -183,13 +204,18 @@ class OptimalControlProgram:
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
 
         ode_opt = {"t0": 0, "tf": nlp["dt"]}
-        if nlp["ode_solver"] == OdeSolver.RK or nlp["ode_solver"] == OdeSolver.COLLOCATION:
+        if (
+            nlp["ode_solver"] == OdeSolver.RK
+            or nlp["ode_solver"] == OdeSolver.COLLOCATION
+        ):
             ode_opt["number_of_finite_elements"] = 5
 
         if nlp["ode_solver"] == OdeSolver.RK:
             nlp["dynamics"] = casadi.integrator("integrator", "rk", ode, ode_opt)
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
-            nlp["dynamics"] = casadi.integrator("integrator", "collocation", ode, ode_opt)
+            nlp["dynamics"] = casadi.integrator(
+                "integrator", "collocation", ode, ode_opt
+            )
         elif nlp["ode_solver"] == OdeSolver.CVODES:
             nlp["dynamics"] = casadi.integrator("integrator", "cvodes", ode, ode_opt)
 
@@ -211,8 +237,12 @@ class OptimalControlProgram:
         for k in range(nlp["ns"]):
             X.append(V.nz[offset : offset + nlp["nx"]])
             if k == 0:
-                V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].first_node_min
-                V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].first_node_max
+                V_bounds.min[offset : offset + nlp["nx"]] = nlp[
+                    "X_bounds"
+                ].first_node_min
+                V_bounds.max[offset : offset + nlp["nx"]] = nlp[
+                    "X_bounds"
+                ].first_node_max
             else:
                 V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].min
                 V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].max
@@ -221,8 +251,12 @@ class OptimalControlProgram:
 
             U.append(V.nz[offset : offset + nlp["nu"]])
             if k == 0:
-                V_bounds.min[offset : offset + nlp["nu"]] = nlp["U_bounds"].first_node_min
-                V_bounds.max[offset : offset + nlp["nu"]] = nlp["U_bounds"].first_node_max
+                V_bounds.min[offset : offset + nlp["nu"]] = nlp[
+                    "U_bounds"
+                ].first_node_min
+                V_bounds.max[offset : offset + nlp["nu"]] = nlp[
+                    "U_bounds"
+                ].first_node_max
             else:
                 V_bounds.min[offset : offset + nlp["nu"]] = nlp["U_bounds"].min
                 V_bounds.max[offset : offset + nlp["nu"]] = nlp["U_bounds"].max

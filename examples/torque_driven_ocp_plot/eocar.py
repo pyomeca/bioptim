@@ -26,14 +26,16 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = (ObjectiveFunction.minimize_torque, 100),
+    objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
     # Dynamics
     variable_type = ProblemType.torque_driven
 
     # Constraints
-    constraints = (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)), \
-                  (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
+    constraints = (
+        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
+        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
+    )
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
@@ -50,7 +52,10 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    U_bounds = Bounds([torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque())
+    U_bounds = Bounds(
+        [torque_min] * biorbd_model.nbGeneralizedTorque(),
+        [torque_max] * biorbd_model.nbGeneralizedTorque(),
+    )
     U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #

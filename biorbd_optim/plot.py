@@ -70,13 +70,18 @@ class AnimateCallback(Callback):
                 if i == 0:
                     self.t = np.linspace(0, nlp["tf"], nlp["ns"] + 1)
                 else:
-                    self.t = np.append(self.t, np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1))
+                    self.t = np.append(
+                        self.t,
+                        np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1),
+                    )
                 self.ns += nlp["ns"] + 1
 
             if self.problem_type == ProblemType.torque_driven:
                 for i in range(self.ocp.nb_phases):
                     if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
-                        raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
+                        raise RuntimeError(
+                            "Graphs with nbQ different at each phase is not implemented yet"
+                        )
                 nlp = self.ocp.nlp[0]
                 self.nx = nlp["nx"]
                 self.nu = nlp["nu"]
@@ -85,16 +90,12 @@ class AnimateCallback(Callback):
                 self.nbTau = nlp["nbTau"]
                 self.nbMuscle = nlp["nbMuscle"]
 
-                self.fig_state, self.axes = plt.subplots(
-                    3, self.nbQ, figsize=(10, 6)
-                )
+                self.fig_state, self.axes = plt.subplots(3, self.nbQ, figsize=(10, 6))
                 self.axes = self.axes.flatten()
                 mid_column_idx = int(self.nbQ / 2)
                 self.axes[mid_column_idx].set_title("q")
                 self.axes[self.nbQ + mid_column_idx].set_title("q_dot")
-                self.axes[self.nbQ + self.nbQdot + mid_column_idx].set_title(
-                    "tau"
-                )
+                self.axes[self.nbQ + self.nbQdot + mid_column_idx].set_title("tau")
                 self.axes[self.nbQ + self.nbQdot + mid_column_idx].set_xlabel(
                     "time (s)"
                 )
@@ -145,7 +146,9 @@ class AnimateCallback(Callback):
                 tau = np.ndarray((self.ns, self.nbTau))
                 for idx in range(self.nbQ):
                     q[:, idx] = np.array(V[idx :: self.nx + self.nu]).squeeze()
-                    q_dot[:, idx] = np.array(V[self.nbQ + idx :: self.nx + self.nu]).squeeze()
+                    q_dot[:, idx] = np.array(
+                        V[self.nbQ + idx :: self.nx + self.nu]
+                    ).squeeze()
                     tau[: self.ns, idx] = np.array(
                         V[self.ns + idx :: self.nx + self.nu]
                     )
