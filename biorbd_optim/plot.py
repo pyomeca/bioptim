@@ -100,24 +100,50 @@ class AnimateCallback(Callback):
             while self.pipe.poll():
                 arg = self.pipe.recv()
                 if self.nlp.problem_type == ProblemType.torque_driven:
+                    q, q_dot, tau = self.__get_data(arg)
                     for i in range(self.nlp.nbQ):
-                        q, q_dot, tau = self.__get_data(arg, i)
                         self.__update_plot(i, q)
                         self.__update_plot(i + self.nlp.nbQ, q_dot)
                         self.__update_plot(i + self.nlp.nbQ + self.nlp.nbQdot, tau)
+                elif self.nlp.problem_type == ProblemType.muscles_and_torque_driven:
+                    q, q_dot, tau, muscle = self.__get_data(arg)
+                    for i in range(self.nlp.nbQ):
+                        self.__update_plot(i, q)
+                        self.__update_plot(i + self.nlp.nbQ, q_dot)
+                        self.__update_plot(i + self.nlp.nbQ + self.nlp.nbQdot, tau)
+                        # self.__update_plot(i + self.nlp.nbQ + self.nlp.nbQdot + self.nlp.nbTau, muscle)
             self.fig_state.canvas.draw()
             return True
 
-        def __get_data(self, V, idx):
-            if self.nlp.problem_type == ProblemType.torque_driven:
-                q = np.array(V[0 * self.nlp.nbQ + idx :: 3 * self.nlp.nbQ])
-                q_dot = np.array(V[1 * self.nlp.nbQdot + idx :: 3 * self.nlp.nbQdot])
-                tau = np.ndarray((self.nlp.ns + 1, 1))
-                tau[0 : self.nlp.ns, :] = np.array(
-                    V[2 * self.nlp.nbTau + idx :: 3 * self.nlp.nbTau]
-                )
+        def __get_data(self, V):
+            if (
+                self.nlp.problem_type == ProblemType.torque_driven
+                or self.nlp.problem_type == ProblemType.muscles_and_torque_driven
+            ):
+                q = np.ndarray((self.nlp.ns + 1, self.nlp.Q))
+                q_dot = np.ndarray((self.nlp.ns + 1, self.nlp.Qdot))
+                tau = np.ndarray((self.nlp.ns + 1, self.nlp.nbTau))
+                for idx in range(self.nlp.nbQ):
+                    q[:, idx] = np.array(V[idx :: self.nx + self.nu])
+                    q_dot[:, idx] = np.array(V[self.nlp.nbQ + idx :: self.nx + self.nu])
+                    tau[: self.nlp.ns, idx] = np.array(
+                        V[self.ns + self.nlp.nbMuscleTotal + idx :: self.nx + self.nu]
+                    )
                 tau[-1, :] = tau[-2, :]
-            return q, q_dot, tau
+                if self.nlp.problem_type == ProblemType.muscles_and_torque_driven:
+                    muscle = np.ndarray((self.nlp.ns + 1, self.nlp.nbMuscleTotal))
+                    for idx in range(self.nlp.nbMuscleTotal):
+                        muscle[: self.nlp.ns, :] = np.array(
+                            V[self.ns + idx :: self.nx + self.nu]
+                        )
+                    muscle[-1, :] = muscle[-2, :]
+                    return q, q_dot, tau, muscle
+                else:
+                    return q, q_dot, tau
+            else:
+                raise RuntimeError(
+                    "plot.__get_data not implemented yet for this problem_type"
+                )
 
         def __update_plot(self, i, y):
             y_range = np.max(y) - np.min(y)
