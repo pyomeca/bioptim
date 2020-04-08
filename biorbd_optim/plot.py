@@ -8,15 +8,15 @@ from .problem_type import ProblemType
 
 
 class AnimateCallback(Callback):
-    def __init__(self, nlp, opts={}):
+    def __init__(self, ocp, opts={}):
         Callback.__init__(self)
-        self.nlp = nlp
-        self.nx = nlp.V.rows()
-        self.ng = nlp.g.rows()
+        self.nlp = ocp
+        self.nx = ocp.V.rows()
+        self.ng = ocp.g.rows()
         self.construct("AnimateCallback", opts)
 
         self.plot_pipe, plotter_pipe = mp.Pipe()
-        self.plotter = self.ProcessPlotter(nlp)
+        self.plotter = self.ProcessPlotter(ocp)
         self.plot_process = mp.Process(
             target=self.plotter, args=(plotter_pipe,), daemon=True
         )
@@ -55,39 +55,60 @@ class AnimateCallback(Callback):
         return [0]
 
     class ProcessPlotter(object):
-        def __init__(self, nlp):
-            self.nlp = nlp
+        def __init__(self, ocp):
+            self.ocp = ocp
 
         def __call__(self, pipe):
             self.pipe = pipe
+            self.ns = 0
 
-            self.t = np.linspace(0, self.nlp.tf, self.nlp.ns + 1)
-            if self.nlp.problem_type == ProblemType.torque_driven:
-                self.fig_state, self.axes = plt.subplots(
-                    3, self.nlp.nbQ, figsize=(10, 6)
-                )
-                self.axes = self.axes.flatten()
-                mid_column_idx = int(self.nlp.nbQ / 2)
-                self.axes[mid_column_idx].set_title("q")
-                self.axes[self.nlp.nbQ + mid_column_idx].set_title("q_dot")
-                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_title(
-                    "tau"
-                )
-            else:
-                raise RuntimeError("Plot is not ready for this type of variable")
+            self.problem_type = None
+            for i, nlp in enumerate(self.ocp.nlp):
+                if self.problem_type is None:
+                    self.problem_type = nlp["problem_type"]
 
-            for i, ax in enumerate(self.axes):
-                if i < self.nlp.nbQ + self.nlp.nbQdot:
-                    ax.plot(self.t, np.zeros((self.nlp.ns + 1, 1)))
+                if i == 0:
+                    self.t = np.linspace(0, nlp["tf"], nlp["ns"] + 1)
                 else:
-                    ax.step(self.t, np.zeros((self.nlp.ns + 1, 1)), where="post")
-                ax.grid(color="k", linestyle="--", linewidth=0.5)
-                ax.set_xlim(0, self.nlp.tf)
+                    self.t = np.append(
+                        self.t,
+                        np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1),
+                    )
+                self.ns += nlp["ns"] + 1
 
-            if self.nlp.problem_type == ProblemType.torque_driven:
-                self.axes[self.nlp.nbQ + self.nlp.nbQdot + mid_column_idx].set_xlabel(
+            if self.problem_type == ProblemType.torque_driven:
+                for i in range(self.ocp.nb_phases):
+                    if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
+                        raise RuntimeError(
+                            "Graphs with nbQ different at each phase is not implemented yet"
+                        )
+                nlp = self.ocp.nlp[0]
+                self.nx = nlp["nx"]
+                self.nu = nlp["nu"]
+                self.nbQ = nlp["nbQ"]
+                self.nbQdot = nlp["nbQdot"]
+                self.nbTau = nlp["nbTau"]
+                self.nbMuscle = nlp["nbMuscle"]
+
+                self.fig_state, self.axes = plt.subplots(3, self.nbQ, figsize=(10, 6))
+                self.axes = self.axes.flatten()
+                mid_column_idx = int(self.nbQ / 2)
+                self.axes[mid_column_idx].set_title("q")
+                self.axes[self.nbQ + mid_column_idx].set_title("q_dot")
+                self.axes[self.nbQ + self.nbQdot + mid_column_idx].set_title("tau")
+                self.axes[self.nbQ + self.nbQdot + mid_column_idx].set_xlabel(
                     "time (s)"
                 )
+            else:
+                raise RuntimeError("Plot is not ready for this type of problem")
+
+            for i, ax in enumerate(self.axes):
+                if i < self.nx:
+                    ax.plot(self.t, np.zeros((self.ns, 1)))
+                else:
+                    ax.step(self.t, np.zeros((self.ns, 1)), where="post")
+                ax.grid(color="k", linestyle="--", linewidth=0.5)
+                ax.set_xlim(0, self.t[-1])
 
             timer = self.fig_state.canvas.new_timer(interval=100)
             timer.add_callback(self.call_back)
@@ -99,14 +120,14 @@ class AnimateCallback(Callback):
         def call_back(self):
             while self.pipe.poll():
                 arg = self.pipe.recv()
-                if self.nlp.problem_type == ProblemType.torque_driven:
-                    q, q_dot, tau = self.__get_data(arg)
+                if self.problem_type == ProblemType.torque_driven:
+                    q, q_dot, tau = ProblemType.get_data_from_V(arg)
                     for i in range(self.nlp.nbQ):
                         self.__update_plot(i, q)
                         self.__update_plot(i + self.nlp.nbQ, q_dot)
                         self.__update_plot(i + self.nlp.nbQ + self.nlp.nbQdot, tau)
                 elif self.nlp.problem_type == ProblemType.muscles_and_torque_driven:
-                    q, q_dot, tau, muscle = self.__get_data(arg)
+                    q, q_dot, tau, muscle = ProblemType.get_data_from_V(arg)
                     for i in range(self.nlp.nbQ):
                         self.__update_plot(i, q)
                         self.__update_plot(i + self.nlp.nbQ, q_dot)
@@ -114,36 +135,6 @@ class AnimateCallback(Callback):
                         # self.__update_plot(i + self.nlp.nbQ + self.nlp.nbQdot + self.nlp.nbTau, muscle)
             self.fig_state.canvas.draw()
             return True
-
-        def __get_data(self, V):
-            if (
-                self.nlp.problem_type == ProblemType.torque_driven
-                or self.nlp.problem_type == ProblemType.muscles_and_torque_driven
-            ):
-                q = np.ndarray((self.nlp.ns + 1, self.nlp.Q))
-                q_dot = np.ndarray((self.nlp.ns + 1, self.nlp.Qdot))
-                tau = np.ndarray((self.nlp.ns + 1, self.nlp.nbTau))
-                for idx in range(self.nlp.nbQ):
-                    q[:, idx] = np.array(V[idx :: self.nx + self.nu])
-                    q_dot[:, idx] = np.array(V[self.nlp.nbQ + idx :: self.nx + self.nu])
-                    tau[: self.nlp.ns, idx] = np.array(
-                        V[self.ns + self.nlp.nbMuscleTotal + idx :: self.nx + self.nu]
-                    )
-                tau[-1, :] = tau[-2, :]
-                if self.nlp.problem_type == ProblemType.muscles_and_torque_driven:
-                    muscle = np.ndarray((self.nlp.ns + 1, self.nlp.nbMuscleTotal))
-                    for idx in range(self.nlp.nbMuscleTotal):
-                        muscle[: self.nlp.ns, :] = np.array(
-                            V[self.ns + idx :: self.nx + self.nu]
-                        )
-                    muscle[-1, :] = muscle[-2, :]
-                    return q, q_dot, tau, muscle
-                else:
-                    return q, q_dot, tau
-            else:
-                raise RuntimeError(
-                    "plot.__get_data not implemented yet for this problem_type"
-                )
 
         def __update_plot(self, i, y):
             y_range = np.max(y) - np.min(y)

@@ -16,7 +16,7 @@ spec.loader.exec_module(jumper)
 
 
 def test_jumper():
-    nlp = jumper.prepare_nlp(
+    nlp = jumper.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER)
         + "/examples/jumper/jumper2contacts.bioMod"
     )

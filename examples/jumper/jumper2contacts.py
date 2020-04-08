@@ -1,4 +1,3 @@
-import numpy as np
 import biorbd
 
 from biorbd_optim import OptimalControlProgram
@@ -6,57 +5,66 @@ from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.mapping import Mapping
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
-from biorbd_optim.path_conditions import Bounds, InitialConditions
+from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
 
 
-def prepare_nlp(
-    biorbd_model_path="jumper2contacts.bioMod",
-    show_online_optim=False,
-    use_symmetry=True,
+def prepare_ocp(
+    show_online_optim=False, use_symmetry=True,
 ):
     # --- Options --- #
     # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
-
-    # Results path
-    optimization_name = "jumper"
-    results_path = "Results/"
-    control_results_file_name = results_path + "Controls" + optimization_name + ".txt"
-    state_results_file_name = results_path + "States" + optimization_name + ".txt"
+    biorbd_model = (
+        biorbd.Model("jumper2contacts.bioMod"),
+        biorbd.Model("jumper1contacts.bioMod"),
+    )
+    nb_phases = len(biorbd_model)
+    torque_min, torque_max, torque_init = -1000, 1000, 0
 
     # Problem parameters
-    number_shooting_points = 30
-    final_time = 0.5
-    is_cyclic_constraint = False
-    is_cyclic_objective = False
+    number_shooting_points = [20, 20]
+    phase_time = [0.5, 0.5]
     if use_symmetry:
         dof_mapping = Mapping(
             [0, 1, 2, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7], [0, 1, 2, 3, 4, 7, 8, 9], [5]
         )
+        dof_mapping = dof_mapping, dof_mapping
     else:
-        dof_mapping = Mapping(range(13), range(13))
+        dof_mapping = [
+            Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model
+        ]
 
     # Add objective functions
-    objective_functions = ((ObjectiveFunction.minimize_torque, 1),)
+    objective_functions = (
+        (
+            (ObjectiveFunction.minimize_torque, {"weight": 1}),
+            (ObjectiveFunction.minimize_states, {"weight": 1}),
+        ),
+        ((ObjectiveFunction.minimize_states, 1),),
+    )
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = ProblemType.torque_driven, ProblemType.torque_driven
 
     # Constraints
     if use_symmetry:
-        constraints = ()
+        constraints = (), ()
     else:
         constraints = (
-            (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.All, (3, 5, -1)),
+            (
+                (
+                    Constraint.Type.PROPORTIONAL_CONTROL,
+                    Constraint.Instant.All,
+                    (3, 5, -1),
+                ),
+            ),
         )
 
     # Path constraint
-    X_bounds = Bounds()
-    X_init = InitialConditions()
-
     if use_symmetry:
+        nb_reduced = 8
         pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0.8, -0.9, 0.47]
     else:
+        nb_reduced = biorbd_model[0].nbQdot()
         pose_at_first_node = [
             0,
             0,
@@ -72,63 +80,48 @@ def prepare_nlp(
             -0.9,
             0.47,
         ]
-
-    # Gets bounds from biorbd model
-    QRanges = []
-    QDotRanges = []
-    for i in range(biorbd_model.nbSegment()):
-        QRanges.extend(
-            [
-                biorbd_model.segment(i).QRanges()[j]
-                for j in range(len(biorbd_model.segment(i).QRanges()))
-            ]
-        )
-        QDotRanges.extend(
-            [
-                biorbd_model.segment(i).QDotRanges()[j]
-                for j in range(len(biorbd_model.segment(i).QDotRanges()))
-            ]
-        )
+    pose_at_first_node += [0] * nb_reduced  # Adds Qdot
 
     # Initialize X_bounds
-    X_bounds.min = [QRanges[i].min() for i in dof_mapping.reduce_idx] + [
-        QDotRanges[i].min() for i in dof_mapping.reduce_idx
+    X_bounds = [
+        QAndQDotBounds(biorbd_model[i], dof_mapping[i]) for i in range(nb_phases)
     ]
-    X_bounds.max = [QRanges[i].max() for i in dof_mapping.reduce_idx] + [
-        QDotRanges[i].max() for i in dof_mapping.reduce_idx
-    ]
-
-    X_bounds.first_node_min = [0] * 2 * dof_mapping.nb_reduced
-    X_bounds.first_node_max = [0] * 2 * dof_mapping.nb_reduced
-    X_bounds.last_node_min = [0] * 2 * dof_mapping.nb_reduced
-    X_bounds.last_node_max = [0] * 2 * dof_mapping.nb_reduced
-
-    for i in range(dof_mapping.nb_reduced):
-        X_bounds.first_node_min[i] = pose_at_first_node[i]
-        X_bounds.first_node_max[i] = pose_at_first_node[i]
-        X_bounds.last_node_min[i] = pose_at_first_node[i]
-        X_bounds.last_node_max[i] = pose_at_first_node[i]
+    X_bounds[0].first_node_min = pose_at_first_node
+    X_bounds[0].first_node_max = pose_at_first_node
+    X_bounds[0].last_node_min = pose_at_first_node
+    X_bounds[0].last_node_max = pose_at_first_node
+    X_bounds[1].first_node_min = pose_at_first_node
+    X_bounds[1].first_node_max = pose_at_first_node
+    X_bounds[1].last_node_min = pose_at_first_node
+    X_bounds[1].last_node_max = pose_at_first_node
 
     # Initial guess
-    X_init.init = pose_at_first_node + [0] * dof_mapping.nb_reduced
+    X_init = [
+        InitialConditions(pose_at_first_node),
+        InitialConditions(pose_at_first_node),
+    ]
 
     # Define control path constraint
-    torque_min = -1000
-    torque_max = 1000
-    torque_init = 0
-    U_bounds = Bounds()
-    U_init = InitialConditions()
+    U_bounds = [
+        Bounds(
+            min_bound=[torque_min] * nb_reduced, max_bound=[torque_max] * nb_reduced
+        ),
+        Bounds(
+            min_bound=[torque_min] * nb_reduced, max_bound=[torque_max] * nb_reduced
+        ),
+    ]
 
-    U_bounds.min = [torque_min for _ in range(dof_mapping.nb_reduced)]
-    U_bounds.max = [torque_max for _ in range(dof_mapping.nb_reduced)]
-    U_init.init = [torque_init for _ in range(dof_mapping.nb_reduced)]
+    U_init = [
+        InitialConditions([torque_init] * nb_reduced),
+        InitialConditions([torque_init] * nb_reduced),
+    ]
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
         problem_type,
         number_shooting_points,
-        final_time,
+        phase_time,
         objective_functions,
         X_init,
         U_init,
@@ -136,27 +129,24 @@ def prepare_nlp(
         U_bounds,
         constraints,
         dof_mapping=dof_mapping,
-        is_cyclic_constraint=is_cyclic_constraint,
-        is_cyclic_objective=is_cyclic_objective,
         show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp(show_online_optim=True)
+    ocp = prepare_ocp(show_online_optim=False)
 
     # --- Solve the program --- #
-    sol = nlp.solve()
-
-    all_q = np.ndarray((nlp.ns + 1, nlp.model.nbQ()))
-    cmp = 0
-    for idx in nlp.dof_mapping.expand_idx:
-        q = sol["x"][0 * nlp.nbQ + idx :: 3 * nlp.nbQ]
-        all_q[:, cmp : cmp + 1] = np.array(q)
-        cmp += 1
-
-    import BiorbdViz
-
-    b = BiorbdViz.BiorbdViz(loaded_model=nlp.model)
-    b.load_movement(all_q)
-    b.exec()
+    sol = ocp.solve()
+    #
+    # all_q = np.ndarray((ocp.ns + 1, nlp.model.nbQ()))
+    # cmp = 0
+    # for idx in nlp.dof_mapping.expand_idx:
+    #     q = sol["x"][0 * nlp.nbQ + idx :: 3 * nlp.nbQ]
+    #     all_q[:, cmp : cmp + 1] = np.array(q)
+    #     cmp += 1
+    #
+    # import BiorbdViz
+    # b = BiorbdViz.BiorbdViz(loaded_model=nlp.model)
+    # b.load_movement(all_q)
+    # b.exec()

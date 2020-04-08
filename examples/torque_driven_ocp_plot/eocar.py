@@ -4,29 +4,20 @@ import biorbd
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.mapping import Mapping
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
-from biorbd_optim.path_conditions import Bounds, InitialConditions
+from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
 
 
-def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
+def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
-    # Results path
-    optimization_name = "eocar"
-    results_path = "Results/"
-    control_results_file_name = results_path + "Controls" + optimization_name + ".txt"
-    state_results_file_name = results_path + "States" + optimization_name + ".txt"
-
     # Problem parameters
     number_shooting_points = 1000
     final_time = 60
-    velocity_max = 15
-    is_cyclic_constraint = False
-    is_cyclic_objective = False
+    torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
@@ -41,50 +32,26 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     )
 
     # Path constraint
-    X_bounds = Bounds()
-    X_init = InitialConditions()
+    X_bounds = QAndQDotBounds(biorbd_model)
 
-    # Gets bounds from biorbd model
-    ranges = []
-    for i in range(biorbd_model.nbSegment()):
-        ranges.extend(
-            [
-                biorbd_model.segment(i).ranges()[j]
-                for j in range(len(biorbd_model.segment(i).ranges()))
-            ]
-        )
-    X_bounds.min = [ranges[i].min() for i in range(biorbd_model.nbQ())]
-    X_bounds.max = [ranges[i].max() for i in range(biorbd_model.nbQ())]
-
-    X_bounds.first_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.first_node_min[0] = X_bounds.min[0]
-    X_bounds.first_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.first_node_max[0] = X_bounds.max[0]
-
-    X_bounds.last_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.last_node_min[0] = X_bounds.min[0]
+    for i in range(1, 6):
+        X_bounds.first_node_min[i] = 0
+        X_bounds.last_node_min[i] = 0
+        X_bounds.first_node_max[i] = 0
+        X_bounds.last_node_max[i] = 0
     X_bounds.last_node_min[2] = 1.57
-    X_bounds.last_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.last_node_max[0] = X_bounds.max[0]
     X_bounds.last_node_max[2] = 1.57
 
-    # Path constraint velocity
-    X_bounds.min.extend([-velocity_max] * (biorbd_model.nbQdot()))
-    X_bounds.max.extend([velocity_max] * (biorbd_model.nbQdot()))
-
     # Initial guess
-    X_init.init = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    torque_min = -100
-    torque_max = 100
-    torque_init = 0
-    U_bounds = Bounds()
-    U_init = InitialConditions()
+    U_bounds = Bounds(
+        [torque_min] * biorbd_model.nbGeneralizedTorque(),
+        [torque_max] * biorbd_model.nbGeneralizedTorque(),
+    )
+    U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
 
-    U_bounds.min = [torque_min for _ in range(biorbd_model.nbGeneralizedTorque())]
-    U_bounds.max = [torque_max for _ in range(biorbd_model.nbGeneralizedTorque())]
-    U_init.init = [torque_init for _ in range(biorbd_model.nbGeneralizedTorque())]
     # ------------- #
 
     return OptimalControlProgram(
@@ -98,17 +65,15 @@ def prepare_nlp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
         X_bounds,
         U_bounds,
         constraints,
-        is_cyclic_constraint=is_cyclic_constraint,
-        is_cyclic_objective=is_cyclic_objective,
         show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp(show_online_optim=True)
+    ocp = prepare_ocp(show_online_optim=True)
 
     # --- Solve the program and show --- #
-    sol = nlp.solve()
+    sol = ocp.solve()
 
     # Admire the graph for 10 more seconds
     time.sleep(10)

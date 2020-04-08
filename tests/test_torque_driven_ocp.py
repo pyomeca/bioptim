@@ -16,11 +16,11 @@ spec.loader.exec_module(eocar)
 
 
 def test_eocar():
-    nlp = eocar.prepare_nlp(
+    ocp = eocar.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER)
         + "/examples/torque_driven_ocp/eocar.bioMod"
     )
-    sol = nlp.solve()
+    sol = ocp.solve()
 
     # Check objective function value
     f = np.array(sol["f"])
@@ -36,12 +36,11 @@ def test_eocar():
     q = []
     q_dot = []
     u = []
-    for idx in range(nlp.model.nbQ()):
-        q.append(np.array(sol["x"][0 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]))
-        q_dot.append(
-            np.array(sol["x"][1 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()])
-        )
-        u.append(np.array(sol["x"][2 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]))
+    nbQ = ocp.nlp[0]["nbQ"]
+    for idx in range(nbQ):
+        q.append(np.array(sol["x"][0 * nbQ + idx :: 3 * nbQ]))
+        q_dot.append(np.array(sol["x"][1 * nbQ + idx :: 3 * nbQ]))
+        u.append(np.array(sol["x"][2 * nbQ + idx :: 3 * nbQ]))
     # initial and final position
     np.testing.assert_almost_equal(q[0][0, 0], 1)
     np.testing.assert_almost_equal(q[0][-1, 0], 2)
