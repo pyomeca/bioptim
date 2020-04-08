@@ -112,8 +112,8 @@ if __name__ == "__main__":
         q = sol["x"][0 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
         q_dot = sol["x"][1 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
         u = sol["x"][2 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]
-        plt.plot(q, label=nlp.x[idx*2])
-        plt.plot(q_dot, label=nlp.x[1+idx*2])
+        plt.plot(q, label=nlp.x[idx * 2])
+        plt.plot(q_dot, label=nlp.x[1 + idx * 2])
         plt.plot(u, label=nlp.u[idx])
         plt.title("DoF : " + nlp.model.nameDof()[idx].to_string())
 

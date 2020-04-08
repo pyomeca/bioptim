@@ -5,10 +5,10 @@ from matplotlib import pyplot as plt
 import biorbd_optim
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
-from biorbd_optim.dynamics import Dynamics
 from biorbd_optim.problem_type import ProblemType
 
-def prepare_nlp(biorbd_model_path="arm26.bioMod"):
+
+def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -30,12 +30,11 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod"):
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
     # Dynamics
-    variable_type = ProblemType.muscles_and_torque_driven
-    dynamics_func = Dynamics.forward_dynamics_torque_muscle_driven
+    problem_type = ProblemType.muscles_and_torque_driven
 
     # Constraints
     constraints = (
-        #(Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
+        # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
     )
 
     # Path constraint
@@ -95,11 +94,9 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod"):
     U_init.init.extend([torque_init for _ in range(biorbd_model.nbGeneralizedTorque())])
     # ------------- #
 
-
-
     return biorbd_optim.OptimalControlProgram(
         biorbd_model,
-        variable_type,
+        problem_type,
         number_shooting_points,
         final_time,
         objective_functions,
@@ -110,6 +107,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod"):
         constraints,
         is_cyclic_constraint=is_cyclic_constraint,
         is_cyclic_objective=is_cyclic_objective,
+        show_online_optim=show_online_optim,
     )
 
 
@@ -131,17 +129,17 @@ def multi_plots(nlp):
     plt.figure("States - Torques - Muscles")
     for i in range(nlp.model.nbQ()):
         plt.subplot(nlp.model.nbQ(), 5, 1 + (5 * i))
-        plt.plot(sol["x"][i:: step])
+        plt.plot(sol["x"][i::step])
         plt.title("Q - " + str(i))
 
     for i in range(nlp.model.nbQdot()):
         plt.subplot(nlp.model.nbQdot(), 5, 2 + (5 * i))
-        plt.plot(sol["x"][i + nlp.model.nbQ():: step])
+        plt.plot(sol["x"][i + nlp.model.nbQ() :: step])
         plt.title("Qdot - " + str(i))
 
     for i in range(nlp.model.nbGeneralizedTorque()):
         plt.subplot(nlp.model.nbGeneralizedTorque(), 5, 3 + (5 * i))
-        plt.plot(sol["x"][i + nlp.nx:: step])
+        plt.plot(sol["x"][i + nlp.nx :: step])
         plt.title("Torque - " + str(i))
 
     cmp = 0
@@ -149,7 +147,7 @@ def multi_plots(nlp):
         for j in range(nlp.model.muscleGroup(i).nbMuscles()):
 
             plt.subplot(nlp.model.muscleGroup(i).nbMuscles(), 5, 4 + i + (5 * j))
-            plt.plot(sol["x"][nlp.nx + nlp.model.nbGeneralizedTorque() + cmp:: step])
+            plt.plot(sol["x"][nlp.nx + nlp.model.nbGeneralizedTorque() + cmp :: step])
             plt.title(nlp.model.muscleNames()[cmp].to_string())
 
             cmp += 1
@@ -157,8 +155,8 @@ def multi_plots(nlp):
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp()
+    nlp = prepare_nlp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = nlp.solve()
-    multi_plots(nlp)
+    # multi_plots(nlp)
