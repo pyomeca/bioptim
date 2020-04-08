@@ -72,28 +72,31 @@ def prepare_nlp(
         ]
     X_bounds = [Bounds(), Bounds()]
 
-    for i in range(dof_mapping.nb_reduced):
-        X_bounds.first_node_min[i] = pose_at_first_node[i]
-        X_bounds.first_node_max[i] = pose_at_first_node[i]
-        X_bounds.last_node_min[i] = pose_at_first_node[i]
-        X_bounds.last_node_max[i] = pose_at_first_node[i]
     for i, bounds in enumerate(X_bounds):
         # Initialize X_bounds (filled later)
         nb_reduced = dof_mapping[i].nb_reduced
-        bounds.min = [0] * nb_reduced
-        bounds.max = [0] * nb_reduced
+        bounds.min = [0] * 2 * nb_reduced
+        bounds.max = [0] * 2 * nb_reduced
         bounds.first_node_min = [0] * 2 * nb_reduced
         bounds.first_node_max = [0] * 2 * nb_reduced
         bounds.last_node_min = [0] * 2 * nb_reduced
         bounds.last_node_max = [0] * 2 * nb_reduced
 
-        for i in range(nb_reduced):
-            bounds.min[i] = -3.14
-            bounds.max[i] = 3.14
-            bounds.first_node_min[i] = pose_at_first_node[i]
-            bounds.first_node_max[i] = pose_at_first_node[i]
-            bounds.last_node_min[i] = pose_at_first_node[i]
-            bounds.last_node_max[i] = pose_at_first_node[i]
+        # Q
+        bounds.min[:nb_reduced] = -3.14
+        bounds.max[:nb_reduced] = 3.14
+        bounds.first_node_min[:nb_reduced] = pose_at_first_node[:nb_reduced]
+        bounds.first_node_max[:nb_reduced] = pose_at_first_node[:nb_reduced]
+        bounds.last_node_min[:nb_reduced] = pose_at_first_node[:nb_reduced]
+        bounds.last_node_max[:nb_reduced] = pose_at_first_node[:nb_reduced]
+
+        # QDot
+        bounds.min[nb_reduced:] = -3.14
+        bounds.max[nb_reduced:] = 3.14
+        bounds.first_node_min[nb_reduced:] = 0
+        bounds.first_node_max[nb_reduced:] = 0
+        bounds.last_node_min[nb_reduced:] = 0
+        bounds.last_node_max[nb_reduced:] = 0
 
         # Path constraint velocity
         velocity_max = 20
