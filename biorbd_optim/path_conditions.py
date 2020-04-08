@@ -1,3 +1,5 @@
+from .mapping import Mapping
+
 class PathCondition:
     """
     Parent class of Bounds and InitialConditions.
@@ -19,7 +21,7 @@ class Bounds(PathCondition):
     Organizes bounds of states("X"), controls("U") and "V".
     """
 
-    def __init__(self):
+    def __init__(self, min_bound=(), max_bound=()):
         """
         There are 3 groups of nodes :
         1. First node
@@ -30,13 +32,13 @@ class Bounds(PathCondition):
         For X and Y bounds, lists have the number of degree of freedom elements.
         For V bounds, lists have number of degree of freedom elements * number of shooting points.
         """
-        self.min = []
-        self.first_node_min = []
-        self.last_node_min = []
+        self.min = min_bound
+        self.first_node_min = min_bound
+        self.last_node_min = min_bound
 
-        self.max = []
-        self.first_node_max = []
-        self.last_node_max = []
+        self.max = max_bound
+        self.first_node_max = max_bound
+        self.last_node_max = max_bound
 
     def regulation(self, nb_elements):
         """
@@ -67,8 +69,30 @@ class Bounds(PathCondition):
         self.regulation_private(self.last_node_max, nb_elements, "Bound last node max")
 
 
+class QAndQDotBounds(Bounds):
+    def __init__(self,  biorbd_model, dof_mapping=None):
+        if not dof_mapping:
+            dof_mapping = Mapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+
+        QRanges = []
+        QDotRanges = []
+        for i in range(biorbd_model.nbSegment()):
+            segment = biorbd_model.segment(i)
+            QRanges += [q_range for q_range in segment.QRanges()]
+            QDotRanges += [qdot_range for qdot_range in segment.QDotRanges()]
+
+        x_min = [QRanges[i].min() for i in dof_mapping.reduce_idx] + [
+            QDotRanges[i].min() for i in dof_mapping.reduce_idx
+        ]
+        x_max = [QRanges[i].max() for i in dof_mapping.reduce_idx] + [
+            QDotRanges[i].max() for i in dof_mapping.reduce_idx
+        ]
+
+        super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
+
+
 class InitialConditions(PathCondition):
-    def __init__(self):
+    def __init__(self, initial_guess=()):
         """
         Organises initial values (for solver)
         There are 3 groups of nodes :
@@ -77,9 +101,9 @@ class InitialConditions(PathCondition):
         3. Last node
         Each group have a list of initial values.
         """
-        self.first_node_init = []
-        self.init = []
-        self.last_node_init = []
+        self.first_node_init = initial_guess
+        self.init = initial_guess
+        self.last_node_init = initial_guess
 
     def regulation(self, nb_elements):
         """
