@@ -91,10 +91,12 @@ def prepare_nlp(
         )
 
     # Initialize X_bounds
-    X_bounds.min = [QRanges[i].min() for i in dof_mapping.reduce_idx] \
-                   + [QDotRanges[i].min() for i in dof_mapping.reduce_idx]
-    X_bounds.max = [QRanges[i].max() for i in dof_mapping.reduce_idx] \
-                   + [QDotRanges[i].max() for i in dof_mapping.reduce_idx]
+    X_bounds.min = [QRanges[i].min() for i in dof_mapping.reduce_idx] + [
+        QDotRanges[i].min() for i in dof_mapping.reduce_idx
+    ]
+    X_bounds.max = [QRanges[i].max() for i in dof_mapping.reduce_idx] + [
+        QDotRanges[i].max() for i in dof_mapping.reduce_idx
+    ]
 
     X_bounds.first_node_min = [0] * 2 * dof_mapping.nb_reduced
     X_bounds.first_node_max = [0] * 2 * dof_mapping.nb_reduced

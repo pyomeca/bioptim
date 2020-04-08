@@ -26,11 +26,11 @@ def test_jumper():
     q_dot = []
     u = []
     for idx in range(nlp.model.nbQ()):
-        q.append(np.array(sol["x"][0 * nlp.model.nbQ() + idx:: 3 * nlp.model.nbQ()]))
+        q.append(np.array(sol["x"][0 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]))
         q_dot.append(
-            np.array(sol["x"][1 * nlp.model.nbQ() + idx:: 3 * nlp.model.nbQ()])
+            np.array(sol["x"][1 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()])
         )
-        u.append(np.array(sol["x"][2 * nlp.model.nbQ() + idx:: 3 * nlp.model.nbQ()]))
+        u.append(np.array(sol["x"][2 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]))
 
     # initial and final position
     print(q[0][0, 0])
@@ -68,7 +68,7 @@ def test_jumper():
     # Check constraints
     g = np.array(sol["g"])
     np.testing.assert_equal(g.shape, (480, 1))
-    np.testing.assert_almost_equal(g, np.zeros((480, 1)))       # ???
+    np.testing.assert_almost_equal(g, np.zeros((480, 1)))  # ???
 
     # Check some of the results
     q = []
