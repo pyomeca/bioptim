@@ -32,6 +32,8 @@ def test_eocarSym():
         )
         u.append(np.array(sol["x"][2 * nlp.model.nbQ() + idx :: 3 * nlp.model.nbQ()]))
 
+    np.testing.assert_almost_equal(q[0][:, 0], np.array((1, 2, 3, 4, 5, 6, 7, 8, 9)))
+
     # initial and final position
     print(q[0][0, 0])
     print(q[0][-1, 0])
