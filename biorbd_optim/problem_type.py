@@ -1,4 +1,5 @@
 from casadi import MX, vertcat
+import numpy as np
 
 from .dynamics import Dynamics
 from .mapping import Mapping
@@ -58,41 +59,59 @@ class ProblemType:
         nlp["nbMuscle"] = nlp.model.nbMuscleTotal()
 
     @staticmethod
+    def get_data_from_V_phase(V_phase, var_size, nb_nodes, offset, nb_variables, duplicate_last_column):
+        array = np.ndarray((var_size, nb_nodes))
+        for dof in range(var_size):
+            array[dof] = V_phase[offset + dof:: nb_variables]
+
+        if duplicate_last_column:
+            return np.c_[array, array[:, -1]]
+        else:
+            return array
+
+    @staticmethod
     def get_data_from_V(ocp, V, num_phase=None):
+        V_array = np.array(V).squeeze()
+        has_muscles = False
+
         if num_phase is None:
-            num_phase = range(ocp.nlp)
+            num_phase = range(len(ocp.nlp))
         elif isinstance(num_phase, int):
             num_phase = [num_phase]
+        offsets = [0]
+        for i, nlp in enumerate(ocp.nlp):
+            offsets.append(offsets[i] + nlp["ns"] * (nlp["nx"] + 1) + nlp["ns"] * (nlp["nu"]))
+
+        q, q_dot, tau, muscle = [], [], [], []
 
         for i in num_phase:
             nlp = ocp.nlp[i]
-            if (
-                nlp["problem_type"] == ProblemType.torque_driven
-                or nlp["problem_type"] == ProblemType.muscles_and_torque_driven
-            ):
-                q.append(np.ndarray((self.ns, self.nbQ)))
-                q_dot = np.ndarray((self.ns, self.nbQdot))
-                tau = np.ndarray((self.ns, self.nbTau))
-                for idx in range(self.nbQ):
-                    q[:, idx] = np.array(V[idx :: self.nx + self.nu]).squeeze()
-                    q_dot[:, idx] = np.array(
-                        V[self.nbQ + idx :: self.nx + self.nu]
-                    ).squeeze()
-                    tau[: self.ns, idx] = np.array(
-                        V[self.ns + idx :: self.nx + self.nu]
-                    )
-                tau[-1, :] = tau[-2, :]
-                if self.problem_type == ProblemType.muscles_and_torque_driven:
-                    muscle = np.ndarray((self.ns + self.ocp.nb_phases, self.nbMuscle))
-                    for idx in range(self.nbMuscle):
-                        muscle[: self.ns, :] = np.array(
-                            V[self.ns + self.nbTau + idx :: self.nx + self.nu]
-                        )
-                    muscle[-1, :] = muscle[-2, :]
-                    return q, q_dot, tau, muscle
+
+            V_phase = np.array(V_array[offsets[i]:offsets[i+1]])
+            nb_var = nlp["nx"] + nlp["nu"]
+
+            if nlp["problem_type"] == ProblemType.torque_driven or \
+                nlp["problem_type"] == ProblemType.muscles_and_torque_driven:
+                q.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbQ"], nlp["ns"] + 1, 0, nb_var, False))
+                q_dot.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbQdot"], nlp["ns"] + 1, nlp["nbQ"], nb_var, False))
+                tau.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbTau"], nlp["ns"], nlp["nx"], nb_var, True))
+
+                if nlp["problem_type"] == ProblemType.muscles_and_torque_driven:
+                    has_muscles = True
+                    muscle.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbMuscle"], nlp["ns"], nlp["nx"] + nlp["nbTau"], nb_var, True))
                 else:
-                    return q, q_dot, tau
+                    muscle.append([])
+
             else:
-                raise RuntimeError(
-                    "plot.__get_data not implemented yet for this problem_type"
-                )
+                raise RuntimeError(nlp["problem_type"].__name__ + " not implemented yet in get_data_from_V")
+
+        if len(num_phase) == 1:
+            q = q[0]
+            q_dot = q_dot[0]
+            tau = tau[0]
+            muscle = muscle[0]
+        if has_muscles:
+            return q, q_dot, tau, muscle
+        else:
+            return q, q_dot, tau
+
