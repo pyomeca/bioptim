@@ -13,7 +13,8 @@ class ProblemType:
     @staticmethod
     def torque_driven(nlp):
         """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu)
+        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
+        Works with torques but without muscles.
         :param nlp: An OptimalControlProgram class.
         """
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_driven
@@ -47,6 +48,11 @@ class ProblemType:
 
     @staticmethod
     def muscles_and_torque_driven(nlp):
+        """
+        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
+        Works with torques and muscles.
+        :param nlp: An OptimalControlProgram class.
+        """
         ProblemType.torque_driven(nlp)
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_muscle_driven
 
@@ -60,6 +66,10 @@ class ProblemType:
 
     @staticmethod
     def get_data_from_V_phase(V_phase, var_size, nb_nodes, offset, nb_variables, duplicate_last_column):
+        """
+        Extracts variables from V.
+        :param V_phase: numpy array : Extract of V for a phase.
+        """
         array = np.ndarray((var_size, nb_nodes))
         for dof in range(var_size):
             array[dof] = V_phase[offset + dof:: nb_variables]
