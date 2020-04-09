@@ -65,14 +65,16 @@ class ProblemType:
         nlp["nbMuscle"] = nlp.model.nbMuscleTotal()
 
     @staticmethod
-    def get_data_from_V_phase(V_phase, var_size, nb_nodes, offset, nb_variables, duplicate_last_column):
+    def get_data_from_V_phase(
+        V_phase, var_size, nb_nodes, offset, nb_variables, duplicate_last_column
+    ):
         """
         Extracts variables from V.
         :param V_phase: numpy array : Extract of V for a phase.
         """
         array = np.ndarray((var_size, nb_nodes))
         for dof in range(var_size):
-            array[dof] = V_phase[offset + dof:: nb_variables]
+            array[dof] = V_phase[offset + dof :: nb_variables]
 
         if duplicate_last_column:
             return np.c_[array, array[:, -1]]
@@ -90,30 +92,58 @@ class ProblemType:
             num_phase = [num_phase]
         offsets = [0]
         for i, nlp in enumerate(ocp.nlp):
-            offsets.append(offsets[i] + nlp["ns"] * (nlp["nx"] + 1) + nlp["ns"] * (nlp["nu"]))
+            offsets.append(
+                offsets[i] + nlp["ns"] * (nlp["nx"] + 1) + nlp["ns"] * (nlp["nu"])
+            )
 
         q, q_dot, tau, muscle = [], [], [], []
 
         for i in num_phase:
             nlp = ocp.nlp[i]
 
-            V_phase = np.array(V_array[offsets[i]:offsets[i+1]])
+            V_phase = np.array(V_array[offsets[i] : offsets[i + 1]])
             nb_var = nlp["nx"] + nlp["nu"]
 
-            if nlp["problem_type"] == ProblemType.torque_driven or \
-                nlp["problem_type"] == ProblemType.muscles_and_torque_driven:
-                q.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbQ"], nlp["ns"] + 1, 0, nb_var, False))
-                q_dot.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbQdot"], nlp["ns"] + 1, nlp["nbQ"], nb_var, False))
-                tau.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbTau"], nlp["ns"], nlp["nx"], nb_var, True))
+            if (
+                nlp["problem_type"] == ProblemType.torque_driven
+                or nlp["problem_type"] == ProblemType.muscles_and_torque_driven
+            ):
+                q.append(
+                    ProblemType.get_data_from_V_phase(
+                        V_phase, nlp["nbQ"], nlp["ns"] + 1, 0, nb_var, False
+                    )
+                )
+                q_dot.append(
+                    ProblemType.get_data_from_V_phase(
+                        V_phase, nlp["nbQdot"], nlp["ns"] + 1, nlp["nbQ"], nb_var, False
+                    )
+                )
+                tau.append(
+                    ProblemType.get_data_from_V_phase(
+                        V_phase, nlp["nbTau"], nlp["ns"], nlp["nx"], nb_var, True
+                    )
+                )
 
                 if nlp["problem_type"] == ProblemType.muscles_and_torque_driven:
                     has_muscles = True
-                    muscle.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbMuscle"], nlp["ns"], nlp["nx"] + nlp["nbTau"], nb_var, True))
+                    muscle.append(
+                        ProblemType.get_data_from_V_phase(
+                            V_phase,
+                            nlp["nbMuscle"],
+                            nlp["ns"],
+                            nlp["nx"] + nlp["nbTau"],
+                            nb_var,
+                            True,
+                        )
+                    )
                 else:
                     muscle.append([])
 
             else:
-                raise RuntimeError(nlp["problem_type"].__name__ + " not implemented yet in get_data_from_V")
+                raise RuntimeError(
+                    nlp["problem_type"].__name__
+                    + " not implemented yet in get_data_from_V"
+                )
 
         if len(num_phase) == 1:
             q = q[0]
@@ -124,4 +154,3 @@ class ProblemType:
             return q, q_dot, tau, muscle
         else:
             return q, q_dot, tau
-
