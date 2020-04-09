@@ -8,7 +8,7 @@ from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
 
 
-def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False):
+def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)

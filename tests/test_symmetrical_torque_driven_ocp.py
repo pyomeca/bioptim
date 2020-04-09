@@ -6,19 +6,19 @@ from pathlib import Path
 
 import numpy as np
 
-# Load jumper2contacts
+# Load eocarSym
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "jumper", str(PROJECT_FOLDER) + "/examples/jumper/jumper2contacts.py"
+    "eocarSym", str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSym.py"
 )
-jumper = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(jumper)
+eocarSym = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(eocarSym)
 
 
-def test_jumper():
-    nlp = jumper.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER)
-        + "/examples/jumper/jumper2contacts.bioMod"
+def test_eocarSym():
+    ocp = eocarSym.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER)
+        + "/examples/symmetrical_torque_driven_ocp/eocarSym.bioMod")
+    sol = ocp.solve()
     )
     sol = nlp.solve()
 
