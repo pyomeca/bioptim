@@ -63,12 +63,12 @@ def test_eocarSym():
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 2204.722517381283)
+    np.testing.assert_almost_equal(f[0, 0], 114.77652947720107)
 
     # Check constraints
     g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (480, 1))
-    np.testing.assert_almost_equal(g, np.zeros((480, 1)))  # ???
+    np.testing.assert_equal(g.shape, (186, 1))
+    np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
     q = []
