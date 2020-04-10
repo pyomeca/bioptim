@@ -11,6 +11,7 @@ class Constraint:
         """
 
         MARKERS_TO_PAIR = 0
+        PROPORTIONAL_CONTROL = 1
 
     @staticmethod
     class Instant(enum.Enum):
@@ -61,6 +62,9 @@ class Constraint:
             if elem[0] == Constraint.Type.MARKERS_TO_PAIR:
                 Constraint.__markers_to_pair(ocp, nlp, x, elem[2])
 
+            elif elem[0] == Constraint.Type.PROPORTIONAL_CONTROL:
+                Constraint.__proportional_control(ocp, nlp, u, elem[2])
+
     @staticmethod
     def __markers_to_pair(ocp, nlp, X, idx_marker):
         """
@@ -78,6 +82,14 @@ class Constraint:
             for i in range(3):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
+
+    @staticmethod
+    def __proportional_control(ocp, nlp, U, idx):
+        for elem in U:
+            u = nlp["dof_mapping"].expand(elem)
+            ocp.g = vertcat(ocp.g, u[idx[0]] != idx[2] * u[idx[1]])
+            ocp.g_bounds.min.append(0)
+            ocp.g_bounds.max.append(0)
 
     @staticmethod
     def continuity_constraint(ocp):

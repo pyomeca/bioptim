@@ -9,7 +9,7 @@ from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditio
 
 
 def prepare_ocp(
-    show_online_optim=False, use_symmetry=True,
+    show_online_optim=False, use_symmetry=False,
 ):
     # --- Options --- #
     # Model path
@@ -49,15 +49,17 @@ def prepare_ocp(
     if use_symmetry:
         constraints = (), ()
     else:
-        constraints = (
-            (
-                (
-                    Constraint.Type.PROPORTIONAL_CONTROL,
-                    Constraint.Instant.All,
-                    (3, 5, -1),
-                ),
-            ),
-        )
+        constraints = (((Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (3, 5, -1)),
+                        (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (4, 6, 1)),
+                        (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (7, 10, 1)),
+                        (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (8, 11, 1)),
+                        (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (9, 12, 1)), ),
+                       ((Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (3, 5, -1)),
+                         (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (4, 6, 1)),
+                         (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (7, 10, 1)),
+                         (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (8, 11, 1)),
+                         (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (9, 12, 1)),
+                         ))
 
     # Path constraint
     if use_symmetry:
