@@ -1,8 +1,7 @@
 import biorbd
-import numpy as np
-from matplotlib import pyplot as plt
 
 from biorbd_optim import OptimalControlProgram
+from biorbd_optim.plot import PlotOcp
 from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
@@ -74,17 +73,7 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    nlp = ocp.nlp[0]
-
-    q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"])
-
-    for idx in range(nlp["model"].nbQ()):
-        plt.figure()
-        t = np.linspace(0, nlp["tf"], nlp["ns"] + 1)
-        plt.plot(t, q[idx], label=nlp["x"][idx * 2])
-        plt.plot(t, q_dot[idx], label=nlp["x"][1 + idx * 2])
-        plt.step(t, u[idx], label=nlp["x"][idx], where="post")
-        plt.title("DoF : " + nlp["model"].nameDof()[idx].to_string())
-
-    plt.legend()
-    plt.show()
+    # --- Plot --- #
+    plt_ocp = PlotOcp(ocp)
+    plt_ocp.update_data(sol["x"])
+    plt_ocp.show()
