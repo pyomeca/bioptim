@@ -56,7 +56,7 @@ class PlotOcp:
 
             intersections_time = PlotOcp.find_phases_intersections(ocp)
             for time in intersections_time:
-                ax.axvline(time, linestyle='--', linewidth=1.2, c='k')
+                ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
             ax.grid(color="k", linestyle="--", linewidth=0.5)
             ax.set_xlim(0, self.t[-1])
 
@@ -69,8 +69,7 @@ class PlotOcp:
         for i in range(len(ocp.nlp) - 1):
             time += ocp.nlp[i]["tf"]
             intersections_time.append(time)
-        return(intersections_time)
-
+        return intersections_time
 
     @staticmethod
     def show():
@@ -79,8 +78,10 @@ class PlotOcp:
     def update_data(self, V):
         self.ydata = [[] for _ in range(self.ocp.nb_phases)]
         for i, nlp in enumerate(self.ocp.nlp):
-            if (self.problem_type == ProblemType.torque_driven
-                    or self.problem_type == ProblemType.muscles_and_torque_driven):
+            if (
+                self.problem_type == ProblemType.torque_driven
+                or self.problem_type == ProblemType.muscles_and_torque_driven
+            ):
                 if self.problem_type == ProblemType.torque_driven:
                     q, q_dot, tau = ProblemType.get_data_from_V(self.ocp, V, i)
 
@@ -184,4 +185,3 @@ class AnimateCallback(Callback):
 
             self.plot.fig_state.canvas.draw()
             return True
-
