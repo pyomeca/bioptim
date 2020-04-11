@@ -44,5 +44,9 @@ def test_eocar():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
+    np.testing.assert_almost_equal(
+        tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487))
+    )
+    np.testing.assert_almost_equal(
+        tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487))
+    )
