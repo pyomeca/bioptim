@@ -28,7 +28,7 @@ def test_eocarSym():
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 114.77652947720107)
+    np.testing.assert_almost_equal(f[0, 0], 14.437842666006878)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -39,11 +39,15 @@ def test_eocarSym():
     q, qdot, tau = ProblemType.get_data_from_V(ocp, sol["x"])
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
+    np.testing.assert_almost_equal(q[:, 0], np.array((-0.2, -1.1797959, 0.20135792)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0.2, -0.7797959, -0.20135792)))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((4.3548387, 0, 2.27903225)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-4.35483872, 0, -2.27903227)))
+    np.testing.assert_almost_equal(
+        tau[:, 0], np.array((1.16129033, 1.16129033, -0.58458751))
+    )
+    np.testing.assert_almost_equal(
+        tau[:, -1], np.array((-1.16129033, -1.16129033, 0.58458751))
+    )

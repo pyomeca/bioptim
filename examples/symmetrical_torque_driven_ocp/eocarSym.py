@@ -6,6 +6,7 @@ from biorbd_optim.mapping import Mapping
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
+from biorbd_optim.plot import PlotOcp
 
 
 def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
@@ -17,7 +18,7 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     number_shooting_points = 30
     final_time = 2
     torque_min, torque_max, torque_init = -100, 100, 0
-    dof_mapping = Mapping([0, 1, 2, 1, 2], [0, 1, 2], [3, 4])
+    dof_mapping = Mapping([0, 1, 2, 2], [0, 1, 2], [3])
 
     # Add objective functions
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
@@ -33,13 +34,11 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model, dof_mapping)
-    for i in range(1, 6):
+    for i in range(3, 6):
         X_bounds.first_node_min[i] = 0
         X_bounds.last_node_min[i] = 0
         X_bounds.first_node_max[i] = 0
         X_bounds.last_node_max[i] = 0
-    X_bounds.last_node_min[2] = 1.57
-    X_bounds.last_node_max[2] = 1.57
 
     # Initial guess
     X_init = InitialConditions([0] * dof_mapping.nb_reduced * 2)
@@ -69,7 +68,23 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True)
+    ocp = prepare_ocp(show_online_optim=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()
+
+    x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
+    x = ocp.nlp[0]["dof_mapping"].expand(x)
+
+    plt_ocp = PlotOcp(ocp)
+    plt_ocp.update_data(sol["x"])
+    plt_ocp.show()
+
+    try:
+        from BiorbdViz import BiorbdViz
+
+        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
+        b.load_movement(x.T)
+        b.exec()
+    except ModuleNotFoundError:
+        print("Install BiorbdViz if you want to have a live view of the optimization")
