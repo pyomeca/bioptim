@@ -15,7 +15,8 @@ class Mapping:
         """
 
         obj_expanded = obj[self.expand_idx]
-        obj_expanded[self.sign_to_oppose] *= -1
+        if self.sign_to_oppose is not ():
+            obj_expanded[self.sign_to_oppose] *= -1
         return obj_expanded
 
     def reduce(self, obj):
