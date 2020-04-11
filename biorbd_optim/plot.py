@@ -7,6 +7,116 @@ import numpy as np
 from .problem_type import ProblemType
 
 
+class PlotOcp:
+    def __init__(self, ocp):
+        self.ocp = ocp
+        self.ns_per_phase = [nlp["ns"] + 1 for nlp in ocp.nlp]
+        self.ydata = []
+        self.ns = 0
+
+        self.problem_type = None
+        for i, nlp in enumerate(self.ocp.nlp):
+            if self.problem_type is None:
+                self.problem_type = nlp["problem_type"]
+
+            if i == 0:
+                self.t = np.linspace(0, nlp["tf"], nlp["ns"] + 1)
+            else:
+                self.t = np.append(
+                    self.t,
+                    np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1),
+                )
+            self.ns += nlp["ns"] + 1
+
+        if self.problem_type == ProblemType.torque_driven:
+            for i in range(self.ocp.nb_phases):
+                if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
+                    raise RuntimeError(
+                        "Graphs with nbQ different at each phase is not implemented yet"
+                    )
+            nlp = self.ocp.nlp[0]
+
+            self.fig_state, self.axes = plt.subplots(3, nlp["nbQ"], figsize=(10, 6))
+            self.axes = self.axes.flatten()
+            mid_column_idx = int(nlp["nbQ"] / 2)
+            self.axes[mid_column_idx].set_title("q")
+            self.axes[nlp["nbQ"] + mid_column_idx].set_title("q_dot")
+            self.axes[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_title("tau")
+            self.axes[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_xlabel(
+                "time (s)"
+            )
+        else:
+            raise RuntimeError("Plot is not ready for this type of problem")
+
+        for i, ax in enumerate(self.axes):
+            if i < self.ocp.nlp[0]["nx"]:
+                ax.plot(self.t, np.zeros((self.ns, 1)))
+            else:
+                ax.step(self.t, np.zeros((self.ns, 1)), where="post")
+
+            intersections_time = PlotOcp.find_phases_intersections(ocp)
+            for time in intersections_time:
+                ax.axvline(time, linestyle='--', linewidth=1.2, c='k')
+            ax.grid(color="k", linestyle="--", linewidth=0.5)
+            ax.set_xlim(0, self.t[-1])
+
+        plt.tight_layout()
+
+    @staticmethod
+    def find_phases_intersections(ocp):
+        intersections_time = []
+        time = 0
+        for i in range(len(ocp.nlp) - 1):
+            time += ocp.nlp[i]["tf"]
+            intersections_time.append(time)
+        return(intersections_time)
+
+
+    @staticmethod
+    def show():
+        plt.show()
+
+    def update_data(self, V):
+        self.ydata = [[] for _ in range(self.ocp.nb_phases)]
+        for i, nlp in enumerate(self.ocp.nlp):
+            if (self.problem_type == ProblemType.torque_driven
+                    or self.problem_type == ProblemType.muscles_and_torque_driven):
+                if self.problem_type == ProblemType.torque_driven:
+                    q, q_dot, tau = ProblemType.get_data_from_V(self.ocp, V, i)
+
+                elif self.problem_type == ProblemType.muscles_and_torque_driven:
+                    q, q_dot, tau, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
+                    self.__update_ydata(muscle, nlp["nbMuscle"], i)
+
+                self.__update_ydata(q, nlp["nbQ"], i)
+                self.__update_ydata(q_dot, nlp["nbQdot"], i)
+                self.__update_ydata(tau, nlp["nbTau"], i)
+        self.__update_axes()
+
+    def __update_ydata(self, array, nb_variables, phase_idx):
+        for i in range(nb_variables):
+            self.ydata[phase_idx].append(array[i, :])
+
+    def __update_axes(self):
+        for i in range(len(self.ydata[0])):
+            y = np.array([])
+            for p in self.ydata:
+                y = np.append(y, p[i])
+
+            y_range = np.max([np.max(y) - np.min(y), 0.5])
+            mean = y_range / 2 + np.min(y)
+            axe_range = (1.1 * y_range) / 2
+            self.axes[i].set_ylim(mean - axe_range, mean + axe_range)
+            self.axes[i].set_yticks(
+                np.arange(
+                    np.round(mean - axe_range, 1),
+                    np.round(mean + axe_range, 1),
+                    step=np.round((mean + axe_range - (mean - axe_range)) / 4, 1),
+                )
+            )
+            self.axes[i].get_lines()[0].set_ydata(y)
+
+
 class AnimateCallback(Callback):
     def __init__(self, ocp, opts={}):
         Callback.__init__(self)
@@ -60,92 +170,18 @@ class AnimateCallback(Callback):
 
         def __call__(self, pipe):
             self.pipe = pipe
-            self.ns = 0
+            self.plot = PlotOcp(self.ocp)
 
-            self.problem_type = None
-            for i, nlp in enumerate(self.ocp.nlp):
-                if self.problem_type is None:
-                    self.problem_type = nlp["problem_type"]
-
-                if i == 0:
-                    self.t = np.linspace(0, nlp["tf"], nlp["ns"] + 1)
-                else:
-                    self.t = np.append(
-                        self.t,
-                        np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1),
-                    )
-                self.ns += nlp["ns"] + 1
-
-            if self.problem_type == ProblemType.torque_driven:
-                for i in range(self.ocp.nb_phases):
-                    if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
-                        raise RuntimeError(
-                            "Graphs with nbQ different at each phase is not implemented yet"
-                        )
-                nlp = self.ocp.nlp[0]
-                self.nx = nlp["nx"]
-                self.nu = nlp["nu"]
-                self.nbQ = nlp["nbQ"]
-                self.nbQdot = nlp["nbQdot"]
-                self.nbTau = nlp["nbTau"]
-                self.nbMuscle = nlp["nbMuscle"]
-
-                self.fig_state, self.axes = plt.subplots(3, self.nbQ, figsize=(10, 6))
-                self.axes = self.axes.flatten()
-                mid_column_idx = int(self.nbQ / 2)
-                self.axes[mid_column_idx].set_title("q")
-                self.axes[self.nbQ + mid_column_idx].set_title("q_dot")
-                self.axes[self.nbQ + self.nbQdot + mid_column_idx].set_title("tau")
-                self.axes[self.nbQ + self.nbQdot + mid_column_idx].set_xlabel(
-                    "time (s)"
-                )
-            else:
-                raise RuntimeError("Plot is not ready for this type of problem")
-
-            for i, ax in enumerate(self.axes):
-                if i < self.nx:
-                    ax.plot(self.t, np.zeros((self.ns, 1)))
-                else:
-                    ax.step(self.t, np.zeros((self.ns, 1)), where="post")
-                ax.grid(color="k", linestyle="--", linewidth=0.5)
-                ax.set_xlim(0, self.t[-1])
-
-            timer = self.fig_state.canvas.new_timer(interval=100)
-            timer.add_callback(self.call_back)
+            timer = self.plot.fig_state.canvas.new_timer(interval=100)
+            timer.add_callback(self.callback)
             timer.start()
-
-            plt.tight_layout()
             plt.show()
 
-        def call_back(self):
+        def callback(self):
             while self.pipe.poll():
-                arg = self.pipe.recv()
-                if self.problem_type == ProblemType.torque_driven:
-                    q, q_dot, tau = ProblemType.get_data_from_V(arg)
-                    for i in range(self.nlp.nbQ):
-                        self.__update_plot(i, q)
-                        self.__update_plot(i + self.nlp.nbQ, q_dot)
-                        self.__update_plot(i + self.nlp.nbQ + self.nlp.nbQdot, tau)
-                elif self.nlp.problem_type == ProblemType.muscles_and_torque_driven:
-                    q, q_dot, tau, muscle = ProblemType.get_data_from_V(arg)
-                    for i in range(self.nlp.nbQ):
-                        self.__update_plot(i, q)
-                        self.__update_plot(i + self.nlp.nbQ, q_dot)
-                        self.__update_plot(i + self.nlp.nbQ + self.nlp.nbQdot, tau)
-                        # self.__update_plot(i + self.nlp.nbQ + self.nlp.nbQdot + self.nlp.nbTau, muscle)
-            self.fig_state.canvas.draw()
+                V = self.pipe.recv()
+                self.plot.update_data(V)
+
+            self.plot.fig_state.canvas.draw()
             return True
 
-        def __update_plot(self, i, y):
-            y_range = np.max(y) - np.min(y)
-            y_mean = y_range / 2 + np.min(y)
-            y_range = (np.max([y_range, np.pi / 2]) + y_range * 0.1) / 2
-            self.axes[i].set_ylim(y_mean - y_range, y_mean + y_range)
-            self.axes[i].set_yticks(
-                np.arange(
-                    np.round(y_mean - y_range, 1),
-                    np.round(y_mean + y_range, 1),
-                    step=np.round((y_mean + y_range - (y_mean - y_range)) / 4, 1),
-                )
-            )
-            self.axes[i].get_lines()[0].set_ydata(np.array(y))

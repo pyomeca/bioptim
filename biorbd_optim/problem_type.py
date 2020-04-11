@@ -93,7 +93,7 @@ class ProblemType:
         offsets = [0]
         for i, nlp in enumerate(ocp.nlp):
             offsets.append(
-                offsets[i] + nlp["ns"] * (nlp["nx"] + 1) + nlp["ns"] * (nlp["nu"])
+                offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"])
             )
 
         q, q_dot, tau, muscle = [], [], [], []
