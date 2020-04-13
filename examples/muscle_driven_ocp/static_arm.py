@@ -6,6 +6,7 @@ import biorbd_optim
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.problem_type import ProblemType
+from biorbd_optim.plot import PlotOcp
 
 
 def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
@@ -16,7 +17,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     # Problem parameters
     number_shooting_points = 30
     final_time = 2
-    velocity_max = 15
+    velocity_max = 5
     is_cyclic_constraint = False
     is_cyclic_objective = False
 
@@ -28,7 +29,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     # Constraints
     constraints = (
-        # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
+        # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 5)),
     )
 
     # Path constraint
@@ -47,17 +48,19 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     X_bounds.min = [ranges[i].min() for i in range(biorbd_model.nbQ())]
     X_bounds.max = [ranges[i].max() for i in range(biorbd_model.nbQ())]
 
-    X_bounds.first_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.first_node_min[0] = X_bounds.min[0]
-    X_bounds.first_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.first_node_max[0] = X_bounds.max[0]
+    X_bounds.first_node_min = [-1] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+    X_bounds.first_node_min[0] = 0.07
+    X_bounds.first_node_min[1] = 1.4
+    X_bounds.first_node_max = [3] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+    X_bounds.first_node_max[0] = 0.07
+    X_bounds.first_node_max[1] = 1.4
 
-    X_bounds.last_node_min = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.last_node_min[0] = X_bounds.min[0]
-    X_bounds.last_node_min[2] = 1.57
-    X_bounds.last_node_max = [0] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.last_node_max[0] = X_bounds.max[0]
-    X_bounds.last_node_max[2] = 1.57
+    X_bounds.last_node_min = [-1] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+    X_bounds.last_node_min[0] = 1.5
+    X_bounds.last_node_min[1] = 2
+    X_bounds.last_node_max = [3] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
+    X_bounds.last_node_max[0] = 1.5
+    X_bounds.last_node_max[1] = 2
 
     # Path constraint velocity
     velocity_max = 15
@@ -81,7 +84,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     muscle_min = 0
     muscle_max = 1
-    muscle_init = 0.1
+    muscle_init = 0.5
 
     U_bounds.min.extend([muscle_min for _ in range(biorbd_model.nbMuscleTotal())])
     U_bounds.max.extend([muscle_max for _ in range(biorbd_model.nbMuscleTotal())])
@@ -105,52 +108,29 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     )
 
 
-def multi_plots(nlp):
-
-    step = nlp.nu + nlp.nx
-    npy_fichier = sol["x"]
-    # for k in range (nlp.ns):
-    #     npy_fichier.append(sol["x"][k*step])
-    #     npy_fichier.append(sol["x"][k*step+1])
-    #     npy_fichier.append(sol["x"][k*step+2])
-    #     npy_fichier.append(sol["x"][k*step+3])
-    #     npy_fichier.append(sol["x"][k*step+4])
-    #     npy_fichier.append(sol["x"][k*step+5])
-    np.save("static_arm", np.array(npy_fichier))
-
-    muscles = []
-
-    plt.figure("States - Torques - Muscles")
-    for i in range(nlp.model.nbQ()):
-        plt.subplot(nlp.model.nbQ(), 5, 1 + (5 * i))
-        plt.plot(sol["x"][i::step])
-        plt.title("Q - " + str(i))
-
-    for i in range(nlp.model.nbQdot()):
-        plt.subplot(nlp.model.nbQdot(), 5, 2 + (5 * i))
-        plt.plot(sol["x"][i + nlp.model.nbQ() :: step])
-        plt.title("Qdot - " + str(i))
-
-    for i in range(nlp.model.nbGeneralizedTorque()):
-        plt.subplot(nlp.model.nbGeneralizedTorque(), 5, 3 + (5 * i))
-        plt.plot(sol["x"][i + nlp.nx :: step])
-        plt.title("Torque - " + str(i))
-
-    cmp = 0
-    for i in range(nlp.model.nbMuscleGroups()):
-        for j in range(nlp.model.muscleGroup(i).nbMuscles()):
-
-            plt.subplot(nlp.model.muscleGroup(i).nbMuscles(), 5, 4 + i + (5 * j))
-            plt.plot(sol["x"][nlp.nx + nlp.model.nbGeneralizedTorque() + cmp :: step])
-            plt.title(nlp.model.muscleNames()[cmp].to_string())
-
-            cmp += 1
-    plt.show()
 
 
 if __name__ == "__main__":
-    nlp = prepare_nlp(show_online_optim=True)
+    ocp = prepare_nlp(show_online_optim=False)
 
     # --- Solve the program --- #
-    sol = nlp.solve()
-    # multi_plots(nlp)
+    sol = ocp.solve()
+
+    x, _, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
+    x = ocp.nlp[0]["dof_mapping"].expand(x)
+
+    np.save("static_arm", x.T)
+
+    # plt_ocp = PlotOcp(ocp)
+    # plt_ocp.update_data(sol["x"])
+    # plt_ocp.show()
+
+    # try:
+    #     from BiorbdViz import BiorbdViz
+    #
+    #     b = BiorbdViz(loaded_model=ocp.nlp[0]["model"], show_meshes=False)
+    #     b.load_movement(x.T)
+    #     b.exec()
+    # except ModuleNotFoundError:
+    #     print("Install BiorbdViz if you want to have a live view of the optimization")
+
