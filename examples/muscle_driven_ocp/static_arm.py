@@ -13,12 +13,6 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
-    # Results path
-    optimization_name = "eocar"
-    results_path = "Results/"
-    control_results_file_name = results_path + "Controls" + optimization_name + ".txt"
-    state_results_file_name = results_path + "States" + optimization_name + ".txt"
-
     # Problem parameters
     number_shooting_points = 30
     final_time = 2
@@ -46,8 +40,8 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     for i in range(biorbd_model.nbSegment()):
         ranges.extend(
             [
-                biorbd_model.segment(i).ranges()[j]
-                for j in range(len(biorbd_model.segment(i).ranges()))
+                biorbd_model.segment(i).QRanges()[j]
+                for j in range(len(biorbd_model.segment(i).QRanges()))
             ]
         )
     X_bounds.min = [ranges[i].min() for i in range(biorbd_model.nbQ())]
@@ -77,21 +71,21 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     U_bounds = biorbd_optim.Bounds()
     U_init = biorbd_optim.InitialConditions()
 
-    muscle_min = 0
-    muscle_max = 1
-    muscle_init = 0.1
-
-    U_bounds.min = [muscle_min for _ in range(biorbd_model.nbMuscleTotal())]
-    U_bounds.max = [muscle_max for _ in range(biorbd_model.nbMuscleTotal())]
-    U_init.init = [muscle_init for _ in range(biorbd_model.nbMuscleTotal())]
-
     torque_min = -100
     torque_max = 100
     torque_init = 0
 
-    U_bounds.min.extend([torque_min for _ in range(biorbd_model.nbGeneralizedTorque())])
-    U_bounds.max.extend([torque_max for _ in range(biorbd_model.nbGeneralizedTorque())])
-    U_init.init.extend([torque_init for _ in range(biorbd_model.nbGeneralizedTorque())])
+    U_bounds.min = [torque_min for _ in range(biorbd_model.nbGeneralizedTorque())]
+    U_bounds.max = [torque_max for _ in range(biorbd_model.nbGeneralizedTorque())]
+    U_init.init = [torque_init for _ in range(biorbd_model.nbGeneralizedTorque())]
+
+    muscle_min = 0
+    muscle_max = 1
+    muscle_init = 0.1
+
+    U_bounds.min.extend([muscle_min for _ in range(biorbd_model.nbMuscleTotal())])
+    U_bounds.max.extend([muscle_max for _ in range(biorbd_model.nbMuscleTotal())])
+    U_init.init.extend([muscle_init for _ in range(biorbd_model.nbMuscleTotal())])
     # ------------- #
 
     return biorbd_optim.OptimalControlProgram(
