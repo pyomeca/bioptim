@@ -71,11 +71,17 @@ class Constraint:
             elif elem[0] == Constraint.Type.PROPORTIONAL_Q:
                 Constraint.__proportional_variable(ocp, nlp, x, elem[2])
             elif elem[0] == Constraint.Type.PROPORTIONAL_CONTROL:
-                # TODO: Paul = Raise error if INSTANT.END is used
+                if elem[1] == Constraint.Instant.END:
+                    raise RuntimeError(
+                        "A proportional control does not make sense at the last node (Instant.END)"
+                    )
                 Constraint.__proportional_variable(ocp, nlp, u, elem[2])
 
             elif elem[0] == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
-                # TODO: Paul = Raise error if INSTANT.END is used
+                if elem[1] == Constraint.Instant.END:
+                    raise RuntimeError(
+                        "Instant.END is used even though there is no control u at last node"
+                    )
                 Constraint.__contact_force_inequality(ocp, nlp, x, u, elem[2])
 
     @staticmethod
