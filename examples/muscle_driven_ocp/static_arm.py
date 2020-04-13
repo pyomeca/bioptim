@@ -56,11 +56,11 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     X_bounds.first_node_max[1] = 1.4
 
     X_bounds.last_node_min = [-1] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.last_node_min[0] = 1.5
-    X_bounds.last_node_min[1] = 2
+    X_bounds.last_node_min[0] = 1.64
+    X_bounds.last_node_min[1] = 2.04
     X_bounds.last_node_max = [3] * (biorbd_model.nbQ() + biorbd_model.nbQdot())
-    X_bounds.last_node_max[0] = 1.5
-    X_bounds.last_node_max[1] = 2
+    X_bounds.last_node_max[0] = 1.64
+    X_bounds.last_node_max[1] = 2.04
 
     # Path constraint velocity
     velocity_max = 15
