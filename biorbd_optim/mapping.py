@@ -14,8 +14,9 @@ class Mapping:
         Docstring à compléter, récupère des variables symétrisées qu'elle signe et renvoie non sym
         """
 
-        obj_expanded = obj[self.expand_idx]
-        obj_expanded[self.sign_to_oppose] *= -1
+        obj_expanded = obj[self.expand_idx, :]
+        if self.sign_to_oppose is not ():
+            obj_expanded[self.sign_to_oppose, :] *= -1
         return obj_expanded
 
     def reduce(self, obj):
@@ -23,6 +24,7 @@ class Mapping:
         Docstring à compléter, récupère des variables non symétrisées qu'elle signe et renvoie sym
         """
         obj_reduced = obj
-        obj_reduced[self.sign_to_oppose] *= -1
-        obj_reduced = obj_reduced[self.reduce_idx]
+        if self.sign_to_oppose is not ():
+            obj_reduced[self.sign_to_oppose, :] *= -1
+        obj_reduced = obj_reduced[self.reduce_idx, :]
         return obj_reduced

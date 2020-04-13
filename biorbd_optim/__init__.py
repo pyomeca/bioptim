@@ -77,7 +77,7 @@ class OptimalControlProgram:
                 "biorbd_model must either be a string or an instance of biorbd.Model()"
             )
         self.nb_phases = len(biorbd_model)
-        self.nlp = [{}] * self.nb_phases
+        self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
 
         # Define some aliases
@@ -119,7 +119,7 @@ class OptimalControlProgram:
         self.V_bounds = Bounds()
         self.V_init = InitialConditions()
         for i in range(self.nb_phases):
-            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i])
+            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
 
         # Define dynamic problem
         self.__add_to_nlp("ode_solver", ode_solver, True)
@@ -177,7 +177,12 @@ class OptimalControlProgram:
         if isinstance(param, (list, tuple)):
             if len(param) != self.nb_phases:
                 raise RuntimeError(
-                    param_name + " size does not correspond to the number of phases"
+                    param_name
+                    + " size("
+                    + str(len(param))
+                    + ") does not correspond to the number of phases("
+                    + str(self.nb_phases)
+                    + ")."
                 )
             else:
                 for i in range(self.nb_phases):
@@ -229,7 +234,7 @@ class OptimalControlProgram:
         elif nlp["ode_solver"] == OdeSolver.CVODES:
             nlp["dynamics"] = casadi.integrator("integrator", "cvodes", ode, ode_opt)
 
-    def __define_multiple_shooting_nodes_per_phase(self, nlp):
+    def __define_multiple_shooting_nodes_per_phase(self, nlp, idx_phase):
         """
         For each node, puts X_bounds and U_bounds in V_bounds.
         Links X and U with V.
@@ -239,7 +244,7 @@ class OptimalControlProgram:
         U = []
 
         nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
-        V = MX.sym("V", nV)
+        V = MX.sym("V_" + str(idx_phase), nV)
         V_bounds = Bounds([0] * nV, [0] * nV)
         V_init = InitialConditions([0] * nV)
 
@@ -277,6 +282,7 @@ class OptimalControlProgram:
         V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].last_node_min
         V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].last_node_max
         V_init.init[offset : offset + nlp["nx"]] = nlp["X_init"].init
+        offset += nlp["nx"]
 
         V_bounds.regulation(nV)
         V_init.regulation(nV)

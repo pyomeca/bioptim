@@ -7,9 +7,12 @@ external_forces	0
 // DEFINITION DU SEGMENTS
 
 // Seg1
-segment Seg0
-    translations	x
-    ranges  -0.70 2.30
+    segment Seg1
+        translations	xz
+        rotations	y
+        ranges  -0.70 2.30
+                -1 1
+                -pi pi
 	mass 1
 	inertia 
 	  1 0 0 
@@ -19,37 +22,7 @@ segment Seg0
 	mesh 0 0 0
 	mesh  0 1 0
 endsegment
-
-segment Seg1
-    parent Seg0
-    rotations	xz
-    ranges  -1 1
-            -pi pi
-	mass 1
-	inertia
-	  1 0 0
-	  0 1 0
-	  0 0 1
-	com 0 0 0
-	mesh 0 0 0
-	mesh  0 1 0
-endsegment
-
-segment Seg2
-    parent Seg0
-    rotations	xz
-    ranges  -1 1
-            -pi pi
-	mass 1
-	inertia
-	  1 0 0
-	  0 1 0
-	  0 0 1
-	com 0 0 0
-	mesh 0 0 0
-	mesh  0 1 0
-endsegment
-
+	
 // Marker on Seg1
     marker m0
         parent Seg1

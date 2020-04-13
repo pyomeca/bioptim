@@ -113,14 +113,14 @@ class Constraint:
                     ocp.g_bounds.min.append(0)
                     ocp.g_bounds.max.append(0)
 
-        # Dynamics must be continuous between constraints
+        # Dynamics must be continuous between phases
         for i in range(len(ocp.nlp) - 1):
             if ocp.nlp[i]["nx"] != ocp.nlp[i + 1]["nx"]:
                 raise RuntimeError(
                     "Phase constraints without same nx is not supported yet"
                 )
 
-            ocp.g = vertcat(ocp.g, ocp.nlp[i]["X"][-1] != ocp.nlp[i + 1]["X"][0])
+            ocp.g = vertcat(ocp.g, ocp.nlp[i]["X"][-1] - ocp.nlp[i + 1]["X"][0])
             for _ in range(ocp.nlp[i]["nx"]):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)

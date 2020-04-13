@@ -1,0 +1,62 @@
+version 3
+
+// Informations générales
+root_actuated	0
+external_forces	0
+
+// DEFINITION DU SEGMENTS
+
+segment Seg0
+    translations	xy
+endsegment
+
+// Seg1
+segment Seg1
+    parent Seg0
+    rotations	x
+    ranges  -pi pi
+	mass 1
+	inertia
+	  1 0 0
+	  0 1 0
+	  0 0 1
+	com 0 0 0
+	mesh 0 0 0
+	mesh  0 1 0
+endsegment
+
+// Seg2
+segment Seg2
+    parent Seg0
+    rotations	x
+    ranges  -pi pi
+	mass 1
+	inertia
+	  1 0 0
+	  0 1 0
+	  0 0 1
+	com 0 0 0
+	mesh 0 0 0
+	mesh  0 1 0
+endsegment
+
+// Marker on Seg2
+    marker m0
+        parent Seg2
+        position 0 1 0
+    endmarker
+
+// Ground
+    segment ground
+    endsegment
+
+// Markers on ground
+    marker m1
+        parent ground
+        position -0.2 -0.2 -0.2
+    endmarker
+
+    marker m2
+        parent ground
+        position 0.2 0.2 0.2
+    endmarker
