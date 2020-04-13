@@ -15,7 +15,7 @@ class Mapping:
         """
 
         obj_expanded = obj[self.expand_idx, :]
-        if self.sign_to_oppose is not ():
+        if self.sign_to_oppose != ():
             obj_expanded[self.sign_to_oppose, :] *= -1
         return obj_expanded
 
@@ -24,7 +24,7 @@ class Mapping:
         Docstring à compléter, récupère des variables non symétrisées qu'elle signe et renvoie sym
         """
         obj_reduced = obj
-        if self.sign_to_oppose is not ():
+        if self.sign_to_oppose != ():
             obj_reduced[self.sign_to_oppose, :] *= -1
         obj_reduced = obj_reduced[self.reduce_idx, :]
         return obj_reduced

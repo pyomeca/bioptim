@@ -23,9 +23,16 @@ def prepare_ocp(
     # Problem parameters
     number_shooting_points = [20, 20]
     phase_time = [0.5, 0.5]
+
+    # x = zeros(13)
+    # # idx1 = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    # # idx2 = [-1, -1, -1, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7]
+    # x[idx] = x_reduced[[-1, -1, -1, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7]]
+    # x_expanded ==> [0, 0, 0, 34.434, 123, -34.434, 123, ]
+    #
     if use_symmetry:
         dof_mapping = Mapping(
-            [0, 1, 2, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7], [0, 1, 2, 3, 4, 7, 8, 9], [5]
+            [-1, -1, -1, 0, 1, 0, 1, 2, 3, 4, 2, 3, 4], [3, 4, 7, 8, 9], [5]
         )
         dof_mapping = dof_mapping, dof_mapping
     else:
@@ -49,17 +56,17 @@ def prepare_ocp(
     if use_symmetry:
         constraints = (), ()
     else:
-        constraints = (((Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (3, 5, -1)),
-                        (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (4, 6, 1)),
-                        (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (7, 10, 1)),
-                        (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (8, 11, 1)),
-                        (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (9, 12, 1)), ),
-                       ((Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (3, 5, -1)),
-                         (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (4, 6, 1)),
-                         (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (7, 10, 1)),
-                         (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (8, 11, 1)),
-                         (Constraint.Type.PROPORTIONAL_CONTROL, Constraint.Instant.ALL, (9, 12, 1)),
-                         ))
+        constraints = \
+            (((Constraint.Type.PROPORTIONAL_CONTROL,
+               Constraint.Instant.ALL,
+               ((3, 5, -1), (4, 6, 1), (7, 10, 1), (8, 11, 1), (9, 12, 1))),
+              (Constraint.Type.CONTACT_FORCE_GREATER_THAN,
+               Constraint.Instant.ALL,
+               ((1, 0), (2, 0), (4, 0), (5, 0))),),
+             ((Constraint.Type.PROPORTIONAL_CONTROL,
+               Constraint.Instant.ALL,
+               ((3, 5, -1), (4, 6, 1), (7, 10, 1), (8, 11, 1), (9, 12, 1)))),
+            )
 
     # Path constraint
     if use_symmetry:

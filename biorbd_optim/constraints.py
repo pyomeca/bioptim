@@ -2,6 +2,8 @@ import enum
 
 from casadi import vertcat
 
+from .dynamics import Dynamics
+
 
 class Constraint:
     @staticmethod
@@ -11,7 +13,11 @@ class Constraint:
         """
 
         MARKERS_TO_PAIR = 0
-        PROPORTIONAL_CONTROL = 1
+        PROPORTIONAL_Q = 1
+        PROPORTIONAL_CONTROL = 2
+        CONTACT_FORCE_GREATER_THAN = 3
+        # TODO: PAUL = Add lesser than
+        # TODO: PAUL = Add frictional cone
 
     @staticmethod
     class Instant(enum.Enum):
@@ -52,7 +58,7 @@ class Constraint:
                 u = nlp["U"][1 : nlp["ns"] - 1]
             elif elem[1] == Constraint.Instant.END:
                 x = [nlp["X"][nlp["ns"]]]
-                # u doesn't make sense at last node
+                u = []  # doesn't make sense at last node
             elif elem[1] == Constraint.Instant.ALL:
                 x = nlp["X"]
                 u = nlp["U"]
@@ -62,34 +68,46 @@ class Constraint:
             if elem[0] == Constraint.Type.MARKERS_TO_PAIR:
                 Constraint.__markers_to_pair(ocp, nlp, x, elem[2])
 
+            elif elem[0] == Constraint.Type.PROPORTIONAL_Q:
+                Constraint.__proportional_variable(ocp, nlp, x, elem[2])
             elif elem[0] == Constraint.Type.PROPORTIONAL_CONTROL:
-                Constraint.__proportional_control(ocp, nlp, u, elem[2])
+                # TODO: Paul = Raise error if INSTANT.END is used
+                Constraint.__proportional_variable(ocp, nlp, u, elem[2])
+
+            elif elem[0] == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
+                # TODO: Paul = Raise error if INSTANT.END is used
+                Constraint.__contact_force_inequality(ocp, nlp, x, u, elem[2])
 
     @staticmethod
-    def __markers_to_pair(ocp, nlp, X, idx_marker):
+    def __markers_to_pair(ocp, nlp, X, policy):
         """
         Adds the constraint that the two markers must be coincided at the desired instant(s).
         :param nlp: An OptimalControlProgram class.
         :param X: List of instant(s).
-        :param idx_marker: Tuple of indices of two markers.
+        :param policy: Tuple of indices of two markers.
         """
         nq = nlp["dof_mapping"].nb_reduced
         for x in X:
             q = nlp["dof_mapping"].expand(x[:nq])
-            marker1 = nlp["model"].marker(q, idx_marker[0]).to_mx()
-            marker2 = nlp["model"].marker(q, idx_marker[1]).to_mx()
+            marker1 = nlp["model"].marker(q, policy[0]).to_mx()
+            marker2 = nlp["model"].marker(q, policy[1]).to_mx()
             ocp.g = vertcat(ocp.g, marker1 - marker2)
             for i in range(3):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
 
     @staticmethod
-    def __proportional_control(ocp, nlp, U, idx):
-        for elem in U:
-            u = nlp["dof_mapping"].expand(elem)
-            ocp.g = vertcat(ocp.g, u[idx[0]] != idx[2] * u[idx[1]])
+    def __proportional_variable(ocp, nlp, V, policy):
+        for v in V:
+            v = nlp["dof_mapping"].expand(v)
+            ocp.g = vertcat(ocp.g, v[policy[0]] - policy[2] * v[policy[1]])
             ocp.g_bounds.min.append(0)
             ocp.g_bounds.max.append(0)
+
+    @staticmethod
+    def __contact_force_inequality(ocp, nlp, X, U, policy):
+        for i in range(len(U)):
+            contact_forces = Dynamics.get_forces_from_contact(X[i], U[i], nlp)
 
     @staticmethod
     def continuity_constraint(ocp):
