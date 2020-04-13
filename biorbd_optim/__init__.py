@@ -142,9 +142,10 @@ class OptimalControlProgram:
 
         if self.nb_phases == 1:
             if (
-                isinstance(constraints, (list, tuple))
+                len(constraints) == 0
+                or (isinstance(constraints, (list, tuple))
                 and isinstance(constraints[0], (list, tuple))
-                and not isinstance(constraints[0][0], (list, tuple))
+                and not isinstance(constraints[0][0], (list, tuple)))
             ):
                 constraints = (constraints,)
         self.__add_to_nlp("constraints", constraints, False)
