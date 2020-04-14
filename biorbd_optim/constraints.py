@@ -130,10 +130,10 @@ class Constraint:
     @staticmethod
     def __contact_force_inequality(ocp, nlp, X, U, policy):
         """
-        A compléter, notamment policy est soit un tuple ou un tuple de tuples, avec en 1er indice
-        le numéro de la force de contact et en 2e indice la borne associée
+        To be completed, in particular the fact that policy is either a tuple/list or a tuple of tuples/list of lists,
+        with in the 1st index the number of the contact force and in the 2nd index the associated bound.
         """
-        # A modifier plus tard pour que ça puisse gérer autre chose que des bornes min pour greater max
+        # To be modified later so that it can handle something other than lower bounds for greater than
         CS_func = Function(
             "Contact_force_inequality",
             [ocp.symbolic_states, ocp.symbolic_controls],
@@ -144,20 +144,20 @@ class Constraint:
             for i in range(len(U)):
 
                 contact_forces = CS_func(X[i], U[i])
-                contact_forces = contact_forces[:6] # A changer : il faut réduire par symétrie (ssi sym par construction)
+                contact_forces = contact_forces[:6] # To be changed: it must be reduced by symmetry (if sym by construction)
 
                 for elem in policy:       # à adapter aussi
                     ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
                     ocp.g_bounds.min.append(elem[1])
-                    ocp.g_bounds.max.append(10000000)         # Comment ne mettre qu'une borne inf ?
+                    ocp.g_bounds.max.append(10000000)  # How can we only put lower bound ? Cf optistack subject_to code
         else:
             for i in range(len(U)):
                 contact_forces = CS_func(X[i], U[i])
-                contact_forces = contact_forces[:nlp["model"].nbContacts()] # A changer : il faut réduire par symétrie (ssi sym par construction)
+                contact_forces = contact_forces[:nlp["model"].nbContacts()] # To be changed: it must be reduced by symmetry (if sym by construction)
 
                 ocp.g = vertcat(ocp.g, contact_forces[policy[0]])
                 ocp.g_bounds.min.append(policy[1])
-                ocp.g_bounds.max.append(10000000)  # Comment ne mettre qu'une borne inf ?
+                ocp.g_bounds.max.append(10000000)  # How can we only put lower bound ? Cf optistack subject_to code
 
     @staticmethod
     def continuity_constraint(ocp):
