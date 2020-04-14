@@ -58,7 +58,7 @@ class Constraint:
                 u = nlp["U"][1 : nlp["ns"] - 1]
             elif elem[1] == Constraint.Instant.END:
                 x = [nlp["X"][nlp["ns"]]]
-                u = []  # doesn't make sense at last node
+                u = []
             elif elem[1] == Constraint.Instant.ALL:
                 x = nlp["X"]
                 u = nlp["U"]
@@ -73,7 +73,7 @@ class Constraint:
             elif elem[0] == Constraint.Type.PROPORTIONAL_CONTROL:
                 if elem[1] == Constraint.Instant.END:
                     raise RuntimeError(
-                        "A proportional control does not make sense at the last node (Instant.END)"
+                        "Instant.END is used even though there is no control u at last node"
                     )
                 Constraint.__proportional_variable(ocp, nlp, u, elem[2])
 
