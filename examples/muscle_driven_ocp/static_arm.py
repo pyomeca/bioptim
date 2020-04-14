@@ -22,15 +22,18 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     is_cyclic_objective = False
 
     # Add objective functions
-    objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
+    objective_functions = (
+                            # (ObjectiveFunction.minimize_torque, {"weight": 1}),
+                            (ObjectiveFunction.minimize_muscle, {"weight": 1}),
+                            (ObjectiveFunction.minimize_final_distance_between_two_markers,
+                             {"markers": (0, 5), "weight": 1}),
+                          )
 
     # Dynamics
     problem_type = ProblemType.muscles_and_torque_driven
 
     # Constraints
-    constraints = (
-        # (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 5)),
-    )
+    constraints = ()
 
     # Path constraint
     X_bounds = biorbd_optim.Bounds()
