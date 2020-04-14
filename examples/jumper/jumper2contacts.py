@@ -156,7 +156,7 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=False)
+    ocp = prepare_ocp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = ocp.solve()
