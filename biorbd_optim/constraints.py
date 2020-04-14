@@ -116,16 +116,16 @@ class Constraint:
         """
         if not isinstance(policy[0], (tuple, list)):
             policy = [policy]
-            for elem in policy:
-                if not isinstance(elem, (tuple, list)):
-                    raise RuntimeError(
-                        "A mix of tuples/lists and non tuples/lists cannot be used for defining proportionality constraints"
-                    )
-                for v in V:
-                    v = nlp["dof_mapping"].expand(v)
-                    ocp.g = vertcat(ocp.g, v[elem[0]] - elem[2] * v[elem[1]])
-                    ocp.g_bounds.min.append(0)
-                    ocp.g_bounds.max.append(0)
+        for elem in policy:
+            if not isinstance(elem, (tuple, list)):
+                raise RuntimeError(
+                    "A mix of tuples/lists and non tuples/lists cannot be used for defining proportionality constraints"
+                )
+            for v in V:
+                v = nlp["dof_mapping"].expand(v)
+                ocp.g = vertcat(ocp.g, v[elem[0]] - elem[2] * v[elem[1]])
+                ocp.g_bounds.min.append(0)
+                ocp.g_bounds.max.append(0)
 
     @staticmethod
     def __contact_force_inequality(ocp, nlp, X, U, policy):
