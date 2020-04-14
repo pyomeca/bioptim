@@ -113,12 +113,12 @@ class PlotOcp:
                     self.__update_ydata(q_dot, nlp["nbQdot"], i)
                     self.__update_ydata(tau, nlp["nbTau"], i)
 
-                # elif self.problem_type == ProblemType.muscles_and_torque_driven:
-                #     q, q_dot, tau, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
-                #     self.__update_ydata(q, nlp["nbQ"], i)
-                #     self.__update_ydata(q_dot, nlp["nbQdot"], i)
-                #     self.__update_ydata(tau, nlp["nbTau"], i)
-                #     self.__update_ydata(muscle, nlp["nbMuscle"], i)
+                elif self.problem_type == ProblemType.muscles_and_torque_driven:
+                    q, q_dot, tau, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
+                    self.__update_ydata(q, nlp["nbQ"], i)
+                    self.__update_ydata(q_dot, nlp["nbQdot"], i)
+                    self.__update_ydata(tau, nlp["nbTau"], i)
+                    self.__update_ydata(muscle, nlp["nbMuscle"], i)
 
         self.__update_axes()
 
