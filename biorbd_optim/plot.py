@@ -28,7 +28,7 @@ class PlotOcp:
                 )
             self.ns += nlp["ns"] + 1
 
-        #self.axes = []
+        self.axes = []
         if self.problem_type == ProblemType.torque_driven\
             or self.problem_type == ProblemType.muscles_and_torque_driven:
             for i in range(self.ocp.nb_phases):
@@ -38,12 +38,12 @@ class PlotOcp:
                     )
             nlp = self.ocp.nlp[0]
             self.fig_q_qdot_tau = plt.figure("Q, Qdot, Tau", figsize=(10, 6))
-            self.axes = self.fig_q_qdot_tau.subplots(3, nlp["nbQ"]).flatten()
+            self.axes.append(self.fig_q_qdot_tau.subplots(3, nlp["nbQ"]).flatten())
             mid_column_idx = int(nlp["nbQ"] / 2)
-            self.axes[mid_column_idx].set_title("q")
-            self.axes[nlp["nbQ"] + mid_column_idx].set_title("q_dot")
-            self.axes[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_title("tau")
-            self.axes[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_xlabel(
+            self.axes[0][mid_column_idx].set_title("q")
+            self.axes[0][nlp["nbQ"] + mid_column_idx].set_title("q_dot")
+            self.axes[0][nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_title("tau")
+            self.axes[0][nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_xlabel(
                 "time (s)"
             )
             self.fig_q_qdot_tau.tight_layout()
@@ -58,33 +58,30 @@ class PlotOcp:
                     nb_rows = nb_cols
 
                 self.fig_muscles = plt.figure("Muscles", figsize=(10, 6))
-                self.axes_muscles = self.fig_muscles.subplots(nb_rows, nb_cols).flatten()
-                for k in range (len(self.axes_muscles)):
-                    self.axes_muscles[k].set_title(nlp["model"].muscleNames()[k].to_string())
-                self.axes_muscles[nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel(
+                self.axes.append(self.fig_muscles.subplots(nb_rows, nb_cols).flatten())
+                for k in range(nlp["nbMuscle"]):
+                    self.axes[1][k].set_title(nlp["model"].muscleNames()[k].to_string())
+                self.axes[1][nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel(
                     "time (s)"
                 )
                 self.fig_muscles.tight_layout()
 
             intersections_time = PlotOcp.find_phases_intersections(ocp)
-            for i, ax in enumerate(self.axes):
-                if i < self.ocp.nlp[0]["nx"]:
-                    ax.plot(self.t, np.zeros((self.ns, 1)))
-                else:
-                    ax.step(self.t, np.zeros((self.ns, 1)), where="post")
+            for indice_figure, figure in enumerate(self.axes):
+                for i, ax in enumerate(figure):
+                    if indice_figure == 0:
+                        if i < self.ocp.nlp[0]["nx"]:
+                            ax.plot(self.t, np.zeros((self.ns, 1)))
+                        else:
+                            ax.step(self.t, np.zeros((self.ns, 1)), where="post")
 
-                for time in intersections_time:
-                    ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
-                ax.grid(color="k", linestyle="--", linewidth=0.5)
-                ax.set_xlim(0, self.t[-1])
+                    if indice_figure == 1 and self.problem_type == ProblemType.muscles_and_torque_driven:
+                        ax.step(self.t, np.zeros((self.ns, 1)), where="post")
 
-            for i, ax in enumerate(self.axes_muscles):
-                ax.step(self.t, np.zeros((self.ns, 1)), where="post")
-                for time in intersections_time:
-                    ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
-                ax.grid(color="k", linestyle="--", linewidth=0.5)
-                ax.set_xlim(0, self.t[-1])
-
+                    for time in intersections_time:
+                        ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
+                    ax.grid(color="k", linestyle="--", linewidth=0.5)
+                    ax.set_xlim(0, self.t[-1])
 
         else:
             raise RuntimeError("Plot is not ready for this type of OCP")
