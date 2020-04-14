@@ -50,7 +50,7 @@ def prepare_ocp(
     )
 
     # Dynamics
-    problem_type = ProblemType.torque_driven, ProblemType.torque_driven
+    problem_type = ProblemType.torque_driven_no_contact, ProblemType.torque_driven_with_contact
 
     # Constraints
     if use_symmetry:

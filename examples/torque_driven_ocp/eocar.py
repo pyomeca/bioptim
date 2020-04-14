@@ -22,7 +22,7 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod"):
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
     # Dynamics
-    variable_type = ProblemType.torque_driven
+    variable_type = ProblemType.torque_driven_no_contact
 
     # Constraints
     constraints = (
