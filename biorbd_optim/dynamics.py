@@ -3,6 +3,21 @@ import biorbd
 
 
 class Dynamics:
+
+    @staticmethod
+    def __dispatch_data(states, controls, nlp):
+        """
+        Returns q, qdot, tau (unreduced by a potential symmetry) and qdot_reduced
+        from states, controls and mapping through nlp to condense this code.
+        """
+        nq = nlp["dof_mapping"].nb_reduced
+        q = nlp["dof_mapping"].expand(states[:nq])
+        qdot_reduced = states[nq:]
+        qdot = nlp["dof_mapping"].expand(qdot_reduced)
+        tau = nlp["dof_mapping"].expand(controls[: nlp["nbTau"]])
+
+        return q, qdot, qdot_reduced, tau
+
     @staticmethod
     def forward_dynamics_torque_driven(states, controls, nlp):
         """
@@ -11,12 +26,7 @@ class Dynamics:
         :param nlp: Instance of an OptimalControlProgram class
         :return: Vertcat of derived states.
         """
-        # TODO: Paul = move the dispatch in a private method
-        nq = nlp["dof_mapping"].nb_reduced
-        q = nlp["dof_mapping"].expand(states[:nq])
-        qdot_reduced = states[nq:]
-        qdot = nlp["dof_mapping"].expand(qdot_reduced)
-        tau = nlp["dof_mapping"].expand(controls)
+        q, qdot, qdot_reduced, tau = Dynamics.__dispatch_data(states, controls, nlp)
 
         qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
         qddot_reduced = nlp["dof_mapping"].reduce(qddot)
@@ -25,11 +35,7 @@ class Dynamics:
 
     @staticmethod
     def forward_dynamics_torque_muscle_driven(states, controls, nlp):
-        nq = nlp["dof_mapping"].nb_reduced
-        q = nlp["dof_mapping"].expand(states[:nq])
-        qdot_reduced = states[nq:]
-        qdot = nlp["dof_mapping"].expand(qdot_reduced)
-        residual_tau = nlp["dof_mapping"].expand(controls[: nlp["nbTau"]])
+        q, qdot, qdot_reduced, residual_tau = Dynamics.__dispatch_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
         muscles_activations = controls[nlp["nbTau"] :]
@@ -47,11 +53,7 @@ class Dynamics:
 
     @staticmethod
     def get_forces_from_contact(states, controls, nlp):
-        nq = nlp["dof_mapping"].nb_reduced
-        q = nlp["dof_mapping"].expand(states[:nq])
-        qdot_reduced = states[nq:]
-        qdot = nlp["dof_mapping"].expand(qdot_reduced)
-        tau = nlp["dof_mapping"].expand(controls[: nlp["nbTau"]])
+        q, qdot, qdot_reduced, tau = Dynamics.__dispatch_data(states, controls, nlp)
 
         cs = nlp["model"].getConstraints()
         biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau, cs)
