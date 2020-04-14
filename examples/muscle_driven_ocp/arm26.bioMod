@@ -1,5 +1,5 @@
 version 3
-//gravity 0 -3.81 0
+gravity 0 -9.81 0
 
 // SEGMENT DEFINITION
 
@@ -21,7 +21,7 @@ version 3
     endsegment
 
     // Markers
-    marker    objectif
+    marker    target
         parent    base
         position    0.15 0.15 0.17
     endmarker
