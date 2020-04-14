@@ -56,25 +56,30 @@ def prepare_ocp(
     )
 
     # Constraints
+    constraints_first_phase = []
+    constraints_second_phase = []
     if use_symmetry:
-        constraints = (), ()
+        constraints_second_phase = ()
     else:
         symmetrical_constraint = (
             Constraint.Type.PROPORTIONAL_Q,
             Constraint.Instant.ALL,
             ((3, 5, -1), (4, 6, 1), (7, 10, 1), (8, 11, 1), (9, 12, 1)),
         )
-        non_pulling_on_floor_2_contacts = (
-            (
-                Constraint.Type.CONTACT_FORCE_GREATER_THAN,
-                Constraint.Instant.ALL,
-                (1, 0), (2, 0), (4, 0), (5, 0),
-            )
+        constraints_first_phase.append(symmetrical_constraint)
+        constraints_second_phase.append(symmetrical_constraint)
+
+    non_pulling_on_floor_2_contacts = (
+        (
+            Constraint.Type.CONTACT_FORCE_GREATER_THAN,
+            Constraint.Instant.ALL,
+            (1, 0), (2, 0), (4, 0), (5, 0),
         )
-        
-        constraints_first_phase = (symmetrical_constraint, non_pulling_on_floor_2_contacts)
-        constraints_second_phase = (non_pulling_on_floor_2_contacts, )
-        constraints = (constraints_first_phase, constraints_second_phase)
+    )
+
+    constraints_first_phase.append(non_pulling_on_floor_2_contacts)
+    constraints_second_phase.append(non_pulling_on_floor_2_contacts)
+    constraints = (constraints_first_phase, constraints_second_phase)
 
     # Path constraint
     if use_symmetry:
