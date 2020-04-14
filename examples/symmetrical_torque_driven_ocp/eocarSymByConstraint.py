@@ -29,7 +29,7 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     constraints = (
         (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
         (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
-        (Constraint.Type.PROPORTIONAL_Q, Constraint.Instant.ALL, (2, 3, -1))
+        (Constraint.Type.PROPORTIONAL_Q, Constraint.Instant.ALL, (2, 3, -1)),
     )
 
     # Path constraint

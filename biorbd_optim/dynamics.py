@@ -3,7 +3,6 @@ import biorbd
 
 
 class Dynamics:
-
     @staticmethod
     def __dispatch_data(states, controls, nlp):
         """
@@ -43,14 +42,18 @@ class Dynamics:
         """
         q, qdot, qdot_reduced, tau = Dynamics.__dispatch_data(states, controls, nlp)
 
-        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau).to_mx()
+        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(
+            nlp["model"], q, qdot, tau
+        ).to_mx()
         qddot_reduced = nlp["dof_mapping"].reduce(qddot)
 
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
     def forward_dynamics_torque_muscle_driven(states, controls, nlp):
-        q, qdot, qdot_reduced, residual_tau = Dynamics.__dispatch_data(states, controls, nlp)
+        q, qdot, qdot_reduced, residual_tau = Dynamics.__dispatch_data(
+            states, controls, nlp
+        )
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
         muscles_activations = controls[nlp["nbTau"] :]

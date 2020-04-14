@@ -50,23 +50,39 @@ def prepare_ocp(
     )
 
     # Dynamics
-    problem_type = ProblemType.torque_driven_no_contact, ProblemType.torque_driven_with_contact
+    problem_type = (
+        ProblemType.torque_driven_no_contact,
+        ProblemType.torque_driven_with_contact,
+    )
 
     # Constraints
     if use_symmetry:
         constraints = (), ()
     else:
-        constraints = \
-            (((Constraint.Type.PROPORTIONAL_CONTROL,
-               Constraint.Instant.ALL,
-               ((3, 5, -1), (4, 6, 1), (7, 10, 1), (8, 11, 1), (9, 12, 1))),
-              (Constraint.Type.CONTACT_FORCE_GREATER_THAN,
-               Constraint.Instant.ALL,
-               (1, 0), (2, 0), (4, 0), (5, 0)),),
-             ((Constraint.Type.PROPORTIONAL_CONTROL,
-               Constraint.Instant.ALL,
-               ((3, 5, -1), (4, 6, 1), (7, 10, 1), (8, 11, 1), (9, 12, 1))),)
-            )
+        constraints = (
+            (
+                (
+                    Constraint.Type.PROPORTIONAL_CONTROL,
+                    Constraint.Instant.ALL,
+                    ((3, 5, -1), (4, 6, 1), (7, 10, 1), (8, 11, 1), (9, 12, 1)),
+                ),
+                (
+                    Constraint.Type.CONTACT_FORCE_GREATER_THAN,
+                    Constraint.Instant.ALL,
+                    (1, 0),
+                    (2, 0),
+                    (4, 0),
+                    (5, 0),
+                ),
+            ),
+            (
+                (
+                    Constraint.Type.PROPORTIONAL_CONTROL,
+                    Constraint.Instant.ALL,
+                    ((3, 5, -1), (4, 6, 1), (7, 10, 1), (8, 11, 1), (9, 12, 1)),
+                ),
+            ),
+        )
 
     # Path constraint
     if use_symmetry:
