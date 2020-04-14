@@ -1,4 +1,5 @@
 version 3
+//gravity 0 -3.81 0
 
 // SEGMENT DEFINITION
 
@@ -16,13 +17,17 @@ version 3
             0.0    0.0    0.0
             0.0    0.0    0.0
         com    0 0 0
-        //meshfile ground_ribs.vtp
+        meshfile vtp/ground_ribs.vtp
     endsegment
 
     // Markers
+    marker    objectif
+        parent    base
+        position    0.15 0.15 0.17
+    endmarker
     marker    r_acromion
         parent    base
-        position    -0.01256 0.040000000000000001 0.17000000000000001
+        position    -0.01256 0.04 0.17
     endmarker
 
 // Information about r_humerus segment
@@ -35,7 +40,6 @@ version 3
             0.0    1.0    0.0    -0.007
             0.0    0.0    1.0    0.17
             0.0    0.0    0.0    1.0
-        //meshfile arm_r_humerus.vtp
     endsegment
     // Segment
     segment r_humerus_rotation1
@@ -47,7 +51,8 @@ version 3
             0.05894291073968768    0.0    0.9982613551938856    0.0
             0.0    0.0    0.0    1.0
         rotations z
-        //meshfile arm_r_humerus.vtp
+	rangesQ	-1 pi
+		
     endsegment
     // Segment
     segment r_humerus_rotation2
@@ -58,7 +63,6 @@ version 3
             0    1    0    0
             0    0    1    0
             0    0    0    1
-        //meshfile arm_r_humerus.vtp
     endsegment
     // Segment
     segment r_humerus_rotation3
@@ -69,7 +73,6 @@ version 3
             1.0    0.0    0.0    0.0
             0.0    0.9982639956056206    0.0588981755023151    0.0
             0.0    0.0    0.0    1.0
-        //meshfile arm_r_humerus.vtp
     endsegment
     // Segment
     segment r_humerus
@@ -86,7 +89,7 @@ version 3
             0.0    0.004551    0.0
             0.0    0.0    0.013193
         com    0 -0.18049599999999999 0
-        //meshfile arm_r_humerus.vtp
+        meshfile vtp/arm_r_humerus.vtp
     endsegment
 
     // Markers
@@ -110,7 +113,6 @@ version 3
             0.0    1.0    0.0    -0.2904
             0.0    0.0    1.0    -0.0123
             0.0    0.0    0.0    1.0
-        //meshfile arm_r_ulna.vtp
     endsegment
     // Segment
     segment r_ulna_radius_hand_rotation1
@@ -122,7 +124,7 @@ version 3
             -0.06148106796684942    3.469446951953614e-18    0.9981082497813831    0.0
             0.0    0.0    0.0    1.0
         rotations z
-        //meshfile arm_r_ulna.vtp
+	rangesQ	0 pi
     endsegment
     // Segment
     segment r_ulna_radius_hand_rotation2
@@ -133,7 +135,6 @@ version 3
             0    1    0    0
             0    0    1    0
             0    0    0    1
-        //meshfile arm_r_ulna.vtp
     endsegment
     // Segment
     segment r_ulna_radius_hand_rotation3
@@ -144,7 +145,6 @@ version 3
             1.0    0.0    0.0    0.0
             0.0    0.998777435476196    -0.049433130424779516    0.0
             0.0    0.0    0.0    1.0
-        //meshfile arm_r_ulna.vtp
     endsegment
     // Segment
     segment r_ulna_radius_hand
@@ -161,7 +161,7 @@ version 3
             0.0    0.001571    0.0
             0.0    0.0    0.020062
         com    0 -0.181479 0
-        //meshfile arm_r_ulna.vtp
+        meshfile vtp/arm_r_ulna.vtp
     endsegment
 
     // Markers

@@ -74,12 +74,16 @@ class ProblemType:
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_muscle_driven
 
         u = MX()
-        muscle_names = nlp.model.muscleNames()
-        for i in range(nlp.model.nbMuscleTotal()):
-            u = vertcat(u, MX.sym("Tau_for_muscle_" + muscle_names[i].to_string()))
+        muscle_names = nlp["model"].muscleNames()
+        for i in range(nlp["model"].nbMuscleTotal()):
+            u = vertcat(
+                u, MX.sym("Muscle_" + muscle_names[i].to_string() + "_activation")
+            )
         nlp["u"] = vertcat(nlp["u"], u)
 
-        nlp["nbMuscle"] = nlp.model.nbMuscleTotal()
+        nlp["nu"] = nlp["u"].rows()
+
+        nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()
 
     @staticmethod
     def get_data_from_V_phase(
