@@ -23,11 +23,11 @@ version 3
     // Markers
     marker    objectif
         parent    base
-        position    -0.01256 0.040000000000000001 0.17000000000000001
+        position    0.15 0.15 0.17
     endmarker
     marker    r_acromion
         parent    base
-        position    0.18 0.170000000000000001 0.14300000000000001
+        position    -0.01256 0.04 0.17
     endmarker
 
 // Information about r_humerus segment
