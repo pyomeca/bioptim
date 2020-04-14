@@ -127,8 +127,28 @@ class Constraint:
 
     @staticmethod
     def __contact_force_inequality(ocp, nlp, X, U, policy):
-        for i in range(len(U)):
-            contact_forces = Dynamics.get_forces_from_contact(X[i], U[i], nlp)
+        """
+        A compléter, notamment policy est soit un tuple ou un tuple de tuples, avec en 1er indice
+        le numéro de la force de contact et en 2e indice la borne associée
+        """
+        # A modifier plus tard pour que ça puisse gérer autre chose que des bornes min pour greater max
+        if isinstance(policy[0], tuple):
+            for i in range(len(U)):
+                contact_forces = Dynamics.get_forces_from_contact(X[i], U[i], nlp)
+                contact_forces = contact_forces[:6] # A changer : il faut réduire par symétrie (ssi sym par construction)
+
+                for elem in policy:       # à adapter aussi
+                    ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
+                    ocp.g_bounds.min.append(elem[1])
+                    ocp.g_bounds.max.append(10000000)         # Comment ne mettre qu'une borne inf ?
+        else:
+            for i in range(len(U)):
+                contact_forces = Dynamics.get_forces_from_contact(X[i], U[i], nlp)
+                contact_forces = contact_forces[:6] # A changer : il faut réduire par symétrie (ssi sym par construction)
+
+                ocp.g = vertcat(ocp.g, contact_forces[policy[0]])
+                ocp.g_bounds.min.append(policy[1])
+                ocp.g_bounds.max.append(10000000)  # Comment ne mettre qu'une borne inf ?
 
     @staticmethod
     def continuity_constraint(ocp):
