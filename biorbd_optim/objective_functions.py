@@ -28,7 +28,8 @@ class ObjectiveFunction:
         for i in range(nlp["ns"]):
             ocp.J += (
                 casadi.dot(
-                    nlp["U"][i][n_tau:n_tau], nlp["U"][i][n_tau : n_tau + nb_muscle],
+                    nlp["U"][i][n_tau : n_tau + nb_muscle],
+                    nlp["U"][i][n_tau : n_tau + nb_muscle],
                 )
                 * nlp["dt"]
                 * nlp["dt"]
@@ -36,9 +37,9 @@ class ObjectiveFunction:
             )
 
     @staticmethod
-    def minimize_all_controls(nlp, weight=1):
+    def minimize_all_controls(ocp, nlp, weight=1):
         raise RuntimeError("cyclic objective function not implemented yet")
 
     @staticmethod
-    def cyclic(nlp, weight=1):
+    def cyclic(ocp, nlp, weight=1):
         raise RuntimeError("cyclic objective function not implemented yet")
