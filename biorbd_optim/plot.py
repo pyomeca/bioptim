@@ -127,24 +127,25 @@ class PlotOcp:
             self.ydata[phase_idx].append(array[i, :])
 
     def __update_axes(self):
-        for i in range(len(self.ydata[0])):
-            y = np.array([])
-            for p in self.ydata:
-                y = np.append(y, p[i])
+        for figure in self.axes:
+            for i, ax in enumerate(figure):
 
-            y_range = np.max([np.max(y) - np.min(y), 0.5])
-            mean = y_range / 2 + np.min(y)
-            axe_range = (1.1 * y_range) / 2
-            self.axes[i].set_ylim(mean - axe_range, mean + axe_range)
-            self.axes[i].set_yticks(
-                np.arange(
-                    np.round(mean - axe_range, 1),
-                    np.round(mean + axe_range, 1),
-                    step=np.round((mean + axe_range - (mean - axe_range)) / 4, 1),
+                y = np.array([])
+                for phase in self.ydata:
+                    y = np.append(y, phase[i])
+
+                y_range = np.max([np.max(y) - np.min(y), 0.5])
+                mean = y_range / 2 + np.min(y)
+                axe_range = (1.1 * y_range) / 2
+                ax.set_ylim(mean - axe_range, mean + axe_range)
+                ax.set_yticks(
+                    np.arange(
+                        np.round(mean - axe_range, 1),
+                        np.round(mean + axe_range, 1),
+                        step=np.round((mean + axe_range - (mean - axe_range)) / 4, 1),
+                    )
                 )
-            )
-            self.axes[i].get_lines()[0].set_ydata(y)
-
+                ax.get_lines()[0].set_ydata(y)
 
 class AnimateCallback(Callback):
     def __init__(self, ocp, opts={}):
