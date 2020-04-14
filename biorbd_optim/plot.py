@@ -201,8 +201,9 @@ class AnimateCallback(Callback):
         def __call__(self, pipe):
             self.pipe = pipe
             self.plot = PlotOcp(self.ocp)
-
-            timer = self.plot.fig_state.canvas.new_timer(interval=100)
+            timer = self.plot.fig_q_qdot_tau.canvas.new_timer(interval=100)
+            if self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
+                timer = self.plot.fig_muscles.canvas.new_timer(interval=100)
             timer.add_callback(self.callback)
             timer.start()
             plt.show()
@@ -212,5 +213,7 @@ class AnimateCallback(Callback):
                 V = self.pipe.recv()
                 self.plot.update_data(V)
 
-            self.plot.fig_state.canvas.draw()
+            self.plot.fig_q_qdot_tau.canvas.draw()
+            if self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
+                self.plot.fig_muscles.canvas.draw()
             return True
