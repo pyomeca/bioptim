@@ -28,16 +28,17 @@ class PlotOcp:
                 )
             self.ns += nlp["ns"] + 1
 
-        if self.problem_type == ProblemType.torque_driven:
+        #self.axes = []
+        if self.problem_type == ProblemType.torque_driven\
+            or self.problem_type == ProblemType.muscles_and_torque_driven:
             for i in range(self.ocp.nb_phases):
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
                     raise RuntimeError(
                         "Graphs with nbQ different at each phase is not implemented yet"
                     )
             nlp = self.ocp.nlp[0]
-
-            self.fig_state, self.axes = plt.subplots(3, nlp["nbQ"], figsize=(10, 6))
-            self.axes = self.axes.flatten()
+            self.fig_q_qdot_tau = plt.figure("Q, Qdot, Tau", figsize=(10, 6))
+            self.axes = self.fig_q_qdot_tau.subplots(3, nlp["nbQ"]).flatten()
             mid_column_idx = int(nlp["nbQ"] / 2)
             self.axes[mid_column_idx].set_title("q")
             self.axes[nlp["nbQ"] + mid_column_idx].set_title("q_dot")
@@ -45,22 +46,48 @@ class PlotOcp:
             self.axes[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_xlabel(
                 "time (s)"
             )
-        else:
-            raise RuntimeError("Plot is not ready for this type of problem")
+            self.fig_q_qdot_tau.tight_layout()
 
-        for i, ax in enumerate(self.axes):
-            if i < self.ocp.nlp[0]["nx"]:
-                ax.plot(self.t, np.zeros((self.ns, 1)))
-            else:
-                ax.step(self.t, np.zeros((self.ns, 1)), where="post")
+            if self.problem_type == ProblemType.muscles_and_torque_driven:
+
+                nlp = self.ocp.nlp[0]
+                nb_cols = int(np.sqrt(nlp["nbMuscle"])) + 1
+                if nb_cols * (nb_cols - 1) >= nlp["nbMuscle"]:
+                    nb_rows = nb_cols -1
+                else:
+                    nb_rows = nb_cols
+
+                self.fig_muscles = plt.figure("Muscles", figsize=(10, 6))
+                self.axes_muscles = self.fig_muscles.subplots(nb_rows, nb_cols).flatten()
+                for k in range (len(self.axes_muscles)):
+                    self.axes_muscles[k].set_title(nlp["model"].muscleNames()[k].to_string())
+                self.axes_muscles[nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel(
+                    "time (s)"
+                )
+                self.fig_muscles.tight_layout()
 
             intersections_time = PlotOcp.find_phases_intersections(ocp)
-            for time in intersections_time:
-                ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
-            ax.grid(color="k", linestyle="--", linewidth=0.5)
-            ax.set_xlim(0, self.t[-1])
+            for i, ax in enumerate(self.axes):
+                if i < self.ocp.nlp[0]["nx"]:
+                    ax.plot(self.t, np.zeros((self.ns, 1)))
+                else:
+                    ax.step(self.t, np.zeros((self.ns, 1)), where="post")
 
-        plt.tight_layout()
+                for time in intersections_time:
+                    ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
+                ax.grid(color="k", linestyle="--", linewidth=0.5)
+                ax.set_xlim(0, self.t[-1])
+
+            for i, ax in enumerate(self.axes_muscles):
+                ax.step(self.t, np.zeros((self.ns, 1)), where="post")
+                for time in intersections_time:
+                    ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
+                ax.grid(color="k", linestyle="--", linewidth=0.5)
+                ax.set_xlim(0, self.t[-1])
+
+
+        else:
+            raise RuntimeError("Plot is not ready for this type of OCP")
 
     @staticmethod
     def find_phases_intersections(ocp):
@@ -82,16 +109,20 @@ class PlotOcp:
                 self.problem_type == ProblemType.torque_driven
                 or self.problem_type == ProblemType.muscles_and_torque_driven
             ):
+                #TODO: Add an integrator for the states
                 if self.problem_type == ProblemType.torque_driven:
                     q, q_dot, tau = ProblemType.get_data_from_V(self.ocp, V, i)
+                    self.__update_ydata(q, nlp["nbQ"], i)
+                    self.__update_ydata(q_dot, nlp["nbQdot"], i)
+                    self.__update_ydata(tau, nlp["nbTau"], i)
 
-                elif self.problem_type == ProblemType.muscles_and_torque_driven:
-                    q, q_dot, tau, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
-                    self.__update_ydata(muscle, nlp["nbMuscle"], i)
+                # elif self.problem_type == ProblemType.muscles_and_torque_driven:
+                #     q, q_dot, tau, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
+                #     self.__update_ydata(q, nlp["nbQ"], i)
+                #     self.__update_ydata(q_dot, nlp["nbQdot"], i)
+                #     self.__update_ydata(tau, nlp["nbTau"], i)
+                #     self.__update_ydata(muscle, nlp["nbMuscle"], i)
 
-                self.__update_ydata(q, nlp["nbQ"], i)
-                self.__update_ydata(q_dot, nlp["nbQdot"], i)
-                self.__update_ydata(tau, nlp["nbTau"], i)
         self.__update_axes()
 
     def __update_ydata(self, array, nb_variables, phase_idx):
