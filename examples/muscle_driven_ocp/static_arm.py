@@ -20,9 +20,6 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     # Problem parameters
     number_shooting_points = 30
     final_time = 2
-    velocity_max = 5
-    is_cyclic_constraint = False
-    is_cyclic_objective = False
 
     # Add objective functions
     objective_functions = (
@@ -58,7 +55,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
                                + [muscle_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
 
-    return biorbd_optim.OptimalControlProgram(
+    return OptimalControlProgram(
         biorbd_model,
         problem_type,
         number_shooting_points,
@@ -69,12 +66,8 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
         X_bounds,
         U_bounds,
         constraints,
-        is_cyclic_constraint=is_cyclic_constraint,
-        is_cyclic_objective=is_cyclic_objective,
         show_online_optim=show_online_optim,
     )
-
-
 
 
 if __name__ == "__main__":
@@ -92,12 +85,11 @@ if __name__ == "__main__":
     # plt_ocp.update_data(sol["x"])
     # plt_ocp.show()
 
-    # try:
-    #     from BiorbdViz import BiorbdViz
-    #
-    #     b = BiorbdViz(loaded_model=ocp.nlp[0]["model"], show_meshes=False)
-    #     b.load_movement(x.T)
-    #     b.exec()
-    # except ModuleNotFoundError:
-    #     print("Install BiorbdViz if you want to have a live view of the optimization")
+    try:
+        from BiorbdViz import BiorbdViz
+        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"], show_meshes=False)
+        b.load_movement(x.T)
+        b.exec()
+    except ModuleNotFoundError:
+        print("Install BiorbdViz if you want to have a live view of the optimization")
 
