@@ -17,7 +17,7 @@ class PathCondition:
             raise RuntimeError(
                 f"Invalid number of {type} ("
                 + str(len(var))
-                + "), the expected number as well "
+                + "), the expected size is "
                 + str(nb_elements)
             )
 
