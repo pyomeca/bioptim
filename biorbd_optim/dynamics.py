@@ -50,6 +50,15 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
+    def forces_from_forward_dynamics_with_contact(states, controls, nlp):
+        q, qdot, qdot_reduced, tau = Dynamics.__dispatch_data(states, controls, nlp)
+
+        cs = nlp["model"].getConstraints()
+        biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau, cs)
+
+        return cs.getForce().to_mx()
+
+    @staticmethod
     def forward_dynamics_torque_muscle_driven(states, controls, nlp):
         q, qdot, qdot_reduced, residual_tau = Dynamics.__dispatch_data(
             states, controls, nlp
@@ -68,12 +77,3 @@ class Dynamics:
         qddot_reduced = nlp["dof_mapping"].reduce(qddot)
 
         return vertcat(qdot_reduced, qddot_reduced)
-
-    @staticmethod
-    def get_forces_from_contact(states, controls, nlp):
-        q, qdot, qdot_reduced, tau = Dynamics.__dispatch_data(states, controls, nlp)
-
-        cs = nlp["model"].getConstraints()
-        biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau, cs)
-
-        return cs.getForce().to_mx()

@@ -123,6 +123,7 @@ class ProblemType:
 
             if (
                 nlp["problem_type"] == ProblemType.torque_driven_no_contact
+                or nlp["problem_type"] == ProblemType.torque_driven_with_contact
                 or nlp["problem_type"] == ProblemType.muscles_and_torque_driven
             ):
                 q.append(

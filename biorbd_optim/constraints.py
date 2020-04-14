@@ -1,9 +1,11 @@
 import enum
 
-from casadi import vertcat
+from casadi import vertcat, MX, Function
 
 from .dynamics import Dynamics
 
+
+# TODO: Convert the constraint in CasADi function?
 
 class Constraint:
     @staticmethod
@@ -132,9 +134,16 @@ class Constraint:
         le numéro de la force de contact et en 2e indice la borne associée
         """
         # A modifier plus tard pour que ça puisse gérer autre chose que des bornes min pour greater max
+        CS_func = Function(
+            "Contact_force_inequality",
+            [ocp.symbolic_states, ocp.symbolic_controls],
+            [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
+            ["x", "u"],
+            ["CS"]).expand()
         if isinstance(policy[0], tuple):
             for i in range(len(U)):
-                contact_forces = Dynamics.get_forces_from_contact(X[i], U[i], nlp)
+
+                contact_forces = CS_func(X[i], U[i])
                 contact_forces = contact_forces[:6] # A changer : il faut réduire par symétrie (ssi sym par construction)
 
                 for elem in policy:       # à adapter aussi
@@ -143,8 +152,8 @@ class Constraint:
                     ocp.g_bounds.max.append(10000000)         # Comment ne mettre qu'une borne inf ?
         else:
             for i in range(len(U)):
-                contact_forces = Dynamics.get_forces_from_contact(X[i], U[i], nlp)
-                contact_forces = contact_forces[:6] # A changer : il faut réduire par symétrie (ssi sym par construction)
+                contact_forces = CS_func(X[i], U[i])
+                contact_forces = contact_forces[:nlp["model"].nbContacts()] # A changer : il faut réduire par symétrie (ssi sym par construction)
 
                 ocp.g = vertcat(ocp.g, contact_forces[policy[0]])
                 ocp.g_bounds.min.append(policy[1])

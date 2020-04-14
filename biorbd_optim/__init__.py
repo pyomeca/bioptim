@@ -123,8 +123,8 @@ class OptimalControlProgram:
 
         # Define dynamic problem
         self.__add_to_nlp("ode_solver", ode_solver, True)
-        states = MX.sym("x", self.nlp[0]["nx"], 1)
-        controls = MX.sym("u", self.nlp[0]["nu"], 1)
+        self.symbolic_states = MX.sym("x", self.nlp[0]["nx"], 1)
+        self.symbolic_controls = MX.sym("u", self.nlp[0]["nu"], 1)
         for i in range(self.nb_phases):
             if (
                 self.nlp[0]["nx"] != self.nlp[i]["nx"]
@@ -133,7 +133,7 @@ class OptimalControlProgram:
                 raise RuntimeError(
                     "Dynamics with different nx or nu is not supported yet"
                 )
-            self.__prepare_dynamics(self.nlp[i], states, controls)
+            self.__prepare_dynamics(self.nlp[i])
 
         # Prepare constraints
         self.g = []
@@ -200,8 +200,7 @@ class OptimalControlProgram:
                         + " must be a list or tuple when number of phase is not equal to 1"
                     )
 
-    @staticmethod
-    def __prepare_dynamics(nlp, states_sym, controls_sym):
+    def __prepare_dynamics(self, nlp):
         """
         Builds CasaDI dynamics function.
         :param dynamics_func: A selected method handler of the class dynamics.Dynamics.
@@ -210,8 +209,8 @@ class OptimalControlProgram:
 
         dynamics = casadi.Function(
             "ForwardDyn",
-            [states_sym, controls_sym],
-            [nlp["dynamics_func"](states_sym, controls_sym, nlp)],
+            [self.symbolic_states, self.symbolic_controls],
+            [nlp["dynamics_func"](self.symbolic_states, self.symbolic_controls, nlp)],
             ["x", "u"],
             ["xdot"],
         ).expand()
