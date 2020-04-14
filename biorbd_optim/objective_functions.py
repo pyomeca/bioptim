@@ -16,7 +16,7 @@ class ObjectiveFunction:
 
     @staticmethod
     def minimize_states(ocp, nlp, weight=1):
-        for i in range(nlp["ns"]):
+        for i in range(nlp["ns"] + 1):
             ocp.J += (
                 casadi.dot(nlp["X"][i], nlp["X"][i]) * nlp["dt"] * nlp["dt"] * weight
             )
