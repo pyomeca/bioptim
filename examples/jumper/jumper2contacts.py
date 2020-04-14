@@ -51,7 +51,7 @@ def prepare_ocp(
 
     # Dynamics
     problem_type = (
-        ProblemType.torque_driven_no_contact,
+        ProblemType.torque_driven_with_contact,
         ProblemType.torque_driven_with_contact,
     )
 

@@ -11,13 +11,13 @@ class ProblemType:
     """
 
     @staticmethod
-    def torque_driven_no_contact(nlp):
+    def torque_driven(nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques but without muscles, must be used with dynamics without contacts.
         :param nlp: An instance of the OptimalControlProgram class.
         """
-        nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_driven_no_contact
+        nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_driven
         ProblemType.__configure_torque_driven(nlp)
 
     @staticmethod
@@ -70,7 +70,7 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        ProblemType.torque_driven_no_contact(nlp)
+        ProblemType.torque_driven(nlp)
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_muscle_driven
 
         u = MX()
@@ -122,7 +122,7 @@ class ProblemType:
             nb_var = nlp["nx"] + nlp["nu"]
 
             if (
-                nlp["problem_type"] == ProblemType.torque_driven_no_contact
+                nlp["problem_type"] == ProblemType.torque_driven
                 or nlp["problem_type"] == ProblemType.torque_driven_with_contact
                 or nlp["problem_type"] == ProblemType.muscles_and_torque_driven
             ):

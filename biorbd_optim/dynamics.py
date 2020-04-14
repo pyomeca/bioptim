@@ -4,7 +4,7 @@ import biorbd
 
 class Dynamics:
     @staticmethod
-    def forward_dynamics_torque_driven_no_contact(states, controls, nlp):
+    def forward_dynamics_torque_driven(states, controls, nlp):
         """
         :param states: MX.sym from CasADi.
         :param controls: MX.sym from CasADi.
