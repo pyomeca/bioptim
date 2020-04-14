@@ -44,6 +44,8 @@ class Constraint:
         Adds constraints to the requested nodes in (nlp.g) and (nlp.g_bounds).
         :param ocp: An OptimalControlProgram class.
         """
+        if nlp["constraints"] is None:
+            return
         for elem in nlp["constraints"]:
             if elem[1] == Constraint.Instant.START:
                 x = [nlp["X"][0]]
