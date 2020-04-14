@@ -5,6 +5,8 @@ from casadi import vertcat, MX, Function
 from .dynamics import Dynamics
 
 
+# TODO: Convert the constraint in CasADi function?
+
 class Constraint:
     @staticmethod
     class Type(enum.Enum):
