@@ -140,23 +140,17 @@ class Constraint:
             [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
             ["x", "u"],
             ["CS"]).expand()
-        if isinstance(policy[0], tuple):
-            for i in range(len(U)):
 
-                contact_forces = CS_func(X[i], U[i])
-                contact_forces = contact_forces[:6] # To be changed: it must be reduced by symmetry (if sym by construction)
+        if not isinstance(policy[0], (tuple, list)):
+            policy = [policy]
 
-                for elem in policy:       # à adapter aussi
-                    ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
-                    ocp.g_bounds.min.append(elem[1])
-                    ocp.g_bounds.max.append(10000000)  # How can we only put lower bound ? Cf optistack subject_to code
-        else:
-            for i in range(len(U)):
-                contact_forces = CS_func(X[i], U[i])
-                contact_forces = contact_forces[:nlp["model"].nbContacts()] # To be changed: it must be reduced by symmetry (if sym by construction)
+        for i in range(len(U)):
+            contact_forces = CS_func(X[i], U[i])
+            contact_forces = contact_forces[:6] # To be changed: it must be reduced by symmetry (if sym by construction)
 
-                ocp.g = vertcat(ocp.g, contact_forces[policy[0]])
-                ocp.g_bounds.min.append(policy[1])
+            for elem in policy:
+                ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
+                ocp.g_bounds.min.append(elem[1])
                 ocp.g_bounds.max.append(10000000)  # How can we only put lower bound ? Cf optistack subject_to code
 
     @staticmethod
