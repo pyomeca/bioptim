@@ -29,7 +29,8 @@ class PlotOcp:
             self.ns += nlp["ns"] + 1
 
         self.axes = []
-        if self.problem_type == ProblemType.torque_driven\
+        if (self.problem_type == ProblemType.torque_driven or
+                self.problem_type == ProblemType.torque_driven_with_contact):
             or self.problem_type == ProblemType.muscles_and_torque_driven:
             for i in range(self.ocp.nb_phases):
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
@@ -103,7 +104,7 @@ class PlotOcp:
         self.ydata = [[] for _ in range(self.ocp.nb_phases)]
         for i, nlp in enumerate(self.ocp.nlp):
             if (
-                self.problem_type == ProblemType.torque_driven_no_contact
+                self.problem_type == ProblemType.torque_driven
                 or self.problem_type == ProblemType.torque_driven_with_contact
                 or self.problem_type == ProblemType.muscles_and_torque_driven
             ):

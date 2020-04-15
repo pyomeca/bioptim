@@ -4,21 +4,7 @@ import biorbd
 
 class Dynamics:
     @staticmethod
-    def __dispatch_data(states, controls, nlp):
-        """
-        Returns q, qdot, tau (unreduced by a potential symmetry) and qdot_reduced
-        from states, controls and mapping through nlp to condense this code.
-        """
-        nq = nlp["dof_mapping"].nb_reduced
-        q = nlp["dof_mapping"].expand(states[:nq])
-        qdot_reduced = states[nq:]
-        qdot = nlp["dof_mapping"].expand(qdot_reduced)
-        tau = nlp["dof_mapping"].expand(controls[: nlp["nbTau"]])
-
-        return q, qdot, qdot_reduced, tau
-
-    @staticmethod
-    def forward_dynamics_torque_driven_no_contact(states, controls, nlp):
+    def forward_dynamics_torque_driven(states, controls, nlp):
         """
         :param states: MX.sym from CasADi.
         :param controls: MX.sym from CasADi.
@@ -77,3 +63,17 @@ class Dynamics:
         qddot_reduced = nlp["dof_mapping"].reduce(qddot)
 
         return vertcat(qdot_reduced, qddot_reduced)
+
+    @staticmethod
+    def __dispatch_data(states, controls, nlp):
+        """
+        Returns q, qdot, tau (unreduced by a potential symmetry) and qdot_reduced
+        from states, controls and mapping through nlp to condense this code.
+        """
+        nq = nlp["dof_mapping"].nb_reduced
+        q = nlp["dof_mapping"].expand(states[:nq])
+        qdot_reduced = states[nq:]
+        qdot = nlp["dof_mapping"].expand(qdot_reduced)
+        tau = nlp["dof_mapping"].expand(controls[: nlp["nbTau"]])
+
+        return q, qdot, qdot_reduced, tau

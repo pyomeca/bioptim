@@ -62,7 +62,7 @@ class Constraint:
                 u = nlp["U"][1 : nlp["ns"] - 1]
             elif elem[1] == Constraint.Instant.END:
                 x = [nlp["X"][nlp["ns"]]]
-                u = []  # doesn't make sense at last node
+                u = []
             elif elem[1] == Constraint.Instant.ALL:
                 x = nlp["X"]
                 u = nlp["U"]
@@ -77,7 +77,7 @@ class Constraint:
             elif elem[0] == Constraint.Type.PROPORTIONAL_CONTROL:
                 if elem[1] == Constraint.Instant.END:
                     raise RuntimeError(
-                        "A proportional control does not make sense at the last node (Instant.END)"
+                        "Instant.END is used even though there is no control u at last node"
                     )
                 Constraint.__proportional_variable(ocp, nlp, u, elem[2])
 
@@ -112,54 +112,48 @@ class Constraint:
         Adds proportionality constraint between the elements (states or controls) chosen.
         :param nlp: An instance of the OptimalControlProgram class.
         :param V: List of states or controls at instants on which this constraint must be applied.
-        :param policy: A tuple or a tuple of tuples whose first two elements are the indexes of elements to be linked proportionally.
+        :param policy: A tuple or a tuple of tuples (also works with lists) whose first two elements
+        are the indexes of elements to be linked proportionally.
         The third element of each tuple (policy[i][2]) is the proportionality coefficient.
         """
-        if isinstance(policy[0], tuple):
-            for elem in policy:
-                for v in V:
-                    v = nlp["dof_mapping"].expand(v)
-                    ocp.g = vertcat(ocp.g, v[elem[0]] - elem[2] * v[elem[1]])
-                    ocp.g_bounds.min.append(0)
-                    ocp.g_bounds.max.append(0)
-        else:
+        if not isinstance(policy[0], (tuple, list)):
+            policy = [policy]
+        for elem in policy:
+            if not isinstance(elem, (tuple, list)):
+                raise RuntimeError(
+                    "A mix of tuples/lists and non tuples/lists cannot be used for defining proportionality constraints"
+                )
             for v in V:
                 v = nlp["dof_mapping"].expand(v)
-                ocp.g = vertcat(ocp.g, v[policy[0]] - policy[2] * v[policy[1]])
+                ocp.g = vertcat(ocp.g, v[elem[0]] - elem[2] * v[elem[1]])
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
 
     @staticmethod
     def __contact_force_inequality(ocp, nlp, X, U, policy):
         """
-        A compléter, notamment policy est soit un tuple ou un tuple de tuples, avec en 1er indice
-        le numéro de la force de contact et en 2e indice la borne associée
+        To be completed, in particular the fact that policy is either a tuple/list or a tuple of tuples/list of lists,
+        with in the 1st index the number of the contact force and in the 2nd index the associated bound.
         """
-        # A modifier plus tard pour que ça puisse gérer autre chose que des bornes min pour greater max
+        # To be modified later so that it can handle something other than lower bounds for greater than
         CS_func = Function(
             "Contact_force_inequality",
             [ocp.symbolic_states, ocp.symbolic_controls],
             [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
             ["x", "u"],
             ["CS"]).expand()
-        if isinstance(policy[0], tuple):
-            for i in range(len(U)):
 
-                contact_forces = CS_func(X[i], U[i])
-                contact_forces = contact_forces[:6] # A changer : il faut réduire par symétrie (ssi sym par construction)
+        if not isinstance(policy[0], (tuple, list)):
+            policy = [policy]
 
-                for elem in policy:       # à adapter aussi
-                    ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
-                    ocp.g_bounds.min.append(elem[1])
-                    ocp.g_bounds.max.append(10000000)         # Comment ne mettre qu'une borne inf ?
-        else:
-            for i in range(len(U)):
-                contact_forces = CS_func(X[i], U[i])
-                contact_forces = contact_forces[:nlp["model"].nbContacts()] # A changer : il faut réduire par symétrie (ssi sym par construction)
+        for i in range(len(U)):
+            contact_forces = CS_func(X[i], U[i])
+            contact_forces = contact_forces[:6] # To be changed: it must be reduced by symmetry (if sym by construction)
 
-                ocp.g = vertcat(ocp.g, contact_forces[policy[0]])
-                ocp.g_bounds.min.append(policy[1])
-                ocp.g_bounds.max.append(10000000)  # Comment ne mettre qu'une borne inf ?
+            for elem in policy:
+                ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
+                ocp.g_bounds.min.append(elem[1])
+                ocp.g_bounds.max.append(10000000)  # How can we only put lower bound ? Cf optistack subject_to code
 
     @staticmethod
     def continuity_constraint(ocp):
