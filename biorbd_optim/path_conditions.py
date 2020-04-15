@@ -119,6 +119,8 @@ class InitialConditions(PathCondition):
         3. Last node
         Each group have a list of initial values.
         """
+
+        # TODO: Add the capability to initialize using initial and final frame that linearly complete between
         self.first_node_init = list(initial_guess)
         self.init = list(initial_guess)
         self.last_node_init = list(initial_guess)

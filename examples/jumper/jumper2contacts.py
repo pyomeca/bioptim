@@ -9,7 +9,7 @@ from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditio
 
 
 def prepare_ocp(
-    show_online_optim=False, use_symmetry=True,
+    show_online_optim=False, use_symmetry=False,
 ):
     # --- Options --- #
     # Model path
@@ -23,9 +23,16 @@ def prepare_ocp(
     # Problem parameters
     number_shooting_points = [20, 20]
     phase_time = [0.5, 0.5]
+
+    # x = zeros(13)
+    # # idx1 = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    # # idx2 = [-1, -1, -1, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7]
+    # x[idx] = x_reduced[[-1, -1, -1, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7]]
+    # x_expanded ==> [0, 0, 0, 34.434, 123, -34.434, 123, ]
+    #
     if use_symmetry:
         dof_mapping = Mapping(
-            [0, 1, 2, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7], [0, 1, 2, 3, 4, 7, 8, 9], [5]
+            [-1, -1, -1, 0, 1, 0, 1, 2, 3, 4, 2, 3, 4], [3, 4, 7, 8, 9], [5]
         )
         dof_mapping = dof_mapping, dof_mapping
     else:
@@ -43,21 +50,36 @@ def prepare_ocp(
     )
 
     # Dynamics
-    problem_type = ProblemType.torque_driven, ProblemType.torque_driven
+    problem_type = (
+        ProblemType.torque_driven_with_contact,
+        ProblemType.torque_driven_with_contact,
+    )
 
     # Constraints
+    constraints_first_phase = []
+    constraints_second_phase = []
     if use_symmetry:
-        constraints = (), ()
+        constraints_second_phase = ()
     else:
-        constraints = (
-            (
-                (
-                    Constraint.Type.PROPORTIONAL_CONTROL,
-                    Constraint.Instant.All,
-                    (3, 5, -1),
-                ),
-            ),
+        symmetrical_constraint = (
+            Constraint.Type.PROPORTIONAL_Q,
+            Constraint.Instant.ALL,
+            ((3, 5, -1), (4, 6, 1), (7, 10, 1), (8, 11, 1), (9, 12, 1)),
         )
+        constraints_first_phase.append(symmetrical_constraint)
+        constraints_second_phase.append(symmetrical_constraint)
+
+    non_pulling_on_floor_2_contacts = (
+        (
+            Constraint.Type.CONTACT_FORCE_GREATER_THAN,
+            Constraint.Instant.ALL,
+            (1, 0), (2, 0), (4, 0), (5, 0),
+        )
+    )
+
+    constraints_first_phase.append(non_pulling_on_floor_2_contacts)
+    constraints_second_phase.append(non_pulling_on_floor_2_contacts)
+    constraints = (constraints_first_phase, constraints_second_phase)
 
     # Path constraint
     if use_symmetry:
@@ -134,7 +156,7 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=False)
+    ocp = prepare_ocp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = ocp.solve()

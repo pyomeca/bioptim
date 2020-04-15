@@ -23,7 +23,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     # Add objective functions
     objective_functions = (
-        # (ObjectiveFunction.minimize_torque, {"weight": 1}),
+        (ObjectiveFunction.minimize_torque, {"weight": 10}),
         (ObjectiveFunction.minimize_muscle, {"weight": 1}),
         (
             ObjectiveFunction.minimize_final_distance_between_two_markers,
@@ -79,7 +79,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
 
 if __name__ == "__main__":
-    ocp = prepare_nlp(show_online_optim=False)
+    ocp = prepare_nlp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = ocp.solve()
@@ -89,9 +89,9 @@ if __name__ == "__main__":
 
     np.save("static_arm", x.T)
 
-    # plt_ocp = PlotOcp(ocp)
-    # plt_ocp.update_data(sol["x"])
-    # plt_ocp.show()
+    plt_ocp = PlotOcp(ocp)
+    plt_ocp.update_data(sol["x"])
+    plt_ocp.show()
 
     try:
         from BiorbdViz import BiorbdViz
@@ -101,3 +101,4 @@ if __name__ == "__main__":
         b.exec()
     except ModuleNotFoundError:
         print("Install BiorbdViz if you want to have a live view of the optimization")
+
