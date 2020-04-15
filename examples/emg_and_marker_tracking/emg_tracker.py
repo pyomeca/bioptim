@@ -207,11 +207,11 @@ if __name__ == "__main__":
     plt.plot(np.linspace(0, 2, n_shooting_points + 1), q.T, "r--")
 
     plt.figure("Tau")
-    plt.step(np.linspace(0, 2, n_shooting_points + 1), tau.T)
+    plt.step(np.linspace(0, 2, n_shooting_points + 1), tau.T, where="post")
 
     plt.figure("Muscle activations")
-    plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_activations_ref, "k")
-    plt.step(np.linspace(0, 2, n_shooting_points + 1), mus.T, "r--")
+    plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_activations_ref, "k", where="post")
+    plt.step(np.linspace(0, 2, n_shooting_points + 1), mus.T, "r--", where="post")
 
     # --- Plot --- #
     plt_ocp = PlotOcp(ocp)
