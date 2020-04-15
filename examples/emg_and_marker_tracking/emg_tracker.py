@@ -45,11 +45,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     dynamics_func = Function(
         "ForwardDyn",
         [symbolic_states, symbolic_controls],
-        [
-            Dynamics.forward_dynamics_torque_muscle_driven(
-                symbolic_states, symbolic_controls, nlp
-            )
-        ],
+        [Dynamics.forward_dynamics_torque_muscle_driven(symbolic_states, symbolic_controls, nlp)],
         ["x", "u"],
         ["xdot"],
     ).expand()
@@ -97,28 +93,18 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = [
-        (
-            ObjectiveFunction.minimize_muscle,
-            {"weight": 1, "data_to_track": activations_ref},
-        ),
+        (ObjectiveFunction.minimize_muscle, {"weight": 1, "data_to_track": activations_ref},),
         (ObjectiveFunction.minimize_torque, {"weight": 1}),
     ]
     if kin_data_to_track == "markers":
         objective_functions.append(
-            (
-                ObjectiveFunction.minimize_markers,
-                {"weight": 100, "data_to_track": markers_ref},
-            ),
+            (ObjectiveFunction.minimize_markers, {"weight": 100, "data_to_track": markers_ref},),
         )
     elif kin_data_to_track == "q":
         objective_functions.append(
             (
                 ObjectiveFunction.minimize_states,
-                {
-                    "weight": 100,
-                    "data_to_track": q_ref,
-                    "states_idx": range(biorbd_model.nbQ()),
-                },
+                {"weight": 100, "data_to_track": q_ref, "states_idx": range(biorbd_model.nbQ()),},
             ),
         )
     else:
@@ -138,14 +124,11 @@ def prepare_ocp(
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque()
-        + [activation_min] * biorbd_model.nbMuscleTotal(),
-        [torque_max] * biorbd_model.nbGeneralizedTorque()
-        + [activation_max] * biorbd_model.nbMuscleTotal(),
+        [torque_min] * biorbd_model.nbGeneralizedTorque() + [activation_min] * biorbd_model.nbMuscleTotal(),
+        [torque_max] * biorbd_model.nbGeneralizedTorque() + [activation_max] * biorbd_model.nbMuscleTotal(),
     )
     U_init = InitialConditions(
-        [torque_init] * biorbd_model.nbGeneralizedTorque()
-        + [activation_init] * biorbd_model.nbMuscleTotal()
+        [torque_init] * biorbd_model.nbGeneralizedTorque() + [activation_init] * biorbd_model.nbMuscleTotal()
     )
 
     # ------------- #
@@ -172,14 +155,10 @@ if __name__ == "__main__":
     n_shooting_points = 29
 
     # Generate random data to fit
-    t, markers_ref, x_ref, muscle_activations_ref = generate_data(
-        biorbd_model, final_time, n_shooting_points
-    )
+    t, markers_ref, x_ref, muscle_activations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
 
     # Track these data
-    biorbd_model = biorbd.Model(
-        "arm26.bioMod"
-    )  # To allow for non free variable, the model must be reloaded
+    biorbd_model = biorbd.Model("arm26.bioMod")  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
         biorbd_model,
         final_time,
@@ -195,9 +174,7 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     # --- Show the results --- #
-    muscle_activations_ref = np.append(
-        muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0
-    )
+    muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
 
     q, qdot, tau, mus = ProblemType.get_data_from_V(ocp, sol["x"])
     n_q = ocp.nlp[0]["model"].nbQ()
@@ -218,9 +195,7 @@ if __name__ == "__main__":
         )
     for i in range(n_frames):
         for j, mark_func in enumerate(markers_func):
-            markers[:, j, i] = np.array(
-                mark_func(np.append(q[:, i], qdot[:, i]))
-            ).squeeze()
+            markers[:, j, i] = np.array(mark_func(np.append(q[:, i], qdot[:, i]))).squeeze()
 
     plt.figure("Markers")
     for i in range(markers.shape[1]):

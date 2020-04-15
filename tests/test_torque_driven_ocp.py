@@ -10,17 +10,13 @@ from biorbd_optim import ProblemType
 
 # Load eocar
 PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "eocar", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/eocar.py"
-)
+spec = importlib.util.spec_from_file_location("eocar", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/eocar.py")
 eocar = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(eocar)
 
 
 def test_eocar():
-    ocp = eocar.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/eocar.bioMod"
-    )
+    ocp = eocar.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/eocar.bioMod")
     sol = ocp.solve()
 
     # Check objective function value
@@ -43,9 +39,5 @@ def test_eocar():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
-    np.testing.assert_almost_equal(
-        tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487))
-    )
-    np.testing.assert_almost_equal(
-        tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487))
-    )
+    np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))

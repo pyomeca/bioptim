@@ -22,10 +22,7 @@ class PlotOcp:
             if i == 0:
                 self.t = np.linspace(0, nlp["tf"], nlp["ns"] + 1)
             else:
-                self.t = np.append(
-                    self.t,
-                    np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1),
-                )
+                self.t = np.append(self.t, np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1),)
             self.ns += nlp["ns"] + 1
 
         self.axes = []
@@ -36,9 +33,7 @@ class PlotOcp:
         ):
             for i in range(self.ocp.nb_phases):
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
-                    raise RuntimeError(
-                        "Graphs with nbQ different at each phase is not implemented yet"
-                    )
+                    raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
             nlp = self.ocp.nlp[0]
             self.fig_q_qdot_tau = plt.figure("Q, Qdot, Tau", figsize=(10, 6))
             axes_dof = self.fig_q_qdot_tau.subplots(3, nlp["nbQ"]).flatten()
@@ -64,9 +59,7 @@ class PlotOcp:
                 self.axes.extend(axes_muscles)
                 for k in range(nlp["nbMuscle"]):
                     axes_muscles[k].set_title(nlp["model"].muscleNames()[k].to_string())
-                axes_muscles[nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel(
-                    "time (s)"
-                )
+                axes_muscles[nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel("time (s)")
                 self.fig_muscles.tight_layout()
 
             intersections_time = PlotOcp.find_phases_intersections(ocp)
@@ -160,9 +153,7 @@ class AnimateCallback(Callback):
 
         self.plot_pipe, plotter_pipe = mp.Pipe()
         self.plotter = self.ProcessPlotter(ocp)
-        self.plot_process = mp.Process(
-            target=self.plotter, args=(plotter_pipe,), daemon=True
-        )
+        self.plot_process = mp.Process(target=self.plotter, args=(plotter_pipe,), daemon=True)
         self.plot_process.start()
 
     @staticmethod

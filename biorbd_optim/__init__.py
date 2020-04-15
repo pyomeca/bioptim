@@ -69,13 +69,9 @@ class OptimalControlProgram:
         elif isinstance(biorbd_model, biorbd.biorbd.Model):
             biorbd_model = [biorbd_model]
         elif isinstance(biorbd_model, (list, tuple)):
-            biorbd_model = [
-                biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model
-            ]
+            biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
         else:
-            raise RuntimeError(
-                "biorbd_model must either be a string or an instance of biorbd.Model()"
-            )
+            raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
         self.nb_phases = len(biorbd_model)
         self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
@@ -84,12 +80,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("ns", number_shooting_points, False)
         self.__add_to_nlp("tf", phase_time, False)
         self.__add_to_nlp(
-            "dt",
-            [
-                self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1)
-                for i in range(self.nb_phases)
-            ],
-            False,
+            "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
         )
         self.is_cyclic_constraint = is_cyclic_constraint
         self.is_cyclic_objective = is_cyclic_objective
@@ -126,13 +117,8 @@ class OptimalControlProgram:
         self.symbolic_states = MX.sym("x", self.nlp[0]["nx"], 1)
         self.symbolic_controls = MX.sym("u", self.nlp[0]["nu"], 1)
         for i in range(self.nb_phases):
-            if (
-                self.nlp[0]["nx"] != self.nlp[i]["nx"]
-                or self.nlp[0]["nu"] != self.nlp[i]["nu"]
-            ):
-                raise RuntimeError(
-                    "Dynamics with different nx or nu is not supported yet"
-                )
+            if self.nlp[0]["nx"] != self.nlp[i]["nx"] or self.nlp[0]["nu"] != self.nlp[i]["nu"]:
+                raise RuntimeError("Dynamics with different nx or nu is not supported yet")
             self.__prepare_dynamics(self.nlp[i])
 
         # Prepare constraints
@@ -195,10 +181,7 @@ class OptimalControlProgram:
                     for i in range(self.nb_phases):
                         self.nlp[i][param_name] = param
                 else:
-                    raise RuntimeError(
-                        param_name
-                        + " must be a list or tuple when number of phase is not equal to 1"
-                    )
+                    raise RuntimeError(param_name + " must be a list or tuple when number of phase is not equal to 1")
 
     def __prepare_dynamics(self, nlp):
         """
@@ -218,10 +201,7 @@ class OptimalControlProgram:
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
 
         ode_opt = {"t0": 0, "tf": nlp["dt"]}
-        if (
-            nlp["ode_solver"] == OdeSolver.RK
-            or nlp["ode_solver"] == OdeSolver.COLLOCATION
-        ):
+        if nlp["ode_solver"] == OdeSolver.RK or nlp["ode_solver"] == OdeSolver.COLLOCATION:
             ode_opt["number_of_finite_elements"] = 5
 
         if nlp["ode_solver"] == OdeSolver.RK:

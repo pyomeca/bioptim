@@ -31,21 +31,14 @@ def prepare_ocp(
     # x_expanded ==> [0, 0, 0, 34.434, 123, -34.434, 123, ]
     #
     if use_symmetry:
-        dof_mapping = Mapping(
-            [-1, -1, -1, 0, 1, 0, 1, 2, 3, 4, 2, 3, 4], [3, 4, 7, 8, 9], [5]
-        )
+        dof_mapping = Mapping([-1, -1, -1, 0, 1, 0, 1, 2, 3, 4, 2, 3, 4], [3, 4, 7, 8, 9], [5])
         dof_mapping = dof_mapping, dof_mapping
     else:
-        dof_mapping = [
-            Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model
-        ]
+        dof_mapping = [Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model]
 
     # Add objective functions
     objective_functions = (
-        (
-            (ObjectiveFunction.minimize_torque, {"weight": 1}),
-            (ObjectiveFunction.minimize_states, {"weight": 1}),
-        ),
+        ((ObjectiveFunction.minimize_torque, {"weight": 1}), (ObjectiveFunction.minimize_states, {"weight": 1}),),
         ((ObjectiveFunction.minimize_states, 1),),
     )
 
