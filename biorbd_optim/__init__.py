@@ -141,7 +141,7 @@ class OptimalControlProgram:
         Constraint.continuity_constraint(self)
 
         if self.nb_phases == 1:
-            if (
+            if len(constraints) == 0 or (
                 isinstance(constraints, (list, tuple))
                 and isinstance(constraints[0], (list, tuple))
                 and not isinstance(constraints[0][0], (list, tuple))
