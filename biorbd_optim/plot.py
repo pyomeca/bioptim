@@ -29,9 +29,9 @@ class PlotOcp:
             self.ns += nlp["ns"] + 1
 
         self.axes = []
-        if (self.problem_type == ProblemType.torque_driven
-                or self.problem_type == ProblemType.torque_driven_with_contact
-                or self.problem_type == ProblemType.muscles_and_torque_driven):
+        if (self.problem_type == ProblemType.torque_driven or
+                self.problem_type == ProblemType.torque_driven_with_contact or
+                self.problem_type == ProblemType.muscles_and_torque_driven):
             for i in range(self.ocp.nb_phases):
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
                     raise RuntimeError(
@@ -105,10 +105,11 @@ class PlotOcp:
             if (
                 self.problem_type == ProblemType.torque_driven
                 or self.problem_type == ProblemType.torque_driven_with_contact
-                or self.problem_type == ProblemType.muscles_and_torque_driven):
-                #TODO: Add an integrator for the states
+                or self.problem_type == ProblemType.muscles_and_torque_driven
+            ):
                 if (self.problem_type == ProblemType.torque_driven
                         or self.problem_type == ProblemType.torque_driven_with_contact):
+                    #TODO: Add an integrator for the states
                     q, q_dot, tau = ProblemType.get_data_from_V(self.ocp, V, i)
                     self.__update_ydata(q, nlp["nbQ"], i)
                     self.__update_ydata(q_dot, nlp["nbQdot"], i)
