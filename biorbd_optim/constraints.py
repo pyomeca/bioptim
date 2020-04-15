@@ -52,7 +52,7 @@ class Constraint:
                 x = [nlp["X"][0]]
                 u = [nlp["U"][0]]
             elif elem[1] == Constraint.Instant.MID:
-                if nlp.ns % 2 == 0:
+                if nlp["ns"] % 2 == 0:
                     raise (ValueError("Number of shooting points must be odd to use MID"))
                 x = [nlp["X"][nlp["ns"] // 2 + 1]]
                 u = [nlp["U"][nlp["ns"] // 2 + 1]]
