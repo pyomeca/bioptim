@@ -101,3 +101,4 @@ if __name__ == "__main__":
         b.exec()
     except ModuleNotFoundError:
         print("Install BiorbdViz if you want to have a live view of the optimization")
+
