@@ -29,9 +29,9 @@ class PlotOcp:
             self.ns += nlp["ns"] + 1
 
         self.axes = []
-        if (self.problem_type == ProblemType.torque_driven or
-                self.problem_type == ProblemType.torque_driven_with_contact):
-            or self.problem_type == ProblemType.muscles_and_torque_driven:
+        if (self.problem_type == ProblemType.torque_driven
+                or self.problem_type == ProblemType.torque_driven_with_contact
+                or self.problem_type == ProblemType.muscles_and_torque_driven):
             for i in range(self.ocp.nb_phases):
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
                     raise RuntimeError(
@@ -106,10 +106,9 @@ class PlotOcp:
             if (
                 self.problem_type == ProblemType.torque_driven
                 or self.problem_type == ProblemType.torque_driven_with_contact
-                or self.problem_type == ProblemType.muscles_and_torque_driven
-            ):
+                or self.problem_type == ProblemType.muscles_and_torque_driven):
                 #TODO: Add an integrator for the states
-                if (self.problem_type == ProblemType.torque_driven_no_contact
+                if (self.problem_type == ProblemType.torque_driven
                         or self.problem_type == ProblemType.torque_driven_with_contact):
                     q, q_dot, tau = ProblemType.get_data_from_V(self.ocp, V, i)
                     self.__update_ydata(q, nlp["nbQ"], i)
@@ -149,6 +148,7 @@ class PlotOcp:
                     )
                 )
                 ax.get_lines()[0].set_ydata(y)
+
 
 class AnimateCallback(Callback):
     def __init__(self, ocp, opts={}):
