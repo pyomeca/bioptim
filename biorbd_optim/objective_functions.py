@@ -28,8 +28,8 @@ class ObjectiveFunction:
         n_tau = nlp["nbTau"]
         for i in range(nlp["ns"]):
             ocp.J += (
-                casadi.dot(nlp["model"].marker(nlp["U"][i][n_tau:] - data),
-                           nlp["model"].marker(nlp["U"][i][n_tau:] - data)) * nlp["dt"] * nlp["dt"] * weight
+                casadi.dot(nlp["U"][i][n_tau:] - data[i, :],
+                           nlp["U"][i][n_tau:] - data[i, :]) * nlp["dt"] * nlp["dt"] * weight
             )
 
     @staticmethod
