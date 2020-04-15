@@ -65,10 +65,10 @@ def prepare_ocp(
     non_pulling_on_floor_2_contacts = (
         Constraint.Type.CONTACT_FORCE_GREATER_THAN,
         Constraint.Instant.ALL,
+        (
         (1, 0),
         (2, 0),
-        (4, 0),
-        (5, 0),
+        ),
     )
 
     constraints_first_phase.append(non_pulling_on_floor_2_contacts)
@@ -148,15 +148,19 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     sol = ocp.solve()
+
+    # x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
+    # x = ocp.nlp[0]["dof_mapping"].expand(x)
     #
-    # all_q = np.ndarray((ocp.ns + 1, nlp.model.nbQ()))
-    # cmp = 0
-    # for idx in nlp.dof_mapping.expand_idx:
-    #     q = sol["x"][0 * nlp.nbQ + idx :: 3 * nlp.nbQ]
-    #     all_q[:, cmp : cmp + 1] = np.array(q)
-    #     cmp += 1
+    # plt_ocp = PlotOcp(ocp)
+    # plt_ocp.update_data(sol["x"])
+    # plt_ocp.show()
     #
-    # import BiorbdViz
-    # b = BiorbdViz.BiorbdViz(loaded_model=nlp.model)
-    # b.load_movement(all_q)
-    # b.exec()
+    # try:
+    #     from BiorbdViz import BiorbdViz
+    #
+    #     b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
+    #     b.load_movement(x.T)
+    #     b.exec()
+    # except ModuleNotFoundError:
+    #     print("Install BiorbdViz if you want to have a live view of the optimization")
