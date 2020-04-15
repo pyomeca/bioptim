@@ -12,14 +12,16 @@ from biorbd_optim import ProblemType
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
     "eocarSym",
-    str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSymByConstruction.py",
+    str(PROJECT_FOLDER)
+    + "/examples/symmetrical_torque_driven_ocp/eocarSymByConstruction.py",
 )
 eocarSymByConstruction = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(eocarSymByConstruction)
 
 spec = importlib.util.spec_from_file_location(
     "eocarSym",
-    str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSymByConstraint.py",
+    str(PROJECT_FOLDER)
+    + "/examples/symmetrical_torque_driven_ocp/eocarSymByConstraint.py",
 )
 eocarSymByConstraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(eocarSymByConstraint)
@@ -81,8 +83,12 @@ def test_eocar_sym_by_constraint():
     q, qdot, tau = ProblemType.get_data_from_V(ocp, sol["x"])
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((-0.2, -1.1797959, 0.20135792, -0.20135792)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((0.2, -0.7797959, -0.20135792, 0.20135792)))
+    np.testing.assert_almost_equal(
+        q[:, 0], np.array((-0.2, -1.1797959, 0.20135792, -0.20135792))
+    )
+    np.testing.assert_almost_equal(
+        q[:, -1], np.array((0.2, -0.7797959, -0.20135792, 0.20135792))
+    )
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))

@@ -70,11 +70,12 @@ def prepare_ocp(
         constraints_second_phase.append(symmetrical_constraint)
 
     non_pulling_on_floor_2_contacts = (
-        (
-            Constraint.Type.CONTACT_FORCE_GREATER_THAN,
-            Constraint.Instant.ALL,
-            (1, 0), (2, 0), (4, 0), (5, 0),
-        )
+        Constraint.Type.CONTACT_FORCE_GREATER_THAN,
+        Constraint.Instant.ALL,
+        (1, 0),
+        (2, 0),
+        (4, 0),
+        (5, 0),
     )
 
     constraints_first_phase.append(non_pulling_on_floor_2_contacts)
@@ -105,9 +106,7 @@ def prepare_ocp(
     pose_at_first_node += [0] * nb_reduced  # Adds Qdot
 
     # Initialize X_bounds
-    X_bounds = [
-        QAndQDotBounds(biorbd_model[i], dof_mapping[i]) for i in range(nb_phases)
-    ]
+    X_bounds = [QAndQDotBounds(biorbd_model[i], dof_mapping[i]) for i in range(nb_phases)]
     X_bounds[0].first_node_min = pose_at_first_node
     X_bounds[0].first_node_max = pose_at_first_node
     X_bounds[0].last_node_min = pose_at_first_node
@@ -125,12 +124,8 @@ def prepare_ocp(
 
     # Define control path constraint
     U_bounds = [
-        Bounds(
-            min_bound=[torque_min] * nb_reduced, max_bound=[torque_max] * nb_reduced
-        ),
-        Bounds(
-            min_bound=[torque_min] * nb_reduced, max_bound=[torque_max] * nb_reduced
-        ),
+        Bounds(min_bound=[torque_min] * nb_reduced, max_bound=[torque_max] * nb_reduced),
+        Bounds(min_bound=[torque_min] * nb_reduced, max_bound=[torque_max] * nb_reduced),
     ]
 
     U_init = [

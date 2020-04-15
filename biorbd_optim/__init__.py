@@ -227,9 +227,7 @@ class OptimalControlProgram:
         if nlp["ode_solver"] == OdeSolver.RK:
             nlp["dynamics"] = casadi.integrator("integrator", "rk", ode, ode_opt)
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
-            nlp["dynamics"] = casadi.integrator(
-                "integrator", "collocation", ode, ode_opt
-            )
+            nlp["dynamics"] = casadi.integrator("integrator", "collocation", ode, ode_opt)
         elif nlp["ode_solver"] == OdeSolver.CVODES:
             nlp["dynamics"] = casadi.integrator("integrator", "cvodes", ode, ode_opt)
 
@@ -251,12 +249,8 @@ class OptimalControlProgram:
         for k in range(nlp["ns"]):
             X.append(V.nz[offset : offset + nlp["nx"]])
             if k == 0:
-                V_bounds.min[offset : offset + nlp["nx"]] = nlp[
-                    "X_bounds"
-                ].first_node_min
-                V_bounds.max[offset : offset + nlp["nx"]] = nlp[
-                    "X_bounds"
-                ].first_node_max
+                V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].first_node_min
+                V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].first_node_max
             else:
                 V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].min
                 V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].max
@@ -265,12 +259,8 @@ class OptimalControlProgram:
 
             U.append(V.nz[offset : offset + nlp["nu"]])
             if k == 0:
-                V_bounds.min[offset : offset + nlp["nu"]] = nlp[
-                    "U_bounds"
-                ].first_node_min
-                V_bounds.max[offset : offset + nlp["nu"]] = nlp[
-                    "U_bounds"
-                ].first_node_max
+                V_bounds.min[offset : offset + nlp["nu"]] = nlp["U_bounds"].first_node_min
+                V_bounds.max[offset : offset + nlp["nu"]] = nlp["U_bounds"].first_node_max
             else:
                 V_bounds.min[offset : offset + nlp["nu"]] = nlp["U_bounds"].min
                 V_bounds.max[offset : offset + nlp["nu"]] = nlp["U_bounds"].max

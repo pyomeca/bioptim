@@ -29,9 +29,11 @@ class PlotOcp:
             self.ns += nlp["ns"] + 1
 
         self.axes = []
-        if (self.problem_type == ProblemType.torque_driven or
-                self.problem_type == ProblemType.torque_driven_with_contact or
-                self.problem_type == ProblemType.muscles_and_torque_driven):
+        if (
+            self.problem_type == ProblemType.torque_driven
+            or self.problem_type == ProblemType.torque_driven_with_contact
+            or self.problem_type == ProblemType.muscles_and_torque_driven
+        ):
             for i in range(self.ocp.nb_phases):
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
                     raise RuntimeError(
@@ -45,9 +47,7 @@ class PlotOcp:
             axes_dof[mid_column_idx].set_title("q")
             axes_dof[nlp["nbQ"] + mid_column_idx].set_title("q_dot")
             axes_dof[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_title("tau")
-            axes_dof[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_xlabel(
-                "time (s)"
-            )
+            axes_dof[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_xlabel("time (s)")
             self.fig_q_qdot_tau.tight_layout()
 
             if self.problem_type == ProblemType.muscles_and_torque_driven:
@@ -55,7 +55,7 @@ class PlotOcp:
                 nlp = self.ocp.nlp[0]
                 nb_cols = int(np.sqrt(nlp["nbMuscle"])) + 1
                 if nb_cols * (nb_cols - 1) >= nlp["nbMuscle"]:
-                    nb_rows = nb_cols -1
+                    nb_rows = nb_cols - 1
                 else:
                     nb_rows = nb_cols
 
@@ -107,9 +107,11 @@ class PlotOcp:
                 or self.problem_type == ProblemType.torque_driven_with_contact
                 or self.problem_type == ProblemType.muscles_and_torque_driven
             ):
-                if (self.problem_type == ProblemType.torque_driven
-                        or self.problem_type == ProblemType.torque_driven_with_contact):
-                    #TODO: Add an integrator for the states
+                if (
+                    self.problem_type == ProblemType.torque_driven
+                    or self.problem_type == ProblemType.torque_driven_with_contact
+                ):
+                    # TODO: Add an integrator for the states
                     q, q_dot, tau = ProblemType.get_data_from_V(self.ocp, V, i)
                     self.__update_ydata(q, nlp["nbQ"], i)
                     self.__update_ydata(q_dot, nlp["nbQdot"], i)
@@ -146,7 +148,6 @@ class PlotOcp:
                 )
             )
             ax.get_lines()[0].set_ydata(y)
-
 
 
 class AnimateCallback(Callback):

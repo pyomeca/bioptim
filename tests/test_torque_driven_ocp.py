@@ -19,8 +19,7 @@ spec.loader.exec_module(eocar)
 
 def test_eocar():
     ocp = eocar.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER)
-        + "/examples/torque_driven_ocp/eocar.bioMod"
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/eocar.bioMod"
     )
     sol = ocp.solve()
 

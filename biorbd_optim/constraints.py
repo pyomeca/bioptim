@@ -7,6 +7,7 @@ from .dynamics import Dynamics
 
 # TODO: Convert the constraint in CasADi function?
 
+
 class Constraint:
     @staticmethod
     class Type(enum.Enum):
@@ -52,9 +53,7 @@ class Constraint:
                 u = [nlp["U"][0]]
             elif elem[1] == Constraint.Instant.MID:
                 if nlp.ns % 2 == 0:
-                    raise (
-                        ValueError("Number of shooting points must be odd to use MID")
-                    )
+                    raise (ValueError("Number of shooting points must be odd to use MID"))
                 x = [nlp["X"][nlp["ns"] // 2 + 1]]
                 u = [nlp["U"][nlp["ns"] // 2 + 1]]
             elif elem[1] == Constraint.Instant.INTERMEDIATES:
@@ -139,21 +138,30 @@ class Constraint:
         CS_func = Function(
             "Contact_force_inequality",
             [ocp.symbolic_states, ocp.symbolic_controls],
-            [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
+            [
+                Dynamics.forces_from_forward_dynamics_with_contact(
+                    ocp.symbolic_states, ocp.symbolic_controls, nlp
+                )
+            ],
             ["x", "u"],
-            ["CS"]).expand()
+            ["CS"],
+        ).expand()
 
         if not isinstance(policy[0], (tuple, list)):
             policy = [policy]
 
         for i in range(len(U)):
             contact_forces = CS_func(X[i], U[i])
-            contact_forces = contact_forces[:6] # To be changed: it must be reduced by symmetry (if sym by construction)
+            contact_forces = contact_forces[
+                :6
+            ]  # To be changed: it must be reduced by symmetry (if sym by construction)
 
             for elem in policy:
                 ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
                 ocp.g_bounds.min.append(elem[1])
-                ocp.g_bounds.max.append(10000000)  # How can we only put lower bound ? Cf optistack subject_to code
+                ocp.g_bounds.max.append(
+                    10000000
+                )  # How can we only put lower bound ? Cf optistack subject_to code
 
     @staticmethod
     def continuity_constraint(ocp):

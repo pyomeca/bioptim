@@ -68,12 +68,8 @@ class Bounds(PathCondition):
         if len(self.last_node_max) == 0:
             self.last_node_max = self.max
 
-        self.regulation_private(
-            self.first_node_min, nb_elements, "Bound first node min"
-        )
-        self.regulation_private(
-            self.first_node_max, nb_elements, "Bound first node max"
-        )
+        self.regulation_private(self.first_node_min, nb_elements, "Bound first node min")
+        self.regulation_private(self.first_node_max, nb_elements, "Bound first node max")
         self.regulation_private(self.last_node_min, nb_elements, "Bound last node min")
         self.regulation_private(self.last_node_max, nb_elements, "Bound last node max")
 
