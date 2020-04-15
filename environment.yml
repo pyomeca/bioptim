@@ -10,3 +10,4 @@ dependencies:
 - casadi
 #- biorbd
 - black
+- matplotlib
