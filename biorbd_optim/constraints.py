@@ -7,6 +7,7 @@ from .dynamics import Dynamics
 
 # TODO: Convert the constraint in CasADi function?
 
+
 class Constraint:
     @staticmethod
     class Type(enum.Enum):
@@ -52,9 +53,7 @@ class Constraint:
                 u = [nlp["U"][0]]
             elif elem[1] == Constraint.Instant.MID:
                 if nlp.ns % 2 == 0:
-                    raise (
-                        ValueError("Number of shooting points must be odd to use MID")
-                    )
+                    raise (ValueError("Number of shooting points must be odd to use MID"))
                 x = [nlp["X"][nlp["ns"] // 2 + 1]]
                 u = [nlp["U"][nlp["ns"] // 2 + 1]]
             elif elem[1] == Constraint.Instant.INTERMEDIATES:
@@ -76,16 +75,12 @@ class Constraint:
                 Constraint.__proportional_variable(ocp, nlp, x, elem[2])
             elif elem[0] == Constraint.Type.PROPORTIONAL_CONTROL:
                 if elem[1] == Constraint.Instant.END:
-                    raise RuntimeError(
-                        "Instant.END is used even though there is no control u at last node"
-                    )
+                    raise RuntimeError("Instant.END is used even though there is no control u at last node")
                 Constraint.__proportional_variable(ocp, nlp, u, elem[2])
 
             elif elem[0] == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
                 if elem[1] == Constraint.Instant.END:
-                    raise RuntimeError(
-                        "Instant.END is used even though there is no control u at last node"
-                    )
+                    raise RuntimeError("Instant.END is used even though there is no control u at last node")
                 Constraint.__contact_force_inequality(ocp, nlp, x, u, elem[2])
 
     @staticmethod
@@ -141,14 +136,17 @@ class Constraint:
             [ocp.symbolic_states, ocp.symbolic_controls],
             [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
             ["x", "u"],
-            ["CS"]).expand()
+            ["CS"],
+        ).expand()
 
         if not isinstance(policy[0], (tuple, list)):
             policy = [policy]
 
         for i in range(len(U)):
             contact_forces = CS_func(X[i], U[i])
-            contact_forces = contact_forces[:6] # To be changed: it must be reduced by symmetry (if sym by construction)
+            contact_forces = contact_forces[
+                :6
+            ]  # To be changed: it must be reduced by symmetry (if sym by construction)
 
             for elem in policy:
                 ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
@@ -167,9 +165,7 @@ class Constraint:
             # Loop over shooting nodes
             for k in range(nlp["ns"]):
                 # Create an evaluation node
-                end_node = nlp["dynamics"].call({"x0": nlp["X"][k], "p": nlp["U"][k]})[
-                    "xf"
-                ]
+                end_node = nlp["dynamics"].call({"x0": nlp["X"][k], "p": nlp["U"][k]})["xf"]
 
                 # Save continuity constraints
                 ocp.g = vertcat(ocp.g, end_node - nlp["X"][k + 1])
@@ -180,9 +176,7 @@ class Constraint:
         # Dynamics must be continuous between phases
         for i in range(len(ocp.nlp) - 1):
             if ocp.nlp[i]["nx"] != ocp.nlp[i + 1]["nx"]:
-                raise RuntimeError(
-                    "Phase constraints without same nx is not supported yet"
-                )
+                raise RuntimeError("Phase constraints without same nx is not supported yet")
 
             ocp.g = vertcat(ocp.g, ocp.nlp[i]["X"][-1] - ocp.nlp[i + 1]["X"][0])
             for _ in range(ocp.nlp[i]["nx"]):
@@ -192,9 +186,7 @@ class Constraint:
         if ocp.is_cyclic_constraint:
             # Save continuity constraints between final integration and first node
             if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
-                raise RuntimeError(
-                    "Cyclic constraint without same nx is not supported yet"
-                )
+                raise RuntimeError("Cyclic constraint without same nx is not supported yet")
             ocp.g = vertcat(ocp.g, ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0])
             for i in range(ocp.nlp[0]["nx"]):
                 ocp.g_bounds.min.append(0)
