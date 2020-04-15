@@ -23,12 +23,12 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     # Add objective functions
     objective_functions = (
-        # (ObjectiveFunction.minimize_torque, {"weight": 1}),
+        #(ObjectiveFunction.minimize_torque, {"weight": 1}),
         (ObjectiveFunction.minimize_muscle, {"weight": 1}),
-        (
-            ObjectiveFunction.minimize_final_distance_between_two_markers,
-            {"markers": (0, 5), "weight": 1},
-        ),
+        # (
+        #     ObjectiveFunction.minimize_final_distance_between_two_markers,
+        #     {"markers": (0, 5), "weight": 100},
+        # ),
     )
 
     # Dynamics
@@ -41,8 +41,8 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     X_bounds = QAndQDotBounds(biorbd_model)
 
     # Set the initial position
-    X_bounds.first_node_min = (0.07, 1.4, 0, 0)
-    X_bounds.first_node_max = (0.07, 1.4, 0, 0)
+    # X_bounds.first_node_min = (0.07, 1.4, 0, 0)
+    # X_bounds.first_node_max = (0.07, 1.4, 0, 0)
 
     # Initial guess
     X_init = InitialConditions(
@@ -79,7 +79,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
 
 if __name__ == "__main__":
-    ocp = prepare_nlp(show_online_optim=False)
+    ocp = prepare_nlp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = ocp.solve()
@@ -89,15 +89,6 @@ if __name__ == "__main__":
 
     np.save("static_arm", x.T)
 
-    # plt_ocp = PlotOcp(ocp)
-    # plt_ocp.update_data(sol["x"])
-    # plt_ocp.show()
-
-    try:
-        from BiorbdViz import BiorbdViz
-
-        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"], show_meshes=False)
-        b.load_movement(x.T)
-        b.exec()
-    except ModuleNotFoundError:
-        print("Install BiorbdViz if you want to have a live view of the optimization")
+    plt_ocp = PlotOcp(ocp)
+    plt_ocp.update_data(sol["x"])
+    plt_ocp.show()
