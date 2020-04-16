@@ -91,9 +91,9 @@ class Constraint:
         :param X: List of instant(s).
         :param policy: Tuple of indices of two markers.
         """
-        nq = nlp["dof_mapping"].nb_reduced
+        nq = nlp["q_mapping"].nb_reduced
         for x in X:
-            q = nlp["dof_mapping"].expand(x[:nq])
+            q = nlp["q_mapping"].expand(x[:nq])
             marker1 = nlp["model"].marker(q, policy[0]).to_mx()
             marker2 = nlp["model"].marker(q, policy[1]).to_mx()
             ocp.g = vertcat(ocp.g, marker1 - marker2)
@@ -119,7 +119,7 @@ class Constraint:
                     "A mix of tuples/lists and non tuples/lists cannot be used for defining proportionality constraints"
                 )
             for v in V:
-                v = nlp["dof_mapping"].expand(v)
+                v = nlp["q_mapping"].expand(v)
                 ocp.g = vertcat(ocp.g, v[elem[0]] - elem[2] * v[elem[1]])
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)

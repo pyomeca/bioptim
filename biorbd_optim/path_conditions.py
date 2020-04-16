@@ -81,9 +81,18 @@ class Bounds(PathCondition):
 
 
 class QAndQDotBounds(Bounds):
-    def __init__(self, biorbd_model, dof_mapping=None):
-        if not dof_mapping:
-            dof_mapping = Mapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+    def __init__(self, biorbd_model, all_generalized_mapping=None, q_mapping=None, q_dot_mapping=None):
+        if all_generalized_mapping is not None:
+            if (q_mapping is not None
+                    or q_dot_mapping is not None):
+                raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used along side")
+            q_mapping = all_generalized_mapping
+            q_dot_mapping = all_generalized_mapping
+
+        if not q_mapping:
+            q_mapping = Mapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+        if not q_dot_mapping:
+            q_dot_mapping = Mapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
 
         QRanges = []
         QDotRanges = []
@@ -92,11 +101,11 @@ class QAndQDotBounds(Bounds):
             QRanges += [q_range for q_range in segment.QRanges()]
             QDotRanges += [qdot_range for qdot_range in segment.QDotRanges()]
 
-        x_min = [QRanges[i].min() for i in dof_mapping.reduce_idx] + [
-            QDotRanges[i].min() for i in dof_mapping.reduce_idx
+        x_min = [QRanges[i].min() for i in q_mapping.reduce_idx] + [
+            QDotRanges[i].min() for i in q_dot_mapping.reduce_idx
         ]
-        x_max = [QRanges[i].max() for i in dof_mapping.reduce_idx] + [
-            QDotRanges[i].max() for i in dof_mapping.reduce_idx
+        x_max = [QRanges[i].max() for i in q_mapping.reduce_idx] + [
+            QDotRanges[i].max() for i in q_dot_mapping.reduce_idx
         ]
 
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
