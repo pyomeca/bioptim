@@ -13,6 +13,8 @@ class Mapping:
         """
         Docstring à compléter, récupère des variables symétrisées qu'elle signe et renvoie non sym
         """
+        obj_expanded = obj[self.expand_idx, :]
+        obj_expanded[[idx for idx, val in enumerate(self.expand_idx) if val < 0], :] = 0
 
         obj_expanded = obj[self.expand_idx, :]
         if self.sign_to_oppose != ():
