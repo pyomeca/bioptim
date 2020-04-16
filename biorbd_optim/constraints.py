@@ -1,4 +1,6 @@
 import enum
+import biorbd
+import numpy as np
 
 from casadi import vertcat, MX, Function
 
@@ -16,9 +18,10 @@ class Constraint:
         """
 
         MARKERS_TO_PAIR = 0
-        PROPORTIONAL_Q = 1
-        PROPORTIONAL_CONTROL = 2
-        CONTACT_FORCE_GREATER_THAN = 3
+        ALIGN_WITH_CUSTOM_RT = 1
+        PROPORTIONAL_Q = 2
+        PROPORTIONAL_CONTROL = 3
+        CONTACT_FORCE_GREATER_THAN = 4
         # TODO: PAUL = Add lesser than
         # TODO: PAUL = Add frictional cone
 
@@ -71,8 +74,12 @@ class Constraint:
             if elem[0] == Constraint.Type.MARKERS_TO_PAIR:
                 Constraint.__markers_to_pair(ocp, nlp, x, elem[2])
 
+            elif elem[0] == Constraint.Type.ALIGN_WITH_CUSTOM_RT:
+                Constraint.__align_with_custom_rt(ocp, nlp, x, elem[2])
+
             elif elem[0] == Constraint.Type.PROPORTIONAL_Q:
                 Constraint.__proportional_variable(ocp, nlp, x, elem[2])
+
             elif elem[0] == Constraint.Type.PROPORTIONAL_CONTROL:
                 if elem[1] == Constraint.Instant.END:
                     raise RuntimeError("Instant.END is used even though there is no control u at last node")
@@ -98,6 +105,25 @@ class Constraint:
             marker2 = nlp["model"].marker(q, policy[1]).to_mx()
             ocp.g = vertcat(ocp.g, marker1 - marker2)
             for i in range(3):
+                ocp.g_bounds.min.append(0)
+                ocp.g_bounds.max.append(0)
+
+    @staticmethod
+    def __align_with_custom_rt(ocp, nlp, X, policy):
+        """
+        Adds the constraint that the RT and the segment must be aligned at the desired instant(s).
+        :param nlp: An OptimalControlProgram class.
+        :param X: List of instant(s).
+        :param policy: Tuple of indices of segment and rt.
+        """
+        nq = nlp["dof_mapping"].nb_reduced
+        for x in X:
+            q = nlp["dof_mapping"].expand(x[:nq])
+            r_seg = np.array(nlp["model"].globalJCS(q, policy[0]).rot())
+            r_rt = np.array(nlp["model"].RT(q, policy[1]).rot())
+            constraint = biorbd.Rotation_toEulerAngles(r_seg.T * r_rt, "zyx")
+            ocp.g = vertcat(ocp.g, constraint)
+            for i in range(constraint.row()):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
 
