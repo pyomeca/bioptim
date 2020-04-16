@@ -43,7 +43,10 @@ class OptimalControlProgram:
         U_bounds,
         constraints,
         ode_solver=OdeSolver.RK,
-        dof_mapping=None,
+        all_generalized_mapping=None,
+        q_mapping=None,
+        q_dot_mapping=None,
+        tau_mapping=None,
         is_cyclic_objective=False,
         is_cyclic_constraint=False,
         show_online_optim=False,
@@ -86,7 +89,15 @@ class OptimalControlProgram:
         self.is_cyclic_objective = is_cyclic_objective
 
         # Compute problem size
-        self.__add_to_nlp("dof_mapping", dof_mapping, dof_mapping is None)
+        if all_generalized_mapping is not None:
+            if (q_mapping is not None
+                    or q_dot_mapping is not None
+                    or tau_mapping is not None):
+                raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used along side")
+            q_mapping, q_dot_mapping, tau_mapping = all_generalized_mapping
+        self.__add_to_nlp("q_mapping", q_mapping, q_mapping is None)
+        self.__add_to_nlp("q_dot_mapping", q_dot_mapping, q_dot_mapping is None)
+        self.__add_to_nlp("tau_mapping", tau_mapping, tau_mapping is None)
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
             self.nlp[i]["problem_type"](self.nlp[i])

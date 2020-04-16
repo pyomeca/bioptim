@@ -31,10 +31,14 @@ def prepare_ocp(
     # x_expanded ==> [0, 0, 0, 34.434, 123, -34.434, 123, ]
     #
     if use_symmetry:
-        dof_mapping = Mapping([-1, -1, -1, 0, 1, 0, 1, 2, 3, 4, 2, 3, 4], [3, 4, 7, 8, 9], [5])
-        dof_mapping = dof_mapping, dof_mapping
+        q_mapping = Mapping([0, 1, 2, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7], [0, 1, 2, 3, 4, 7, 8, 9], [5])
+        q_mapping = q_mapping, q_mapping
+        tau_mapping = Mapping([-1, -1, -1, 0, 1, 0, 1, 2, 3, 4, 2, 3, 4], [3, 4, 7, 8, 9], [5])
+        tau_mapping = tau_mapping, tau_mapping
+
     else:
-        dof_mapping = [Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model]
+        q_mapping = [Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model]
+        tau_mapping = q_mapping
 
     # Add objective functions
     objective_functions = (
@@ -138,7 +142,9 @@ def prepare_ocp(
         X_bounds,
         U_bounds,
         constraints,
-        dof_mapping=dof_mapping,
+        q_mapping=q_mapping,
+        q_dot_mapping=q_mapping,
+        tau_mapping=tau_mapping,
         show_online_optim=show_online_optim,
     )
 
