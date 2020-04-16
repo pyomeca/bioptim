@@ -83,8 +83,7 @@ class Bounds(PathCondition):
 class QAndQDotBounds(Bounds):
     def __init__(self, biorbd_model, all_generalized_mapping=None, q_mapping=None, q_dot_mapping=None):
         if all_generalized_mapping is not None:
-            if (q_mapping is not None
-                    or q_dot_mapping is not None):
+            if q_mapping is not None or q_dot_mapping is not None:
                 raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used along side")
             q_mapping = all_generalized_mapping
             q_dot_mapping = all_generalized_mapping

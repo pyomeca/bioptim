@@ -144,7 +144,7 @@ class Constraint:
 
         for i in range(len(U)):
             contact_forces = CS_func(X[i], U[i])
-            contact_forces = contact_forces[:nlp["model"].nbContacts()]
+            contact_forces = contact_forces[: nlp["model"].nbContacts()]
             # [:number] -> To be changed: it must be reduced by symmetry (if sym by construction)
 
             for elem in policy:

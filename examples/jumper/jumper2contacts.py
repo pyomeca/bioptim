@@ -63,10 +63,7 @@ def prepare_ocp(
     non_pulling_on_floor_2_contacts = (
         Constraint.Type.CONTACT_FORCE_GREATER_THAN,
         Constraint.Instant.ALL,
-        (
-        (1, 0),
-        (2, 0),
-        ),
+        ((1, 0), (2, 0),),
     )
 
     constraints_first_phase.append(non_pulling_on_floor_2_contacts)
