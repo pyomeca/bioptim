@@ -1,13 +1,10 @@
 import biorbd
 import numpy as np
-from matplotlib import pyplot as plt
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.objective_functions import ObjectiveFunction
-from biorbd_optim.constraints import Constraint
 from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
-from biorbd_optim.plot import PlotOcp
 
 
 def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
@@ -81,10 +78,6 @@ if __name__ == "__main__":
 
     np.save("static_arm", x.T)
 
-    plt_ocp = PlotOcp(ocp)
-    plt_ocp.update_data(sol["x"])
-    plt_ocp.show()
-
     try:
         from BiorbdViz import BiorbdViz
 
@@ -93,3 +86,5 @@ if __name__ == "__main__":
         b.exec()
     except ModuleNotFoundError:
         print("Install BiorbdViz if you want to have a live view of the optimization")
+        from matplotlib import pyplot as plt
+        plt.show()
