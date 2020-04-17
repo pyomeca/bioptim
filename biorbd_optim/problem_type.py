@@ -36,29 +36,35 @@ class ProblemType:
         Configures common settings for torque driven problems with and without contacts.
         :param nlp: An OptimalControlProgram class.
         """
-        if nlp["dof_mapping"] is None:
-            nlp["dof_mapping"] = Mapping(range(nlp["model"].nbQ()), range(nlp["model"].nbQ()))
+        if nlp["q_mapping"] is None:
+            nlp["q_mapping"] = Mapping(range(nlp["model"].nbQ()), range(nlp["model"].nbQ()))
+        if nlp["q_dot_mapping"] is None:
+            nlp["q_dot_mapping"] = Mapping(range(nlp["model"].nbQdot()), range(nlp["model"].nbQdot()))
+        if nlp["q_dot_mapping"] is None:
+            nlp["tau_mapping"] = Mapping(
+                range(nlp["model"].nbGeneralizedTorques()), range(nlp["model"].nbGeneralizedTorques())
+            )
 
         dof_names = nlp["model"].nameDof()
         q = MX()
         q_dot = MX()
-        for i in nlp["dof_mapping"].reduce_idx:
+        for i in nlp["q_mapping"].reduce_idx:
             q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string()))
-        for i in nlp["dof_mapping"].reduce_idx:
+        for i in nlp["q_dot_mapping"].reduce_idx:
             q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string()))
         nlp["x"] = vertcat(q, q_dot)
 
         u = MX()
-        for i in nlp["dof_mapping"].reduce_idx:
+        for i in nlp["tau_mapping"].reduce_idx:
             u = vertcat(u, MX.sym("Tau_" + dof_names[i].to_string()))
         nlp["u"] = u
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()
 
-        nlp["nbQ"] = nlp["dof_mapping"].nb_reduced
-        nlp["nbQdot"] = nlp["dof_mapping"].nb_reduced
-        nlp["nbTau"] = nlp["dof_mapping"].nb_reduced
+        nlp["nbQ"] = nlp["q_mapping"].nb_reduced
+        nlp["nbQdot"] = nlp["q_dot_mapping"].nb_reduced
+        nlp["nbTau"] = nlp["tau_mapping"].nb_reduced
         nlp["nbMuscle"] = 0
 
     @staticmethod

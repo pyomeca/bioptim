@@ -87,4 +87,5 @@ if __name__ == "__main__":
     except ModuleNotFoundError:
         print("Install BiorbdViz if you want to have a live view of the optimization")
         from matplotlib import pyplot as plt
+
         plt.show()

@@ -89,7 +89,7 @@ class ObjectiveFunction:
     def minimize_final_distance_between_two_markers(ocp, nlp, weight=1, markers=()):
         if not isinstance(markers, (list, tuple)) or len(markers) != 2:
             raise RuntimeError("minimize_distance_between_two_markers expect markers to be a list of 2 marker indices")
-        q = nlp["dof_mapping"].expand(nlp["X"][nlp["ns"]][: nlp["nbQ"]])
+        q = nlp["q_mapping"].expand(nlp["X"][nlp["ns"]][: nlp["nbQ"]])
         marker0 = nlp["model"].marker(q, markers[0]).to_mx()
         marker1 = nlp["model"].marker(q, markers[1]).to_mx()
 
