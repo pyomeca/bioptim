@@ -36,7 +36,8 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = (
-        ((ObjectiveFunction.minimize_torque, {"weight": 1}), (ObjectiveFunction.minimize_states, {"weight": 1}),),
+        ((ObjectiveFunction.minimize_torque, {"weight": 1}),
+         (ObjectiveFunction.minimize_states, {"weight": 1}),),
         ((ObjectiveFunction.minimize_states, 1),),
     )
 
@@ -63,11 +64,16 @@ def prepare_ocp(
     non_pulling_on_floor_2_contacts = (
         Constraint.Type.CONTACT_FORCE_GREATER_THAN,
         Constraint.Instant.ALL,
-        ((1, 0), (2, 0),),
+        ((1, 0), (2, 0), (4, 0), (5, 0),),
+    )
+    non_pulling_on_floor_1_contacts = (
+        Constraint.Type.CONTACT_FORCE_GREATER_THAN,
+        Constraint.Instant.ALL,
+        ((1, 0), (3, 0)),
     )
 
     constraints_first_phase.append(non_pulling_on_floor_2_contacts)
-    constraints_second_phase.append(non_pulling_on_floor_2_contacts)
+    constraints_second_phase.append(non_pulling_on_floor_1_contacts)
     constraints = (constraints_first_phase, constraints_second_phase)
 
     # Path constraint
@@ -97,10 +103,10 @@ def prepare_ocp(
     X_bounds = [QAndQDotBounds(biorbd_model[i], all_generalized_mapping=q_mapping[i]) for i in range(nb_phases)]
     X_bounds[0].first_node_min = pose_at_first_node
     X_bounds[0].first_node_max = pose_at_first_node
-    X_bounds[0].last_node_min = pose_at_first_node
-    X_bounds[0].last_node_max = pose_at_first_node
-    X_bounds[1].first_node_min = pose_at_first_node
-    X_bounds[1].first_node_max = pose_at_first_node
+    # X_bounds[0].last_node_min = pose_at_first_node
+    # X_bounds[0].last_node_max = pose_at_first_node
+    # X_bounds[1].first_node_min = pose_at_first_node
+    # X_bounds[1].first_node_max = pose_at_first_node
     X_bounds[1].last_node_min = pose_at_first_node
     X_bounds[1].last_node_max = pose_at_first_node
 
