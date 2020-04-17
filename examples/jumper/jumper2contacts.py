@@ -36,8 +36,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = (
-        ((ObjectiveFunction.minimize_torque, {"weight": 1}),
-         (ObjectiveFunction.minimize_states, {"weight": 1}),),
+        ((ObjectiveFunction.minimize_torque, {"weight": 1}), (ObjectiveFunction.minimize_states, {"weight": 1}),),
         ((ObjectiveFunction.minimize_states, 1),),
     )
 
