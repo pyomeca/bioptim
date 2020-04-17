@@ -11,7 +11,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
-    torque_min, torque_max, torque_init = -100, 100, 0
+    torque_min, torque_max, torque_init = -1, 1, 0
     muscle_min, muscle_max, muscle_init = 0, 1, 0.5
 
     # Problem parameters
@@ -20,9 +20,9 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     # Add objective functions
     objective_functions = (
-        (ObjectiveFunction.minimize_torque, {"weight": 10}),
+        # (ObjectiveFunction.minimize_torque, {"weight": 1}),
         (ObjectiveFunction.minimize_muscle, {"weight": 1}),
-        (ObjectiveFunction.minimize_final_distance_between_two_markers, {"markers": (0, 5), "weight": 1},),
+        (ObjectiveFunction.minimize_final_distance_between_two_markers, {"markers": (0, 5), "weight": 1000},),
     )
 
     # Dynamics
