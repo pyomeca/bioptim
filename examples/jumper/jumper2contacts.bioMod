@@ -530,12 +530,12 @@ external_forces 0
     endmarker
 
     // Contact
-    contact    PiedG_1
+    contact    PiedD_1
         parent    PiedD
         position    -0.00465    0.15809    0.00611
         axis    yz
     endcontact
-    contact    PiedG_2
+    contact    PiedD_2
         parent    PiedD
         position    0.00757    0.01189    -0.01802
         axis    z
