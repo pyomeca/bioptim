@@ -119,11 +119,11 @@ class Constraint:
         nq = nlp["dof_mapping"].nb_reduced
         for x in X:
             q = nlp["dof_mapping"].expand(x[:nq])
-            r_seg = np.array(nlp["model"].globalJCS(q, policy[0]).rot())
-            r_rt = np.array(nlp["model"].RT(q, policy[1]).rot())
-            constraint = biorbd.Rotation_toEulerAngles(r_seg.T * r_rt, "zyx")
+            r_seg = nlp["model"].globalJCS(q, policy[0]).rot()
+            r_rt = nlp["model"].RT(q, policy[1]).rot()
+            constraint = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
             ocp.g = vertcat(ocp.g, constraint)
-            for i in range(constraint.row()):
+            for i in range(constraint.rows()):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
 
