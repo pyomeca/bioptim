@@ -35,15 +35,15 @@ class PlotOcp:
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
                     raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
             nlp = self.ocp.nlp[0]
-            self.fig_q_qdot_tau = plt.figure("Q, Qdot, Tau", figsize=(10, 6))
-            axes_dof = self.fig_q_qdot_tau.subplots(3, nlp["nbQ"]).flatten()
-            self.axes.extend(axes_dof)
-            mid_column_idx = int(nlp["nbQ"] / 2)
-            axes_dof[mid_column_idx].set_title("q")
-            axes_dof[nlp["nbQ"] + mid_column_idx].set_title("q_dot")
-            axes_dof[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_title("tau")
-            axes_dof[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_xlabel("time (s)")
-            self.fig_q_qdot_tau.tight_layout()
+            self.all_figures = []
+            for type in ["Q", "Qdot", "Tau"]:
+                self.all_figures.append(plt.figure(type, figsize=(10, 2)))
+                axes_dof = self.all_figures[-1].subplots(1, nlp["nb" + type]).flatten()
+                self.axes.extend(axes_dof)
+                mid_column_idx = int(nlp["nb" + type] / 2)
+                axes_dof[mid_column_idx].set_title(type)
+                axes_dof[nlp["nb" + type] - mid_column_idx].set_xlabel("time (s)")
+                self.all_figures[-1].tight_layout()
 
             if self.problem_type == ProblemType.muscles_and_torque_driven:
 
@@ -54,13 +54,13 @@ class PlotOcp:
                 else:
                     nb_rows = nb_cols
 
-                self.fig_muscles = plt.figure("Muscles", figsize=(10, 6))
-                axes_muscles = self.fig_muscles.subplots(nb_rows, nb_cols).flatten()
+                self.all_figures.append(plt.figure("Muscles", figsize=(10, 6)))
+                axes_muscles = self.all_figures[-1].subplots(nb_rows, nb_cols).flatten()
                 self.axes.extend(axes_muscles)
                 for k in range(nlp["nbMuscle"]):
                     axes_muscles[k].set_title(nlp["model"].muscleNames()[k].to_string())
                 axes_muscles[nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel("time (s)")
-                self.fig_muscles.tight_layout()
+                self.all_figures[-1].tight_layout()
 
             intersections_time = PlotOcp.find_phases_intersections(ocp)
             for i, ax in enumerate(self.axes):
@@ -195,7 +195,7 @@ class AnimateCallback(Callback):
         def __call__(self, pipe):
             self.pipe = pipe
             self.plot = PlotOcp(self.ocp)
-            timer = self.plot.fig_q_qdot_tau.canvas.new_timer(interval=100)
+            timer = self.plot.all_figures[0].canvas.new_timer(interval=100)
             timer.add_callback(self.callback)
             timer.start()
 
@@ -206,7 +206,6 @@ class AnimateCallback(Callback):
                 V = self.pipe.recv()
                 self.plot.update_data(V)
 
-            self.plot.fig_q_qdot_tau.canvas.draw()
-            if self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
-                self.plot.fig_muscles.canvas.draw()
+            for fig in self.plot.all_figures:
+                fig.canvas.draw()
             return True
