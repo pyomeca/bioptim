@@ -1,10 +1,10 @@
 import biorbd
-import numpy as np
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
+from biorbd_optim.plot import ShowResult
 
 
 def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
@@ -22,7 +22,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     objective_functions = (
         # (ObjectiveFunction.minimize_torque, {"weight": 1}),
         (ObjectiveFunction.minimize_muscle, {"weight": 1}),
-        (ObjectiveFunction.minimize_final_distance_between_two_markers, {"markers": (0, 5), "weight": 1000},),
+        (ObjectiveFunction.minimize_final_distance_between_two_markers, {"markers": (0, 5), "weight": 100},),
     )
 
     # Dynamics
@@ -73,19 +73,7 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    x, _, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    x = ocp.nlp[0]["dof_mapping"].expand(x)
-
-    np.save("static_arm", x.T)
-
-    try:
-        from BiorbdViz import BiorbdViz
-
-        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"], show_meshes=False)
-        b.load_movement(x.T)
-        b.exec()
-    except ModuleNotFoundError:
-        print("Install BiorbdViz if you want to have a live view of the optimization")
-        from matplotlib import pyplot as plt
-
-        plt.show()
+    # --- Show results --- #
+    result = ShowResult(ocp, sol)
+    result.keep_matplotlib()
+    result.show_biorbd_viz(show_meshes=False)

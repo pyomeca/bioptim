@@ -1,11 +1,11 @@
 import biorbd
 
 from biorbd_optim import OptimalControlProgram
-from biorbd_optim.plot import PlotOcp
 from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
+from biorbd_optim.plot import ShowResult
 
 
 def prepare_ocp(biorbd_model_path="eocar.bioMod"):
@@ -14,7 +14,7 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod"):
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    number_shooting_points = 30
+    number_shooting_points = 300
     final_time = 2
     torque_min, torque_max, torque_init = -100, 100, 0
 
@@ -22,7 +22,7 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod"):
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
     # Dynamics
-    variable_type = ProblemType.torque_driven
+    problem_type = ProblemType.torque_driven
 
     # Constraints
     constraints = (
@@ -54,7 +54,7 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod"):
 
     return OptimalControlProgram(
         biorbd_model,
-        variable_type,
+        problem_type,
         number_shooting_points,
         final_time,
         objective_functions,
@@ -63,6 +63,7 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod"):
         X_bounds,
         U_bounds,
         constraints,
+        show_online_optim=True,
     )
 
 
@@ -72,7 +73,7 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    # --- Plot --- #
-    plt_ocp = PlotOcp(ocp)
-    plt_ocp.update_data(sol["x"])
-    plt_ocp.show()
+    # --- Show results --- #
+    result = ShowResult(ocp, sol)
+    result.keep_matplotlib()
+    result.show_biorbd_viz()
