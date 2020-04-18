@@ -1,4 +1,6 @@
 import multiprocessing as mp
+import numpy as np
+import tkinter
 
 from matplotlib import pyplot as plt
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
@@ -6,9 +8,15 @@ import numpy as np
 
 from .problem_type import ProblemType
 
+height = 2.4
+muscle_position = 1000
+width_step = 4
+width_max = 10
+
 
 class PlotOcp:
     def __init__(self, ocp):
+
         self.ocp = ocp
         self.ns_per_phase = [nlp["ns"] + 1 for nlp in ocp.nlp]
         self.ydata = []
@@ -35,9 +43,12 @@ class PlotOcp:
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
                     raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
             nlp = self.ocp.nlp[0]
+
             self.all_figures = []
-            for type in ["Q", "Qdot", "Tau"]:
-                self.all_figures.append(plt.figure(type, figsize=(10, 2)))
+            for j, type in enumerate(["Q", "Qdot", "Tau"]):
+                self.all_figures.append(
+                    plt.figure(type, figsize=(min(nlp["nb" + type] * width_step, width_max), height))
+                )
                 axes_dof = self.all_figures[-1].subplots(1, nlp["nb" + type]).flatten()
                 self.axes.extend(axes_dof)
                 mid_column_idx = int(nlp["nb" + type] / 2)
@@ -54,7 +65,9 @@ class PlotOcp:
                 else:
                     nb_rows = nb_cols
 
-                self.all_figures.append(plt.figure("Muscles", figsize=(10, 6)))
+                self.all_figures.append(
+                    plt.figure("Muscles", figsize=(min(nb_cols * width_step, width_max), min(nb_rows, 4) * height))
+                )
                 axes_muscles = self.all_figures[-1].subplots(nb_rows, nb_cols).flatten()
                 self.axes.extend(axes_muscles)
                 for k in range(nlp["nbMuscle"]):
@@ -206,6 +219,23 @@ class AnimateCallback(Callback):
                 V = self.pipe.recv()
                 self.plot.update_data(V)
 
-            for fig in self.plot.all_figures:
+            if self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven:
+                height_step = int(tkinter.Tk().winfo_screenheight() / len(self.plot.all_figures))
+            if self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
+                height_step = int(tkinter.Tk().winfo_screenheight() / (len(self.plot.all_figures) - 1))
+
+            for i, fig in enumerate(self.plot.all_figures):
+                if (
+                    self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven
+                    and fig == self.plot.all_figures[-1]
+                ):
+                    fig.canvas.manager.window.move(muscle_position, 0)
+
+                elif (
+                    self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven
+                    or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven
+                ):
+                    fig.canvas.manager.window.move(20, i * height_step)
+
                 fig.canvas.draw()
             return True
