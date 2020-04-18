@@ -4,14 +4,14 @@ An optimization framework that links CasADi, ipopt and biorbd for Optimal Contro
 # How to install 
 The way to install BiorbdOptim on your computer is to installing from the sources. 
 
-##Installing from the sources 
+## Installing from the sources 
 You simply have to download the source, navigate to the root folder and (assuming your conda environment is loaded if needed) type the following command :
 ```bash 
 python setup.py install
 ```
 Please note that this method will not install the dependencies for you, therefore you will have to install them manually. Moreover, the setuptools dependencies must be installed prior to the installation in order for it to work.
 
-##Dependencies
+## Dependencies
 BiorbdOptim relies on several libraries. The most obvious one is BIORBD, but pyomeca is also requires and some others.  
 
 There are two ways to install Biorbd, to choose the better way for you please refer to the ReadMe file here : https://github.com/pyomeca/biorbd.
