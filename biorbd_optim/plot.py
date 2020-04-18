@@ -4,7 +4,6 @@ import tkinter
 
 from matplotlib import pyplot as plt
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
-import numpy as np
 
 from .problem_type import ProblemType
 
@@ -154,6 +153,43 @@ class PlotOcp:
                 )
             )
             ax.get_lines()[0].set_ydata(y)
+
+
+class ShowResult:
+    def __init__(self, ocp, sol):
+        self.ocp = ocp
+        self.sol = sol
+
+    def show_biorbd_viz(self, show_meshes=True):
+        if self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven:
+            x, _, _ = ProblemType.get_data_from_V(self.ocp, self.sol["x"])
+
+        if self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
+            x, _, _, _ = ProblemType.get_data_from_V(self.ocp, self.sol["x"])
+
+        if self.ocp.nb_phases == 1:
+            x = [x]
+        # x = self.ocp.nlp[0]["q_mapping"].expand(x)
+
+        from BiorbdViz import BiorbdViz
+
+        try:
+            for x_phase in x:
+                b = BiorbdViz(loaded_model=self.ocp.nlp[0]["model"], show_meshes=show_meshes)
+                b.load_movement(x_phase.T)
+                b.exec()
+
+        except ModuleNotFoundError:
+            print("Install BiorbdViz if you want to have a live view of the optimization")
+
+    def save_npy(self, name):
+        x, _, _ = ProblemType.get_data_from_V(self.ocp, self.sol["x"])
+        np.save(name, x.T)
+
+    @staticmethod
+    def keep_matplotlib():
+        plt.figure(figsize=(0, 0)).canvas.manager.window.move(1000, 100)
+        plt.show()
 
 
 class AnimateCallback(Callback):
