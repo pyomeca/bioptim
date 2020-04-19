@@ -36,8 +36,10 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = (
-        ((ObjectiveFunction.minimize_torque, {"weight": 1}), (ObjectiveFunction.minimize_states, {"weight": 1}),),
-        ((ObjectiveFunction.minimize_states, 1),),
+        (
+            (ObjectiveFunction.maximize_height_jump, {"node_idx": number_shooting_points[0] - 5, "weight": 10}),
+         (ObjectiveFunction.minimize_torque, {"weight": 1}), (ObjectiveFunction.minimize_states, {"weight": 1}),),
+        ((ObjectiveFunction.maximize_height_jump, {"node_idx": number_shooting_points[1] - 10, "weight": 10}), (ObjectiveFunction.minimize_states, 1),),
     )
 
     # Dynamics

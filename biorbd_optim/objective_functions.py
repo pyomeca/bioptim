@@ -96,6 +96,23 @@ class ObjectiveFunction:
         ocp.J += casadi.dot(marker0 - marker1, marker0 - marker1) * nlp["dt"] * nlp["dt"] * weight
 
     @staticmethod
+    def maximize_height_jump(ocp, nlp, node_idx, weight, controls_idx=(), data_to_track=()):
+        # Use of controls_idx and data_to_track ?
+
+        g = 9.81
+        q_at_node = nlp["q_mapping"].expand(nlp["X"][node_idx])
+        q_dot_at_node = nlp["q_dot_mapping"].expand(nlp["X"][node_idx + nlp["nbQ"]])
+        CoM_at_node = nlp["model"].CoM(q_at_node)
+        CoM_dot_at_node = nlp["model"].CoMdot(q_at_node, q_dot_at_node)
+        height_jump = (CoM_at_node(2)*CoM_dot_at_node(2))/(2*g) + CoM_at_node(2)
+
+        ocp.J -= height_jump * weight
+
+
+
+
+
+    @staticmethod
     def __check_var_size(var_idx, target_size, var_name="var"):
         if var_idx == ():
             var_idx = range(target_size)
