@@ -100,8 +100,8 @@ class ObjectiveFunction:
         # Use of controls_idx and data_to_track ?
 
         g = 9.81
-        q_at_node = nlp["q_mapping"].expand(nlp["X"][node_idx])
-        q_dot_at_node = nlp["q_dot_mapping"].expand(nlp["X"][node_idx + nlp["nbQ"]])
+        q_at_node = nlp["q_mapping"].expand(nlp["X"][node_idx][: nlp["nbQ"]])
+        q_dot_at_node = nlp["q_dot_mapping"].expand(nlp["X"][node_idx][nlp["nbQ"]:])
         CoM_at_node = nlp["model"].CoM(q_at_node)
         CoM_dot_at_node = nlp["model"].CoMdot(q_at_node, q_dot_at_node)
         height_jump = (CoM_at_node(2)*CoM_dot_at_node(2))/(2*g) + CoM_at_node(2)
