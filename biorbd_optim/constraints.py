@@ -116,9 +116,9 @@ class Constraint:
         :param X: List of instant(s).
         :param policy: Tuple of indices of segment and rt.
         """
-        nq = nlp["dof_mapping"].nb_reduced
+        nq = nlp["q_mapping"].nb_reduced
         for x in X:
-            q = nlp["dof_mapping"].expand(x[:nq])
+            q = nlp["q_mapping"].expand(x[:nq])
             r_seg = nlp["model"].globalJCS(q, policy[0]).rot()
             r_rt = nlp["model"].RT(q, policy[1]).rot()
             constraint = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
