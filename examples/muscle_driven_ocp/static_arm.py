@@ -1,13 +1,10 @@
 import biorbd
 import numpy as np
-from matplotlib import pyplot as plt
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.objective_functions import ObjectiveFunction
-from biorbd_optim.constraints import Constraint
 from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
-from biorbd_optim.plot import PlotOcp
 
 
 def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
@@ -23,12 +20,9 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     # Add objective functions
     objective_functions = (
-        # (ObjectiveFunction.minimize_torque, {"weight": 1}),
+        (ObjectiveFunction.minimize_torque, {"weight": 10}),
         (ObjectiveFunction.minimize_muscle, {"weight": 1}),
-        (
-            ObjectiveFunction.minimize_final_distance_between_two_markers,
-            {"markers": (0, 5), "weight": 1},
-        ),
+        (ObjectiveFunction.minimize_final_distance_between_two_markers, {"markers": (0, 5), "weight": 1},),
     )
 
     # Dynamics
@@ -45,21 +39,16 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     X_bounds.first_node_max = (0.07, 1.4, 0, 0)
 
     # Initial guess
-    X_init = InitialConditions(
-        [1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot()
-    )
+    X_init = InitialConditions([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque()
-        + [muscle_min] * biorbd_model.nbMuscleTotal(),
-        [torque_max] * biorbd_model.nbGeneralizedTorque()
-        + [muscle_max] * biorbd_model.nbMuscleTotal(),
+        [torque_min] * biorbd_model.nbGeneralizedTorque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
+        [torque_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
     )
 
     U_init = InitialConditions(
-        [torque_init] * biorbd_model.nbGeneralizedTorque()
-        + [muscle_init] * biorbd_model.nbMuscleTotal()
+        [torque_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal()
     )
     # ------------- #
 
@@ -79,7 +68,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
 
 if __name__ == "__main__":
-    ocp = prepare_nlp(show_online_optim=False)
+    ocp = prepare_nlp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = ocp.solve()
@@ -89,10 +78,6 @@ if __name__ == "__main__":
 
     np.save("static_arm", x.T)
 
-    # plt_ocp = PlotOcp(ocp)
-    # plt_ocp.update_data(sol["x"])
-    # plt_ocp.show()
-
     try:
         from BiorbdViz import BiorbdViz
 
@@ -101,3 +86,5 @@ if __name__ == "__main__":
         b.exec()
     except ModuleNotFoundError:
         print("Install BiorbdViz if you want to have a live view of the optimization")
+        from matplotlib import pyplot as plt
+        plt.show()

@@ -22,30 +22,27 @@ class PlotOcp:
             if i == 0:
                 self.t = np.linspace(0, nlp["tf"], nlp["ns"] + 1)
             else:
-                self.t = np.append(
-                    self.t,
-                    np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1),
-                )
+                self.t = np.append(self.t, np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1),)
             self.ns += nlp["ns"] + 1
 
         self.axes = []
-        if self.problem_type == ProblemType.torque_driven\
-            or self.problem_type == ProblemType.muscles_and_torque_driven:
+        if (
+            self.problem_type == ProblemType.torque_driven
+            or self.problem_type == ProblemType.torque_driven_with_contact
+            or self.problem_type == ProblemType.muscles_and_torque_driven
+        ):
             for i in range(self.ocp.nb_phases):
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
-                    raise RuntimeError(
-                        "Graphs with nbQ different at each phase is not implemented yet"
-                    )
+                    raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
             nlp = self.ocp.nlp[0]
             self.fig_q_qdot_tau = plt.figure("Q, Qdot, Tau", figsize=(10, 6))
-            self.axes.append(self.fig_q_qdot_tau.subplots(3, nlp["nbQ"]).flatten())
+            axes_dof = self.fig_q_qdot_tau.subplots(3, nlp["nbQ"]).flatten()
+            self.axes.extend(axes_dof)
             mid_column_idx = int(nlp["nbQ"] / 2)
-            self.axes[0][mid_column_idx].set_title("q")
-            self.axes[0][nlp["nbQ"] + mid_column_idx].set_title("q_dot")
-            self.axes[0][nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_title("tau")
-            self.axes[0][nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_xlabel(
-                "time (s)"
-            )
+            axes_dof[mid_column_idx].set_title("q")
+            axes_dof[nlp["nbQ"] + mid_column_idx].set_title("q_dot")
+            axes_dof[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_title("tau")
+            axes_dof[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_xlabel("time (s)")
             self.fig_q_qdot_tau.tight_layout()
 
             if self.problem_type == ProblemType.muscles_and_torque_driven:
@@ -53,35 +50,31 @@ class PlotOcp:
                 nlp = self.ocp.nlp[0]
                 nb_cols = int(np.sqrt(nlp["nbMuscle"])) + 1
                 if nb_cols * (nb_cols - 1) >= nlp["nbMuscle"]:
-                    nb_rows = nb_cols -1
+                    nb_rows = nb_cols - 1
                 else:
                     nb_rows = nb_cols
 
                 self.fig_muscles = plt.figure("Muscles", figsize=(10, 6))
-                self.axes.append(self.fig_muscles.subplots(nb_rows, nb_cols).flatten())
+                axes_muscles = self.fig_muscles.subplots(nb_rows, nb_cols).flatten()
+                self.axes.extend(axes_muscles)
                 for k in range(nlp["nbMuscle"]):
-                    self.axes[1][k].set_title(nlp["model"].muscleNames()[k].to_string())
-                self.axes[1][nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel(
-                    "time (s)"
-                )
+                    axes_muscles[k].set_title(nlp["model"].muscleNames()[k].to_string())
+                axes_muscles[nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel("time (s)")
                 self.fig_muscles.tight_layout()
 
             intersections_time = PlotOcp.find_phases_intersections(ocp)
-            for indice_figure, figure in enumerate(self.axes):
-                for i, ax in enumerate(figure):
-                    if indice_figure == 0:
-                        if i < self.ocp.nlp[0]["nx"]:
-                            ax.plot(self.t, np.zeros((self.ns, 1)))
-                        else:
-                            ax.step(self.t, np.zeros((self.ns, 1)), where="post")
+            for i, ax in enumerate(self.axes):
+                if i < self.ocp.nlp[0]["nx"]:
+                    ax.plot(self.t, np.zeros((self.ns, 1)))
+                elif i < self.ocp.nlp[0]["nx"] + self.ocp.nlp[0]["nbTau"]:
+                    ax.step(self.t, np.zeros((self.ns, 1)), where="post")
+                else:
+                    ax.step(self.t, np.zeros((self.ns, 1)), where="post")
 
-                    if indice_figure == 1 and self.problem_type == ProblemType.muscles_and_torque_driven:
-                        ax.step(self.t, np.zeros((self.ns, 1)), where="post")
-
-                    for time in intersections_time:
-                        ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
-                    ax.grid(color="k", linestyle="--", linewidth=0.5)
-                    ax.set_xlim(0, self.t[-1])
+                for time in intersections_time:
+                    ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
+                ax.grid(color="k", linestyle="--", linewidth=0.5)
+                ax.set_xlim(0, self.t[-1])
 
         else:
             raise RuntimeError("Plot is not ready for this type of OCP")
@@ -104,10 +97,14 @@ class PlotOcp:
         for i, nlp in enumerate(self.ocp.nlp):
             if (
                 self.problem_type == ProblemType.torque_driven
+                or self.problem_type == ProblemType.torque_driven_with_contact
                 or self.problem_type == ProblemType.muscles_and_torque_driven
             ):
-                #TODO: Add an integrator for the states
-                if self.problem_type == ProblemType.torque_driven:
+                if (
+                    self.problem_type == ProblemType.torque_driven
+                    or self.problem_type == ProblemType.torque_driven_with_contact
+                ):
+                    # TODO: Add an integrator for the states
                     q, q_dot, tau = ProblemType.get_data_from_V(self.ocp, V, i)
                     self.__update_ydata(q, nlp["nbQ"], i)
                     self.__update_ydata(q_dot, nlp["nbQdot"], i)
@@ -127,25 +124,24 @@ class PlotOcp:
             self.ydata[phase_idx].append(array[i, :])
 
     def __update_axes(self):
-        for figure in self.axes:
-            for i, ax in enumerate(figure):
+        for i, ax in enumerate(self.axes):
+            y = np.array([])
+            for phase in self.ydata:
+                y = np.append(y, phase[i])
 
-                y = np.array([])
-                for phase in self.ydata:
-                    y = np.append(y, phase[i])
-
-                y_range = np.max([np.max(y) - np.min(y), 0.5])
-                mean = y_range / 2 + np.min(y)
-                axe_range = (1.1 * y_range) / 2
-                ax.set_ylim(mean - axe_range, mean + axe_range)
-                ax.set_yticks(
-                    np.arange(
-                        np.round(mean - axe_range, 1),
-                        np.round(mean + axe_range, 1),
-                        step=np.round((mean + axe_range - (mean - axe_range)) / 4, 1),
-                    )
+            y_range = np.max([np.max(y) - np.min(y), 0.5])
+            mean = y_range / 2 + np.min(y)
+            axe_range = (1.1 * y_range) / 2
+            ax.set_ylim(mean - axe_range, mean + axe_range)
+            ax.set_yticks(
+                np.arange(
+                    np.round(mean - axe_range, 1),
+                    np.round(mean + axe_range, 1),
+                    step=np.round((mean + axe_range - (mean - axe_range)) / 4, 1),
                 )
-                ax.get_lines()[0].set_ydata(y)
+            )
+            ax.get_lines()[0].set_ydata(y)
+
 
 class AnimateCallback(Callback):
     def __init__(self, ocp, opts={}):
@@ -157,9 +153,7 @@ class AnimateCallback(Callback):
 
         self.plot_pipe, plotter_pipe = mp.Pipe()
         self.plotter = self.ProcessPlotter(ocp)
-        self.plot_process = mp.Process(
-            target=self.plotter, args=(plotter_pipe,), daemon=True
-        )
+        self.plot_process = mp.Process(target=self.plotter, args=(plotter_pipe,), daemon=True)
         self.plot_process.start()
 
     @staticmethod
@@ -202,10 +196,9 @@ class AnimateCallback(Callback):
             self.pipe = pipe
             self.plot = PlotOcp(self.ocp)
             timer = self.plot.fig_q_qdot_tau.canvas.new_timer(interval=100)
-            if self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
-                timer = self.plot.fig_muscles.canvas.new_timer(interval=100)
             timer.add_callback(self.callback)
             timer.start()
+
             plt.show()
 
         def callback(self):

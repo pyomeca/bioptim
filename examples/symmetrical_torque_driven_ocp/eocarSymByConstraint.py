@@ -18,7 +18,6 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     number_shooting_points = 30
     final_time = 2
     torque_min, torque_max, torque_init = -100, 100, 0
-    dof_mapping = Mapping([0, 1, 2, 2], [0, 1, 2], [3])
 
     # Add objective functions
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
@@ -30,24 +29,23 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     constraints = (
         (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
         (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
+        (Constraint.Type.PROPORTIONAL_Q, Constraint.Instant.ALL, (2, 3, -1)),
     )
 
     # Path constraint
-    X_bounds = QAndQDotBounds(biorbd_model, dof_mapping)
-    for i in range(3, 6):
+    X_bounds = QAndQDotBounds(biorbd_model)
+    for i in range(4, 8):
         X_bounds.first_node_min[i] = 0
         X_bounds.last_node_min[i] = 0
         X_bounds.first_node_max[i] = 0
         X_bounds.last_node_max[i] = 0
 
     # Initial guess
-    X_init = InitialConditions([0] * dof_mapping.nb_reduced * 2)
+    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    U_bounds = Bounds(
-        [torque_min] * dof_mapping.nb_reduced, [torque_max] * dof_mapping.nb_reduced,
-    )
-    U_init = InitialConditions([torque_init] * dof_mapping.nb_reduced)
+    U_bounds = Bounds([torque_min] * biorbd_model.nbQ(), [torque_max] * biorbd_model.nbQ(),)
+    U_init = InitialConditions([torque_init] * biorbd_model.nbQ())
 
     # ------------- #
 
@@ -62,7 +60,6 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
         X_bounds,
         U_bounds,
         constraints,
-        dof_mapping=dof_mapping,
         show_online_optim=show_online_optim,
     )
 

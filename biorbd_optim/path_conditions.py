@@ -15,10 +15,7 @@ class PathCondition:
     def regulation_private(var, nb_elements, type):
         if len(var) != nb_elements:
             raise RuntimeError(
-                f"Invalid number of {type} ("
-                + str(len(var))
-                + "), the expected size is "
-                + str(nb_elements)
+                f"Invalid number of {type} (" + str(len(var)) + "), the expected size is " + str(nb_elements)
             )
 
     def expand(self, other):
@@ -68,12 +65,8 @@ class Bounds(PathCondition):
         if len(self.last_node_max) == 0:
             self.last_node_max = self.max
 
-        self.regulation_private(
-            self.first_node_min, nb_elements, "Bound first node min"
-        )
-        self.regulation_private(
-            self.first_node_max, nb_elements, "Bound first node max"
-        )
+        self.regulation_private(self.first_node_min, nb_elements, "Bound first node min")
+        self.regulation_private(self.first_node_max, nb_elements, "Bound first node max")
         self.regulation_private(self.last_node_min, nb_elements, "Bound last node min")
         self.regulation_private(self.last_node_max, nb_elements, "Bound last node max")
 
@@ -119,6 +112,8 @@ class InitialConditions(PathCondition):
         3. Last node
         Each group have a list of initial values.
         """
+
+        # TODO: Add the capability to initialize using initial and final frame that linearly complete between
         self.first_node_init = list(initial_guess)
         self.init = list(initial_guess)
         self.last_node_init = list(initial_guess)

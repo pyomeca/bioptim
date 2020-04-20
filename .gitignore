@@ -92,4 +92,7 @@ Misc/
 # Remove symbolic links to biorbd_optim in examples and tests folder
 examples/*/biorbd_optim
 examples/biorbd_optim
+
+# Remove other development artifacts
+examples/sandbox
 *.npy
