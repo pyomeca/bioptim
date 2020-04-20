@@ -1,7 +1,6 @@
 import biorbd
-import numpy as np
 
-from biorbd_optim import OptimalControlProgram
+from biorbd_optim import OptimalControlProgram, OdeSolver
 from biorbd_optim.plot import PlotOcp
 from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.objective_functions import ObjectiveFunction
@@ -22,28 +21,44 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod"):
     # Add objective functions
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
 
+
     # Dynamics
     variable_type = ProblemType.torque_driven
 
     # Constraints
-    constraints = (
-        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
-        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
-    )
+    constraints = ()
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
 
-    for i in range(1, 6):
+    for i in range(biorbd_model.nbQ() + biorbd_model.nbQdot()):
         X_bounds.first_node_min[i] = 0
         X_bounds.last_node_min[i] = 0
         X_bounds.first_node_max[i] = 0
         X_bounds.last_node_max[i] = 0
-    X_bounds.last_node_min[2] = 1.57
-    X_bounds.last_node_max[2] = 1.57
+
+    X_bounds.last_node_min[1] = 3.14
+    X_bounds.last_node_max[1] = 3.14
+
+    #Q_translation
+    # X_bounds.last_node_min[0] = 4
+    # X_bounds.last_node_max[0] = 4
+
+    #Qdot_translation
+    X_bounds.last_node_min[2] = 1
+    X_bounds.last_node_max[2] = 2
+
+
+    # for i in range(1, 6):
+    #     X_bounds.first_node_min[i] = 0
+    #     X_bounds.last_node_min[i] = 0
+    #     X_bounds.first_node_max[i] = 0
+    #     X_bounds.last_node_max[i] = 0
+    # X_bounds.last_node_min[2] = 1.57
+    # X_bounds.last_node_max[2] = 1.57
 
     # Initial guess
-    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    X_init = InitialConditions([2] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
     U_bounds = Bounds(
@@ -65,6 +80,8 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod"):
         X_bounds,
         U_bounds,
         constraints,
+        ode_solver=OdeSolver.COLLOCATION,
+        show_online_optim=True,
     )
 
 
@@ -75,22 +92,22 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     # --- Plot --- #
-    x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    x = ocp.nlp[0]["dof_mapping"].expand(x)
+    # x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
+    # x = ocp.nlp[0]["dof_mapping"].expand(x)
+    #
+    # try:
+    #     from BiorbdViz import BiorbdViz
+    #
+    #     b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
+    #     b.load_movement(x.T)
+    #     b.exec()
+    # except ModuleNotFoundError:
+    #     print("Install BiorbdViz if you want to have a live view of the optimization")
 
-    try:
-        from BiorbdViz import BiorbdViz
 
-        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
-        b.load_movement(x.T)
-        b.exec()
-    except ModuleNotFoundError:
-        print("Install BiorbdViz if you want to have a live view of the optimization")
-
-
-    # plt_ocp = PlotOcp(ocp)
-    # plt_ocp.update_data(sol["x"])
-    # plt_ocp.show()
+    plt_ocp = PlotOcp(ocp)
+    plt_ocp.update_data(sol["x"])
+    plt_ocp.show()
 
 
 

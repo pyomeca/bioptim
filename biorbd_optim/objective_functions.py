@@ -10,10 +10,14 @@ class ObjectiveFunction:
 
         for i in range(nlp["ns"] + 1):
             ocp.J += (
+<<<<<<< Updated upstream
                 casadi.dot(
                     nlp["X"][i][states_idx] - data_to_track[i, states_idx],
                     nlp["X"][i][states_idx] - data_to_track[i, states_idx],
                 )
+=======
+                casadi.dot(nlp["U"][i][1], nlp["U"][i][1],)
+>>>>>>> Stashed changes
                 * nlp["dt"]
                 * nlp["dt"]
                 * weight
