@@ -81,9 +81,15 @@ class ObjectiveFunction:
     def minimize_all_controls(ocp, nlp, weight=1):
         raise RuntimeError("cyclic objective function not implemented yet")
 
+
     @staticmethod
     def cyclic(ocp, nlp, weight=1):
-        raise RuntimeError("cyclic objective function not implemented yet")
+
+        if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
+            raise RuntimeError("Cyclic constraint without same nx is not supported yet")
+
+        ocp.J += casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
+
 
     @staticmethod
     def minimize_final_distance_between_two_markers(ocp, nlp, weight=1, markers=()):
@@ -93,7 +99,7 @@ class ObjectiveFunction:
         marker0 = nlp["model"].marker(q, markers[0]).to_mx()
         marker1 = nlp["model"].marker(q, markers[1]).to_mx()
 
-        ocp.J += casadi.dot(marker0 - marker1, marker0 - marker1) * nlp["dt"] * nlp["dt"] * weight
+        ocp.J += casadi.dot(marker0 - marker1, marker0 - marker1) * weight
 
     @staticmethod
     def __check_var_size(var_idx, target_size, var_name="var"):
