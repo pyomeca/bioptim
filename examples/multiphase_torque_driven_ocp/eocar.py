@@ -22,8 +22,10 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
 
     # Add objective functions
     objective_functions = (
-        ((ObjectiveFunction.minimize_torque, 100),),
-        ((ObjectiveFunction.minimize_torque, 100),),
+        ((ObjectiveFunction.minimize_torque, {"weight": 100}),
+         (ObjectiveFunction.cyclic, {"weight": 100})),
+        ((ObjectiveFunction.minimize_torque, {"weight": 100}),
+         (ObjectiveFunction.cyclic, {"weight": 100}),)
     )
 
     # Dynamics
@@ -50,10 +52,10 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
                 bounds.last_node_max[i] = 0
     X_bounds[0].first_node_min[2] = 0.0
     X_bounds[0].first_node_max[2] = 0.0
-    X_bounds[0].last_node_min[2] = 1.57
-    X_bounds[0].last_node_max[2] = 1.57
-    X_bounds[1].last_node_min[2] = 1.0
-    X_bounds[1].last_node_max[2] = 1.0
+    # X_bounds[0].last_node_min[2] = 1.57
+    # X_bounds[0].last_node_max[2] = 1.57
+    # X_bounds[1].last_node_min[2] = 1.0
+    # X_bounds[1].last_node_max[2] = 1.0
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
