@@ -40,7 +40,7 @@ class ProblemType:
             nlp["q_mapping"] = Mapping(range(nlp["model"].nbQ()), range(nlp["model"].nbQ()))
         if nlp["q_dot_mapping"] is None:
             nlp["q_dot_mapping"] = Mapping(range(nlp["model"].nbQdot()), range(nlp["model"].nbQdot()))
-        if nlp["q_dot_mapping"] is None:
+        if nlp["tau_mapping"] is None:
             nlp["tau_mapping"] = Mapping(
                 range(nlp["model"].nbGeneralizedTorques()), range(nlp["model"].nbGeneralizedTorques())
             )
