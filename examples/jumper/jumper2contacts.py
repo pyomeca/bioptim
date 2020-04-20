@@ -1,3 +1,5 @@
+import numpy as np
+from matplotlib import pyplot as plt
 import biorbd
 
 from biorbd_optim import OptimalControlProgram
@@ -21,13 +23,13 @@ def prepare_ocp(
     torque_min, torque_max, torque_init = -1000, 1000, 0
 
     # Problem parameters
-    number_shooting_points = [20, 20]
-    phase_time = [0.5, 0.5]
+    number_shooting_points = [8, 8]
+    phase_time = [0.4, 0.2]
 
     if use_symmetry:
-        q_mapping = Mapping([0, 1, 2, 3, 4, 3, 4, 5, 6, 7, 5, 6, 7], [0, 1, 2, 3, 4, 7, 8, 9], [5])
+        q_mapping = Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [0, 1, 2, 4, 7, 8, 9], [5])
         q_mapping = q_mapping, q_mapping
-        tau_mapping = Mapping([-1, -1, -1, 0, 1, 0, 1, 2, 3, 4, 2, 3, 4], [3, 4, 7, 8, 9], [5])
+        tau_mapping = Mapping([-1, -1, -1, -1, 0, -1, 0, 1, 2, 3, 1, 2, 3], [4, 7, 8, 9], [5])
         tau_mapping = tau_mapping, tau_mapping
 
     else:
@@ -36,10 +38,11 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = (
+        (),
         (
-            (ObjectiveFunction.maximize_height_jump, {"node_idx": number_shooting_points[0] - 5, "weight": 10}),
-         (ObjectiveFunction.minimize_torque, {"weight": 1}), (ObjectiveFunction.minimize_states, {"weight": 1}),),
-        ((ObjectiveFunction.maximize_height_jump, {"node_idx": number_shooting_points[1] - 10, "weight": 10}), (ObjectiveFunction.minimize_states, 1),),
+            (ObjectiveFunction.maximize_predicted_height_jump, {"weight": 1}),
+            (ObjectiveFunction.minimize_all_controls, {"weight": 1/100})
+        )
     )
 
     # Dynamics
@@ -64,7 +67,7 @@ def prepare_ocp(
 
     non_pulling_on_floor_2_contacts = (
         Constraint.Type.CONTACT_FORCE_GREATER_THAN,
-        Constraint.Instant.ALL,
+        (Constraint.Instant.START, Constraint.Instant.INTERMEDIATES),
         ((1, 0), (2, 0), (4, 0), (5, 0),),
     )
     non_pulling_on_floor_1_contacts = (
@@ -79,10 +82,13 @@ def prepare_ocp(
 
     # Path constraint
     if use_symmetry:
-        q_reduced = q_mapping[0].nb_reduced
-        pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0.8, -0.9, 0.47]
+        nb_q = q_mapping[0].nb_reduced
+        nb_qdot = nb_q
+        # pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0.8, -0.9, 0.47]
+        pose_at_first_node = [0, 0, -0.5336, 1.4, 0.8, -0.9, 0.47]
     else:
-        q_reduced = q_mapping[0].nb_reduced
+        nb_q = q_mapping[0].nb_reduced
+        nb_qdot = nb_q
         pose_at_first_node = [
             0,
             0,
@@ -98,23 +104,22 @@ def prepare_ocp(
             -0.9,
             0.47,
         ]
-    pose_at_first_node += [0] * q_reduced  # Adds Qdot
 
     # Initialize X_bounds
     X_bounds = [QAndQDotBounds(biorbd_model[i], all_generalized_mapping=q_mapping[i]) for i in range(nb_phases)]
-    X_bounds[0].first_node_min = pose_at_first_node
-    X_bounds[0].first_node_max = pose_at_first_node
+    X_bounds[0].first_node_min = pose_at_first_node + [0] * nb_qdot
+    X_bounds[0].first_node_max = pose_at_first_node + [0] * nb_qdot
     # X_bounds[0].last_node_min = pose_at_first_node
     # X_bounds[0].last_node_max = pose_at_first_node
     # X_bounds[1].first_node_min = pose_at_first_node
     # X_bounds[1].first_node_max = pose_at_first_node
-    X_bounds[1].last_node_min = pose_at_first_node
-    X_bounds[1].last_node_max = pose_at_first_node
+    # X_bounds[1].last_node_min = pose_at_first_node + X_bounds[1].min[nb_q:]
+    # X_bounds[1].last_node_max = pose_at_first_node + X_bounds[1].max[nb_q:]
 
     # Initial guess
     X_init = [
-        InitialConditions(pose_at_first_node),
-        InitialConditions(pose_at_first_node),
+        InitialConditions(pose_at_first_node + [0] * nb_qdot),
+        InitialConditions(pose_at_first_node + [0] * nb_qdot),
     ]
 
     # Define control path constraint
@@ -145,23 +150,31 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True, use_symmetry=True)
+    ocp = prepare_ocp(show_online_optim=False, use_symmetry=True)
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    # sol = ocp.solve()
+    x = [np.random.random((7, 9)), np.random.random((7, 9))]
+    x_dot = [np.random.random((7, 9)), np.random.random((7, 9))]
+    u = [np.random.random((4, 9)), np.random.random((4, 9))]
 
-    # x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    # x = ocp.nlp[0]["q_mapping"].expand(x)
-    #
-    # plt_ocp = PlotOcp(ocp)
-    # plt_ocp.update_data(sol["x"])
-    # plt_ocp.show()
-    #
-    # try:
-    #     from BiorbdViz import BiorbdViz
-    #
-    #     b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
-    #     b.load_movement(x.T)
-    #     b.exec()
-    # except ModuleNotFoundError:
-    #     print("Install BiorbdViz if you want to have a live view of the optimization")
+
+    try:
+        from BiorbdViz import BiorbdViz
+
+        x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
+        q = np.ndarray((ocp.nlp[0]["model"].nbQ(), sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
+        for i in range(len(ocp.nlp)):
+            if i == 0:
+                q[:, :ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand(x[i])[:, :-1]
+            else:
+                q[:, ocp.nlp[i - 1]["ns"]:ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] \
+                    = ocp.nlp[i]["q_mapping"].expand(x[i])[:, :-1]
+        q[:, -1] = ocp.nlp[-1]["q_mapping"].expand(x[-1])[:, -1]
+
+        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
+        b.load_movement(q.T)
+        b.exec()
+    except ModuleNotFoundError:
+        print("Install BiorbdViz if you want to have a live view of the optimization")
+        plt.show()
