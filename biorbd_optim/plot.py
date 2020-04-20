@@ -161,16 +161,23 @@ class ShowResult:
         self.sol = sol
 
     def show_biorbd_viz(self, show_meshes=True):
-        if self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven:
-            x, _, _ = ProblemType.get_data_from_V(self.ocp, self.sol["x"])
-
-        if self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
-            x, _, _, _ = ProblemType.get_data_from_V(self.ocp, self.sol["x"])
+        x = ProblemType.get_q_from_V(self.ocp, self.sol["x"])
 
         if self.ocp.nb_phases == 1:
             x = [x]
-        # x = self.ocp.nlp[0]["q_mapping"].expand(x)
 
+        else:
+            same_dof = True
+            for k in range(self.ocp.nlp[0]["model"].nbDof()):
+                if self.ocp.nlp[0]["model"].nameDof()[k].to_string() != self.ocp.nlp[1]["model"].nameDof()[k].to_string():
+                    same_dof = False
+                    break
+            if same_dof:
+                x_concat = x[0]
+                for i in range (1, self.ocp.nb_phases):
+                    x_concat = np.concatenate((x_concat, x[i]), axis = 1)
+                x = [x_concat]
+            
         from BiorbdViz import BiorbdViz
 
         try:
