@@ -156,3 +156,15 @@ class ProblemType:
             return q, q_dot, tau, muscle
         else:
             return q, q_dot, tau
+
+    @staticmethod
+    def get_q_from_V(ocp, V, num_phase=None):
+        if ocp.nlp[0]["problem_type"] == ProblemType.torque_driven:
+            x, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
+
+        elif ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
+            x, _, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
+
+        else:
+            raise RuntimeError (ocp.nlp[0]["problem_type"] + " is not implemented for this type of OCP")
+        return x
