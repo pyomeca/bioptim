@@ -71,7 +71,6 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    x = ocp.nlp[0]["dof_mapping"].expand(x)
 
     plt_ocp = PlotOcp(ocp)
     plt_ocp.update_data(sol["x"])

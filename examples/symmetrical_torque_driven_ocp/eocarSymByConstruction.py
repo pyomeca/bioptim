@@ -18,7 +18,7 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     number_shooting_points = 30
     final_time = 2
     torque_min, torque_max, torque_init = -100, 100, 0
-    dof_mapping = Mapping([0, 1, 2, 2], [0, 1, 2], [3])
+    all_generalized_mapping = Mapping([0, 1, 2, 2], [0, 1, 2], [3])
 
     # Add objective functions
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
@@ -33,7 +33,7 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     )
 
     # Path constraint
-    X_bounds = QAndQDotBounds(biorbd_model, dof_mapping)
+    X_bounds = QAndQDotBounds(biorbd_model, all_generalized_mapping)
     for i in range(3, 6):
         X_bounds.first_node_min[i] = 0
         X_bounds.last_node_min[i] = 0
@@ -41,11 +41,11 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
         X_bounds.last_node_max[i] = 0
 
     # Initial guess
-    X_init = InitialConditions([0] * dof_mapping.nb_reduced * 2)
+    X_init = InitialConditions([0] * all_generalized_mapping.nb_reduced * 2)
 
     # Define control path constraint
-    U_bounds = Bounds([torque_min] * dof_mapping.nb_reduced, [torque_max] * dof_mapping.nb_reduced,)
-    U_init = InitialConditions([torque_init] * dof_mapping.nb_reduced)
+    U_bounds = Bounds([torque_min] * all_generalized_mapping.nb_reduced, [torque_max] * all_generalized_mapping.nb_reduced,)
+    U_init = InitialConditions([torque_init] * all_generalized_mapping.nb_reduced)
 
     # ------------- #
 
@@ -60,7 +60,7 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
         X_bounds,
         U_bounds,
         constraints,
-        dof_mapping=dof_mapping,
+        all_generalized_mapping=all_generalized_mapping,
         show_online_optim=show_online_optim,
     )
 
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    x = ocp.nlp[0]["dof_mapping"].expand(x)
+    x = ocp.nlp[0]["q_mapping"].expand(x)
 
     plt_ocp = PlotOcp(ocp)
     plt_ocp.update_data(sol["x"])
