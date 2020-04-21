@@ -29,7 +29,9 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         "model": biorbd_model,
         "nbTau": nb_tau,
         "nbMuscle": nb_mus,
-        "dof_mapping": Mapping(range(nb_q), range(nb_q)),
+        "q_mapping": Mapping(range(nb_q), range(nb_q)),
+        "q_dot_mapping": Mapping(range(nb_qdot), range(nb_qdot)),
+        "tau_mapping": Mapping(range(nb_tau), range(nb_tau)),
     }
     markers_func = []
     for i in range(nb_markers):
