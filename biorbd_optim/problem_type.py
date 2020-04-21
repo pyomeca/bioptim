@@ -42,7 +42,7 @@ class ProblemType:
             nlp["q_dot_mapping"] = Mapping(range(nlp["model"].nbQdot()), range(nlp["model"].nbQdot()))
         if nlp["tau_mapping"] is None:
             nlp["tau_mapping"] = Mapping(
-                range(nlp["model"].nbGeneralizedTorques()), range(nlp["model"].nbGeneralizedTorques())
+                range(nlp["model"].nbGeneralizedTorque()), range(nlp["model"].nbGeneralizedTorque())
             )
 
         dof_names = nlp["model"].nameDof()

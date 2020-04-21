@@ -92,7 +92,7 @@ class OptimalControlProgram:
         if all_generalized_mapping is not None:
             if q_mapping is not None or q_dot_mapping is not None or tau_mapping is not None:
                 raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used alongside")
-            q_mapping, q_dot_mapping, tau_mapping = all_generalized_mapping
+            q_mapping = q_dot_mapping = tau_mapping = all_generalized_mapping
         self.__add_to_nlp("q_mapping", q_mapping, q_mapping is None)
         self.__add_to_nlp("q_dot_mapping", q_dot_mapping, q_dot_mapping is None)
         self.__add_to_nlp("tau_mapping", tau_mapping, tau_mapping is None)
