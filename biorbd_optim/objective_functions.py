@@ -80,12 +80,7 @@ class ObjectiveFunction:
     @staticmethod
     def minimize_all_controls(ocp, nlp, weight=1):
         for i in range(nlp["ns"]):
-            ocp.J += (
-                    casadi.dot(nlp["U"][i], nlp["U"][i])
-                    * nlp["dt"]
-                    * nlp["dt"]
-                    * weight
-            )
+            ocp.J += casadi.dot(nlp["U"][i], nlp["U"][i]) * nlp["dt"] * nlp["dt"] * weight
 
     @staticmethod
     def cyclic(ocp, nlp, weight=1):
@@ -105,16 +100,12 @@ class ObjectiveFunction:
     def maximize_predicted_height_jump(ocp, nlp, weight=1, node=-1):
         g = -9.81  # get gravity from biorbd
         q = nlp["q_mapping"].expand(nlp["X"][node][: nlp["nbQ"]])
-        q_dot = nlp["q_dot_mapping"].expand(nlp["X"][node][nlp["nbQ"]:])
+        q_dot = nlp["q_dot_mapping"].expand(nlp["X"][node][nlp["nbQ"] :])
         CoM = nlp["model"].CoM(q).to_mx()
         CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
-        jump_height = (CoM_dot[2]*CoM_dot[2])/(2*-g) + CoM[2]
+        jump_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
 
         ocp.J -= jump_height * weight
-
-
-
-
 
     @staticmethod
     def __check_var_size(var_idx, target_size, var_name="var"):

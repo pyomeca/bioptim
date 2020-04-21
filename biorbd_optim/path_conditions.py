@@ -14,9 +14,7 @@ class PathCondition:
     @staticmethod
     def regulation_private(var, nb_elements, type):
         if len(var) != nb_elements:
-            raise RuntimeError(
-                f"Invalid number of {type} ({str(len(var))}), the expected size is {str(nb_elements)}"
-            )
+            raise RuntimeError(f"Invalid number of {type} ({str(len(var))}), the expected size is {str(nb_elements)}")
 
     def expand(self, other):
         pass

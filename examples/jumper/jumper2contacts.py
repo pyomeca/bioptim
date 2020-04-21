@@ -22,8 +22,8 @@ def prepare_ocp(
     torque_min, torque_max, torque_init = -1000, 1000, 0
 
     # Problem parameters
-    number_shooting_points = [8, 8]       # 8, 8 for dev test, echec avec 20,20 et 0.5,0.3
-    phase_time = [0.4, 0.2]                 # 0.4, 0.2 for dev test
+    number_shooting_points = [8, 8]  # 8, 8 for dev test, echec avec 20,20 et 0.5,0.3
+    phase_time = [0.4, 0.2]  # 0.4, 0.2 for dev test
 
     if use_symmetry:
         q_mapping = Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [0, 1, 2, 4, 7, 8, 9], [5])
@@ -40,8 +40,8 @@ def prepare_ocp(
         (),
         (
             (ObjectiveFunction.maximize_predicted_height_jump, {"weight": 1}),
-            (ObjectiveFunction.minimize_all_controls, {"weight": 1/100})
-        )
+            (ObjectiveFunction.minimize_all_controls, {"weight": 1 / 100}),
+        ),
     )
 
     # Dynamics
@@ -154,10 +154,10 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
-
     from matplotlib import pyplot as plt
     from casadi import vertcat, Function
-    contact_forces = np.zeros((6, sum([nlp["ns"] for nlp in ocp.nlp])+1))
+
+    contact_forces = np.zeros((6, sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
     cs_map = (range(6), (0, 1, 3, 4))
 
     for i, nlp in enumerate(ocp.nlp):
@@ -172,9 +172,9 @@ if __name__ == "__main__":
         q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"], i)
         x = vertcat(q, q_dot)
         if i == 0:
-            contact_forces[cs_map[i], :nlp["ns"]+1] = CS_func(x, u)
+            contact_forces[cs_map[i], : nlp["ns"] + 1] = CS_func(x, u)
         else:
-            contact_forces[cs_map[i], ocp.nlp[i-1]["ns"]:ocp.nlp[i-1]["ns"]+nlp["ns"]+1] = CS_func(x, u)
+            contact_forces[cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1] = CS_func(x, u)
     plt.plot(contact_forces.T)
     plt.show()
 
@@ -185,10 +185,11 @@ if __name__ == "__main__":
         q = np.ndarray((ocp.nlp[0]["model"].nbQ(), sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
         for i in range(len(ocp.nlp)):
             if i == 0:
-                q[:, :ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand(x[i])[:, :-1]
+                q[:, : ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand(x[i])[:, :-1]
             else:
-                q[:, ocp.nlp[i - 1]["ns"]:ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] \
-                    = ocp.nlp[i]["q_mapping"].expand(x[i])[:, :-1]
+                q[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand(
+                    x[i]
+                )[:, :-1]
         q[:, -1] = ocp.nlp[-1]["q_mapping"].expand(x[-1])[:, -1]
 
         np.save("results2", q.T)
