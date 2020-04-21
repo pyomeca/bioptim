@@ -1,6 +1,9 @@
 import enum
-import biorbd
 import numpy as np
+from math import inf
+
+import biorbd
+
 
 from casadi import vertcat, MX, Function
 
@@ -153,7 +156,7 @@ class Constraint:
     @staticmethod
     def __contact_force_inequality(ocp, nlp, X, U, policy):
         """
-        To be completed, in particular the fact that policy is either a tuple/list or a tuple of tuples/list of lists,
+        To be completed when this function will be fully developed, in particular the fact that policy is either a tuple/list or a tuple of tuples/list of lists,
         with in the 1st index the number of the contact force and in the 2nd index the associated bound.
         """
         # To be modified later so that it can handle something other than lower bounds for greater than
@@ -171,12 +174,11 @@ class Constraint:
         for i in range(len(U)):
             contact_forces = CS_func(X[i], U[i])
             contact_forces = contact_forces[: nlp["model"].nbContacts()]
-            # [:number] -> To be changed: it must be reduced by symmetry (if sym by construction)
 
             for elem in policy:
                 ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
                 ocp.g_bounds.min.append(elem[1])
-                ocp.g_bounds.max.append(10000000)  # How can we only put lower bound ? Cf optistack subject_to code
+                ocp.g_bounds.max.append(inf)
 
     @staticmethod
     def continuity_constraint(ocp):
