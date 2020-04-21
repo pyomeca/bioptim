@@ -44,7 +44,9 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     X_init = InitialConditions([0] * all_generalized_mapping.nb_reduced * 2)
 
     # Define control path constraint
-    U_bounds = Bounds([torque_min] * all_generalized_mapping.nb_reduced, [torque_max] * all_generalized_mapping.nb_reduced,)
+    U_bounds = Bounds(
+        [torque_min] * all_generalized_mapping.nb_reduced, [torque_max] * all_generalized_mapping.nb_reduced,
+    )
     U_init = InitialConditions([torque_init] * all_generalized_mapping.nb_reduced)
 
     # ------------- #
