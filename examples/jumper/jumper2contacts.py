@@ -23,8 +23,8 @@ def prepare_ocp(
     torque_min, torque_max, torque_init = -1000, 1000, 0
 
     # Problem parameters
-    number_shooting_points = [8, 8]
-    phase_time = [0.4, 0.2]
+    number_shooting_points = [15, 15]       # 8, 8 for dev test, echec avec 20,20 et 0.5,0.3
+    phase_time = [0.4, 0.2]                 # 0.4, 0.2 for dev test
 
     if use_symmetry:
         q_mapping = Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [0, 1, 2, 4, 7, 8, 9], [5])
@@ -67,7 +67,7 @@ def prepare_ocp(
 
     non_pulling_on_floor_2_contacts = (
         Constraint.Type.CONTACT_FORCE_GREATER_THAN,
-        (Constraint.Instant.START, Constraint.Instant.INTERMEDIATES),
+        Constraint.Instant.ALL,
         ((1, 0), (2, 0), (4, 0), (5, 0),),
     )
     non_pulling_on_floor_1_contacts = (
@@ -150,14 +150,34 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=False, use_symmetry=True)
+    ocp = prepare_ocp(show_online_optim=True, use_symmetry=True)
 
     # --- Solve the program --- #
-    # sol = ocp.solve()
-    x = [np.random.random((7, 9)), np.random.random((7, 9))]
-    x_dot = [np.random.random((7, 9)), np.random.random((7, 9))]
-    u = [np.random.random((4, 9)), np.random.random((4, 9))]
+    sol = ocp.solve()
 
+
+    from matplotlib import pyplot as plt
+    from casadi import vertcat, Function
+    contact_forces = np.zeros((6, sum([nlp["ns"] for nlp in ocp.nlp])+1))
+    cs_map = (range(6), (0, 1, 3, 4))
+
+    for i, nlp in enumerate(ocp.nlp):
+        CS_func = Function(
+            "Contact_force_inequality",
+            [ocp.symbolic_states, ocp.symbolic_controls],
+            [nlp["model"].getConstraints().getForce().to_mx()],
+            ["x", "u"],
+            ["CS"],
+        ).expand()
+
+        q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"], i)
+        x = vertcat(q, q_dot)
+        if i == 0:
+            contact_forces[cs_map[i], :nlp["ns"]+1] = CS_func(x, u)
+        else:
+            contact_forces[cs_map[i], ocp.nlp[i-1]["ns"]:ocp.nlp[i-1]["ns"]+nlp["ns"]+1] = CS_func(x, u)
+    plt.plot(contact_forces.T)
+    plt.show()
 
     try:
         from BiorbdViz import BiorbdViz
@@ -172,9 +192,15 @@ if __name__ == "__main__":
                     = ocp.nlp[i]["q_mapping"].expand(x[i])[:, :-1]
         q[:, -1] = ocp.nlp[-1]["q_mapping"].expand(x[-1])[:, -1]
 
+        np.save("results2", q.T)
+
         b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
         b.load_movement(q.T)
         b.exec()
     except ModuleNotFoundError:
         print("Install BiorbdViz if you want to have a live view of the optimization")
         plt.show()
+
+    # np.save("results2CF", q.T)
+    # S = np.load("/home/iornaith/Documents/GitKraken/biorbdOptim/BiorbdOptim/examples/jumper/results2.npy")
+    # print("Results loaded")
