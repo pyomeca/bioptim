@@ -37,12 +37,9 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod"):
         X_bounds.first_node_max[i] = 0
         X_bounds.last_node_max[i] = 0
 
+    #Q_rotation
     X_bounds.last_node_min[1] = 3.14
     X_bounds.last_node_max[1] = 3.14
-
-    #Q_translation
-    # X_bounds.last_node_min[0] = 4
-    # X_bounds.last_node_max[0] = 4
 
     #Qdot_translation
     X_bounds.last_node_min[2] = 1
@@ -91,23 +88,23 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    # --- Plot --- #
-    # x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    # x = ocp.nlp[0]["dof_mapping"].expand(x)
-    #
-    # try:
-    #     from BiorbdViz import BiorbdViz
-    #
-    #     b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
-    #     b.load_movement(x.T)
-    #     b.exec()
-    # except ModuleNotFoundError:
-    #     print("Install BiorbdViz if you want to have a live view of the optimization")
+    #--- Plot ---#
+    x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
+    x = ocp.nlp[0]["dof_mapping"].expand(x)
+
+    try:
+        from BiorbdViz import BiorbdViz
+
+        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
+        b.load_movement(x.T)
+        b.exec()
+    except ModuleNotFoundError:
+        print("Install BiorbdViz if you want to have a live view of the optimization")
 
 
-    plt_ocp = PlotOcp(ocp)
-    plt_ocp.update_data(sol["x"])
-    plt_ocp.show()
+    # plt_ocp = PlotOcp(ocp)
+    # plt_ocp.update_data(sol["x"])
+    # plt_ocp.show()
 
 
 
