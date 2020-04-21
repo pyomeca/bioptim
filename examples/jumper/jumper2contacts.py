@@ -1,5 +1,4 @@
 import numpy as np
-from matplotlib import pyplot as plt
 import biorbd
 
 from biorbd_optim import OptimalControlProgram
@@ -23,7 +22,7 @@ def prepare_ocp(
     torque_min, torque_max, torque_init = -1000, 1000, 0
 
     # Problem parameters
-    number_shooting_points = [15, 15]       # 8, 8 for dev test, echec avec 20,20 et 0.5,0.3
+    number_shooting_points = [8, 8]       # 8, 8 for dev test, echec avec 20,20 et 0.5,0.3
     phase_time = [0.4, 0.2]                 # 0.4, 0.2 for dev test
 
     if use_symmetry:
