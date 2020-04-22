@@ -7,7 +7,7 @@ from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditio
 from biorbd_optim.plot import ShowResult
 
 
-def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
+def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -73,7 +73,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
 
 if __name__ == "__main__":
-    ocp = prepare_nlp(show_online_optim=True)
+    ocp = prepare_ocp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = ocp.solve()
