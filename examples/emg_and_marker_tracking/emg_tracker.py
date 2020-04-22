@@ -93,19 +93,21 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = [
-        (ObjectiveFunction.minimize_muscle, {"weight": 1, "data_to_track": activations_ref},),
-        (ObjectiveFunction.minimize_torque, {"weight": 1}),
+        {"type": ObjectiveFunction.minimize_muscle, "weight": 1, "data_to_track": activations_ref},
+        {"type": ObjectiveFunction.minimize_torque, "weight": 1},
     ]
     if kin_data_to_track == "markers":
         objective_functions.append(
-            (ObjectiveFunction.minimize_markers, {"weight": 100, "data_to_track": markers_ref},),
+            {"type": ObjectiveFunction.minimize_markers, "weight": 100, "data_to_track": markers_ref},
         )
     elif kin_data_to_track == "q":
         objective_functions.append(
-            (
-                ObjectiveFunction.minimize_states,
-                {"weight": 100, "data_to_track": q_ref, "states_idx": range(biorbd_model.nbQ()),},
-            ),
+            {
+                "type": ObjectiveFunction.minimize_states,
+                "weight": 100,
+                "data_to_track": q_ref,
+                "states_idx": range(biorbd_model.nbQ()),
+            },
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
