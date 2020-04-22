@@ -5,6 +5,7 @@ import casadi
 from casadi import MX, vertcat
 
 from .constraints import Constraint
+from .objective_functions import ObjectiveFunction
 from .problem_type import ProblemType
 from .plot import AnimateCallback
 from .path_conditions import Bounds, InitialConditions
@@ -41,7 +42,7 @@ class OptimalControlProgram:
         U_init,
         X_bounds,
         U_bounds,
-        constraints,
+        constraints=(),
         ode_solver=OdeSolver.RK,
         all_generalized_mapping=None,
         q_mapping=None,
@@ -134,34 +135,37 @@ class OptimalControlProgram:
         self.g = []
         self.g_bounds = Bounds()
         Constraint.continuity_constraint(self)
-
-        if self.nb_phases == 1:
-            if len(constraints) == 0 or (
-                isinstance(constraints, (list, tuple))
-                and isinstance(constraints[0], (list, tuple))
-                and not isinstance(constraints[0][0], (list, tuple))
-            ):
-                constraints = (constraints,)
-        self.__add_to_nlp("constraints", constraints, False)
-        for i in range(self.nb_phases):
-            Constraint.add_constraints(self, self.nlp[i])
+        if len(constraints) > 0:
+            if self.nb_phases == 1:
+                if isinstance(constraints, dict):
+                    constraints = (constraints,)
+                if isinstance(constraints[0], dict):
+                    constraints = (constraints,)
+            elif isinstance(constraints, (list, tuple)):
+                constraints = list(constraints)
+                for i, constraint in enumerate(constraints):
+                    if isinstance(constraint, dict):
+                        constraints[i] = (constraint,)
+            self.__add_to_nlp("constraints", constraints, False)
+            for i in range(self.nb_phases):
+                Constraint.add_constraints(self, self.nlp[i])
 
         # Objective functions
         self.J = 0
-        if self.nb_phases == 1:
-            if (
-                isinstance(objective_functions, (list, tuple))
-                and isinstance(objective_functions[0], (list, tuple))
-                and not isinstance(objective_functions[0][0], (list, tuple))
-            ):
-                objective_functions = (objective_functions,)
-        self.__add_to_nlp("objective_functions", objective_functions, False)
-        for i in range(self.nb_phases):
-            for (func, params) in self.nlp[i]["objective_functions"]:
-                if isinstance(params, dict):
-                    func(self, self.nlp[i], **params)
-                else:
-                    func(self, self.nlp[i], params)
+        if len(objective_functions) > 0:
+            if self.nb_phases == 1:
+                if isinstance(objective_functions, dict):
+                    objective_functions = (objective_functions,)
+                if isinstance(objective_functions[0], dict):
+                    objective_functions = (objective_functions,)
+            elif isinstance(objective_functions, (list, tuple)):
+                objective_functions = list(objective_functions)
+                for i, objective_function in enumerate(objective_functions):
+                    if isinstance(objective_function, dict):
+                        objective_functions[i] = (objective_function,)
+            self.__add_to_nlp("objective_functions", objective_functions, False)
+            for i in range(self.nb_phases):
+                ObjectiveFunction.add_objective_functions(self, self.nlp[i])
 
         if show_online_optim:
             self.show_online_optim_callback = AnimateCallback(self)
@@ -205,7 +209,7 @@ class OptimalControlProgram:
             [nlp["dynamics_func"](self.symbolic_states, self.symbolic_controls, nlp)],
             ["x", "u"],
             ["xdot"],
-        ).expand()
+        ).expand()  # .map(nlp["ns"], "thread", 2)
 
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
 
