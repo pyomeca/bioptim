@@ -128,6 +128,8 @@ class Constraint:
         :param X: List of instant(s).
         :param policy: Tuple of indices of two markers.
         """
+        Correct.parameters("marker", [first_marker, second_marker], nlp["model"].nbMarkers())
+
         nq = nlp["q_mapping"].nb_reduced
         for x in horzsplit(X, 1):
             q = nlp["q_mapping"].expand(x[:nq])
@@ -146,6 +148,9 @@ class Constraint:
         :param X: List of instant(s).
         :param policy: Tuple of indices of segment and rt.
         """
+        Correct.parameters("segment", segment, nlp["model"].nbSegment())
+        Correct.parameters("rt", rt, nlp["model"].nbRTs())
+
         nq = nlp["q_mapping"].nb_reduced
         for x in horzsplit(X, 1):
             q = nlp["q_mapping"].expand(x[:nq])
@@ -247,3 +252,19 @@ class Constraint:
             for i in range(ocp.nlp[0]["nx"]):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
+
+
+class Correct:
+    @staticmethod
+    def parameters(name, elements, nb):
+        if not isinstance(elements, (list, tuple)):
+            elements = (elements,)
+        for element in elements:
+            if not isinstance(element, int):
+                raise RuntimeError(str(element) + " is not a valid index for " + name + ", it must be a " + str(type))
+            if element < 0 or element > nb:
+                raise RuntimeError(
+                    str(element) + " is not a valid index for " + name + ", it must be between 0 and " + str(nb - 1)
+                )
+
+    # TODO: same security in objective_function
