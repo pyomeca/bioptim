@@ -19,13 +19,13 @@ class ObjectiveFunction:
 
         for i in range(nlp["ns"] + 1):
             ocp.J += (
-                casadi.dot(
-                    nlp["X"][i][states_idx] - data_to_track[i, states_idx],
-                    nlp["X"][i][states_idx] - data_to_track[i, states_idx],
-                )
-                * nlp["dt"]
-                * nlp["dt"]
-                * weight
+                    casadi.dot(
+                        nlp["X"][i][states_idx] - data_to_track[i, states_idx],
+                        nlp["X"][i][states_idx] - data_to_track[i, states_idx],
+                    )
+                    * nlp["dt"]
+                    * nlp["dt"]
+                    * weight
             )
 
     @staticmethod
@@ -96,16 +96,17 @@ class ObjectiveFunction:
         if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
             raise RuntimeError("Cyclic constraint without same nx is not supported yet")
 
-        ocp.J += casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
-
+        ocp.J += (
+                casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0],
+                           ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
+        )
 
     @staticmethod
-    def minimize_final_distance_between_two_markers(ocp, nlp, weight=1, markers=()):
-        if not isinstance(markers, (list, tuple)) or len(markers) != 2:
-            raise RuntimeError("minimize_distance_between_two_markers expect markers to be a list of 2 marker indices")
+    def minimize_final_distance_between_two_markers(ocp, nlp, first_marker, second_marker, weight=1):
+
         q = nlp["q_mapping"].expand(nlp["X"][nlp["ns"]][: nlp["nbQ"]])
-        marker0 = nlp["model"].marker(q, markers[0]).to_mx()
-        marker1 = nlp["model"].marker(q, markers[1]).to_mx()
+        marker0 = nlp["model"].marker(q, first_marker).to_mx()
+        marker1 = nlp["model"].marker(q, second_marker).to_mx()
 
         ocp.J += casadi.dot(marker0 - marker1, marker0 - marker1) * weight
 
