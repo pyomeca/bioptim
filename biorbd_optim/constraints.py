@@ -2,7 +2,7 @@ import enum
 import biorbd
 import numpy as np
 
-from casadi import vertcat, MX, Function
+from casadi import vertcat, horzcat, MX, Function, horzsplit
 
 from .dynamics import Dynamics
 
@@ -50,45 +50,75 @@ class Constraint:
         """
         if nlp["constraints"] is None:
             return
-        for elem in nlp["constraints"]:
-            if elem[1] == Constraint.Instant.START:
-                x = [nlp["X"][0]]
-                u = [nlp["U"][0]]
-            elif elem[1] == Constraint.Instant.MID:
+        for constraint in nlp["constraints"]:
+            x, u, last_node = Constraint.__get_instant(nlp, constraint)
+            type = constraint["type"]
+            del constraint["instant"], constraint["type"]
+
+            if type == Constraint.Type.MARKERS_TO_PAIR:
+                Constraint.__markers_to_pair(ocp, nlp, x, **constraint)
+
+            elif type == Constraint.Type.ALIGN_WITH_CUSTOM_RT:
+                Constraint.__align_with_custom_rt(ocp, nlp, x, **constraint)
+
+            elif type == Constraint.Type.PROPORTIONAL_Q:
+                Constraint.__proportional_variable(ocp, nlp, x, **constraint)
+
+            elif type == Constraint.Type.PROPORTIONAL_CONTROL:
+                if last_node:
+                    raise RuntimeError("No control u at last node")
+                Constraint.__proportional_variable(ocp, nlp, u, **constraint)
+
+            elif type == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
+                if last_node:
+                    raise RuntimeError("No control u at last node")
+                Constraint.__contact_force_inequality(ocp, nlp, x, u, **constraint)
+
+            else:
+                raise RuntimeError(constraint + "is not a valid constraint, take a look in Constraint.Type class")
+
+    @staticmethod
+    def __get_instant(nlp, constraint):
+        if not isinstance(constraint["instant"], (list, tuple)):
+            constraint["instant"] = (constraint["instant"],)
+        x = MX()
+        u = MX()
+        last_node = False
+        for node in constraint["instant"]:
+            if isinstance(node, int):
+                if node < 0 or node > nlp["ns"]:
+                    raise RuntimeError("Invalid instant, " + str(node) + " must be between 0 and " + str(nlp["ns"]))
+                if node == nlp["ns"]:
+                    last_node = True
+                x = horzcat(x, nlp["X"][node])
+                u = horzcat(u, nlp["U"][node])
+
+            elif node == Constraint.Instant.START:
+                x = horzcat(x, nlp["X"][0])
+                u = horzcat(u, nlp["U"][0])
+
+            elif node == Constraint.Instant.MID:
                 if nlp["ns"] % 2 == 0:
                     raise (ValueError("Number of shooting points must be odd to use MID"))
-                x = [nlp["X"][nlp["ns"] // 2 + 1]]
-                u = [nlp["U"][nlp["ns"] // 2 + 1]]
-            elif elem[1] == Constraint.Instant.INTERMEDIATES:
-                x = nlp["X"][1 : nlp["ns"] - 1]
-                u = nlp["U"][1 : nlp["ns"] - 1]
-            elif elem[1] == Constraint.Instant.END:
-                x = [nlp["X"][nlp["ns"]]]
-                u = []
-            elif elem[1] == Constraint.Instant.ALL:
-                x = nlp["X"]
-                u = nlp["U"]
+                x = horzcat(x, nlp["X"][nlp["ns"] // 2 + 1])
+                u = horzcat(u, nlp["U"][nlp["ns"] // 2 + 1])
+
+            elif node == Constraint.Instant.INTERMEDIATES:
+                x = horzcat(x, nlp["X"][1 : nlp["ns"] - 1])
+                u = horzcat(u, nlp["U"][1 : nlp["ns"] - 1])
+
+            elif node == Constraint.Instant.END:
+                x = horzcat(x, nlp["X"][nlp["ns"]])
+
+            elif node == Constraint.Instant.ALL:
+                for i in range(nlp["ns"]):
+                    x = horzcat(x, nlp["X"][i])
+                    u = horzcat(u, nlp["U"][i])
+                x = horzcat(x, nlp["X"][nlp["ns"]])
+                last_node = True
             else:
-                continue
-
-            if elem[0] == Constraint.Type.MARKERS_TO_PAIR:
-                Constraint.__markers_to_pair(ocp, nlp, x, elem[2])
-
-            elif elem[0] == Constraint.Type.ALIGN_WITH_CUSTOM_RT:
-                Constraint.__align_with_custom_rt(ocp, nlp, x, elem[2])
-
-            elif elem[0] == Constraint.Type.PROPORTIONAL_Q:
-                Constraint.__proportional_variable(ocp, nlp, x, elem[2])
-
-            elif elem[0] == Constraint.Type.PROPORTIONAL_CONTROL:
-                if elem[1] == Constraint.Instant.END:
-                    raise RuntimeError("Instant.END is used even though there is no control u at last node")
-                Constraint.__proportional_variable(ocp, nlp, u, elem[2])
-
-            elif elem[0] == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
-                if elem[1] == Constraint.Instant.END:
-                    raise RuntimeError("Instant.END is used even though there is no control u at last node")
-                Constraint.__contact_force_inequality(ocp, nlp, x, u, elem[2])
+                raise RuntimeError(" is not a valid instant")
+        return x, u, last_node
 
     @staticmethod
     def __markers_to_pair(ocp, nlp, X, policy):
