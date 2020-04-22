@@ -166,5 +166,5 @@ class ProblemType:
             x, _, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
 
         else:
-            raise RuntimeError (ocp.nlp[0]["problem_type"] + " is not implemented for this type of OCP")
+            raise RuntimeError(ocp.nlp[0]["problem_type"] + " is not implemented for this type of OCP")
         return x
