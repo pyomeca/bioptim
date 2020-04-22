@@ -74,7 +74,7 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     x, _, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    x = ocp.nlp[0]["q_mapping"].expand(x)
+    x = ocp.nlp[0]["q_mapping"].expand.map(x)
 
     np.save("static_arm", x.T)
 
