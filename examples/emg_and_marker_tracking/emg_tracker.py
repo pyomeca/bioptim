@@ -29,15 +29,9 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         "model": biorbd_model,
         "nbTau": nb_tau,
         "nbMuscle": nb_mus,
-        "q_mapping": BidirectionalMapping(
-            Mapping(range(nb_q)),
-            Mapping(range(nb_q))),
-        "q_dot_mapping": BidirectionalMapping(
-            Mapping(range(nb_qdot)),
-            Mapping(range(nb_qdot))),
-        "tau_mapping": BidirectionalMapping(
-            Mapping(range(nb_tau)),
-            Mapping(range(nb_tau))),
+        "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
+        "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
+        "tau_mapping": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
     }
     markers_func = []
     for i in range(nb_markers):

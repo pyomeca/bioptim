@@ -22,13 +22,13 @@ class ObjectiveFunction:
 
         for i in range(nlp["ns"] + 1):
             ocp.J += (
-                    casadi.dot(
-                        nlp["X"][i][states_idx] - data_to_track[i, states_idx],
-                        nlp["X"][i][states_idx] - data_to_track[i, states_idx],
-                    )
-                    * nlp["dt"]
-                    * nlp["dt"]
-                    * weight
+                casadi.dot(
+                    nlp["X"][i][states_idx] - data_to_track[i, states_idx],
+                    nlp["X"][i][states_idx] - data_to_track[i, states_idx],
+                )
+                * nlp["dt"]
+                * nlp["dt"]
+                * weight
             )
 
     @staticmethod
@@ -101,8 +101,7 @@ class ObjectiveFunction:
             raise RuntimeError("Cyclic constraint without same nx is not supported yet")
 
         ocp.J += (
-                casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0],
-                           ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
+            casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
         )
 
     @staticmethod
@@ -143,9 +142,11 @@ class ObjectiveFunction:
         else:
             if len(data_to_track.shape) != len(target_size):
                 raise RuntimeError(
-                    f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}")
+                    f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}"
+                )
             for i in range(len(target_size)):
                 if data_to_track.shape[i] < target_size[i]:
                     raise RuntimeError(
-                        f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}")
+                        f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}"
+                    )
         return data_to_track

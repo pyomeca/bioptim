@@ -87,9 +87,7 @@ class QAndQDotBounds(Bounds):
             q_dot_mapping = all_generalized_mapping
 
         if not q_mapping:
-            q_mapping = BidirectionalMapping(
-                Mapping(range(biorbd_model.nbQ())), Mapping(range(biorbd_model.nbQ()))
-            )
+            q_mapping = BidirectionalMapping(Mapping(range(biorbd_model.nbQ())), Mapping(range(biorbd_model.nbQ())))
         if not q_dot_mapping:
             q_dot_mapping = BidirectionalMapping(
                 Mapping(range(biorbd_model.nbQdot())), Mapping(range(biorbd_model.nbQdot()))

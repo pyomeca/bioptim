@@ -38,16 +38,16 @@ class ProblemType:
         """
         if nlp["q_mapping"] is None:
             nlp["q_mapping"] = BidirectionalMapping(
-                Mapping(range(nlp["model"].nbQ())),
-                Mapping(range(nlp["model"].nbQ())))
+                Mapping(range(nlp["model"].nbQ())), Mapping(range(nlp["model"].nbQ()))
+            )
         if nlp["q_dot_mapping"] is None:
             nlp["q_dot_mapping"] = BidirectionalMapping(
-                Mapping(range(nlp["model"].nbQdot())),
-                Mapping(range(nlp["model"].nbQdot())))
+                Mapping(range(nlp["model"].nbQdot())), Mapping(range(nlp["model"].nbQdot()))
+            )
         if nlp["tau_mapping"] is None:
             nlp["tau_mapping"] = BidirectionalMapping(
-                Mapping(range(nlp["model"].nbGeneralizedTorque())),
-                Mapping(range(nlp["model"].nbGeneralizedTorque())))
+                Mapping(range(nlp["model"].nbGeneralizedTorque())), Mapping(range(nlp["model"].nbGeneralizedTorque()))
+            )
 
         dof_names = nlp["model"].nameDof()
         q = MX()

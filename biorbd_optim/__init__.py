@@ -175,7 +175,8 @@ class OptimalControlProgram:
         if isinstance(param, (list, tuple)):
             if len(param) != self.nb_phases:
                 raise RuntimeError(
-                    f"{param_name} size({len(param)}) does not correspond to the number of phases({self.nb_phases}).")
+                    f"{param_name} size({len(param)}) does not correspond to the number of phases({self.nb_phases})."
+                )
             else:
                 for i in range(self.nb_phases):
                     self.nlp[i][param_name] = param[i]

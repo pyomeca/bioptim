@@ -99,10 +99,7 @@ class PlotOcp:
             height_step = int(tkinter.Tk().winfo_screenheight() / (len(self.all_figures) - 1))
 
         for i, fig in enumerate(self.all_figures):
-            if (
-                self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven
-                and fig == self.all_figures[-1]
-            ):
+            if self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven and fig == self.all_figures[-1]:
                 fig.canvas.manager.window.move(muscle_position, 0)
 
             elif (
@@ -197,8 +194,8 @@ class ShowResult:
             same_dof = True
             for k in range(self.ocp.nlp[0]["model"].nbDof()):
                 if (
-                        self.ocp.nlp[0]["model"].nameDof()[k].to_string()
-                        != self.ocp.nlp[1]["model"].nameDof()[k].to_string()
+                    self.ocp.nlp[0]["model"].nameDof()[k].to_string()
+                    != self.ocp.nlp[1]["model"].nameDof()[k].to_string()
                 ):
                     same_dof = False
                     break

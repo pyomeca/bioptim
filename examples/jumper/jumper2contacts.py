@@ -27,18 +27,19 @@ def prepare_ocp(
 
     if use_symmetry:
         q_mapping = BidirectionalMapping(
-            Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]),
-            Mapping([0, 1, 2, 3, 7, 8, 9]))
+            Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 3, 7, 8, 9])
+        )
         q_mapping = q_mapping, q_mapping
         tau_mapping = BidirectionalMapping(
-            Mapping([-1, -1, -1, -1, 0, -1, 0, 1, 2, 3, 1, 2, 3], [5]),
-            Mapping([4, 7, 8, 9]))
+            Mapping([-1, -1, -1, -1, 0, -1, 0, 1, 2, 3, 1, 2, 3], [5]), Mapping([4, 7, 8, 9])
+        )
         tau_mapping = tau_mapping, tau_mapping
 
     else:
         q_mapping = BidirectionalMapping(
             Mapping([Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model]),
-            Mapping([Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model]))
+            Mapping([Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model]),
+        )
         tau_mapping = q_mapping
 
     # Add objective functions

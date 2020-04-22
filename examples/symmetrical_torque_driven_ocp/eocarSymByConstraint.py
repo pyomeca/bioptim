@@ -39,7 +39,13 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
             "first_marker": 0,
             "second_marker": 2,
         },
-        {"type": Constraint.Type.PROPORTIONAL_Q, "instant": Constraint.Instant.ALL, "first_dof": 2, "second_dof": 3, "coef": -1},
+        {
+            "type": Constraint.Type.PROPORTIONAL_Q,
+            "instant": Constraint.Instant.ALL,
+            "first_dof": 2,
+            "second_dof": 3,
+            "coef": -1,
+        },
     )
 
     # Path constraint

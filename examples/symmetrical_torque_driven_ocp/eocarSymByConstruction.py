@@ -18,9 +18,7 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     number_shooting_points = 30
     final_time = 2
     torque_min, torque_max, torque_init = -100, 100, 0
-    all_generalized_mapping = BidirectionalMapping(
-        Mapping([0, 1, 2, 2], [3]),
-        Mapping([0, 1, 2]))
+    all_generalized_mapping = BidirectionalMapping(Mapping([0, 1, 2, 2], [3]), Mapping([0, 1, 2]))
 
     # Add objective functions
     objective_functions = {"type": ObjectiveFunction.minimize_torque, "weight": 100}
