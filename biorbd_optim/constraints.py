@@ -129,7 +129,7 @@ class Constraint:
         :param policy: Tuple of indices of two markers.
         """
         nq = nlp["q_mapping"].nb_reduced
-        for x in X:
+        for x in horzsplit(X, 1):
             q = nlp["q_mapping"].expand(x[:nq])
             marker1 = nlp["model"].marker(q, first_marker).to_mx()
             marker2 = nlp["model"].marker(q, second_marker).to_mx()
@@ -147,7 +147,7 @@ class Constraint:
         :param policy: Tuple of indices of segment and rt.
         """
         nq = nlp["q_mapping"].nb_reduced
-        for x in X:
+        for x in horzsplit(X, 1):
             q = nlp["q_mapping"].expand(x[:nq])
             r_seg = nlp["model"].globalJCS(q, segment).rot()
             r_rt = nlp["model"].RT(q, rt).rot()
@@ -174,7 +174,7 @@ class Constraint:
                 raise RuntimeError(
                     "A mix of tuples/lists and non tuples/lists cannot be used for defining proportionality constraints"
                 )
-            for v in V:
+            for v in horzsplit(V, 1):
                 v = nlp["q_mapping"].expand(v)
                 ocp.g = vertcat(ocp.g, v[first_dof] - coef * v[second_dof])
                 ocp.g_bounds.min.append(0)
