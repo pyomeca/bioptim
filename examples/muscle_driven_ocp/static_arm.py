@@ -20,7 +20,7 @@ def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     # Add objective functions
     objective_functions = (
-        # (ObjectiveFunction.minimize_torque, {"weight": 1}),
+        {"type": ObjectiveFunction.minimize_torque, "weight": 1},
         {"type": ObjectiveFunction.minimize_muscle, "weight": 1},
         {
             "type": ObjectiveFunction.minimize_distance_between_two_markers,
@@ -31,8 +31,8 @@ def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     )
 
     # Dynamics
-    # problem_type = ProblemType.muscles_and_torque_driven
-    problem_type = ProblemType.torque_driven
+    problem_type = ProblemType.muscles_and_torque_driven
+    # problem_type = ProblemType.torque_driven
 
     # Constraints
     constraints = ()
@@ -49,12 +49,12 @@ def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque() , #+ [muscle_min] * biorbd_model.nbMuscleTotal(),
-        [torque_max] * biorbd_model.nbGeneralizedTorque() , #+ [muscle_max] * biorbd_model.nbMuscleTotal(),
+        [torque_min] * biorbd_model.nbGeneralizedTorque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
+        [torque_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
     )
 
     U_init = InitialConditions(
-        [torque_init] * biorbd_model.nbGeneralizedTorque() #+ [muscle_init] * biorbd_model.nbMuscleTotal()
+        [torque_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal()
     )
     # ------------- #
 

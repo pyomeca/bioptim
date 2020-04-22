@@ -24,37 +24,11 @@ def test_muscle_driven_ocp():
     )
     sol = ocp.solve()
 
-
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 38.36734873968106)
-
-    # Check constraints
-    g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (120, 1))
-    np.testing.assert_almost_equal(g, np.zeros((120, 1)), decimal=6)
-
-    # Check some of the results
-    q, qdot, tau = ProblemType.get_data_from_V(ocp, sol["x"])
-
-    # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([-0.07264118,  0.52329762]))
-    # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([0., 0.]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([-0.03963854, -0.8312761]))
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([0.99999652, 0.99999979]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([0.99995636, 0.99998742]))
-
-
-
     #
     # # Check objective function value
     # f = np.array(sol["f"])
     # np.testing.assert_equal(f.shape, (1, 1))
-    # np.testing.assert_almost_equal(f[0, 0], 0.09990643702945518)
+    # np.testing.assert_almost_equal(f[0, 0], 1.9859178242635677e-15)
     #
     # # Check constraints
     # g = np.array(sol["g"])
@@ -62,22 +36,48 @@ def test_muscle_driven_ocp():
     # np.testing.assert_almost_equal(g, np.zeros((120, 1)), decimal=6)
     #
     # # Check some of the results
-    # q, qdot, tau, mus = ProblemType.get_data_from_V(ocp, sol["x"])
+    # q, qdot, tau = ProblemType.get_data_from_V(ocp, sol["x"])
     #
     # # initial and final position
     # np.testing.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
-    # np.testing.assert_almost_equal(q[:, -1], np.array([1.25897393, -3.93236422]))
+    # np.testing.assert_almost_equal(q[:, -1], np.array([-0.06756487, -0.02846171]))
     # # initial and final velocities
     # np.testing.assert_almost_equal(qdot[:, 0], np.array([0., 0.]))
-    # np.testing.assert_almost_equal(qdot[:, -1], np.array([-0.18678309, -5.93159108]))
+    # np.testing.assert_almost_equal(qdot[:, -1], np.array([-0.03906034, -1.22301875]))
     # # initial and final controls
-    # np.testing.assert_almost_equal(tau[:, 0], np.array([-0.99946814,  0.99920787]))
-    # np.testing.assert_almost_equal(tau[:, -1], np.array([0.9990183 , -0.99911126]))
-    # np.testing.assert_almost_equal(
-    #     mus[:, 0], np.array([3.27792898e-01, 1.72406097e-01, 2.14413672e-01, 7.25272142e-05,
-    #    7.45552332e-05, 2.56485014e-01]),
-    # )
-    # np.testing.assert_almost_equal(
-    #     mus[:, -1], np.array([1.92162446e-04, 2.45779020e-04, 5.46807443e-05, 1.98144086e-02,
-    #    1.97345933e-02, 8.29861803e-05]),
-    # )
+    # np.testing.assert_almost_equal(tau[:, 0], np.array([1.31437879e-07, -3.16564845e-07]))
+    # np.testing.assert_almost_equal(tau[:, -1], np.array([-7.51833328e-10,  1.73856102e-09]))
+    #
+
+
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 0.03928217227963457)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (120, 1))
+    np.testing.assert_almost_equal(g, np.zeros((120, 1)), decimal=6)
+
+    # Check some of the results
+    q, qdot, tau, mus = ProblemType.get_data_from_V(ocp, sol["x"])
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([-3.2961726,  4.0696519]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0., 0.]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([-1.04474827,  3.81391233]))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([-0.00488432, -0.00645102]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-0.00300375,  0.0016473]))
+    np.testing.assert_almost_equal(
+        mus[:, 0], np.array([2.00151754e-01, 4.32317180e-05, 7.97613093e-05, 7.06526090e-02,
+       6.87228618e-02, 7.97498498e-05]),
+    )
+    np.testing.assert_almost_equal(
+        mus[:, -1], np.array([0.0004186 , 0.0005029 , 0.00035645, 0.01507679, 0.01483208,
+       0.00058814]),
+    )
