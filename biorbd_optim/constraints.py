@@ -17,7 +17,7 @@ class Constraint:
         Different conditions between biorbd geometric structures.
         """
 
-        MARKERS_TO_PAIR = 0
+        MARKERS_TO_MATCH = 0
         ALIGN_WITH_CUSTOM_RT = 1
         PROPORTIONAL_Q = 2
         PROPORTIONAL_CONTROL = 3
@@ -55,8 +55,8 @@ class Constraint:
             type = constraint["type"]
             del constraint["instant"], constraint["type"]
 
-            if type == Constraint.Type.MARKERS_TO_PAIR:
-                Constraint.__markers_to_pair(ocp, nlp, x, **constraint)
+            if type == Constraint.Type.MARKERS_TO_MATCH:
+                Constraint.__markers_to_match(ocp, nlp, x, **constraint)
 
             elif type == Constraint.Type.ALIGN_WITH_CUSTOM_RT:
                 Constraint.__align_with_custom_rt(ocp, nlp, x, **constraint)
@@ -121,7 +121,7 @@ class Constraint:
         return x, u, last_node
 
     @staticmethod
-    def __markers_to_pair(ocp, nlp, X, first_marker, second_marker):
+    def __markers_to_match(ocp, nlp, X, first_marker, second_marker):
         """
         Adds the constraint that the two markers must be coincided at the desired instant(s).
         :param nlp: An OptimalControlProgram class.
