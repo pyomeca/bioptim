@@ -2,6 +2,7 @@ import multiprocessing as mp
 import numpy as np
 import tkinter
 
+from scipy import interpolate
 from matplotlib import pyplot as plt
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
@@ -160,7 +161,7 @@ class ShowResult:
         self.ocp = ocp
         self.sol = sol
 
-    def show_biorbd_viz(self, show_meshes=True):
+    def show_biorbd_viz(self, nb_frames=100, show_meshes=True):
         x = ProblemType.get_q_from_V(self.ocp, self.sol["x"])
 
         if self.ocp.nb_phases == 1:
@@ -181,10 +182,17 @@ class ShowResult:
                     x_concat = np.concatenate((x_concat, x[i][:, 1:]), axis=1)
                 x = [x_concat]
 
+
         from BiorbdViz import BiorbdViz
 
         try:
             for x_phase in x:
+                # time_interp = np.linspace(0, t_int[-1], nb_frames)
+                x_interpolate = np.ndarray((nb_frames, len(x_phase)))
+                for x_interpolate_dof in x_interpolate:
+                    tck = interpolate.splrep(t_int, y_int[q, :], s=0)
+                    x_interpolate_dof = interpolate.splev()
+
                 b = BiorbdViz(loaded_model=self.ocp.nlp[0]["model"], show_meshes=show_meshes)
                 b.load_movement(x_phase.T)
                 b.exec()
