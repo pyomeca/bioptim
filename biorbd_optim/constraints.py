@@ -75,7 +75,7 @@ class Constraint:
                 Constraint.__contact_force_inequality(ocp, nlp, x, u, **constraint)
 
             else:
-                raise RuntimeError(constraint + "is not a valid constraint, take a look in Constraint.Type class")
+                raise RuntimeError(f"{constraint} is not a valid constraint, take a look in Constraint.Type class")
 
     @staticmethod
     def __get_instant(nlp, constraint):
@@ -87,7 +87,7 @@ class Constraint:
         for node in constraint["instant"]:
             if isinstance(node, int):
                 if node < 0 or node > nlp["ns"]:
-                    raise RuntimeError("Invalid instant, " + str(node) + " must be between 0 and " + str(nlp["ns"]))
+                    raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp['ns']}")
                 if node == nlp["ns"]:
                     last_node = True
                 x = horzcat(x, nlp["X"][node])
@@ -261,10 +261,8 @@ class Correct:
             elements = (elements,)
         for element in elements:
             if not isinstance(element, int):
-                raise RuntimeError(str(element) + " is not a valid index for " + name + ", it must be a " + str(type))
+                raise RuntimeError(f"{element} is not a valid index for {name}, it must be an integer")
             if element < 0 or element > nb:
-                raise RuntimeError(
-                    str(element) + " is not a valid index for " + name + ", it must be between 0 and " + str(nb - 1)
-                )
+                raise RuntimeError(f"{element} is not a valid index for {name}, it must be between 0 and {nb - 1}.")
 
     # TODO: same security in objective_function
