@@ -4,6 +4,15 @@ import numpy as np
 
 class ObjectiveFunction:
     @staticmethod
+    def add_objective_functions(ocp, nlp):
+        for objective_function in nlp["objective_functions"]:
+            if not isinstance(objective_function, dict):
+                raise RuntimeError(str(objective_function) + " is not a dictionary")
+            type = objective_function["type"]
+            del objective_function["type"]
+            type(ocp, nlp, **objective_function)
+
+    @staticmethod
     def minimize_states(ocp, nlp, weight=1, states_idx=(), data_to_track=()):
         states_idx = ObjectiveFunction.__check_var_size(states_idx, nlp["nx"], "state_idx")
         data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"] + 1, len(states_idx)])
@@ -80,7 +89,6 @@ class ObjectiveFunction:
     @staticmethod
     def minimize_all_controls(ocp, nlp, weight=1):
         raise RuntimeError("cyclic objective function not implemented yet")
-
 
     @staticmethod
     def cyclic(ocp, nlp, weight=1):
