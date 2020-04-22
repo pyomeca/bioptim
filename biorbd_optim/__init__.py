@@ -143,10 +143,9 @@ class OptimalControlProgram:
                 if isinstance(constraints[0], dict):
                     constraints = (constraints,)
             elif isinstance(constraints, (list, tuple)):
-                constraints = list(constraints)
-                for i, constraint in enumerate(constraints):
+                for constraint in constraints:
                     if isinstance(constraint, dict):
-                        constraints[i] = (constraint,)
+                        raise RuntimeError("Each phase must declares its constraints (even if it is empty)")
             self.__add_to_nlp("constraints", constraints, False)
             for i in range(self.nb_phases):
                 Constraint.add_constraints(self, self.nlp[i])
@@ -160,10 +159,9 @@ class OptimalControlProgram:
                 if isinstance(objective_functions[0], dict):
                     objective_functions = (objective_functions,)
             elif isinstance(objective_functions, (list, tuple)):
-                objective_functions = list(objective_functions)
-                for i, objective_function in enumerate(objective_functions):
+                for objective_function in objective_functions:
                     if isinstance(objective_function, dict):
-                        objective_functions[i] = (objective_function,)
+                        raise RuntimeError("Each phase must declares its objective (even if it is empty)")
             self.__add_to_nlp("objective_functions", objective_functions, False)
             for i in range(self.nb_phases):
                 ObjectiveFunction.add_objective_functions(self, self.nlp[i])

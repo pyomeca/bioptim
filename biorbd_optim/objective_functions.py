@@ -12,6 +12,9 @@ class ObjectiveFunction:
             del objective_function["type"]
             type(ocp, nlp, **objective_function)
 
+        if ocp.is_cyclic_objective:
+            ObjectiveFunction.cyclic(ocp)
+
     @staticmethod
     def minimize_states(ocp, nlp, weight=1, states_idx=(), data_to_track=()):
         states_idx = ObjectiveFunction.__check_var_size(states_idx, nlp["nx"], "state_idx")
@@ -92,7 +95,7 @@ class ObjectiveFunction:
             ocp.J += casadi.dot(nlp["U"][i], nlp["U"][i]) * nlp["dt"] * nlp["dt"] * weight
 
     @staticmethod
-    def cyclic(ocp, nlp, weight=1):
+    def cyclic(ocp, weight=1):
 
         if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
             raise RuntimeError("Cyclic constraint without same nx is not supported yet")

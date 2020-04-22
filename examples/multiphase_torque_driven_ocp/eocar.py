@@ -8,7 +8,7 @@ from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditio
 from biorbd_optim.plot import ShowResult
 
 
-def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
+def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
@@ -22,11 +22,9 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     objective_functions = (
         (
             {"type": ObjectiveFunction.minimize_torque, "weight": 100},
-            {"type": ObjectiveFunction.cyclic, "weight": 100},
         ),
         (
             {"type": ObjectiveFunction.minimize_torque, "weight": 100},
-            {"type": ObjectiveFunction.cyclic, "weight": 100},
         ),
     )
 
@@ -115,4 +113,4 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.show_biorbd_viz()
+    result.animate()

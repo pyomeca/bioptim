@@ -172,13 +172,7 @@ class Constraint:
         are the indexes of elements to be linked proportionally.
         The third element of each tuple (policy[i][2]) is the proportionality coefficient.
         """
-        Correct.parameters("dof", (first_dof, second_dof, coef), 1)
-        if not isinstance(first_dof, int):
-            raise RuntimeError("first_dof must be an index")
-
-        if not isinstance(second_dof, int):
-            raise RuntimeError("second_dof must be an index")
-
+        Correct.parameters("dof", (first_dof, second_dof), UX.rows())
         if not isinstance(coef, (int, float)):
             raise RuntimeError("coef must be a coeff")
 

@@ -8,13 +8,13 @@ from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditio
 from biorbd_optim.plot import ShowResult
 
 
-def prepare_ocp(biorbd_model_path="eocar.bioMod"):
+def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    number_shooting_points = 300
+    number_shooting_points = 30
     final_time = 2
     torque_min, torque_max, torque_init = -100, 100, 0
 
@@ -73,7 +73,7 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod"):
         X_bounds,
         U_bounds,
         constraints,
-        show_online_optim=True,
+        show_online_optim=show_online_optim,
     )
 
 
