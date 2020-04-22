@@ -37,13 +37,13 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     constraints = (
         (
             {
-                "type": Constraint.Type.MARKERS_TO_PAIR,
+                "type": Constraint.Type.MARKERS_TO_MATCH,
                 "instant": Constraint.Instant.START,
                 "first_marker": 0,
                 "second_marker": 1,
             },
             {
-                "type": Constraint.Type.MARKERS_TO_PAIR,
+                "type": Constraint.Type.MARKERS_TO_MATCH,
                 "instant": Constraint.Instant.END,
                 "first_marker": 0,
                 "second_marker": 2,
@@ -51,7 +51,7 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
         ),
         (
             {
-                "type": Constraint.Type.MARKERS_TO_PAIR,
+                "type": Constraint.Type.MARKERS_TO_MATCH,
                 "instant": Constraint.Instant.END,
                 "first_marker": 0,
                 "second_marker": 1,
