@@ -184,41 +184,50 @@ class ShowResult:
         plot_ocp.update_data(self.sol["x"])
         plt.show()
 
-    def animate(self, nb_frames=100, **kwargs):
+    def animate(self, nb_frames=80, **kwargs):
         x = ProblemType.get_q_from_V(self.ocp, self.sol["x"])
+        t = [np.array(np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1)) for i in
+             range(self.ocp.nb_phases)]
 
         if self.ocp.nb_phases == 1:
             x = [x]
 
         else:
             same_dof = True
-            for k in range(self.ocp.nlp[0]["model"].nbDof()):
-                if (
-                    self.ocp.nlp[0]["model"].nameDof()[k].to_string()
-                    != self.ocp.nlp[1]["model"].nameDof()[k].to_string()
-                ):
-                    same_dof = False
+            for i in range(self.ocp.nb_phases):
+                for k in range(self.ocp.nlp[0]["model"].nbDof()):
+                    if (
+                            self.ocp.nlp[i]["model"].nameDof()[k].to_string()
+                            != self.ocp.nlp[i - 1]["model"].nameDof()[k].to_string()
+                    ):
+                        same_dof = False
+                        break
+                if not same_dof:
                     break
+
             if same_dof:
                 x_concat = x[0]
+                t_concat = t[0]
                 for i in range(1, self.ocp.nb_phases):
                     x_concat = np.concatenate((x_concat, x[i][:, 1:]), axis=1)
+                    t_concat = np.concatenate((t_concat, t[i][1:] + t_concat[-1]))
                 x = [x_concat]
+                t = [t_concat]
 
         try:
             from BiorbdViz import BiorbdViz
         except ModuleNotFoundError:
             print("Install BiorbdViz if you want to have a live view of the optimization")
 
-        for x_phase in x:
-            # time_interp = np.linspace(0, t_int[-1], nb_frames)
-            # x_interpolate = np.ndarray((nb_frames, len(x_phase)))
-            # for x_interpolate_dof in x_interpolate:
-            #     tck = interpolate.splrep(t_int, y_int[q, :], s=0)
-            #     x_interpolate_dof = interpolate.splev()
+        for i, x_phase in enumerate(x):
+            x_interpolate = np.ndarray((self.ocp.nlp[i]["nbQ"], nb_frames))
+            t_interpolate = np.linspace(0, t[i][-1], nb_frames)
+            for j in range(self.ocp.nlp[i]["nbQ"]):
+                tck = interpolate.splrep(t[i], x_phase[j], s=0)
+                x_interpolate[j] = interpolate.splev(t_interpolate, tck)
 
-            b = BiorbdViz(loaded_model=self.ocp.nlp[0]["model"], **kwargs)
-            b.load_movement(x_phase.T)
+            b = BiorbdViz(loaded_model=self.ocp.nlp[i]["model"], **kwargs)
+            b.load_movement(x_interpolate.T)
             b.exec()
 
     @staticmethod
