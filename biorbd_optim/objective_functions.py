@@ -7,7 +7,7 @@ class ObjectiveFunction:
     def add_objective_functions(ocp, nlp):
         for objective_function in nlp["objective_functions"]:
             if not isinstance(objective_function, dict):
-                raise RuntimeError(str(objective_function) + " is not a dictionary")
+                raise RuntimeError(f"{objective_function} is not a dictionary")
             type = objective_function["type"]
             del objective_function["type"]
             type(ocp, nlp, **objective_function)
@@ -133,7 +133,7 @@ class ObjectiveFunction:
             if isinstance(var_idx, int):
                 var_idx = [var_idx]
             if max(var_idx) > target_size:
-                raise RuntimeError(var_name + " in minimize_states cannot be higher than nx (" + target_size + ")")
+                raise RuntimeError(f"{var_name} in minimize_states cannot be higher than nx ({target_size})")
         return var_idx
 
     @staticmethod
@@ -143,17 +143,9 @@ class ObjectiveFunction:
         else:
             if len(data_to_track.shape) != len(target_size):
                 raise RuntimeError(
-                    "data_to_track "
-                    + str(data_to_track.shape)
-                    + " don't correspond to expected minimum size "
-                    + str(target_size)
-                )
+                    f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}")
             for i in range(len(target_size)):
                 if data_to_track.shape[i] < target_size[i]:
                     raise RuntimeError(
-                        "data_to_track "
-                        + str(data_to_track.shape)
-                        + " don't correspond to expected minimum size "
-                        + str(target_size)
-                    )
+                        f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}")
         return data_to_track

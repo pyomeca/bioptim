@@ -149,7 +149,7 @@ class ProblemType:
                     muscle.append([])
 
             else:
-                raise RuntimeError(nlp["problem_type"].__name__ + " not implemented yet in get_data_from_V")
+                raise RuntimeError(f"{nlp['problem_type'].__name__} not implemented yet in get_data_from_V")
 
         if len(num_phase) == 1:
             q = q[0]
@@ -170,5 +170,5 @@ class ProblemType:
             x, _, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
 
         else:
-            raise RuntimeError(ocp.nlp[0]["problem_type"] + " is not implemented for this type of OCP")
+            raise RuntimeError(f"{ocp.nlp[0]['problem_type']} is not implemented for this type of OCP")
         return x

@@ -17,7 +17,7 @@ class Constraint:
         Different conditions between biorbd geometric structures.
         """
 
-        MARKERS_TO_PAIR = 0
+        MARKERS_TO_MATCH = 0
         ALIGN_WITH_CUSTOM_RT = 1
         PROPORTIONAL_Q = 2
         PROPORTIONAL_CONTROL = 3
@@ -55,8 +55,8 @@ class Constraint:
             type = constraint["type"]
             del constraint["instant"], constraint["type"]
 
-            if type == Constraint.Type.MARKERS_TO_PAIR:
-                Constraint.__markers_to_pair(ocp, nlp, x, **constraint)
+            if type == Constraint.Type.MARKERS_TO_MATCH:
+                Constraint.__markers_to_match(ocp, nlp, x, **constraint)
 
             elif type == Constraint.Type.ALIGN_WITH_CUSTOM_RT:
                 Constraint.__align_with_custom_rt(ocp, nlp, x, **constraint)
@@ -75,7 +75,7 @@ class Constraint:
                 Constraint.__contact_force_inequality(ocp, nlp, x, u, "GREATER_THAN", **constraint)
 
             else:
-                raise RuntimeError(constraint + "is not a valid constraint, take a look in Constraint.Type class")
+                raise RuntimeError(f"{constraint} is not a valid constraint, take a look in Constraint.Type class")
 
     @staticmethod
     def __get_instant(nlp, constraint):
@@ -87,7 +87,7 @@ class Constraint:
         for node in constraint["instant"]:
             if isinstance(node, int):
                 if node < 0 or node > nlp["ns"]:
-                    raise RuntimeError("Invalid instant, " + str(node) + " must be between 0 and " + str(nlp["ns"]))
+                    raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp['ns']}")
                 if node == nlp["ns"]:
                     last_node = True
                 x = horzcat(x, nlp["X"][node])
@@ -121,7 +121,7 @@ class Constraint:
         return x, u, last_node
 
     @staticmethod
-    def __markers_to_pair(ocp, nlp, X, first_marker, second_marker):
+    def __markers_to_match(ocp, nlp, X, first_marker, second_marker):
         """
         Adds the constraint that the two markers must be coincided at the desired instant(s).
         :param nlp: An OptimalControlProgram class.
@@ -261,10 +261,8 @@ class Correct:
             elements = (elements,)
         for element in elements:
             if not isinstance(element, int):
-                raise RuntimeError(str(element) + " is not a valid index for " + name + ", it must be a " + str(type))
+                raise RuntimeError(f"{element} is not a valid index for {name}, it must be an integer")
             if element < 0 or element > nb:
-                raise RuntimeError(
-                    str(element) + " is not a valid index for " + name + ", it must be between 0 and " + str(nb - 1)
-                )
+                raise RuntimeError(f"{element} is not a valid index for {name}, it must be between 0 and {nb - 1}.")
 
     # TODO: same security in objective_function

@@ -2,6 +2,7 @@ import multiprocessing as mp
 import numpy as np
 import tkinter
 
+from scipy import interpolate
 from matplotlib import pyplot as plt
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
@@ -186,7 +187,7 @@ class ShowResult:
         plot_ocp.update_data(self.sol["x"])
         plt.show()
 
-    def animate(self, **kwargs):
+    def animate(self, nb_frames=100, **kwargs):
         x = ProblemType.get_q_from_V(self.ocp, self.sol["x"])
 
         if self.ocp.nb_phases == 1:
@@ -204,7 +205,7 @@ class ShowResult:
             if same_dof:
                 x_concat = x[0]
                 for i in range(1, self.ocp.nb_phases):
-                    x_concat = np.concatenate((x_concat, x[i]), axis=1)
+                    x_concat = np.concatenate((x_concat, x[i][:, 1:]), axis=1)
                 x = [x_concat]
 
         try:
@@ -213,6 +214,12 @@ class ShowResult:
             print("Install BiorbdViz if you want to have a live view of the optimization")
 
         for x_phase in x:
+            # time_interp = np.linspace(0, t_int[-1], nb_frames)
+            # x_interpolate = np.ndarray((nb_frames, len(x_phase)))
+            # for x_interpolate_dof in x_interpolate:
+            #     tck = interpolate.splrep(t_int, y_int[q, :], s=0)
+            #     x_interpolate_dof = interpolate.splev()
+
             b = BiorbdViz(loaded_model=self.ocp.nlp[0]["model"], **kwargs)
             b.load_movement(x_phase.T)
             b.exec()
