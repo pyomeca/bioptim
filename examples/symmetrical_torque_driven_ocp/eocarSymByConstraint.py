@@ -39,7 +39,7 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
             "first_marker": 0,
             "second_marker": 2,
         },
-        # {"type": Constraint.Type.PROPORTIONAL_Q, "instant": Constraint.Instant.ALL, "first_dof": 2, "second_dof": 3, "coef": -1},
+        {"type": Constraint.Type.PROPORTIONAL_Q, "instant": Constraint.Instant.ALL, "first_dof": 2, "second_dof": 3, "coef": -1},
     )
 
     # Path constraint
@@ -75,11 +75,11 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True)
+    ocp = prepare_ocp(show_online_optim=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.keep_matplotlib()
+    result.graphs()

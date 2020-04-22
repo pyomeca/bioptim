@@ -5,7 +5,7 @@ from casadi import MX, Function
 from matplotlib import pyplot as plt
 
 from biorbd_optim import OptimalControlProgram
-from biorbd_optim.mapping import Mapping
+from biorbd_optim.mapping import BidirectionalMapping, Mapping
 from biorbd_optim.dynamics import Dynamics
 from biorbd_optim.plot import PlotOcp
 from biorbd_optim.problem_type import ProblemType
@@ -29,7 +29,15 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         "model": biorbd_model,
         "nbTau": nb_tau,
         "nbMuscle": nb_mus,
-        "dof_mapping": Mapping(range(nb_q), range(nb_q)),
+        "q_mapping": BidirectionalMapping(
+            Mapping(range(nb_q), range(nb_q)),
+            Mapping(range(nb_q), range(nb_q))),
+        "q_dot_mapping": BidirectionalMapping(
+            Mapping(range(nb_qdot), range(nb_qdot)),
+            Mapping(range(nb_qdot), range(nb_qdot))),
+        "tau_mapping": BidirectionalMapping(
+            Mapping(range(nb_tau), range(nb_tau)),
+            Mapping(range(nb_tau), range(nb_tau))),
     }
     markers_func = []
     for i in range(nb_markers):

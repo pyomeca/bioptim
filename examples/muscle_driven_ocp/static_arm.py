@@ -23,7 +23,7 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
         # (ObjectiveFunction.minimize_torque, {"weight": 1}),
         {"type": ObjectiveFunction.minimize_muscle, "weight": 1},
         {
-            "type": ObjectiveFunction.minimize_final_distance_between_two_markers,
+            "type": ObjectiveFunction.minimize_distance_between_two_markers,
             "first_marker": 0,
             "second_marker": 5,
             "weight": 100,

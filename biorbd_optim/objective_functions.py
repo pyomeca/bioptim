@@ -88,7 +88,8 @@ class ObjectiveFunction:
 
     @staticmethod
     def minimize_all_controls(ocp, nlp, weight=1):
-        raise RuntimeError("cyclic objective function not implemented yet")
+        for i in range(nlp["ns"]):
+            ocp.J += casadi.dot(nlp["U"][i], nlp["U"][i]) * nlp["dt"] * nlp["dt"] * weight
 
     @staticmethod
     def cyclic(ocp, nlp, weight=1):
@@ -102,13 +103,24 @@ class ObjectiveFunction:
         )
 
     @staticmethod
-    def minimize_final_distance_between_two_markers(ocp, nlp, first_marker, second_marker, weight=1):
+    def minimize_distance_between_two_markers(ocp, nlp, first_marker, second_marker, weight=1, node=-1):
 
-        q = nlp["q_mapping"].expand(nlp["X"][nlp["ns"]][: nlp["nbQ"]])
+        q = nlp["q_mapping"].expand.map(nlp["X"][node][: nlp["nbQ"]])
         marker0 = nlp["model"].marker(q, first_marker).to_mx()
         marker1 = nlp["model"].marker(q, second_marker).to_mx()
 
         ocp.J += casadi.dot(marker0 - marker1, marker0 - marker1) * weight
+
+    @staticmethod
+    def maximize_predicted_height_jump(ocp, nlp, weight=1, node=-1):
+        g = -9.81  # get gravity from biorbd
+        q = nlp["q_mapping"].expand.map(nlp["X"][node][: nlp["nbQ"]])
+        q_dot = nlp["q_dot_mapping"].expand.map(nlp["X"][node][nlp["nbQ"] :])
+        CoM = nlp["model"].CoM(q).to_mx()
+        CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
+        jump_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
+
+        ocp.J -= jump_height * weight
 
     @staticmethod
     def __check_var_size(var_idx, target_size, var_name="var"):

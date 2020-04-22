@@ -1,7 +1,7 @@
 import enum
-import biorbd
-import numpy as np
+from math import inf
 
+import biorbd
 from casadi import vertcat, horzcat, MX, Function, horzsplit
 
 from .dynamics import Dynamics
@@ -72,7 +72,7 @@ class Constraint:
             elif type == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
                 if last_node:
                     raise RuntimeError("No control u at last node")
-                Constraint.__contact_force_inequality(ocp, nlp, x, u, **constraint)
+                Constraint.__contact_force_inequality(ocp, nlp, x, u, "GREATER_THAN", **constraint)
 
             else:
                 raise RuntimeError(constraint + "is not a valid constraint, take a look in Constraint.Type class")
@@ -130,9 +130,9 @@ class Constraint:
         """
         Correct.parameters("marker", [first_marker, second_marker], nlp["model"].nbMarkers())
 
-        nq = nlp["q_mapping"].nb_reduced
+        nq = nlp["q_mapping"].reduce.len
         for x in horzsplit(X, 1):
-            q = nlp["q_mapping"].expand(x[:nq])
+            q = nlp["q_mapping"].expand.map(x[:nq])
             marker1 = nlp["model"].marker(q, first_marker).to_mx()
             marker2 = nlp["model"].marker(q, second_marker).to_mx()
             ocp.g = vertcat(ocp.g, marker1 - marker2)
@@ -163,7 +163,7 @@ class Constraint:
                 ocp.g_bounds.max.append(0)
 
     @staticmethod
-    def __proportional_variable(ocp, nlp, V, policy):
+    def __proportional_variable(ocp, nlp, UX, first_dof, second_dof, coef):
         """
         Adds proportionality constraint between the elements (states or controls) chosen.
         :param nlp: An instance of the OptimalControlProgram class.
@@ -172,23 +172,26 @@ class Constraint:
         are the indexes of elements to be linked proportionally.
         The third element of each tuple (policy[i][2]) is the proportionality coefficient.
         """
-        if not isinstance(policy[0], (tuple, list)):
-            policy = [policy]
-        for elem in policy:
-            if not isinstance(elem, (tuple, list)):
-                raise RuntimeError(
-                    "A mix of tuples/lists and non tuples/lists cannot be used for defining proportionality constraints"
-                )
-            for v in horzsplit(V, 1):
-                v = nlp["q_mapping"].expand(v)
-                ocp.g = vertcat(ocp.g, v[first_dof] - coef * v[second_dof])
-                ocp.g_bounds.min.append(0)
-                ocp.g_bounds.max.append(0)
+        Correct.parameters("dof", (first_dof, second_dof, coef), 1)
+        if not isinstance(first_dof, int):
+            raise RuntimeError("first_dof must be an index")
+
+        if not isinstance(second_dof, int):
+            raise RuntimeError("second_dof must be an index")
+
+        if not isinstance(coef, (int, float)):
+            raise RuntimeError("coef must be a coeff")
+
+        for v in horzsplit(UX, 1):
+            v = nlp["q_mapping"].expand.map(v)
+            ocp.g = vertcat(ocp.g, v[first_dof] - coef * v[second_dof])
+            ocp.g_bounds.min.append(0)
+            ocp.g_bounds.max.append(0)
 
     @staticmethod
-    def __contact_force_inequality(ocp, nlp, X, U, policy):
+    def __contact_force_inequality(ocp, nlp, X, U, policy, type):
         """
-        To be completed, in particular the fact that policy is either a tuple/list or a tuple of tuples/list of lists,
+        To be completed when this function will be fully developed, in particular the fact that policy is either a tuple/list or a tuple of tuples/list of lists,
         with in the 1st index the number of the contact force and in the 2nd index the associated bound.
         """
         # To be modified later so that it can handle something other than lower bounds for greater than
@@ -207,12 +210,15 @@ class Constraint:
         for i in range(len(U)):
             contact_forces = CS_func(X[i], U[i])
             contact_forces = contact_forces[: nlp["model"].nbContacts()]
-            # [:number] -> To be changed: it must be reduced by symmetry (if sym by construction)
 
             for elem in policy:
                 ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
-                ocp.g_bounds.min.append(elem[1])
-                ocp.g_bounds.max.append(10000000)  # How can we only put lower bound ? Cf optistack subject_to code
+                if type == "GREATER_THAN":
+                    ocp.g_bounds.min.append(elem[1])
+                    ocp.g_bounds.max.append(inf)
+                elif type == "LESSER_THAN":
+                    ocp.g_bounds.min.append(-inf)
+                    ocp.g_bounds.max.append(elem[1])
 
     @staticmethod
     def continuity_constraint(ocp):

@@ -10,6 +10,7 @@ from .problem_type import ProblemType
 from .plot import OnlineCallback
 from .path_conditions import Bounds, InitialConditions
 from .dynamics import Dynamics
+from .mapping import BidirectionalMapping
 
 
 class OdeSolver(enum.Enum):
@@ -92,11 +93,11 @@ class OptimalControlProgram:
         # Compute problem size
         if all_generalized_mapping is not None:
             if q_mapping is not None or q_dot_mapping is not None or tau_mapping is not None:
-                raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used along side")
-            q_mapping, q_dot_mapping, tau_mapping = all_generalized_mapping
-        self.__add_to_nlp("q_mapping", q_mapping, q_mapping is None)
-        self.__add_to_nlp("q_dot_mapping", q_dot_mapping, q_dot_mapping is None)
-        self.__add_to_nlp("tau_mapping", tau_mapping, tau_mapping is None)
+                raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used alongside")
+            q_mapping = q_dot_mapping = tau_mapping = all_generalized_mapping
+        self.__add_to_nlp("q_mapping", q_mapping, q_mapping is None, BidirectionalMapping)
+        self.__add_to_nlp("q_dot_mapping", q_dot_mapping, q_dot_mapping is None, BidirectionalMapping)
+        self.__add_to_nlp("tau_mapping", tau_mapping, tau_mapping is None, BidirectionalMapping)
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
             self.nlp[i]["problem_type"](self.nlp[i])
@@ -172,7 +173,7 @@ class OptimalControlProgram:
         else:
             self.show_online_optim_callback = None
 
-    def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one):
+    def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None):
         if isinstance(param, (list, tuple)):
             if len(param) != self.nb_phases:
                 raise RuntimeError(
@@ -195,6 +196,11 @@ class OptimalControlProgram:
                         self.nlp[i][param_name] = param
                 else:
                     raise RuntimeError(param_name + " must be a list or tuple when number of phase is not equal to 1")
+
+        if _type is not None:
+            for nlp in self.nlp:
+                if nlp[param_name] is not None and not isinstance(nlp[param_name], _type):
+                    raise RuntimeError(f"Parameter {param_name} must be a {str(_type)}")
 
     def __prepare_dynamics(self, nlp):
         """
