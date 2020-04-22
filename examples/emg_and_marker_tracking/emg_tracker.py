@@ -224,6 +224,4 @@ if __name__ == "__main__":
     plt.step(np.linspace(0, 2, n_shooting_points + 1), mus.T, "r--", where="post")
 
     # --- Plot --- #
-    plt_ocp = PlotOcp(ocp)
-    plt_ocp.update_data(sol["x"])
-    plt_ocp.show()
+    plt.show()

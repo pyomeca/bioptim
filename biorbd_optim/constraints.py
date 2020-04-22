@@ -151,9 +151,9 @@ class Constraint:
         Correct.parameters("segment", segment, nlp["model"].nbSegment())
         Correct.parameters("rt", rt, nlp["model"].nbRTs())
 
-        nq = nlp["q_mapping"].nb_reduced
+        nq = nlp["q_mapping"].reduce.len
         for x in horzsplit(X, 1):
-            q = nlp["q_mapping"].expand(x[:nq])
+            q = nlp["q_mapping"].expand.map(x[:nq])
             r_seg = nlp["model"].globalJCS(q, segment).rot()
             r_rt = nlp["model"].RT(q, rt).rot()
             constraint = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
