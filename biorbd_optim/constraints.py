@@ -91,7 +91,7 @@ class Constraint:
             elif elem[0] == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
                 if elem[1] == Constraint.Instant.END:
                     raise RuntimeError("Instant.END is used even though there is no control u at last node")
-                Constraint.__contact_force_inequality(ocp, nlp, x, u, elem[2])
+                Constraint.__contact_force_inequality(ocp, nlp, x, u, elem[2], "GREATER_THAN")
 
     @staticmethod
     def __markers_to_pair(ocp, nlp, X, policy):
@@ -154,7 +154,7 @@ class Constraint:
                 ocp.g_bounds.max.append(0)
 
     @staticmethod
-    def __contact_force_inequality(ocp, nlp, X, U, policy):
+    def __contact_force_inequality(ocp, nlp, X, U, policy, type):
         """
         To be completed when this function will be fully developed, in particular the fact that policy is either a tuple/list or a tuple of tuples/list of lists,
         with in the 1st index the number of the contact force and in the 2nd index the associated bound.
@@ -177,8 +177,12 @@ class Constraint:
 
             for elem in policy:
                 ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
-                ocp.g_bounds.min.append(elem[1])
-                ocp.g_bounds.max.append(inf)
+                if type == "GREATER_THAN":
+                    ocp.g_bounds.min.append(elem[1])
+                    ocp.g_bounds.max.append(inf)
+                elif type == "LESSER_THAN":
+                    ocp.g_bounds.min.append(-inf)
+                    ocp.g_bounds.max.append(elem[1])
 
     @staticmethod
     def continuity_constraint(ocp):
