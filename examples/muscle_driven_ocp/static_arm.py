@@ -21,7 +21,7 @@ def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     # Add objective functions
     objective_functions = (
         {"type": ObjectiveFunction.minimize_torque, "weight": 1},
-        # {"type": ObjectiveFunction.minimize_muscle, "weight": 1},
+        {"type": ObjectiveFunction.minimize_muscle, "weight": 1},
         # {
         #     "type": ObjectiveFunction.minimize_distance_between_two_markers,
         #     "first_marker": 0,
