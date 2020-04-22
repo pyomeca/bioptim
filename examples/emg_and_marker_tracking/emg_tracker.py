@@ -30,14 +30,14 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         "nbTau": nb_tau,
         "nbMuscle": nb_mus,
         "q_mapping": BidirectionalMapping(
-            Mapping(range(nb_q), range(nb_q)),
-            Mapping(range(nb_q), range(nb_q))),
+            Mapping(range(nb_q)),
+            Mapping(range(nb_q))),
         "q_dot_mapping": BidirectionalMapping(
-            Mapping(range(nb_qdot), range(nb_qdot)),
-            Mapping(range(nb_qdot), range(nb_qdot))),
+            Mapping(range(nb_qdot)),
+            Mapping(range(nb_qdot))),
         "tau_mapping": BidirectionalMapping(
-            Mapping(range(nb_tau), range(nb_tau)),
-            Mapping(range(nb_tau), range(nb_tau))),
+            Mapping(range(nb_tau)),
+            Mapping(range(nb_tau))),
     }
     markers_func = []
     for i in range(nb_markers):
@@ -102,7 +102,7 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = [
         {"type": ObjectiveFunction.minimize_muscle, "weight": 1, "data_to_track": activations_ref},
-        # {"type": ObjectiveFunction.minimize_torque, "weight": 0.0001},
+        {"type": ObjectiveFunction.minimize_torque, "weight": 1},
     ]
     if kin_data_to_track == "markers":
         objective_functions.append(
