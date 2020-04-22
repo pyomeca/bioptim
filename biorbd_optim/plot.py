@@ -91,6 +91,27 @@ class PlotOcp:
         else:
             raise RuntimeError("Plot is not ready for this type of OCP")
 
+        # Move the figures
+        if self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven:
+            height_step = int(tkinter.Tk().winfo_screenheight() / len(self.all_figures))
+        if self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
+            height_step = int(tkinter.Tk().winfo_screenheight() / (len(self.all_figures) - 1))
+
+        for i, fig in enumerate(self.all_figures):
+            if (
+                self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven
+                and fig == self.all_figures[-1]
+            ):
+                fig.canvas.manager.window.move(muscle_position, 0)
+
+            elif (
+                self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven
+                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven
+            ):
+                fig.canvas.manager.window.move(20, i * height_step)
+
+            fig.canvas.draw()
+
     @staticmethod
     def find_phases_intersections(ocp):
         intersections_time = []
@@ -160,7 +181,12 @@ class ShowResult:
         self.ocp = ocp
         self.sol = sol
 
-    def show_biorbd_viz(self, show_meshes=True):
+    def graphs(self):
+        plot_ocp = PlotOcp(self.ocp)
+        plot_ocp.update_data(self.sol["x"])
+        plt.show()
+
+    def animate(self, **kwargs):
         x = ProblemType.get_q_from_V(self.ocp, self.sol["x"])
 
         if self.ocp.nb_phases == 1:
@@ -187,14 +213,9 @@ class ShowResult:
             print("Install BiorbdViz if you want to have a live view of the optimization")
 
         for x_phase in x:
-            b = BiorbdViz(loaded_model=self.ocp.nlp[0]["model"], show_meshes=show_meshes)
+            b = BiorbdViz(loaded_model=self.ocp.nlp[0]["model"], **kwargs)
             b.load_movement(x_phase.T)
             b.exec()
-
-
-    def save_npy(self, name):
-        x, _, _ = ProblemType.get_data_from_V(self.ocp, self.sol["x"])
-        np.save(name, x.T)
 
     @staticmethod
     def keep_matplotlib():
@@ -202,7 +223,7 @@ class ShowResult:
         plt.show()
 
 
-class AnimateCallback(Callback):
+class OnlineCallback(Callback):
     def __init__(self, ocp, opts={}):
         Callback.__init__(self)
         self.nlp = ocp
@@ -265,23 +286,6 @@ class AnimateCallback(Callback):
                 V = self.pipe.recv()
                 self.plot.update_data(V)
 
-            if self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven:
-                height_step = int(tkinter.Tk().winfo_screenheight() / len(self.plot.all_figures))
-            if self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
-                height_step = int(tkinter.Tk().winfo_screenheight() / (len(self.plot.all_figures) - 1))
-
             for i, fig in enumerate(self.plot.all_figures):
-                if (
-                    self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven
-                    and fig == self.plot.all_figures[-1]
-                ):
-                    fig.canvas.manager.window.move(muscle_position, 0)
-
-                elif (
-                    self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven
-                    or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven
-                ):
-                    fig.canvas.manager.window.move(20, i * height_step)
-
                 fig.canvas.draw()
             return True

@@ -7,7 +7,7 @@ from casadi import MX, vertcat
 from .constraints import Constraint
 from .objective_functions import ObjectiveFunction
 from .problem_type import ProblemType
-from .plot import AnimateCallback
+from .plot import OnlineCallback
 from .path_conditions import Bounds, InitialConditions
 from .dynamics import Dynamics
 
@@ -168,7 +168,7 @@ class OptimalControlProgram:
                 ObjectiveFunction.add_objective_functions(self, self.nlp[i])
 
         if show_online_optim:
-            self.show_online_optim_callback = AnimateCallback(self)
+            self.show_online_optim_callback = OnlineCallback(self)
         else:
             self.show_online_optim_callback = None
 

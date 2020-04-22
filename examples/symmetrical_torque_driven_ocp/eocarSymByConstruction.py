@@ -6,7 +6,7 @@ from biorbd_optim.mapping import Mapping
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
-from biorbd_optim.plot import PlotOcp
+from biorbd_optim.plot import ShowResult
 
 
 def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
@@ -81,18 +81,4 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    x = ocp.nlp[0]["dof_mapping"].expand(x)
-
-    plt_ocp = PlotOcp(ocp)
-    plt_ocp.update_data(sol["x"])
-    plt_ocp.show()
-
-    try:
-        from BiorbdViz import BiorbdViz
-
-        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
-        b.load_movement(x.T)
-        b.exec()
-    except ModuleNotFoundError:
-        print("Install BiorbdViz if you want to have a live view of the optimization")
+    ShowResult(ocp, sol).graphs()

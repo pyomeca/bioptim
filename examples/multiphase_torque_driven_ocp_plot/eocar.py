@@ -107,5 +107,5 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    # result.keep_matplotlib()
-    result.show_biorbd_viz()
+    result.graphs()
+    result.animate()
