@@ -59,7 +59,7 @@ class Dynamics:
 
         qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
 
-        qdot_reduced = nlp["q_dot_mapping"].reduce.map(qdot)
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
