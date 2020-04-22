@@ -198,7 +198,7 @@ class ShowResult:
 
     @staticmethod
     def keep_matplotlib():
-        plt.figure(figsize=(0, 0)).canvas.manager.window.move(1000, 100)
+        plt.figure(figsize=(0.01, 0.01)).canvas.manager.window.move(1000, 100)
         plt.show()
 
 
