@@ -1,16 +1,14 @@
-import time
-
 import biorbd
 
 from biorbd_optim import OptimalControlProgram
-from biorbd_optim.plot import PlotOcp
 from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
+from biorbd_optim.plot import ShowResult
 
 
-def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
+def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
@@ -22,8 +20,8 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
 
     # Add objective functions
     objective_functions = (
-        ((ObjectiveFunction.minimize_torque, 100),),
-        ((ObjectiveFunction.minimize_torque, 100),),
+        ({"type": ObjectiveFunction.minimize_torque, "weight": 100},),
+        ({"type": ObjectiveFunction.minimize_torque, "weight": 100},),
     )
 
     # Dynamics
@@ -32,10 +30,27 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
     # Constraints
     constraints = (
         (
-            (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
-            (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
+            {
+                "type": Constraint.Type.MARKERS_TO_MATCH,
+                "instant": Constraint.Instant.START,
+                "first_marker": 0,
+                "second_marker": 1,
+            },
+            {
+                "type": Constraint.Type.MARKERS_TO_MATCH,
+                "instant": Constraint.Instant.END,
+                "first_marker": 0,
+                "second_marker": 2,
+            },
         ),
-        (((Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 1))),),
+        (
+            {
+                "type": Constraint.Type.MARKERS_TO_MATCH,
+                "instant": Constraint.Instant.END,
+                "first_marker": 0,
+                "second_marker": 1,
+            },
+        ),
     )
 
     # Path constraint
@@ -50,10 +65,10 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
                 bounds.last_node_max[i] = 0
     X_bounds[0].first_node_min[2] = 0.0
     X_bounds[0].first_node_max[2] = 0.0
-    X_bounds[0].last_node_min[2] = 1.57
-    X_bounds[0].last_node_max[2] = 1.57
-    X_bounds[1].last_node_min[2] = 1.0
-    X_bounds[1].last_node_max[2] = 1.0
+    # X_bounds[0].last_node_min[2] = 1.57
+    # X_bounds[0].last_node_max[2] = 1.57
+    # X_bounds[1].last_node_min[2] = 1.0
+    # X_bounds[1].last_node_max[2] = 1.0
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
@@ -89,10 +104,9 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
 if __name__ == "__main__":
     ocp = prepare_ocp(show_online_optim=False)
 
-    # --- Solve the program and show --- #
-    sol = OptimalControlProgram.solve(ocp)
+    # --- Solve the program --- #
+    sol = ocp.solve()
 
-    # --- Plot --- #
-    plt_ocp = PlotOcp(ocp)
-    plt_ocp.update_data(sol["x"])
-    plt_ocp.show()
+    # --- Show results --- #
+    result = ShowResult(ocp, sol)
+    result.animate()

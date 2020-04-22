@@ -6,7 +6,7 @@ from biorbd_optim.mapping import Mapping
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
-from biorbd_optim.plot import PlotOcp
+from biorbd_optim.plot import ShowResult
 
 
 def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
@@ -20,16 +20,32 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
+    objective_functions = {"type": ObjectiveFunction.minimize_torque, "weight": 100}
 
     # Dynamics
     variable_type = ProblemType.torque_driven
 
     # Constraints
     constraints = (
-        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
-        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
-        (Constraint.Type.PROPORTIONAL_Q, Constraint.Instant.ALL, (2, 3, -1)),
+        {
+            "type": Constraint.Type.MARKERS_TO_MATCH,
+            "instant": Constraint.Instant.START,
+            "first_marker": 0,
+            "second_marker": 1,
+        },
+        {
+            "type": Constraint.Type.MARKERS_TO_MATCH,
+            "instant": Constraint.Instant.END,
+            "first_marker": 0,
+            "second_marker": 2,
+        },
+        {
+            "type": Constraint.Type.PROPORTIONAL_Q,
+            "instant": Constraint.Instant.ALL,
+            "first_dof": 2,
+            "second_dof": 3,
+            "coef": -1,
+        },
     )
 
     # Path constraint
@@ -70,18 +86,6 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    x = ocp.nlp[0]["dof_mapping"].expand(x)
-
-    plt_ocp = PlotOcp(ocp)
-    plt_ocp.update_data(sol["x"])
-    plt_ocp.show()
-
-    try:
-        from BiorbdViz import BiorbdViz
-
-        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
-        b.load_movement(x.T)
-        b.exec()
-    except ModuleNotFoundError:
-        print("Install BiorbdViz if you want to have a live view of the optimization")
+    # --- Show results --- #
+    result = ShowResult(ocp, sol)
+    result.graphs()
