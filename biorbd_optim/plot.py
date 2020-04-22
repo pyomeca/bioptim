@@ -169,15 +169,18 @@ class ShowResult:
         else:
             same_dof = True
             for k in range(self.ocp.nlp[0]["model"].nbDof()):
-                if self.ocp.nlp[0]["model"].nameDof()[k].to_string() != self.ocp.nlp[1]["model"].nameDof()[k].to_string():
+                if (
+                        self.ocp.nlp[0]["model"].nameDof()[k].to_string()
+                        != self.ocp.nlp[1]["model"].nameDof()[k].to_string()
+                ):
                     same_dof = False
                     break
             if same_dof:
                 x_concat = x[0]
-                for i in range (1, self.ocp.nb_phases):
-                    x_concat = np.concatenate((x_concat, x[i]), axis = 1)
+                for i in range(1, self.ocp.nb_phases):
+                    x_concat = np.concatenate((x_concat, x[i]), axis=1)
                 x = [x_concat]
-            
+
         from BiorbdViz import BiorbdViz
 
         try:
