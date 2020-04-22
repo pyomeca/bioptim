@@ -52,24 +52,24 @@ class Constraint:
             return
         for constraint in nlp["constraints"]:
             x, u, last_node = Constraint.__get_instant(nlp, constraint)
-            type = constraint["type"]
+            _type = constraint["type"]
             del constraint["instant"], constraint["type"]
 
-            if type == Constraint.Type.MARKERS_TO_MATCH:
+            if _type == Constraint.Type.MARKERS_TO_MATCH:
                 Constraint.__markers_to_match(ocp, nlp, x, **constraint)
 
-            elif type == Constraint.Type.ALIGN_WITH_CUSTOM_RT:
+            elif _type == Constraint.Type.ALIGN_WITH_CUSTOM_RT:
                 Constraint.__align_with_custom_rt(ocp, nlp, x, **constraint)
 
-            elif type == Constraint.Type.PROPORTIONAL_Q:
+            elif _type == Constraint.Type.PROPORTIONAL_Q:
                 Constraint.__proportional_variable(ocp, nlp, x, **constraint)
 
-            elif type == Constraint.Type.PROPORTIONAL_CONTROL:
+            elif _type == Constraint.Type.PROPORTIONAL_CONTROL:
                 if last_node:
                     raise RuntimeError("No control u at last node")
                 Constraint.__proportional_variable(ocp, nlp, u, **constraint)
 
-            elif type == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
+            elif _type == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
                 if last_node:
                     raise RuntimeError("No control u at last node")
                 Constraint.__contact_force_inequality(ocp, nlp, x, u, "GREATER_THAN", **constraint)
@@ -183,7 +183,7 @@ class Constraint:
             ocp.g_bounds.max.append(0)
 
     @staticmethod
-    def __contact_force_inequality(ocp, nlp, X, U, policy, type):
+    def __contact_force_inequality(ocp, nlp, X, U, policy, _type):
         """
         To be completed when this function will be fully developed, in particular the fact that policy is either a tuple/list or a tuple of tuples/list of lists,
         with in the 1st index the number of the contact force and in the 2nd index the associated bound.
@@ -207,10 +207,10 @@ class Constraint:
 
             for elem in policy:
                 ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
-                if type == "GREATER_THAN":
+                if _type == "GREATER_THAN":
                     ocp.g_bounds.min.append(elem[1])
                     ocp.g_bounds.max.append(inf)
-                elif type == "LESSER_THAN":
+                elif _type == "LESSER_THAN":
                     ocp.g_bounds.min.append(-inf)
                     ocp.g_bounds.max.append(elem[1])
 
