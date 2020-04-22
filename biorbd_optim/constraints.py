@@ -121,7 +121,7 @@ class Constraint:
         return x, u, last_node
 
     @staticmethod
-    def __markers_to_pair(ocp, nlp, X, policy):
+    def __markers_to_pair(ocp, nlp, X, first_marker, second_marker):
         """
         Adds the constraint that the two markers must be coincided at the desired instant(s).
         :param nlp: An OptimalControlProgram class.
@@ -131,15 +131,15 @@ class Constraint:
         nq = nlp["q_mapping"].nb_reduced
         for x in X:
             q = nlp["q_mapping"].expand(x[:nq])
-            marker1 = nlp["model"].marker(q, policy[0]).to_mx()
-            marker2 = nlp["model"].marker(q, policy[1]).to_mx()
+            marker1 = nlp["model"].marker(q, first_marker).to_mx()
+            marker2 = nlp["model"].marker(q, second_marker).to_mx()
             ocp.g = vertcat(ocp.g, marker1 - marker2)
             for i in range(3):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
 
     @staticmethod
-    def __align_with_custom_rt(ocp, nlp, X, policy):
+    def __align_with_custom_rt(ocp, nlp, X, segment, rt):
         """
         Adds the constraint that the RT and the segment must be aligned at the desired instant(s).
         :param nlp: An OptimalControlProgram class.
@@ -149,8 +149,8 @@ class Constraint:
         nq = nlp["q_mapping"].nb_reduced
         for x in X:
             q = nlp["q_mapping"].expand(x[:nq])
-            r_seg = nlp["model"].globalJCS(q, policy[0]).rot()
-            r_rt = nlp["model"].RT(q, policy[1]).rot()
+            r_seg = nlp["model"].globalJCS(q, segment).rot()
+            r_rt = nlp["model"].RT(q, rt).rot()
             constraint = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
             ocp.g = vertcat(ocp.g, constraint)
             for i in range(constraint.rows()):
@@ -176,7 +176,7 @@ class Constraint:
                 )
             for v in V:
                 v = nlp["q_mapping"].expand(v)
-                ocp.g = vertcat(ocp.g, v[elem[0]] - elem[2] * v[elem[1]])
+                ocp.g = vertcat(ocp.g, v[first_dof] - coef * v[second_dof])
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
 
@@ -198,6 +198,7 @@ class Constraint:
         if not isinstance(policy[0], (tuple, list)):
             policy = [policy]
 
+        X, U = horzsplit(X, 1), horzsplit(U, 1)
         for i in range(len(U)):
             contact_forces = CS_func(X[i], U[i])
             contact_forces = contact_forces[: nlp["model"].nbContacts()]
