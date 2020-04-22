@@ -90,7 +90,7 @@ class ObjectiveFunction:
     def minimize_final_distance_between_two_markers(ocp, nlp, weight=1, markers=(), node=-1):
         if not isinstance(markers, (list, tuple)) or len(markers) != 2:
             raise RuntimeError("minimize_distance_between_two_markers expect markers to be a list of 2 marker indices")
-        q = nlp["q_mapping"].expand(nlp["X"][node][: nlp["nbQ"]])
+        q = nlp["q_mapping"].expand.map(nlp["X"][node][: nlp["nbQ"]])
         marker0 = nlp["model"].marker(q, markers[0]).to_mx()
         marker1 = nlp["model"].marker(q, markers[1]).to_mx()
 
@@ -99,8 +99,8 @@ class ObjectiveFunction:
     @staticmethod
     def maximize_predicted_height_jump(ocp, nlp, weight=1, node=-1):
         g = -9.81  # get gravity from biorbd
-        q = nlp["q_mapping"].expand(nlp["X"][node][: nlp["nbQ"]])
-        q_dot = nlp["q_dot_mapping"].expand(nlp["X"][node][nlp["nbQ"] :])
+        q = nlp["q_mapping"].expand.map(nlp["X"][node][: nlp["nbQ"]])
+        q_dot = nlp["q_dot_mapping"].expand.map(nlp["X"][node][nlp["nbQ"] :])
         CoM = nlp["model"].CoM(q).to_mx()
         CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
         jump_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]

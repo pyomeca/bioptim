@@ -2,7 +2,7 @@ import biorbd
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.mapping import Mapping
+from biorbd_optim.mapping import BidirectionalMapping, Mapping
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
@@ -18,7 +18,9 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     number_shooting_points = 30
     final_time = 2
     torque_min, torque_max, torque_init = -100, 100, 0
-    all_generalized_mapping = Mapping([0, 1, 2, 2], [0, 1, 2], [3])
+    all_generalized_mapping = BidirectionalMapping(
+        Mapping([0, 1, 2, 2], [3]),
+        Mapping([0, 1, 2]))
 
     # Add objective functions
     objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
@@ -41,13 +43,13 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
         X_bounds.last_node_max[i] = 0
 
     # Initial guess
-    X_init = InitialConditions([0] * all_generalized_mapping.nb_reduced * 2)
+    X_init = InitialConditions([0] * all_generalized_mapping.reduce.len * 2)
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * all_generalized_mapping.nb_reduced, [torque_max] * all_generalized_mapping.nb_reduced,
+        [torque_min] * all_generalized_mapping.reduce.len, [torque_max] * all_generalized_mapping.reduce.len,
     )
-    U_init = InitialConditions([torque_init] * all_generalized_mapping.nb_reduced)
+    U_init = InitialConditions([torque_init] * all_generalized_mapping.reduce.len)
 
     # ------------- #
 
@@ -74,7 +76,7 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    x = ocp.nlp[0]["q_mapping"].expand(x)
+    x = ocp.nlp[0]["q_mapping"].expand.map(x)
 
     plt_ocp = PlotOcp(ocp)
     plt_ocp.update_data(sol["x"])

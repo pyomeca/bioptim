@@ -1,4 +1,4 @@
-from .mapping import Mapping
+from .mapping import BidirectionalMapping, Mapping
 
 
 class PathCondition:
@@ -87,9 +87,13 @@ class QAndQDotBounds(Bounds):
             q_dot_mapping = all_generalized_mapping
 
         if not q_mapping:
-            q_mapping = Mapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+            q_mapping = BidirectionalMapping(
+                Mapping(range(biorbd_model.nbQ())), Mapping(range(biorbd_model.nbQ()))
+            )
         if not q_dot_mapping:
-            q_dot_mapping = Mapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+            q_dot_mapping = BidirectionalMapping(
+                Mapping(range(biorbd_model.nbQdot())), Mapping(range(biorbd_model.nbQdot()))
+            )
 
         QRanges = []
         QDotRanges = []
@@ -98,11 +102,11 @@ class QAndQDotBounds(Bounds):
             QRanges += [q_range for q_range in segment.QRanges()]
             QDotRanges += [qdot_range for qdot_range in segment.QDotRanges()]
 
-        x_min = [QRanges[i].min() for i in q_mapping.reduce_idx] + [
-            QDotRanges[i].min() for i in q_dot_mapping.reduce_idx
+        x_min = [QRanges[i].min() for i in q_mapping.reduce.map_idx] + [
+            QDotRanges[i].min() for i in q_dot_mapping.reduce.map_idx
         ]
-        x_max = [QRanges[i].max() for i in q_mapping.reduce_idx] + [
-            QDotRanges[i].max() for i in q_dot_mapping.reduce_idx
+        x_max = [QRanges[i].max() for i in q_mapping.reduce.map_idx] + [
+            QDotRanges[i].max() for i in q_dot_mapping.reduce.map_idx
         ]
 
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
