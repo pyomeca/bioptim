@@ -101,8 +101,8 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = [
-        # {"type": ObjectiveFunction.minimize_muscle, "weight": 1, "data_to_track": activations_ref},
-        # {"type": ObjectiveFunction.minimize_torque, "weight": 1},
+        {"type": ObjectiveFunction.minimize_muscle, "weight": 1, "data_to_track": activations_ref},
+        # {"type": ObjectiveFunction.minimize_torque, "weight": 0.0001},
     ]
     if kin_data_to_track == "markers":
         objective_functions.append(
@@ -121,8 +121,7 @@ def prepare_ocp(
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
-    # variable_type = ProblemType.muscles_and_torque_driven
-    variable_type = ProblemType.torque_driven
+    variable_type = ProblemType.muscles_and_torque_driven
 
     # Constraints
     constraints = ()
@@ -135,11 +134,11 @@ def prepare_ocp(
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque(), #+ [activation_min] * biorbd_model.nbMuscleTotal(),
-        [torque_max] * biorbd_model.nbGeneralizedTorque(), #+ [activation_max] * biorbd_model.nbMuscleTotal(),
+        [torque_min] * biorbd_model.nbGeneralizedTorque() + [activation_min] * biorbd_model.nbMuscleTotal(),
+        [torque_max] * biorbd_model.nbGeneralizedTorque() + [activation_max] * biorbd_model.nbMuscleTotal(),
     )
     U_init = InitialConditions(
-        [torque_init] * biorbd_model.nbGeneralizedTorque() # + [activation_init] * biorbd_model.nbMuscleTotal()
+        [torque_init] * biorbd_model.nbGeneralizedTorque() + [activation_init] * biorbd_model.nbMuscleTotal()
     )
 
     # ------------- #
@@ -177,8 +176,8 @@ if __name__ == "__main__":
         markers_ref,
         muscle_activations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        show_online_optim=False,
-        kin_data_to_track="q",
+        show_online_optim=True,
+        kin_data_to_track="markers",
     )
 
     # --- Solve the program --- #
@@ -187,7 +186,7 @@ if __name__ == "__main__":
     # --- Show the results --- #
     muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
 
-    q, qdot, tau = ProblemType.get_data_from_V(ocp, sol["x"])
+    q, qdot, tau, mus = ProblemType.get_data_from_V(ocp, sol["x"])
     n_q = ocp.nlp[0]["model"].nbQ()
     n_mark = ocp.nlp[0]["model"].nbMarkers()
     n_frames = q.shape[1]
@@ -219,10 +218,10 @@ if __name__ == "__main__":
 
     plt.figure("Tau")
     plt.step(np.linspace(0, 2, n_shooting_points + 1), tau.T, where="post")
-    #
-    # plt.figure("Muscle activations")
-    # plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_activations_ref, "k", where="post")
-    # plt.step(np.linspace(0, 2, n_shooting_points + 1), mus.T, "r--", where="post")
+
+    plt.figure("Muscle activations")
+    plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_activations_ref, "k", where="post")
+    plt.step(np.linspace(0, 2, n_shooting_points + 1), mus.T, "r--", where="post")
 
     # --- Plot --- #
     plt.show()
