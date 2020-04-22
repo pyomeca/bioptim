@@ -181,16 +181,16 @@ class ShowResult:
                     x_concat = np.concatenate((x_concat, x[i]), axis=1)
                 x = [x_concat]
 
-        from BiorbdViz import BiorbdViz
-
         try:
-            for x_phase in x:
-                b = BiorbdViz(loaded_model=self.ocp.nlp[0]["model"], show_meshes=show_meshes)
-                b.load_movement(x_phase.T)
-                b.exec()
-
+            from BiorbdViz import BiorbdViz
         except ModuleNotFoundError:
             print("Install BiorbdViz if you want to have a live view of the optimization")
+
+        for x_phase in x:
+            b = BiorbdViz(loaded_model=self.ocp.nlp[0]["model"], show_meshes=show_meshes)
+            b.load_movement(x_phase.T)
+            b.exec()
+
 
     def save_npy(self, name):
         x, _, _ = ProblemType.get_data_from_V(self.ocp, self.sol["x"])
