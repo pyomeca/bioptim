@@ -21,15 +21,25 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     dof_mapping = Mapping([0, 1, 2, 2], [0, 1, 2], [3])
 
     # Add objective functions
-    objective_functions = ((ObjectiveFunction.minimize_torque, 100),)
+    objective_functions = {"type": ObjectiveFunction.minimize_torque, "weight": 100}
 
     # Dynamics
     variable_type = ProblemType.torque_driven
 
     # Constraints
     constraints = (
-        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.START, (0, 1)),
-        (Constraint.Type.MARKERS_TO_PAIR, Constraint.Instant.END, (0, 2)),
+        {
+            "type": Constraint.Type.MARKERS_TO_PAIR,
+            "instant": Constraint.Instant.START,
+            "first_marker": 0,
+            "second_marker": 1,
+        },
+        {
+            "type": Constraint.Type.MARKERS_TO_PAIR,
+            "instant": Constraint.Instant.END,
+            "first_marker": 0,
+            "second_marker": 2,
+        },
     )
 
     # Path constraint
