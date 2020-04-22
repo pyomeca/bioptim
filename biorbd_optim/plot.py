@@ -178,7 +178,7 @@ class ShowResult:
             if same_dof:
                 x_concat = x[0]
                 for i in range(1, self.ocp.nb_phases):
-                    x_concat = np.concatenate((x_concat, x[i]), axis=1)
+                    x_concat = np.concatenate((x_concat, x[i][:, 1:]), axis=1)
                 x = [x_concat]
 
         from BiorbdViz import BiorbdViz
