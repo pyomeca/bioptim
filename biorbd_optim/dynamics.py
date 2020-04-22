@@ -15,8 +15,8 @@ class Dynamics:
 
         qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
 
-        qdot_reduced = nlp["q_mapping"].reduce(qdot)
-        qddot_reduced = nlp["q_dot_mapping"].reduce(qddot)
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
@@ -31,8 +31,8 @@ class Dynamics:
 
         qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau).to_mx()
 
-        qdot_reduced = nlp["q_mapping"].reduce(qdot)
-        qddot_reduced = nlp["q_dot_mapping"].reduce(qddot)
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
@@ -59,8 +59,8 @@ class Dynamics:
 
         qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
 
-        qdot_reduced = nlp["q_dot_mapping"].reduce(qdot)
-        qddot_reduced = nlp["q_dot_mapping"].reduce(qddot)
+        qdot_reduced = nlp["q_dot_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
@@ -69,9 +69,9 @@ class Dynamics:
         Returns q, qdot, tau (unreduced by a potential symmetry) and qdot_reduced
         from states, controls and mapping through nlp to condense this code.
         """
-        nq = nlp["q_mapping"].nb_reduced
-        q = nlp["q_mapping"].expand(states[:nq])
-        qdot = nlp["q_dot_mapping"].expand(states[nq:])
-        tau = nlp["tau_mapping"].expand(controls[: nlp["nbTau"]])
+        nq = nlp["q_mapping"].reduce.len
+        q = nlp["q_mapping"].expand.map(states[:nq])
+        qdot = nlp["q_dot_mapping"].expand.map(states[nq:])
+        tau = nlp["tau_mapping"].expand.map(controls[: nlp["nbTau"]])
 
         return q, qdot, tau

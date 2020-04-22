@@ -3,14 +3,14 @@ import biorbd
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.mapping import Mapping
+from biorbd_optim.mapping import BidirectionalMapping, Mapping
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
 
 
 def prepare_ocp(
-    show_online_optim=False, use_symmetry=False,
+    show_online_optim=False, use_symmetry=True,
 ):
     # --- Options --- #
     # Model path
@@ -26,13 +26,19 @@ def prepare_ocp(
     phase_time = [0.4, 0.2]  # 0.4, 0.2 for dev test
 
     if use_symmetry:
-        q_mapping = Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [0, 1, 2, 4, 7, 8, 9], [5])
+        q_mapping = BidirectionalMapping(
+            Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]),
+            Mapping([0, 1, 2, 3, 7, 8, 9]))
         q_mapping = q_mapping, q_mapping
-        tau_mapping = Mapping([-1, -1, -1, -1, 0, -1, 0, 1, 2, 3, 1, 2, 3], [4, 7, 8, 9], [5])
+        tau_mapping = BidirectionalMapping(
+            Mapping([-1, -1, -1, -1, 0, -1, 0, 1, 2, 3, 1, 2, 3], [5]),
+            Mapping([4, 7, 8, 9]))
         tau_mapping = tau_mapping, tau_mapping
 
     else:
-        q_mapping = [Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model]
+        q_mapping = BidirectionalMapping(
+            Mapping([Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model]),
+            Mapping([Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model]))
         tau_mapping = q_mapping
 
     # Add objective functions
@@ -81,12 +87,12 @@ def prepare_ocp(
 
     # Path constraint
     if use_symmetry:
-        nb_q = q_mapping[0].nb_reduced
+        nb_q = q_mapping[0].reduce.len
         nb_qdot = nb_q
         # pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0.8, -0.9, 0.47]
         pose_at_first_node = [0, 0, -0.5336, 1.4, 0.8, -0.9, 0.47]
     else:
-        nb_q = q_mapping[0].nb_reduced
+        nb_q = q_mapping[0].reduce.len
         nb_qdot = nb_q
         pose_at_first_node = [
             0,
@@ -123,11 +129,11 @@ def prepare_ocp(
 
     # Define control path constraint
     U_bounds = [
-        Bounds(min_bound=[torque_min] * tau_m.nb_reduced, max_bound=[torque_max] * tau_m.nb_reduced)
+        Bounds(min_bound=[torque_min] * tau_m.reduce.len, max_bound=[torque_max] * tau_m.reduce.len)
         for tau_m in tau_mapping
     ]
 
-    U_init = [InitialConditions([torque_init] * tau_m.nb_reduced) for tau_m in tau_mapping]
+    U_init = [InitialConditions([torque_init] * tau_m.reduce.len) for tau_m in tau_mapping]
     # ------------- #
 
     return OptimalControlProgram(
