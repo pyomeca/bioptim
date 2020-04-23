@@ -5,10 +5,12 @@ import casadi
 from casadi import MX, vertcat
 
 from .constraints import Constraint
+from .objective_functions import ObjectiveFunction
 from .problem_type import ProblemType
-from .plot import AnimateCallback
+from .plot import OnlineCallback
 from .path_conditions import Bounds, InitialConditions
 from .dynamics import Dynamics
+from .mapping import BidirectionalMapping
 
 
 class OdeSolver(enum.Enum):
@@ -41,9 +43,12 @@ class OptimalControlProgram:
         U_init,
         X_bounds,
         U_bounds,
-        constraints,
+        constraints=(),
         ode_solver=OdeSolver.RK,
-        dof_mapping=None,
+        all_generalized_mapping=None,
+        q_mapping=None,
+        q_dot_mapping=None,
+        tau_mapping=None,
         is_cyclic_objective=False,
         is_cyclic_constraint=False,
         show_online_optim=False,
@@ -86,7 +91,13 @@ class OptimalControlProgram:
         self.is_cyclic_objective = is_cyclic_objective
 
         # Compute problem size
-        self.__add_to_nlp("dof_mapping", dof_mapping, dof_mapping is None)
+        if all_generalized_mapping is not None:
+            if q_mapping is not None or q_dot_mapping is not None or tau_mapping is not None:
+                raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used alongside")
+            q_mapping = q_dot_mapping = tau_mapping = all_generalized_mapping
+        self.__add_to_nlp("q_mapping", q_mapping, q_mapping is None, BidirectionalMapping)
+        self.__add_to_nlp("q_dot_mapping", q_dot_mapping, q_dot_mapping is None, BidirectionalMapping)
+        self.__add_to_nlp("tau_mapping", tau_mapping, tau_mapping is None, BidirectionalMapping)
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
             self.nlp[i]["problem_type"](self.nlp[i])
@@ -125,50 +136,46 @@ class OptimalControlProgram:
         self.g = []
         self.g_bounds = Bounds()
         Constraint.continuity_constraint(self)
-
-        if self.nb_phases == 1:
-            if len(constraints) == 0 or (
-                isinstance(constraints, (list, tuple))
-                and isinstance(constraints[0], (list, tuple))
-                and not isinstance(constraints[0][0], (list, tuple))
-            ):
-                constraints = (constraints,)
-        self.__add_to_nlp("constraints", constraints, False)
-        for i in range(self.nb_phases):
-            Constraint.add_constraints(self, self.nlp[i])
+        if len(constraints) > 0:
+            if self.nb_phases == 1:
+                if isinstance(constraints, dict):
+                    constraints = (constraints,)
+                if isinstance(constraints[0], dict):
+                    constraints = (constraints,)
+            elif isinstance(constraints, (list, tuple)):
+                for constraint in constraints:
+                    if isinstance(constraint, dict):
+                        raise RuntimeError("Each phase must declares its constraints (even if it is empty)")
+            self.__add_to_nlp("constraints", constraints, False)
+            for i in range(self.nb_phases):
+                Constraint.add_constraints(self, self.nlp[i])
 
         # Objective functions
         self.J = 0
-        if self.nb_phases == 1:
-            if (
-                isinstance(objective_functions, (list, tuple))
-                and isinstance(objective_functions[0], (list, tuple))
-                and not isinstance(objective_functions[0][0], (list, tuple))
-            ):
-                objective_functions = (objective_functions,)
-        self.__add_to_nlp("objective_functions", objective_functions, False)
-        for i in range(self.nb_phases):
-            for (func, params) in self.nlp[i]["objective_functions"]:
-                if isinstance(params, dict):
-                    func(self, self.nlp[i], **params)
-                else:
-                    func(self, self.nlp[i], params)
+        if len(objective_functions) > 0:
+            if self.nb_phases == 1:
+                if isinstance(objective_functions, dict):
+                    objective_functions = (objective_functions,)
+                if isinstance(objective_functions[0], dict):
+                    objective_functions = (objective_functions,)
+            elif isinstance(objective_functions, (list, tuple)):
+                for objective_function in objective_functions:
+                    if isinstance(objective_function, dict):
+                        raise RuntimeError("Each phase must declares its objective (even if it is empty)")
+            self.__add_to_nlp("objective_functions", objective_functions, False)
+            for i in range(self.nb_phases):
+                ObjectiveFunction.add_objective_functions(self, self.nlp[i])
 
         if show_online_optim:
-            self.show_online_optim_callback = AnimateCallback(self)
+            self.show_online_optim_callback = OnlineCallback(self)
         else:
             self.show_online_optim_callback = None
 
-    def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one):
+    def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None):
         if isinstance(param, (list, tuple)):
             if len(param) != self.nb_phases:
                 raise RuntimeError(
-                    param_name
-                    + " size("
-                    + str(len(param))
-                    + ") does not correspond to the number of phases("
-                    + str(self.nb_phases)
-                    + ")."
+                    f"{param_name} size({len(param)}) does not correspond to the number of phases({self.nb_phases})."
                 )
             else:
                 for i in range(self.nb_phases):
@@ -181,7 +188,12 @@ class OptimalControlProgram:
                     for i in range(self.nb_phases):
                         self.nlp[i][param_name] = param
                 else:
-                    raise RuntimeError(param_name + " must be a list or tuple when number of phase is not equal to 1")
+                    raise RuntimeError(f"{param_name} must be a list or tuple when number of phase is not equal to 1")
+
+        if _type is not None:
+            for nlp in self.nlp:
+                if nlp[param_name] is not None and not isinstance(nlp[param_name], _type):
+                    raise RuntimeError(f"Parameter {param_name} must be a {str(_type)}")
 
     def __prepare_dynamics(self, nlp):
         """
@@ -196,7 +208,7 @@ class OptimalControlProgram:
             [nlp["dynamics_func"](self.symbolic_states, self.symbolic_controls, nlp)],
             ["x", "u"],
             ["xdot"],
-        ).expand()
+        ).expand()  # .map(nlp["ns"], "thread", 2)
 
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
 

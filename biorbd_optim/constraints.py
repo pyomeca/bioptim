@@ -1,6 +1,8 @@
 import enum
+from math import inf
 
-from casadi import vertcat, MX, Function
+import biorbd
+from casadi import vertcat, horzcat, MX, Function, horzsplit
 
 from .dynamics import Dynamics
 
@@ -15,10 +17,11 @@ class Constraint:
         Different conditions between biorbd geometric structures.
         """
 
-        MARKERS_TO_PAIR = 0
-        PROPORTIONAL_Q = 1
-        PROPORTIONAL_CONTROL = 2
-        CONTACT_FORCE_GREATER_THAN = 3
+        MARKERS_TO_MATCH = 0
+        ALIGN_WITH_CUSTOM_RT = 1
+        PROPORTIONAL_Q = 2
+        PROPORTIONAL_CONTROL = 3
+        CONTACT_FORCE_GREATER_THAN = 4
         # TODO: PAUL = Add lesser than
         # TODO: PAUL = Add frictional cone
 
@@ -47,62 +50,120 @@ class Constraint:
         """
         if nlp["constraints"] is None:
             return
-        for elem in nlp["constraints"]:
-            if elem[1] == Constraint.Instant.START:
-                x = [nlp["X"][0]]
-                u = [nlp["U"][0]]
-            elif elem[1] == Constraint.Instant.MID:
-                if nlp.ns % 2 == 0:
-                    raise (ValueError("Number of shooting points must be odd to use MID"))
-                x = [nlp["X"][nlp["ns"] // 2 + 1]]
-                u = [nlp["U"][nlp["ns"] // 2 + 1]]
-            elif elem[1] == Constraint.Instant.INTERMEDIATES:
-                x = nlp["X"][1 : nlp["ns"] - 1]
-                u = nlp["U"][1 : nlp["ns"] - 1]
-            elif elem[1] == Constraint.Instant.END:
-                x = [nlp["X"][nlp["ns"]]]
-                u = []
-            elif elem[1] == Constraint.Instant.ALL:
-                x = nlp["X"]
-                u = nlp["U"]
+        for constraint in nlp["constraints"]:
+            x, u, last_node = Constraint.__get_instant(nlp, constraint)
+            _type = constraint["type"]
+            del constraint["instant"], constraint["type"]
+
+            if _type == Constraint.Type.MARKERS_TO_MATCH:
+                Constraint.__markers_to_match(ocp, nlp, x, **constraint)
+
+            elif _type == Constraint.Type.ALIGN_WITH_CUSTOM_RT:
+                Constraint.__align_with_custom_rt(ocp, nlp, x, **constraint)
+
+            elif _type == Constraint.Type.PROPORTIONAL_Q:
+                Constraint.__proportional_variable(ocp, nlp, x, **constraint)
+
+            elif _type == Constraint.Type.PROPORTIONAL_CONTROL:
+                if last_node:
+                    raise RuntimeError("No control u at last node")
+                Constraint.__proportional_variable(ocp, nlp, u, **constraint)
+
+            elif _type == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
+                if last_node:
+                    raise RuntimeError("No control u at last node")
+                Constraint.__contact_force_inequality(ocp, nlp, x, u, "GREATER_THAN", **constraint)
+
             else:
-                continue
-
-            if elem[0] == Constraint.Type.MARKERS_TO_PAIR:
-                Constraint.__markers_to_pair(ocp, nlp, x, elem[2])
-
-            elif elem[0] == Constraint.Type.PROPORTIONAL_Q:
-                Constraint.__proportional_variable(ocp, nlp, x, elem[2])
-            elif elem[0] == Constraint.Type.PROPORTIONAL_CONTROL:
-                if elem[1] == Constraint.Instant.END:
-                    raise RuntimeError("Instant.END is used even though there is no control u at last node")
-                Constraint.__proportional_variable(ocp, nlp, u, elem[2])
-
-            elif elem[0] == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
-                if elem[1] == Constraint.Instant.END:
-                    raise RuntimeError("Instant.END is used even though there is no control u at last node")
-                Constraint.__contact_force_inequality(ocp, nlp, x, u, elem[2])
+                raise RuntimeError(f"{constraint} is not a valid constraint, take a look in Constraint.Type class")
 
     @staticmethod
-    def __markers_to_pair(ocp, nlp, X, policy):
+    def __get_instant(nlp, constraint):
+        if not isinstance(constraint["instant"], (list, tuple)):
+            constraint["instant"] = (constraint["instant"],)
+        x = MX()
+        u = MX()
+        last_node = False
+        for node in constraint["instant"]:
+            if isinstance(node, int):
+                if node < 0 or node > nlp["ns"]:
+                    raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp['ns']}")
+                if node == nlp["ns"]:
+                    last_node = True
+                x = horzcat(x, nlp["X"][node])
+                u = horzcat(u, nlp["U"][node])
+
+            elif node == Constraint.Instant.START:
+                x = horzcat(x, nlp["X"][0])
+                u = horzcat(u, nlp["U"][0])
+
+            elif node == Constraint.Instant.MID:
+                if nlp["ns"] % 2 == 0:
+                    raise (ValueError("Number of shooting points must be odd to use MID"))
+                x = horzcat(x, nlp["X"][nlp["ns"] // 2 + 1])
+                u = horzcat(u, nlp["U"][nlp["ns"] // 2 + 1])
+
+            elif node == Constraint.Instant.INTERMEDIATES:
+                x = horzcat(x, nlp["X"][1 : nlp["ns"] - 1])
+                u = horzcat(u, nlp["U"][1 : nlp["ns"] - 1])
+
+            elif node == Constraint.Instant.END:
+                x = horzcat(x, nlp["X"][nlp["ns"]])
+
+            elif node == Constraint.Instant.ALL:
+                for i in range(nlp["ns"]):
+                    x = horzcat(x, nlp["X"][i])
+                    u = horzcat(u, nlp["U"][i])
+                x = horzcat(x, nlp["X"][nlp["ns"]])
+                last_node = True
+            else:
+                raise RuntimeError(" is not a valid instant")
+        return x, u, last_node
+
+    @staticmethod
+    def __markers_to_match(ocp, nlp, X, first_marker, second_marker):
         """
         Adds the constraint that the two markers must be coincided at the desired instant(s).
         :param nlp: An OptimalControlProgram class.
         :param X: List of instant(s).
         :param policy: Tuple of indices of two markers.
         """
-        nq = nlp["dof_mapping"].nb_reduced
-        for x in X:
-            q = nlp["dof_mapping"].expand(x[:nq])
-            marker1 = nlp["model"].marker(q, policy[0]).to_mx()
-            marker2 = nlp["model"].marker(q, policy[1]).to_mx()
+        Correct.parameters("marker", [first_marker, second_marker], nlp["model"].nbMarkers())
+
+        nq = nlp["q_mapping"].reduce.len
+        for x in horzsplit(X, 1):
+            q = nlp["q_mapping"].expand.map(x[:nq])
+            marker1 = nlp["model"].marker(q, first_marker).to_mx()
+            marker2 = nlp["model"].marker(q, second_marker).to_mx()
             ocp.g = vertcat(ocp.g, marker1 - marker2)
             for i in range(3):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
 
     @staticmethod
-    def __proportional_variable(ocp, nlp, V, policy):
+    def __align_with_custom_rt(ocp, nlp, X, segment, rt):
+        """
+        Adds the constraint that the RT and the segment must be aligned at the desired instant(s).
+        :param nlp: An OptimalControlProgram class.
+        :param X: List of instant(s).
+        :param policy: Tuple of indices of segment and rt.
+        """
+        Correct.parameters("segment", segment, nlp["model"].nbSegment())
+        Correct.parameters("rt", rt, nlp["model"].nbRTs())
+
+        nq = nlp["q_mapping"].reduce.len
+        for x in horzsplit(X, 1):
+            q = nlp["q_mapping"].expand.map(x[:nq])
+            r_seg = nlp["model"].globalJCS(q, segment).rot()
+            r_rt = nlp["model"].RT(q, rt).rot()
+            constraint = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
+            ocp.g = vertcat(ocp.g, constraint)
+            for i in range(constraint.rows()):
+                ocp.g_bounds.min.append(0)
+                ocp.g_bounds.max.append(0)
+
+    @staticmethod
+    def __proportional_variable(ocp, nlp, UX, first_dof, second_dof, coef):
         """
         Adds proportionality constraint between the elements (states or controls) chosen.
         :param nlp: An instance of the OptimalControlProgram class.
@@ -111,23 +172,20 @@ class Constraint:
         are the indexes of elements to be linked proportionally.
         The third element of each tuple (policy[i][2]) is the proportionality coefficient.
         """
-        if not isinstance(policy[0], (tuple, list)):
-            policy = [policy]
-        for elem in policy:
-            if not isinstance(elem, (tuple, list)):
-                raise RuntimeError(
-                    "A mix of tuples/lists and non tuples/lists cannot be used for defining proportionality constraints"
-                )
-            for v in V:
-                v = nlp["dof_mapping"].expand(v)
-                ocp.g = vertcat(ocp.g, v[elem[0]] - elem[2] * v[elem[1]])
-                ocp.g_bounds.min.append(0)
-                ocp.g_bounds.max.append(0)
+        Correct.parameters("dof", (first_dof, second_dof), UX.rows())
+        if not isinstance(coef, (int, float)):
+            raise RuntimeError("coef must be a coeff")
+
+        for v in horzsplit(UX, 1):
+            v = nlp["q_mapping"].expand.map(v)
+            ocp.g = vertcat(ocp.g, v[first_dof] - coef * v[second_dof])
+            ocp.g_bounds.min.append(0)
+            ocp.g_bounds.max.append(0)
 
     @staticmethod
-    def __contact_force_inequality(ocp, nlp, X, U, policy):
+    def __contact_force_inequality(ocp, nlp, X, U, policy, _type):
         """
-        To be completed, in particular the fact that policy is either a tuple/list or a tuple of tuples/list of lists,
+        To be completed when this function will be fully developed, in particular the fact that policy is either a tuple/list or a tuple of tuples/list of lists,
         with in the 1st index the number of the contact force and in the 2nd index the associated bound.
         """
         # To be modified later so that it can handle something other than lower bounds for greater than
@@ -142,16 +200,19 @@ class Constraint:
         if not isinstance(policy[0], (tuple, list)):
             policy = [policy]
 
+        X, U = horzsplit(X, 1), horzsplit(U, 1)
         for i in range(len(U)):
             contact_forces = CS_func(X[i], U[i])
-            contact_forces = contact_forces[
-                :6
-            ]  # To be changed: it must be reduced by symmetry (if sym by construction)
+            contact_forces = contact_forces[: nlp["model"].nbContacts()]
 
             for elem in policy:
                 ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
-                ocp.g_bounds.min.append(elem[1])
-                ocp.g_bounds.max.append(10000000)  # How can we only put lower bound ? Cf optistack subject_to code
+                if _type == "GREATER_THAN":
+                    ocp.g_bounds.min.append(elem[1])
+                    ocp.g_bounds.max.append(inf)
+                elif _type == "LESSER_THAN":
+                    ocp.g_bounds.min.append(-inf)
+                    ocp.g_bounds.max.append(elem[1])
 
     @staticmethod
     def continuity_constraint(ocp):
@@ -191,3 +252,17 @@ class Constraint:
             for i in range(ocp.nlp[0]["nx"]):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
+
+
+class Correct:
+    @staticmethod
+    def parameters(name, elements, nb):
+        if not isinstance(elements, (list, tuple)):
+            elements = (elements,)
+        for element in elements:
+            if not isinstance(element, int):
+                raise RuntimeError(f"{element} is not a valid index for {name}, it must be an integer")
+            if element < 0 or element > nb:
+                raise RuntimeError(f"{element} is not a valid index for {name}, it must be between 0 and {nb - 1}.")
+
+    # TODO: same security in objective_function

@@ -4,6 +4,18 @@ import numpy as np
 
 class ObjectiveFunction:
     @staticmethod
+    def add_objective_functions(ocp, nlp):
+        for objective_function in nlp["objective_functions"]:
+            if not isinstance(objective_function, dict):
+                raise RuntimeError(f"{objective_function} is not a dictionary")
+            type = objective_function["type"]
+            del objective_function["type"]
+            type(ocp, nlp, **objective_function)
+
+        if ocp.is_cyclic_objective:
+            ObjectiveFunction.cyclic(ocp)
+
+    @staticmethod
     def minimize_states(ocp, nlp, weight=1, states_idx=(), data_to_track=()):
         states_idx = ObjectiveFunction.__check_var_size(states_idx, nlp["nx"], "state_idx")
         data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"] + 1, len(states_idx)])
@@ -79,21 +91,38 @@ class ObjectiveFunction:
 
     @staticmethod
     def minimize_all_controls(ocp, nlp, weight=1):
-        raise RuntimeError("cyclic objective function not implemented yet")
+        for i in range(nlp["ns"]):
+            ocp.J += casadi.dot(nlp["U"][i], nlp["U"][i]) * nlp["dt"] * nlp["dt"] * weight
 
     @staticmethod
-    def cyclic(ocp, nlp, weight=1):
-        raise RuntimeError("cyclic objective function not implemented yet")
+    def cyclic(ocp, weight=1):
+
+        if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
+            raise RuntimeError("Cyclic constraint without same nx is not supported yet")
+
+        ocp.J += (
+            casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
+        )
 
     @staticmethod
-    def minimize_final_distance_between_two_markers(ocp, nlp, weight=1, markers=()):
-        if not isinstance(markers, (list, tuple)) or len(markers) != 2:
-            raise RuntimeError("minimize_distance_between_two_markers expect markers to be a list of 2 marker indices")
-        q = nlp["dof_mapping"].expand(nlp["X"][nlp["ns"]][: nlp["nbQ"]])
-        marker0 = nlp["model"].marker(q, markers[0]).to_mx()
-        marker1 = nlp["model"].marker(q, markers[1]).to_mx()
+    def minimize_distance_between_two_markers(ocp, nlp, first_marker, second_marker, weight=1, node=-1):
 
-        ocp.J += casadi.dot(marker0 - marker1, marker0 - marker1) * nlp["dt"] * nlp["dt"] * weight
+        q = nlp["q_mapping"].expand.map(nlp["X"][node][: nlp["nbQ"]])
+        marker0 = nlp["model"].marker(q, first_marker).to_mx()
+        marker1 = nlp["model"].marker(q, second_marker).to_mx()
+
+        ocp.J += casadi.dot(marker0 - marker1, marker0 - marker1) * weight
+
+    @staticmethod
+    def maximize_predicted_height_jump(ocp, nlp, weight=1, node=-1):
+        g = -9.81  # get gravity from biorbd
+        q = nlp["q_mapping"].expand.map(nlp["X"][node][: nlp["nbQ"]])
+        q_dot = nlp["q_dot_mapping"].expand.map(nlp["X"][node][nlp["nbQ"] :])
+        CoM = nlp["model"].CoM(q).to_mx()
+        CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
+        jump_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
+
+        ocp.J -= jump_height * weight
 
     @staticmethod
     def __check_var_size(var_idx, target_size, var_name="var"):
@@ -103,7 +132,7 @@ class ObjectiveFunction:
             if isinstance(var_idx, int):
                 var_idx = [var_idx]
             if max(var_idx) > target_size:
-                raise RuntimeError(var_name + " in minimize_states cannot be higher than nx (" + target_size + ")")
+                raise RuntimeError(f"{var_name} in minimize_states cannot be higher than nx ({target_size})")
         return var_idx
 
     @staticmethod
@@ -113,17 +142,11 @@ class ObjectiveFunction:
         else:
             if len(data_to_track.shape) != len(target_size):
                 raise RuntimeError(
-                    "data_to_track "
-                    + str(data_to_track.shape)
-                    + " don't correspond to expected minimum size "
-                    + str(target_size)
+                    f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}"
                 )
             for i in range(len(target_size)):
                 if data_to_track.shape[i] < target_size[i]:
                     raise RuntimeError(
-                        "data_to_track "
-                        + str(data_to_track.shape)
-                        + " don't correspond to expected minimum size "
-                        + str(target_size)
+                        f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}"
                     )
         return data_to_track

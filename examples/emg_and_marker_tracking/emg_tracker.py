@@ -5,7 +5,7 @@ from casadi import MX, Function
 from matplotlib import pyplot as plt
 
 from biorbd_optim import OptimalControlProgram
-from biorbd_optim.mapping import Mapping
+from biorbd_optim.mapping import BidirectionalMapping, Mapping
 from biorbd_optim.dynamics import Dynamics
 from biorbd_optim.plot import PlotOcp
 from biorbd_optim.problem_type import ProblemType
@@ -29,7 +29,9 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         "model": biorbd_model,
         "nbTau": nb_tau,
         "nbMuscle": nb_mus,
-        "dof_mapping": Mapping(range(nb_q), range(nb_q)),
+        "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
+        "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
+        "tau_mapping": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
     }
     markers_func = []
     for i in range(nb_markers):
@@ -93,19 +95,21 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = [
-        (ObjectiveFunction.minimize_muscle, {"weight": 1, "data_to_track": activations_ref},),
-        (ObjectiveFunction.minimize_torque, {"weight": 1}),
+        {"type": ObjectiveFunction.minimize_muscle, "weight": 1, "data_to_track": activations_ref},
+        {"type": ObjectiveFunction.minimize_torque, "weight": 1},
     ]
     if kin_data_to_track == "markers":
         objective_functions.append(
-            (ObjectiveFunction.minimize_markers, {"weight": 100, "data_to_track": markers_ref},),
+            {"type": ObjectiveFunction.minimize_markers, "weight": 100, "data_to_track": markers_ref},
         )
     elif kin_data_to_track == "q":
         objective_functions.append(
-            (
-                ObjectiveFunction.minimize_states,
-                {"weight": 100, "data_to_track": q_ref, "states_idx": range(biorbd_model.nbQ()),},
-            ),
+            {
+                "type": ObjectiveFunction.minimize_states,
+                "weight": 100,
+                "data_to_track": q_ref,
+                "states_idx": range(biorbd_model.nbQ()),
+            },
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
@@ -214,6 +218,4 @@ if __name__ == "__main__":
     plt.step(np.linspace(0, 2, n_shooting_points + 1), mus.T, "r--", where="post")
 
     # --- Plot --- #
-    plt_ocp = PlotOcp(ocp)
-    plt_ocp.update_data(sol["x"])
-    plt_ocp.show()
+    plt.show()

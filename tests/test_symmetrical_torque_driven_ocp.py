@@ -25,7 +25,7 @@ spec.loader.exec_module(eocarSymByConstraint)
 
 def test_eocar_sym_by_construction():
     ocp = eocarSymByConstruction.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSym.bioMod"
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSym.bioMod",
     )
     sol = ocp.solve()
 

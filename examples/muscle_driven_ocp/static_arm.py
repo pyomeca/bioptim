@@ -1,17 +1,17 @@
 import biorbd
-import numpy as np
 
 from biorbd_optim import OptimalControlProgram
 from biorbd_optim.objective_functions import ObjectiveFunction
 from biorbd_optim.problem_type import ProblemType
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
+from biorbd_optim.plot import ShowResult
 
 
-def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
+def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
-    torque_min, torque_max, torque_init = -100, 100, 0
+    torque_min, torque_max, torque_init = -1, 1, 0
     muscle_min, muscle_max, muscle_init = 0, 1, 0.5
 
     # Problem parameters
@@ -20,13 +20,19 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     # Add objective functions
     objective_functions = (
-        (ObjectiveFunction.minimize_torque, {"weight": 10}),
-        (ObjectiveFunction.minimize_muscle, {"weight": 1}),
-        (ObjectiveFunction.minimize_final_distance_between_two_markers, {"markers": (0, 5), "weight": 1},),
+        {"type": ObjectiveFunction.minimize_torque, "weight": 1},
+        {"type": ObjectiveFunction.minimize_muscle, "weight": 1},
+        {
+            "type": ObjectiveFunction.minimize_distance_between_two_markers,
+            "first_marker": 0,
+            "second_marker": 5,
+            "weight": 1,
+        },
     )
 
     # Dynamics
     problem_type = ProblemType.muscles_and_torque_driven
+    # problem_type = ProblemType.torque_driven
 
     # Constraints
     constraints = ()
@@ -68,23 +74,12 @@ def prepare_nlp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
 
 if __name__ == "__main__":
-    ocp = prepare_nlp(show_online_optim=True)
+    ocp = prepare_ocp(show_online_optim=True)
 
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    x, _, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-    x = ocp.nlp[0]["dof_mapping"].expand(x)
-
-    np.save("static_arm", x.T)
-
-    try:
-        from BiorbdViz import BiorbdViz
-
-        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"], show_meshes=False)
-        b.load_movement(x.T)
-        b.exec()
-    except ModuleNotFoundError:
-        print("Install BiorbdViz if you want to have a live view of the optimization")
-        from matplotlib import pyplot as plt
-        plt.show()
+    # --- Show results --- #
+    result = ShowResult(ocp, sol)
+    result.animate(show_meshes=False)
+    result.graphs()
