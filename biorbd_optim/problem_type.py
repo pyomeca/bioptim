@@ -73,7 +73,7 @@ class ProblemType:
 
         u = MX()
         muscle_names = nlp["model"].muscleNames()
-        for i in range(nlp["model"].nbMuscleTotal()):
+        for i in range(nlp["nbMuscle"]):
             u = vertcat(u, MX.sym("Muscle_" + muscle_names[i].to_string() + "_activation"))
         nlp["u"] = vertcat(nlp["u"], u)
 
