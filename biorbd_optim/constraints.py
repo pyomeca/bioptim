@@ -1,11 +1,12 @@
 import enum
 from math import inf
 
+import numpy as np
 import biorbd
+import casadi
 from casadi import vertcat, horzcat, MX, Function, horzsplit
 
 from .dynamics import Dynamics
-
 
 # TODO: Convert the constraint in CasADi function?
 
@@ -19,9 +20,10 @@ class Constraint:
 
         MARKERS_TO_MATCH = 0
         ALIGN_WITH_CUSTOM_RT = 1
-        PROPORTIONAL_Q = 2
-        PROPORTIONAL_CONTROL = 3
-        CONTACT_FORCE_GREATER_THAN = 4
+        TRACK_Q = 2
+        PROPORTIONAL_Q = 3
+        PROPORTIONAL_CONTROL = 4
+        CONTACT_FORCE_GREATER_THAN = 5
         # TODO: PAUL = Add lesser than
         # TODO: PAUL = Add frictional cone
 
@@ -51,7 +53,7 @@ class Constraint:
         if nlp["constraints"] is None:
             return
         for constraint in nlp["constraints"]:
-            x, u, last_node = Constraint.__get_instant(nlp, constraint)
+            t, x, u, last_node = Constraint.__get_instant(nlp, constraint)
             _type = constraint["type"]
             del constraint["instant"], constraint["type"]
 
@@ -60,6 +62,9 @@ class Constraint:
 
             elif _type == Constraint.Type.ALIGN_WITH_CUSTOM_RT:
                 Constraint.__align_with_custom_rt(ocp, nlp, x, **constraint)
+
+            elif _type == Constraint.Type.TRACK_Q:
+                Constraint.__q_to_match(ocp, nlp, t, x, **constraint)
 
             elif _type == Constraint.Type.PROPORTIONAL_Q:
                 Constraint.__proportional_variable(ocp, nlp, x, **constraint)
@@ -81,6 +86,7 @@ class Constraint:
     def __get_instant(nlp, constraint):
         if not isinstance(constraint["instant"], (list, tuple)):
             constraint["instant"] = (constraint["instant"],)
+        t = []
         x = MX()
         u = MX()
         last_node = False
@@ -90,27 +96,33 @@ class Constraint:
                     raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp['ns']}")
                 if node == nlp["ns"]:
                     last_node = True
+                t.append(node)
                 x = horzcat(x, nlp["X"][node])
                 u = horzcat(u, nlp["U"][node])
 
             elif node == Constraint.Instant.START:
+                t.append(0)
                 x = horzcat(x, nlp["X"][0])
                 u = horzcat(u, nlp["U"][0])
 
             elif node == Constraint.Instant.MID:
-                if nlp["ns"] % 2 == 0:
-                    raise (ValueError("Number of shooting points must be odd to use MID"))
-                x = horzcat(x, nlp["X"][nlp["ns"] // 2 + 1])
-                u = horzcat(u, nlp["U"][nlp["ns"] // 2 + 1])
+                if nlp["ns"] % 2 == 1:
+                    raise (ValueError("Number of shooting points must be even to use MID"))
+                t.append(nlp["X"][nlp["ns"] // 2])
+                x = horzcat(x, nlp["X"][nlp["ns"] // 2])
+                u = horzcat(u, nlp["U"][nlp["ns"] // 2])
 
             elif node == Constraint.Instant.INTERMEDIATES:
+                t.extend([i for i in range(1, nlp["ns"])])
                 x = horzcat(x, nlp["X"][1 : nlp["ns"] - 1])
                 u = horzcat(u, nlp["U"][1 : nlp["ns"] - 1])
 
             elif node == Constraint.Instant.END:
+                t.append(nlp["X"][nlp["ns"]])
                 x = horzcat(x, nlp["X"][nlp["ns"]])
 
             elif node == Constraint.Instant.ALL:
+                t.extend([i for i in range(nlp["ns"]+1)])
                 for i in range(nlp["ns"]):
                     x = horzcat(x, nlp["X"][i])
                     u = horzcat(u, nlp["U"][i])
@@ -118,7 +130,7 @@ class Constraint:
                 last_node = True
             else:
                 raise RuntimeError(" is not a valid instant")
-        return x, u, last_node
+        return t, x, u, last_node
 
     @staticmethod
     def __markers_to_match(ocp, nlp, X, first_marker, second_marker):
@@ -135,6 +147,7 @@ class Constraint:
             q = nlp["q_mapping"].expand.map(x[:nq])
             marker1 = nlp["model"].marker(q, first_marker).to_mx()
             marker2 = nlp["model"].marker(q, second_marker).to_mx()
+
             ocp.g = vertcat(ocp.g, marker1 - marker2)
             for i in range(3):
                 ocp.g_bounds.min.append(0)
@@ -161,6 +174,18 @@ class Constraint:
             for i in range(constraint.rows()):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
+
+    @staticmethod
+    def __q_to_match(ocp, nlp, t, x, data_to_track, states_idx=()):
+        states_idx = Constraint.__check_var_size(states_idx, nlp["nx"], "state_idx")
+        data_to_track = Constraint.__check_tracking_data_size(data_to_track, [nlp["ns"] + 1, len(states_idx)])
+
+        for idx, v in enumerate(horzsplit(x, 1)):
+            ocp.g = vertcat(ocp.g, v[states_idx] - data_to_track[t[idx], states_idx])
+            for _ in states_idx:
+                ocp.g_bounds.min.append(0)
+                ocp.g_bounds.max.append(0)
+
 
     @staticmethod
     def __proportional_variable(ocp, nlp, UX, first_dof, second_dof, coef):
@@ -215,6 +240,39 @@ class Constraint:
                     ocp.g_bounds.max.append(elem[1])
 
     @staticmethod
+    def __check_var_size(var_idx, target_size, var_name="var"):
+        # This a copy of ObjectiveFunction.__check_var_size and should be join at some point
+        if var_idx == ():
+            var_idx = range(target_size)
+        else:
+            if isinstance(var_idx, int):
+                var_idx = [var_idx]
+            if max(var_idx) > target_size:
+                raise RuntimeError(f"{var_name} in minimize_states cannot be higher than nx ({target_size})")
+        return var_idx
+
+    @staticmethod
+    def __check_tracking_data_size(data_to_track, target_size):
+        # This a copy of ObjectiveFunction.__check_tracking_data_size and should be join at some point
+        if data_to_track == ():
+            data_to_track = np.zeros(target_size)
+        else:
+            if len(data_to_track.shape) != len(target_size):
+                if target_size[1] == 1 and len(data_to_track.shape) == 1:
+                    # If we have a vector it is still okay
+                    data_to_track = data_to_track.reshape(data_to_track.shape[0], 1)
+                else:
+                    raise RuntimeError(
+                        f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}"
+                    )
+            for i in range(len(target_size)):
+                if data_to_track.shape[i] < target_size[i]:
+                    raise RuntimeError(
+                        f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}"
+                    )
+        return data_to_track
+
+    @staticmethod
     def continuity_constraint(ocp):
         """
         Adds continuity constraints between each nodes and its neighbours. It is possible to add a continuity
@@ -248,7 +306,7 @@ class Constraint:
             # Save continuity constraints between final integration and first node
             if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
                 raise RuntimeError("Cyclic constraint without same nx is not supported yet")
-            ocp.g = vertcat(ocp.g, ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0])
+            ocp.g = vertcat(ocp.g, ocp.nlp[-1]["X"][-1][1:] - ocp.nlp[0]["X"][0][1:])
             for i in range(ocp.nlp[0]["nx"]):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
