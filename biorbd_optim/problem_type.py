@@ -71,6 +71,8 @@ class ProblemType:
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_muscle_driven
         ProblemType.__configure_torque_driven(nlp)
 
+        nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()
+
         u = MX()
         muscle_names = nlp["model"].muscleNames()
         for i in range(nlp["nbMuscle"]):
