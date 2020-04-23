@@ -122,7 +122,7 @@ class Constraint:
                 x = horzcat(x, nlp["X"][nlp["ns"]])
 
             elif node == Constraint.Instant.ALL:
-                t.extend([i for i in range(nlp["ns"]+1)])
+                t.extend([i for i in range(nlp["ns"] + 1)])
                 for i in range(nlp["ns"]):
                     x = horzcat(x, nlp["X"][i])
                     u = horzcat(u, nlp["U"][i])
@@ -185,7 +185,6 @@ class Constraint:
             for _ in states_idx:
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
-
 
     @staticmethod
     def __proportional_variable(ocp, nlp, UX, first_dof, second_dof, coef):

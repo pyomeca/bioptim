@@ -73,7 +73,7 @@ class PlotOcp:
                     axes_muscles[k].set_title(nlp["model"].muscleNames()[k].to_string())
                 for k in range(nlp["nbMuscle"], len(axes_muscles)):
                     axes_muscles[k].remove()
-                axes_muscles = axes_muscles[:nlp["nbMuscle"]]
+                axes_muscles = axes_muscles[: nlp["nbMuscle"]]
                 self.axes.extend(axes_muscles)
 
                 axes_muscles[nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel("time (s)")

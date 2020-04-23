@@ -25,19 +25,9 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod", show_online_optim=False)
 
     # Add objective functions
     objective_functions = (
-        {
-            "type": ObjectiveFunction.minimize_markers_displacement,
-            "weight": 1,
-            "markers_idx": hand_marker_idx
-        },
-        {
-            "type": ObjectiveFunction.minimize_muscle,
-            "weight": 1,
-        },
-        {
-            "type": ObjectiveFunction.minimize_torque,
-            "weight": 1,
-        }
+        {"type": ObjectiveFunction.minimize_markers_displacement, "weight": 1, "markers_idx": hand_marker_idx},
+        {"type": ObjectiveFunction.minimize_muscle, "weight": 1,},
+        {"type": ObjectiveFunction.minimize_torque, "weight": 1,},
     )
 
     # Dynamics
@@ -49,15 +39,14 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod", show_online_optim=False)
             "type": Constraint.Type.MARKERS_TO_MATCH,
             "first_marker": hand_marker_idx,
             "second_marker": end_crank_idx,
-            "instant": Constraint.Instant.ALL
-         },
-
+            "instant": Constraint.Instant.ALL,
+        },
         {
             "type": Constraint.Type.TRACK_Q,
             "instant": Constraint.Instant.ALL,
             "states_idx": 0,
-            "data_to_track": np.linspace(0, 2*np.pi, number_shooting_points + 1)
-         }
+            "data_to_track": np.linspace(0, 2 * np.pi, number_shooting_points + 1),
+        },
     )
 
     # Path constraint

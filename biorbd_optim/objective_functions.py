@@ -59,13 +59,15 @@ class ObjectiveFunction:
         for i in range(nlp["ns"]):
             for j in markers_idx:
                 ocp.J += (
-                        casadi.dot(
-                            nlp["model"].marker(nlp["X"][i][:n_q], j).to_mx() - nlp["model"].marker(nlp["X"][i + 1][:n_q], j).to_mx(),
-                            nlp["model"].marker(nlp["X"][i][:n_q], j).to_mx() - nlp["model"].marker(nlp["X"][i + 1][:n_q], j).to_mx(),
-                        )
-                        * nlp["dt"]
-                        * nlp["dt"]
-                        * weight
+                    casadi.dot(
+                        nlp["model"].marker(nlp["X"][i][:n_q], j).to_mx()
+                        - nlp["model"].marker(nlp["X"][i + 1][:n_q], j).to_mx(),
+                        nlp["model"].marker(nlp["X"][i][:n_q], j).to_mx()
+                        - nlp["model"].marker(nlp["X"][i + 1][:n_q], j).to_mx(),
+                    )
+                    * nlp["dt"]
+                    * nlp["dt"]
+                    * weight
                 )
 
     @staticmethod
@@ -78,8 +80,8 @@ class ObjectiveFunction:
             for j in markers_idx:
                 ocp.J += (
                     casadi.dot(
-                        nlp["model"].markerVelocity(nlp["X"][i][:n_q], nlp["X"][i][n_q:n_q+n_qdot], j).to_mx(),
-                        nlp["model"].markerVelocity(nlp["X"][i][:n_q], nlp["X"][i][n_q:n_q+n_qdot], j).to_mx(),
+                        nlp["model"].markerVelocity(nlp["X"][i][:n_q], nlp["X"][i][n_q : n_q + n_qdot], j).to_mx(),
+                        nlp["model"].markerVelocity(nlp["X"][i][:n_q], nlp["X"][i][n_q : n_q + n_qdot], j).to_mx(),
                     )
                     * nlp["dt"]
                     * nlp["dt"]
