@@ -45,15 +45,15 @@ class PlotOcp:
             nlp = self.ocp.nlp[0]
 
             self.all_figures = []
-            for j, type in enumerate(["Q", "Qdot", "Tau"]):
+            for j, _type in enumerate(["Q", "Qdot", "Tau"]):
                 self.all_figures.append(
-                    plt.figure(type, figsize=(min(nlp["nb" + type] * width_step, width_max), height))
+                    plt.figure(_type, figsize=(min(nlp["nb" + _type] * width_step, width_max), height))
                 )
-                axes_dof = self.all_figures[-1].subplots(1, nlp["nb" + type]).flatten()
+                axes_dof = self.all_figures[-1].subplots(1, nlp["nb" + _type]).flatten()
                 self.axes.extend(axes_dof)
-                mid_column_idx = int(nlp["nb" + type] / 2)
-                axes_dof[mid_column_idx].set_title(type)
-                axes_dof[nlp["nb" + type] - mid_column_idx].set_xlabel("time (s)")
+                mid_column_idx = int(nlp["nb" + _type] / 2)
+                axes_dof[mid_column_idx].set_title(_type)
+                axes_dof[nlp["nb" + _type] - mid_column_idx].set_xlabel("time (s)")
                 self.all_figures[-1].tight_layout()
 
             if self.problem_type == ProblemType.muscles_and_torque_driven:
@@ -69,9 +69,13 @@ class PlotOcp:
                     plt.figure("Muscles", figsize=(min(nb_cols * width_step, width_max), min(nb_rows, 4) * height))
                 )
                 axes_muscles = self.all_figures[-1].subplots(nb_rows, nb_cols).flatten()
-                self.axes.extend(axes_muscles)
                 for k in range(nlp["nbMuscle"]):
                     axes_muscles[k].set_title(nlp["model"].muscleNames()[k].to_string())
+                for k in range(nlp["nbMuscle"], len(axes_muscles)):
+                    axes_muscles[k].remove()
+                axes_muscles = axes_muscles[:nlp["nbMuscle"]]
+                self.axes.extend(axes_muscles)
+
                 axes_muscles[nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel("time (s)")
                 self.all_figures[-1].tight_layout()
 
