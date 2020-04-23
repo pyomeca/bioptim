@@ -61,8 +61,8 @@ class ObjectiveFunction:
         for i in range(nlp["ns"]):
             ocp.J += (
                 casadi.dot(
-                    nlp["U"][i][controls_idx] - data_to_track[i, controls_idx],
-                    nlp["U"][i][controls_idx] - data_to_track[i, controls_idx],
+                    nlp["U"][i][controls_idx] - data_to_track[i, :],
+                    nlp["U"][i][controls_idx] - data_to_track[i, :],
                 )
                 * nlp["dt"]
                 * nlp["dt"]
