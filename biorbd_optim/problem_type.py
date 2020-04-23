@@ -91,6 +91,26 @@ class ProblemType:
         nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()
 
     @staticmethod
+    def muscles_and_torque_driven_with_contact(nlp):
+        """
+        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
+        Works with torques and muscles.
+        :param nlp: An OptimalControlProgram class.
+        """
+        nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_muscle_driven_with_contact
+        ProblemType.__configure_torque_driven(nlp)
+
+        u = MX()
+        muscle_names = nlp["model"].muscleNames()
+        for i in range(nlp["model"].nbMuscleTotal()):
+            u = vertcat(u, MX.sym("Muscle_" + muscle_names[i].to_string() + "_activation"))
+        nlp["u"] = vertcat(nlp["u"], u)
+
+        nlp["nu"] = nlp["u"].rows()
+
+        nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()
+
+    @staticmethod
     def get_data_from_V_phase(V_phase, var_size, nb_nodes, offset, nb_variables, duplicate_last_column):
         """
         Extracts variables from V.
