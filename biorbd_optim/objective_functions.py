@@ -18,7 +18,9 @@ class ObjectiveFunction:
     @staticmethod
     def minimize_states(ocp, nlp, weight=1, states_idx=(), data_to_track=()):
         states_idx = ObjectiveFunction.__check_var_size(states_idx, nlp["nx"], "state_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"] + 1, max(states_idx) + 1])
+        data_to_track = ObjectiveFunction.__check_tracking_data_size(
+            data_to_track, [nlp["ns"] + 1, max(states_idx) + 1]
+        )
 
         for i in range(nlp["ns"] + 1):
             ocp.J += (
@@ -92,7 +94,7 @@ class ObjectiveFunction:
     def minimize_torque(ocp, nlp, weight=1, controls_idx=(), data_to_track=()):
         n_tau = nlp["nbTau"]
         controls_idx = ObjectiveFunction.__check_var_size(controls_idx, n_tau, "controls_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"], max(controls_idx)+1])
+        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"], max(controls_idx) + 1])
 
         for i in range(nlp["ns"]):
             ocp.J += (
