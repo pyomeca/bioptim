@@ -81,7 +81,28 @@ class ProblemType:
 
         nlp["nu"] = nlp["u"].rows()
 
+    @staticmethod
+    def excitation_driven(nlp):
+        """
+        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
+        Works with torques and muscles.
+        :param nlp: An OptimalControlProgram class.
+        """
+        nlp["dynamics_func"] = Dynamics.forward_dynamics_excitation_driven
+        ProblemType.__configure_torque_driven(nlp)
+
         nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()
+
+        u = MX()
+        muscle_names = nlp["model"].muscleNames()
+        for i in range(nlp["nbMuscle"]):
+            u = vertcat(u, MX.sym("Muscle_" + muscle_names[i].to_string() + "_excitation"))
+            x = vertcat(x, MX.sym("Muscle_" + muscle_names[i].to_string() + "_activation"))
+        nlp["u"] = vertcat(nlp["u"], u)
+        nlp["x"] = vertcat(nlp["x"], x)
+
+        nlp["nu"] = nlp["u"].rows()
+        nlp["nx"] = nlp["x"].rows()
 
     @staticmethod
     def get_data_from_V_phase(V_phase, var_size, nb_nodes, offset, nb_variables, duplicate_last_column):
