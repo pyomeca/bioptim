@@ -22,12 +22,12 @@ def prepare_ocp(
     torque_min, torque_max, torque_init = -1000, 1000, 0
 
     # Problem parameters
-    number_shooting_points = [8, 8]  # 8, 8 for dev test, echec avec 20,20 et 0.5,0.3
-    phase_time = [0.4, 0.2]  # 0.4, 0.2 for dev test
+    number_shooting_points = [8, 8]
+    phase_time = [0.4, 0.2]
 
     if use_symmetry:
         q_mapping = BidirectionalMapping(
-            Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 3, 7, 8, 9])
+            Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
         )
         q_mapping = q_mapping, q_mapping
         tau_mapping = BidirectionalMapping(
@@ -37,17 +37,18 @@ def prepare_ocp(
 
     else:
         q_mapping = BidirectionalMapping(
-            Mapping([Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model]),
-            Mapping([Mapping(range(model.nbQ()), range(model.nbQ())) for model in biorbd_model]),
+            Mapping([i for i in range(biorbd_model[0].nbQ())]),
+            Mapping([i for i in range(biorbd_model[0].nbQ())]),
         )
+        q_mapping = q_mapping, q_mapping
         tau_mapping = q_mapping
 
     # Add objective functions
     objective_functions = (
         (),
         (
-            (ObjectiveFunction.maximize_predicted_height_jump, {"weight": 1}),
-            (ObjectiveFunction.minimize_all_controls, {"weight": 1 / 100}),
+            {"type": ObjectiveFunction.maximize_predicted_height_jump, "weight": 1},
+            {"type": ObjectiveFunction.minimize_all_controls, "weight": 1/100},
         ),
     )
 
@@ -57,40 +58,70 @@ def prepare_ocp(
         ProblemType.torque_driven_with_contact,
     )
 
-    # Constraints
     constraints_first_phase = []
     constraints_second_phase = []
-    if use_symmetry:
-        constraints_second_phase = []
-    else:
-        symmetrical_constraint = (
-            Constraint.Type.PROPORTIONAL_Q,
-            Constraint.Instant.ALL,
-            ((3, 5, -1), (4, 6, 1), (7, 10, 1), (8, 11, 1), (9, 12, 1)),
-        )
-        constraints_first_phase.append(symmetrical_constraint)
-        constraints_second_phase.append(symmetrical_constraint)
 
-    non_pulling_on_floor_2_contacts = (
-        Constraint.Type.CONTACT_FORCE_GREATER_THAN,
-        Constraint.Instant.ALL,
-        ((1, 0), (2, 0), (4, 0), (5, 0),),
-    )
-    non_pulling_on_floor_1_contacts = (
-        Constraint.Type.CONTACT_FORCE_GREATER_THAN,
-        Constraint.Instant.ALL,
-        ((1, 0), (3, 0)),
-    )
+    contact_axes = (1, 2, 4, 5)
+    for i in contact_axes:
+        constraints_first_phase.append({
+            "type": Constraint.Type.CONTACT_FORCE_GREATER_THAN,
+            "instant": Constraint.Instant.ALL,
+            "idx": i,
+            "boundary": 0,
+        })
+    contact_axes = (1, 3)
+    for i in contact_axes:
+        constraints_second_phase.append({
+            "type": Constraint.Type.CONTACT_FORCE_GREATER_THAN,
+            "instant": Constraint.Instant.ALL,
+            "idx": i,
+            "boundary": 0,
+        })
+    constraints_first_phase.append({
+        "type": Constraint.Type.NON_SLIPPING,
+        "instant": Constraint.Instant.ALL,
+        "normal_component_idx": (1, 2, 4, 5),
+        "tangential_component_idx": (0, 3),
+        "static_friction_coefficient": 0.5,
+    })
+    constraints_second_phase.append({
+        "type": Constraint.Type.NON_SLIPPING,
+        "instant": Constraint.Instant.ALL,
+        "normal_component_idx": (1, 3),
+        "tangential_component_idx": (0, 2),
+        "static_friction_coefficient": 0.5,
+    })
+    if not use_symmetry:
+        first_dof = (3, 4, 7, 8, 9)
+        second_dof = (5, 6, 10, 11, 12)
+        coeff = (-1, 1, 1, 1, 1)
+        for i in range(len(first_dof)):
+            constraints_first_phase.append(
+                {
+                    "type": Constraint.Type.PROPORTIONAL_Q,
+                    "instant": Constraint.Instant.ALL,
+                    "first_dof": first_dof[i],
+                    "second_dof": second_dof[i],
+                    "coef": coeff[i]
+                }
+            )
 
-    constraints_first_phase.append(non_pulling_on_floor_2_contacts)
-    constraints_second_phase.append(non_pulling_on_floor_1_contacts)
+        for i in range(len(first_dof)):
+            constraints_second_phase.append(
+                {
+                    "type": Constraint.Type.PROPORTIONAL_Q,
+                    "instant": Constraint.Instant.ALL,
+                    "first_dof": first_dof[i],
+                    "second_dof": second_dof[i],
+                    "coef": coeff[i]
+                }
+            )
     constraints = (constraints_first_phase, constraints_second_phase)
 
     # Path constraint
     if use_symmetry:
         nb_q = q_mapping[0].reduce.len
         nb_qdot = nb_q
-        # pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0.8, -0.9, 0.47]
         pose_at_first_node = [0, 0, -0.5336, 1.4, 0.8, -0.9, 0.47]
     else:
         nb_q = q_mapping[0].reduce.len
@@ -115,12 +146,6 @@ def prepare_ocp(
     X_bounds = [QAndQDotBounds(biorbd_model[i], all_generalized_mapping=q_mapping[i]) for i in range(nb_phases)]
     X_bounds[0].first_node_min = pose_at_first_node + [0] * nb_qdot
     X_bounds[0].first_node_max = pose_at_first_node + [0] * nb_qdot
-    # X_bounds[0].last_node_min = pose_at_first_node
-    # X_bounds[0].last_node_max = pose_at_first_node
-    # X_bounds[1].first_node_min = pose_at_first_node
-    # X_bounds[1].first_node_max = pose_at_first_node
-    # X_bounds[1].last_node_min = pose_at_first_node + X_bounds[1].min[nb_q:]
-    # X_bounds[1].last_node_max = pose_at_first_node + X_bounds[1].max[nb_q:]
 
     # Initial guess
     X_init = [
@@ -156,7 +181,7 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True, use_symmetry=True)
+    ocp = prepare_ocp(show_online_optim=True, use_symmetry=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()
@@ -192,14 +217,14 @@ if __name__ == "__main__":
         q = np.ndarray((ocp.nlp[0]["model"].nbQ(), sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
         for i in range(len(ocp.nlp)):
             if i == 0:
-                q[:, : ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand(x[i])[:, :-1]
+                q[:, : ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(x[i])[:, :-1]
             else:
-                q[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand(
+                q[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(
                     x[i]
                 )[:, :-1]
-        q[:, -1] = ocp.nlp[-1]["q_mapping"].expand(x[-1])[:, -1]
+        q[:, -1] = ocp.nlp[-1]["q_mapping"].expand.map(x[-1])[:, -1]
 
-        np.save("results2", q.T)
+        # np.save("results2", q.T)
 
         b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
         b.load_movement(q.T)
