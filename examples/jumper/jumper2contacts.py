@@ -37,8 +37,7 @@ def prepare_ocp(
 
     else:
         q_mapping = BidirectionalMapping(
-            Mapping([i for i in range(biorbd_model[0].nbQ())]),
-            Mapping([i for i in range(biorbd_model[0].nbQ())]),
+            Mapping([i for i in range(biorbd_model[0].nbQ())]), Mapping([i for i in range(biorbd_model[0].nbQ())]),
         )
         q_mapping = q_mapping, q_mapping
         tau_mapping = q_mapping
@@ -48,7 +47,7 @@ def prepare_ocp(
         (),
         (
             {"type": ObjectiveFunction.maximize_predicted_height_jump, "weight": 1},
-            {"type": ObjectiveFunction.minimize_all_controls, "weight": 1/100},
+            {"type": ObjectiveFunction.minimize_all_controls, "weight": 1 / 100},
         ),
     )
 
@@ -63,34 +62,42 @@ def prepare_ocp(
 
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
-        constraints_first_phase.append({
-            "type": Constraint.Type.CONTACT_FORCE_GREATER_THAN,
-            "instant": Constraint.Instant.ALL,
-            "idx": i,
-            "boundary": 0,
-        })
+        constraints_first_phase.append(
+            {
+                "type": Constraint.Type.CONTACT_FORCE_GREATER_THAN,
+                "instant": Constraint.Instant.ALL,
+                "idx": i,
+                "boundary": 0,
+            }
+        )
     contact_axes = (1, 3)
     for i in contact_axes:
-        constraints_second_phase.append({
-            "type": Constraint.Type.CONTACT_FORCE_GREATER_THAN,
+        constraints_second_phase.append(
+            {
+                "type": Constraint.Type.CONTACT_FORCE_GREATER_THAN,
+                "instant": Constraint.Instant.ALL,
+                "idx": i,
+                "boundary": 0,
+            }
+        )
+    constraints_first_phase.append(
+        {
+            "type": Constraint.Type.NON_SLIPPING,
             "instant": Constraint.Instant.ALL,
-            "idx": i,
-            "boundary": 0,
-        })
-    constraints_first_phase.append({
-        "type": Constraint.Type.NON_SLIPPING,
-        "instant": Constraint.Instant.ALL,
-        "normal_component_idx": (1, 2, 4, 5),
-        "tangential_component_idx": (0, 3),
-        "static_friction_coefficient": 0.5,
-    })
-    constraints_second_phase.append({
-        "type": Constraint.Type.NON_SLIPPING,
-        "instant": Constraint.Instant.ALL,
-        "normal_component_idx": (1, 3),
-        "tangential_component_idx": (0, 2),
-        "static_friction_coefficient": 0.5,
-    })
+            "normal_component_idx": (1, 2, 4, 5),
+            "tangential_component_idx": (0, 3),
+            "static_friction_coefficient": 0.5,
+        }
+    )
+    constraints_second_phase.append(
+        {
+            "type": Constraint.Type.NON_SLIPPING,
+            "instant": Constraint.Instant.ALL,
+            "normal_component_idx": (1, 3),
+            "tangential_component_idx": (0, 2),
+            "static_friction_coefficient": 0.5,
+        }
+    )
     if not use_symmetry:
         first_dof = (3, 4, 7, 8, 9)
         second_dof = (5, 6, 10, 11, 12)
@@ -102,7 +109,7 @@ def prepare_ocp(
                     "instant": Constraint.Instant.ALL,
                     "first_dof": first_dof[i],
                     "second_dof": second_dof[i],
-                    "coef": coeff[i]
+                    "coef": coeff[i],
                 }
             )
 
@@ -113,7 +120,7 @@ def prepare_ocp(
                     "instant": Constraint.Instant.ALL,
                     "first_dof": first_dof[i],
                     "second_dof": second_dof[i],
-                    "coef": coeff[i]
+                    "coef": coeff[i],
                 }
             )
     constraints = (constraints_first_phase, constraints_second_phase)
@@ -181,7 +188,7 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True, use_symmetry=False)
+    ocp = prepare_ocp(show_online_optim=True, use_symmetry=True)
 
     # --- Solve the program --- #
     sol = ocp.solve()
@@ -219,9 +226,9 @@ if __name__ == "__main__":
             if i == 0:
                 q[:, : ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(x[i])[:, :-1]
             else:
-                q[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(
-                    x[i]
-                )[:, :-1]
+                q[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i][
+                    "q_mapping"
+                ].expand.map(x[i])[:, :-1]
         q[:, -1] = ocp.nlp[-1]["q_mapping"].expand.map(x[-1])[:, -1]
 
         # np.save("results2", q.T)

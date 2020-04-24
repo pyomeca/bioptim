@@ -91,6 +91,26 @@ class ProblemType:
         nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()
 
     @staticmethod
+    def muscles_and_torque_driven_with_contact(nlp):
+        """
+        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
+        Works with torques and muscles.
+        :param nlp: An OptimalControlProgram class.
+        """
+        nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_muscle_driven_with_contact
+        ProblemType.__configure_torque_driven(nlp)
+
+        u = MX()
+        muscle_names = nlp["model"].muscleNames()
+        for i in range(nlp["model"].nbMuscleTotal()):
+            u = vertcat(u, MX.sym("Muscle_" + muscle_names[i].to_string() + "_activation"))
+        nlp["u"] = vertcat(nlp["u"], u)
+
+        nlp["nu"] = nlp["u"].rows()
+
+        nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()
+
+    @staticmethod
     def get_data_from_V_phase(V_phase, var_size, nb_nodes, offset, nb_variables, duplicate_last_column):
         """
         Extracts variables from V.
@@ -130,6 +150,7 @@ class ProblemType:
                 nlp["problem_type"] == ProblemType.torque_driven
                 or nlp["problem_type"] == ProblemType.torque_driven_with_contact
                 or nlp["problem_type"] == ProblemType.muscles_and_torque_driven
+                or nlp["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
             ):
                 q.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbQ"], nlp["ns"] + 1, 0, nb_var, False))
                 q_dot.append(
@@ -137,7 +158,10 @@ class ProblemType:
                 )
                 tau.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbTau"], nlp["ns"], nlp["nx"], nb_var, True))
 
-                if nlp["problem_type"] == ProblemType.muscles_and_torque_driven:
+                if (
+                    nlp["problem_type"] == ProblemType.muscles_and_torque_driven
+                    or nlp["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+                ):
                     has_muscles = True
                     muscle.append(
                         ProblemType.get_data_from_V_phase(
@@ -165,7 +189,10 @@ class ProblemType:
         if ocp.nlp[0]["problem_type"] == ProblemType.torque_driven:
             x, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
 
-        elif ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
+        elif (
+            ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven
+            or ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+        ):
             x, _, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
 
         else:
