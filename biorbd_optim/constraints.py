@@ -26,6 +26,7 @@ class Constraint:
         CONTACT_FORCE_GREATER_THAN = 5
         CONTACT_FORCE_LESSER_THAN = 6
         NON_SLIPPING = 7
+        CUSTOM_CONSTRAINT = 8
 
     @staticmethod
     class Instant(enum.Enum):
@@ -88,6 +89,11 @@ class Constraint:
                 if instant == Constraint.Instant.END or instant == nlp["ns"]:
                     raise RuntimeError("No control u at last node")
                 Constraint.__non_slipping(ocp, nlp, x, u, **constraint)
+
+            elif _type == Constraint.Type.CUSTOM_CONSTRAINT:
+                func = constraint["function"]
+                del constraint["function"]
+                func(ocp, nlp, x, u, **constraint)
 
             else:
                 raise RuntimeError(f"{constraint} is not a valid constraint, take a look in Constraint.Type class")
@@ -185,8 +191,8 @@ class Constraint:
 
     @staticmethod
     def __q_to_match(ocp, nlp, t, x, data_to_track, states_idx=()):
-        states_idx = Constraint.__check_var_size(states_idx, nlp["nx"], "state_idx")
-        data_to_track = Constraint.__check_tracking_data_size(data_to_track, [nlp["ns"] + 1, len(states_idx)])
+        states_idx = Constraint._check_var_size(states_idx, nlp["nx"], "state_idx")
+        data_to_track = Constraint._check_tracking_data_size(data_to_track, [nlp["ns"] + 1, len(states_idx)])
 
         for idx, v in enumerate(horzsplit(x, 1)):
             ocp.g = vertcat(ocp.g, v[states_idx] - data_to_track[t[idx], states_idx])
@@ -277,8 +283,8 @@ class Constraint:
             ocp.g_bounds.max.append(inf)
 
     @staticmethod
-    def __check_var_size(var_idx, target_size, var_name="var"):
-        # This a copy of ObjectiveFunction.__check_var_size and should be join at some point
+    def _check_var_size(var_idx, target_size, var_name="var"):
+        # This a copy of ObjectiveFunction._check_var_size and should be join at some point
         if var_idx == ():
             var_idx = range(target_size)
         else:
@@ -289,8 +295,8 @@ class Constraint:
         return var_idx
 
     @staticmethod
-    def __check_tracking_data_size(data_to_track, target_size):
-        # This a copy of ObjectiveFunction.__check_tracking_data_size and should be join at some point
+    def _check_tracking_data_size(data_to_track, target_size):
+        # This a copy of ObjectiveFunction._check_tracking_data_size and should be join at some point
         if data_to_track == ():
             data_to_track = np.zeros(target_size)
         else:

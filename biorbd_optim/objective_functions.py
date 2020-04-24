@@ -17,10 +17,8 @@ class ObjectiveFunction:
 
     @staticmethod
     def minimize_states(ocp, nlp, weight=1, states_idx=(), data_to_track=()):
-        states_idx = ObjectiveFunction.__check_var_size(states_idx, nlp["nx"], "state_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(
-            data_to_track, [nlp["ns"] + 1, max(states_idx) + 1]
-        )
+        states_idx = ObjectiveFunction._check_var_size(states_idx, nlp["nx"], "state_idx")
+        data_to_track = ObjectiveFunction._check_tracking_data_size(data_to_track, [nlp["ns"] + 1, max(states_idx) + 1])
 
         for i in range(nlp["ns"] + 1):
             ocp.J += (
@@ -36,8 +34,8 @@ class ObjectiveFunction:
     @staticmethod
     def minimize_markers(ocp, nlp, weight=1, markers_idx=(), data_to_track=()):
         n_q = nlp["nbQ"]
-        markers_idx = ObjectiveFunction.__check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(
+        markers_idx = ObjectiveFunction._check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
+        data_to_track = ObjectiveFunction._check_tracking_data_size(
             data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
         )
 
@@ -56,7 +54,7 @@ class ObjectiveFunction:
     @staticmethod
     def minimize_markers_displacement(ocp, nlp, weight=1, markers_idx=()):
         n_q = nlp["nbQ"]
-        markers_idx = ObjectiveFunction.__check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
+        markers_idx = ObjectiveFunction._check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
 
         for i in range(nlp["ns"]):
             for j in markers_idx:
@@ -76,7 +74,7 @@ class ObjectiveFunction:
     def minimize_markers_velocity(ocp, nlp, weight=1, markers_idx=()):
         n_q = nlp["nbQ"]
         n_qdot = nlp["nbQdot"]
-        markers_idx = ObjectiveFunction.__check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
+        markers_idx = ObjectiveFunction._check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
 
         for i in range(nlp["ns"] + 1):
             for j in markers_idx:
@@ -93,8 +91,8 @@ class ObjectiveFunction:
     @staticmethod
     def minimize_torque(ocp, nlp, weight=1, controls_idx=(), data_to_track=()):
         n_tau = nlp["nbTau"]
-        controls_idx = ObjectiveFunction.__check_var_size(controls_idx, n_tau, "controls_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"], max(controls_idx) + 1])
+        controls_idx = ObjectiveFunction._check_var_size(controls_idx, n_tau, "controls_idx")
+        data_to_track = ObjectiveFunction._check_tracking_data_size(data_to_track, [nlp["ns"], max(controls_idx) + 1])
 
         for i in range(nlp["ns"]):
             ocp.J += (
@@ -111,8 +109,8 @@ class ObjectiveFunction:
     def minimize_muscle(ocp, nlp, weight=1, muscles_idx=(), data_to_track=()):
         n_tau = nlp["nbTau"]
         nb_muscle = nlp["nbMuscle"]
-        muscles_idx = ObjectiveFunction.__check_var_size(muscles_idx, nb_muscle, "muscles_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"], max(muscles_idx) + 1])
+        muscles_idx = ObjectiveFunction._check_var_size(muscles_idx, nb_muscle, "muscles_idx")
+        data_to_track = ObjectiveFunction._check_tracking_data_size(data_to_track, [nlp["ns"], max(muscles_idx) + 1])
 
         # Add the nbTau offset to the muscle index
         muscles_idx_plus_tau = [idx + n_tau for idx in muscles_idx]
@@ -163,7 +161,7 @@ class ObjectiveFunction:
         ocp.J -= jump_height * weight
 
     @staticmethod
-    def __check_var_size(var_idx, target_size, var_name="var"):
+    def _check_var_size(var_idx, target_size, var_name="var"):
         if var_idx == ():
             var_idx = range(target_size)
         else:
@@ -174,7 +172,7 @@ class ObjectiveFunction:
         return var_idx
 
     @staticmethod
-    def __check_tracking_data_size(data_to_track, target_size):
+    def _check_tracking_data_size(data_to_track, target_size):
         if data_to_track == ():
             data_to_track = np.zeros(target_size)
         else:

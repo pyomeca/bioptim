@@ -9,6 +9,12 @@ from biorbd_optim.constraints import Constraint
 from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
 
 
+class MyConstraints(Constraint):
+    @staticmethod
+    def phase_one_transition_heel_take_off(ocp, nlp, x, u):
+        model = ocp.nlp[0]["model"]
+
+
 def prepare_ocp(
     show_online_optim=False, use_symmetry=True,
 ):
@@ -87,6 +93,13 @@ def prepare_ocp(
             "normal_component_idx": (1, 2, 4, 5),
             "tangential_component_idx": (0, 3),
             "static_friction_coefficient": 0.5,
+        }
+    )
+    constraints_first_phase.append(
+        {
+            "type": Constraint.Type.CUSTOM_CONSTRAINT,
+            "function": MyConstraints.phase_one_transition_heel_take_off,
+            "instant": Constraint.Instant.ALL,
         }
     )
     constraints_second_phase.append(
