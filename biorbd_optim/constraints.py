@@ -22,7 +22,8 @@ class Constraint:
         PROPORTIONAL_Q = 2
         PROPORTIONAL_CONTROL = 3
         CONTACT_FORCE_GREATER_THAN = 4
-        # TODO: PAUL = Add lesser than
+        CONTACT_FORCE_LESSER_THAN = 5
+        NON_SLIPPING = 6
         # TODO: PAUL = Add frictional cone
 
     @staticmethod
@@ -51,10 +52,10 @@ class Constraint:
         if nlp["constraints"] is None:
             return
         for constraint in nlp["constraints"]:
-            x, u, last_node = Constraint.__get_instant(nlp, constraint)
+            x, u = Constraint.__get_instant(nlp, constraint)
             _type = constraint["type"]
+            instant = constraint["instant"]
             del constraint["instant"], constraint["type"]
-
             if _type == Constraint.Type.MARKERS_TO_MATCH:
                 Constraint.__markers_to_match(ocp, nlp, x, **constraint)
 
@@ -65,14 +66,24 @@ class Constraint:
                 Constraint.__proportional_variable(ocp, nlp, x, **constraint)
 
             elif _type == Constraint.Type.PROPORTIONAL_CONTROL:
-                if last_node:
+                if instant == Constraint.Instant.END or instant == nlp["ns"]:
                     raise RuntimeError("No control u at last node")
                 Constraint.__proportional_variable(ocp, nlp, u, **constraint)
 
             elif _type == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
-                if last_node:
+                if instant == Constraint.Instant.END or instant == nlp["ns"]:
                     raise RuntimeError("No control u at last node")
                 Constraint.__contact_force_inequality(ocp, nlp, x, u, "GREATER_THAN", **constraint)
+
+            elif _type == Constraint.Type.CONTACT_FORCE_LESSER_THAN:
+                if instant == Constraint.Instant.END or instant == nlp["ns"]:
+                    raise RuntimeError("No control u at last node")
+                Constraint.__contact_force_inequality(ocp, nlp, x, u, "LESSER_THAN", **constraint)
+
+            elif _type == Constraint.Type.NON_SLIPPING:
+                if instant == Constraint.Instant.END or instant == nlp["ns"]:
+                    raise RuntimeError("No control u at last node")
+                Constraint.__non_slipping(ocp, nlp, x, u, **constraint)
 
             else:
                 raise RuntimeError(f"{constraint} is not a valid constraint, take a look in Constraint.Type class")
@@ -83,7 +94,6 @@ class Constraint:
             constraint["instant"] = (constraint["instant"],)
         x = MX()
         u = MX()
-        last_node = False
         for node in constraint["instant"]:
             if isinstance(node, int):
                 if node < 0 or node > nlp["ns"]:
@@ -104,8 +114,9 @@ class Constraint:
                 u = horzcat(u, nlp["U"][nlp["ns"] // 2 + 1])
 
             elif node == Constraint.Instant.INTERMEDIATES:
-                x = horzcat(x, nlp["X"][1 : nlp["ns"] - 1])
-                u = horzcat(u, nlp["U"][1 : nlp["ns"] - 1])
+                for i in range(1, nlp["ns"] - 1):
+                    x = horzcat(x, nlp["X"][i])
+                    u = horzcat(u, nlp["U"][i])
 
             elif node == Constraint.Instant.END:
                 x = horzcat(x, nlp["X"][nlp["ns"]])
@@ -115,10 +126,10 @@ class Constraint:
                     x = horzcat(x, nlp["X"][i])
                     u = horzcat(u, nlp["U"][i])
                 x = horzcat(x, nlp["X"][nlp["ns"]])
-                last_node = True
+
             else:
                 raise RuntimeError(" is not a valid instant")
-        return x, u, last_node
+        return x, u
 
     @staticmethod
     def __markers_to_match(ocp, nlp, X, first_marker, second_marker):
@@ -174,7 +185,7 @@ class Constraint:
         """
         Correct.parameters("dof", (first_dof, second_dof), UX.rows())
         if not isinstance(coef, (int, float)):
-            raise RuntimeError("coef must be a coeff")
+            raise RuntimeError("coef must be an int or a float")
 
         for v in horzsplit(UX, 1):
             v = nlp["q_mapping"].expand.map(v)
@@ -183,7 +194,7 @@ class Constraint:
             ocp.g_bounds.max.append(0)
 
     @staticmethod
-    def __contact_force_inequality(ocp, nlp, X, U, policy, _type):
+    def __contact_force_inequality(ocp, nlp, X, U, _type, idx, boundary):
         """
         To be completed when this function will be fully developed, in particular the fact that policy is either a tuple/list or a tuple of tuples/list of lists,
         with in the 1st index the number of the contact force and in the 2nd index the associated bound.
@@ -197,22 +208,52 @@ class Constraint:
             ["CS"],
         ).expand()
 
-        if not isinstance(policy[0], (tuple, list)):
-            policy = [policy]
-
         X, U = horzsplit(X, 1), horzsplit(U, 1)
         for i in range(len(U)):
-            contact_forces = CS_func(X[i], U[i])
-            contact_forces = contact_forces[: nlp["model"].nbContacts()]
+            ocp.g = vertcat(ocp.g, CS_func(X[i], U[i])[idx])
+            if _type == "GREATER_THAN":
+                ocp.g_bounds.min.append(boundary)
+                ocp.g_bounds.max.append(inf)
+            elif _type == "LESSER_THAN":
+                ocp.g_bounds.min.append(-inf)
+                ocp.g_bounds.max.append(boundary)
 
-            for elem in policy:
-                ocp.g = vertcat(ocp.g, contact_forces[elem[0]])
-                if _type == "GREATER_THAN":
-                    ocp.g_bounds.min.append(elem[1])
-                    ocp.g_bounds.max.append(inf)
-                elif _type == "LESSER_THAN":
-                    ocp.g_bounds.min.append(-inf)
-                    ocp.g_bounds.max.append(elem[1])
+    @staticmethod
+    def __non_slipping(ocp, nlp, X, U, normal_component_idx, tangential_component_idx, static_friction_coefficient):
+        """
+        :param coeff: It is the coefficient of static friction.
+        """
+        CS_func = Function(
+            "Contact_force_inequality",
+            [ocp.symbolic_states, ocp.symbolic_controls],
+            [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
+            ["x", "u"],
+            ["CS"],
+        ).expand()
+
+        mu = static_friction_coefficient
+        X, U = horzsplit(X, 1), horzsplit(U, 1)
+        for i in range(len(U)):
+            normal_contact_force = tangential_contact_force = 0
+            for idx in normal_component_idx:
+                normal_contact_force += CS_func(X[i], U[i])[idx]
+            for idx in tangential_component_idx:
+                normal_contact_force += CS_func(X[i], U[i])[idx]
+            #ocp.g = vertcat(ocp.g, tangential_contact_force)
+            # if normal_contact_force >= 0:             # Triggers error because MX haven't value here
+            #     ocp.g_bounds.min.append(-mu*normal_contact_force)    # Triggers error likely because MX haven't value here
+            #     ocp.g_bounds.max.append(mu*normal_contact_force)     # Same
+            # else:
+            #     ocp.g_bounds.min.append(mu*normal_contact_force)     # Same
+            #     ocp.g_bounds.max.append(-mu*normal_contact_force)    # Same
+
+            # Proposal : only case normal_contact_force >= 0 and with two ocp.g
+            ocp.g = vertcat(ocp.g, mu*normal_contact_force + tangential_contact_force)
+            ocp.g_bounds.min.append(0)
+            ocp.g_bounds.max.append(inf)
+            ocp.g = vertcat(ocp.g, mu * normal_contact_force - tangential_contact_force)
+            ocp.g_bounds.min.append(0)
+            ocp.g_bounds.max.append(inf)
 
     @staticmethod
     def continuity_constraint(ocp):
