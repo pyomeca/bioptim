@@ -18,7 +18,7 @@ from biorbd_optim import (
 
 
 def generate_data(biorbd_model, final_time, nb_shooting):
-    # Alisases
+    # Aliases
     nb_q = biorbd_model.nbQ()
     nb_qdot = biorbd_model.nbQdot()
     nb_tau = biorbd_model.nbGeneralizedTorque()

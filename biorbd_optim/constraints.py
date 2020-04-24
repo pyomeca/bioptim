@@ -1,18 +1,14 @@
 import enum
 from math import inf
 
-import numpy as np
 import biorbd
-from casadi import vertcat, horzcat, MX, Function, horzsplit
+from casadi import vertcat, Function, horzsplit
 
 from .dynamics import Dynamics
 from .enums import Instant
+from .goal import Goal
 
 # TODO: Convert the constraint in CasADi function?
-
-
-class Goal:
-    pass
 
 
 class Constraint(Goal):
@@ -41,7 +37,7 @@ class Constraint(Goal):
         if nlp["constraints"] is None:
             return
         for constraint in nlp["constraints"]:
-            t, x, u = Constraint.__get_instant(nlp, constraint)
+            t, x, u = Constraint._get_instant(nlp, constraint)
             _type = constraint["type"]
             instant = constraint["instant"]
             del constraint["instant"], constraint["type"]
@@ -89,54 +85,6 @@ class Constraint(Goal):
                 raise RuntimeError(f"{constraint} is not a valid constraint, take a look in Constraint.Type class")
 
     @staticmethod
-    def __get_instant(nlp, constraint):
-        if not isinstance(constraint["instant"], (list, tuple)):
-            constraint["instant"] = (constraint["instant"],)
-        t = []
-        x = MX()
-        u = MX()
-        for node in constraint["instant"]:
-            if isinstance(node, int):
-                if node < 0 or node > nlp["ns"]:
-                    raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp['ns']}")
-                t.append(node)
-                x = horzcat(x, nlp["X"][node])
-                u = horzcat(u, nlp["U"][node])
-
-            elif node == Instant.START:
-                t.append(0)
-                x = horzcat(x, nlp["X"][0])
-                u = horzcat(u, nlp["U"][0])
-
-            elif node == Instant.MID:
-                if nlp["ns"] % 2 == 1:
-                    raise (ValueError("Number of shooting points must be even to use MID"))
-                t.append(nlp["X"][nlp["ns"] // 2])
-                x = horzcat(x, nlp["X"][nlp["ns"] // 2])
-                u = horzcat(u, nlp["U"][nlp["ns"] // 2])
-
-            elif node == Instant.INTERMEDIATES:
-                for i in range(1, nlp["ns"] - 1):
-                    t.append(i)
-                    x = horzcat(x, nlp["X"][i])
-                    u = horzcat(u, nlp["U"][i])
-
-            elif node == Instant.END:
-                t.append(nlp["X"][nlp["ns"]])
-                x = horzcat(x, nlp["X"][nlp["ns"]])
-
-            elif node == Instant.ALL:
-                t.extend([i for i in range(nlp["ns"] + 1)])
-                for i in range(nlp["ns"]):
-                    x = horzcat(x, nlp["X"][i])
-                    u = horzcat(u, nlp["U"][i])
-                x = horzcat(x, nlp["X"][nlp["ns"]])
-
-            else:
-                raise RuntimeError(" is not a valid instant")
-        return t, x, u
-
-    @staticmethod
     def __markers_to_match(ocp, nlp, X, first_marker, second_marker):
         """
         Adds the constraint that the two markers must be coincided at the desired instant(s).
@@ -144,7 +92,7 @@ class Constraint(Goal):
         :param X: List of instant(s).
         :param policy: Tuple of indices of two markers.
         """
-        Correct.parameters("marker", [first_marker, second_marker], nlp["model"].nbMarkers())
+        Constraint._check_idx("marker", [first_marker, second_marker], nlp["model"].nbMarkers())
 
         nq = nlp["q_mapping"].reduce.len
         for x in horzsplit(X, 1):
@@ -165,8 +113,8 @@ class Constraint(Goal):
         :param X: List of instant(s).
         :param policy: Tuple of indices of segment and rt.
         """
-        Correct.parameters("segment", segment, nlp["model"].nbSegment())
-        Correct.parameters("rt", rt, nlp["model"].nbRTs())
+        Constraint._check_idx("segment", segment, nlp["model"].nbSegment())
+        Constraint._check_idx("rt", rt, nlp["model"].nbRTs())
 
         nq = nlp["q_mapping"].reduce.len
         for x in horzsplit(X, 1):
@@ -200,7 +148,7 @@ class Constraint(Goal):
 
     @staticmethod
     def __q_to_match(ocp, nlp, t, x, data_to_track, states_idx=()):
-        states_idx = Constraint._check_var_size(states_idx, nlp["nx"], "state_idx")
+        states_idx = Constraint._check_and_fill_index(states_idx, nlp["nx"], "state_idx")
         data_to_track = Constraint._check_tracking_data_size(data_to_track, [nlp["ns"] + 1, len(states_idx)])
 
         for idx, v in enumerate(horzsplit(x, 1)):
@@ -219,7 +167,7 @@ class Constraint(Goal):
         are the indexes of elements to be linked proportionally.
         The third element of each tuple (policy[i][2]) is the proportionality coefficient.
         """
-        Correct.parameters("dof", (first_dof, second_dof), UX.rows())
+        Constraint._check_idx("dof", (first_dof, second_dof), UX.rows())
         if not isinstance(coef, (int, float)):
             raise RuntimeError("coef must be an int or a float")
 
@@ -292,39 +240,6 @@ class Constraint(Goal):
             ocp.g_bounds.max.append(inf)
 
     @staticmethod
-    def _check_var_size(var_idx, target_size, var_name="var"):
-        # This a copy of ObjectiveFunction._check_var_size and should be join at some point
-        if var_idx == ():
-            var_idx = range(target_size)
-        else:
-            if isinstance(var_idx, int):
-                var_idx = [var_idx]
-            if max(var_idx) > target_size:
-                raise RuntimeError(f"{var_name} in minimize_states cannot be higher than nx ({target_size})")
-        return var_idx
-
-    @staticmethod
-    def _check_tracking_data_size(data_to_track, target_size):
-        # This a copy of ObjectiveFunction._check_tracking_data_size and should be join at some point
-        if data_to_track == ():
-            data_to_track = np.zeros(target_size)
-        else:
-            if len(data_to_track.shape) != len(target_size):
-                if target_size[1] == 1 and len(data_to_track.shape) == 1:
-                    # If we have a vector it is still okay
-                    data_to_track = data_to_track.reshape(data_to_track.shape[0], 1)
-                else:
-                    raise RuntimeError(
-                        f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}"
-                    )
-            for i in range(len(target_size)):
-                if data_to_track.shape[i] < target_size[i]:
-                    raise RuntimeError(
-                        f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}"
-                    )
-        return data_to_track
-
-    @staticmethod
     def continuity_constraint(ocp):
         """
         Adds continuity constraints between each nodes and its neighbours. It is possible to add a continuity
@@ -362,17 +277,3 @@ class Constraint(Goal):
             for i in range(ocp.nlp[0]["nx"]):
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
-
-
-class Correct:
-    @staticmethod
-    def parameters(name, elements, nb):
-        if not isinstance(elements, (list, tuple)):
-            elements = (elements,)
-        for element in elements:
-            if not isinstance(element, int):
-                raise RuntimeError(f"{element} is not a valid index for {name}, it must be an integer")
-            if element < 0 or element > nb:
-                raise RuntimeError(f"{element} is not a valid index for {name}, it must be between 0 and {nb - 1}.")
-
-    # TODO: same security in objective_function
