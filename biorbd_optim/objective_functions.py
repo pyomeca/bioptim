@@ -18,7 +18,9 @@ class ObjectiveFunction:
     @staticmethod
     def minimize_states(ocp, nlp, weight=1, states_idx=(), data_to_track=()):
         states_idx = ObjectiveFunction.__check_var_size(states_idx, nlp["nx"], "state_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"] + 1, len(states_idx)])
+        data_to_track = ObjectiveFunction.__check_tracking_data_size(
+            data_to_track, [nlp["ns"] + 1, max(states_idx) + 1]
+        )
 
         for i in range(nlp["ns"] + 1):
             ocp.J += (
@@ -34,14 +36,13 @@ class ObjectiveFunction:
     @staticmethod
     def minimize_markers(ocp, nlp, weight=1, markers_idx=(), data_to_track=()):
         n_q = nlp["nbQ"]
-        n_mark = nlp["model"].nbMarkers()
-        markers_idx = ObjectiveFunction.__check_var_size(markers_idx, n_mark, "markers_idx")
+        markers_idx = ObjectiveFunction.__check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
         data_to_track = ObjectiveFunction.__check_tracking_data_size(
-            data_to_track, [3, len(markers_idx), nlp["ns"] + 1]
+            data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
         )
 
         for i in range(nlp["ns"] + 1):
-            for j in range(n_mark):
+            for j in markers_idx:
                 ocp.J += (
                     casadi.dot(
                         nlp["model"].marker(nlp["X"][i][:n_q], j).to_mx() - data_to_track[:, j, i],
@@ -53,10 +54,47 @@ class ObjectiveFunction:
                 )
 
     @staticmethod
+    def minimize_markers_displacement(ocp, nlp, weight=1, markers_idx=()):
+        n_q = nlp["nbQ"]
+        markers_idx = ObjectiveFunction.__check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
+
+        for i in range(nlp["ns"]):
+            for j in markers_idx:
+                ocp.J += (
+                    casadi.dot(
+                        nlp["model"].marker(nlp["X"][i][:n_q], j).to_mx()
+                        - nlp["model"].marker(nlp["X"][i + 1][:n_q], j).to_mx(),
+                        nlp["model"].marker(nlp["X"][i][:n_q], j).to_mx()
+                        - nlp["model"].marker(nlp["X"][i + 1][:n_q], j).to_mx(),
+                    )
+                    * nlp["dt"]
+                    * nlp["dt"]
+                    * weight
+                )
+
+    @staticmethod
+    def minimize_markers_velocity(ocp, nlp, weight=1, markers_idx=()):
+        n_q = nlp["nbQ"]
+        n_qdot = nlp["nbQdot"]
+        markers_idx = ObjectiveFunction.__check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
+
+        for i in range(nlp["ns"] + 1):
+            for j in markers_idx:
+                ocp.J += (
+                    casadi.dot(
+                        nlp["model"].markerVelocity(nlp["X"][i][:n_q], nlp["X"][i][n_q : n_q + n_qdot], j).to_mx(),
+                        nlp["model"].markerVelocity(nlp["X"][i][:n_q], nlp["X"][i][n_q : n_q + n_qdot], j).to_mx(),
+                    )
+                    * nlp["dt"]
+                    * nlp["dt"]
+                    * weight
+                )
+
+    @staticmethod
     def minimize_torque(ocp, nlp, weight=1, controls_idx=(), data_to_track=()):
         n_tau = nlp["nbTau"]
         controls_idx = ObjectiveFunction.__check_var_size(controls_idx, n_tau, "controls_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"], len(controls_idx)])
+        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"], max(controls_idx) + 1])
 
         for i in range(nlp["ns"]):
             ocp.J += (
@@ -74,7 +112,7 @@ class ObjectiveFunction:
         n_tau = nlp["nbTau"]
         nb_muscle = nlp["nbMuscle"]
         muscles_idx = ObjectiveFunction.__check_var_size(muscles_idx, nb_muscle, "muscles_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"], len(muscles_idx)])
+        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"], max(muscles_idx) + 1])
 
         # Add the nbTau offset to the muscle index
         muscles_idx_plus_tau = [idx + n_tau for idx in muscles_idx]
@@ -141,9 +179,13 @@ class ObjectiveFunction:
             data_to_track = np.zeros(target_size)
         else:
             if len(data_to_track.shape) != len(target_size):
-                raise RuntimeError(
-                    f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}"
-                )
+                if target_size[1] == 1 and len(data_to_track.shape) == 1:
+                    # If we have a vector it is still okay
+                    data_to_track = data_to_track.reshape(data_to_track.shape[0], 1)
+                else:
+                    raise RuntimeError(
+                        f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}"
+                    )
             for i in range(len(target_size)):
                 if data_to_track.shape[i] < target_size[i]:
                     raise RuntimeError(
