@@ -19,9 +19,10 @@ class Constraint:
 
         MARKERS_TO_MATCH = 0
         ALIGN_WITH_CUSTOM_RT = 1
-        PROPORTIONAL_Q = 2
-        PROPORTIONAL_CONTROL = 3
-        CONTACT_FORCE_GREATER_THAN = 4
+        PROJECTION_ON_PLANE = 2
+        PROPORTIONAL_Q = 3
+        PROPORTIONAL_CONTROL = 4
+        CONTACT_FORCE_GREATER_THAN = 5
         # TODO: PAUL = Add lesser than
         # TODO: PAUL = Add frictional cone
 
@@ -43,6 +44,12 @@ class Constraint:
         ALL = 4
 
     @staticmethod
+    class Axe(enum.IntEnum):
+        X = 0
+        Y = 1
+        Z = 2
+
+    @staticmethod
     def add_constraints(ocp, nlp):
         """
         Adds constraints to the requested nodes in (nlp.g) and (nlp.g_bounds).
@@ -60,6 +67,9 @@ class Constraint:
 
             elif _type == Constraint.Type.ALIGN_WITH_CUSTOM_RT:
                 Constraint.__align_with_custom_rt(ocp, nlp, x, **constraint)
+
+            elif _type == Constraint.Type.PROJECTION_ON_PLANE:
+                Constraint.__projectionOnPlaneConstraint(ocp, nlp, x, **constraint)
 
             elif _type == Constraint.Type.PROPORTIONAL_Q:
                 Constraint.__proportional_variable(ocp, nlp, x, **constraint)
@@ -159,6 +169,26 @@ class Constraint:
             constraint = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
             ocp.g = vertcat(ocp.g, constraint)
             for i in range(constraint.rows()):
+                ocp.g_bounds.min.append(0)
+                ocp.g_bounds.max.append(0)
+
+    @staticmethod
+    def __projectionOnPlaneConstraint(ocp, nlp, X, marker, segment, axes):
+        if not isinstance(axes, (tuple, list)):
+            axes = (axes,)
+
+        nq = nlp["q_mapping"].reduce.len
+        for x in horzsplit(X, 1):
+            q = nlp["q_mapping"].expand.map(x[:nq])
+
+            r_rt = nlp["model"].globalJCS(q, segment)
+            n_seg = nlp["model"].marker(q, marker)
+            n_seg.applyRT(r_rt.transpose())
+            n_seg = n_seg.to_mx()
+
+            for axe in axes:
+                ocp.g = vertcat(ocp.g, n_seg[axe, 0])
+
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(0)
 
