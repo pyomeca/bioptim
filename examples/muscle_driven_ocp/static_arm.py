@@ -1,10 +1,14 @@
 import biorbd
 
-from biorbd_optim import OptimalControlProgram
-from biorbd_optim.objective_functions import ObjectiveFunction
-from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
-from biorbd_optim.plot import ShowResult
+from biorbd_optim import (
+    OptimalControlProgram,
+    ObjectiveFunction,
+    ProblemType,
+    Bounds,
+    QAndQDotBounds,
+    InitialConditions,
+    ShowResult,
+)
 
 
 def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
@@ -32,7 +36,6 @@ def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     # Dynamics
     problem_type = ProblemType.muscles_and_torque_driven
-    # problem_type = ProblemType.torque_driven
 
     # Constraints
     constraints = ()

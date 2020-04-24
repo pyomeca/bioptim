@@ -4,13 +4,17 @@ import biorbd
 from casadi import MX, Function
 from matplotlib import pyplot as plt
 
-from biorbd_optim import OptimalControlProgram
-from biorbd_optim.mapping import BidirectionalMapping, Mapping
-from biorbd_optim.dynamics import Dynamics
-from biorbd_optim.plot import PlotOcp
-from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.objective_functions import ObjectiveFunction
-from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
+from biorbd_optim import (
+    OptimalControlProgram,
+    BidirectionalMapping,
+    Mapping,
+    Dynamics,
+    ProblemType,
+    ObjectiveFunction,
+    Bounds,
+    QAndQDotBounds,
+    InitialConditions,
+)
 
 
 def generate_data(biorbd_model, final_time, nb_shooting):

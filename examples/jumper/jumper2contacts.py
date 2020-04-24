@@ -1,12 +1,18 @@
 import numpy as np
 import biorbd
 
-from biorbd_optim import OptimalControlProgram
-from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.mapping import BidirectionalMapping, Mapping
-from biorbd_optim.objective_functions import ObjectiveFunction
-from biorbd_optim.constraints import Constraint
-from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
+from biorbd_optim import (
+    Instant,
+    OptimalControlProgram,
+    Constraint,
+    ObjectiveFunction,
+    ProblemType,
+    BidirectionalMapping,
+    Mapping,
+    Bounds,
+    QAndQDotBounds,
+    InitialConditions,
+)
 
 
 class MyConstraints(Constraint):
@@ -69,27 +75,17 @@ def prepare_ocp(
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
         constraints_first_phase.append(
-            {
-                "type": Constraint.Type.CONTACT_FORCE_GREATER_THAN,
-                "instant": Constraint.Instant.ALL,
-                "idx": i,
-                "boundary": 0,
-            }
+            {"type": Constraint.Type.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0,}
         )
     contact_axes = (1, 3)
     for i in contact_axes:
         constraints_second_phase.append(
-            {
-                "type": Constraint.Type.CONTACT_FORCE_GREATER_THAN,
-                "instant": Constraint.Instant.ALL,
-                "idx": i,
-                "boundary": 0,
-            }
+            {"type": Constraint.Type.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0,}
         )
     constraints_first_phase.append(
         {
             "type": Constraint.Type.NON_SLIPPING,
-            "instant": Constraint.Instant.ALL,
+            "instant": Instant.ALL,
             "normal_component_idx": (1, 2, 4, 5),
             "tangential_component_idx": (0, 3),
             "static_friction_coefficient": 0.5,
@@ -97,15 +93,15 @@ def prepare_ocp(
     )
     constraints_first_phase.append(
         {
-            "type": Constraint.Type.CUSTOM_CONSTRAINT,
+            "type": Constraint.Type.CUSTOM,
             "function": MyConstraints.phase_one_transition_heel_take_off,
-            "instant": Constraint.Instant.ALL,
+            "instant": Instant.ALL,
         }
     )
     constraints_second_phase.append(
         {
             "type": Constraint.Type.NON_SLIPPING,
-            "instant": Constraint.Instant.ALL,
+            "instant": Instant.ALL,
             "normal_component_idx": (1, 3),
             "tangential_component_idx": (0, 2),
             "static_friction_coefficient": 0.5,
@@ -119,7 +115,7 @@ def prepare_ocp(
             constraints_first_phase.append(
                 {
                     "type": Constraint.Type.PROPORTIONAL_Q,
-                    "instant": Constraint.Instant.ALL,
+                    "instant": Instant.ALL,
                     "first_dof": first_dof[i],
                     "second_dof": second_dof[i],
                     "coef": coeff[i],
@@ -130,7 +126,7 @@ def prepare_ocp(
             constraints_second_phase.append(
                 {
                     "type": Constraint.Type.PROPORTIONAL_Q,
-                    "instant": Constraint.Instant.ALL,
+                    "instant": Instant.ALL,
                     "first_dof": first_dof[i],
                     "second_dof": second_dof[i],
                     "coef": coeff[i],

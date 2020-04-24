@@ -1,12 +1,17 @@
 import numpy as np
 import biorbd
 
-from biorbd_optim import OptimalControlProgram
-from biorbd_optim.constraints import Constraint
-from biorbd_optim.objective_functions import ObjectiveFunction
-from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
-from biorbd_optim.plot import ShowResult
+from biorbd_optim import (
+    Instant,
+    OptimalControlProgram,
+    Constraint,
+    ObjectiveFunction,
+    ProblemType,
+    Bounds,
+    QAndQDotBounds,
+    InitialConditions,
+    ShowResult,
+)
 
 
 def prepare_ocp(biorbd_model_path="HandSpinner.bioMod", show_online_optim=False):
@@ -39,11 +44,11 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod", show_online_optim=False)
             "type": Constraint.Type.MARKERS_TO_MATCH,
             "first_marker": hand_marker_idx,
             "second_marker": end_crank_idx,
-            "instant": Constraint.Instant.ALL,
+            "instant": Instant.ALL,
         },
         {
             "type": Constraint.Type.TRACK_Q,
-            "instant": Constraint.Instant.ALL,
+            "instant": Instant.ALL,
             "states_idx": 0,
             "data_to_track": np.linspace(0, 2 * np.pi, number_shooting_points + 1),
         },

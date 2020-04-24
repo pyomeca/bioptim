@@ -3,54 +3,34 @@ from math import inf
 
 import numpy as np
 import biorbd
-import casadi
 from casadi import vertcat, horzcat, MX, Function, horzsplit
 
 from .dynamics import Dynamics
+from .enums import Instant
 
 # TODO: Convert the constraint in CasADi function?
 
 
-class Constraint:
-    @staticmethod
+class Goal:
+    pass
+
+
+class Constraint(Goal):
     class Type(enum.Enum):
         """
         Different conditions between biorbd geometric structures.
         """
 
-        MARKERS_TO_MATCH = 0
-        ALIGN_WITH_CUSTOM_RT = 1
-        PROJECTION_ON_PLANE = 2
-        TRACK_Q = 3
-        PROPORTIONAL_Q = 4
-        PROPORTIONAL_CONTROL = 5
-        CONTACT_FORCE_GREATER_THAN = 6
-        CONTACT_FORCE_LESSER_THAN = 7
-        NON_SLIPPING = 8
-        CUSTOM_CONSTRAINT = 9
-
-    @staticmethod
-    class Instant(enum.Enum):
-        """
-        Five groups of nodes.
-        START: first node only.
-        MID: middle node only.
-        INTERMEDIATES: all nodes except first and last.
-        END: last node only.
-        ALL: obvious.
-        """
-
-        START = 0
-        MID = 1
-        INTERMEDIATES = 2
-        END = 3
-        ALL = 4
-
-    @staticmethod
-    class Axe(enum.IntEnum):
-        X = 0
-        Y = 1
-        Z = 2
+        MARKERS_TO_MATCH = "markers_to_match"
+        ALIGN_WITH_CUSTOM_RT = "align_with_custom_rt"
+        PROJECTION_ON_PLANE = "projection_on_plane"
+        TRACK_Q = "track_q"
+        PROPORTIONAL_Q = "proportional_q"
+        PROPORTIONAL_CONTROL = "proportional_control"
+        CONTACT_FORCE_GREATER_THAN = "contact_force_greater_than"
+        CONTACT_FORCE_LESSER_THAN = "contact_force_lesser_than"
+        NON_SLIPPING = "non_slipping"
+        CUSTOM = "custom"
 
     @staticmethod
     def add_constraints(ocp, nlp):
@@ -81,26 +61,26 @@ class Constraint:
                 Constraint.__proportional_variable(ocp, nlp, x, **constraint)
 
             elif _type == Constraint.Type.PROPORTIONAL_CONTROL:
-                if instant == Constraint.Instant.END or instant == nlp["ns"]:
+                if instant == Instant.END or instant == nlp["ns"]:
                     raise RuntimeError("No control u at last node")
                 Constraint.__proportional_variable(ocp, nlp, u, **constraint)
 
             elif _type == Constraint.Type.CONTACT_FORCE_GREATER_THAN:
-                if instant == Constraint.Instant.END or instant == nlp["ns"]:
+                if instant == Instant.END or instant == nlp["ns"]:
                     raise RuntimeError("No control u at last node")
                 Constraint.__contact_force_inequality(ocp, nlp, x, u, "GREATER_THAN", **constraint)
 
             elif _type == Constraint.Type.CONTACT_FORCE_LESSER_THAN:
-                if instant == Constraint.Instant.END or instant == nlp["ns"]:
+                if instant == Instant.END or instant == nlp["ns"]:
                     raise RuntimeError("No control u at last node")
                 Constraint.__contact_force_inequality(ocp, nlp, x, u, "LESSER_THAN", **constraint)
 
             elif _type == Constraint.Type.NON_SLIPPING:
-                if instant == Constraint.Instant.END or instant == nlp["ns"]:
+                if instant == Instant.END or instant == nlp["ns"]:
                     raise RuntimeError("No control u at last node")
                 Constraint.__non_slipping(ocp, nlp, x, u, **constraint)
 
-            elif _type == Constraint.Type.CUSTOM_CONSTRAINT:
+            elif _type == Constraint.Type.CUSTOM:
                 func = constraint["function"]
                 del constraint["function"]
                 func(ocp, nlp, x, u, **constraint)
@@ -123,29 +103,29 @@ class Constraint:
                 x = horzcat(x, nlp["X"][node])
                 u = horzcat(u, nlp["U"][node])
 
-            elif node == Constraint.Instant.START:
+            elif node == Instant.START:
                 t.append(0)
                 x = horzcat(x, nlp["X"][0])
                 u = horzcat(u, nlp["U"][0])
 
-            elif node == Constraint.Instant.MID:
+            elif node == Instant.MID:
                 if nlp["ns"] % 2 == 1:
                     raise (ValueError("Number of shooting points must be even to use MID"))
                 t.append(nlp["X"][nlp["ns"] // 2])
                 x = horzcat(x, nlp["X"][nlp["ns"] // 2])
                 u = horzcat(u, nlp["U"][nlp["ns"] // 2])
 
-            elif node == Constraint.Instant.INTERMEDIATES:
+            elif node == Instant.INTERMEDIATES:
                 for i in range(1, nlp["ns"] - 1):
                     t.append(i)
                     x = horzcat(x, nlp["X"][i])
                     u = horzcat(u, nlp["U"][i])
 
-            elif node == Constraint.Instant.END:
+            elif node == Instant.END:
                 t.append(nlp["X"][nlp["ns"]])
                 x = horzcat(x, nlp["X"][nlp["ns"]])
 
-            elif node == Constraint.Instant.ALL:
+            elif node == Instant.ALL:
                 t.extend([i for i in range(nlp["ns"] + 1)])
                 for i in range(nlp["ns"]):
                     x = horzcat(x, nlp["X"][i])
