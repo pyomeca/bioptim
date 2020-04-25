@@ -205,8 +205,10 @@ class ShowResult:
 
     def animate(self, nb_frames=80, **kwargs):
         x = ProblemType.get_q_from_V(self.ocp, self.sol["x"])
-        t = [np.array(np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1)) for i in
-             range(self.ocp.nb_phases)]
+        t = [
+            np.array(np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1))
+            for i in range(self.ocp.nb_phases)
+        ]
 
         if self.ocp.nb_phases == 1:
             x = [x]
@@ -216,8 +218,8 @@ class ShowResult:
             for i in range(self.ocp.nb_phases):
                 for k in range(self.ocp.nlp[0]["model"].nbDof()):
                     if (
-                            self.ocp.nlp[i]["model"].nameDof()[k].to_string()
-                            != self.ocp.nlp[i - 1]["model"].nameDof()[k].to_string()
+                        self.ocp.nlp[i]["model"].nameDof()[k].to_string()
+                        != self.ocp.nlp[i - 1]["model"].nameDof()[k].to_string()
                     ):
                         same_dof = False
                         break
