@@ -64,11 +64,8 @@ class PenaltyFunctionAbstract:
             )
 
             for i, v in enumerate(horzsplit(x, 1)):
-                val = (
-                    nlp["model"].markerVelocity(v[:n_q], v[n_q : n_q + n_qdot], markers_idx).to_mx()
-                    - data_to_track[:, markers_idx, t[i]]
-                )
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                val = nlp["model"].markerVelocity(v[:n_q], v[n_q : n_q + n_qdot], markers_idx).to_mx() - data_to_track[:, markers_idx, t[i]]
+                penalty_type._add_to_goal(ocp, nlp, val, weight)
 
         @staticmethod
         def align_markers(penalty_type, ocp, nlp, t, x, u, first_marker, second_marker, **extra_param):
@@ -90,9 +87,7 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def proportional_variable(
-            penalty_type, ocp, nlp, t, x, u, which_var, first_dof, second_dof, coef, **extra_param
-        ):
+        def proportional_variable(penalty_type, ocp, nlp, t, x, u, which_var, first_dof, second_dof, coef, weight=1):
             """
             Adds proportionality constraint between the elements (states or controls) chosen.
             :param nlp: An instance of the OptimalControlProgram class.
@@ -189,9 +184,7 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def align_marker_with_segment_axis(
-            penalty_type, ocp, nlp, t, x, u, marker_idx, segment_idx, axis, **extra_param
-        ):
+        def align_marker_with_segment_axis(penalty_type, ocp, nlp, t, x, u, marker_idx, segment_idx, axis, weight=1):
             if not isinstance(axis, Axe):
                 raise RuntimeError("axis must be a biorbd_optim.Axe")
 
@@ -239,23 +232,6 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def _parameter_modifier(penalty_function, parameters):
-        # Everything that should change the entry parameters depending on the penalty can be added here
-        if (
-            penalty_function == PenaltyType.MINIMIZE_STATE
-            or penalty_function == PenaltyType.MINIMIZE_MARKERS
-            or penalty_function == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
-            or penalty_function == PenaltyType.MINIMIZE_MARKERS_VELOCITY
-            or penalty_function == PenaltyType.ALIGN_MARKERS
-            or penalty_function == PenaltyType.PROPORTIONAL_STATE
-            or penalty_function == PenaltyType.PROPORTIONAL_CONTROL
-            or penalty_function == PenaltyType.MINIMIZE_TORQUE
-            or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
-            or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
-            or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
-            or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
-        ):
-            parameters["quadratic"] = True
-
         if penalty_function == PenaltyType.PROPORTIONAL_STATE:
             parameters["which_var"] = "states"
         if penalty_function == PenaltyType.PROPORTIONAL_CONTROL:
