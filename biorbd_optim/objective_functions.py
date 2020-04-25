@@ -13,13 +13,11 @@ class ObjectiveFunction:
         """
 
         @staticmethod
-        def _add_to_goal(ocp, nlp, val, weight):
-            ocp.J += (
-                    casadi.dot(val, val)
-                    * nlp["dt"]
-                    * nlp["dt"]
-                    * weight
-            )
+        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False):
+            if quadratic:
+                ocp.J += casadi.dot(val, val) * weight * nlp["dt"] * nlp["dt"]
+            else:
+                ocp.J += casadi.sum1(val) * weight * nlp["dt"] * nlp["dt"]
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
@@ -37,8 +35,11 @@ class ObjectiveFunction:
         """
 
         @staticmethod
-        def _add_to_goal(ocp, nlp, val, weight):
-            ocp.J += val * weight
+        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False):
+            if quadratic:
+                ocp.J += casadi.dot(val, val) * weight
+            else:
+                ocp.J += casadi.sum1(val) * weight
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):

@@ -27,7 +27,7 @@ def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
         {"type": Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, "weight": 1},
         {
-            "type": Objective.Lagrange.ALIGN_MARKERS,
+            "type": Objective.Mayer.ALIGN_MARKERS,
             "first_marker": 0,
             "second_marker": 5,
             "weight": 1,

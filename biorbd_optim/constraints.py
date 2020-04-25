@@ -94,7 +94,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                 # Save continuity constraints
                 val = end_node - nlp["X"][k + 1]
-                ConstraintFunction._add_to_goal(ocp, None, val, None)
+                ConstraintFunction._add_to_penalty(ocp, None, val)
 
         # Dynamics must be continuous between phases
         for i in range(len(ocp.nlp) - 1):
@@ -102,7 +102,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise RuntimeError("Phase constraints without same nx is not supported yet")
 
             val = ocp.nlp[i]["X"][-1] - ocp.nlp[i + 1]["X"][0]
-            ConstraintFunction._add_to_goal(ocp, None, val, None)
+            ConstraintFunction._add_to_penalty(ocp, None, val)
 
         if ocp.is_cyclic_constraint:
             # Save continuity constraints between final integration and first node
@@ -110,10 +110,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise RuntimeError("Cyclic constraint without same nx is not supported yet")
 
             val = ocp.nlp[-1]["X"][-1][1:] - ocp.nlp[0]["X"][0][1:]
-            ConstraintFunction._add_to_goal(ocp, None, val, None)
+            ConstraintFunction._add_to_penalty(ocp, None, val)
 
     @staticmethod
-    def _add_to_goal(ocp, nlp, val, weight):
+    def _add_to_penalty(ocp, nlp, val, **extra_param):
         ocp.g = vertcat(ocp.g, val)
         for _ in range(val.rows()):
             ocp.g_bounds.min.append(0)
@@ -126,7 +126,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         if constraint_function == Constraint.CONTACT_FORCE_GREATER_THAN.value[0]:
             parameters["direction"] = "GREATER_THAN"
 
-        elif constraint_function == Constraint.CONTACT_FORCE_LESSER_THAN.value[0]:
+        if constraint_function == Constraint.CONTACT_FORCE_LESSER_THAN.value[0]:
             parameters["direction"] = "LESSER_THAN"
 
     @staticmethod

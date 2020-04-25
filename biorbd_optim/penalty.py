@@ -12,16 +12,16 @@ from .enums import Axe
 class PenaltyFunctionAbstract:
     class Functions:
         @staticmethod
-        def minimize_states(penalty_type, ocp, nlp, t, x, u, data_to_track=(), states_idx=(), weight=1):
+        def minimize_states(penalty_type, ocp, nlp, t, x, u, data_to_track=(), states_idx=(), **extra_param):
             states_idx = PenaltyFunctionAbstract._check_and_fill_index(states_idx, nlp["nx"], "state_idx")
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(data_to_track, [nlp["ns"] + 1, len(states_idx)])
 
             for i, v in enumerate(horzsplit(x, 1)):
                 val = v[states_idx] - data_to_track[t[i], states_idx]
-                penalty_type._add_to_goal(ocp, nlp, val, weight)
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_markers(penalty_type, ocp, nlp, t, x, u, markers_idx=(), data_to_track=(), weight=1):
+        def minimize_markers(penalty_type, ocp, nlp, t, x, u, markers_idx=(), data_to_track=(), **extra_param):
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
             )
@@ -33,20 +33,20 @@ class PenaltyFunctionAbstract:
             for i, v in enumerate(horzsplit(x, 1)):
                 q = nlp["q_mapping"].expand.map(v[:nq])
                 val = nlp["model"].markers(q)[:, markers_idx] - data_to_track[:, markers_idx, t[i]]
-                penalty_type._add_to_goal(ocp, nlp, val, weight)
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_markers_displacement(penalty_type, ocp, nlp, t, x, u, markers_idx=(), weight=1):
+        def minimize_markers_displacement(penalty_type, ocp, nlp, t, x, u, markers_idx=(), **extra_param):
             n_q = nlp["nbQ"]
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
 
             X = horzsplit(x, 1)
             for i in range(len(X)-1):
                 val = nlp["model"].markers(X[i+1][:n_q])[:, markers_idx] - nlp["model"].markers(X[i][:n_q])[:, markers_idx]
-                penalty_type._add_to_goal(ocp, nlp, val, weight)
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_markers_velocity(penalty_type, ocp, nlp, t, x, u, markers_idx=(), data_to_track=(), weight=1):
+        def minimize_markers_velocity(penalty_type, ocp, nlp, t, x, u, markers_idx=(), data_to_track=(), **extra_param):
             n_q = nlp["nbQ"]
             n_qdot = nlp["nbQdot"]
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
@@ -56,10 +56,10 @@ class PenaltyFunctionAbstract:
 
             for i, v in enumerate(horzsplit(x, 1)):
                 val = nlp["model"].markerVelocity(v[:n_q], v[n_q : n_q + n_qdot], markers_idx).to_mx() - data_to_track[:, markers_idx, t[i]]
-                penalty_type._add_to_goal(ocp, nlp, val, weight)
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def align_markers(penalty_type, ocp, nlp, t, x, u, first_marker, second_marker, weight=1):
+        def align_markers(penalty_type, ocp, nlp, t, x, u, first_marker, second_marker, **extra_param):
             """
             Adds the constraint that the two markers must be coincided at the desired instant(s).
             :param nlp: An OptimalControlProgram class.
@@ -75,10 +75,10 @@ class PenaltyFunctionAbstract:
                 marker2 = nlp["model"].marker(q, second_marker).to_mx()
 
                 val = marker1 - marker2
-                penalty_type._add_to_goal(ocp, nlp, val, weight)
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def proportional_variable(penalty_type, ocp, nlp, t, x, u, which_var, first_dof, second_dof, coef, weight=1):
+        def proportional_variable(penalty_type, ocp, nlp, t, x, u, which_var, first_dof, second_dof, coef, **extra_param):
             """
             Adds proportionality constraint between the elements (states or controls) chosen.
             :param nlp: An instance of the OptimalControlProgram class.
@@ -101,20 +101,20 @@ class PenaltyFunctionAbstract:
             for v in horzsplit(ux, 1):
                 v = nlp["q_mapping"].expand.map(v)
                 val = v[first_dof] - coef * v[second_dof]
-                penalty_type._add_to_goal(ocp, nlp, val, weight)
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_torque(penalty_type, ocp, nlp, t, x, u, controls_idx=(), data_to_track=(), weight=1):
+        def minimize_torque(penalty_type, ocp, nlp, t, x, u, controls_idx=(), data_to_track=(), **extra_param):
             n_tau = nlp["nbTau"]
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_tau, "controls_idx")
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(data_to_track, [nlp["ns"], max(controls_idx) + 1])
 
             for i, v in enumerate(horzsplit(u, 1)):
                 val = v[controls_idx] - data_to_track[t[i], controls_idx]
-                penalty_type._add_to_goal(ocp, nlp, val, weight)
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_muscles_control(penalty_type, ocp, nlp, t, x, u, muscles_idx=(), data_to_track=(), weight=1):
+        def minimize_muscles_control(penalty_type, ocp, nlp, t, x, u, muscles_idx=(), data_to_track=(), **extra_param):
             n_tau = nlp["nbTau"]
             nb_muscle = nlp["nbMuscle"]
             muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(muscles_idx, nb_muscle, "muscles_idx")
@@ -124,10 +124,10 @@ class PenaltyFunctionAbstract:
             muscles_idx_plus_tau = [idx + n_tau for idx in muscles_idx]
             for i, v in enumerate(horzsplit(u, 1)):
                 val = v[muscles_idx_plus_tau] - data_to_track[t[i], muscles_idx]
-                penalty_type._add_to_goal(ocp, nlp, val, weight)
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_all_controls(penalty_type, ocp, nlp, t, x, u, controls_idx=(), data_to_track=(), weight=1):
+        def minimize_all_controls(penalty_type, ocp, nlp, t, x, u, controls_idx=(), data_to_track=(), **extra_param):
             n_u = nlp["nu"]
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_u, "muscles_idx")
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
@@ -135,10 +135,10 @@ class PenaltyFunctionAbstract:
 
             for i, v in enumerate(horzsplit(u, 1)):
                 val = v[controls_idx] - data_to_track[t[i], controls_idx]
-                penalty_type._add_to_goal(ocp, nlp, val, weight)
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_predicted_com_height(penalty_type, ocp, nlp, t, x, u, weight=1):
+        def minimize_predicted_com_height(penalty_type, ocp, nlp, t, x, u, **extra_param):
             g = -9.81  # get gravity from biorbd
 
             for i, v in enumerate(horzsplit(x, 1)):
@@ -148,10 +148,10 @@ class PenaltyFunctionAbstract:
                 CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
 
-                penalty_type._add_to_goal(ocp, nlp, CoM_height, weight)
+                penalty_type._add_to_penalty(ocp, nlp, CoM_height, **extra_param)
 
         @staticmethod
-        def align_segment_with_custom_rt(penalty_type, ocp, nlp, t, x, u, segment_idx, rt_idx, weight=1):
+        def align_segment_with_custom_rt(penalty_type, ocp, nlp, t, x, u, segment_idx, rt_idx, **extra_param):
             """
             Adds the constraint that the RT and the segment must be aligned at the desired instant(s).
             :param nlp: An OptimalControlProgram class.
@@ -167,10 +167,10 @@ class PenaltyFunctionAbstract:
                 r_seg = nlp["model"].globalJCS(q, segment_idx).rot()
                 r_rt = nlp["model"].RT(q, rt_idx).rot()
                 val = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
-                penalty_type._add_to_goal(ocp, nlp, val, weight)
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def align_marker_with_segment_axis(penalty_type, ocp, nlp, t, x, u, marker_idx, segment_idx, axis, weight=1):
+        def align_marker_with_segment_axis(penalty_type, ocp, nlp, t, x, u, marker_idx, segment_idx, axis, **extra_param):
             if not isinstance(axis, Axe):
                 raise RuntimeError("axis must be a biorbd_optim.Axe")
 
@@ -187,16 +187,16 @@ class PenaltyFunctionAbstract:
                     if axe != axis:
                         # To align an axis, the other must be equal to 0
                         val = n_seg[axe, 0]
-                        penalty_type._add_to_goal(ocp, nlp, val, weight)
+                        penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def custom(penalty_type, ocp, nlp, t, x, u, weight=1, **parameters):
+        def custom(penalty_type, ocp, nlp, t, x, u, **parameters):
             func = parameters["function"]
             del parameters["function"]
             X = horzsplit(x, 1)
             U = horzsplit(u, 1)
             val = func(ocp, nlp, t, X, U, **parameters)
-            penalty_type._add_to_goal(ocp, nlp, val, weight)
+            penalty_type._add_to_penalty(ocp, nlp, val, **parameters)
 
     @staticmethod
     def add(ocp, nlp):
@@ -218,12 +218,27 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def _parameter_modifier(penalty_function, parameters):
+        # Everything that should change the entry parameters depending on the penalty can be added here
+        if (
+                penalty_function == PenaltyType.MINIMIZE_STATE
+                or penalty_function == PenaltyType.MINIMIZE_MARKERS
+                or penalty_function == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
+                or penalty_function == PenaltyType.MINIMIZE_MARKERS_VELOCITY
+                or penalty_function == PenaltyType.ALIGN_MARKERS
+                or penalty_function == PenaltyType.PROPORTIONAL_STATE
+                or penalty_function == PenaltyType.PROPORTIONAL_CONTROL
+                or penalty_function == PenaltyType.MINIMIZE_TORQUE
+                or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
+                or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
+                or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
+                or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
+        ):
+            parameters["quadratic"] = True
+
         if penalty_function == PenaltyType.PROPORTIONAL_STATE:
             parameters["which_var"] = "states"
-        elif penalty_function == PenaltyType.PROPORTIONAL_CONTROL:
+        if penalty_function == PenaltyType.PROPORTIONAL_CONTROL:
             parameters["which_var"] = "controls"
-        # Everything that should change the entry parameters depending on the penalty can be added here
-        pass
 
     @staticmethod
     def _span_checker(penalty_function, instant, nlp):
@@ -278,8 +293,8 @@ class PenaltyFunctionAbstract:
                     f"{element} is not a valid index for {name}, it must be between 0 and {max_bound - 1}.")
 
     @staticmethod
-    def _add_to_goal(ocp, nlp, val, weight):
-        raise RuntimeError("__add_to_goal cannot be called from an abstract class")
+    def _add_to_penalty(ocp, nlp, val, **extra_param):
+        raise RuntimeError("_add_to_penalty cannot be called from an abstract class")
 
     @staticmethod
     def _get_type():
