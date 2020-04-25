@@ -98,7 +98,7 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        nlp["dynamics_func"] = Dynamics.forward_dynamics_excitation_driven
+        nlp["dynamics_func"] = Dynamics.forward_dynamics_muscle_excitations_and_torque_driven
         ProblemType.__configure_torque_driven(nlp)
 
         nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()

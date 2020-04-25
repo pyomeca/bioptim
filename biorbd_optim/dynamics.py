@@ -83,7 +83,7 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_excitation_driven(states, controls, nlp):
+    def forward_dynamics_muscle_excitations_and_torque_driven(states, controls, nlp):
         q, qdot, qdot_reduced, residual_tau = Dynamics.__dispatch_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
