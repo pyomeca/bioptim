@@ -37,7 +37,7 @@ class PlotOcp:
         if (
             self.problem_type == ProblemType.torque_driven
             or self.problem_type == ProblemType.torque_driven_with_contact
-            or self.problem_type == ProblemType.muscles_and_torque_driven
+            or self.problem_type == ProblemType.muscle_activations_and_torque_driven
             or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
         ):
             for i in range(self.ocp.nb_phases):
