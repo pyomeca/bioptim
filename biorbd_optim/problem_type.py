@@ -72,7 +72,8 @@ class ProblemType:
         nlp["nbMuscle"] = 0
 
     @staticmethod
-    def muscles_and_torque_driven(nlp):
+    def muscle_activations_and_torque_driven(nlp):
+        # old name : muscles_and_torque_driven. Normaly, I check all files to change it, but I let here to be sure.
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques and muscles.
@@ -91,7 +92,7 @@ class ProblemType:
         nlp["nu"] = nlp["u"].rows()
 
     @staticmethod
-    def excitation_driven(nlp):
+    def muscle_excitations_and_torque_driven(nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques and muscles.
@@ -172,7 +173,7 @@ class ProblemType:
             if (
                 nlp["problem_type"] == ProblemType.torque_driven
                 or nlp["problem_type"] == ProblemType.torque_driven_with_contact
-                or nlp["problem_type"] == ProblemType.muscles_and_torque_driven
+                or nlp["problem_type"] == ProblemType.muscle_activations_and_torque_driven
                 or nlp["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
             ):
                 q.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbQ"], nlp["ns"] + 1, 0, nb_var, False))
@@ -182,7 +183,7 @@ class ProblemType:
                 tau.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbTau"], nlp["ns"], nlp["nx"], nb_var, True))
 
                 if (
-                    nlp["problem_type"] == ProblemType.muscles_and_torque_driven
+                    nlp["problem_type"] == ProblemType.muscle_activations_and_torque_driven
                     or nlp["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
                 ):
                     has_muscles = True
@@ -213,7 +214,7 @@ class ProblemType:
             x, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
 
         elif (
-            ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven
+            ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
             or ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
         ):
             x, _, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
