@@ -5,7 +5,7 @@ from biorbd_optim import (
     Instant,
     OptimalControlProgram,
     Constraint,
-    ObjectiveFunction,
+    Objective,
     ProblemType,
     BidirectionalMapping,
     Mapping,
@@ -15,17 +15,17 @@ from biorbd_optim import (
 )
 
 
-class MyConstraints:
-    @staticmethod
-    def phase_one_transition_heel_take_off(ocp, nlp, t, x, u):
-        g = -9.81  # get gravity from biorbd
-        v = x[-1]
-        q = nlp["q_mapping"].expand.map(v[: nlp["nbQ"]])
-        q_dot = nlp["q_dot_mapping"].expand.map(v[nlp["nbQ"]:])
-        CoM = nlp["model"].CoM(q).to_mx()
-        CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
-        CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
-        return CoM_height
+# class MyConstraints:
+#     @staticmethod
+#     def phase_one_transition_heel_take_off(ocp, nlp, t, x, u):
+#         g = -9.81  # get gravity from biorbd
+#         v = x[-1]
+#         q = nlp["q_mapping"].expand.map(v[: nlp["nbQ"]])
+#         q_dot = nlp["q_dot_mapping"].expand.map(v[nlp["nbQ"]:])
+#         CoM = nlp["model"].CoM(q).to_mx()
+#         CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
+#         CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
+#         return CoM_height
 
 
 def prepare_ocp(
@@ -65,8 +65,8 @@ def prepare_ocp(
     objective_functions = (
         (),
         (
-            {"type": ObjectiveFunction.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
-            {"type": ObjectiveFunction.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1 / 100},
+            {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
+            {"type": Objective.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1 / 100},
         ),
     )
 
@@ -98,13 +98,13 @@ def prepare_ocp(
             "static_friction_coefficient": 0.5,
         }
     )
-    constraints_first_phase.append(
-        {
-            "type": Constraint.CUSTOM,
-            "function": MyConstraints.phase_one_transition_heel_take_off,
-            "instant": Instant.ALL,
-        }
-    )
+    # constraints_first_phase.append(
+    #     {
+    #         "type": Constraint.CUSTOM,
+    #         "function": MyConstraints.phase_one_transition_heel_take_off,
+    #         "instant": Instant.ALL,
+    #     }
+    # )
     constraints_second_phase.append(
         {
             "type": Constraint.NON_SLIPPING,

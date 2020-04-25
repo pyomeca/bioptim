@@ -6,7 +6,7 @@ from biorbd_optim import (
     ProblemType,
     BidirectionalMapping,
     Mapping,
-    ObjectiveFunction,
+    Objective,
     Constraint,
     Bounds,
     QAndQDotBounds,
@@ -27,7 +27,7 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     all_generalized_mapping = BidirectionalMapping(Mapping([0, 1, 2, 2], [3]), Mapping([0, 1, 2]))
 
     # Add objective functions
-    objective_functions = {"type": ObjectiveFunction.Lagrange.MINIMIZE_TORQUE, "weight": 100}
+    objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
     variable_type = ProblemType.torque_driven

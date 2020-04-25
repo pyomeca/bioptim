@@ -5,7 +5,7 @@ from casadi import MX, vertcat
 from .enums import OdeSolver
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions
-from .constraints import Constraint
+from .constraints import Constraint, ConstraintFunction
 from .objective_functions import ObjectiveFunction
 from .plot import OnlineCallback
 
@@ -120,7 +120,7 @@ class OptimalControlProgram:
         # Prepare constraints
         self.g = []
         self.g_bounds = Bounds()
-        Constraint.continuity_constraint(self)
+        ConstraintFunction.continuity_constraint(self)
         if len(constraints) > 0:
             if self.nb_phases == 1:
                 if isinstance(constraints, dict):
@@ -133,7 +133,7 @@ class OptimalControlProgram:
                         raise RuntimeError("Each phase must declares its constraints (even if it is empty)")
             self.__add_to_nlp("constraints", constraints, False)
             for i in range(self.nb_phases):
-                Constraint.add(self, self.nlp[i])
+                ConstraintFunction.add(self, self.nlp[i])
 
         # Objective functions
         self.J = 0

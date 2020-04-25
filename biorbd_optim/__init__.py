@@ -1,6 +1,6 @@
 from .enums import Axe, OdeSolver, Instant
 from .constraints import Constraint
-from .objective_functions import ObjectiveFunction
+from .objective_functions import Objective
 from .problem_type import ProblemType
 from .plot import ShowResult
 from .path_conditions import Bounds, QAndQDotBounds, InitialConditions

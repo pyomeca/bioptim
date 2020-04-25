@@ -2,7 +2,7 @@ import biorbd
 
 from biorbd_optim import (
     OptimalControlProgram,
-    ObjectiveFunction,
+    Objective,
     ProblemType,
     Bounds,
     QAndQDotBounds,
@@ -24,10 +24,10 @@ def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     # Add objective functions
     objective_functions = (
-        {"type": ObjectiveFunction.minimize_torque, "weight": 1},
-        {"type": ObjectiveFunction.minimize_muscle, "weight": 1},
+        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
+        {"type": Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, "weight": 1},
         {
-            "type": ObjectiveFunction.minimize_distance_between_two_markers,
+            "type": Objective.Lagrange.ALIGN_MARKERS,
             "first_marker": 0,
             "second_marker": 5,
             "weight": 1,

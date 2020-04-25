@@ -5,7 +5,7 @@ from biorbd_optim import (
     Instant,
     OptimalControlProgram,
     Constraint,
-    ObjectiveFunction,
+    Objective,
     ProblemType,
     Bounds,
     QAndQDotBounds,
@@ -30,9 +30,9 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod", show_online_optim=False)
 
     # Add objective functions
     objective_functions = (
-        {"type": ObjectiveFunction.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, "weight": 1, "markers_idx": hand_marker_idx},
-        {"type": ObjectiveFunction.Lagrange.MINIMIZE_MUSCLES, "weight": 1},
-        {"type": ObjectiveFunction.Lagrange.MINIMIZE_TORQUE, "weight": 1},
+        {"type": Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, "weight": 1, "markers_idx": hand_marker_idx},
+        {"type": Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, "weight": 1},
+        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
     )
 
     # Dynamics

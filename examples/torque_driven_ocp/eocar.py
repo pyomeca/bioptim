@@ -4,7 +4,7 @@ from biorbd_optim import (
     Instant,
     OptimalControlProgram,
     ProblemType,
-    ObjectiveFunction,
+    Objective,
     Constraint,
     Bounds,
     QAndQDotBounds,
@@ -24,8 +24,7 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False):
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
-    # objective_functions = {"type": ObjectiveFunction.minimize_torque, "weight": 100}
-    objective_functions = {"type": ObjectiveFunction.Lagrange.MINIMIZE_TORQUE, "weight": 100}
+    objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
     problem_type = ProblemType.torque_driven
