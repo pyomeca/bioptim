@@ -66,8 +66,8 @@ def test_eocar_sym_by_constraint():
 
     # Check constraints
     g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (277, 1))
-    np.testing.assert_almost_equal(g, np.zeros((277, 1)))
+    np.testing.assert_equal(g.shape, (276, 1))
+    np.testing.assert_almost_equal(g, np.zeros((276, 1)))
 
     # Check some of the results
     q, qdot, tau = ProblemType.get_data_from_V(ocp, sol["x"])

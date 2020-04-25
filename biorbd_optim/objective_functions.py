@@ -1,194 +1,140 @@
+from enum import Enum
+
 import casadi
-import numpy as np
+
+from .penalty import PenaltyType, PenaltyFunctionAbstract
+from .enums import Instant
 
 
 class ObjectiveFunction:
-    @staticmethod
-    def add_objective_functions(ocp, nlp):
-        for objective_function in nlp["objective_functions"]:
-            if not isinstance(objective_function, dict):
-                raise RuntimeError(f"{objective_function} is not a dictionary")
-            type = objective_function["type"]
-            del objective_function["type"]
-            type(ocp, nlp, **objective_function)
+    class LagrangeFunction(PenaltyFunctionAbstract):
+        """
+        Different conditions between biorbd geometric structures.
+        """
 
-        if ocp.is_cyclic_objective:
-            ObjectiveFunction.cyclic(ocp)
+        @staticmethod
+        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False):
+            if quadratic:
+                ocp.J += casadi.dot(val, val) * weight * nlp["dt"] * nlp["dt"]
+            else:
+                ocp.J += casadi.sum1(val) * weight * nlp["dt"] * nlp["dt"]
 
-    @staticmethod
-    def minimize_states(ocp, nlp, weight=1, states_idx=(), data_to_track=()):
-        states_idx = ObjectiveFunction.__check_var_size(states_idx, nlp["nx"], "state_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(
-            data_to_track, [nlp["ns"] + 1, max(states_idx) + 1]
-        )
+        @staticmethod
+        def _parameter_modifier(penalty_function, parameters):
+            # Everything that should change the entry parameters depending on the penalty can be added here
+            PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
 
-        for i in range(nlp["ns"] + 1):
-            ocp.J += (
-                casadi.dot(
-                    nlp["X"][i][states_idx] - data_to_track[i, states_idx],
-                    nlp["X"][i][states_idx] - data_to_track[i, states_idx],
-                )
-                * nlp["dt"]
-                * nlp["dt"]
-                * weight
-            )
+        @staticmethod
+        def _span_checker(penalty_function, instant, nlp):
+            # Everything that is suspicious in terms of the span of the penalty function ca be checked here
+            PenaltyFunctionAbstract._span_checker(penalty_function, instant, nlp)
 
-    @staticmethod
-    def minimize_markers(ocp, nlp, weight=1, markers_idx=(), data_to_track=()):
-        n_q = nlp["nbQ"]
-        markers_idx = ObjectiveFunction.__check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(
-            data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
-        )
+    class MayerFunction(PenaltyFunctionAbstract):
+        """
+        Different conditions between biorbd geometric structures.
+        """
 
-        for i in range(nlp["ns"] + 1):
-            for j in markers_idx:
-                ocp.J += (
-                    casadi.dot(
-                        nlp["model"].marker(nlp["X"][i][:n_q], j).to_mx() - data_to_track[:, j, i],
-                        nlp["model"].marker(nlp["X"][i][:n_q], j).to_mx() - data_to_track[:, j, i],
-                    )
-                    * nlp["dt"]
-                    * nlp["dt"]
-                    * weight
-                )
+        @staticmethod
+        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False):
+            if quadratic:
+                ocp.J += casadi.dot(val, val) * weight
+            else:
+                ocp.J += casadi.sum1(val) * weight
+
+        @staticmethod
+        def _parameter_modifier(penalty_function, parameters):
+            # Everything that should change the entry parameters depending on the penalty can be added here
+            PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
+
+        @staticmethod
+        def _span_checker(penalty_function, instant, nlp):
+            # Everything that is suspicious in terms of the span of the penalty function ca be checked here
+            PenaltyFunctionAbstract._span_checker(penalty_function, instant, nlp)
 
     @staticmethod
-    def minimize_markers_displacement(ocp, nlp, weight=1, markers_idx=()):
-        n_q = nlp["nbQ"]
-        markers_idx = ObjectiveFunction.__check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
+    def add(ocp, nlp):
+        for objective in nlp["objective_functions"]:
+            if objective["type"]._get_type() == ObjectiveFunction.LagrangeFunction:
+                if "instant" in objective.keys() and objective["instant"] != Instant.ALL:
+                    raise RuntimeError("Lagrange objective are for Instant.ALL, did you mean Mayer?")
+                objective["instant"] = Instant.ALL
+            elif objective["type"]._get_type() == ObjectiveFunction.MayerFunction:
+                if "instant" not in objective.keys():
+                    objective["instant"] = Instant.END
+            else:
+                raise RuntimeError("Objective function Type must be either a Lagrange or Mayer type")
 
-        for i in range(nlp["ns"]):
-            for j in markers_idx:
-                ocp.J += (
-                    casadi.dot(
-                        nlp["model"].marker(nlp["X"][i][:n_q], j).to_mx()
-                        - nlp["model"].marker(nlp["X"][i + 1][:n_q], j).to_mx(),
-                        nlp["model"].marker(nlp["X"][i][:n_q], j).to_mx()
-                        - nlp["model"].marker(nlp["X"][i + 1][:n_q], j).to_mx(),
-                    )
-                    * nlp["dt"]
-                    * nlp["dt"]
-                    * weight
-                )
+        PenaltyFunctionAbstract._add(ocp, nlp, "objective_functions")
 
-    @staticmethod
-    def minimize_markers_velocity(ocp, nlp, weight=1, markers_idx=()):
-        n_q = nlp["nbQ"]
-        n_qdot = nlp["nbQdot"]
-        markers_idx = ObjectiveFunction.__check_var_size(markers_idx, nlp["model"].nbMarkers(), "markers_idx")
+    #
+    # @staticmethod
+    # def cyclic(ocp, weight=1):
+    #
+    #     if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
+    #         raise RuntimeError("Cyclic constraint without same nx is not supported yet")
+    #
+    #     ocp.J += (
+    #         casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
+    #     )
 
-        for i in range(nlp["ns"] + 1):
-            for j in markers_idx:
-                ocp.J += (
-                    casadi.dot(
-                        nlp["model"].markerVelocity(nlp["X"][i][:n_q], nlp["X"][i][n_q : n_q + n_qdot], j).to_mx(),
-                        nlp["model"].markerVelocity(nlp["X"][i][:n_q], nlp["X"][i][n_q : n_q + n_qdot], j).to_mx(),
-                    )
-                    * nlp["dt"]
-                    * nlp["dt"]
-                    * weight
-                )
 
-    @staticmethod
-    def minimize_torque(ocp, nlp, weight=1, controls_idx=(), data_to_track=()):
-        n_tau = nlp["nbTau"]
-        controls_idx = ObjectiveFunction.__check_var_size(controls_idx, n_tau, "controls_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"], max(controls_idx) + 1])
+class Objective:
+    class Lagrange(Enum):
+        """
+        Different conditions between biorbd geometric structures.
+        """
 
-        for i in range(nlp["ns"]):
-            ocp.J += (
-                casadi.dot(
-                    nlp["U"][i][controls_idx] - data_to_track[i, controls_idx],
-                    nlp["U"][i][controls_idx] - data_to_track[i, controls_idx],
-                )
-                * nlp["dt"]
-                * nlp["dt"]
-                * weight
-            )
+        MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
+        TRACK_STATE = (PenaltyType.TRACK_STATE,)
+        MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
+        TRACK_MARKERS = (PenaltyType.TRACK_MARKERS,)
+        MINIMIZE_MARKERS_DISPLACEMENT = (PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT,)
+        MINIMIZE_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
+        TRACK_MARKERS_VELOCITY = (PenaltyType.TRACK_MARKERS_VELOCITY,)
+        ALIGN_MARKERS = (PenaltyType.ALIGN_MARKERS,)
+        PROPORTIONAL_STATE = (PenaltyType.PROPORTIONAL_STATE,)
+        PROPORTIONAL_CONTROL = (PenaltyType.PROPORTIONAL_CONTROL,)
+        MINIMIZE_TORQUE = (PenaltyType.MINIMIZE_TORQUE,)
+        TRACK_TORQUE = (PenaltyType.TRACK_TORQUE,)
+        MINIMIZE_MUSCLES_CONTROL = (PenaltyType.MINIMIZE_MUSCLES_CONTROL,)
+        TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
+        MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
+        TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
+        MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyType.MINIMIZE_PREDICTED_COM_HEIGHT,)
+        ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
+        ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
+        CUSTOM = (PenaltyType.CUSTOM,)
 
-    @staticmethod
-    def minimize_muscle(ocp, nlp, weight=1, muscles_idx=(), data_to_track=()):
-        n_tau = nlp["nbTau"]
-        nb_muscle = nlp["nbMuscle"]
-        muscles_idx = ObjectiveFunction.__check_var_size(muscles_idx, nb_muscle, "muscles_idx")
-        data_to_track = ObjectiveFunction.__check_tracking_data_size(data_to_track, [nlp["ns"], max(muscles_idx) + 1])
+        @staticmethod
+        def _get_type():
+            return ObjectiveFunction.LagrangeFunction
 
-        # Add the nbTau offset to the muscle index
-        muscles_idx_plus_tau = [idx + n_tau for idx in muscles_idx]
-        for i in range(nlp["ns"]):
-            ocp.J += (
-                casadi.dot(
-                    nlp["U"][i][muscles_idx_plus_tau] - data_to_track[i, muscles_idx],
-                    nlp["U"][i][muscles_idx_plus_tau] - data_to_track[i, muscles_idx],
-                )
-                * nlp["dt"]
-                * nlp["dt"]
-                * weight
-            )
+    class Mayer(Enum):
+        """
+        Different conditions between biorbd geometric structures.
+        """
 
-    @staticmethod
-    def minimize_all_controls(ocp, nlp, weight=1):
-        for i in range(nlp["ns"]):
-            ocp.J += casadi.dot(nlp["U"][i], nlp["U"][i]) * nlp["dt"] * nlp["dt"] * weight
+        MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
+        TRACK_STATE = (PenaltyType.TRACK_STATE,)
+        MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
+        TRACK_MARKERS = (PenaltyType.TRACK_MARKERS,)
+        MINIMIZE_MARKERS_DISPLACEMENT = (PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT,)
+        MINIMIZE_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
+        TRACK_MARKERS_VELOCITY = (PenaltyType.TRACK_MARKERS_VELOCITY,)
+        ALIGN_MARKERS = (PenaltyType.ALIGN_MARKERS,)
+        PROPORTIONAL_STATE = (PenaltyType.PROPORTIONAL_STATE,)
+        PROPORTIONAL_CONTROL = (PenaltyType.PROPORTIONAL_CONTROL,)
+        MINIMIZE_TORQUE = (PenaltyType.MINIMIZE_TORQUE,)
+        TRACK_TORQUE = (PenaltyType.TRACK_TORQUE,)
+        MINIMIZE_MUSCLES_CONTROL = (PenaltyType.MINIMIZE_MUSCLES_CONTROL,)
+        TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
+        MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
+        TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
+        MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyType.MINIMIZE_PREDICTED_COM_HEIGHT,)
+        ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
+        ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
+        CUSTOM = (PenaltyType.CUSTOM,)
 
-    @staticmethod
-    def cyclic(ocp, weight=1):
-
-        if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
-            raise RuntimeError("Cyclic constraint without same nx is not supported yet")
-
-        ocp.J += (
-            casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
-        )
-
-    @staticmethod
-    def minimize_distance_between_two_markers(ocp, nlp, first_marker, second_marker, weight=1, node=-1):
-
-        q = nlp["q_mapping"].expand.map(nlp["X"][node][: nlp["nbQ"]])
-        marker0 = nlp["model"].marker(q, first_marker).to_mx()
-        marker1 = nlp["model"].marker(q, second_marker).to_mx()
-
-        ocp.J += casadi.dot(marker0 - marker1, marker0 - marker1) * weight
-
-    @staticmethod
-    def maximize_predicted_height_jump(ocp, nlp, weight=1, node=-1):
-        g = -9.81  # get gravity from biorbd
-        q = nlp["q_mapping"].expand.map(nlp["X"][node][: nlp["nbQ"]])
-        q_dot = nlp["q_dot_mapping"].expand.map(nlp["X"][node][nlp["nbQ"] :])
-        CoM = nlp["model"].CoM(q).to_mx()
-        CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
-        jump_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
-
-        ocp.J -= jump_height * weight
-
-    @staticmethod
-    def __check_var_size(var_idx, target_size, var_name="var"):
-        if var_idx == ():
-            var_idx = range(target_size)
-        else:
-            if isinstance(var_idx, int):
-                var_idx = [var_idx]
-            if max(var_idx) > target_size:
-                raise RuntimeError(f"{var_name} in minimize_states cannot be higher than nx ({target_size})")
-        return var_idx
-
-    @staticmethod
-    def __check_tracking_data_size(data_to_track, target_size):
-        if data_to_track == ():
-            data_to_track = np.zeros(target_size)
-        else:
-            if len(data_to_track.shape) != len(target_size):
-                if target_size[1] == 1 and len(data_to_track.shape) == 1:
-                    # If we have a vector it is still okay
-                    data_to_track = data_to_track.reshape(data_to_track.shape[0], 1)
-                else:
-                    raise RuntimeError(
-                        f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}"
-                    )
-            for i in range(len(target_size)):
-                if data_to_track.shape[i] < target_size[i]:
-                    raise RuntimeError(
-                        f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}"
-                    )
-        return data_to_track
+        @staticmethod
+        def _get_type():
+            return ObjectiveFunction.MayerFunction
