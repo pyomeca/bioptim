@@ -119,7 +119,7 @@ def prepare_ocp(
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
-    variable_type = ProblemType.muscles_and_torque_driven
+    variable_type = ProblemType.muscle_activations_and_torque_driven
 
     # Constraints
     constraints = ()
