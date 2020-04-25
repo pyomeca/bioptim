@@ -12,25 +12,33 @@ from biorbd_optim import ProblemType
 # Load eocarSym
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "eocarSym", str(PROJECT_FOLDER) + "/examples/emg_and_marker_tracking/emg_tracker.py",
+    "eocarSym", str(PROJECT_FOLDER) + "/examples/muscle_and_marker_tracking/muscle_activation_tracker.py",
 )
-emg_tracker = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(emg_tracker)
+muscle_activation_tracker = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(muscle_activation_tracker)
+
+# Load eocarSym
+PROJECT_FOLDER = Path(__file__).parent / ".."
+spec = importlib.util.spec_from_file_location(
+    "eocarSym", str(PROJECT_FOLDER) + "/examples/muscle_and_marker_tracking/muscle_excitation_tracker.py",
+)
+muscle_excitation_tracker = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(muscle_excitation_tracker)
 
 
-def test_emg_and_states_tracking():
+def test_muscle_activation_and_states_tracking():
     # Define the problem
-    model_path = str(PROJECT_FOLDER) + "/examples/emg_and_marker_tracking/arm26.bioMod"
+    model_path = str(PROJECT_FOLDER) + "/examples/muscle_and_marker_tracking/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 2
     nb_shooting = 29
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_activations_ref = emg_tracker.generate_data(biorbd_model, final_time, nb_shooting)
+    t, markers_ref, x_ref, muscle_activations_ref = muscle_activation_tracker.generate_data(biorbd_model, final_time, nb_shooting)
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
-    ocp = emg_tracker.prepare_ocp(
+    ocp = muscle_activation_tracker.prepare_ocp(
         biorbd_model,
         final_time,
         nb_shooting,
@@ -72,19 +80,19 @@ def test_emg_and_states_tracking():
     )
 
 
-def test_emg_and_markers_tracking():
+def test_muscle_excitation_and_markers_tracking():
     # Define the problem
-    model_path = str(PROJECT_FOLDER) + "/examples/emg_and_marker_tracking/arm26.bioMod"
+    model_path = str(PROJECT_FOLDER) + "/examples/muscle_and_marker_tracking/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 2
     nb_shooting = 29
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_activations_ref = emg_tracker.generate_data(biorbd_model, final_time, nb_shooting)
+    t, markers_ref, x_ref, muscle_activations_ref = muscle_excitation_tracker.generate_data(biorbd_model, final_time, nb_shooting)
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
-    ocp = emg_tracker.prepare_ocp(
+    ocp = muscle_excitation_tracker.prepare_ocp(
         biorbd_model,
         final_time,
         nb_shooting,

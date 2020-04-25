@@ -31,7 +31,6 @@ def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
 
     # Dynamics
     problem_type = ProblemType.muscle_activations_and_torque_driven
-    # problem_type = ProblemType.torque_driven
 
     # Constraints
     constraints = ()

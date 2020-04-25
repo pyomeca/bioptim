@@ -73,7 +73,6 @@ class ProblemType:
 
     @staticmethod
     def muscle_activations_and_torque_driven(nlp):
-        # old name : muscles_and_torque_driven. Normaly, I check all files to change it, but I let here to be sure.
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques and muscles.
@@ -104,6 +103,7 @@ class ProblemType:
         nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()
 
         u = MX()
+        x = MX()
         muscle_names = nlp["model"].muscleNames()
         for i in range(nlp["nbMuscle"]):
             u = vertcat(u, MX.sym("Muscle_" + muscle_names[i].to_string() + "_excitation"))
