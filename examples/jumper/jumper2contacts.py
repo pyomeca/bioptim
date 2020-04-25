@@ -15,10 +15,17 @@ from biorbd_optim import (
 )
 
 
-class MyConstraints(Constraint):
+class MyConstraints:
     @staticmethod
-    def phase_one_transition_heel_take_off(ocp, nlp, x, u):
-        model = ocp.nlp[0]["model"]
+    def phase_one_transition_heel_take_off(ocp, nlp, t, x, u):
+        g = -9.81  # get gravity from biorbd
+        v = x[-1]
+        q = nlp["q_mapping"].expand.map(v[: nlp["nbQ"]])
+        q_dot = nlp["q_dot_mapping"].expand.map(v[nlp["nbQ"]:])
+        CoM = nlp["model"].CoM(q).to_mx()
+        CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
+        CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
+        return CoM_height
 
 
 def prepare_ocp(
@@ -58,8 +65,8 @@ def prepare_ocp(
     objective_functions = (
         (),
         (
-            {"type": ObjectiveFunction.maximize_predicted_height_jump, "weight": 1},
-            {"type": ObjectiveFunction.minimize_all_controls, "weight": 1 / 100},
+            {"type": ObjectiveFunction.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
+            {"type": ObjectiveFunction.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1 / 100},
         ),
     )
 
@@ -75,16 +82,16 @@ def prepare_ocp(
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
         constraints_first_phase.append(
-            {"type": Constraint.Type.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0,}
+            {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0,}
         )
     contact_axes = (1, 3)
     for i in contact_axes:
         constraints_second_phase.append(
-            {"type": Constraint.Type.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0,}
+            {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0,}
         )
     constraints_first_phase.append(
         {
-            "type": Constraint.Type.NON_SLIPPING,
+            "type": Constraint.NON_SLIPPING,
             "instant": Instant.ALL,
             "normal_component_idx": (1, 2, 4, 5),
             "tangential_component_idx": (0, 3),
@@ -93,14 +100,14 @@ def prepare_ocp(
     )
     constraints_first_phase.append(
         {
-            "type": Constraint.Type.CUSTOM,
+            "type": Constraint.CUSTOM,
             "function": MyConstraints.phase_one_transition_heel_take_off,
             "instant": Instant.ALL,
         }
     )
     constraints_second_phase.append(
         {
-            "type": Constraint.Type.NON_SLIPPING,
+            "type": Constraint.NON_SLIPPING,
             "instant": Instant.ALL,
             "normal_component_idx": (1, 3),
             "tangential_component_idx": (0, 2),
@@ -114,7 +121,7 @@ def prepare_ocp(
         for i in range(len(first_dof)):
             constraints_first_phase.append(
                 {
-                    "type": Constraint.Type.PROPORTIONAL_Q,
+                    "type": Constraint.PROPORTIONAL_Q,
                     "instant": Instant.ALL,
                     "first_dof": first_dof[i],
                     "second_dof": second_dof[i],
@@ -125,7 +132,7 @@ def prepare_ocp(
         for i in range(len(first_dof)):
             constraints_second_phase.append(
                 {
-                    "type": Constraint.Type.PROPORTIONAL_Q,
+                    "type": Constraint.PROPORTIONAL_Q,
                     "instant": Instant.ALL,
                     "first_dof": first_dof[i],
                     "second_dof": second_dof[i],

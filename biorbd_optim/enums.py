@@ -1,13 +1,13 @@
-import enum
+from enum import Enum, IntEnum
 
 
-class Axe(enum.IntEnum):
+class Axe(IntEnum):
     X = 0
     Y = 1
     Z = 2
 
 
-class OdeSolver(enum.Enum):
+class OdeSolver(Enum):
     """
     Four models to solve.
     RK is pretty much good balance.
@@ -19,7 +19,7 @@ class OdeSolver(enum.Enum):
     NO_SOLVER = 3
 
 
-class Instant(enum.Enum):
+class Instant(Enum):
     """
     Five groups of nodes.
     START: first node only.

@@ -25,8 +25,8 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False):
 
     # Add objective functions
     objective_functions = (
-        ({"type": ObjectiveFunction.minimize_torque, "weight": 100},),
-        ({"type": ObjectiveFunction.minimize_torque, "weight": 100},),
+        ({"type": ObjectiveFunction.Lagrange.MINIMIZE_TORQUE, "weight": 100},),
+        ({"type": ObjectiveFunction.Lagrange.MINIMIZE_TORQUE, "weight": 100},),
     )
 
     # Dynamics
@@ -36,14 +36,14 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False):
     constraints = (
         (
             {
-                "type": Constraint.Type.MARKERS_TO_MATCH,
+                "type": Constraint.ALIGN_MARKERS,
                 "instant": Instant.START,
                 "first_marker": 0,
                 "second_marker": 1,
             },
-            {"type": Constraint.Type.MARKERS_TO_MATCH, "instant": Instant.END, "first_marker": 0, "second_marker": 2,},
+            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker": 0, "second_marker": 2,},
         ),
-        ({"type": Constraint.Type.MARKERS_TO_MATCH, "instant": Instant.END, "first_marker": 0, "second_marker": 1,},),
+        ({"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker": 0, "second_marker": 1,},),
     )
 
     # Path constraint

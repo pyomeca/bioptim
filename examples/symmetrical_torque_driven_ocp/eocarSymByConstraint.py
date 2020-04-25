@@ -24,16 +24,16 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = {"type": ObjectiveFunction.minimize_torque, "weight": 100}
+    objective_functions = {"type": ObjectiveFunction.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
     variable_type = ProblemType.torque_driven
 
     # Constraints
     constraints = (
-        {"type": Constraint.Type.MARKERS_TO_MATCH, "instant": Instant.START, "first_marker": 0, "second_marker": 1,},
-        {"type": Constraint.Type.MARKERS_TO_MATCH, "instant": Instant.END, "first_marker": 0, "second_marker": 2,},
-        {"type": Constraint.Type.PROPORTIONAL_Q, "instant": Instant.ALL, "first_dof": 2, "second_dof": 3, "coef": -1,},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker": 0, "second_marker": 1,},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker": 0, "second_marker": 2,},
+        {"type": Constraint.PROPORTIONAL_STATE, "instant": Instant.ALL, "first_dof": 2, "second_dof": 3, "coef": -1,},
     )
 
     # Path constraint

@@ -133,7 +133,7 @@ class OptimalControlProgram:
                         raise RuntimeError("Each phase must declares its constraints (even if it is empty)")
             self.__add_to_nlp("constraints", constraints, False)
             for i in range(self.nb_phases):
-                Constraint.add_constraints(self, self.nlp[i])
+                Constraint.add(self, self.nlp[i])
 
         # Objective functions
         self.J = 0
@@ -149,7 +149,7 @@ class OptimalControlProgram:
                         raise RuntimeError("Each phase must declares its objective (even if it is empty)")
             self.__add_to_nlp("objective_functions", objective_functions, False)
             for i in range(self.nb_phases):
-                ObjectiveFunction.add_objective_functions(self, self.nlp[i])
+                ObjectiveFunction.add(self, self.nlp[i])
 
         if show_online_optim:
             self.show_online_optim_callback = OnlineCallback(self)
