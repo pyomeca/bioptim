@@ -14,8 +14,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     """
     Different conditions between biorbd geometric structures.
     """
-    class Functions:
 
+    class Functions:
         @staticmethod
         def contact_force_inequality(constraint_type, ocp, nlp, t, x, u, direction, idx, boundary):
             """
@@ -43,8 +43,17 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     ocp.g_bounds.max.append(boundary)
 
         @staticmethod
-        def non_slipping(constraint_type, ocp, nlp, t, x, u, normal_component_idx, tangential_component_idx,
-                         static_friction_coefficient):
+        def non_slipping(
+            constraint_type,
+            ocp,
+            nlp,
+            t,
+            x,
+            u,
+            normal_component_idx,
+            tangential_component_idx,
+            static_friction_coefficient,
+        ):
             """
             :param coeff: It is the coefficient of static friction.
             """
@@ -134,9 +143,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         # Everything that is suspicious in terms of the span of the penalty function ca be checked here
         super(ConstraintFunction, ConstraintFunction)._span_checker(constraint_function, instant, nlp)
         if (
-                constraint_function == Constraint.CONTACT_FORCE_GREATER_THAN.value[0]
-                or constraint_function == Constraint.CONTACT_FORCE_LESSER_THAN.value[0]
-                or constraint_function == Constraint.NON_SLIPPING.value[0]
+            constraint_function == Constraint.CONTACT_FORCE_GREATER_THAN.value[0]
+            or constraint_function == Constraint.CONTACT_FORCE_LESSER_THAN.value[0]
+            or constraint_function == Constraint.NON_SLIPPING.value[0]
         ):
             if instant == Instant.END or instant == nlp["ns"]:
                 raise RuntimeError("No control u at last node")
@@ -147,29 +156,29 @@ class Constraint(Enum):
     Different conditions between biorbd geometric structures.
     """
 
-    MINIMIZE_STATE = PenaltyType.MINIMIZE_STATE,
-    TRACK_STATE = PenaltyType.TRACK_STATE,
-    MINIMIZE_MARKERS = PenaltyType.MINIMIZE_MARKERS,
-    TRACK_MARKERS = PenaltyType.TRACK_MARKERS,
-    MINIMIZE_MARKERS_DISPLACEMENT = PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT,
-    MINIMIZE_MARKERS_VELOCITY = PenaltyType.MINIMIZE_MARKERS_VELOCITY,
-    TRACK_MARKERS_VELOCITY = PenaltyType.TRACK_MARKERS_VELOCITY,
-    ALIGN_MARKERS = PenaltyType.ALIGN_MARKERS,
-    PROPORTIONAL_STATE = PenaltyType.PROPORTIONAL_STATE,
-    PROPORTIONAL_CONTROL = PenaltyType.PROPORTIONAL_CONTROL,
-    MINIMIZE_TORQUE = PenaltyType.MINIMIZE_TORQUE,
-    TRACK_TORQUE = PenaltyType.TRACK_TORQUE,
-    MINIMIZE_MUSCLES_CONTROL = PenaltyType.MINIMIZE_MUSCLES_CONTROL,
-    TRACK_MUSCLES_CONTROL = PenaltyType.TRACK_MUSCLES_CONTROL,
-    MINIMIZE_ALL_CONTROLS = PenaltyType.MINIMIZE_ALL_CONTROLS,
-    TRACK_ALL_CONTROLS = PenaltyType.TRACK_ALL_CONTROLS,
-    MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyType.MINIMIZE_PREDICTED_COM_HEIGHT,
-    ALIGN_SEGMENT_WITH_CUSTOM_RT = PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,
-    ALIGN_MARKER_WITH_SEGMENT_AXIS = PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,
-    CUSTOM = PenaltyType.CUSTOM,
-    CONTACT_FORCE_GREATER_THAN = ConstraintFunction.Functions.contact_force_inequality,
-    CONTACT_FORCE_LESSER_THAN = ConstraintFunction.Functions.contact_force_inequality,
-    NON_SLIPPING = ConstraintFunction.Functions.non_slipping,
+    MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
+    TRACK_STATE = (PenaltyType.TRACK_STATE,)
+    MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
+    TRACK_MARKERS = (PenaltyType.TRACK_MARKERS,)
+    MINIMIZE_MARKERS_DISPLACEMENT = (PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT,)
+    MINIMIZE_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
+    TRACK_MARKERS_VELOCITY = (PenaltyType.TRACK_MARKERS_VELOCITY,)
+    ALIGN_MARKERS = (PenaltyType.ALIGN_MARKERS,)
+    PROPORTIONAL_STATE = (PenaltyType.PROPORTIONAL_STATE,)
+    PROPORTIONAL_CONTROL = (PenaltyType.PROPORTIONAL_CONTROL,)
+    MINIMIZE_TORQUE = (PenaltyType.MINIMIZE_TORQUE,)
+    TRACK_TORQUE = (PenaltyType.TRACK_TORQUE,)
+    MINIMIZE_MUSCLES_CONTROL = (PenaltyType.MINIMIZE_MUSCLES_CONTROL,)
+    TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
+    MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
+    TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
+    MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyType.MINIMIZE_PREDICTED_COM_HEIGHT,)
+    ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
+    ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
+    CUSTOM = (PenaltyType.CUSTOM,)
+    CONTACT_FORCE_GREATER_THAN = (ConstraintFunction.Functions.contact_force_inequality,)
+    CONTACT_FORCE_LESSER_THAN = (ConstraintFunction.Functions.contact_force_inequality,)
+    NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
 
     @staticmethod
     def _get_type():

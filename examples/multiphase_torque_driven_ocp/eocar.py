@@ -10,10 +10,11 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
+    OdeSolver,
 )
 
 
-def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False):
+def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
@@ -35,12 +36,7 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False):
     # Constraints
     constraints = (
         (
-            {
-                "type": Constraint.ALIGN_MARKERS,
-                "instant": Instant.START,
-                "first_marker": 0,
-                "second_marker": 1,
-            },
+            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker": 0, "second_marker": 1,},
             {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker": 0, "second_marker": 2,},
         ),
         ({"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker": 0, "second_marker": 1,},),
@@ -86,6 +82,7 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False):
         X_bounds,
         U_bounds,
         constraints,
+        ode_solver=ode_solver,
         show_online_optim=show_online_optim,
     )
 

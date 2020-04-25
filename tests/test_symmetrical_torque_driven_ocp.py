@@ -4,9 +4,10 @@ Test for file IO
 import importlib.util
 from pathlib import Path
 
+import pytest
 import numpy as np
 
-from biorbd_optim import ProblemType
+from biorbd_optim import ProblemType, OdeSolver
 
 # Load eocarSym
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -23,9 +24,11 @@ eocarSymByConstraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(eocarSymByConstraint)
 
 
-def test_eocar_sym_by_construction():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
+def test_eocar_sym_by_construction(ode_solver):
     ocp = eocarSymByConstruction.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSym.bioMod",
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -53,9 +56,11 @@ def test_eocar_sym_by_construction():
     np.testing.assert_almost_equal(tau[:, -1], np.array((-1.16129033, -1.16129033, 0.58458751)))
 
 
-def test_eocar_sym_by_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
+def test_eocar_sym_by_constraint(ode_solver):
     ocp = eocarSymByConstraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSym.bioMod"
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSym.bioMod",
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
