@@ -96,6 +96,7 @@ def prepare_ocp(
     # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
+    excitation_min, excitation_max, excitation_init = 0, 1, 0.5
 
     # Add objective functions
     objective_functions = [
@@ -119,24 +120,30 @@ def prepare_ocp(
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
-    variable_type = ProblemType.muscles_excitation_and_torque_driven
+    variable_type = ProblemType.muscle_excitations_and_torque_driven
 
     # Constraints
     constraints = ()
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
+    X_bounds.first_node_min += [activation_min] * biorbd_model.nbMuscleTotal()
+    X_bounds.first_node_max += [activation_max] * biorbd_model.nbMuscleTotal()
+    X_bounds.min += [activation_min] * biorbd_model.nbMuscleTotal()
+    X_bounds.max += [activation_max] * biorbd_model.nbMuscleTotal()
+    X_bounds.last_node_min += [activation_min] * biorbd_model.nbMuscleTotal()
+    X_bounds.last_node_max += [activation_max] * biorbd_model.nbMuscleTotal()
 
     # Initial guess
-    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot() + biorbd_model.nbMuscleTotal()))
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque() + [activation_min] * biorbd_model.nbMuscleTotal(),
-        [torque_max] * biorbd_model.nbGeneralizedTorque() + [activation_max] * biorbd_model.nbMuscleTotal(),
+        [torque_min] * biorbd_model.nbGeneralizedTorque() + [excitation_min] * biorbd_model.nbMuscleTotal(),
+        [torque_max] * biorbd_model.nbGeneralizedTorque() + [excitation_max] * biorbd_model.nbMuscleTotal(),
     )
     U_init = InitialConditions(
-        [torque_init] * biorbd_model.nbGeneralizedTorque() + [activation_init] * biorbd_model.nbMuscleTotal()
+        [torque_init] * biorbd_model.nbGeneralizedTorque() + [excitation_init] * biorbd_model.nbMuscleTotal()
     )
 
     # ------------- #
@@ -174,7 +181,7 @@ if __name__ == "__main__":
         markers_ref,
         muscle_activations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        show_online_optim=True,
+        show_online_optim=False,
         kin_data_to_track="markers",
     )
 
