@@ -109,6 +109,8 @@ class ObjectiveFunction:
 
     @staticmethod
     def minimize_muscle(ocp, nlp, weight=1, muscles_idx=(), data_to_track=()):
+        # It could be solve also for the activation than the excitation
+
         n_tau = nlp["nbTau"]
         nb_muscle = nlp["nbMuscle"]
         muscles_idx = ObjectiveFunction.__check_var_size(muscles_idx, nb_muscle, "muscles_idx")
