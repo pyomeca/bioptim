@@ -103,10 +103,9 @@ class Dynamics:
         tau = muscles_tau + residual_tau
 
         qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
-        qddot_reduced = nlp["dof_mapping"].reduce(qddot)
+        qddot_reduced = nlp["qdot_mapping"].reduce.map(qddot)
 
         return vertcat(muscles_activations, qdot_reduced, qddot_reduced)
-
 
     @staticmethod
     def __dispatch_data(states, controls, nlp):
