@@ -15,19 +15,6 @@ from biorbd_optim import (
 )
 
 
-# class MyConstraints:
-#     @staticmethod
-#     def phase_one_transition_heel_take_off(ocp, nlp, t, x, u):
-#         g = -9.81  # get gravity from biorbd
-#         v = x[-1]
-#         q = nlp["q_mapping"].expand.map(v[: nlp["nbQ"]])
-#         q_dot = nlp["q_dot_mapping"].expand.map(v[nlp["nbQ"]:])
-#         CoM = nlp["model"].CoM(q).to_mx()
-#         CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
-#         CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
-#         return CoM_height
-
-
 def prepare_ocp(
     show_online_optim=False, use_symmetry=True,
 ):
@@ -98,13 +85,6 @@ def prepare_ocp(
             "static_friction_coefficient": 0.5,
         }
     )
-    # constraints_first_phase.append(
-    #     {
-    #         "type": Constraint.CUSTOM,
-    #         "function": MyConstraints.phase_one_transition_heel_take_off,
-    #         "instant": Instant.ALL,
-    #     }
-    # )
     constraints_second_phase.append(
         {
             "type": Constraint.NON_SLIPPING,
@@ -255,7 +235,3 @@ if __name__ == "__main__":
     except ModuleNotFoundError:
         print("Install BiorbdViz if you want to have a live view of the optimization")
         plt.show()
-
-    # np.save("results2CF", q.T)
-    # S = np.load("/home/iornaith/Documents/GitKraken/biorbdOptim/BiorbdOptim/examples/jumper/results2.npy")
-    # print("Results loaded")
