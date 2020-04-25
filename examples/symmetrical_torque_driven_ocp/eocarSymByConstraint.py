@@ -1,12 +1,16 @@
 import biorbd
 
-from biorbd_optim import OptimalControlProgram
-from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.mapping import Mapping
-from biorbd_optim.objective_functions import ObjectiveFunction
-from biorbd_optim.constraints import Constraint
-from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
-from biorbd_optim.plot import ShowResult
+from biorbd_optim import (
+    Instant,
+    OptimalControlProgram,
+    ProblemType,
+    Objective,
+    Constraint,
+    Bounds,
+    QAndQDotBounds,
+    InitialConditions,
+    ShowResult,
+)
 
 
 def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
@@ -20,32 +24,16 @@ def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False):
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = {"type": ObjectiveFunction.minimize_torque, "weight": 100}
+    objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
     variable_type = ProblemType.torque_driven
 
     # Constraints
     constraints = (
-        {
-            "type": Constraint.Type.MARKERS_TO_MATCH,
-            "instant": Constraint.Instant.START,
-            "first_marker": 0,
-            "second_marker": 1,
-        },
-        {
-            "type": Constraint.Type.MARKERS_TO_MATCH,
-            "instant": Constraint.Instant.END,
-            "first_marker": 0,
-            "second_marker": 2,
-        },
-        {
-            "type": Constraint.Type.PROPORTIONAL_Q,
-            "instant": Constraint.Instant.ALL,
-            "first_dof": 2,
-            "second_dof": 3,
-            "coef": -1,
-        },
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker": 0, "second_marker": 1,},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker": 0, "second_marker": 2,},
+        {"type": Constraint.PROPORTIONAL_STATE, "instant": Instant.ALL, "first_dof": 2, "second_dof": 3, "coef": -1,},
     )
 
     # Path constraint

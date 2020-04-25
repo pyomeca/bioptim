@@ -1,12 +1,17 @@
 import numpy as np
 import biorbd
 
-from biorbd_optim import OptimalControlProgram
-from biorbd_optim.constraints import Constraint
-from biorbd_optim.objective_functions import ObjectiveFunction
-from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
-from biorbd_optim.plot import ShowResult
+from biorbd_optim import (
+    Instant,
+    OptimalControlProgram,
+    Constraint,
+    Objective,
+    ProblemType,
+    Bounds,
+    QAndQDotBounds,
+    InitialConditions,
+    ShowResult,
+)
 
 
 def prepare_ocp(biorbd_model_path="HandSpinner.bioMod", show_online_optim=False):
@@ -25,9 +30,9 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod", show_online_optim=False)
 
     # Add objective functions
     objective_functions = (
-        {"type": ObjectiveFunction.minimize_markers_displacement, "weight": 1, "markers_idx": hand_marker_idx},
-        {"type": ObjectiveFunction.minimize_muscle, "weight": 1,},
-        {"type": ObjectiveFunction.minimize_torque, "weight": 1,},
+        {"type": Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, "weight": 1, "markers_idx": hand_marker_idx},
+        {"type": Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, "weight": 1},
+        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
     )
 
     # Dynamics
@@ -36,14 +41,14 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod", show_online_optim=False)
     # Constraints
     constraints = (
         {
-            "type": Constraint.Type.MARKERS_TO_MATCH,
+            "type": Constraint.ALIGN_MARKERS,
             "first_marker": hand_marker_idx,
             "second_marker": end_crank_idx,
-            "instant": Constraint.Instant.ALL,
+            "instant": Instant.ALL,
         },
         {
-            "type": Constraint.Type.TRACK_Q,
-            "instant": Constraint.Instant.ALL,
+            "type": Constraint.TRACK_STATE,
+            "instant": Instant.ALL,
             "states_idx": 0,
             "data_to_track": np.linspace(0, 2 * np.pi, number_shooting_points + 1),
         },
