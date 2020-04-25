@@ -58,7 +58,7 @@ class PlotOcp:
                 self.all_figures[-1].tight_layout()
 
             if (
-                self.problem_type == ProblemType.muscles_activation_and_torque_driven
+                self.problem_type == ProblemType.muscle_activations_and_torque_driven
                 or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
             ):
 
@@ -104,21 +104,21 @@ class PlotOcp:
         if self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven:
             height_step = int(tkinter.Tk().winfo_screenheight() / len(self.all_figures))
         if (
-            self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_activation_and_torque_driven
+            self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
             or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
         ):
             height_step = int(tkinter.Tk().winfo_screenheight() / (len(self.all_figures) - 1))
 
         for i, fig in enumerate(self.all_figures):
             if (
-                self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_activation_and_torque_driven
+                self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
                 or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
             ) and fig == self.all_figures[-1]:
                 fig.canvas.manager.window.move(muscle_position, 0)
 
             elif (
                 self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven
-                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_activation_and_torque_driven
+                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
                 or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
             ):
                 fig.canvas.manager.window.move(20, i * height_step)
@@ -144,7 +144,7 @@ class PlotOcp:
             if (
                 self.problem_type == ProblemType.torque_driven
                 or self.problem_type == ProblemType.torque_driven_with_contact
-                or self.problem_type == ProblemType.muscles_activation_and_torque_driven
+                or self.problem_type == ProblemType.muscle_activations_and_torque_driven
                 or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
             ):
                 if (
@@ -158,7 +158,7 @@ class PlotOcp:
                     self.__update_ydata(tau, nlp["nbTau"], i)
 
                 elif (
-                    self.problem_type == ProblemType.muscles_activation_and_torque_driven
+                    self.problem_type == ProblemType.muscle_activations_and_torque_driven
                     or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
                 ):
                     q, q_dot, tau, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
