@@ -4,9 +4,10 @@ Test for file IO
 import importlib.util
 from pathlib import Path
 
+import pytest
 import numpy as np
 
-from biorbd_optim import ProblemType
+from biorbd_optim import ProblemType, OdeSolver
 
 # Load eocar
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -15,8 +16,11 @@ eocar = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(eocar)
 
 
-def test_eocar():
-    ocp = eocar.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/eocar.bioMod")
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
+def test_eocar(ode_solver):
+    ocp = eocar.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/eocar.bioMod", ode_solver=ode_solver
+    )
     sol = ocp.solve()
 
     # Check objective function value
