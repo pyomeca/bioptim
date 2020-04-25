@@ -60,7 +60,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         u = np.concatenate([np.array((0, 0)), u])
         return np.array(dynamics_func(x, u)).squeeze()
 
-    # Generate some muscle activation
+    # Generate some muscle excitations
     U = np.random.rand(nb_shooting, nb_mus)
 
     # Integrate and collect the position of the markers accordingly
@@ -88,7 +88,7 @@ def prepare_ocp(
     final_time,
     nb_shooting,
     markers_ref,
-    activations_ref,
+    excitations_ref,
     q_ref,
     kin_data_to_track="markers",
     show_online_optim=False,
@@ -100,7 +100,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = [
-        {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": activations_ref},
+        {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": excitations_ref},
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
     ]
     if kin_data_to_track == "markers":
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     n_shooting_points = 29
 
     # Generate random data to fit
-    t, markers_ref, x_ref, muscle_activations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
+    t, markers_ref, x_ref, muscle_excitations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
 
     # Track these data
     biorbd_model = biorbd.Model("arm26.bioMod")  # To allow for non free variable, the model must be reloaded
@@ -179,7 +179,7 @@ if __name__ == "__main__":
         final_time,
         n_shooting_points,
         markers_ref,
-        muscle_activations_ref,
+        muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
         show_online_optim=False,
         kin_data_to_track="markers",
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     # --- Show the results --- #
-    muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
+    muscle_excitations_ref = np.append(muscle_excitations_ref, muscle_excitations_ref[-1:, :], axis=0)
 
     q, qdot, tau, mus = ProblemType.get_data_from_V(ocp, sol["x"])
     n_q = ocp.nlp[0]["model"].nbQ()
@@ -224,8 +224,8 @@ if __name__ == "__main__":
     plt.figure("Tau")
     plt.step(np.linspace(0, 2, n_shooting_points + 1), tau.T, where="post")
 
-    plt.figure("Muscle activations")
-    plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_activations_ref, "k", where="post")
+    plt.figure("Muscle excitations")
+    plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_excitations_ref, "k", where="post")
     plt.step(np.linspace(0, 2, n_shooting_points + 1), mus.T, "r--", where="post")
 
     # --- Plot --- #
