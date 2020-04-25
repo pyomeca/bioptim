@@ -35,7 +35,9 @@ def test_muscle_activations_and_states_tracking():
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_activations_ref = muscle_activations_tracker.generate_data(biorbd_model, final_time, nb_shooting)
+    t, markers_ref, x_ref, muscle_activations_ref = muscle_activations_tracker.generate_data(
+        biorbd_model, final_time, nb_shooting
+    )
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = muscle_activations_tracker.prepare_ocp(
