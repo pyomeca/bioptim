@@ -204,6 +204,11 @@ class ShowResult:
         plt.show()
 
     def animate(self, nb_frames=80, **kwargs):
+        try:
+            from BiorbdViz import BiorbdViz
+        except ModuleNotFoundError:
+            raise RuntimeError("BiorbdViz must be installed for animating the optimization")
+        
         x = ProblemType.get_q_from_V(self.ocp, self.sol["x"])
         t = [
             np.array(np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1))
@@ -234,11 +239,6 @@ class ShowResult:
                     t_concat = np.concatenate((t_concat, t[i][1:] + t_concat[-1]))
                 x = [x_concat]
                 t = [t_concat]
-
-        try:
-            from BiorbdViz import BiorbdViz
-        except ModuleNotFoundError:
-            print("Install BiorbdViz if you want to have a live view of the optimization")
 
         for i, x_phase in enumerate(x):
             x_interpolate = np.ndarray((self.ocp.nlp[i]["nbQ"], nb_frames))
