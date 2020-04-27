@@ -8,6 +8,7 @@ from .path_conditions import Bounds, InitialConditions
 from .constraints import Constraint, ConstraintFunction
 from .objective_functions import ObjectiveFunction
 from .plot import OnlineCallback
+from .__version__ import __version__
 
 
 class OptimalControlProgram:
