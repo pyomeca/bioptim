@@ -95,4 +95,6 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
+    result.graphs()
     result.animate()
+    OptimalControlProgram.save(ocp, sol, "eocar_ocp_sol")
