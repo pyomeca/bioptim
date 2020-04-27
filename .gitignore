@@ -96,3 +96,4 @@ examples/biorbd_optim
 # Remove other development artifacts
 examples/sandbox
 *.npy
+*.bo
