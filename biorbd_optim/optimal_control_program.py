@@ -298,8 +298,17 @@ class OptimalControlProgram:
 
     def _get_a_reduced_ocp(self):
         reduced_ocp = copy(self)
-        delattr(object, "tata")
-
+        del (
+            reduced_ocp.J,
+            reduced_ocp.V,
+            reduced_ocp.V_bounds,
+            reduced_ocp.V_init,
+            reduced_ocp.g,
+            reduced_ocp.g_bounds,
+            reduced_ocp.show_online_optim_callback,
+            reduced_ocp.symbolic_controls,
+            reduced_ocp.symbolic_states,
+        )
         for nlp in reduced_ocp.nlp:
             del (
                 nlp["model"],
@@ -311,16 +320,16 @@ class OptimalControlProgram:
         return reduced_ocp
 
     @staticmethod
-    def save(ocp, sol):
-        with open("tata", "wb") as file:
+    def save(ocp, sol, name):
+        with open(name, "wb") as file:
             pickle.dump({"ocp": OptimalControlProgram._get_a_reduced_ocp(ocp), "sol": sol}, file)
 
     @staticmethod
-    def load( biorbd_model_path, name):
+    def load(biorbd_model_path, name):
         with open(name, "rb") as file:
             data = pickle.load(file)
             ocp = data["ocp"]
             sol = data["sol"]
             for nlp in ocp.nlp:
                 nlp["model"] = biorbd.Model(biorbd_model_path)
-
+        return (ocp, sol)
