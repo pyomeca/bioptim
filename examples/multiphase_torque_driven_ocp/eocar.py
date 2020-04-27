@@ -55,6 +55,10 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=False, ode_s
                 bounds.last_node_max[i] = 0
     X_bounds[0].first_node_min[2] = 0.0
     X_bounds[0].first_node_max[2] = 0.0
+    X_bounds[1].first_node_min[2] = 0.0
+    X_bounds[1].first_node_max[2] = 0.0
+    X_bounds[1].last_node_min[2] = 1.57
+    X_bounds[1].last_node_max[2] = 1.57
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
@@ -98,4 +102,3 @@ if __name__ == "__main__":
     result = ShowResult(ocp, sol)
     result.graphs()
     result.animate()
-    OptimalControlProgram.save(ocp, sol, "eocar_ocp_sol")
