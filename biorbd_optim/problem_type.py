@@ -210,7 +210,7 @@ class ProblemType:
 
     @staticmethod
     def get_q_from_V(ocp, V, num_phase=None):
-        if ocp.nlp[0]["problem_type"] == ProblemType.torque_driven:
+        if ocp.nlp[0]["problem_type"] == ProblemType.torque_driven or ocp.nlp[0]["problem_type"] == ProblemType.torque_driven_with_contact:
             x, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
 
         elif (
