@@ -101,12 +101,14 @@ class PenaltyFunctionAbstract:
             """
             if which_var == "states":
                 ux = x
+                nb_val = nlp["nx"]
             elif which_var == "controls":
                 ux = u
+                nb_val = nlp["nu"]
             else:
                 raise RuntimeError("Wrong choice of which_var")
 
-            PenaltyFunctionAbstract._check_idx("dof", (first_dof, second_dof), len(ux))
+            PenaltyFunctionAbstract._check_idx("dof", (first_dof, second_dof), nb_val)
             if not isinstance(coef, (int, float)):
                 raise RuntimeError("coef must be an int or a float")
 
