@@ -101,7 +101,7 @@ def prepare_ocp(
         for i in range(len(first_dof)):
             constraints_first_phase.append(
                 {
-                    "type": Constraint.PROPORTIONAL_Q,
+                    "type": Constraint.PROPORTIONAL_STATE,
                     "instant": Instant.ALL,
                     "first_dof": first_dof[i],
                     "second_dof": second_dof[i],
@@ -112,7 +112,7 @@ def prepare_ocp(
         for i in range(len(first_dof)):
             constraints_second_phase.append(
                 {
-                    "type": Constraint.PROPORTIONAL_Q,
+                    "type": Constraint.PROPORTIONAL_STATE,
                     "instant": Instant.ALL,
                     "first_dof": first_dof[i],
                     "second_dof": second_dof[i],
@@ -136,7 +136,7 @@ def prepare_ocp(
             0,
             1.4,
             0,
-            -1.4,
+            1.4,
             0.8,
             -0.9,
             0.47,
@@ -184,7 +184,7 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True, use_symmetry=True)
+    ocp = prepare_ocp(show_online_optim=True, use_symmetry=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()
