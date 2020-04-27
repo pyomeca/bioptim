@@ -207,49 +207,86 @@ class ShowResult:
         try:
             from BiorbdViz import BiorbdViz
         except ModuleNotFoundError:
-            raise RuntimeError("BiorbdViz must be installed for animating the optimization")
-        
+            raise RuntimeError("BiorbdViz must be install to animate the model")
+
         x = ProblemType.get_q_from_V(self.ocp, self.sol["x"])
-        t = [
-            np.array(np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1))
-            for i in range(self.ocp.nb_phases)
-        ]
+        t = self.__generate_time()
 
         if self.ocp.nb_phases == 1:
             x = [x]
 
-        else:
-            same_dof = True
-            for i in range(self.ocp.nb_phases):
-                for k in range(self.ocp.nlp[0]["model"].nbDof()):
-                    if (
-                        self.ocp.nlp[i]["model"].nameDof()[k].to_string()
-                        != self.ocp.nlp[i - 1]["model"].nameDof()[k].to_string()
-                    ):
-                        same_dof = False
-                        break
-                if not same_dof:
-                    break
-
-            if same_dof:
-                x_concat = x[0]
-                t_concat = t[0]
-                for i in range(1, self.ocp.nb_phases):
-                    x_concat = np.concatenate((x_concat, x[i][:, 1:]), axis=1)
-                    t_concat = np.concatenate((t_concat, t[i][1:] + t_concat[-1]))
-                x = [x_concat]
-                t = [t_concat]
+        elif self.__compatible_phases():
+            x = self.__concatenate_dof(x)
+            t = self.__concatenate_time(t)
 
         for i, x_phase in enumerate(x):
-            x_interpolate = np.ndarray((self.ocp.nlp[i]["nbQ"], nb_frames))
-            t_interpolate = np.linspace(0, t[i][-1], nb_frames)
-            for j in range(self.ocp.nlp[i]["nbQ"]):
-                tck = interpolate.splrep(t[i], x_phase[j], s=0)
-                x_interpolate[j] = interpolate.splev(t_interpolate, tck)
-
+            # integrated_t, integrated_state = self.__integrate(i, x_phase, t)
+            x_interpolate = self.__interpolate(i, x_phase, t, nb_frames)
             b = BiorbdViz(loaded_model=self.ocp.nlp[i]["model"], **kwargs)
             b.load_movement(x_interpolate.T)
             b.exec()
+        return x_interpolate.T
+
+    def __compatible_phases(self):
+        for i in range(self.ocp.nb_phases):
+            for k in range(self.ocp.nlp[0]["model"].nbDof()):
+                if (
+                    self.ocp.nlp[i]["model"].nameDof()[k].to_string()
+                    != self.ocp.nlp[i - 1]["model"].nameDof()[k].to_string()
+                ):
+                    return False
+        return True
+
+    def __generate_time(self):
+        return [
+            np.array(np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1))
+            for i in range(self.ocp.nb_phases)
+        ]
+
+    def __concatenate_dof(self, dof):
+        d = dof[0]
+        for i in range(1, self.ocp.nb_phases):
+            d = np.concatenate((d, dof[i][:, 1:]), axis=1)
+        return [d]
+
+    def __concatenate_time(self, time):
+        t = time[0]
+        for i in range(1, self.ocp.nb_phases):
+            t = np.concatenate((t, time[i][1:] + t[-1]))
+        return [t]
+
+    # def __integrate(self, idx_phase, x_phase, t):
+    #     tf = self.ocp.nlp[idx_phase]["tf"]
+    #     integrated_t, integrated_state = (
+    #         np.ndarray(0),
+    #         np.ndarray((self.ocp.nlp[idx_phase]["nbQ"] + self.ocp.nlp[idx_phase]["nbQdot"], 0)),
+    #     )
+    #
+    #     for i in range(len(t) - 1):
+    #         integration = integrate.solve_ivp(
+    #             fun=lambda tf, y: TODO use good dynamics function
+    #             y0=x_phase[:, i],
+    #             t_span=(t[i], t[i + 1]),
+    #             method="RK45",
+    #             atol=1e-8,
+    #             rtol=1e-6,
+    #         )
+    #
+    #         if i < len(t) - 2:
+    #             integrated_t = np.concatenate(integrated_t, integration.t[:-1])
+    #             integrated_state = np.concatenate((integrated_state, integration.y[:, :-1]), axis=1)
+    #         else:
+    #             integrated_t = np.concatenate(integrated_t, integration.t)
+    #             integrated_state = np.concatenate((integrated_state, integration.y), axis=1)
+    #     return integrated_t, integrated_state
+
+    def __interpolate(self, idx_phase, x_phase, t, nb_frames):
+        x_interpolate = np.ndarray((self.ocp.nlp[idx_phase]["nbQ"], nb_frames))
+        for j in range(self.ocp.nlp[idx_phase]["nbQ"]):
+            x_interpolate[j] = interpolate.splev(
+                np.linspace(0, t[idx_phase][-1], nb_frames), interpolate.splrep(t[idx_phase], x_phase[j], s=0)
+            )
+        return x_interpolate
 
     @staticmethod
     def keep_matplotlib():
