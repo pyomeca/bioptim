@@ -1,3 +1,6 @@
+from copy import copy
+import pickle
+
 import biorbd
 import casadi
 from casadi import MX, vertcat
@@ -63,6 +66,8 @@ class OptimalControlProgram:
             biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
         else:
             raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
+        self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "biorbd_optim": __version__}
+
         self.nb_phases = len(biorbd_model)
         self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
@@ -291,5 +296,31 @@ class OptimalControlProgram:
         # Solve the problem
         return solver.call(arg)
 
-    def show(self):
-        pass
+    def _get_a_reduced_ocp(self):
+        reduced_ocp = copy(self)
+        delattr(object, "tata")
+
+        for nlp in reduced_ocp.nlp:
+            del (
+                nlp["model"],
+                nlp["x"],
+                nlp["u"],
+                nlp["X"],
+                nlp["U"],
+            )
+        return reduced_ocp
+
+    @staticmethod
+    def save(ocp, sol):
+        with open("tata", "wb") as file:
+            pickle.dump({"ocp": OptimalControlProgram._get_a_reduced_ocp(ocp), "sol": sol}, file)
+
+    @staticmethod
+    def load( biorbd_model_path, name):
+        with open(name, "rb") as file:
+            data = pickle.load(file)
+            ocp = data["ocp"]
+            sol = data["sol"]
+            for nlp in ocp.nlp:
+                nlp["model"] = biorbd.Model(biorbd_model_path)
+
