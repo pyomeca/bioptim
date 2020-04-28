@@ -26,7 +26,7 @@ def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     objective_functions = (
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
         {"type": Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, "weight": 1},
-        {"type": Objective.Mayer.ALIGN_MARKERS, "first_marker": 0, "second_marker": 5, "weight": 1,},
+        {"type": Objective.Mayer.ALIGN_MARKERS, "first_marker_idx": 0, "second_marker_idx": 5, "weight": 1, },
     )
 
     # Dynamics
@@ -79,5 +79,5 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.animate(show_meshes=False)
+    result.animate(show_meshes=True)
     result.graphs()
