@@ -21,8 +21,22 @@ segment Seg1
 	  0 1 0
 	  0 0 1
 	com 0 0 0
-	mesh 0 0 0
-	mesh  0 1 0
+  mesh -0.1 1 -0.1
+  mesh -0.1 0 -0.1
+  mesh -0.1 0 0.1
+  mesh -0.1 1 0.1
+  mesh -0.1 1 -0.1
+  mesh 0.1 1 -0.1
+  mesh 0.1 0 -0.1
+  mesh -0.1 0 -0.1
+  mesh 0.1 0 -0.1
+  mesh 0.1 0 0.1
+  mesh -0.1 0 0.1
+  mesh 0.1 0 0.1
+  mesh 0.1 1 0.1
+  mesh -0.1 1 0.1
+  mesh 0.1 1 0.1
+  mesh 0.1 1 -0.1
 endsegment
 
 // Seg2
@@ -36,8 +50,22 @@ segment Seg2
 	  0 1 0
 	  0 0 1
 	com 0 0 0
-	mesh 0 0 0
-	mesh  0 1 0
+  mesh -0.1 1 -0.1
+  mesh -0.1 0 -0.1
+  mesh -0.1 0 0.1
+  mesh -0.1 1 0.1
+  mesh -0.1 1 -0.1
+  mesh 0.1 1 -0.1
+  mesh 0.1 0 -0.1
+  mesh -0.1 0 -0.1
+  mesh 0.1 0 -0.1
+  mesh 0.1 0 0.1
+  mesh -0.1 0 0.1
+  mesh 0.1 0 0.1
+  mesh 0.1 1 0.1
+  mesh -0.1 1 0.1
+  mesh 0.1 1 0.1
+  mesh 0.1 1 -0.1
 endsegment
 
 // Marker on Seg2
