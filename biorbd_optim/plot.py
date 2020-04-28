@@ -1,8 +1,9 @@
 import multiprocessing as mp
 import numpy as np
 import tkinter
+import casadi
 
-from scipy import interpolate
+from scipy import interpolate, integrate
 from matplotlib import pyplot as plt
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
@@ -209,84 +210,13 @@ class ShowResult:
         except ModuleNotFoundError:
             raise RuntimeError("BiorbdViz must be install to animate the model")
 
-        x = ProblemType.get_q_from_V(self.ocp, self.sol["x"])
-        t = self.__generate_time()
-
-        if self.ocp.nb_phases == 1:
-            x = [x]
-
-        elif self.__compatible_phases():
-            x = self.__concatenate_dof(x)
-            t = self.__concatenate_time(t)
+        x = ProblemType.get_states_integrated_from_V(self.ocp, self.sol["x"])
 
         for i, x_phase in enumerate(x):
-            # integrated_t, integrated_state = self.__integrate(i, x_phase, t)
-            x_interpolate = self.__interpolate(i, x_phase, t, nb_frames)
             b = BiorbdViz(loaded_model=self.ocp.nlp[i]["model"], **kwargs)
-            b.load_movement(x_interpolate.T)
+            b.load_movement(x_phase.T)
             b.exec()
-        return x_interpolate.T
-
-    def __compatible_phases(self):
-        for i in range(self.ocp.nb_phases):
-            for k in range(self.ocp.nlp[0]["model"].nbDof()):
-                if (
-                    self.ocp.nlp[i]["model"].nameDof()[k].to_string()
-                    != self.ocp.nlp[i - 1]["model"].nameDof()[k].to_string()
-                ):
-                    return False
-        return True
-
-    def __generate_time(self):
-        return [
-            np.array(np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1))
-            for i in range(self.ocp.nb_phases)
-        ]
-
-    def __concatenate_dof(self, dof):
-        d = dof[0]
-        for i in range(1, self.ocp.nb_phases):
-            d = np.concatenate((d, dof[i][:, 1:]), axis=1)
-        return [d]
-
-    def __concatenate_time(self, time):
-        t = time[0]
-        for i in range(1, self.ocp.nb_phases):
-            t = np.concatenate((t, time[i][1:] + t[-1]))
-        return [t]
-
-    # def __integrate(self, idx_phase, x_phase, t):
-    #     tf = self.ocp.nlp[idx_phase]["tf"]
-    #     integrated_t, integrated_state = (
-    #         np.ndarray(0),
-    #         np.ndarray((self.ocp.nlp[idx_phase]["nbQ"] + self.ocp.nlp[idx_phase]["nbQdot"], 0)),
-    #     )
-    #
-    #     for i in range(len(t) - 1):
-    #         integration = integrate.solve_ivp(
-    #             fun=lambda tf, y: TODO use good dynamics function
-    #             y0=x_phase[:, i],
-    #             t_span=(t[i], t[i + 1]),
-    #             method="RK45",
-    #             atol=1e-8,
-    #             rtol=1e-6,
-    #         )
-    #
-    #         if i < len(t) - 2:
-    #             integrated_t = np.concatenate(integrated_t, integration.t[:-1])
-    #             integrated_state = np.concatenate((integrated_state, integration.y[:, :-1]), axis=1)
-    #         else:
-    #             integrated_t = np.concatenate(integrated_t, integration.t)
-    #             integrated_state = np.concatenate((integrated_state, integration.y), axis=1)
-    #     return integrated_t, integrated_state
-
-    def __interpolate(self, idx_phase, x_phase, t, nb_frames):
-        x_interpolate = np.ndarray((self.ocp.nlp[idx_phase]["nbQ"], nb_frames))
-        for j in range(self.ocp.nlp[idx_phase]["nbQ"]):
-            x_interpolate[j] = interpolate.splev(
-                np.linspace(0, t[idx_phase][-1], nb_frames), interpolate.splrep(t[idx_phase], x_phase[j], s=0)
-            )
-        return x_interpolate
+        return x_phase.T
 
     @staticmethod
     def keep_matplotlib():
