@@ -9,18 +9,18 @@ import biorbd
 
 from biorbd_optim import ProblemType
 
-# Load eocarSym
+# Load muscle_activations_tracker
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "eocarSym", str(PROJECT_FOLDER) + "/examples/muscle_and_marker_tracking/muscle_activations_tracker.py",
+    "muscle_activations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_activations_tracker.py",
 )
 muscle_activations_tracker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(muscle_activations_tracker)
 
-# Load eocarSym
+# Load muscle_excitations_tracker
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "eocarSym", str(PROJECT_FOLDER) + "/examples/muscle_and_marker_tracking/muscle_excitations_tracker.py",
+    "muscle_excitations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py",
 )
 muscle_excitations_tracker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(muscle_excitations_tracker)
@@ -28,7 +28,7 @@ spec.loader.exec_module(muscle_excitations_tracker)
 
 def test_muscle_activations_and_states_tracking():
     # Define the problem
-    model_path = str(PROJECT_FOLDER) + "/examples/muscle_and_marker_tracking/arm26.bioMod"
+    model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 2
     nb_shooting = 29
@@ -84,7 +84,7 @@ def test_muscle_activations_and_states_tracking():
 
 # def test_muscle_excitation_and_markers_tracking():
 #     # Define the problem
-#     model_path = str(PROJECT_FOLDER) + "/examples/muscle_and_marker_tracking/arm26.bioMod"
+#     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
 #     biorbd_model = biorbd.Model(model_path)
 #     final_time = 2
 #     nb_shooting = 29
