@@ -11,7 +11,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
+def prepare_ocp(biorbd_model_path="arm26_with_contact.bioMod", show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -30,7 +30,7 @@ def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     )
 
     # Dynamics
-    problem_type = ProblemType.muscle_activations_and_torque_driven
+    problem_type = ProblemType.muscles_and_torque_driven_with_contact
 
     # Constraints
     constraints = ()
@@ -39,8 +39,8 @@ def prepare_ocp(biorbd_model_path="arm26.bioMod", show_online_optim=False):
     X_bounds = QAndQDotBounds(biorbd_model)
 
     # Set the initial position
-    X_bounds.first_node_min = (0.07, 1.4, 0, 0)
-    X_bounds.first_node_max = (0.07, 1.4, 0, 0)
+    X_bounds.first_node_min = (0, 0.07, 1.4, 0, 0, 0)
+    X_bounds.first_node_max = (0, 0.07, 1.4, 0, 0, 0)
 
     # Initial guess
     X_init = InitialConditions([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())

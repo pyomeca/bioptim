@@ -4,17 +4,21 @@ import biorbd
 from casadi import MX, Function
 from matplotlib import pyplot as plt
 
-from biorbd_optim import OptimalControlProgram
-from biorbd_optim.mapping import Mapping
-from biorbd_optim.dynamics import Dynamics
-from biorbd_optim.plot import PlotOcp
-from biorbd_optim.problem_type import ProblemType
-from biorbd_optim.objective_functions import ObjectiveFunction
-from biorbd_optim.path_conditions import Bounds, QAndQDotBounds, InitialConditions
+from biorbd_optim import (
+    OptimalControlProgram,
+    BidirectionalMapping,
+    Mapping,
+    Dynamics,
+    ProblemType,
+    Objective,
+    Bounds,
+    QAndQDotBounds,
+    InitialConditions,
+)
 
 
 def generate_data(biorbd_model, final_time, nb_shooting):
-    # Alisases
+    # Aliases
     nb_q = biorbd_model.nbQ()
     nb_qdot = biorbd_model.nbQdot()
     nb_tau = biorbd_model.nbGeneralizedTorque()
@@ -29,7 +33,9 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         "model": biorbd_model,
         "nbTau": nb_tau,
         "nbMuscle": nb_mus,
-        "dof_mapping": Mapping(range(nb_q), range(nb_q)),
+        "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
+        "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
+        "tau_mapping": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
     }
     markers_func = []
     for i in range(nb_markers):
@@ -54,7 +60,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         u = np.concatenate([np.array((0, 0)), u])
         return np.array(dynamics_func(x, u)).squeeze()
 
-    # Generate some muscle activation
+    # Generate some muscle excitations
     U = np.random.rand(nb_shooting, nb_mus)
 
     # Integrate and collect the position of the markers accordingly
@@ -82,7 +88,7 @@ def prepare_ocp(
     final_time,
     nb_shooting,
     markers_ref,
-    activations_ref,
+    excitations_ref,
     q_ref,
     kin_data_to_track="markers",
     show_online_optim=False,
@@ -90,45 +96,54 @@ def prepare_ocp(
     # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
+    excitation_min, excitation_max, excitation_init = 0, 1, 0.5
 
     # Add objective functions
     objective_functions = [
-        (ObjectiveFunction.minimize_muscle, {"weight": 1, "data_to_track": activations_ref},),
-        (ObjectiveFunction.minimize_torque, {"weight": 1}),
+        {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": excitations_ref},
+        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
     ]
     if kin_data_to_track == "markers":
         objective_functions.append(
-            (ObjectiveFunction.minimize_markers, {"weight": 100, "data_to_track": markers_ref},),
+            {"type": Objective.Lagrange.TRACK_MARKERS, "weight": 100, "data_to_track": markers_ref},
         )
     elif kin_data_to_track == "q":
         objective_functions.append(
-            (
-                ObjectiveFunction.minimize_states,
-                {"weight": 100, "data_to_track": q_ref, "states_idx": range(biorbd_model.nbQ()),},
-            ),
+            {
+                "type": Objective.Lagrange.TRACK_STATE,
+                "weight": 100,
+                "data_to_track": q_ref,
+                "states_idx": range(biorbd_model.nbQ()),
+            },
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
-    variable_type = ProblemType.muscles_and_torque_driven
+    variable_type = ProblemType.muscle_excitations_and_torque_driven
 
     # Constraints
     constraints = ()
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
+    X_bounds.first_node_min += [activation_min] * biorbd_model.nbMuscleTotal()
+    X_bounds.first_node_max += [activation_max] * biorbd_model.nbMuscleTotal()
+    X_bounds.min += [activation_min] * biorbd_model.nbMuscleTotal()
+    X_bounds.max += [activation_max] * biorbd_model.nbMuscleTotal()
+    X_bounds.last_node_min += [activation_min] * biorbd_model.nbMuscleTotal()
+    X_bounds.last_node_max += [activation_max] * biorbd_model.nbMuscleTotal()
 
     # Initial guess
-    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot() + biorbd_model.nbMuscleTotal()))
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque() + [activation_min] * biorbd_model.nbMuscleTotal(),
-        [torque_max] * biorbd_model.nbGeneralizedTorque() + [activation_max] * biorbd_model.nbMuscleTotal(),
+        [torque_min] * biorbd_model.nbGeneralizedTorque() + [excitation_min] * biorbd_model.nbMuscleTotal(),
+        [torque_max] * biorbd_model.nbGeneralizedTorque() + [excitation_max] * biorbd_model.nbMuscleTotal(),
     )
     U_init = InitialConditions(
-        [torque_init] * biorbd_model.nbGeneralizedTorque() + [activation_init] * biorbd_model.nbMuscleTotal()
+        [torque_init] * biorbd_model.nbGeneralizedTorque() + [excitation_init] * biorbd_model.nbMuscleTotal()
     )
 
     # ------------- #
@@ -155,7 +170,7 @@ if __name__ == "__main__":
     n_shooting_points = 29
 
     # Generate random data to fit
-    t, markers_ref, x_ref, muscle_activations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
+    t, markers_ref, x_ref, muscle_excitations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
 
     # Track these data
     biorbd_model = biorbd.Model("arm26.bioMod")  # To allow for non free variable, the model must be reloaded
@@ -164,9 +179,9 @@ if __name__ == "__main__":
         final_time,
         n_shooting_points,
         markers_ref,
-        muscle_activations_ref,
+        muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        show_online_optim=True,
+        show_online_optim=False,
         kin_data_to_track="markers",
     )
 
@@ -174,7 +189,7 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     # --- Show the results --- #
-    muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
+    muscle_excitations_ref = np.append(muscle_excitations_ref, muscle_excitations_ref[-1:, :], axis=0)
 
     q, qdot, tau, mus = ProblemType.get_data_from_V(ocp, sol["x"])
     n_q = ocp.nlp[0]["model"].nbQ()
@@ -209,11 +224,9 @@ if __name__ == "__main__":
     plt.figure("Tau")
     plt.step(np.linspace(0, 2, n_shooting_points + 1), tau.T, where="post")
 
-    plt.figure("Muscle activations")
-    plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_activations_ref, "k", where="post")
+    plt.figure("Muscle excitations")
+    plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_excitations_ref, "k", where="post")
     plt.step(np.linspace(0, 2, n_shooting_points + 1), mus.T, "r--", where="post")
 
     # --- Plot --- #
-    plt_ocp = PlotOcp(ocp)
-    plt_ocp.update_data(sol["x"])
-    plt_ocp.show()
+    plt.show()

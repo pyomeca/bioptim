@@ -1,14 +1,22 @@
 import multiprocessing as mp
+import numpy as np
+import tkinter
 
+from scipy import interpolate
 from matplotlib import pyplot as plt
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
-import numpy as np
 
 from .problem_type import ProblemType
+
+height = 2.4
+muscle_position = 1000
+width_step = 4
+width_max = 10
 
 
 class PlotOcp:
     def __init__(self, ocp):
+
         self.ocp = ocp
         self.ns_per_phase = [nlp["ns"] + 1 for nlp in ocp.nlp]
         self.ydata = []
@@ -29,23 +37,30 @@ class PlotOcp:
         if (
             self.problem_type == ProblemType.torque_driven
             or self.problem_type == ProblemType.torque_driven_with_contact
-            or self.problem_type == ProblemType.muscles_and_torque_driven
+            or self.problem_type == ProblemType.muscle_activations_and_torque_driven
+            or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
         ):
             for i in range(self.ocp.nb_phases):
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
                     raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
             nlp = self.ocp.nlp[0]
-            self.fig_q_qdot_tau = plt.figure("Q, Qdot, Tau", figsize=(10, 6))
-            axes_dof = self.fig_q_qdot_tau.subplots(3, nlp["nbQ"]).flatten()
-            self.axes.extend(axes_dof)
-            mid_column_idx = int(nlp["nbQ"] / 2)
-            axes_dof[mid_column_idx].set_title("q")
-            axes_dof[nlp["nbQ"] + mid_column_idx].set_title("q_dot")
-            axes_dof[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_title("tau")
-            axes_dof[nlp["nbQ"] + nlp["nbQdot"] + mid_column_idx].set_xlabel("time (s)")
-            self.fig_q_qdot_tau.tight_layout()
 
-            if self.problem_type == ProblemType.muscles_and_torque_driven:
+            self.all_figures = []
+            for j, _type in enumerate(["Q", "Qdot", "Tau"]):
+                self.all_figures.append(
+                    plt.figure(_type, figsize=(min(nlp["nb" + _type] * width_step, width_max), height))
+                )
+                axes_dof = self.all_figures[-1].subplots(1, nlp["nb" + _type]).flatten()
+                self.axes.extend(axes_dof)
+                mid_column_idx = int(nlp["nb" + _type] / 2)
+                axes_dof[mid_column_idx].set_title(_type)
+                axes_dof[nlp["nb" + _type] - mid_column_idx].set_xlabel("time (s)")
+                self.all_figures[-1].tight_layout()
+
+            if (
+                self.problem_type == ProblemType.muscle_activations_and_torque_driven
+                or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
+            ):
 
                 nlp = self.ocp.nlp[0]
                 nb_cols = int(np.sqrt(nlp["nbMuscle"])) + 1
@@ -54,13 +69,19 @@ class PlotOcp:
                 else:
                     nb_rows = nb_cols
 
-                self.fig_muscles = plt.figure("Muscles", figsize=(10, 6))
-                axes_muscles = self.fig_muscles.subplots(nb_rows, nb_cols).flatten()
-                self.axes.extend(axes_muscles)
+                self.all_figures.append(
+                    plt.figure("Muscles", figsize=(min(nb_cols * width_step, width_max), min(nb_rows, 4) * height))
+                )
+                axes_muscles = self.all_figures[-1].subplots(nb_rows, nb_cols).flatten()
                 for k in range(nlp["nbMuscle"]):
                     axes_muscles[k].set_title(nlp["model"].muscleNames()[k].to_string())
+                for k in range(nlp["nbMuscle"], len(axes_muscles)):
+                    axes_muscles[k].remove()
+                axes_muscles = axes_muscles[: nlp["nbMuscle"]]
+                self.axes.extend(axes_muscles)
+
                 axes_muscles[nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel("time (s)")
-                self.fig_muscles.tight_layout()
+                self.all_figures[-1].tight_layout()
 
             intersections_time = PlotOcp.find_phases_intersections(ocp)
             for i, ax in enumerate(self.axes):
@@ -78,6 +99,31 @@ class PlotOcp:
 
         else:
             raise RuntimeError("Plot is not ready for this type of OCP")
+
+        # Move the figures
+        if self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven:
+            height_step = int(tkinter.Tk().winfo_screenheight() / len(self.all_figures))
+        if (
+            self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
+            or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+        ):
+            height_step = int(tkinter.Tk().winfo_screenheight() / (len(self.all_figures) - 1))
+
+        for i, fig in enumerate(self.all_figures):
+            if (
+                self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
+                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+            ) and fig == self.all_figures[-1]:
+                fig.canvas.manager.window.move(muscle_position, 0)
+
+            elif (
+                self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven
+                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
+                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+            ):
+                fig.canvas.manager.window.move(20, i * height_step)
+
+            fig.canvas.draw()
 
     @staticmethod
     def find_phases_intersections(ocp):
@@ -98,7 +144,8 @@ class PlotOcp:
             if (
                 self.problem_type == ProblemType.torque_driven
                 or self.problem_type == ProblemType.torque_driven_with_contact
-                or self.problem_type == ProblemType.muscles_and_torque_driven
+                or self.problem_type == ProblemType.muscle_activations_and_torque_driven
+                or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
             ):
                 if (
                     self.problem_type == ProblemType.torque_driven
@@ -110,7 +157,10 @@ class PlotOcp:
                     self.__update_ydata(q_dot, nlp["nbQdot"], i)
                     self.__update_ydata(tau, nlp["nbTau"], i)
 
-                elif self.problem_type == ProblemType.muscles_and_torque_driven:
+                elif (
+                    self.problem_type == ProblemType.muscle_activations_and_torque_driven
+                    or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
+                ):
                     q, q_dot, tau, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
                     self.__update_ydata(q, nlp["nbQ"], i)
                     self.__update_ydata(q_dot, nlp["nbQdot"], i)
@@ -143,7 +193,71 @@ class PlotOcp:
             ax.get_lines()[0].set_ydata(y)
 
 
-class AnimateCallback(Callback):
+class ShowResult:
+    def __init__(self, ocp, sol):
+        self.ocp = ocp
+        self.sol = sol
+
+    def graphs(self):
+        plot_ocp = PlotOcp(self.ocp)
+        plot_ocp.update_data(self.sol["x"])
+        plt.show()
+
+    def animate(self, nb_frames=80, **kwargs):
+        x = ProblemType.get_q_from_V(self.ocp, self.sol["x"])
+        t = [
+            np.array(np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1))
+            for i in range(self.ocp.nb_phases)
+        ]
+
+        if self.ocp.nb_phases == 1:
+            x = [x]
+
+        else:
+            same_dof = True
+            for i in range(self.ocp.nb_phases):
+                for k in range(self.ocp.nlp[0]["model"].nbDof()):
+                    if (
+                        self.ocp.nlp[i]["model"].nameDof()[k].to_string()
+                        != self.ocp.nlp[i - 1]["model"].nameDof()[k].to_string()
+                    ):
+                        same_dof = False
+                        break
+                if not same_dof:
+                    break
+
+            if same_dof:
+                x_concat = x[0]
+                t_concat = t[0]
+                for i in range(1, self.ocp.nb_phases):
+                    x_concat = np.concatenate((x_concat, x[i][:, 1:]), axis=1)
+                    t_concat = np.concatenate((t_concat, t[i][1:] + t_concat[-1]))
+                x = [x_concat]
+                t = [t_concat]
+
+        try:
+            from BiorbdViz import BiorbdViz
+        except ModuleNotFoundError:
+            print("Install BiorbdViz if you want to have a live view of the optimization")
+
+        for i, x_phase in enumerate(x):
+            x_interpolate = np.ndarray((self.ocp.nlp[i]["nbQ"], nb_frames))
+            t_interpolate = np.linspace(0, t[i][-1], nb_frames)
+            for j in range(self.ocp.nlp[i]["nbQ"]):
+                tck = interpolate.splrep(t[i], x_phase[j], s=0)
+                x_interpolate[j] = interpolate.splev(t_interpolate, tck)
+
+            b = BiorbdViz(loaded_model=self.ocp.nlp[i]["model"], **kwargs)
+            b.load_movement(x_interpolate.T)
+            b.exec()
+
+    @staticmethod
+    def keep_matplotlib():
+        plt.figure(figsize=(0.01, 0.01)).canvas.manager.window.move(1000, 100)
+        plt.show()
+
+
+class OnlineCallback(Callback):
     def __init__(self, ocp, opts={}):
         Callback.__init__(self)
         self.nlp = ocp
@@ -195,7 +309,7 @@ class AnimateCallback(Callback):
         def __call__(self, pipe):
             self.pipe = pipe
             self.plot = PlotOcp(self.ocp)
-            timer = self.plot.fig_q_qdot_tau.canvas.new_timer(interval=100)
+            timer = self.plot.all_figures[0].canvas.new_timer(interval=100)
             timer.add_callback(self.callback)
             timer.start()
 
@@ -206,7 +320,6 @@ class AnimateCallback(Callback):
                 V = self.pipe.recv()
                 self.plot.update_data(V)
 
-            self.plot.fig_q_qdot_tau.canvas.draw()
-            if self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven:
-                self.plot.fig_muscles.canvas.draw()
+            for i, fig in enumerate(self.plot.all_figures):
+                fig.canvas.draw()
             return True

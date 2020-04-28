@@ -1,4 +1,4 @@
-from casadi import vertcat
+from casadi import vertcat, MX
 import biorbd
 
 
@@ -11,11 +11,12 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class
         :return: Vertcat of derived states.
         """
-        q, qdot, qdot_reduced, tau = Dynamics.__dispatch_data(states, controls, nlp)
+        q, qdot, tau = Dynamics.__dispatch_data(states, controls, nlp)
 
         qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
-        qddot_reduced = nlp["dof_mapping"].reduce(qddot)
 
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
@@ -26,16 +27,17 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class
         :return: Vertcat of derived states.
         """
-        q, qdot, qdot_reduced, tau = Dynamics.__dispatch_data(states, controls, nlp)
+        q, qdot, tau = Dynamics.__dispatch_data(states, controls, nlp)
 
         qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau).to_mx()
-        qddot_reduced = nlp["dof_mapping"].reduce(qddot)
 
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
     def forces_from_forward_dynamics_with_contact(states, controls, nlp):
-        q, qdot, qdot_reduced, tau = Dynamics.__dispatch_data(states, controls, nlp)
+        q, qdot, tau = Dynamics.__dispatch_data(states, controls, nlp)
 
         cs = nlp["model"].getConstraints()
         biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau, cs)
@@ -44,7 +46,7 @@ class Dynamics:
 
     @staticmethod
     def forward_dynamics_torque_muscle_driven(states, controls, nlp):
-        q, qdot, qdot_reduced, residual_tau = Dynamics.__dispatch_data(states, controls, nlp)
+        q, qdot, residual_tau = Dynamics.__dispatch_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
         muscles_activations = controls[nlp["nbTau"] :]
@@ -56,9 +58,52 @@ class Dynamics:
         tau = muscles_tau + residual_tau
 
         qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
-        qddot_reduced = nlp["dof_mapping"].reduce(qddot)
 
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
+
+    @staticmethod
+    def forward_dynamics_torque_muscle_driven_with_contact(states, controls, nlp):
+        q, qdot, residual_tau = Dynamics.__dispatch_data(states, controls, nlp)
+
+        muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
+        muscles_activations = controls[nlp["nbTau"] :]
+
+        for k in range(nlp["nbMuscle"]):
+            muscles_states[k].setActivation(muscles_activations[k])
+        muscles_tau = nlp["model"].muscularJointTorque(muscles_states, q, qdot).to_mx()
+
+        tau = muscles_tau + residual_tau
+
+        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau).to_mx()
+
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
+        return vertcat(qdot_reduced, qddot_reduced)
+
+    @staticmethod
+    def forward_dynamics_muscle_excitations_and_torque_driven(states, controls, nlp):
+        q, qdot, residual_tau = Dynamics.__dispatch_data(states, controls, nlp)
+
+        muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
+        muscles_excitation = controls[nlp["nbTau"] :]
+        muscles_activations = states[nlp["nbQ"] + nlp["nbQdot"] :]
+
+        for k in range(nlp["nbMuscle"]):
+            muscles_states[k].setExcitation(muscles_excitation[k])
+            muscles_states[k].setActivation(muscles_activations[k])
+        muscles_tau = nlp["model"].muscularJointTorque(muscles_states, q, qdot).to_mx()
+
+        muscles_activations_dot = nlp["model"].activationDot(muscles_states).to_mx()
+
+        tau = muscles_tau + residual_tau
+
+        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau).to_mx()
+
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
+        return vertcat(muscles_activations_dot, qdot_reduced, qddot_reduced)
 
     @staticmethod
     def __dispatch_data(states, controls, nlp):
@@ -66,10 +111,9 @@ class Dynamics:
         Returns q, qdot, tau (unreduced by a potential symmetry) and qdot_reduced
         from states, controls and mapping through nlp to condense this code.
         """
-        nq = nlp["dof_mapping"].nb_reduced
-        q = nlp["dof_mapping"].expand(states[:nq])
-        qdot_reduced = states[nq:]
-        qdot = nlp["dof_mapping"].expand(qdot_reduced)
-        tau = nlp["dof_mapping"].expand(controls[: nlp["nbTau"]])
+        nq = nlp["q_mapping"].reduce.len
+        q = nlp["q_mapping"].expand.map(states[:nq])
+        qdot = nlp["q_dot_mapping"].expand.map(states[nq:])
+        tau = nlp["tau_mapping"].expand.map(controls[: nlp["nbTau"]])
 
-        return q, qdot, qdot_reduced, tau
+        return q, qdot, tau
