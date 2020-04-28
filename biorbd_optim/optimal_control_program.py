@@ -1,6 +1,6 @@
 from copy import copy
 import pickle
-
+import os
 import biorbd
 import casadi
 from casadi import MX, vertcat
@@ -321,11 +321,17 @@ class OptimalControlProgram:
 
     @staticmethod
     def save(ocp, sol, name):
+        _, ext = os.path.splitext(name)
+        if ext == '':
+            name = name + ".bo"
         with open(name, "wb") as file:
             pickle.dump({"ocp": OptimalControlProgram._get_a_reduced_ocp(ocp), "sol": sol}, file)
 
     @staticmethod
     def load(biorbd_model_path, name):
+        _, ext = os.path.splitext(name)
+        if ext == '':
+            name = name + ".bo"
         with open(name, "rb") as file:
             data = pickle.load(file)
             ocp = data["ocp"]
