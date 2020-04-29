@@ -87,7 +87,7 @@ class Dynamics:
         q, qdot, residual_tau = Dynamics.__dispatch_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
-        muscles_activations = controls[nlp["nbTau"]:]
+        muscles_activations = controls[nlp["nbTau"] :]
 
         for k in range(nlp["nbMuscle"]):
             muscles_states[k].setActivation(muscles_activations[k])
