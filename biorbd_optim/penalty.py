@@ -170,6 +170,30 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, CoM_height, **extra_param)
 
         @staticmethod
+        def minimize_contact_forces(penalty_type, ocp, nlp, t, x, u, contacts_idx=(), data_to_track=(), **extra_param):
+            from casadi import Function
+            from .dynamics import Dynamics
+
+            CS_func = Function(
+                "Contact_force",
+                [ocp.symbolic_states, ocp.symbolic_controls],
+                [Dynamics.forces_from_forward_dynamics_torque_muscle_driven_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
+                ["x", "u"],
+                ["CS"],
+            ).expand()
+
+            n_contact = nlp["model"].nbContacts()
+            contacts_idx = PenaltyFunctionAbstract._check_and_fill_index(contacts_idx, n_contact, "contacts_idx")
+            data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                data_to_track, [nlp["ns"], max(contacts_idx) + 1]
+            )
+
+            for i, v in enumerate(u):
+                force = CS_func(x[i], u[i])
+                val = force[contacts_idx] - data_to_track[t[i], contacts_idx]
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+
+        @staticmethod
         def align_segment_with_custom_rt(penalty_type, ocp, nlp, t, x, u, segment_idx, rt_idx, **extra_param):
             """
             Adds the constraint that the RT and the segment must be aligned at the desired instant(s).
