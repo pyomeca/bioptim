@@ -72,6 +72,14 @@ class OptimalControlProgram:
         nb_variable_time = 0
         variable_time_phases = []
 
+        for i in range(self.nb_phases):
+            if phase_time[i] >= 0:
+                phase_time[i] = phase_time[i]
+            else:
+                phase_time[i] = MX()
+                nb_variable_time += 1
+                variable_time_phases.append(i)
+
         self.__add_to_nlp("tf", phase_time, False)
         self.__add_to_nlp(
             "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
