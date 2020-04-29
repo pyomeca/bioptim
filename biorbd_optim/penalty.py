@@ -275,6 +275,7 @@ class PenaltyFunctionAbstract:
             or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
             or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
             or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
+            or penalty_function == PenaltyType.TRACK_CONTACT_FORCES
         ):
             if "quadratic" not in parameters.keys():
                 parameters["quadratic"] = True
@@ -421,3 +422,4 @@ class PenaltyType(Enum):
     ALIGN_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.align_segment_with_custom_rt
     ALIGN_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.align_marker_with_segment_axis
     CUSTOM = PenaltyFunctionAbstract.Functions.custom
+    TRACK_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
