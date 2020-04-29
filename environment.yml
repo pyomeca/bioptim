@@ -6,8 +6,7 @@ channels:
 dependencies:
 - python
 - numpy
-- ipopt
-- casadi
-#- biorbd
+- biorbd-casadi
 - black
 - matplotlib
+- pytest
