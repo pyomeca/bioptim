@@ -103,6 +103,7 @@ class Objective:
         ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
         ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
         CUSTOM = (PenaltyType.CUSTOM,)
+        TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
 
         @staticmethod
         def _get_type():
@@ -132,6 +133,7 @@ class Objective:
         MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyType.MINIMIZE_PREDICTED_COM_HEIGHT,)
         ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
         ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
+        TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
         CUSTOM = (PenaltyType.CUSTOM,)
 
         @staticmethod
