@@ -177,7 +177,11 @@ class PenaltyFunctionAbstract:
             CS_func = Function(
                 "Contact_force",
                 [ocp.symbolic_states, ocp.symbolic_controls],
-                [Dynamics.forces_from_forward_dynamics_torque_muscle_driven_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
+                [
+                    Dynamics.forces_from_forward_dynamics_torque_muscle_driven_with_contact(
+                        ocp.symbolic_states, ocp.symbolic_controls, nlp
+                    )
+                ],
                 ["x", "u"],
                 ["CS"],
             ).expand()
