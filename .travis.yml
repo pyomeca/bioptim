@@ -2,25 +2,17 @@
 language: python
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-      bash miniconda.sh -b -p $HOME/miniconda;
-    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh;
-      bash miniconda.sh -b -p $HOME/miniconda;
-    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then 
-      choco install miniconda3 --params="'/AddToPath:1'";
-      export PATH="/c/tools/miniconda3/scripts:/c/tools/miniconda3/:/c/Program Files/Git/miniconda3/bin/:$PATH";
-    fi
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda config --set auto_update_conda no
-  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then conda update -q conda; fi
+  - conda update -q conda
 
 install:
   - conda env update -n root -f environment.yml
-  - conda install pytest-cov black pytest codecov -cconda-forge
+  - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
 
 script:
   - black --check . --line-length 120
@@ -28,7 +20,6 @@ script:
   - pytest -v --color=yes --cov=biorbd_optim tests
 
 after_success:
-  # Uploading report to CodeCov
   - codecov
 
 notifications:
