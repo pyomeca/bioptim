@@ -213,8 +213,14 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def custom(penalty_type, ocp, nlp, t, x, u, **parameters):
             func = parameters["function"]
+            weight = None
+            if "weight" in parameters.keys():
+                weight = parameters["weight"]
             del parameters["function"]
+            del parameters["weight"]
             val = func(ocp, nlp, t, x, u, **parameters)
+            if weight is not None:
+                parameters["weight"] = weight
             penalty_type._add_to_penalty(ocp, nlp, val, **parameters)
 
     @staticmethod
