@@ -10,16 +10,20 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
+    OdeSolver,
 )
 
 
-def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
+def prepare_ocp(biorbd_model_path="cube.bioMod", show_online_optim=False, ode_solver=OdeSolver.RK, long_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
 
     # Problem parameters
-    number_shooting_points = (100, 1000)
+    if long_optim:
+        number_shooting_points = (100, 1000)
+    else:
+        number_shooting_points = (20, 30)
     final_time = (2, 5)
     torque_min, torque_max, torque_init = -100, 100, 0
 
@@ -53,10 +57,10 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
                 bounds.last_node_max[i] = 0
     X_bounds[0].first_node_min[2] = 0.0
     X_bounds[0].first_node_max[2] = 0.0
-    X_bounds[0].last_node_min[2] = 1.57
-    X_bounds[0].last_node_max[2] = 1.57
-    X_bounds[1].last_node_min[2] = 1.0
-    X_bounds[1].last_node_max[2] = 1.0
+    X_bounds[1].first_node_min[2] = 0.0
+    X_bounds[1].first_node_max[2] = 0.0
+    X_bounds[1].last_node_min[2] = 1.57
+    X_bounds[1].last_node_max[2] = 1.57
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
@@ -85,17 +89,17 @@ def prepare_ocp(biorbd_model_path="eocar.bioMod", show_online_optim=True):
         X_bounds,
         U_bounds,
         constraints,
+        ode_solver=ode_solver,
         show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True)
+    ocp = prepare_ocp(show_online_optim=True, long_optim=True)
 
-    # --- Solve the program and show --- #
-    sol = OptimalControlProgram.solve(ocp)
+    # --- Solve the program --- #
+    sol = ocp.solve()
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.graphs()
     result.animate()

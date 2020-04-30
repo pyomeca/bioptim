@@ -1,6 +1,13 @@
 # BiorbdOptim
 An optimization framework that links CasADi, ipopt and biorbd for Optimal Control Problem 
 
+## Status
+
+| | |
+|---|---|
+| Continuous integration | [![Build Status](https://travis-ci.org/pyomeca/BiorbdOptim.svg?branch=master)](https://travis-ci.org/pyomeca/BiorbdOptim) |
+|  Code coverage | [![codecov](https://codecov.io/gh/pyomeca/BiorbdOptim/branch/master/graph/badge.svg)](https://codecov.io/gh/pyomeca/BiorbdOptim) |
+
 # How to install 
 The way to install BiorbdOptim on your computer is to installing from the sources. 
 
@@ -12,7 +19,7 @@ python setup.py install
 Please note that this method will not install the dependencies for you, therefore you will have to install them manually. Moreover, the setuptools dependencies must be installed prior to the installation in order for it to work.
 
 ## Dependencies
-BiorbdOptim relies on several libraries. The most obvious one is BIORBD, but pyomeca is also requires and some others.  
+BiorbdOptim relies on several libraries. The most obvious one is BIORBD, but pyomeca is also requires and some others.
 
 There are two ways to install Biorbd, to choose the better way for you please refer to the ReadMe file here : https://github.com/pyomeca/biorbd.
 
