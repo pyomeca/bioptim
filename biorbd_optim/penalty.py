@@ -1,11 +1,13 @@
 from enum import Enum
 from math import inf
+from casadi import Function
 
 import numpy as np
 import biorbd
 
 from .enums import Instant
 from .enums import Axe
+from .dynamics import Dynamics
 
 
 class PenaltyFunctionAbstract:
@@ -171,9 +173,6 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_contact_forces(penalty_type, ocp, nlp, t, x, u, contacts_idx=(), data_to_track=(), **extra_param):
-            from casadi import Function
-            from .dynamics import Dynamics
-
             CS_func = Function(
                 "Contact_force",
                 [ocp.symbolic_states, ocp.symbolic_controls],
@@ -196,10 +195,6 @@ class PenaltyFunctionAbstract:
                 force = CS_func(x[i], u[i])
                 val = force[contacts_idx] - data_to_track[t[i], contacts_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
-
-            force = CS_func(x[-1], u[-1])
-            val = force[contacts_idx] - data_to_track[t[-1], contacts_idx]
-            penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
         def align_segment_with_custom_rt(penalty_type, ocp, nlp, t, x, u, segment_idx, rt_idx, **extra_param):
