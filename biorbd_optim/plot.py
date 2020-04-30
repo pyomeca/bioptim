@@ -50,11 +50,19 @@ class PlotOcp:
                 self.all_figures.append(
                     plt.figure(_type, figsize=(min(nlp["nb" + _type] * width_step, width_max), height))
                 )
-                axes_dof = self.all_figures[-1].subplots(1, nlp["nb" + _type]).flatten()
+                axes_dof = self.all_figures[-1].subplots(1, nlp["nb" + _type])
+                if isinstance(axes_dof, np.ndarray):
+                    axes_dof = axes_dof.flatten()
+                else:
+                    axes_dof = [axes_dof]
                 self.axes.extend(axes_dof)
-                mid_column_idx = int(nlp["nb" + _type] / 2)
-                axes_dof[mid_column_idx].set_title(_type)
-                axes_dof[nlp["nb" + _type] - mid_column_idx].set_xlabel("time (s)")
+                if nlp["nb" + _type] == 1:
+                    axes_dof[0].set_title(_type)
+                    axes_dof[nlp["nb" + _type] - 1].set_xlabel("time (s)")
+                else:
+                    mid_column_idx = int(nlp["nb" + _type] / 2)
+                    axes_dof[mid_column_idx].set_title(_type)
+                    axes_dof[nlp["nb" + _type] - mid_column_idx].set_xlabel("time (s)")
                 self.all_figures[-1].tight_layout()
 
             if (
