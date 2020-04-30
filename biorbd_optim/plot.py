@@ -134,9 +134,9 @@ class PlotOcp:
                 fig.canvas.manager.window.move(muscle_position, 0)
 
             elif (
-                self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven
-                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
-                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+                    self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven
+                    or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
+                    or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
             ):
                 fig.canvas.manager.window.move(20, i * height_step)
 
@@ -175,7 +175,7 @@ class PlotOcp:
                     or self.problem_type == ProblemType.torque_driven_with_contact
                 ):
                     # TODO: Add an integrator for the states
-                    q, q_dot, tau = ProblemType.get_data_from_V(self.ocp, V, i)
+                    q, q_dot, tau = ProblemType.get_data_integrated_from_V(self.ocp, V)
                     self.__update_ydata(q, nlp["nbQ"], i)
                     self.__update_ydata(q_dot, nlp["nbQdot"], i)
                     self.__update_ydata(tau, nlp["nbTau"], i)
@@ -184,7 +184,7 @@ class PlotOcp:
                     self.problem_type == ProblemType.muscle_activations_and_torque_driven
                     or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
                 ):
-                    q, q_dot, tau, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
+                    q, q_dot, tau, muscle = ProblemType.get_data_integrated_from_V(self.ocp, V)
                     self.__update_ydata(q, nlp["nbQ"], i)
                     self.__update_ydata(q_dot, nlp["nbQdot"], i)
                     self.__update_ydata(tau, nlp["nbTau"], i)
@@ -194,7 +194,7 @@ class PlotOcp:
 
     def __update_ydata(self, array, nb_variables, phase_idx):
         for i in range(nb_variables):
-            self.ydata[phase_idx].append(array[i, :])
+            self.ydata[phase_idx].append(array[phase_idx][i, :])
 
     def __update_axes(self):
         for i, ax in enumerate(self.axes):
@@ -213,7 +213,16 @@ class PlotOcp:
                     step=np.round((mean + axe_range - (mean - axe_range)) / 4, 1),
                 )
             )
-            ax.get_lines()[0].set_ydata(y)
+            if i < self.ocp.nlp[0]["nx"]:
+                cmp = 0
+                for idx_phase in range(self.ocp.nb_phases):
+                    for _ in range(self.ocp.nlp[idx_phase]["ns"]):
+                        ax.get_lines()[2 * cmp].set_ydata(y[2 * cmp + idx_phase: 2 * (cmp + 1) + idx_phase])
+                        ax.get_lines()[2 * cmp + 1].set_ydata(y[2 * cmp + idx_phase])
+                        cmp += 1
+
+            else:
+                ax.get_lines()[0].set_ydata(y)
 
 
 class ShowResult:
@@ -226,7 +235,7 @@ class ShowResult:
         plot_ocp.update_data(self.sol["x"])
         plt.show()
 
-    def animate(self, nb_frames=80, **kwargs):
+    def animate(self, integrated=False, nb_frames=80, **kwargs):
         try:
             from BiorbdViz import BiorbdViz
         except ModuleNotFoundError:
