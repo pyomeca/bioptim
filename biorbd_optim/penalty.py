@@ -426,8 +426,8 @@ class PenaltyType(Enum):
     TRACK_MUSCLES_CONTROL = MINIMIZE_MUSCLES_CONTROL
     MINIMIZE_ALL_CONTROLS = PenaltyFunctionAbstract.Functions.minimize_all_controls
     TRACK_ALL_CONTROLS = MINIMIZE_ALL_CONTROLS
+    TRACK_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
     MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height
     ALIGN_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.align_segment_with_custom_rt
     ALIGN_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.align_marker_with_segment_axis
     CUSTOM = PenaltyFunctionAbstract.Functions.custom
-    TRACK_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
