@@ -19,7 +19,7 @@ python setup.py install
 Please note that this method will not install the dependencies for you, therefore you will have to install them manually. Moreover, the setuptools dependencies must be installed prior to the installation in order for it to work.
 
 ## Dependencies
-BiorbdOptim relies on several libraries. The most obvious one is BIORBD, but pyomeca is also requires and some others.  
+BiorbdOptim relies on several libraries. The most obvious one is BIORBD, but pyomeca is also requires and some others.
 
 There are two ways to install Biorbd, to choose the better way for you please refer to the ReadMe file here : https://github.com/pyomeca/biorbd.
 
