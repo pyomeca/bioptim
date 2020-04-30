@@ -68,7 +68,9 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="arm26_with_contact.bioMod", final_time=2, number_shooting_points=20, show_online_optim=True)
+    ocp = prepare_ocp(
+        biorbd_model_path="arm26_with_contact.bioMod", final_time=2, number_shooting_points=20, show_online_optim=True
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve()

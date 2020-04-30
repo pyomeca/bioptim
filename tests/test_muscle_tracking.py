@@ -72,7 +72,7 @@ def test_muscle_activations_and_states_tracking():
     np.testing.assert_almost_equal(qdot[:, 0], np.array([-8.66527631e-05, -1.31486656e-04]))
     np.testing.assert_almost_equal(qdot[:, -1], np.array([0.8780829, -2.6474387]))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([-1.55359644e-06,  1.26569700e-05]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([-1.55359644e-06, 1.26569700e-05]))
     np.testing.assert_almost_equal(tau[:, -1], np.array([-7.41845169e-06, -7.67568954e-07]))
     np.testing.assert_almost_equal(
         mus[:, 0], np.array([0.37439688, 0.95073361, 0.73203047, 0.59855246, 0.15592687, 0.15595739]),
