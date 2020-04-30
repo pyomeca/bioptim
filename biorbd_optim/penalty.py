@@ -197,6 +197,10 @@ class PenaltyFunctionAbstract:
                 val = force[contacts_idx] - data_to_track[t[i], contacts_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
+            force = CS_func(x[-1], u[-1])
+            val = force[contacts_idx] - data_to_track[t[-1], contacts_idx]
+            penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+
         @staticmethod
         def align_segment_with_custom_rt(penalty_type, ocp, nlp, t, x, u, segment_idx, rt_idx, **extra_param):
             """
