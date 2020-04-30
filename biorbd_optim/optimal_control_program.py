@@ -286,6 +286,33 @@ class OptimalControlProgram:
         self.V_bounds.expand(V_bounds)
         self.V_init.expand(V_init)
 
+    def __define_variable_time(self, initial_guess, minimum, maximum):
+        """
+        For each variable time, puts X_bounds and U_bounds in V_bounds.
+        Links X and U with V.
+        :param nlp: The nlp problem
+        :param initial_guess: The initial values taken from the phase_time vector
+        :param minimum: variable time minimums as set by user (default: 0)
+        :param maximum: vairable time maximums as set by user (default: inf)
+        """
+        nV = len(initial_guess)
+        V = MX.sym("V_time", nV, 1)
+        V_bounds = Bounds(minimum, maximum)
+        V_init = InitialConditions(initial_guess)
+
+        cmp = 0
+        for nlp in self.nlp:
+            if isinstance(nlp["tf"], MX):
+                V[cmp] = nlp["tf"]
+                cmp += 1
+
+        V_bounds.regulation(nV)
+        V_init.regulation(nV)
+
+        self.V = vertcat(self.V, V)
+        self.V_bounds.expand(V_bounds)
+        self.V_init.expand(V_init)
+
     def solve(self):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
