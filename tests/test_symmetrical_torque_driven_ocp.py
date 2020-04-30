@@ -9,25 +9,26 @@ import numpy as np
 
 from biorbd_optim import ProblemType, OdeSolver
 
-# Load eocarSym
+# Load symmetry
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "eocarSym", str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSymByConstruction.py",
+    "symmetry_by_construction",
+    str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_construction.py",
 )
-eocarSymByConstruction = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(eocarSymByConstruction)
+symmetry_by_construction = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(symmetry_by_construction)
 
 spec = importlib.util.spec_from_file_location(
-    "eocarSym", str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSymByConstraint.py",
+    "symmetry_by_constraint", str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_constraint.py",
 )
-eocarSymByConstraint = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(eocarSymByConstraint)
+symmetry_by_constraint = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(symmetry_by_constraint)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
-def test_eocar_sym_by_construction(ode_solver):
-    ocp = eocarSymByConstruction.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSym.bioMod",
+def test_symmetry_by_construction(ode_solver):
+    ocp = symmetry_by_construction.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
         ode_solver=ode_solver,
     )
     sol = ocp.solve()
@@ -57,9 +58,9 @@ def test_eocar_sym_by_construction(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
-def test_eocar_sym_by_constraint(ode_solver):
-    ocp = eocarSymByConstraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/eocarSym.bioMod",
+def test_symmetry_by_constraint(ode_solver):
+    ocp = symmetry_by_constraint.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
         ode_solver=ode_solver,
     )
     sol = ocp.solve()

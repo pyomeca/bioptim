@@ -1,7 +1,7 @@
 from math import inf
 from enum import Enum
 
-from casadi import vertcat, horzsplit, Function, fabs
+from casadi import vertcat, Function, fabs
 
 from .enums import Instant
 from .penalty import PenaltyType, PenaltyFunctionAbstract
@@ -32,9 +32,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 ["CS"],
             ).expand()
 
-            X, U = horzsplit(x, 1), horzsplit(u, 1)
-            for i in range(len(U)):
-                ocp.g = vertcat(ocp.g, CS_func(X[i], U[i])[idx])
+            for i in range(len(u)):
+                ocp.g = vertcat(ocp.g, CS_func(x[i], u[i])[idx])
                 if direction == "GREATER_THAN":
                     ocp.g_bounds.min.append(boundary)
                     ocp.g_bounds.max.append(inf)
@@ -66,13 +65,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ).expand()
 
             mu = static_friction_coefficient
-            X, U = horzsplit(x, 1), horzsplit(u, 1)
-            for i in range(len(U)):
+            for i in range(len(u)):
                 normal_contact_force = tangential_contact_force = 0
                 for idx in normal_component_idx:
-                    normal_contact_force += CS_func(X[i], U[i])[idx]
+                    normal_contact_force += CS_func(x[i], u[i])[idx]
                 for idx in tangential_component_idx:
-                    normal_contact_force += CS_func(X[i], U[i])[idx]
+                    normal_contact_force += CS_func(x[i], u[i])[idx]
 
                 # Proposal : only case normal_contact_force >= 0 and with two ocp.g
                 ocp.g = vertcat(ocp.g, mu * fabs(normal_contact_force) + fabs(tangential_contact_force))

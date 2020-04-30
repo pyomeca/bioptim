@@ -95,5 +95,4 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.animate(show_meshes=False)
-    result.graphs()
+    result.animate()

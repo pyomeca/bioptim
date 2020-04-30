@@ -16,7 +16,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path="eocarSym.bioMod", show_online_optim=False, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path="cubeSym.bioMod", show_online_optim=False, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -82,4 +82,6 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     # --- Show results --- #
-    ShowResult(ocp, sol).graphs()
+    result = ShowResult(ocp, sol)
+    result.graphs()
+    result.animate()
