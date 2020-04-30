@@ -1,3 +1,5 @@
+from math import inf
+
 import numpy as np
 import biorbd
 
@@ -20,35 +22,32 @@ def prepare_ocp(show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model("example_maximize_predicted_height_CoM.bioMod")
-    torque_min, torque_max, torque_init = -1000, 1000, 0
+    torque_min, torque_max, torque_init = -500, 500, 0
 
     # Problem parameters
-    number_shooting_points = 50
-    phase_time = 1
+    number_shooting_points = 30
+    phase_time = 0.5
 
     q_mapping = BidirectionalMapping(
-        Mapping([i for i in range(biorbd_model.nbQ())]), Mapping([i for i in range(biorbd_model.nbQ())]))
+        Mapping(range(biorbd_model.nbQ())), Mapping(range(biorbd_model.nbQ())))
     tau_mapping = BidirectionalMapping(
-        Mapping([-1, -1, -1, 0]), Mapping([3]))
+        Mapping([-1, -1, -1, 0, 1, 2]), Mapping([3, 4, 5]))
 
     # Add objective functions
     objective_functions = (
         {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
-        #{"type": Objective.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1 / 100},
     )
 
     # Dynamics
     problem_type = ProblemType.torque_driven_with_contact
 
     # Constraints
-    constraints = (
-        {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": 1, "boundary": 0}
-    )
+    constraints = ()
 
     # Path constraint
     nb_q = biorbd_model.nbQ()
     nb_qdot = nb_q
-    pose_at_first_node = [0, 0, 0.5, -1]
+    pose_at_first_node = [0, 0, 0.6, -1, -1.3, 0.6]
 
     # Initialize X_bounds
     X_bounds = [QAndQDotBounds(biorbd_model)]
@@ -104,13 +103,13 @@ if __name__ == "__main__":
         ["x", "u"],
         ["CS"],
     ).expand()
-
-    q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"])
-    x = vertcat(q, q_dot)
-    contact_forces[cs_map, : nlp["ns"] + 1] = CS_func(x, u)
-
-    plt.plot(contact_forces.T)
-    plt.show()
+    #
+    # q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"])
+    # x = vertcat(q, q_dot)
+    # contact_forces[cs_map, : nlp["ns"] + 1] = CS_func(x, u)
+    #
+    # plt.plot(contact_forces.T)
+    # plt.show()
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
