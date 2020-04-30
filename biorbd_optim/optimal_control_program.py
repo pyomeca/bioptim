@@ -1,3 +1,5 @@
+from math import inf
+
 import biorbd
 import casadi
 from casadi import MX, vertcat
@@ -9,6 +11,7 @@ from .constraints import Constraint, ConstraintFunction
 from .objective_functions import ObjectiveFunction
 from .plot import OnlineCallback
 
+from biorbd_optim import Objective
 
 class OptimalControlProgram:
     """
@@ -69,18 +72,30 @@ class OptimalControlProgram:
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
 
-        nb_variable_time = 0
-        variable_time_phases = []
+        initial_time_guess = []
+        variable_time_min = []
+        variable_time_max = []
 
         for i in range(self.nb_phases):
-            if phase_time[i] >= 0:
-                phase_time[i] = phase_time[i]
-            else:
-                phase_time[i] = MX()
-                nb_variable_time += 1
-                variable_time_phases.append(i)
+            for j in range(len(objective_functions[i])):
+                if (objective_functions[i][j][type] == Objective.Mayer.MINIMIZE_TIME) or (objective_functions[i][j][type] == Objective.Lagrange.MINIMIZE_TIME):
+                    initial_time_guess.append(phase_time[i])
+                    phase_time[i] = MX()
+                    if 'maximum' in objective_functions[i][j]:
+                        variable_time_min.append(objective_functions[i][j]['maximum'])
+                    else:
+                        variable_time_min.append(0)
+
+                    if 'minimum' in objective_functions[i][j]:
+                        variable_time_max.append(objective_functions[i][j]['minimum'])
+                    else:
+                        variable_time_max.append(0)
 
         self.__add_to_nlp("tf", phase_time, False)
+
+        self.__add_to_nlp("tmin", variable_time_min, False)
+        self.__add_to_nlp("tmax", variable_time_max, False)
+
         self.__add_to_nlp(
             "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
         )
