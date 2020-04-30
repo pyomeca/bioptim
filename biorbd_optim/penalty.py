@@ -166,7 +166,6 @@ class PenaltyFunctionAbstract:
                 CoM = nlp["model"].CoM(q).to_mx()
                 CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
-
                 penalty_type._add_to_penalty(ocp, nlp, CoM_height, **extra_param)
 
         @staticmethod

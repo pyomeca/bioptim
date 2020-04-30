@@ -23,13 +23,13 @@ def prepare_ocp(show_online_optim=False):
     torque_min, torque_max, torque_init = -1000, 1000, 0
 
     # Problem parameters
-    number_shooting_points = 8
-    phase_time = 2
+    number_shooting_points = 50
+    phase_time = 1
 
     q_mapping = BidirectionalMapping(
         Mapping([i for i in range(biorbd_model.nbQ())]), Mapping([i for i in range(biorbd_model.nbQ())]))
     tau_mapping = BidirectionalMapping(
-        Mapping([0, -1, 1, 2]), Mapping([0, 2, 3]))
+        Mapping([-1, -1, -1, 0]), Mapping([3]))
 
     # Add objective functions
     objective_functions = (
@@ -42,14 +42,13 @@ def prepare_ocp(show_online_optim=False):
 
     # Constraints
     constraints = (
-        {"type": Constraint.MINIMIZE_ALL_CONTROLS, "instant": Instant.ALL},
         {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": 1, "boundary": 0}
     )
 
     # Path constraint
     nb_q = biorbd_model.nbQ()
     nb_qdot = nb_q
-    pose_at_first_node = [0, 0, 0.5, -0.5]
+    pose_at_first_node = [0, 0, 0.5, -1]
 
     # Initialize X_bounds
     X_bounds = [QAndQDotBounds(biorbd_model)]
