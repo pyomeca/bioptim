@@ -209,66 +209,63 @@ class ProblemType:
             return q, q_dot, tau
 
     @staticmethod
-    def get_states_integrated_from_V(ocp, V, number_elements=1, concatenate_phases=False):
-        v = ProblemType.get_data_from_V(ocp, V)[:3]
+    def get_data_integrated_from_V(ocp, V):
+        v = list(ProblemType.get_data_from_V(ocp, V))
 
-        if ocp.nb_phases == 1:
-            v = [v]
-
-        t = [np.linspace(0, ocp.nlp[i]["tf"], ocp.nlp[i]["ns"] * number_elements) for i in range(ocp.nb_phases)]
-        integrated_state = []
-        for idx_phase, v_phase in enumerate(v):
-
-            integrated_state_phase = np.ndarray(
-                (ocp.nlp[idx_phase]["nbQ"] + ocp.nlp[idx_phase]["nbQdot"], ocp.nlp[idx_phase]["ns"] + 1)
-            )
-            for j in range(ocp.nlp[idx_phase]["ns"] + 1):
-                integrated_state_phase[:, j] = np.reshape(
+        for idx_phase in range(ocp.nb_phases):
+            for node in range(ocp.nlp[idx_phase]["ns"]):
+                if ocp.nlp[idx_phase]["problem_type"] in (
+                        ProblemType.torque_driven,
+                        ProblemType.torque_driven_with_contact,
+                ):
+                    p = v[2][idx_phase][:, node]
+                elif ocp.nlp[idx_phase]["problem_type"] in (
+                        ProblemType.muscle_activations_and_torque_driven,
+                        ProblemType.muscles_and_torque_driven_with_contact,
+                ):
+                    p = np.concatenate((v[2][idx_phase][:, node], v[3][idx_phase][:, node]))
+                integrated_state_phase = np.reshape(
                     ocp.nlp[idx_phase]["dynamics"].call(
-                        {"x0": np.concatenate((v_phase[:2][0][:, j], v_phase[:2][1][:, j])), "p": v_phase[2][:, j]}
+                        {"x0": np.concatenate((v[0][idx_phase][:, node], v[1][idx_phase][:, node])), "p": p}
                     )["xf"],
-                    ocp.nlp[idx_phase]["nbQ"] + ocp.nlp[idx_phase]["nbQdot"]
+                    ocp.nlp[idx_phase]["nbQ"] + ocp.nlp[idx_phase]["nbQdot"],
+                )
+                v[0][idx_phase] = np.insert(
+                    v[0][idx_phase], 2 * node + 1, integrated_state_phase[: ocp.nlp[idx_phase]["nbQ"]], axis=1
+                )
+                v[1][idx_phase] = np.insert(
+                    v[1][idx_phase], 2 * node + 1, integrated_state_phase[ocp.nlp[idx_phase]["nbQ"]:], axis=1
                 )
 
-            integrated_state.append(integrated_state_phase)
-
-        if concatenate_phases:
-            same_dof = True
-            for i in range(self.ocp.nb_phases):
-                for k in range(self.ocp.nlp[0]["model"].nbDof()):
-                    if (
-                            self.ocp.nlp[i]["model"].nameDof()[k].to_string()
-                            != self.ocp.nlp[i - 1]["model"].nameDof()[k].to_string()
-                    ):
-                        same_dof = False
-            if same_dof:
-                t_concat = t[0]
-                state_concat = integrated_state[0]
-                for i in range(1, self.ocp.nb_phases):
-                    state_concat = np.concatenate((state_concat, integrated_state[i][:, 1:]), axis=1)
-                    t_concat = np.concatenate((t_concat, t[0][i][1:] + t[-1]))
-        return integrated_state
+        return v
 
     @staticmethod
-    def __interpolate(self, idx_phase, x_phase, t, nb_frames):
-        x_interpolate = np.ndarray((self.ocp.nlp[idx_phase]["nbQ"], nb_frames))
-        for j in range(self.ocp.nlp[idx_phase]["nbQ"]):
-            x_interpolate[j] = interpolate.splev(
-                np.linspace(0, t[idx_phase][-1], nb_frames), interpolate.splrep(t[idx_phase], x_phase[j], s=0)
+    def get_q_integrated_from_V(ocp, V):
+        v = list(ProblemType.get_data_from_V(ocp, V))
+
+        integrated_state = []
+        for idx_phase in range(ocp.nb_phases):
+            integrated_state_phase = np.ndarray(
+                (ocp.nlp[idx_phase]["nx"], ocp.nlp[idx_phase]["ns"] + 1)
             )
-        return x_interpolate
+            for node in range(ocp.nlp[idx_phase]["ns"]):
+                if ocp.nlp[idx_phase]["problem_type"] in (
+                        ProblemType.torque_driven,
+                        ProblemType.torque_driven_with_contact,
+                ):
+                    p = v[2][idx_phase][:, node]
+                elif ocp.nlp[idx_phase]["problem_type"] in (
+                        ProblemType.muscle_activations_and_torque_driven,
+                        ProblemType.muscles_and_torque_driven_with_contact,
+                ):
+                    p = np.concatenate((v[2][idx_phase][:, node], v[3][idx_phase][:, node]))
 
-    @staticmethod
-    def get_q_from_V(ocp, V, num_phase=None):
-        if ocp.nlp[0]["problem_type"] == ProblemType.torque_driven:
-            x, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
+                integrated_state_phase[:, node] = np.reshape(
+                    ocp.nlp[idx_phase]["dynamics"].call(
+                        {"x0": np.concatenate((v[0][idx_phase][:, node], v[1][idx_phase][:, node])), "p": p}
+                    )["xf"],
+                    ocp.nlp[idx_phase]["nbQ"] + ocp.nlp[idx_phase]["nbQdot"],
+                )
+            integrated_state.append(integrated_state_phase[: ocp.nlp[idx_phase]["nbQ"]])
 
-        elif (
-                ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
-                or ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
-        ):
-            x, _, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
-
-        else:
-            raise RuntimeError(f"{ocp.nlp[0]['problem_type']} is not implemented for this type of OCP")
-        return x
+        return integrated_state
