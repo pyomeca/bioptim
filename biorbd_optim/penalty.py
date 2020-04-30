@@ -78,8 +78,9 @@ class PenaltyFunctionAbstract:
             :param x: List of instant(s).
             :param policy: Tuple of indices of two markers.
             """
-            PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx],
-                                               nlp["model"].nbMarkers())
+            PenaltyFunctionAbstract._check_idx(
+                "marker", [first_marker_idx, second_marker_idx], nlp["model"].nbMarkers()
+            )
 
             nq = nlp["q_mapping"].reduce.len
             for v in horzsplit(x, 1):
