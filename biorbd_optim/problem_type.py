@@ -198,11 +198,6 @@ class ProblemType:
             else:
                 raise RuntimeError(f"{nlp['problem_type'].__name__} not implemented yet in get_data_from_V")
 
-        if len(num_phase) == 1:
-            q = q[0]
-            q_dot = q_dot[0]
-            tau = tau[0]
-            muscle = muscle[0]
         if has_muscles:
             return q, q_dot, tau, muscle
         else:
