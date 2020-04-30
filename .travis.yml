@@ -17,7 +17,7 @@ install:
 script:
   - black --check . --line-length 120
   - python setup.py install
-  - pytest -v --color=yes --cov=biorbd_optim tests
+  - pytest -v --color=yes --cov-report term-missing --cov=biorbd_optim tests
 
 after_success:
   - codecov
