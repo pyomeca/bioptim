@@ -30,8 +30,11 @@ class PlotOcp:
 
             if i == 0:
                 self.t = np.linspace(0, nlp["tf"], nlp["ns"] + 1)
+                self.t_integrated = PlotOcp.generate_integrated_time(self.t)
             else:
-                self.t = np.append(self.t, np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1),)
+                time_phase = np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1)
+                self.t = np.append(self.t, time_phase)
+                self.t_integrated = np.append(self.t_integrated, PlotOcp.generate_integrated_time(time_phase))
             self.ns += nlp["ns"] + 1
 
         self.axes = []
@@ -87,11 +90,24 @@ class PlotOcp:
             intersections_time = PlotOcp.find_phases_intersections(ocp)
             for i, ax in enumerate(self.axes):
                 if i < self.ocp.nlp[0]["nx"]:
-                    ax.plot(self.t, np.zeros((self.ns, 1)))
+                    cmp = 0
+                    for idx_phase in range(self.ocp.nb_phases):
+                        for _ in range(self.ocp.nlp[idx_phase]["ns"]):
+                            ax.plot(
+                                self.t_integrated[2 * cmp + idx_phase: 2 * (cmp + 1) + idx_phase],
+                                np.zeros(2),
+                                color="g",
+                                linewidth=0.8,
+                            )
+                            ax.plot(
+                                self.t_integrated[2 * cmp + idx_phase], np.zeros(1), color="g", marker=".", markersize=6
+                            )
+                            cmp += 1
+
                 elif i < self.ocp.nlp[0]["nx"] + self.ocp.nlp[0]["nbTau"]:
-                    ax.step(self.t, np.zeros((self.ns, 1)), where="post")
+                    ax.step(self.t, np.zeros((self.ns, 1)), where="post", color="r")
                 else:
-                    ax.step(self.t, np.zeros((self.ns, 1)), where="post")
+                    ax.step(self.t, np.zeros((self.ns, 1)), where="post", color="b")
 
                 for time in intersections_time:
                     ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
@@ -125,6 +141,12 @@ class PlotOcp:
                 fig.canvas.manager.window.move(20, i * height_step)
 
             fig.canvas.draw()
+
+    @staticmethod
+    def generate_integrated_time(t):
+        for i in range(len(t) - 1, 0, -1):
+            t = np.insert(t, i, t[i])
+        return t
 
     @staticmethod
     def find_phases_intersections(ocp):
