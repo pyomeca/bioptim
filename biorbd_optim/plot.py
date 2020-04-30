@@ -240,14 +240,37 @@ class ShowResult:
             from BiorbdViz import BiorbdViz
         except ModuleNotFoundError:
             raise RuntimeError("BiorbdViz must be install to animate the model")
+        if integrated:
+            x = ProblemType.get_q_integrated_from_V(self.ocp, self.sol["x"])
+        else:
+            x = ProblemType.get_data_from_V(self.ocp, self.sol["x"])[0]
+        t = [np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1) for i in range(self.ocp.nb_phases)]
 
-        x = ProblemType.get_states_integrated_from_V(self.ocp, self.sol["x"])
+        same_dof = True
 
-        for i, x_phase in enumerate(x):
-            b = BiorbdViz(loaded_model=self.ocp.nlp[i]["model"], **kwargs)
-            b.load_movement(x_phase.T)
+        for i in range(self.ocp.nb_phases):
+            for dof in self.ocp.nlp[0]["model"].nameDof():
+                if dof.to_string() != dof.to_string():
+                    same_dof = False
+        if same_dof:
+            t_concat = t[0]
+            x_concat = x[0]
+            for i in range(1, self.ocp.nb_phases):
+                x_concat = np.concatenate((x_concat, x[i][:, 1:]), axis=1)
+                t_concat = np.concatenate((t_concat, t[i][1:] + t_concat[-1]))
+            x = [x_concat]
+            t = [t_concat]
+
+        for idx_phase, x_phase in enumerate(x):
+            x_interpolate = np.ndarray((self.ocp.nlp[idx_phase]["nbQ"], nb_frames))
+            for j in range(self.ocp.nlp[idx_phase]["nbQ"]):
+                x_interpolate[j] = interpolate.splev(
+                    np.linspace(0, t[idx_phase][-1], nb_frames), interpolate.splrep(t[idx_phase], x_phase[j], s=0)
+                )
+            b = BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs)
+            b.load_movement(x_interpolate.T)
             b.exec()
-        return x_phase.T
+        return x_interpolate.T
 
     @staticmethod
     def keep_matplotlib():
