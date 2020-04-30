@@ -20,11 +20,16 @@ before_install:
 
 install:
   - conda env update -n root -f environment.yml
+  - conda install pytest-cov black pytest codecov -cconda-forge
 
 script:
-  - black --check biorbd_optim/ --line-length 120
+  - black --check . --line-length 120
   - python setup.py install
-  - pytest -v --color=yes
+  - pytest -v --color=yes --cov=biorbd_optim tests
+
+after_success:
+  # Uploading report to CodeCov
+  - codecov
 
 notifications:
   email:
