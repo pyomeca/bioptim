@@ -76,11 +76,12 @@ class OptimalControlProgram:
         variable_time_min = []
         variable_time_max = []
 
+        phase_time = list(phase_time)
         for i in range(self.nb_phases):
             for j in range(len(objective_functions[i])):
-                if (objective_functions[i][j][type] == Objective.Mayer.MINIMIZE_TIME) or (objective_functions[i][j][type] == Objective.Lagrange.MINIMIZE_TIME):
+                if (objective_functions[i][j]['type'] == Objective.Mayer.MINIMIZE_TIME) or (objective_functions[i][j]['type'] == Objective.Mayer.MINIMIZE_TIME):
                     initial_time_guess.append(phase_time[i])
-                    phase_time[i] = MX()
+                    phase_time[i] = casadi.MX()
                     if 'maximum' in objective_functions[i][j]:
                         variable_time_min.append(objective_functions[i][j]['maximum'])
                     else:
@@ -91,6 +92,7 @@ class OptimalControlProgram:
                     else:
                         variable_time_max.append(0)
 
+        phase_time = tuple(phase_time)
         self.__add_to_nlp("tf", phase_time, False)
 
         self.__add_to_nlp("tmin", variable_time_min, False)
