@@ -17,7 +17,7 @@ class ObjectiveFunction:
             if quadratic:
                 ocp.J += casadi.dot(val, val) * weight * nlp["dt"] * nlp["dt"]
             else:
-                ocp.J += casadi.sum1(val) * weight * nlp["dt"] * nlp["dt"]
+                ocp.J += casadi.sum1(val) * weight * nlp["dt"]
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
