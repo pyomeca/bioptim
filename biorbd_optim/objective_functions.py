@@ -46,6 +46,10 @@ class ObjectiveFunction:
             # Everything that should change the entry parameters depending on the penalty can be added here
             PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
 
+            if penalty_function == ObjectiveFunction.Mayer.MINIMIZE_TIME:
+                del penalty_function["minimum"]
+                del penalty_function["maximum"]
+
         @staticmethod
         def _span_checker(penalty_function, instant, nlp):
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
