@@ -20,7 +20,6 @@ before_install:
 
 install:
   - conda env update -n root -f environment.yml
-  - conda install biorbd-casadi -cconda-forge
 
 script:
   - black --check biorbd_optim/ --line-length 120
