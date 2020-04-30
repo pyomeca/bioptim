@@ -11,16 +11,12 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path="arm26_with_contact.bioMod", show_online_optim=False):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
     torque_min, torque_max, torque_init = -1, 1, 0
     muscle_min, muscle_max, muscle_init = 0, 1, 0.5
-
-    # Problem parameters
-    number_shooting_points = 30
-    final_time = 2
 
     # Add objective functions
     objective_functions = (
@@ -72,7 +68,9 @@ def prepare_ocp(biorbd_model_path="arm26_with_contact.bioMod", show_online_optim
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True)
+    ocp = prepare_ocp(
+        biorbd_model_path="arm26_with_contact.bioMod", final_time=2, number_shooting_points=20, show_online_optim=True
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve()
