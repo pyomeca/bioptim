@@ -1,6 +1,13 @@
 # BiorbdOptim
 An optimization framework that links CasADi, ipopt and biorbd for Optimal Control Problem 
 
+## Status
+
+| | |
+|---|---|
+| Continuous integration | [![Build Status](https://travis-ci.org/pyomeca/BiorbdOptim.svg?branch=travis)](https://travis-ci.org/pyomeca/BiorbdOptim) |
+| Code coverage | [![codecov](https://codecov.io/gh/pyomeca/BiorbdOptim/branch/dev/graph/badge.svg)](https://codecov.io/gh/pyomeca/BiorbdOptim) |
+
 # How to install 
 The way to install BiorbdOptim on your computer is to installing from the sources. 
 
