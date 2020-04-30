@@ -28,6 +28,7 @@ class ProblemType:
         :param nlp: An OptimalControlProgram class.
         """
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_driven_with_contact
+        nlp["CS_func"] = Dynamics.forces_from_forward_dynamics_with_contact
         ProblemType.__configure_torque_driven(nlp)
 
     @staticmethod

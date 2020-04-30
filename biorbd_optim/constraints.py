@@ -27,7 +27,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             CS_func = Function(
                 "Contact_force_inequality",
                 [ocp.symbolic_states, ocp.symbolic_controls],
-                [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
+                [nlp["CS_func"](ocp.symbolic_states, ocp.symbolic_controls, nlp)],
                 ["x", "u"],
                 ["CS"],
             ).expand()
