@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
 from .problem_type import ProblemType
+from .variable_optimisation import Data
 
 height = 2.4
 muscle_position = 1000
@@ -175,7 +176,7 @@ class PlotOcp:
                     or self.problem_type == ProblemType.torque_driven_with_contact
                 ):
                     # TODO: Add an integrator for the states
-                    q, q_dot, tau = ProblemType.get_data_integrated_from_V(self.ocp, V)
+                    q, q_dot, tau = Data.get_data_integrated_from_V(self.ocp, V)
                     self.__update_ydata(q, nlp["nbQ"], i)
                     self.__update_ydata(q_dot, nlp["nbQdot"], i)
                     self.__update_ydata(tau, nlp["nbTau"], i)
@@ -184,7 +185,7 @@ class PlotOcp:
                     self.problem_type == ProblemType.muscle_activations_and_torque_driven
                     or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
                 ):
-                    q, q_dot, tau, muscle = ProblemType.get_data_integrated_from_V(self.ocp, V)
+                    q, q_dot, tau, muscle = Data.get_data_integrated_from_V(self.ocp, V)
                     self.__update_ydata(q, nlp["nbQ"], i)
                     self.__update_ydata(q_dot, nlp["nbQdot"], i)
                     self.__update_ydata(tau, nlp["nbTau"], i)
@@ -240,26 +241,22 @@ class ShowResult:
             from BiorbdViz import BiorbdViz
         except ModuleNotFoundError:
             raise RuntimeError("BiorbdViz must be install to animate the model")
-        if integrated:
-            x = ProblemType.get_q_integrated_from_V(self.ocp, self.sol["x"])
-        else:
-            x = ProblemType.get_data_from_V(self.ocp, self.sol["x"])[0]
+        data = Data.get_data_integrated_from_V(self.ocp, self.sol["x"])
         t = [np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1) for i in range(self.ocp.nb_phases)]
 
         same_dof = True
-
         for i in range(self.ocp.nb_phases):
             for dof in self.ocp.nlp[0]["model"].nameDof():
                 if dof.to_string() != dof.to_string():
                     same_dof = False
         if same_dof:
             t_concat = t[0]
-            x_concat = x[0]
             for i in range(1, self.ocp.nb_phases):
-                x_concat = np.concatenate((x_concat, x[i][:, 1:]), axis=1)
                 t_concat = np.concatenate((t_concat, t[i][1:] + t_concat[-1]))
-            x = [x_concat]
             t = [t_concat]
+            x = data["q"].get_data()
+        else:
+            x = [data["q"].get_data(phases=idx_phase) for idx_phase in range(len(data["q"].phase))]
 
         for idx_phase, x_phase in enumerate(x):
             x_interpolate = np.ndarray((self.ocp.nlp[idx_phase]["nbQ"], nb_frames))
