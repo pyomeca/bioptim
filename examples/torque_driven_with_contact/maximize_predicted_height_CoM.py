@@ -93,8 +93,8 @@ if __name__ == "__main__":
     from casadi import vertcat, Function
 
     nlp = ocp.nlp[0]  # why [0] is necessary if there is no multiphase?
-    contact_forces = np.zeros((2, nlp["ns"] + 1))
-    cs_map = range(2)
+    contact_forces = np.zeros((3, nlp["ns"] + 1))
+    cs_map = range(3)
 
     CS_func = Function(
         "Contact_force_inequality",
@@ -103,14 +103,15 @@ if __name__ == "__main__":
         ["x", "u"],
         ["CS"],
     ).expand()
-    #
-    # q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"])
-    # x = vertcat(q, q_dot)
-    # contact_forces[cs_map, : nlp["ns"] + 1] = CS_func(x, u)
-    #
-    # plt.plot(contact_forces.T)
-    # plt.show()
+
+    q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"])
+    x = vertcat(q, q_dot)
+    contact_forces[cs_map, : nlp["ns"] + 1] = CS_func(x, u)
+
+    plt.plot(contact_forces.T)
+    plt.show()
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
     result.animate()
+

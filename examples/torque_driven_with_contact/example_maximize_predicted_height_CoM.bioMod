@@ -52,7 +52,7 @@ segment Seg1
 	mesh  0 0 -0.5
 endsegment
 
-// Seg1
+// Seg2
 segment Seg2
     parent Seg1
     RT 0 0 0 xyz 0 0 -0.5
