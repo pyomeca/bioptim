@@ -75,6 +75,7 @@ class OptimalControlProgram:
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
         self.__add_to_nlp("tf", phase_time, False)
+        self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp)-1], False)
         self.__add_to_nlp(
             "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
         )
