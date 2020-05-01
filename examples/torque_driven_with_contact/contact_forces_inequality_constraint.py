@@ -43,8 +43,8 @@ def prepare_ocp(show_online_optim=False):
 
     # Constraints
     constraints = (
-        {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0, },
-        {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0, },
+        #{"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "contact_force_idx": 1, "boundary": 0, },
+        #{"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "contact_force_idx": 2, "boundary": 0, },
     )
 
     # Path constraint
@@ -111,6 +111,10 @@ if __name__ == "__main__":
     x = vertcat(q, q_dot)
     contact_forces[cs_map, : nlp["ns"] + 1] = CS_func(x, u)
 
+    names_contact_forces = ocp.nlp[0]["model"].contactNames()
+    # for i, elt in enumerate(contact_forces):
+    #     plt.plot(elt.T, label=f"{names_contact_forces[i].to_string()}")
+    # plt.legend()
     plt.plot(contact_forces.T)
     plt.show()
 
