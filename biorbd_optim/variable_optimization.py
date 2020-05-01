@@ -25,7 +25,7 @@ class Data:
 
     def get_data(self, phases=(), nodes=(), dofs=(), integrated=False):
         if self.phase == []:
-            raise RuntimeError("Data empty, please append phase before trying to get data.")
+            return np.ndarray((0, 1))
 
         phases = phases if isinstance(phases, (list, tuple)) else [phases]
         nodes = nodes if isinstance(nodes, (list, tuple)) else [nodes]
