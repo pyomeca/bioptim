@@ -1,14 +1,12 @@
 import multiprocessing as mp
 import numpy as np
 import tkinter
-import casadi
 
-from scipy import interpolate, integrate
 from matplotlib import pyplot as plt
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
 from .problem_type import ProblemType
-from .variable_optimisation import Data
+from .variable_optimization import Data
 
 height = 2.4
 muscle_position = 1000
@@ -171,31 +169,17 @@ class PlotOcp:
                 or self.problem_type == ProblemType.muscle_activations_and_torque_driven
                 or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
             ):
-                if (
-                    self.problem_type == ProblemType.torque_driven
-                    or self.problem_type == ProblemType.torque_driven_with_contact
-                ):
-                    # TODO: Add an integrator for the states
-                    q, q_dot, tau = Data.get_data_integrated_from_V(self.ocp, V)
-                    self.__update_ydata(q, nlp["nbQ"], i)
-                    self.__update_ydata(q_dot, nlp["nbQdot"], i)
-                    self.__update_ydata(tau, nlp["nbTau"], i)
-
-                elif (
-                    self.problem_type == ProblemType.muscle_activations_and_torque_driven
-                    or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
-                ):
-                    q, q_dot, tau, muscle = Data.get_data_integrated_from_V(self.ocp, V)
-                    self.__update_ydata(q, nlp["nbQ"], i)
-                    self.__update_ydata(q_dot, nlp["nbQdot"], i)
-                    self.__update_ydata(tau, nlp["nbTau"], i)
-                    self.__update_ydata(muscle, nlp["nbMuscle"], i)
+                # TODO: Add an integrator for the states
+                data = Data.get_data_from_V(self.ocp, V, integrate=True)
+                for key in data.keys():
+                    self.__update_ydata(data[key], i)
 
         self.__update_axes()
 
-    def __update_ydata(self, array, nb_variables, phase_idx):
-        for i in range(nb_variables):
-            self.ydata[phase_idx].append(array[phase_idx][i, :])
+    def __update_ydata(self, data, phase_idx):
+        for i in range(data.nb_elements):
+            d = data.to_matrix(idx=i, phases=phase_idx)
+            self.ydata[phase_idx].append(d)
 
     def __update_axes(self):
         for i, ax in enumerate(self.axes):
@@ -236,38 +220,29 @@ class ShowResult:
         plot_ocp.update_data(self.sol["x"])
         plt.show()
 
-    def animate(self, integrated=False, nb_frames=80, **kwargs):
+    def animate(self, nb_frames=80, **kwargs):
         try:
             from BiorbdViz import BiorbdViz
         except ModuleNotFoundError:
             raise RuntimeError("BiorbdViz must be install to animate the model")
-        data = Data.get_data_integrated_from_V(self.ocp, self.sol["x"])
-        t = [np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1) for i in range(self.ocp.nb_phases)]
+        data_interpolate = Data.get_data_from_V(self.ocp, self.sol["x"], integrate=False, interpolate_nb_frames=nb_frames)
 
-        same_dof = True
-        for i in range(self.ocp.nb_phases):
-            for dof in self.ocp.nlp[0]["model"].nameDof():
-                if dof.to_string() != dof.to_string():
-                    same_dof = False
-        if same_dof:
-            t_concat = t[0]
-            for i in range(1, self.ocp.nb_phases):
-                t_concat = np.concatenate((t_concat, t[i][1:] + t_concat[-1]))
-            t = [t_concat]
-            x = data["q"].get_data()
-        else:
-            x = [data["q"].get_data(phases=idx_phase) for idx_phase in range(len(data["q"].phase))]
+        all_bioviz = []
+        for idx_phase, d in enumerate(data_interpolate["q"].phase):
+            all_bioviz.append(BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs))
+            all_bioviz[-1].load_movement(d.T)
 
-        for idx_phase, x_phase in enumerate(x):
-            x_interpolate = np.ndarray((self.ocp.nlp[idx_phase]["nbQ"], nb_frames))
-            for j in range(self.ocp.nlp[idx_phase]["nbQ"]):
-                x_interpolate[j] = interpolate.splev(
-                    np.linspace(0, t[idx_phase][-1], nb_frames), interpolate.splrep(t[idx_phase], x_phase[j], s=0)
-                )
-            b = BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs)
-            b.load_movement(x_interpolate.T)
-            b.exec()
-        return x_interpolate.T
+        b_is_visible = [True] * len(all_bioviz)
+        while sum(b_is_visible):
+            for i, b in enumerate(all_bioviz):
+                if b.vtk_window.is_active:
+                    if b.show_analyses_panel and b.is_animating:
+                        b.movement_slider[0].setValue(
+                            (b.movement_slider[0].value() + 1) % b.movement_slider[0].maximum()
+                        )
+                    b.refresh_window()
+                else:
+                    b_is_visible[i] = False
 
     @staticmethod
     def keep_matplotlib():
