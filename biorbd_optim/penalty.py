@@ -282,9 +282,9 @@ class PenaltyFunctionAbstract:
             or penalty_function == PenaltyType.MINIMIZE_TORQUE
             or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
             or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
+            or penalty_function == PenaltyType.TRACK_CONTACT_FORCES
             or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
             or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
-            or penalty_function == PenaltyType.TRACK_CONTACT_FORCES
         ):
             if "quadratic" not in parameters.keys():
                 parameters["quadratic"] = True
