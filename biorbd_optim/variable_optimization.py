@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Data:
     def __init__(self, type):
         self.phase = []
@@ -21,10 +22,6 @@ class Data:
             class Dof:
                 def __init__(self, x0):
                     self.x0 = x0
-
-
-    def append_phase(self, phase, nlp):
-        self.phase.append(Data.Phase(phase, nlp))
 
     def get_data(self, phases=(), nodes=(), dofs=(), integrated=False):
         if self.phase == []:
@@ -137,3 +134,6 @@ class Data:
             data["q_dot"].give_integrated(xf_dof[ocp.nlp[idx_phase]["nbQ"]:], idx_phase, ocp.nlp[idx_phase]["ns"])
         data["q"].get_data(**{"integrated": True})
         return data
+
+    def _append_phase(self, phase, nlp):
+        self.phase.append(Data.Phase(phase, nlp))
