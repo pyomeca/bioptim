@@ -185,7 +185,6 @@ endmusclegroup
 
     muscle    TRIlong
         Type    hillthelenfatigable
-        statetype    buchanan
         musclegroup    base_to_r_ulna_radius_hand
         OriginPosition    -0.053650000000000003 -0.013729999999999999 0.14723
         InsertionPosition    -0.021899999999999999 0.010460000000000001 -0.00077999999999999999
@@ -225,7 +224,6 @@ endmusclegroup
 
     muscle    BIClong
         Type    hillthelen
-        statetype    buchanan
         musclegroup    base_to_r_ulna_radius_hand
         OriginPosition    -0.039234999999999999 0.00347 0.14795
         InsertionPosition    0.0075100000000000002 -0.048390000000000002 0.02179
@@ -281,7 +279,6 @@ endmusclegroup
 
     muscle    BICshort
         Type    hillthelen
-        statetype    buchanan
         musclegroup    base_to_r_ulna_radius_hand
         OriginPosition    0.0046750000000000003 -0.01231 0.13475000000000001
         InsertionPosition    0.0075100000000000002 -0.048390000000000002 0.02179
@@ -325,7 +322,6 @@ endmusclegroup
 
     muscle    TRIlat
         Type    hillthelen
-        statetype    buchanan
         musclegroup    r_humerus_to_r_ulna_radius_hand
         OriginPosition    -0.0059899999999999997 -0.12645999999999999 0.00428
         InsertionPosition    -0.021899999999999999 0.010460000000000001 -0.00077999999999999999
@@ -357,7 +353,6 @@ endmusclegroup
 
     muscle    TRImed
         Type    hillthelen
-        statetype    buchanan
         musclegroup    r_humerus_to_r_ulna_radius_hand
         OriginPosition    -0.0083800000000000003 -0.13694999999999999 -0.0090600000000000003
         InsertionPosition    -0.021899999999999999 0.010460000000000001 -0.00077999999999999999
@@ -389,7 +384,6 @@ endmusclegroup
 
     muscle    BRA
         Type    hillthelen
-        statetype    buchanan
         musclegroup    r_humerus_to_r_ulna_radius_hand
         OriginPosition    0.0067999999999999996 -0.1739 -0.0035999999999999999
         InsertionPosition    -0.0032000000000000002 -0.023900000000000001 0.00089999999999999998
