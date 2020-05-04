@@ -82,7 +82,7 @@ class ProblemType:
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_muscle_driven
         ProblemType.__configure_torque_driven(nlp)
 
-        nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()
+        nlp["nbMuscle"] = nlp["model"].nbMuscles()
 
         u = MX()
         muscle_names = nlp["model"].muscleNames()
@@ -101,7 +101,7 @@ class ProblemType:
         nlp["dynamics_func"] = Dynamics.forward_dynamics_muscle_excitations_and_torque_driven
         ProblemType.__configure_torque_driven(nlp)
 
-        nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()
+        nlp["nbMuscle"] = nlp["model"].nbMuscles()
 
         u = MX()
         x = MX()
@@ -127,13 +127,13 @@ class ProblemType:
 
         u = MX()
         muscle_names = nlp["model"].muscleNames()
-        for i in range(nlp["model"].nbMuscleTotal()):
+        for i in range(nlp["model"].nbMuscles()):
             u = vertcat(u, MX.sym("Muscle_" + muscle_names[i].to_string() + "_activation"))
         nlp["u"] = vertcat(nlp["u"], u)
 
         nlp["nu"] = nlp["u"].rows()
 
-        nlp["nbMuscle"] = nlp["model"].nbMuscleTotal()
+        nlp["nbMuscle"] = nlp["model"].nbMuscles()
 
     @staticmethod
     def get_data_from_V_phase(V_phase, var_size, nb_nodes, offset, nb_variables, duplicate_last_column):
@@ -153,7 +153,8 @@ class ProblemType:
     @staticmethod
     def get_data_from_V(ocp, V, num_phase=None):
         V_array = np.array(V).squeeze()
-        has_muscles = False
+        has_muscles_states = False
+        has_muscles_controls = False
 
         if num_phase is None:
             num_phase = range(len(ocp.nlp))
@@ -163,7 +164,7 @@ class ProblemType:
         for i, nlp in enumerate(ocp.nlp):
             offsets.append(offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"]))
 
-        q, q_dot, tau, muscle = [], [], [], []
+        q, q_dot, tau, muscle_states, muscle_control = [], [], [], [], []
 
         for i in num_phase:
             nlp = ocp.nlp[i]
@@ -176,6 +177,7 @@ class ProblemType:
                 or nlp["problem_type"] == ProblemType.torque_driven_with_contact
                 or nlp["problem_type"] == ProblemType.muscle_activations_and_torque_driven
                 or nlp["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+                or nlp["problem_type"] == ProblemType.muscle_excitations_and_torque_driven
             ):
                 q.append(ProblemType.get_data_from_V_phase(V_phase, nlp["nbQ"], nlp["ns"] + 1, 0, nb_var, False))
                 q_dot.append(
@@ -186,15 +188,21 @@ class ProblemType:
                 if (
                     nlp["problem_type"] == ProblemType.muscle_activations_and_torque_driven
                     or nlp["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+                    or nlp["problem_type"] == ProblemType.muscle_excitations_and_torque_driven
                 ):
-                    has_muscles = True
-                    muscle.append(
+                    has_muscles_controls = True
+                    muscle_control.append(
                         ProblemType.get_data_from_V_phase(
                             V_phase, nlp["nbMuscle"], nlp["ns"], nlp["nx"] + nlp["nbTau"], nb_var, True,
                         )
                     )
-                else:
-                    muscle.append([])
+                    if nlp["problem_type"] == ProblemType.muscle_excitations_and_torque_driven:
+                        has_muscles_states = True
+                        muscle_states.append(
+                            ProblemType.get_data_from_V_phase(
+                                V_phase, nlp["nbMuscle"], nlp["ns"] + 1, nlp["nbQ"] + nlp["nbQdot"], nb_var, False,
+                            )
+                        )
 
             else:
                 raise RuntimeError(f"{nlp['problem_type'].__name__} not implemented yet in get_data_from_V")
@@ -203,9 +211,12 @@ class ProblemType:
             q = q[0]
             q_dot = q_dot[0]
             tau = tau[0]
-            muscle = muscle[0]
-        if has_muscles:
-            return q, q_dot, tau, muscle
+        if has_muscles_controls:
+            muscle_control = muscle_control[0]
+            if has_muscles_states:
+                muscle_states = muscle_states[0]
+                return q, q_dot, tau, muscle_states, muscle_control
+            return q, q_dot, tau, muscle_control
         else:
             return q, q_dot, tau
 
@@ -217,6 +228,7 @@ class ProblemType:
         elif (
             ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
             or ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+            or ocp.nlp[0]["problem_type"] == ProblemType.muscle_exctitations_and_torque_driven
         ):
             x, _, _, _ = ProblemType.get_data_from_V(ocp, V, num_phase)
 
