@@ -9,6 +9,7 @@ from biorbd_optim import (
     Constraint,
     Objective,
     ProblemType,
+    Dynamics,
     BidirectionalMapping,
     Mapping,
     Bounds,
@@ -18,24 +19,22 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(show_online_optim=False):
+def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_optim=False):
     # --- Options --- #
     # Model path
-    biorbd_model = biorbd.Model("example_maximize_predicted_height_CoM.bioMod")
-    torque_min, torque_max, torque_init = -500, 500, 0
+    biorbd_model = biorbd.Model(model_path)
 
-    # Problem parameters
-    number_shooting_points = 30
-    phase_time = 0.5
+    torque_min, torque_max, torque_init = -500, 500, 0
 
     q_mapping = BidirectionalMapping(
         Mapping(range(biorbd_model.nbQ())), Mapping(range(biorbd_model.nbQ())))
     tau_mapping = BidirectionalMapping(
-        Mapping([-1, -1, -1, 0, 1, 2]), Mapping([3, 4, 5]))
+        Mapping([-1, -1, -1, 0]), Mapping([3]))
 
     # Add objective functions
     objective_functions = (
         {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
+        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1/100}
     )
 
     # Dynamics
@@ -47,7 +46,7 @@ def prepare_ocp(show_online_optim=False):
     # Path constraint
     nb_q = biorbd_model.nbQ()
     nb_qdot = nb_q
-    pose_at_first_node = [0, 0, 0.6, -1, -1.3, 0.6]
+    pose_at_first_node = [0, 0, -0.5, 0.5]
 
     # Initialize X_bounds
     X_bounds = [QAndQDotBounds(biorbd_model)]
@@ -84,7 +83,8 @@ def prepare_ocp(show_online_optim=False):
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True)
+    model_path = "2segments_4dof_2contacts.bioMod"
+    ocp = prepare_ocp(model_path=model_path, phase_time=0.5, number_shooting_points=20, show_online_optim=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()
@@ -92,23 +92,28 @@ if __name__ == "__main__":
     from matplotlib import pyplot as plt
     from casadi import vertcat, Function
 
-    nlp = ocp.nlp[0]  # why [0] is necessary if there is no multiphase?
-    contact_forces = np.zeros((3, nlp["ns"] + 1))
-    cs_map = range(3)
+    nlp = ocp.nlp[0]
+    contact_forces = np.ndarray((nlp["model"].nbContacts(), nlp["ns"] + 1))
 
-    CS_func = Function(
-        "Contact_force_inequality",
+    nlp["model"] = biorbd.Model(model_path)
+    contact_forces_func = Function(
+        "contact_forces_func",
         [ocp.symbolic_states, ocp.symbolic_controls],
-        [nlp["model"].getConstraints().getForce().to_mx()],
+        [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
         ["x", "u"],
-        ["CS"],
+        ["contact_forces"],
     ).expand()
 
     q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"])
     x = vertcat(q, q_dot)
-    contact_forces[cs_map, : nlp["ns"] + 1] = CS_func(x, u)
+    contact_forces[:, : nlp["ns"] + 1] = contact_forces_func(x, u)
 
-    plt.plot(contact_forces.T)
+    names_contact_forces = ocp.nlp[0]["model"].contactNames()
+    for i, elt in enumerate(contact_forces):
+        plt.plot(elt.T, label=f"{names_contact_forces[i].to_string()}")
+    plt.legend()
+    plt.grid()
+    plt.title("Contact forces")
     plt.show()
 
     # --- Show results --- #
