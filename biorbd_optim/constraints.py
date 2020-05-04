@@ -51,13 +51,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             t,
             x,
             u,
-            normal_component_idx,
             tangential_component_idx,
+            normal_component_idx,
             static_friction_coefficient,
         ):
             """
             :param coeff: It is the coefficient of static friction.
             """
+            if not isinstance(tangential_component_idx, int):
+                raise RuntimeError("tangential_component_idx must be a unique integer")
+
             CS_func = Function(
                 "Contact_force_inequality",
                 [ocp.symbolic_states, ocp.symbolic_controls],
@@ -66,16 +69,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 ["CS"],
             ).expand()
 
+            if isinstance(normal_component_idx, int):
+                normal_component_idx = [normal_component_idx]
+
             mu = static_friction_coefficient
             for i in range(len(u)):
                 normal_contact_force = tangential_contact_force = 0
                 for idx in normal_component_idx:
                     normal_contact_force += CS_func(x[i], u[i])[idx]
-                for idx in tangential_component_idx:
-                    normal_contact_force += CS_func(x[i], u[i])[idx]
+                tangential_contact_force += CS_func(x[i], u[i])[tangential_component_idx]
 
                 # Proposal : only case normal_contact_force >= 0 and with two ocp.g
-                ocp.g = vertcat(ocp.g, mu * fabs(normal_contact_force) + fabs(tangential_contact_force))
+                ocp.g = vertcat(ocp.g, mu * fabs(normal_contact_force) - fabs(tangential_contact_force))
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(inf)
 
