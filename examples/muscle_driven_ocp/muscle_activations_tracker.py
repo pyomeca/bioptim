@@ -57,14 +57,14 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     ).expand()
 
     def dyn_interface(t, x, u):
-        u = np.concatenate([np.array((0, 0)), u])
+        u = np.concatenate([np.zeros(nb_tau), u])
         return np.array(dynamics_func(x, u)).squeeze()
 
     # Generate some muscle activation
     U = np.random.rand(nb_shooting, nb_mus)
 
     # Integrate and collect the position of the markers accordingly
-    X = np.ndarray((biorbd_model.nbQ() + biorbd_model.nbQdot(), nb_shooting + 1))
+    X = np.ndarray((nb_q + nb_qdot, nb_shooting + 1))
     markers = np.ndarray((3, biorbd_model.nbMarkers(), nb_shooting + 1))
 
     def add_to_data(i, q):
@@ -195,20 +195,11 @@ if __name__ == "__main__":
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
-    markers_func = []
-    for i in range(n_mark):
-        markers_func.append(
-            Function(
-                "ForwardKin",
-                [ocp.symbolic_states],
-                [biorbd_model.marker(ocp.symbolic_states[:n_q], i).to_mx()],
-                ["q"],
-                ["marker_" + str(i)],
-            ).expand()
-        )
+    markers_func = Function(
+        "ForwardKin", [ocp.symbolic_states], [biorbd_model.markers(ocp.symbolic_states[:n_q])], ["q"], ["markers"],
+    ).expand()
     for i in range(n_frames):
-        for j, mark_func in enumerate(markers_func):
-            markers[:, j, i] = np.array(mark_func(np.append(q[:, i], qdot[:, i]))).squeeze()
+        markers[:, :, i] = markers_func(np.concatenate((q[:, i], qdot[:, i])))
 
     plt.figure("Markers")
     for i in range(markers.shape[1]):

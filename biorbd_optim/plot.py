@@ -34,11 +34,13 @@ class PlotOcp:
             self.ns += nlp["ns"] + 1
 
         self.axes = []
+        self.plots = []
         if (
             self.problem_type == ProblemType.torque_driven
             or self.problem_type == ProblemType.torque_driven_with_contact
             or self.problem_type == ProblemType.muscle_activations_and_torque_driven
             or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
+            or self.problem_type == ProblemType.muscle_excitations_and_torque_driven
         ):
             for i in range(self.ocp.nb_phases):
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
@@ -60,6 +62,7 @@ class PlotOcp:
             if (
                 self.problem_type == ProblemType.muscle_activations_and_torque_driven
                 or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
+                or self.problem_type == ProblemType.muscle_excitations_and_torque_driven
             ):
 
                 nlp = self.ocp.nlp[0]
@@ -85,17 +88,20 @@ class PlotOcp:
 
             intersections_time = PlotOcp.find_phases_intersections(ocp)
             for i, ax in enumerate(self.axes):
-                if i < self.ocp.nlp[0]["nx"]:
-                    ax.plot(self.t, np.zeros((self.ns, 1)))
-                elif i < self.ocp.nlp[0]["nx"] + self.ocp.nlp[0]["nbTau"]:
-                    ax.step(self.t, np.zeros((self.ns, 1)), where="post")
+                if i < nlp["nbQ"] + nlp["nbQdot"]:
+                    self.plots.append(ax.plot(self.t, np.zeros((self.ns, 1)))[0])
                 else:
-                    ax.step(self.t, np.zeros((self.ns, 1)), where="post")
+                    self.plots.append(ax.step(self.t, np.zeros((self.ns, 1)), where="post")[0])
 
                 for time in intersections_time:
                     ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
                 ax.grid(color="k", linestyle="--", linewidth=0.5)
                 ax.set_xlim(0, self.t[-1])
+
+            if self.problem_type == ProblemType.muscle_excitations_and_torque_driven:
+                offset = nlp["nbQ"] + nlp["nbQdot"] + nlp["nbTau"]
+                for i in range(offset, offset + nlp["nbMuscle"]):
+                    self.plots.append(self.axes[i].plot(self.t, np.zeros((self.ns, 1)), "r")[0])
 
         else:
             raise RuntimeError("Plot is not ready for this type of OCP")
@@ -106,6 +112,7 @@ class PlotOcp:
         if (
             self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
             or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+            or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_excitations_and_torque_driven
         ):
             height_step = int(tkinter.Tk().winfo_screenheight() / (len(self.all_figures) - 1))
 
@@ -113,6 +120,7 @@ class PlotOcp:
             if (
                 self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
                 or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_excitations_and_torque_driven
             ) and fig == self.all_figures[-1]:
                 fig.canvas.manager.window.move(muscle_position, 0)
 
@@ -120,6 +128,7 @@ class PlotOcp:
                 self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven
                 or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
                 or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
+                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_excitations_and_torque_driven
             ):
                 fig.canvas.manager.window.move(20, i * height_step)
 
@@ -146,6 +155,7 @@ class PlotOcp:
                 or self.problem_type == ProblemType.torque_driven_with_contact
                 or self.problem_type == ProblemType.muscle_activations_and_torque_driven
                 or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
+                or self.problem_type == ProblemType.muscle_excitations_and_torque_driven
             ):
                 if (
                     self.problem_type == ProblemType.torque_driven
@@ -160,12 +170,18 @@ class PlotOcp:
                 elif (
                     self.problem_type == ProblemType.muscle_activations_and_torque_driven
                     or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
+                    or self.problem_type == ProblemType.muscle_excitations_and_torque_driven
                 ):
-                    q, q_dot, tau, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
+                    if self.problem_type == ProblemType.muscle_excitations_and_torque_driven:
+                        q, q_dot, tau, muscle_states, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
+                    else:
+                        q, q_dot, tau, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
                     self.__update_ydata(q, nlp["nbQ"], i)
                     self.__update_ydata(q_dot, nlp["nbQdot"], i)
                     self.__update_ydata(tau, nlp["nbTau"], i)
                     self.__update_ydata(muscle, nlp["nbMuscle"], i)
+                    if self.problem_type == ProblemType.muscle_excitations_and_torque_driven:
+                        self.__update_ydata(muscle_states, nlp["nbMuscle"], i)
 
         self.__update_axes()
 
@@ -174,7 +190,8 @@ class PlotOcp:
             self.ydata[phase_idx].append(array[i, :])
 
     def __update_axes(self):
-        for i, ax in enumerate(self.axes):
+        for i, p in enumerate(self.plots):
+            ax = p.axes
             y = np.array([])
             for phase in self.ydata:
                 y = np.append(y, phase[i])
@@ -190,7 +207,7 @@ class PlotOcp:
                     step=np.round((mean + axe_range - (mean - axe_range)) / 4, 1),
                 )
             )
-            ax.get_lines()[0].set_ydata(y)
+            p.set_ydata(y)
 
 
 class ShowResult:
