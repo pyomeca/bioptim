@@ -137,19 +137,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     def _parameter_modifier(constraint_function, parameters):
         # Everything that should change the entry parameters depending on the penalty can be added here
         super(ConstraintFunction, ConstraintFunction)._parameter_modifier(constraint_function, parameters)
-        if constraint_function == Constraint.CONTACT_FORCE_GREATER_THAN.value[0]:
-            parameters["direction"] = "GREATER_THAN"
-
-        if constraint_function == Constraint.CONTACT_FORCE_LESSER_THAN.value[0]:
-            parameters["direction"] = "LESSER_THAN"
 
     @staticmethod
     def _span_checker(constraint_function, instant, nlp):
         # Everything that is suspicious in terms of the span of the penalty function ca be checked here
         super(ConstraintFunction, ConstraintFunction)._span_checker(constraint_function, instant, nlp)
         if (
-            constraint_function == Constraint.CONTACT_FORCE_GREATER_THAN.value[0]
-            or constraint_function == Constraint.CONTACT_FORCE_LESSER_THAN.value[0]
+            constraint_function == Constraint.CONTACT_FORCE_INEQUALITY.value[0]
             or constraint_function == Constraint.NON_SLIPPING.value[0]
         ):
             if instant == Instant.END or instant == nlp["ns"]:
@@ -181,8 +175,7 @@ class Constraint(Enum):
     ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
     ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
     CUSTOM = (PenaltyType.CUSTOM,)
-    CONTACT_FORCE_GREATER_THAN = (ConstraintFunction.Functions.contact_force_inequality,)
-    CONTACT_FORCE_LESSER_THAN = (ConstraintFunction.Functions.contact_force_inequality,)
+    CONTACT_FORCE_INEQUALITY = (ConstraintFunction.Functions.contact_force_inequality,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
 
     @staticmethod
