@@ -69,19 +69,20 @@ def prepare_ocp(
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
         constraints_first_phase.append(
-            {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "contact_force_idx": i, "boundary": 0,}
+            {"type": Constraint.CONTACT_FORCE_INEQUALITY, "direction": "GREATER_THAN",
+             "instant": Instant.ALL, "contact_force_idx": i, "boundary": 0,}
         )
     contact_axes = (1, 3)
     for i in contact_axes:
         constraints_second_phase.append(
-            {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "contact_force_idx": i, "boundary": 0,}
+            {"type": Constraint.CONTACT_FORCE_INEQUALITY, "direction": "GREATER_THAN", "instant": Instant.ALL, "contact_force_idx": i, "boundary": 0,}
         )
     constraints_first_phase.append(
         {
             "type": Constraint.NON_SLIPPING,
             "instant": Instant.ALL,
-            "normal_component_idx": (1, 2, 4, 5),
-            "tangential_component_idx": (0, 3),
+            "normal_component_idx": (1, 2),
+            "tangential_component_idx": 0,
             "static_friction_coefficient": 0.5,
         }
     )
@@ -89,8 +90,8 @@ def prepare_ocp(
         {
             "type": Constraint.NON_SLIPPING,
             "instant": Instant.ALL,
-            "normal_component_idx": (1, 3),
-            "tangential_component_idx": (0, 2),
+            "normal_component_idx": 1,
+            "tangential_component_idx": 0,
             "static_friction_coefficient": 0.5,
         }
     )
