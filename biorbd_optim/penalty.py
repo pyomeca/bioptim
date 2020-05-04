@@ -173,8 +173,8 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_contact_forces(penalty_type, ocp, nlp, t, x, u, contacts_idx=(), data_to_track=(), **extra_param):
-            CS_func = Function(
-                "Contact_force",
+            contact_forces_func = Function(
+                "contact_forces",
                 [ocp.symbolic_states, ocp.symbolic_controls],
                 [
                     Dynamics.forces_from_forward_dynamics_torque_muscle_driven_with_contact(
@@ -182,7 +182,7 @@ class PenaltyFunctionAbstract:
                     )
                 ],
                 ["x", "u"],
-                ["CS"],
+                ["contact_forces"],
             ).expand()
 
             n_contact = nlp["model"].nbContacts()
@@ -192,7 +192,7 @@ class PenaltyFunctionAbstract:
             )
 
             for i, v in enumerate(u):
-                force = CS_func(x[i], u[i])
+                force = contact_forces_func(x[i], u[i])
                 val = force[contacts_idx] - data_to_track[t[i], contacts_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
@@ -427,7 +427,8 @@ class PenaltyType(Enum):
     TRACK_MUSCLES_CONTROL = MINIMIZE_MUSCLES_CONTROL
     MINIMIZE_ALL_CONTROLS = PenaltyFunctionAbstract.Functions.minimize_all_controls
     TRACK_ALL_CONTROLS = MINIMIZE_ALL_CONTROLS
-    TRACK_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
+    MINIMIZE_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
+    TRACK_CONTACT_FORCES = MINIMIZE_CONTACT_FORCES
     MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height
     ALIGN_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.align_segment_with_custom_rt
     ALIGN_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.align_marker_with_segment_axis

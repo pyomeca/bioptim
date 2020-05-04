@@ -24,16 +24,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             with in the 1st index the number of the contact force and in the 2nd index the associated bound.
             """
             # To be modified later so that it can handle something other than lower bounds for greater than
-            CS_func = Function(
+            contact_forces_func = Function(
                 "Contact_force_inequality",
                 [ocp.symbolic_states, ocp.symbolic_controls],
                 [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
                 ["x", "u"],
-                ["CS"],
+                ["contact_forces_inequality"],
             ).expand()
 
             for i in range(len(u)):
-                ocp.g = vertcat(ocp.g, CS_func(x[i], u[i])[idx])
+                ocp.g = vertcat(ocp.g, contact_forces_func(x[i], u[i])[idx])
                 if direction == "GREATER_THAN":
                     ocp.g_bounds.min.append(boundary)
                     ocp.g_bounds.max.append(inf)
@@ -56,21 +56,21 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             :param coeff: It is the coefficient of static friction.
             """
-            CS_func = Function(
-                "Contact_force_inequality",
+            contact_forces_func = Function(
+                "contact_force_inequality",
                 [ocp.symbolic_states, ocp.symbolic_controls],
                 [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
                 ["x", "u"],
-                ["CS"],
+                ["contact_force_inequality"],
             ).expand()
 
             mu = static_friction_coefficient
             for i in range(len(u)):
                 normal_contact_force = tangential_contact_force = 0
                 for idx in normal_component_idx:
-                    normal_contact_force += CS_func(x[i], u[i])[idx]
+                    normal_contact_force += contact_forces_func(x[i], u[i])[idx]
                 for idx in tangential_component_idx:
-                    normal_contact_force += CS_func(x[i], u[i])[idx]
+                    normal_contact_force += contact_forces_func(x[i], u[i])[idx]
 
                 # Proposal : only case normal_contact_force >= 0 and with two ocp.g
                 ocp.g = vertcat(ocp.g, mu * fabs(normal_contact_force) + fabs(tangential_contact_force))
@@ -170,6 +170,8 @@ class Constraint(Enum):
     TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
     MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
     TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
+    MINIMIZE_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
+    TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
     MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyType.MINIMIZE_PREDICTED_COM_HEIGHT,)
     ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
     ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
