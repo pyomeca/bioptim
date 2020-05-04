@@ -101,7 +101,7 @@ class PlotOcp:
             if self.problem_type == ProblemType.muscle_excitations_and_torque_driven:
                 offset = nlp["nbQ"] + nlp["nbQdot"] + nlp["nbTau"]
                 for i in range(offset, offset + nlp["nbMuscle"]):
-                    self.plots.append(self.axes[i].plot(self.t, np.zeros((self.ns, 1)), 'r')[0])
+                    self.plots.append(self.axes[i].plot(self.t, np.zeros((self.ns, 1)), "r")[0])
 
         else:
             raise RuntimeError("Plot is not ready for this type of OCP")

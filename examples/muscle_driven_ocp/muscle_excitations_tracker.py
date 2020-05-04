@@ -14,7 +14,7 @@ from biorbd_optim import (
     Bounds,
     QAndQDotBounds,
     InitialConditions,
-    ShowResult
+    ShowResult,
 )
 
 
@@ -181,7 +181,7 @@ if __name__ == "__main__":
     # Generate random data to fit
     np.random.seed(42)
     t, markers_ref, x_ref, muscle_excitations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
-    muscle_activations_ref = x_ref[biorbd_model.nbQ() + biorbd_model.nbQdot():, :].T
+    muscle_activations_ref = x_ref[biorbd_model.nbQ() + biorbd_model.nbQdot() :, :].T
 
     # Track these data
     biorbd_model = biorbd.Model("arm26.bioMod")  # To allow for non free variable, the model must be reloaded
@@ -210,11 +210,7 @@ if __name__ == "__main__":
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
     markers_func = Function(
-        "ForwardKin",
-        [ocp.symbolic_states],
-        [biorbd_model.markers(ocp.symbolic_states[:n_q])],
-        ["q"],
-        ["markers"],
+        "ForwardKin", [ocp.symbolic_states], [biorbd_model.markers(ocp.symbolic_states[:n_q])], ["q"], ["markers"],
     ).expand()
     for i in range(n_frames):
         markers[:, :, i] = markers_func(np.concatenate((q[:, i], qdot[:, i], activations[:, i])))

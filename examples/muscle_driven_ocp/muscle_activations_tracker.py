@@ -196,11 +196,7 @@ if __name__ == "__main__":
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
     markers_func = Function(
-        "ForwardKin",
-        [ocp.symbolic_states],
-        [biorbd_model.markers(ocp.symbolic_states[:n_q])],
-        ["q"],
-        ["markers"],
+        "ForwardKin", [ocp.symbolic_states], [biorbd_model.markers(ocp.symbolic_states[:n_q])], ["q"], ["markers"],
     ).expand()
     for i in range(n_frames):
         markers[:, :, i] = markers_func(np.concatenate((q[:, i], qdot[:, i])))
