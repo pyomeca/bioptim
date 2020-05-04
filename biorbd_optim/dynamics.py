@@ -111,17 +111,15 @@ class Dynamics:
         for k in range(nlp["nbMuscle"]):
             muscles_states[k].setExcitation(muscles_excitation[k])
             muscles_states[k].setActivation(muscles_activations[k])
-        muscles_tau = nlp["model"].muscularJointTorque(muscles_states, q, qdot).to_mx()
-
         muscles_activations_dot = nlp["model"].activationDot(muscles_states).to_mx()
 
+        muscles_tau = nlp["model"].muscularJointTorque(muscles_states, q, qdot).to_mx()
         tau = muscles_tau + residual_tau
-
         qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau).to_mx()
 
         qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
-        return vertcat(muscles_activations_dot, qdot_reduced, qddot_reduced)
+        return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
     @staticmethod
     def __dispatch_data(states, controls, nlp):
