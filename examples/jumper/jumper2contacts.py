@@ -12,24 +12,19 @@ from biorbd_optim import (
     Bounds,
     QAndQDotBounds,
     InitialConditions,
+    Dynamics,
 )
 
 
-def prepare_ocp(
+def prepare_ocp(model_path, phase_time, number_shooting_points,
     show_online_optim=False, use_symmetry=True,
 ):
     # --- Options --- #
     # Model path
-    biorbd_model = (
-        biorbd.Model("jumper2contacts.bioMod"),
-        biorbd.Model("jumper1contacts.bioMod"),
-    )
+    biorbd_model = [biorbd.Model(elt) for elt in model_path]
+
     nb_phases = len(biorbd_model)
     torque_min, torque_max, torque_init = -1000, 1000, 0
-
-    # Problem parameters
-    number_shooting_points = [8, 8]
-    phase_time = [0.4, 0.2]
 
     if use_symmetry:
         q_mapping = BidirectionalMapping(
@@ -185,7 +180,9 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True, use_symmetry=False)
+    model_path = ("jumper2contacts.bioMod", "jumper1contacts.bioMod")
+    ocp = prepare_ocp(model_path=model_path, phase_time=[0.4, 0.2],
+                      number_shooting_points=[6, 6], show_online_optim=True, use_symmetry=True)
 
     # --- Solve the program --- #
     sol = ocp.solve()
@@ -197,21 +194,28 @@ if __name__ == "__main__":
     cs_map = (range(6), (0, 1, 3, 4))
 
     for i, nlp in enumerate(ocp.nlp):
-        CS_func = Function(
-            "Contact_force_inequality",
+        nlp["model"] = biorbd.Model(model_path[i])
+        contact_forces_func = Function(
+            "contact_forces_func",
             [ocp.symbolic_states, ocp.symbolic_controls],
-            [nlp["model"].getConstraints().getForce().to_mx()],
+            [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
             ["x", "u"],
-            ["CS"],
+            ["contact_forces"],
         ).expand()
 
         q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"], i)
         x = vertcat(q, q_dot)
         if i == 0:
-            contact_forces[cs_map[i], : nlp["ns"] + 1] = CS_func(x, u)
+            contact_forces[cs_map[i], : nlp["ns"] + 1] = contact_forces_func(x, u)
         else:
-            contact_forces[cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1] = CS_func(x, u)
-    plt.plot(contact_forces.T)
+            contact_forces[cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1] = contact_forces_func(x, u)
+
+    names_contact_forces = ocp.nlp[0]["model"].contactNames()
+    for i, elt in enumerate(contact_forces):
+        plt.plot(elt.T, label=f"{names_contact_forces[i].to_string()}")
+    plt.legend()
+    plt.grid()
+    plt.title("Contact forces")
     plt.show()
 
     try:
