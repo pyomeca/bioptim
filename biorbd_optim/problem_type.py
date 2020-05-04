@@ -18,7 +18,6 @@ class ProblemType:
         """
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_driven
         ProblemType.__configure_torque_driven(nlp)
-        nlp["has_muscles"] = False
 
     @staticmethod
     def torque_driven_with_contact(nlp):
@@ -29,7 +28,6 @@ class ProblemType:
         """
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_driven_with_contact
         ProblemType.__configure_torque_driven(nlp)
-        nlp["has_muscles"] = False
 
     @staticmethod
     def __configure_torque_driven(nlp):
@@ -63,14 +61,15 @@ class ProblemType:
         for i in nlp["tau_mapping"].reduce.map_idx:
             u = vertcat(u, MX.sym("Tau_" + dof_names[i].to_string()))
         nlp["u"] = u
-
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()
 
         nlp["nbQ"] = nlp["q_mapping"].reduce.len
         nlp["nbQdot"] = nlp["q_dot_mapping"].reduce.len
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
-        nlp["nbMuscle"] = 0
+
+        nlp["has_states"] = {"q": nlp["q_mapping"].reduce.len, "q_dot": nlp["q_dot_mapping"].reduce.len}
+        nlp["has_controls"] = {"tau": nlp["tau_mapping"].reduce.len}
 
     @staticmethod
     def muscle_activations_and_torque_driven(nlp):
@@ -81,15 +80,16 @@ class ProblemType:
         """
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_muscle_driven
         ProblemType.__configure_torque_driven(nlp)
-        nlp["has_muscles"] = True
-        nlp["nbMuscle"] = nlp["model"].nbMuscles()
 
         u = MX()
+        nlp["nbMuscle"] = nlp["model"].nbMuscles()
         muscle_names = nlp["model"].muscleNames()
         for i in range(nlp["nbMuscle"]):
             u = vertcat(u, MX.sym("Muscle_" + muscle_names[i].to_string() + "_activation"))
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["nu"] = nlp["u"].rows()
+
+        nlp["has_controls"]["muscles"] = nlp["nbMuscle"]
 
     @staticmethod
     def muscle_excitations_and_torque_driven(nlp):
@@ -100,20 +100,21 @@ class ProblemType:
         """
         nlp["dynamics_func"] = Dynamics.forward_dynamics_muscle_excitations_and_torque_driven
         ProblemType.__configure_torque_driven(nlp)
-        nlp["has_muscles"] = True
-        nlp["nbMuscle"] = nlp["model"].nbMuscles()
 
         u = MX()
         x = MX()
+        nlp["nbMuscle"] = nlp["model"].nbMuscles()
         muscle_names = nlp["model"].muscleNames()
         for i in range(nlp["nbMuscle"]):
             u = vertcat(u, MX.sym("Muscle_" + muscle_names[i].to_string() + "_excitation"))
             x = vertcat(x, MX.sym("Muscle_" + muscle_names[i].to_string() + "_activation"))
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["x"] = vertcat(nlp["x"], x)
-
         nlp["nu"] = nlp["u"].rows()
         nlp["nx"] = nlp["x"].rows()
+
+        nlp["has_states"]["muscles"] = nlp["nbMuscle"]
+        nlp["has_controls"]["muscles"] = nlp["nbMuscle"]
 
     @staticmethod
     def muscles_and_torque_driven_with_contact(nlp):
@@ -124,13 +125,13 @@ class ProblemType:
         """
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_muscle_driven_with_contact
         ProblemType.__configure_torque_driven(nlp)
-        nlp["has_muscles"] = True
+
         u = MX()
+        nlp["nbMuscle"] = nlp["model"].nbMuscles()
         muscle_names = nlp["model"].muscleNames()
-        for i in range(nlp["model"].nbMuscles()):
+        for i in range(nlp["nbMuscle"]):
             u = vertcat(u, MX.sym("Muscle_" + muscle_names[i].to_string() + "_activation"))
         nlp["u"] = vertcat(nlp["u"], u)
-
         nlp["nu"] = nlp["u"].rows()
 
-        nlp["nbMuscle"] = nlp["model"].nbMuscles()
+        nlp["has_states"]["muscles"] = nlp["nbMuscle"]

@@ -75,11 +75,11 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", show_online_optim=False, ode_so
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True)
+    ocp = prepare_ocp(show_online_optim=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.animate(integrated=True)
+    result.graphs()

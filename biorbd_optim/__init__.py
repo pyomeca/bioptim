@@ -8,3 +8,4 @@ from .path_conditions import Bounds, QAndQDotBounds, InitialConditions
 from .dynamics import Dynamics
 from .mapping import Mapping, BidirectionalMapping
 from .optimal_control_program import OptimalControlProgram
+from .variable_optimization import Data
