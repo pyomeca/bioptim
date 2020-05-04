@@ -27,7 +27,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             CS_func = Function(
                 "Contact_force_inequality",
                 [ocp.symbolic_states, ocp.symbolic_controls],
-                [nlp["CS_func"](ocp.symbolic_states, ocp.symbolic_controls, nlp)],
+                [nlp["contact_forces_func"](ocp.symbolic_states, ocp.symbolic_controls, nlp)],
                 ["x", "u"],
                 ["CS"],
             ).expand()
@@ -40,6 +40,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 elif direction == "LESSER_THAN":
                     ocp.g_bounds.min.append(-inf)
                     ocp.g_bounds.max.append(boundary)
+                else:
+                    raise RuntimeError("direction parameter of contact_force_inequality must either be GREATER_THAN or LESSER_THAN")
 
         @staticmethod
         def non_slipping(
