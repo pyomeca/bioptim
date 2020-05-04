@@ -2,11 +2,11 @@ import multiprocessing as mp
 import numpy as np
 import tkinter
 
-from scipy import interpolate
 from matplotlib import pyplot as plt
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
 from .problem_type import ProblemType
+from .variable_optimization import Data
 
 height = 2.4
 muscle_position = 1000
@@ -29,18 +29,19 @@ class PlotOcp:
 
             if i == 0:
                 self.t = np.linspace(0, nlp["tf"], nlp["ns"] + 1)
+                self.t_integrated = PlotOcp.generate_integrated_time(self.t)
             else:
-                self.t = np.append(self.t, np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1),)
+                time_phase = np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1)
+                self.t = np.append(self.t, time_phase)
+                self.t_integrated = np.append(self.t_integrated, PlotOcp.generate_integrated_time(time_phase))
             self.ns += nlp["ns"] + 1
 
         self.axes = []
-        self.plots = []
         if (
             self.problem_type == ProblemType.torque_driven
             or self.problem_type == ProblemType.torque_driven_with_contact
             or self.problem_type == ProblemType.muscle_activations_and_torque_driven
             or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
-            or self.problem_type == ProblemType.muscle_excitations_and_torque_driven
         ):
             for i in range(self.ocp.nb_phases):
                 if self.ocp.nlp[0]["nbQ"] != self.ocp.nlp[i]["nbQ"]:
@@ -62,7 +63,6 @@ class PlotOcp:
             if (
                 self.problem_type == ProblemType.muscle_activations_and_torque_driven
                 or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
-                or self.problem_type == ProblemType.muscle_excitations_and_torque_driven
             ):
 
                 nlp = self.ocp.nlp[0]
@@ -88,20 +88,30 @@ class PlotOcp:
 
             intersections_time = PlotOcp.find_phases_intersections(ocp)
             for i, ax in enumerate(self.axes):
-                if i < nlp["nbQ"] + nlp["nbQdot"]:
-                    self.plots.append(ax.plot(self.t, np.zeros((self.ns, 1)))[0])
+                if i < self.ocp.nlp[0]["nx"]:
+                    cmp = 0
+                    for idx_phase in range(self.ocp.nb_phases):
+                        for _ in range(self.ocp.nlp[idx_phase]["ns"]):
+                            ax.plot(
+                                self.t_integrated[2 * cmp + idx_phase: 2 * (cmp + 1) + idx_phase],
+                                np.zeros(2),
+                                color="g",
+                                linewidth=0.8,
+                            )
+                            ax.plot(
+                                self.t_integrated[2 * cmp + idx_phase], np.zeros(1), color="g", marker=".", markersize=6
+                            )
+                            cmp += 1
+
+                elif i < self.ocp.nlp[0]["nx"] + self.ocp.nlp[0]["nbTau"]:
+                    ax.step(self.t, np.zeros((self.ns, 1)), where="post", color="r")
                 else:
-                    self.plots.append(ax.step(self.t, np.zeros((self.ns, 1)), where="post")[0])
+                    ax.step(self.t, np.zeros((self.ns, 1)), where="post", color="b")
 
                 for time in intersections_time:
                     ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
                 ax.grid(color="k", linestyle="--", linewidth=0.5)
                 ax.set_xlim(0, self.t[-1])
-
-            if self.problem_type == ProblemType.muscle_excitations_and_torque_driven:
-                offset = nlp["nbQ"] + nlp["nbQdot"] + nlp["nbTau"]
-                for i in range(offset, offset + nlp["nbMuscle"]):
-                    self.plots.append(self.axes[i].plot(self.t, np.zeros((self.ns, 1)), "r")[0])
 
         else:
             raise RuntimeError("Plot is not ready for this type of OCP")
@@ -112,7 +122,6 @@ class PlotOcp:
         if (
             self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
             or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
-            or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_excitations_and_torque_driven
         ):
             height_step = int(tkinter.Tk().winfo_screenheight() / (len(self.all_figures) - 1))
 
@@ -120,19 +129,23 @@ class PlotOcp:
             if (
                 self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
                 or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
-                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_excitations_and_torque_driven
             ) and fig == self.all_figures[-1]:
                 fig.canvas.manager.window.move(muscle_position, 0)
 
             elif (
-                self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven
-                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
-                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
-                or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_excitations_and_torque_driven
+                    self.ocp.nlp[0]["problem_type"] == ProblemType.torque_driven
+                    or self.ocp.nlp[0]["problem_type"] == ProblemType.muscle_activations_and_torque_driven
+                    or self.ocp.nlp[0]["problem_type"] == ProblemType.muscles_and_torque_driven_with_contact
             ):
                 fig.canvas.manager.window.move(20, i * height_step)
 
             fig.canvas.draw()
+
+    @staticmethod
+    def generate_integrated_time(t):
+        for i in range(len(t) - 1, 0, -1):
+            t = np.insert(t, i, t[i])
+        return t
 
     @staticmethod
     def find_phases_intersections(ocp):
@@ -155,43 +168,21 @@ class PlotOcp:
                 or self.problem_type == ProblemType.torque_driven_with_contact
                 or self.problem_type == ProblemType.muscle_activations_and_torque_driven
                 or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
-                or self.problem_type == ProblemType.muscle_excitations_and_torque_driven
             ):
-                if (
-                    self.problem_type == ProblemType.torque_driven
-                    or self.problem_type == ProblemType.torque_driven_with_contact
-                ):
-                    # TODO: Add an integrator for the states
-                    q, q_dot, tau = ProblemType.get_data_from_V(self.ocp, V, i)
-                    self.__update_ydata(q, nlp["nbQ"], i)
-                    self.__update_ydata(q_dot, nlp["nbQdot"], i)
-                    self.__update_ydata(tau, nlp["nbTau"], i)
-
-                elif (
-                    self.problem_type == ProblemType.muscle_activations_and_torque_driven
-                    or self.problem_type == ProblemType.muscles_and_torque_driven_with_contact
-                    or self.problem_type == ProblemType.muscle_excitations_and_torque_driven
-                ):
-                    if self.problem_type == ProblemType.muscle_excitations_and_torque_driven:
-                        q, q_dot, tau, muscle_states, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
-                    else:
-                        q, q_dot, tau, muscle = ProblemType.get_data_from_V(self.ocp, V, i)
-                    self.__update_ydata(q, nlp["nbQ"], i)
-                    self.__update_ydata(q_dot, nlp["nbQdot"], i)
-                    self.__update_ydata(tau, nlp["nbTau"], i)
-                    self.__update_ydata(muscle, nlp["nbMuscle"], i)
-                    if self.problem_type == ProblemType.muscle_excitations_and_torque_driven:
-                        self.__update_ydata(muscle_states, nlp["nbMuscle"], i)
+                # TODO: Add an integrator for the states
+                data = Data.get_data_from_V(self.ocp, V, integrate=True)
+                for key in data.keys():
+                    self.__update_ydata(data[key], i)
 
         self.__update_axes()
 
-    def __update_ydata(self, array, nb_variables, phase_idx):
-        for i in range(nb_variables):
-            self.ydata[phase_idx].append(array[i, :])
+    def __update_ydata(self, data, phase_idx):
+        for i in range(data.nb_elements):
+            d = data.to_matrix(idx=i, phases=phase_idx)
+            self.ydata[phase_idx].append(d)
 
     def __update_axes(self):
-        for i, p in enumerate(self.plots):
-            ax = p.axes
+        for i, ax in enumerate(self.axes):
             y = np.array([])
             for phase in self.ydata:
                 y = np.append(y, phase[i])
@@ -207,7 +198,16 @@ class PlotOcp:
                     step=np.round((mean + axe_range - (mean - axe_range)) / 4, 1),
                 )
             )
-            p.set_ydata(y)
+            if i < self.ocp.nlp[0]["nx"]:
+                cmp = 0
+                for idx_phase in range(self.ocp.nb_phases):
+                    for _ in range(self.ocp.nlp[idx_phase]["ns"]):
+                        ax.get_lines()[2 * cmp].set_ydata(y[2 * cmp + idx_phase: 2 * (cmp + 1) + idx_phase])
+                        ax.get_lines()[2 * cmp + 1].set_ydata(y[2 * cmp + idx_phase])
+                        cmp += 1
+
+            else:
+                ax.get_lines()[0].set_ydata(y)
 
 
 class ShowResult:
@@ -221,52 +221,28 @@ class ShowResult:
         plt.show()
 
     def animate(self, nb_frames=80, **kwargs):
-        x = ProblemType.get_q_from_V(self.ocp, self.sol["x"])
-        t = [
-            np.array(np.linspace(0, self.ocp.nlp[i]["tf"], self.ocp.nlp[i]["ns"] + 1))
-            for i in range(self.ocp.nb_phases)
-        ]
-
-        if self.ocp.nb_phases == 1:
-            x = [x]
-
-        else:
-            same_dof = True
-            for i in range(self.ocp.nb_phases):
-                for k in range(self.ocp.nlp[0]["model"].nbDof()):
-                    if (
-                        self.ocp.nlp[i]["model"].nameDof()[k].to_string()
-                        != self.ocp.nlp[i - 1]["model"].nameDof()[k].to_string()
-                    ):
-                        same_dof = False
-                        break
-                if not same_dof:
-                    break
-
-            if same_dof:
-                x_concat = x[0]
-                t_concat = t[0]
-                for i in range(1, self.ocp.nb_phases):
-                    x_concat = np.concatenate((x_concat, x[i][:, 1:]), axis=1)
-                    t_concat = np.concatenate((t_concat, t[i][1:] + t_concat[-1]))
-                x = [x_concat]
-                t = [t_concat]
-
         try:
             from BiorbdViz import BiorbdViz
         except ModuleNotFoundError:
-            print("Install BiorbdViz if you want to have a live view of the optimization")
+            raise RuntimeError("BiorbdViz must be install to animate the model")
+        data_interpolate = Data.get_data_from_V(self.ocp, self.sol["x"], integrate=False, interpolate_nb_frames=nb_frames)
 
-        for i, x_phase in enumerate(x):
-            x_interpolate = np.ndarray((self.ocp.nlp[i]["nbQ"], nb_frames))
-            t_interpolate = np.linspace(0, t[i][-1], nb_frames)
-            for j in range(self.ocp.nlp[i]["nbQ"]):
-                tck = interpolate.splrep(t[i], x_phase[j], s=0)
-                x_interpolate[j] = interpolate.splev(t_interpolate, tck)
+        all_bioviz = []
+        for idx_phase, d in enumerate(data_interpolate["q"].phase):
+            all_bioviz.append(BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs))
+            all_bioviz[-1].load_movement(d.T)
 
-            b = BiorbdViz(loaded_model=self.ocp.nlp[i]["model"], **kwargs)
-            b.load_movement(x_interpolate.T)
-            b.exec()
+        b_is_visible = [True] * len(all_bioviz)
+        while sum(b_is_visible):
+            for i, b in enumerate(all_bioviz):
+                if b.vtk_window.is_active:
+                    if b.show_analyses_panel and b.is_animating:
+                        b.movement_slider[0].setValue(
+                            (b.movement_slider[0].value() + 1) % b.movement_slider[0].maximum()
+                        )
+                    b.refresh_window()
+                else:
+                    b_is_visible[i] = False
 
     @staticmethod
     def keep_matplotlib():

@@ -1,3 +1,4 @@
+from .__version__ import __version__
 from .enums import Axe, OdeSolver, Instant
 from .constraints import Constraint
 from .objective_functions import Objective
