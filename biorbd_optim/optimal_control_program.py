@@ -81,8 +81,8 @@ class OptimalControlProgram:
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
-
-        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time, objective_functions)
+        self.initial_phase_time = phase_time
+        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time)
         self.__add_to_nlp("tf", phase_time, False)
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         self.__add_to_nlp(
@@ -263,16 +263,20 @@ class OptimalControlProgram:
         self.V_bounds.expand(V_bounds)
         self.V_init.expand(V_init)
 
-    def __init_phase_time(self, phase_time, objective_functions):
+    def __init_phase_time(self, phase_time):
+        if isinstance(phase_time, (int, float)):
+            phase_time = [phase_time]
         phase_time = list(phase_time)
         initial_time_guess, time_min, time_max = [], [], []
-        for i in range(self.nb_phases):
-            for obj_fun in objective_functions[i]:
+        for i, nlp in enumerate(self.nlp):
+            for obj_fun in nlp["objective_functions"]:
                 if obj_fun['type'] == Objective.Mayer.MINIMIZE_TIME: #or (objective_functions[i][j]['type'] == Objective.Lagrange.MINIMIZE_TIME):
                     initial_time_guess.append(phase_time[i])
-                    phase_time[i] = casadi.MX.sym(f"time_phase{i}", 1, 1)
+                    phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
                     time_min.append(obj_fun['minimum'] if 'minimum' in obj_fun else 0)
                     time_max.append(obj_fun['maximum'] if 'maximum' in obj_fun else inf)
+        if sum([isinstance(p, MX) for p in phase_time]) > 1:
+            raise RuntimeError("Time optimization for more than one phase is not supported yet")
         return phase_time, initial_time_guess, time_min, time_max
 
     def __define_variable_time(self, initial_guess, minimum, maximum):
