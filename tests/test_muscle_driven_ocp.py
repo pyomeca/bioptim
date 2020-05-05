@@ -47,7 +47,6 @@ def test_muscle_driven_ocp():
     tau = controls["tau"].to_matrix()
     mus = controls["muscles"].to_matrix()
 
-
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
     np.testing.assert_almost_equal(q[:, -1], np.array([-0.95746379, 3.09503322]))

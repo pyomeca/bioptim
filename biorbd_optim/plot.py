@@ -37,7 +37,9 @@ class PlotOcp:
             if state in ocp.nlp[0]["has_controls"]:
                 self.matching_variables[state] = running_cmp
             running_cmp += ocp.nlp[0]["has_states"][state]
-        self._organize_windows(len(self.ocp.nlp[0]["has_states"]) + len(self.ocp.nlp[0]["has_controls"]) - len(self.matching_variables))
+        self._organize_windows(
+            len(self.ocp.nlp[0]["has_states"]) + len(self.ocp.nlp[0]["has_controls"]) - len(self.matching_variables)
+        )
 
         self.create_plots(ocp.nlp[0]["has_states"], "state")
         self.create_plots(ocp.nlp[0]["has_controls"], "control")
@@ -56,9 +58,9 @@ class PlotOcp:
             nb = has[variable]
             nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
             if var_type == "control" and variable in self.matching_variables:
-                axes = self.axes[self.matching_variables[variable]:self.matching_variables[variable] + nb]
+                axes = self.axes[self.matching_variables[variable] : self.matching_variables[variable] + nb]
             else:
-                self.all_figures.append(plt.figure(variable, figsize=(self.width_step/100, self.height_step/131)))
+                self.all_figures.append(plt.figure(variable, figsize=(self.width_step / 100, self.height_step / 131)))
                 axes = self.all_figures[-1].subplots(nb_rows, nb_cols).flatten()
                 for i in range(nb, len(axes)):
                     axes[i].remove()
@@ -81,15 +83,23 @@ class PlotOcp:
                     plots = []
                     for idx_phase in range(self.ocp.nb_phases):
                         for _ in range(self.ocp.nlp[idx_phase]["ns"]):
-                            plots.append(ax.plot(
-                                self.t_integrated[2 * cmp + idx_phase: 2 * (cmp + 1) + idx_phase],
-                                np.zeros(2),
-                                color="g",
-                                linewidth=0.8,
-                            )[0])
-                            plots.append(ax.plot(
-                                self.t_integrated[2 * cmp + idx_phase], np.zeros(1), color="g", marker=".", markersize=6
-                            )[0])
+                            plots.append(
+                                ax.plot(
+                                    self.t_integrated[2 * cmp + idx_phase : 2 * (cmp + 1) + idx_phase],
+                                    np.zeros(2),
+                                    color="g",
+                                    linewidth=0.8,
+                                )[0]
+                            )
+                            plots.append(
+                                ax.plot(
+                                    self.t_integrated[2 * cmp + idx_phase],
+                                    np.zeros(1),
+                                    color="g",
+                                    marker=".",
+                                    markersize=6,
+                                )[0]
+                            )
                             cmp += 1
                     self.plots.append(plots)
                 elif var_type == "control":
@@ -109,7 +119,6 @@ class PlotOcp:
         self.top_margin = height / 15
         self.height_step = (height - self.top_margin) / nb_horizontal_windows
         self.width_step = width / self.nb_vertical_windows
-
 
     @staticmethod
     def generate_integrated_time(t):
@@ -167,7 +176,7 @@ class PlotOcp:
                 cmp = 0
                 for idx_phase in range(self.ocp.nb_phases):
                     for _ in range(self.ocp.nlp[idx_phase]["ns"]):
-                        p[2 * cmp].set_ydata(y[2 * cmp + idx_phase: 2 * (cmp + 1) + idx_phase])
+                        p[2 * cmp].set_ydata(y[2 * cmp + idx_phase : 2 * (cmp + 1) + idx_phase])
                         p[2 * cmp + 1].set_ydata(y[2 * cmp + idx_phase])
                         cmp += 1
 
@@ -195,7 +204,9 @@ class ShowResult:
             from BiorbdViz import BiorbdViz
         except ModuleNotFoundError:
             raise RuntimeError("BiorbdViz must be install to animate the model")
-        data_interpolate, data_control = Data.get_data_from_V(self.ocp, self.sol["x"], integrate=False, interpolate_nb_frames=nb_frames)
+        data_interpolate, data_control = Data.get_data_from_V(
+            self.ocp, self.sol["x"], integrate=False, interpolate_nb_frames=nb_frames
+        )
 
         all_bioviz = []
         for idx_phase, d in enumerate(data_interpolate["q"].phase):

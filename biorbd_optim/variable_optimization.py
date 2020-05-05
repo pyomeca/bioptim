@@ -77,16 +77,22 @@ class Data:
                 if key not in data_controls[i].keys():
                     data_controls[i][key] = Data()
 
-            V_phase = np.array(V_array[offsets[i]: offsets[i + 1]])
+            V_phase = np.array(V_array[offsets[i] : offsets[i + 1]])
             nb_var = nlp["nx"] + nlp["nu"]
             offset = 0
 
             for key in nlp["has_states"]:
-                data_states[i][key]._append_phase((nlp["t0"], nlp["tf"]), Data._get_phase(V_phase, nlp["has_states"][key], nlp["ns"] + 1, offset, nb_var, False))
+                data_states[i][key]._append_phase(
+                    (nlp["t0"], nlp["tf"]),
+                    Data._get_phase(V_phase, nlp["has_states"][key], nlp["ns"] + 1, offset, nb_var, False),
+                )
                 offset += nlp["has_states"][key]
 
             for key in nlp["has_controls"]:
-                data_controls[i][key]._append_phase((nlp["t0"], nlp["tf"]), Data._get_phase(V_phase, nlp["has_controls"][key], nlp["ns"], offset, nb_var, True))
+                data_controls[i][key]._append_phase(
+                    (nlp["t0"], nlp["tf"]),
+                    Data._get_phase(V_phase, nlp["has_controls"][key], nlp["ns"], offset, nb_var, True),
+                )
                 offset += nlp["has_controls"][key]
 
         if integrate:
@@ -114,7 +120,9 @@ class Data:
 
                 offset = 0
                 for key in nlp["has_states"]:
-                    data_states[key]._horzcat_node(dt, xf_dof[offset: offset+nlp["has_states"][key]], idx_phase, idx_node)
+                    data_states[key]._horzcat_node(
+                        dt, xf_dof[offset : offset + nlp["has_states"][key]], idx_phase, idx_node
+                    )
                     offset += nlp["has_states"][key]
         return data_states
 
@@ -140,7 +148,13 @@ class Data:
         return data_states
 
     def _horzcat_node(self, dt, x_to_add, idx_phase, idx_node):
-        self.phase[idx_phase].t = np.concatenate((self.phase[idx_phase].t[:idx_node+1], [self.phase[idx_phase].t[idx_node]+dt], self.phase[idx_phase].t[idx_node+1:]))
+        self.phase[idx_phase].t = np.concatenate(
+            (
+                self.phase[idx_phase].t[: idx_node + 1],
+                [self.phase[idx_phase].t[idx_node] + dt],
+                self.phase[idx_phase].t[idx_node + 1 :],
+            )
+        )
         self.phase[idx_phase].node[idx_node] = np.concatenate((self.phase[idx_phase].node[idx_node], x_to_add), axis=1)
 
     @staticmethod
@@ -172,4 +186,3 @@ class Data:
 
         if self.nb_elements != self.phase[-1].nb_elements:
             self.has_same_nb_elements = False
-
