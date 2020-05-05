@@ -1,8 +1,8 @@
 from math import inf
-
 from copy import copy
 import pickle
 import os
+
 import biorbd
 import casadi
 from casadi import MX, vertcat
@@ -11,11 +11,11 @@ from .enums import OdeSolver
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions
 from .constraints import Constraint, ConstraintFunction
-from .objective_functions import ObjectiveFunction
+from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback
+from .integrator import RK4
 from .__version__ import __version__
 
-from biorbd_optim import Objective
 
 class OptimalControlProgram:
     """
