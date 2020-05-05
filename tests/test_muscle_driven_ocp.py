@@ -5,9 +5,8 @@ import importlib.util
 from pathlib import Path
 
 import numpy as np
-import biorbd
 
-from biorbd_optim import ProblemType
+from biorbd_optim import Data
 
 # Load static_arm
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -42,7 +41,11 @@ def test_muscle_driven_ocp():
     np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau, mus = ProblemType.get_data_from_V(ocp, sol["x"])
+    states, controls = Data.get_data_from_V(ocp, sol["x"])
+    q = states["q"].to_matrix()
+    qdot = states["q_dot"].to_matrix()
+    tau = controls["tau"].to_matrix()
+    mus = controls["muscles"].to_matrix()
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
@@ -82,7 +85,11 @@ def test_muscle_with_contact_driven_ocp():
     np.testing.assert_almost_equal(g, np.zeros((60, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau, mus = ProblemType.get_data_from_V(ocp, sol["x"])
+    states, controls = Data.get_data_from_V(ocp, sol["x"])
+    q = states["q"].to_matrix()
+    qdot = states["q_dot"].to_matrix()
+    tau = controls["tau"].to_matrix()
+    mus = controls["muscles"].to_matrix()
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0, 0.07, 1.4]))

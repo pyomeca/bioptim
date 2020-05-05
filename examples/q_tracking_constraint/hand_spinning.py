@@ -42,8 +42,8 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod", show_online_optim=False)
     constraints = (
         {
             "type": Constraint.ALIGN_MARKERS,
-            "first_marker": hand_marker_idx,
-            "second_marker": end_crank_idx,
+            "first_marker_idx": hand_marker_idx,
+            "second_marker_idx": end_crank_idx,
             "instant": Instant.ALL,
         },
         {
