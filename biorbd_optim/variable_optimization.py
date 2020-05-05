@@ -57,7 +57,6 @@ class Data:
     @staticmethod
     def get_data_from_V(ocp, V, num_phase=None, integrate=False, interpolate_nb_frames=-1, concatenate=True):
         V_array = np.array(V).squeeze()
-        data_states, data_controls = {}, {}
 
         if num_phase is None:
             num_phase = range(len(ocp.nlp))
@@ -67,36 +66,40 @@ class Data:
         for i, nlp in enumerate(ocp.nlp):
             offsets.append(offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"]))
 
+        data_states, data_controls = [{} for _ in num_phase], [{} for _ in num_phase]
         for i in num_phase:
             nlp = ocp.nlp[i]
             for key in nlp["has_states"].keys():
-                if key not in data_states.keys():
-                    data_states[key] = Data()
+                if key not in data_states[i].keys():
+                    data_states[i][key] = Data()
 
             for key in nlp["has_controls"].keys():
-                if key not in data_controls.keys():
-                    data_controls[key] = Data()
+                if key not in data_controls[i].keys():
+                    data_controls[i][key] = Data()
 
             V_phase = np.array(V_array[offsets[i]: offsets[i + 1]])
             nb_var = nlp["nx"] + nlp["nu"]
             offset = 0
 
             for key in nlp["has_states"]:
-                data_states[key]._append_phase((nlp["t0"], nlp["tf"]), Data._get_phase(V_phase, nlp["has_states"][key], nlp["ns"] + 1, offset, nb_var, False))
+                data_states[i][key]._append_phase((nlp["t0"], nlp["tf"]), Data._get_phase(V_phase, nlp["has_states"][key], nlp["ns"] + 1, offset, nb_var, False))
                 offset += nlp["has_states"][key]
 
             for key in nlp["has_controls"]:
-                data_controls[key]._append_phase((nlp["t0"], nlp["tf"]), Data._get_phase(V_phase, nlp["has_controls"][key], nlp["ns"], offset, nb_var, True))
+                data_controls[i][key]._append_phase((nlp["t0"], nlp["tf"]), Data._get_phase(V_phase, nlp["has_controls"][key], nlp["ns"], offset, nb_var, True))
                 offset += nlp["has_controls"][key]
 
         if integrate:
-            data_states = Data._get_data_integrated_from_V(ocp, data_states, data_controls)
+            data_states[i] = Data._get_data_integrated_from_V(ocp, data_states[i], data_controls[i])
 
         if interpolate_nb_frames > 0:
             if integrate:
                 raise RuntimeError("interpolate values are not compatible yet with integrated values")
-            data_states = Data._get_data_interpolated_from_V(data_states, interpolate_nb_frames, concatenate)
+            data_states[i] = Data._get_data_interpolated_from_V(data_states[i], interpolate_nb_frames, concatenate)
 
+        if len(num_phase) == 1:
+            data_states = data_states[0]
+            data_controls = data_controls[0]
         return data_states, data_controls
 
     @staticmethod

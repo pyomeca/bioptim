@@ -134,4 +134,4 @@ class ProblemType:
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["nu"] = nlp["u"].rows()
 
-        nlp["has_states"]["muscles"] = nlp["nbMuscle"]
+        nlp["has_controls"]["muscles"] = nlp["nbMuscle"]

@@ -22,7 +22,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
     objective_functions = (
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
         {"type": Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, "weight": 1},
-        {"type": Objective.Mayer.ALIGN_MARKERS, "first_marker": 0, "second_marker": 5, "weight": 1,},
+        {"type": Objective.Mayer.ALIGN_MARKERS, "first_marker_idx": 0, "second_marker_idx": 5, "weight": 1,},
     )
 
     # Dynamics
