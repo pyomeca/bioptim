@@ -154,7 +154,7 @@ class PlotOcp:
 
     def __update_ydata(self, data, phase_idx):
         for i in range(data.nb_elements):
-            d = data.to_matrix(idx=i, phases=phase_idx)
+            d = data.to_matrix(idx=i, phase_idx=phase_idx)
             self.ydata[phase_idx].append(d)
 
     def __update_axes(self):
