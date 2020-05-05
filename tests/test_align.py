@@ -49,7 +49,7 @@ def test_align_segment_on_rt(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([1.09038782e-23, 9.81, 66.9866667, 66.9866667]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.61910771e-23,  9.81, -66.9866667, -66.9866667]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.61910771e-23, 9.81, -66.9866667, -66.9866667]))
 
 
 # Load align_marker_on_segment
@@ -92,4 +92,4 @@ def test_align_marker_on_segment(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([23.62164829, 12.25908105, 31.52069123, 12.94722946]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-16.65951013,  14.58726024, -36.10090342,   4.41782557]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-16.65951013, 14.58726024, -36.10090342, 4.41782557]))

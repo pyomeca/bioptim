@@ -40,7 +40,7 @@ def prepare_ocp(biorbd_model_path="cube_and_line.bioMod", show_online_optim=Fals
             "instant": Instant.ALL,
             "marker_idx": 1,
             "segment_idx": 2,
-            "axis": (Axe.X)
+            "axis": (Axe.X),
         },
     )
 
