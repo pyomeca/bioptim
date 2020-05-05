@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import biorbd
 
-from biorbd_optim import ProblemType
+from biorbd_optim import Data
 
 # Load muscle_activations_tracker
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -63,7 +63,11 @@ def test_muscle_activations_and_states_tracking():
     np.testing.assert_almost_equal(g, np.zeros((36, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau, mus = ProblemType.get_data_from_V(ocp, sol["x"])
+    states, controls = Data.get_data_from_V(ocp, sol["x"])
+    q = states["q"].to_matrix()
+    qdot = states["q_dot"].to_matrix()
+    tau = controls["tau"].to_matrix()
+    mus = controls["muscles"].to_matrix()
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([-1.13043502e-05, -1.35629661e-05]))
@@ -119,7 +123,12 @@ def test_muscle_excitation_and_markers_tracking():
     np.testing.assert_almost_equal(g, np.zeros((90, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau, mus_states, mus_controls = ProblemType.get_data_from_V(ocp, sol["x"])
+    states, controls = Data.get_data_from_V(ocp, sol["x"])
+    q = states["q"].to_matrix()
+    qdot = states["q_dot"].to_matrix()
+    mus_states = states["muscles"].to_matrix()
+    tau = controls["tau"].to_matrix()
+    mus_controls = controls["muscles"].to_matrix()
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.00025253, -0.00087191]))
