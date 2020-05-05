@@ -71,7 +71,10 @@ class PlotOcp:
                         axes[k].set_title(self.ocp.nlp[0]["model"].nameDof()[k].to_string())
                     elif "muscles" in variable:
                         axes[k].set_title(self.ocp.nlp[0]["model"].muscleNames()[k].to_string())
-                axes[nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel("time (s)")
+                idx_center = nb_rows * nb_cols - int(nb_cols / 2) - 1
+                if idx_center >= len(axes):
+                    idx_center = len(axes) - 1
+                axes[idx_center].set_xlabel("time (s)")
 
                 self.axes.extend(axes)
                 self.all_figures[-1].tight_layout()
