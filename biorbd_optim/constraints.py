@@ -17,7 +17,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
     class Functions:
         @staticmethod
-        def contact_force_inequality(constraint_type, ocp, nlp, t, x, u, direction, idx, boundary):
+        def contact_force_inequality(constraint_type, ocp, nlp, t, x, u, direction, contact_force_idx, boundary):
             """
             To be completed when this function will be fully developed, in particular the fact that policy is either a
             tuple/list or a tuple of tuples/list of lists,
@@ -27,13 +27,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             CS_func = Function(
                 "Contact_force_inequality",
                 [ocp.symbolic_states, ocp.symbolic_controls],
-                [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
+                [nlp["CS_func"](ocp.symbolic_states, ocp.symbolic_controls, nlp)],
                 ["x", "u"],
                 ["CS"],
             ).expand()
 
             for i in range(len(u)):
-                ocp.g = vertcat(ocp.g, CS_func(x[i], u[i])[idx])
+                ocp.g = vertcat(ocp.g, CS_func(x[i], u[i])[contact_force_idx])
                 if direction == "GREATER_THAN":
                     ocp.g_bounds.min.append(boundary)
                     ocp.g_bounds.max.append(inf)
@@ -120,11 +120,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ConstraintFunction._add_to_penalty(ocp, None, val)
 
     @staticmethod
-    def _add_to_penalty(ocp, nlp, val, **extra_param):
+    def _add_to_penalty(ocp, nlp, val, inf_bound=0, max_bound=0, **extra_param):
         ocp.g = vertcat(ocp.g, val)
         for _ in range(val.rows()):
-            ocp.g_bounds.min.append(0)
-            ocp.g_bounds.max.append(0)
+            ocp.g_bounds.min.append(inf_bound)
+            ocp.g_bounds.max.append(max_bound)
 
     @staticmethod
     def _parameter_modifier(constraint_function, parameters):

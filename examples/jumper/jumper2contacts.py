@@ -69,12 +69,12 @@ def prepare_ocp(
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
         constraints_first_phase.append(
-            {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0,}
+            {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "contact_force_idx": i, "boundary": 0,}
         )
     contact_axes = (1, 3)
     for i in contact_axes:
         constraints_second_phase.append(
-            {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0,}
+            {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "contact_force_idx": i, "boundary": 0,}
         )
     constraints_first_phase.append(
         {
