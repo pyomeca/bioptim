@@ -9,11 +9,12 @@ from biorbd_optim import (
     BidirectionalMapping,
     Mapping,
     Dynamics,
-    ProblemType,
+    Data,
     Objective,
     Bounds,
     QAndQDotBounds,
     InitialConditions,
+    ProblemType,
     ShowResult,
 )
 
@@ -175,11 +176,10 @@ def prepare_ocp(
 if __name__ == "__main__":
     # Define the problem
     biorbd_model = biorbd.Model("arm26.bioMod")
-    final_time = 0.5
-    n_shooting_points = 9
+    final_time = 1.5
+    n_shooting_points = 29
 
     # Generate random data to fit
-    np.random.seed(42)
     t, markers_ref, x_ref, muscle_excitations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
     muscle_activations_ref = x_ref[biorbd_model.nbQ() + biorbd_model.nbQdot() :, :].T
 
@@ -202,7 +202,13 @@ if __name__ == "__main__":
     # --- Show the results --- #
     muscle_excitations_ref = np.append(muscle_excitations_ref, muscle_excitations_ref[-1:, :], axis=0)
 
-    q, qdot, tau, activations, excitations = ProblemType.get_data_from_V(ocp, sol["x"])
+    states_sol, controls_sol = Data.get_data_from_V(ocp, sol["x"])
+    q = states_sol["q"].to_matrix()
+    q_dot = states_sol["q_dot"].to_matrix()
+    activations = states_sol["muscles"].to_matrix()
+    tau = controls_sol["tau"].to_matrix()
+    excitations = controls_sol["muscles"].to_matrix()
+
     n_q = ocp.nlp[0]["model"].nbQ()
     n_qdot = ocp.nlp[0]["model"].nbQdot()
     n_mark = ocp.nlp[0]["model"].nbMarkers()
@@ -213,7 +219,7 @@ if __name__ == "__main__":
         "ForwardKin", [ocp.symbolic_states], [biorbd_model.markers(ocp.symbolic_states[:n_q])], ["q"], ["markers"],
     ).expand()
     for i in range(n_frames):
-        markers[:, :, i] = markers_func(np.concatenate((q[:, i], qdot[:, i], activations[:, i])))
+        markers[:, :, i] = markers_func(np.concatenate((q[:, i], q_dot[:, i], activations[:, i])))
 
     plt.figure("Markers")
     for i in range(markers.shape[1]):

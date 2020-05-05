@@ -69,22 +69,24 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def align_markers(penalty_type, ocp, nlp, t, x, u, first_marker, second_marker, **extra_param):
+        def align_markers(penalty_type, ocp, nlp, t, x, u, first_marker_idx, second_marker_idx, **extra_param):
             """
             Adds the constraint that the two markers must be coincided at the desired instant(s).
             :param nlp: An OptimalControlProgram class.
             :param x: List of instant(s).
             :param policy: Tuple of indices of two markers.
             """
-            PenaltyFunctionAbstract._check_idx("marker", [first_marker, second_marker], nlp["model"].nbMarkers())
+            PenaltyFunctionAbstract._check_idx(
+                "marker", [first_marker_idx, second_marker_idx], nlp["model"].nbMarkers()
+            )
 
             nq = nlp["q_mapping"].reduce.len
             for v in x:
                 q = nlp["q_mapping"].expand.map(v[:nq])
-                marker1 = nlp["model"].marker(q, first_marker).to_mx()
-                marker2 = nlp["model"].marker(q, second_marker).to_mx()
+                first_marker = nlp["model"].marker(q, first_marker_idx).to_mx()
+                second_marker = nlp["model"].marker(q, second_marker_idx).to_mx()
 
-                val = marker1 - marker2
+                val = first_marker - second_marker
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
