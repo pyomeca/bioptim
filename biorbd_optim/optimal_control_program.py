@@ -75,6 +75,10 @@ class OptimalControlProgram:
         self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
 
+        # Prepare some variables
+        self.__init_constraints(constraints)
+        self.__init_objective_fun(objective_functions)
+
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
 
