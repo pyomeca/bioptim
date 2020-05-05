@@ -24,4 +24,4 @@ if __name__ == "__main__":
     ocp, sol = OptimalControlProgram.load(biorbd_model_path="cube.bioMod", name="cube_ocp_sol.bo")
     result = ShowResult(ocp, sol)
     result.graphs()
-    result.animate(40)
+    result.animate(nb_frames=40)
