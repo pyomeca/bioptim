@@ -61,7 +61,7 @@ align_marker_on_segment = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(align_marker_on_segment)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_align_marker_on_segment(ode_solver):
     ocp = align_marker_on_segment.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod", ode_solver=ode_solver
