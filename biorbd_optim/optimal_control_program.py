@@ -138,32 +138,12 @@ class OptimalControlProgram:
         self.g_bounds = Bounds()
         ConstraintFunction.continuity_constraint(self)
         if len(constraints) > 0:
-            if self.nb_phases == 1:
-                if isinstance(constraints, dict):
-                    constraints = (constraints,)
-                if isinstance(constraints[0], dict):
-                    constraints = (constraints,)
-            elif isinstance(constraints, (list, tuple)):
-                for constraint in constraints:
-                    if isinstance(constraint, dict):
-                        raise RuntimeError("Each phase must declares its constraints (even if it is empty)")
-            self.__add_to_nlp("constraints", constraints, False)
             for i in range(self.nb_phases):
                 ConstraintFunction.add(self, self.nlp[i])
 
         # Objective functions
         self.J = 0
         if len(objective_functions) > 0:
-            if self.nb_phases == 1:
-                if isinstance(objective_functions, dict):
-                    objective_functions = (objective_functions,)
-                if isinstance(objective_functions[0], dict):
-                    objective_functions = (objective_functions,)
-            elif isinstance(objective_functions, (list, tuple)):
-                for objective_function in objective_functions:
-                    if isinstance(objective_function, dict):
-                        raise RuntimeError("Each phase must declares its objective (even if it is empty)")
-            self.__add_to_nlp("objective_functions", objective_functions, False)
             for i in range(self.nb_phases):
                 ObjectiveFunction.add(self, self.nlp[i])
 
@@ -322,6 +302,32 @@ class OptimalControlProgram:
         self.V_bounds.expand(V_bounds)
         self.V_init.expand(V_init)
         self.param_to_optim['time'] = P
+
+    def __init_constraints(self, constraints):
+        if len(constraints) > 0:
+            if self.nb_phases == 1:
+                if isinstance(constraints, dict):
+                    constraints = (constraints,)
+                if isinstance(constraints[0], dict):
+                    constraints = (constraints,)
+            elif isinstance(constraints, (list, tuple)):
+                for constraint in constraints:
+                    if isinstance(constraint, dict):
+                        raise RuntimeError("Each phase must declares its constraints (even if it is empty)")
+            self.__add_to_nlp("constraints", constraints, False)
+
+    def __init_objective_fun(self, objective_functions):
+        if len(objective_functions) > 0:
+            if self.nb_phases == 1:
+                if isinstance(objective_functions, dict):
+                    objective_functions = (objective_functions,)
+                if isinstance(objective_functions[0], dict):
+                    objective_functions = (objective_functions,)
+            elif isinstance(objective_functions, (list, tuple)):
+                for objective_function in objective_functions:
+                    if isinstance(objective_function, dict):
+                        raise RuntimeError("Each phase must declares its objective (even if it is empty)")
+            self.__add_to_nlp("objective_functions", objective_functions, False)
 
     def solve(self):
         """
