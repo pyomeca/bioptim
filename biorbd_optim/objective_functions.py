@@ -33,6 +33,11 @@ class ObjectiveFunction:
         """
         Different conditions between biorbd geometric structures.
         """
+        # class Functions:
+        @staticmethod
+        def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
+            val = nlp["tf"]
+            penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
         def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False):
@@ -45,10 +50,6 @@ class ObjectiveFunction:
         def _parameter_modifier(penalty_function, parameters):
             # Everything that should change the entry parameters depending on the penalty can be added here
             PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
-
-            if penalty_function == ObjectiveFunction.Mayer.MINIMIZE_TIME:
-                del penalty_function["minimum"]
-                del penalty_function["maximum"]
 
         @staticmethod
         def _span_checker(penalty_function, instant, nlp):
@@ -70,11 +71,7 @@ class ObjectiveFunction:
 
         PenaltyFunctionAbstract._add(ocp, nlp, "objective_functions")
 
-        class Functions:
-            @staticmethod
-            def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
-                val = nlp["tf"]
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+
     #
     # @staticmethod
     # def cyclic(ocp, weight=1):
@@ -121,7 +118,7 @@ class Objective:
         """
         Different conditions between biorbd geometric structures.
         """
-
+        MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.minimize_time)
         MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
         TRACK_STATE = (PenaltyType.TRACK_STATE,)
         MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)

@@ -79,7 +79,7 @@ class OptimalControlProgram:
         phase_time = list(phase_time)
         for i in range(self.nb_phases):
             for j in range(len(objective_functions[i])):
-                if (objective_functions[i][j]['type'] == Objective.Mayer.MINIMIZE_TIME) or (objective_functions[i][j]['type'] == Objective.Mayer.MINIMIZE_TIME):
+                if (objective_functions[i][j]['type'] == Objective.Mayer.MINIMIZE_TIME) or (objective_functions[i][j]['type'] == Objective.Lagrange.MINIMIZE_TIME):
                     initial_time_guess.append(phase_time[i])
                     phase_time[i] = casadi.MX()
                     if 'maximum' in objective_functions[i][j]:
@@ -94,9 +94,6 @@ class OptimalControlProgram:
 
         phase_time = tuple(phase_time)
         self.__add_to_nlp("tf", phase_time, False)
-
-        self.__add_to_nlp("tmin", variable_time_min, False)
-        self.__add_to_nlp("tmax", variable_time_max, False)
 
         self.__add_to_nlp(
             "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
@@ -136,6 +133,8 @@ class OptimalControlProgram:
         self.V_init = InitialConditions()
         for i in range(self.nb_phases):
             self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
+
+        self.__define_variable_time(initial_time_guess, variable_time_min, variable_time_max)
 
         # Define dynamic problem
         self.__add_to_nlp("ode_solver", ode_solver, True)
