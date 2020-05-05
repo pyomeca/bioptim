@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import interpolate
+from casadi import MX
 
 
 class Data:
@@ -58,7 +59,8 @@ class Data:
             return np.array(t_concat)
 
     @staticmethod
-    def get_data_from_V(ocp, V, phase_idx=None, integrate=False, interpolate_nb_frames=-1, concatenate=True):
+    def get_data_from_V(ocp, V, get_states=True, get_controls=True, get_parameters=False, phase_idx=None,
+                        integrate=False, interpolate_nb_frames=-1, concatenate=True):
         V_array = np.array(V).squeeze()
 
         if phase_idx is None:
@@ -69,7 +71,7 @@ class Data:
         for i, nlp in enumerate(ocp.nlp):
             offsets.append(offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"]))
 
-        data_states, data_controls = {}, {}
+        data_states, data_controls, data_parameters = {}, {}, {}
         for i in phase_idx:
             nlp = ocp.nlp[i]
             for key in nlp["has_states"].keys():
@@ -86,17 +88,24 @@ class Data:
 
             for key in nlp["has_states"]:
                 data_states[key]._append_phase(
-                    (nlp["t0"], nlp["tf"]),
+                    (Data._get_phase_time(V_phase, nlp)),
                     Data._get_phase(V_phase, nlp["has_states"][key], nlp["ns"] + 1, offset, nb_var, False),
                 )
                 offset += nlp["has_states"][key]
 
             for key in nlp["has_controls"]:
                 data_controls[key]._append_phase(
-                    (nlp["t0"], nlp["tf"]),
+                    (Data._get_phase_time(V_phase, nlp)),
                     Data._get_phase(V_phase, nlp["has_controls"][key], nlp["ns"], offset, nb_var, True),
                 )
                 offset += nlp["has_controls"][key]
+
+        offset = sum([nlp['nx'] * (nlp['ns'] + 1) + nlp['nu'] * nlp['ns'] for nlp in ocp.nlp])
+        for key in ocp.param_to_optim:
+            if ocp.param_to_optim[key]:
+                nb_param = len(ocp.param_to_optim[key])
+                data_parameters[key] = Data._get_phase(V, 1, 1, offset, nb_param, False)[:, 0]
+                offset += nb_param
 
         if integrate:
             data_states = Data._get_data_integrated_from_V(ocp, data_states, data_controls)
@@ -106,17 +115,42 @@ class Data:
                 raise RuntimeError("interpolate values are not compatible yet with integrated values")
             data_states = Data._get_data_interpolated_from_V(data_states, interpolate_nb_frames, concatenate)
 
-        return data_states, data_controls
+        out = []
+        if get_states:
+            out.append(data_states)
+        if get_controls:
+            out.append(data_controls)
+        if get_parameters:
+            out.append(data_parameters)
+        return out
+
+    @staticmethod
+    def _get_phase_time(V, nlp):
+        if isinstance(nlp["tf"], (int, float)):
+            return 0, nlp["tf"]
+        else:
+            return 0, V[-1]
 
     @staticmethod
     def _get_data_integrated_from_V(ocp, data_states, data_controls):
+        # Check if time is optimized
+        time_is_optimized = False
+        for nlp in ocp.nlp:
+            if isinstance(nlp["tf"], MX):
+                time_is_optimized = True
+                break
+
         for idx_phase in range(ocp.nb_phases):
             dt = ocp.nlp[idx_phase]["dt"]
             nlp = ocp.nlp[idx_phase]
             for idx_node in reversed(range(ocp.nlp[idx_phase]["ns"])):
                 x0 = Data._vertcat(data_states, list(nlp["has_states"].keys()), idx_phase, idx_node)
                 p = Data._vertcat(data_controls, list(nlp["has_controls"].keys()), idx_phase, idx_node)
-                xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"](x0=x0, p=p)["xf"])  # Integrate
+                if time_is_optimized:
+                    # TODO: Allow integrate when optimizing time
+                    xf_dof = x0
+                else:
+                    xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"](x0=x0, p=p)["xf"])  # Integrate
 
                 offset = 0
                 for key in nlp["has_states"]:

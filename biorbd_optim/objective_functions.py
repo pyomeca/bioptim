@@ -13,7 +13,7 @@ class ObjectiveFunction:
         """
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False):
+        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **extra_param):
             if quadratic:
                 ocp.J += casadi.dot(val, val) * weight * nlp["dt"] * nlp["dt"]
             else:
@@ -33,14 +33,14 @@ class ObjectiveFunction:
         """
         Different conditions between biorbd geometric structures.
         """
-        # class Functions:
-        @staticmethod
-        def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
-            val = nlp["tf"]
-            penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+        class Functions:
+            @staticmethod
+            def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
+                val = nlp["tf"]
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False):
+        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **extra_param):
             if quadratic:
                 ocp.J += casadi.dot(val, val) * weight
             else:
@@ -118,7 +118,7 @@ class Objective:
         """
         Different conditions between biorbd geometric structures.
         """
-        MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.minimize_time)
+        MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time, )
         MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
         TRACK_STATE = (PenaltyType.TRACK_STATE,)
         MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
