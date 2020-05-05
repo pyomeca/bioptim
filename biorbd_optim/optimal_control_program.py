@@ -211,17 +211,21 @@ class OptimalControlProgram:
             ["xdot"],
         ).expand()  # .map(nlp["ns"], "thread", 2)
 
-        ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
-
         ode_opt = {"t0": 0, "tf": nlp["dt"]}
         if nlp["ode_solver"] == OdeSolver.RK or nlp["ode_solver"] == OdeSolver.COLLOCATION:
             ode_opt["number_of_finite_elements"] = 5
 
+        ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
         if nlp["ode_solver"] == OdeSolver.RK:
-            nlp["dynamics"] = casadi.integrator("integrator", "rk", ode, ode_opt)
+            ode["ode"] = dynamics
+            nlp["dynamics"] = RK4(ode, ode_opt)
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
+            if isinstance(nlp["tf"], casadi.MX):
+                raise RuntimeError("OdeSolver.COLLOCATION cannot be used while optimizing the time parameter")
             nlp["dynamics"] = casadi.integrator("integrator", "collocation", ode, ode_opt)
         elif nlp["ode_solver"] == OdeSolver.CVODES:
+            if isinstance(nlp["tf"], casadi.MX):
+                raise RuntimeError("OdeSolver.CVODES cannot be used while optimizing the time parameter")
             nlp["dynamics"] = casadi.integrator("integrator", "cvodes", ode, ode_opt)
 
     def __define_multiple_shooting_nodes_per_phase(self, nlp, idx_phase):
