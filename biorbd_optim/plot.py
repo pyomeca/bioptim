@@ -76,7 +76,12 @@ class PlotOcp:
                 axes = self.axes[self.matching_variables[variable] : self.matching_variables[variable] + nb]
             else:
                 self.all_figures.append(plt.figure(variable, figsize=(self.width_step / 100, self.height_step / 131)))
-                axes = self.all_figures[-1].subplots(nb_rows, nb_cols).flatten()
+                axes = self.all_figures[-1].subplots(nb_rows, nb_cols)
+                if isinstance(axes, np.ndarray):
+                    axes = axes.flatten()
+                else:
+                    axes = [axes]
+
                 for i in range(nb, len(axes)):
                     axes[i].remove()
                 axes = axes[:nb]

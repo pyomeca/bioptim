@@ -38,7 +38,10 @@ class Data:
                     node = self.phase[idx_phase].node[idx_node][range_idx, :]
                     data = np.concatenate((data, node), axis=1)
         else:
-            data = [Data.to_matrix(idx=idx, phase_idx=phase, node_idx=node_idx, concatenate_phases=False) for phase in phase_idx]
+            data = [
+                Data.to_matrix(idx=idx, phase_idx=phase, node_idx=node_idx, concatenate_phases=False)
+                for phase in phase_idx
+            ]
 
         return data
 
