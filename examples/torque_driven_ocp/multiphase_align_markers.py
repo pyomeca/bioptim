@@ -21,7 +21,7 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", show_online_optim=False, ode_so
 
     # Problem parameters
     if long_optim:
-        number_shooting_points = (100, 1000, 100)
+        number_shooting_points = (100, 150, 100)
     else:
         number_shooting_points = (20, 30, 20)
     final_time = (2, 5, 4)

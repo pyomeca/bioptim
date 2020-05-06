@@ -101,10 +101,10 @@ class Data:
                 offset += nlp["has_controls"][key]
 
         offset = sum([nlp['nx'] * (nlp['ns'] + 1) + nlp['nu'] * nlp['ns'] for nlp in ocp.nlp])
-        for key in ocp.param_to_optim:
-            if ocp.param_to_optim[key]:
-                nb_param = len(ocp.param_to_optim[key])
-                data_parameters[key] = Data._get_phase(V, 1, 1, offset, nb_param, False)[:, 0]
+        for key in ocp.param_to_optimize:
+            if ocp.param_to_optimize[key]:
+                nb_param = len(ocp.param_to_optimize[key])
+                data_parameters[key] = np.array(V[offset:offset+nb_param])
                 offset += nb_param
 
         if integrate:

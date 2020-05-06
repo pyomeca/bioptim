@@ -125,7 +125,7 @@ class OptimalControlProgram:
             self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
 
         # Declare the parameters to optimize
-        self.param_to_optim = {}
+        self.param_to_optimize = {}
         self.__define_variable_time(initial_time_guess, time_min, time_max)
 
         # Define dynamic problem
@@ -275,8 +275,6 @@ class OptimalControlProgram:
                     phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
                     time_min.append(obj_fun['minimum'] if 'minimum' in obj_fun else 0)
                     time_max.append(obj_fun['maximum'] if 'maximum' in obj_fun else inf)
-        if sum([isinstance(p, MX) for p in phase_time]) > 1:
-            raise RuntimeError("Time optimization for more than one phase is not supported yet")
         return phase_time, initial_time_guess, time_min, time_max
 
     def __define_variable_time(self, initial_guess, minimum, maximum):
@@ -289,27 +287,20 @@ class OptimalControlProgram:
         :param maximum: vairable time maximums as set by user (default: inf)
         """
         P = []
-
-        nV = len(initial_guess)
-        V = MX.sym("V_time", nV, 1)
-
-        V_bounds = Bounds(minimum, maximum)
-        V_init = InitialConditions(initial_guess)
-
-        cmp = 0
         for nlp in self.nlp:
             if isinstance(nlp["tf"], MX):
-                P.append(V[cmp])
-                V[cmp] = nlp["tf"]
-                cmp += 1
+                self.V = vertcat(self.V, nlp["tf"])
+                P.append(self.V[-1])
+        self.param_to_optimize['time'] = P
 
+        nV = len(initial_guess)
+        V_bounds = Bounds(minimum, maximum)
         V_bounds.regulation(nV)
-        V_init.regulation(nV)
-
-        self.V = vertcat(self.V, V)
         self.V_bounds.expand(V_bounds)
+
+        V_init = InitialConditions(initial_guess)
+        V_init.regulation(nV)
         self.V_init.expand(V_init)
-        self.param_to_optim['time'] = P
 
     def __init_penality(self, penalities, penality_type):
         if len(penalities) > 0:
