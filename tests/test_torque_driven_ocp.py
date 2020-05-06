@@ -81,10 +81,10 @@ def test_multiphase_align_markers(ode_solver):
     # Check some of the results
     states, controls = Data.get_data_from_V(ocp, sol["x"], concatenate=False)
     q, qdot, tau = [], [], []
-    for i in range(len(states)):
-        q.append(states[i]["q"].to_matrix())
-        qdot.append(states[i]["q_dot"].to_matrix())
-        tau.append(controls[i]["tau"].to_matrix())
+    for i in range(ocp.nb_phases):
+        q.append(states["q"].to_matrix(phase_idx=i))
+        qdot.append(states["q_dot"].to_matrix(phase_idx=i))
+        tau.append(controls["tau"].to_matrix(phase_idx=i))
 
     # initial and final position
     np.testing.assert_almost_equal(q[0][:, 0], np.array((1, 0, 0)))

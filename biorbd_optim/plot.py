@@ -71,7 +71,10 @@ class PlotOcp:
                         axes[k].set_title(self.ocp.nlp[0]["model"].nameDof()[k].to_string())
                     elif "muscles" in variable:
                         axes[k].set_title(self.ocp.nlp[0]["model"].muscleNames()[k].to_string())
-                axes[nb_rows * nb_cols - int(nb_cols / 2) - 1].set_xlabel("time (s)")
+                idx_center = nb_rows * nb_cols - int(nb_cols / 2) - 1
+                if idx_center >= len(axes):
+                    idx_center = len(axes) - 1
+                axes[idx_center].set_xlabel("time (s)")
 
                 self.axes.extend(axes)
                 self.all_figures[-1].tight_layout()
@@ -151,7 +154,7 @@ class PlotOcp:
 
     def __update_ydata(self, data, phase_idx):
         for i in range(data.nb_elements):
-            d = data.to_matrix(idx=i, phases=phase_idx)
+            d = data.to_matrix(idx=i, phase_idx=phase_idx)
             self.ydata[phase_idx].append(d)
 
     def __update_axes(self):
@@ -211,7 +214,7 @@ class ShowResult:
         all_bioviz = []
         for idx_phase, d in enumerate(data_interpolate["q"].phase):
             all_bioviz.append(BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs))
-            all_bioviz[-1].load_movement(d.T)
+            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase]["q_mapping"].expand.map(d).T)
 
         b_is_visible = [True] * len(all_bioviz)
         while sum(b_is_visible):

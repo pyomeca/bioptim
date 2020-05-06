@@ -9,6 +9,7 @@ from biorbd_optim import (
     BidirectionalMapping,
     Mapping,
     Dynamics,
+    Data,
     ProblemType,
     Objective,
     Bounds,
@@ -189,7 +190,12 @@ if __name__ == "__main__":
     # --- Show the results --- #
     muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
 
-    q, qdot, tau, mus = ProblemType.get_data_from_V(ocp, sol["x"])
+    states, controls = Data.get_data_from_V(ocp, sol["x"])
+    q = states["q"].to_matrix()
+    qdot = states["q_dot"].to_matrix()
+    tau = controls["tau"].to_matrix()
+    mus = controls["muscles"].to_matrix()
+
     n_q = ocp.nlp[0]["model"].nbQ()
     n_mark = ocp.nlp[0]["model"].nbMarkers()
     n_frames = q.shape[1]
