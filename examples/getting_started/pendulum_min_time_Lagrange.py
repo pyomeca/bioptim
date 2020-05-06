@@ -1,19 +1,18 @@
 import biorbd
 
 from biorbd_optim import (
-    Instant,
     OptimalControlProgram,
     ProblemType,
     Objective,
-    Constraint,
     BidirectionalMapping,
     Mapping,
     Bounds,
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
-    OdeSolver,
+    Data,
 )
+
 
 def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_online_optim=False):
     # --- Options --- #
@@ -24,7 +23,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
     # Add objective functions
     objective_functions = (
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
-        {"type": Objective.Lagrange.MINIMIZE_TIME, "minimum":1}
+        {"type": Objective.Lagrange.MINIMIZE_TIME}
     )
 
     # Mapping
@@ -78,6 +77,9 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     # --- Show results --- #
+    param = Data.get_data_from_V(ocp, sol['x'], get_states=False, get_controls=False, get_parameters=True)
+    print(f"The optimized phase time is: {param['time'][0, 0]}, good job Lagrange!")
+
     result = ShowResult(ocp, sol)
-    # result.graphs()
+    result.graphs()
     result.animate()

@@ -28,6 +28,9 @@ class ObjectiveFunction:
         def _parameter_modifier(penalty_function, parameters):
             # Everything that should change the entry parameters depending on the penalty can be added here
             PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
+            if penalty_function == Objective.Lagrange.MINIMIZE_TIME.value[0]:
+                if "quadratic" not in parameters.keys():
+                    parameters["quadratic"] = True
 
         @staticmethod
         def _span_checker(penalty_function, instant, nlp):

@@ -45,8 +45,12 @@ class Data:
 
         return data
 
+    def set_time_per_phase(self, new_t):
+        for i, phase in enumerate(self.phase):
+            phase.t = np.linspace(new_t[i][0], new_t[i][1], len(phase.node))
+
     def get_time_per_phase(self, phases=(), concatenate=False):
-        if self.phase == []:
+        if not self.phase:
             return np.ndarray((0,))
 
         phases = phases if isinstance(phases, (list, tuple)) else [phases]
@@ -111,8 +115,16 @@ class Data:
                 offset += nb_param
 
                 if key == "time":
+                    new_t = []
+                    cmp = 0
+                    for nlp in ocp.nlp:
+                        if isinstance(nlp["tf"], MX):
+                            new_t.append((0, data_parameters["time"][cmp, 0]))
+                            cmp += 1
+                        else:
+                            new_t.append((0, nlp["tf"]))
                     for key_stat in data_states:
-                        print(data_states)
+                        data_states[key_stat].set_time_per_phase(new_t)
 
         if integrate:
             data_states = Data._get_data_integrated_from_V(ocp, data_states, data_controls)
@@ -129,7 +141,10 @@ class Data:
             out.append(data_controls)
         if get_parameters:
             out.append(data_parameters)
-        return out
+        if len(out) == 1:
+            return out[0]
+        else:
+            return out
 
     @staticmethod
     def _get_phase_time(V, nlp):

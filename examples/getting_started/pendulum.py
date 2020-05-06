@@ -1,19 +1,17 @@
 import biorbd
 
 from biorbd_optim import (
-    Instant,
     OptimalControlProgram,
     ProblemType,
     Objective,
-    Constraint,
     BidirectionalMapping,
     Mapping,
     Bounds,
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
-    OdeSolver,
 )
+
 
 def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_online_optim=False):
     # --- Options --- #
@@ -78,5 +76,5 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    # result.graphs()
+    result.graphs()
     result.animate()
