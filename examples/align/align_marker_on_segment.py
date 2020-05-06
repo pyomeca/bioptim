@@ -15,14 +15,14 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path="cube_and_line.bioMod", show_online_optim=False, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver, initialize_near_solution=False, show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    number_shooting_points = 8
-    final_time = 0.5
+    number_shooting_points = 30
+    final_time = 2
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
@@ -58,6 +58,13 @@ def prepare_ocp(biorbd_model_path="cube_and_line.bioMod", show_online_optim=Fals
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    if initialize_near_solution:
+        for i in range(2):
+            X_init.init[i] = 1.5
+        for i in range(4, 6):
+            X_init.init[i] = 0.7
+        for i in range(6, 8):
+            X_init.init[i] = 0.6
 
     # Define control path constraint
     U_bounds = Bounds(
@@ -84,7 +91,7 @@ def prepare_ocp(biorbd_model_path="cube_and_line.bioMod", show_online_optim=Fals
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=False)
+    ocp = prepare_ocp(biorbd_model_path="cube_and_line.bioMod", number_shooting_points=15., final_time=2., ode_solver=OdeSolver.RK, show_online_optim=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()

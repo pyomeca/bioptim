@@ -21,7 +21,11 @@ spec.loader.exec_module(align_segment_on_rt)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
 def test_align_segment_on_rt(ode_solver):
     ocp = align_segment_on_rt.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod", ode_solver=ode_solver
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+        final_time = 0.5,
+        number_shooting_points = 8,
+        ode_solver=ode_solver,
+
     )
     sol = ocp.solve()
 
@@ -64,7 +68,7 @@ spec.loader.exec_module(align_marker_on_segment)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_align_marker_on_segment(ode_solver):
     ocp = align_marker_on_segment.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod", ode_solver=ode_solver
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod", final_time=0.5, number_shooting_points=8, ode_solver=ode_solver
     )
     sol = ocp.solve()
 
