@@ -41,7 +41,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     ocp.g_bounds.min.append(-inf)
                     ocp.g_bounds.max.append(boundary)
                 else:
-                    raise RuntimeError("direction parameter of contact_force_inequality must either be GREATER_THAN or LESSER_THAN")
+                    raise RuntimeError(
+                        "direction parameter of contact_force_inequality must either be GREATER_THAN or LESSER_THAN"
+                    )
 
         @staticmethod
         def non_slipping(

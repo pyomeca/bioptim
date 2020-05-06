@@ -5,7 +5,6 @@ import biorbd
 
 from biorbd_optim import (
     Instant,
-
     OptimalControlProgram,
     Constraint,
     Objective,
@@ -27,15 +26,11 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_opti
     biorbd_model = biorbd.Model(model_path)
     torque_min, torque_max, torque_init = -500, 500, 0
 
-    q_mapping = BidirectionalMapping(
-        Mapping(range(biorbd_model.nbQ())), Mapping(range(biorbd_model.nbQ())))
-    tau_mapping = BidirectionalMapping(
-        Mapping([-1, -1, -1, 0]), Mapping([3]))
+    q_mapping = BidirectionalMapping(Mapping(range(biorbd_model.nbQ())), Mapping(range(biorbd_model.nbQ())))
+    tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
 
     # Add objective functions
-    objective_functions = (
-        {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
-    )
+    objective_functions = ({"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},)
 
     # Dynamics
     problem_type = ProblemType.torque_driven_with_contact
@@ -62,7 +57,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_opti
             "normal_component_idx": (1, 2),
             "tangential_component_idx": 0,
             "static_friction_coefficient": 0.25,
-        }
+        },
     )
 
     # Path constraint
@@ -144,4 +139,3 @@ if __name__ == "__main__":
     # --- Show results --- #
     result = ShowResult(ocp, sol)
     result.animate()
-

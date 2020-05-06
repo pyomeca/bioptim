@@ -17,8 +17,8 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points,
-    show_online_optim=False, use_symmetry=True,
+def prepare_ocp(
+    model_path, phase_time, number_shooting_points, show_online_optim=False, use_symmetry=True,
 ):
     # --- Options --- #
     # Model path
@@ -65,13 +65,24 @@ def prepare_ocp(model_path, phase_time, number_shooting_points,
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
         constraints_first_phase.append(
-            {"type": Constraint.CONTACT_FORCE_INEQUALITY, "direction": "GREATER_THAN",
-             "instant": Instant.ALL, "contact_force_idx": i, "boundary": 0,}
+            {
+                "type": Constraint.CONTACT_FORCE_INEQUALITY,
+                "direction": "GREATER_THAN",
+                "instant": Instant.ALL,
+                "contact_force_idx": i,
+                "boundary": 0,
+            }
         )
     contact_axes = (1, 3)
     for i in contact_axes:
         constraints_second_phase.append(
-            {"type": Constraint.CONTACT_FORCE_INEQUALITY, "direction": "GREATER_THAN", "instant": Instant.ALL, "contact_force_idx": i, "boundary": 0,}
+            {
+                "type": Constraint.CONTACT_FORCE_INEQUALITY,
+                "direction": "GREATER_THAN",
+                "instant": Instant.ALL,
+                "contact_force_idx": i,
+                "boundary": 0,
+            }
         )
     constraints_first_phase.append(
         {
@@ -182,8 +193,13 @@ def prepare_ocp(model_path, phase_time, number_shooting_points,
 
 if __name__ == "__main__":
     model_path = ("jumper2contacts.bioMod", "jumper1contacts.bioMod")
-    ocp = prepare_ocp(model_path=model_path, phase_time=[0.4, 0.2],
-                      number_shooting_points=[6, 6], show_online_optim=True, use_symmetry=True)
+    ocp = prepare_ocp(
+        model_path=model_path,
+        phase_time=[0.4, 0.2],
+        number_shooting_points=[6, 6],
+        show_online_optim=True,
+        use_symmetry=True,
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve()
@@ -212,7 +228,9 @@ if __name__ == "__main__":
         if i == 0:
             contact_forces[cs_map[i], : nlp["ns"] + 1] = contact_forces_func(x, u)
         else:
-            contact_forces[cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1] = contact_forces_func(x, u)
+            contact_forces[
+                cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1
+            ] = contact_forces_func(x, u)
 
     names_contact_forces = ocp.nlp[0]["model"].contactNames()
     for i, elt in enumerate(contact_forces):
@@ -234,7 +252,9 @@ if __name__ == "__main__":
             if i == 0:
                 q_total[:, : ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(x[i])[:, :-1]
             else:
-                q_total[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(x[i])[:, :-1]
+                q_total[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i][
+                    "q_mapping"
+                ].expand.map(x[i])[:, :-1]
         q_total[:, -1] = ocp.nlp[-1]["q_mapping"].expand.map(x[-1])[:, -1]
 
         # np.save("results2", q.T)

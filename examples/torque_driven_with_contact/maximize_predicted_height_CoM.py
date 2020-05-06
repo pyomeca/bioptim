@@ -27,15 +27,13 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_opti
 
     torque_min, torque_max, torque_init = -500, 500, 0
 
-    q_mapping = BidirectionalMapping(
-        Mapping(range(biorbd_model.nbQ())), Mapping(range(biorbd_model.nbQ())))
-    tau_mapping = BidirectionalMapping(
-        Mapping([-1, -1, -1, 0]), Mapping([3]))
+    q_mapping = BidirectionalMapping(Mapping(range(biorbd_model.nbQ())), Mapping(range(biorbd_model.nbQ())))
+    tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
 
     # Add objective functions
     objective_functions = (
         {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
-        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1/100}
+        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
     )
 
     # Dynamics
@@ -123,4 +121,3 @@ if __name__ == "__main__":
     # --- Show results --- #
     result = ShowResult(ocp, sol)
     result.animate()
-

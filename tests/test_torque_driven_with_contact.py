@@ -62,7 +62,7 @@ def test_maximize_predicted_height_CoM(ode_solver):
     tau = controls["tau"].to_matrix()
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0., 0., -0.5, 0.5)))
+    np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
     np.testing.assert_almost_equal(q[:, -1], np.array((-0.2191102, 0.0607841, -0.0412168, 0.0412168)))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
@@ -77,7 +77,7 @@ def test_contact_forces_inequality_constraint(ode_solver):
     ocp = contact_forces_inequality_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
-        number_shooting_points=10
+        number_shooting_points=10,
     )
     sol = ocp.solve()
 
@@ -91,26 +91,30 @@ def test_contact_forces_inequality_constraint(ode_solver):
     np.testing.assert_equal(g.shape, (100, 1))
     np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)), decimal=6)
     np.testing.assert_array_less(-g[80:], 0)
-    expected_pos_g = np.array([[4.14326709e+01],
-                               [5.89469050e+01],
-                               [6.31668706e+01],
-                               [6.62340130e+01],
-                               [6.81979220e+01],
-                               [6.85259469e+01],
-                               [6.66231189e+01],
-                               [6.18915213e+01],
-                               [5.39938053e+01],
-                               [4.34594467e+01],
-                               [2.057260303e+02],
-                               [9.16286233e+01],
-                               [6.65898730e+01],
-                               [5.81849733e+01],
-                               [5.50995044e+01],
-                               [5.44123368e+01],
-                               [5.48895651e+01],
-                               [5.55906536e+01],
-                               [5.52487885e+01],
-                               [5.19858748e+01]])
+    expected_pos_g = np.array(
+        [
+            [4.14326709e01],
+            [5.89469050e01],
+            [6.31668706e01],
+            [6.62340130e01],
+            [6.81979220e01],
+            [6.85259469e01],
+            [6.66231189e01],
+            [6.18915213e01],
+            [5.39938053e01],
+            [4.34594467e01],
+            [2.057260303e02],
+            [9.16286233e01],
+            [6.65898730e01],
+            [5.81849733e01],
+            [5.50995044e01],
+            [5.44123368e01],
+            [5.48895651e01],
+            [5.55906536e01],
+            [5.52487885e01],
+            [5.19858748e01],
+        ]
+    )
     np.testing.assert_almost_equal(g[80:], expected_pos_g)
 
     # Check some of the results
@@ -120,12 +124,11 @@ def test_contact_forces_inequality_constraint(ode_solver):
     tau = controls["tau"].to_matrix()
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0., 0., -0.75, 0.75)))
+    np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
     np.testing.assert_almost_equal(q[:, -1], np.array((-3.4081740e-01, 1.3415556e-01, -3.9566794e-06, 3.9566794e-06)))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1],
-                                   np.array((-2.0922416e+00, 8.2778459e-06, 4.1844833e+00, -4.1844833e+00)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-2.0922416e00, 8.2778459e-06, 4.1844833e00, -4.1844833e00)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-70.1205906)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-17.5866089)))
@@ -150,36 +153,40 @@ def test_non_slipping_constraint(ode_solver):
     np.testing.assert_equal(g.shape, (110, 1))
     np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
     np.testing.assert_array_less(-g[80:], 0)
-    expected_pos_g = np.array([[8.06654187e+01],
-                               [8.42778524e+01],
-                               [8.81615178e+01],
-                               [9.17459644e+01],
-                               [9.50899567e+01],
-                               [9.83262204e+01],
-                               [1.0156872164e+02],
-                               [1.0488130122e+02],
-                               [1.0821887319e+02],
-                               [1.1131692919e+02],
-                               [6.17068815e+01],
-                               [5.34409324e+01],
-                               [4.59011530e+01],
-                               [4.06703203e+01],
-                               [3.67591700e+01],
-                               [3.32903343e+01],
-                               [2.97727890e+01],
-                               [2.59507626e+01],
-                               [2.17350095e+01],
-                               [1.72057582e+01],
-                               [1.91986775e+01],
-                               [2.40008630e+01],
-                               [2.62549528e+01],
-                               [2.68785755e+01],
-                               [2.65984026e+01],
-                               [2.57205116e+01],
-                               [2.43993580e+01],
-                               [2.27149568e+01],
-                               [2.06672767e+01],
-                               [1.81470345e+01]])
+    expected_pos_g = np.array(
+        [
+            [8.06654187e01],
+            [8.42778524e01],
+            [8.81615178e01],
+            [9.17459644e01],
+            [9.50899567e01],
+            [9.83262204e01],
+            [1.0156872164e02],
+            [1.0488130122e02],
+            [1.0821887319e02],
+            [1.1131692919e02],
+            [6.17068815e01],
+            [5.34409324e01],
+            [4.59011530e01],
+            [4.06703203e01],
+            [3.67591700e01],
+            [3.32903343e01],
+            [2.97727890e01],
+            [2.59507626e01],
+            [2.17350095e01],
+            [1.72057582e01],
+            [1.91986775e01],
+            [2.40008630e01],
+            [2.62549528e01],
+            [2.68785755e01],
+            [2.65984026e01],
+            [2.57205116e01],
+            [2.43993580e01],
+            [2.27149568e01],
+            [2.06672767e01],
+            [1.81470345e01],
+        ]
+    )
     np.testing.assert_almost_equal(g[80:], expected_pos_g)
 
     # Check some of the results
@@ -189,12 +196,11 @@ def test_non_slipping_constraint(ode_solver):
     tau = controls["tau"].to_matrix()
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0., 0., -0.5, 0.5)))
+    np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
     np.testing.assert_almost_equal(q[:, -1], np.array((-2.3970871e-01, 6.1208704e-02, -8.1394939e-06, 8.1394939e-06)))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1],
-                                   np.array((-7.4541514e-01, 5.9274858e-06, 1.4908303e+00, -1.4908303e+00)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-7.4541514e-01, 5.9274858e-06, 1.4908303e00, -1.4908303e00)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-19.7138885)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-4.2970368)))
