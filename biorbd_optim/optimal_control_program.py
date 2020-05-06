@@ -270,7 +270,7 @@ class OptimalControlProgram:
         initial_time_guess, time_min, time_max = [], [], []
         for i, nlp in enumerate(self.nlp):
             for obj_fun in nlp["objective_functions"]:
-                if obj_fun['type'] == Objective.Mayer.MINIMIZE_TIME: #or (objective_functions[i][j]['type'] == Objective.Lagrange.MINIMIZE_TIME):
+                if obj_fun['type'] == Objective.Mayer.MINIMIZE_TIME or obj_fun['type'] == Objective.Lagrange.MINIMIZE_TIME:
                     initial_time_guess.append(phase_time[i])
                     phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
                     time_min.append(obj_fun['minimum'] if 'minimum' in obj_fun else 0)
