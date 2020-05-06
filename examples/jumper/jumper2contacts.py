@@ -190,32 +190,36 @@ def prepare_ocp(
         show_online_optim=show_online_optim,
     )
 
-
-if __name__ == "__main__":
-    model_path = ("jumper2contacts.bioMod", "jumper1contacts.bioMod")
+def run_and_save_ocp(model_path):
     ocp = prepare_ocp(
         model_path=model_path,
         phase_time=[0.4, 0.2],
         number_shooting_points=[6, 6],
-        show_online_optim=True,
+        show_online_optim=False,
         use_symmetry=True,
     )
-
-    # --- Solve the program --- #
     sol = ocp.solve()
+    OptimalControlProgram.save(ocp, sol, "jumper2contacts_sol")
+
+if __name__ == "__main__":
+    model_path = ("jumper2contacts.bioMod", "jumper1contacts.bioMod")
+    run_and_save_ocp(model_path)
+    ocp, sol = OptimalControlProgram.load(biorbd_model_path=model_path, name="jumper2contacts_sol.bo")
 
     from matplotlib import pyplot as plt
-    from casadi import vertcat, Function
+    from casadi import vertcat, Function, MX
 
     contact_forces = np.zeros((6, sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
     cs_map = (range(6), (0, 1, 3, 4))
 
     for i, nlp in enumerate(ocp.nlp):
+        symbolic_states = MX.sym("x", nlp["nx"], 1)
+        symbolic_controls = MX.sym("u", nlp["nu"], 1)
         nlp["model"] = biorbd.Model(model_path[i])
         contact_forces_func = Function(
             "contact_forces_func",
-            [ocp.symbolic_states, ocp.symbolic_controls],
-            [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
+            [symbolic_states, symbolic_controls],
+            [Dynamics.forces_from_forward_dynamics_with_contact(symbolic_states, symbolic_controls, nlp)],
             ["x", "u"],
             ["contact_forces"],
         ).expand()
