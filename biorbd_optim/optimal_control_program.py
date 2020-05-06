@@ -334,6 +334,6 @@ class OptimalControlProgram:
             data = pickle.load(file)
             ocp = data["ocp"]
             sol = data["sol"]
-            for nlp in ocp.nlp:
-                nlp["model"] = biorbd.Model(biorbd_model_path)
+            for i, nlp in enumerate(ocp.nlp):
+                nlp["model"] = biorbd.Model(biorbd_model_path[i])
         return (ocp, sol)
