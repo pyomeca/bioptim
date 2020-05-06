@@ -22,10 +22,9 @@ spec.loader.exec_module(align_segment_on_rt)
 def test_align_segment_on_rt(ode_solver):
     ocp = align_segment_on_rt.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
-        final_time = 0.5,
-        number_shooting_points = 8,
+        final_time=0.5,
+        number_shooting_points=8,
         ode_solver=ode_solver,
-
     )
     sol = ocp.solve()
 
@@ -68,7 +67,11 @@ spec.loader.exec_module(align_marker_on_segment)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_align_marker_on_segment(ode_solver):
     ocp = align_marker_on_segment.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod", final_time=0.5, number_shooting_points=8, ode_solver=ode_solver, initialize_near_solution=True
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+        final_time=0.5,
+        number_shooting_points=8,
+        ode_solver=ode_solver,
+        initialize_near_solution=True,
     )
     sol = ocp.solve()
 
@@ -96,4 +99,4 @@ def test_align_marker_on_segment(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([1.61499455, 9.97512191, 2.13907245, 0.89301203]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.11715165, 10.14520729, -2.5377627 ,  0.37996436]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.11715165, 10.14520729, -2.5377627, 0.37996436]))
