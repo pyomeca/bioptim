@@ -16,8 +16,7 @@ from biorbd_optim import (
 
 
 def prepare_ocp(
-        biorbd_model_path, final_time, number_shooting_points, ode_solver, initialize_near_solution,
-        show_online_optim=False
+    biorbd_model_path, final_time, number_shooting_points, ode_solver, initialize_near_solution, show_online_optim=False
 ):
     # --- Options --- #
     # Model path
