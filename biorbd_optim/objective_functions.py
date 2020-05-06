@@ -11,6 +11,11 @@ class ObjectiveFunction:
         """
         Different conditions between biorbd geometric structures.
         """
+        class Functions:
+            @staticmethod
+            def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
+                val = 1
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
         def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **extra_param):
@@ -89,7 +94,7 @@ class Objective:
         """
         Different conditions between biorbd geometric structures.
         """
-
+        MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time, )
         MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
         TRACK_STATE = (PenaltyType.TRACK_STATE,)
         MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
