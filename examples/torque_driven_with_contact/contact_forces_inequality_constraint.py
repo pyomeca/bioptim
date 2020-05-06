@@ -20,7 +20,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_optim=False):
+def prepare_ocp(model_path, phase_time, number_shooting_points, direction, show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -39,14 +39,14 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_opti
     constraints = (
         {
             "type": Constraint.CONTACT_FORCE_INEQUALITY,
-            "direction": "GREATER_THAN",
+            "direction": direction,
             "instant": Instant.ALL,
             "contact_force_idx": 1,
             "boundary": 0,
         },
         {
             "type": Constraint.CONTACT_FORCE_INEQUALITY,
-            "direction": "GREATER_THAN",
+            "direction": direction,
             "instant": Instant.ALL,
             "contact_force_idx": 2,
             "boundary": 0,

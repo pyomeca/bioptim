@@ -80,8 +80,18 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_opti
         show_online_optim=show_online_optim,
     )
 
+def run_and_save_ocp():
+    ocp = prepare_ocp(model_path="2segments_4dof_2contacts.bioMod", phase_time=0.5, number_shooting_points=20, show_online_optim=False)
+    sol = ocp.solve()
+    OptimalControlProgram.save(ocp, sol, "maximize_predicted_height_CoM_sol")
 
 if __name__ == "__main__":
+
+    # model_path = "2segments_4dof_2contacts.bioMod"
+    # run_and_save_ocp()
+    # ocp, sol = OptimalControlProgram.load(biorbd_model_path=model_path, name="maximize_predicted_height_CoM_sol.bo")
+
+
     model_path = "2segments_4dof_2contacts.bioMod"
     ocp = prepare_ocp(model_path=model_path, phase_time=0.5, number_shooting_points=20, show_online_optim=False)
 
@@ -89,16 +99,19 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     from matplotlib import pyplot as plt
-    from casadi import vertcat, Function
+    from casadi import vertcat, Function, MX
 
     nlp = ocp.nlp[0]
     contact_forces = np.ndarray((nlp["model"].nbContacts(), nlp["ns"] + 1))
 
+    symbolic_states = MX.sym("x", nlp["nx"], 1)
+    symbolic_controls = MX.sym("u", nlp["nu"], 1)
+
     nlp["model"] = biorbd.Model(model_path)
     contact_forces_func = Function(
         "contact_forces_func",
-        [ocp.symbolic_states, ocp.symbolic_controls],
-        [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
+        [symbolic_states, symbolic_controls],
+        [Dynamics.forces_from_forward_dynamics_with_contact(symbolic_states, symbolic_controls, nlp)],
         ["x", "u"],
         ["contact_forces"],
     ).expand()
@@ -120,4 +133,5 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.animate()
+    result.graphs()
+    result.animate(nb_frames=40)

@@ -220,7 +220,7 @@ if __name__ == "__main__":
             ["contact_forces"],
         ).expand()
 
-        states, controls = Data.get_data_from_V(ocp, sol["x"], num_phase=i)
+        states, controls = Data.get_data_from_V(ocp, sol["x"], phase_idx=i)
         q = states["q"].to_matrix()
         q_dot = states["q_dot"].to_matrix()
         u = controls["tau"].to_matrix()

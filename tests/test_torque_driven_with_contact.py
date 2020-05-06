@@ -36,7 +36,7 @@ non_slipping_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(non_slipping_constraint)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_maximize_predicted_height_CoM(ode_solver):
     ocp = maximize_predicted_height_CoM.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
@@ -72,12 +72,13 @@ def test_maximize_predicted_height_CoM(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-0.2636804)))
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
-def test_contact_forces_inequality_constraint(ode_solver):
-    ocp = contact_forces_inequality_constraint.prepare_ocp(
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
+def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
+    ocp = contact_forces_inequality_constraint_GREATER_THAN.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
         number_shooting_points=10,
+        direction="GREATER_THAN"
     )
     sol = ocp.solve()
 
@@ -133,8 +134,69 @@ def test_contact_forces_inequality_constraint(ode_solver):
     np.testing.assert_almost_equal(tau[:, 0], np.array((-70.1205906)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-17.5866089)))
 
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
+def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
+    ocp = contact_forces_inequality_constraint_LESSER_THAN.prepare_ocp(
+        model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
+        phase_time=0.3,
+        number_shooting_points=10,
+        direction="LESSER_THAN"
+    )
+    sol = ocp.solve()
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 0.1452562070438664)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (100, 1))
+    np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)), decimal=6)
+    np.testing.assert_array_less(-g[80:], 0)
+    expected_pos_g = np.array(
+        [
+            [4.14326709e01],
+            [5.89469050e01],
+            [6.31668706e01],
+            [6.62340130e01],
+            [6.81979220e01],
+            [6.85259469e01],
+            [6.66231189e01],
+            [6.18915213e01],
+            [5.39938053e01],
+            [4.34594467e01],
+            [2.057260303e02],
+            [9.16286233e01],
+            [6.65898730e01],
+            [5.81849733e01],
+            [5.50995044e01],
+            [5.44123368e01],
+            [5.48895651e01],
+            [5.55906536e01],
+            [5.52487885e01],
+            [5.19858748e01],
+        ]
+    )
+    np.testing.assert_almost_equal(g[80:], expected_pos_g)
+
+    # Check some of the results
+    states, controls = Data.get_data_from_V(ocp, sol["x"])
+    q = states["q"].to_matrix()
+    qdot = states["q_dot"].to_matrix()
+    tau = controls["tau"].to_matrix()
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-3.4081740e-01, 1.3415556e-01, -3.9566794e-06, 3.9566794e-06)))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-2.0922416e00, 8.2778459e-06, 4.1844833e00, -4.1844833e00)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-70.1205906)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-17.5866089)))
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_non_slipping_constraint(ode_solver):
     ocp = non_slipping_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
