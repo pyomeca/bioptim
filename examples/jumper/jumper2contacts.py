@@ -14,6 +14,7 @@ from biorbd_optim import (
     InitialConditions,
     Dynamics,
     Data,
+    ShowResult,
 )
 
 
@@ -244,28 +245,33 @@ if __name__ == "__main__":
     plt.title("Contact forces")
     plt.show()
 
-    try:
-        from BiorbdViz import BiorbdViz
+    # try:
+    #     from BiorbdViz import BiorbdViz
+    #
+    #     states, _ = Data.get_data_from_V(ocp, sol["x"])
+    #     q = states["q"].to_matrix()
+    #     q_dot = states["q_dot"].to_matrix()
+    #     x = vertcat(q, q_dot)
+    #     q_total = np.ndarray((ocp.nlp[0]["model"].nbQ(), sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
+    #     for i in range(len(ocp.nlp)):
+    #         if i == 0:
+    #             q_total[:, : ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(x[i])[:, :-1]
+    #         else:
+    #             q_total[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i][
+    #                 "q_mapping"
+    #             ].expand.map(x[i])[:, :-1]
+    #     q_total[:, -1] = ocp.nlp[-1]["q_mapping"].expand.map(x[-1])[:, -1]
+    #
+    #     # np.save("results2", q.T)
+    #
+    #     b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
+    #     b.load_movement(q_total.T)
+    #     b.exec()
+    # except ModuleNotFoundError:
+    #     print("Install BiorbdViz if you want to have a live view of the optimization")
+    #     plt.show()
 
-        states, _ = Data.get_data_from_V(ocp, sol["x"])
-        q = states["q"].to_matrix()
-        q_dot = states["q_dot"].to_matrix()
-        x = vertcat(q, q_dot)
-        q_total = np.ndarray((ocp.nlp[0]["model"].nbQ(), sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
-        for i in range(len(ocp.nlp)):
-            if i == 0:
-                q_total[:, : ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(x[i])[:, :-1]
-            else:
-                q_total[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i][
-                    "q_mapping"
-                ].expand.map(x[i])[:, :-1]
-        q_total[:, -1] = ocp.nlp[-1]["q_mapping"].expand.map(x[-1])[:, -1]
-
-        # np.save("results2", q.T)
-
-        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
-        b.load_movement(q_total.T)
-        b.exec()
-    except ModuleNotFoundError:
-        print("Install BiorbdViz if you want to have a live view of the optimization")
-        plt.show()
+    # --- Show results --- #
+    result = ShowResult(ocp, sol)
+    result.graphs()
+    result.animate(nb_frames=40)
