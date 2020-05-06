@@ -19,7 +19,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
-    torque_min, torque_max, torque_init = -1, 1, 0
+    torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
     objective_functions = (
@@ -27,7 +27,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
     )
 
     # Mapping
-    tau_mapping = BidirectionalMapping(Mapping([0,-1],), Mapping([0]))
+    tau_mapping = BidirectionalMapping(Mapping([0, -1],), Mapping([0]))
 
     # Dynamics
     problem_type = ProblemType.torque_driven
@@ -37,27 +37,20 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
-
-    for i in range(biorbd_model.nbQ() + biorbd_model.nbQdot()):
-        X_bounds.first_node_min[i] = 0
-        X_bounds.first_node_max[i] = 0
-        X_bounds.last_node_min[i] = 0
-        X_bounds.last_node_max[i] = 0
-
-
-    #Q_rotation
-    X_bounds.last_node_min[1] = 3.14
-    X_bounds.last_node_max[1] = 3.14
+    X_bounds.first_node_min = [0, 0, 0, 0]
+    X_bounds.first_node_max = [0, 0, 0, 0]
+    X_bounds.last_node_min = [0, 3.14, 0, 0]
+    X_bounds.last_node_max = [0, 3.14, 0, 0]
 
     # Initial guess
-    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    X_init = InitialConditions([0, 0, 0, 0])
 
     # Define control path constraint
     U_bounds = [
-        Bounds(min_bound=[torque_min] * tau_mapping.reduce.len, max_bound=[torque_max] * tau_mapping.reduce.len)
+        Bounds(min_bound=[torque_min], max_bound=[torque_max])
     ]
 
-    U_init = [InitialConditions([torque_init] * tau_mapping.reduce.len)]
+    U_init = [InitialConditions([torque_init])]
 
     # ------------- #
 
@@ -78,12 +71,12 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=20, show_online_optim=False)
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50, show_online_optim=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.graphs()
+    # result.graphs()
     result.animate()

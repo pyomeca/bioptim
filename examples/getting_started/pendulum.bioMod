@@ -15,16 +15,35 @@ gravity 0 0 -9.81
 	inertia
     0.01 0 0
     0 0.01 0
-    0 0 0.0001
-	com 0 0 -1
-	mesh 0 0 0
-	mesh  0 0 -1
+    0 0 0.001
+	com 0.1 0.1 -1
+
+    mesh 0.0   0.0   0.0
+    mesh 0.0  -0.0  -0.9
+    mesh 0.0   0.0   0.0
+    mesh 0.0   0.2  -0.9
+    mesh 0.0   0.0   0.0
+    mesh 0.2   0.2  -0.9
+    mesh 0.0   0.0   0.0
+    mesh 0.2   0.0  -0.9
+    mesh 0.0   0.0   0.0
+    mesh 0.0  -0.0  -1.1
+    mesh 0.0   0.2  -1.1
+    mesh 0.0   0.2  -0.9
+    mesh 0.0  -0.0  -0.9
+    mesh 0.0  -0.0  -1.1
+    mesh 0.2  -0.0  -1.1
+    mesh 0.2   0.2  -1.1
+    mesh 0.0   0.2  -1.1
+    mesh 0.2   0.2  -1.1
+    mesh 0.2   0.2  -0.9
+    mesh 0.0   0.2  -0.9
+    mesh 0.2   0.2  -0.9
+    mesh 0.2  -0.0  -0.9
+    mesh 0.0  -0.0  -0.9
+    mesh 0.2  -0.0  -0.9
+    mesh 0.2  -0.0  -1.1
 endsegment
-	
-// Marker on Seg1
-    marker m0
-        parent Seg1
-        position 0 0 -1
-    endmarker
+
 
 
