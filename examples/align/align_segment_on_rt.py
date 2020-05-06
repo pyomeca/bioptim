@@ -31,12 +31,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
     # Constraints
     constraints = (
-        {
-            "type": Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT,
-            "instant": Instant.ALL,
-            "segment_idx": 2,
-            "rt_idx": 0,
-        },
+        {"type": Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT, "instant": Instant.ALL, "segment_idx": 2, "rt_idx": 0,},
     )
 
     # Path constraint
