@@ -110,6 +110,10 @@ class Data:
                 data_parameters[key] = np.array(V[offset:offset+nb_param])
                 offset += nb_param
 
+                if key == "time":
+                    for key_stat in data_states:
+                        print(data_states)
+
         if integrate:
             data_states = Data._get_data_integrated_from_V(ocp, data_states, data_controls)
 
