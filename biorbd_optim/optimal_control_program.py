@@ -76,8 +76,8 @@ class OptimalControlProgram:
         self.__add_to_nlp("model", biorbd_model, False)
 
         # Prepare some variables
-        self.__init_constraints(constraints)
-        self.__init_objective_fun(objective_functions)
+        self.__init_penality(constraints, "constraints")
+        self.__init_penality(objective_functions, "objective_functions")
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
@@ -311,31 +311,18 @@ class OptimalControlProgram:
         self.V_init.expand(V_init)
         self.param_to_optim['time'] = P
 
-    def __init_constraints(self, constraints):
-        if len(constraints) > 0:
+    def __init_penality(self, penalities, penality_type):
+        if len(penalities) > 0:
             if self.nb_phases == 1:
-                if isinstance(constraints, dict):
-                    constraints = (constraints,)
-                if isinstance(constraints[0], dict):
-                    constraints = (constraints,)
-            elif isinstance(constraints, (list, tuple)):
-                for constraint in constraints:
+                if isinstance(penalities, dict):
+                    penalities = (penalities,)
+                if isinstance(penalities[0], dict):
+                    penalities = (penalities,)
+            elif isinstance(penalities, (list, tuple)):
+                for constraint in penalities:
                     if isinstance(constraint, dict):
-                        raise RuntimeError("Each phase must declares its constraints (even if it is empty)")
-            self.__add_to_nlp("constraints", constraints, False)
-
-    def __init_objective_fun(self, objective_functions):
-        if len(objective_functions) > 0:
-            if self.nb_phases == 1:
-                if isinstance(objective_functions, dict):
-                    objective_functions = (objective_functions,)
-                if isinstance(objective_functions[0], dict):
-                    objective_functions = (objective_functions,)
-            elif isinstance(objective_functions, (list, tuple)):
-                for objective_function in objective_functions:
-                    if isinstance(objective_function, dict):
-                        raise RuntimeError("Each phase must declares its objective (even if it is empty)")
-            self.__add_to_nlp("objective_functions", objective_functions, False)
+                        raise RuntimeError(f"Each phase must declares its {penality_type} (even if it is empty)")
+            self.__add_to_nlp(penality_type, penalities, False)
 
     def solve(self):
         """
