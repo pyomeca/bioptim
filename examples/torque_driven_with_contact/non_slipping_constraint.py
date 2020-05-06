@@ -17,6 +17,7 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
+    Data,
 )
 
 
@@ -125,7 +126,10 @@ if __name__ == "__main__":
         ["contact_forces"],
     ).expand()
 
-    q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"])
+    states, controls = Data.get_data_from_V(ocp, sol["x"])
+    q = states["q"].to_matrix()
+    q_dot = states["q_dot"].to_matrix()
+    u = controls["tau"].to_matrix()
     x = vertcat(q, q_dot)
     contact_forces[:, : nlp["ns"] + 1] = contact_forces_func(x, u)
 

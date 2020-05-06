@@ -13,6 +13,7 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditions,
     Dynamics,
+    Data,
 )
 
 
@@ -203,7 +204,10 @@ if __name__ == "__main__":
             ["contact_forces"],
         ).expand()
 
-        q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"], i)
+        states, controls = Data.get_data_from_V(ocp, sol["x"], num_phase=i)
+        q = states["q"].to_matrix()
+        q_dot = states["q_dot"].to_matrix()
+        u = controls["tau"].to_matrix()
         x = vertcat(q, q_dot)
         if i == 0:
             contact_forces[cs_map[i], : nlp["ns"] + 1] = contact_forces_func(x, u)
@@ -221,21 +225,22 @@ if __name__ == "__main__":
     try:
         from BiorbdViz import BiorbdViz
 
-        x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-        q = np.ndarray((ocp.nlp[0]["model"].nbQ(), sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
+        states, _ = Data.get_data_from_V(ocp, sol["x"])
+        q = states["q"].to_matrix()
+        q_dot = states["q_dot"].to_matrix()
+        x = vertcat(q, q_dot)
+        q_total = np.ndarray((ocp.nlp[0]["model"].nbQ(), sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
         for i in range(len(ocp.nlp)):
             if i == 0:
-                q[:, : ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(x[i])[:, :-1]
+                q_total[:, : ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(x[i])[:, :-1]
             else:
-                q[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i][
-                    "q_mapping"
-                ].expand.map(x[i])[:, :-1]
-        q[:, -1] = ocp.nlp[-1]["q_mapping"].expand.map(x[-1])[:, -1]
+                q_total[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(x[i])[:, :-1]
+        q_total[:, -1] = ocp.nlp[-1]["q_mapping"].expand.map(x[-1])[:, -1]
 
         # np.save("results2", q.T)
 
         b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
-        b.load_movement(q.T)
+        b.load_movement(q_total.T)
         b.exec()
     except ModuleNotFoundError:
         print("Install BiorbdViz if you want to have a live view of the optimization")
