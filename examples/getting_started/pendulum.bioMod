@@ -6,9 +6,10 @@ gravity 0 0 -9.81
 
 // Seg1
     segment Seg1
-        translations	y
+        translations	yz
         rotations	x
         ranges -5 5
+                0 0
                 -2*pi 2*pi
 
 	mass 1

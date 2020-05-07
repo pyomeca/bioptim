@@ -22,10 +22,7 @@ def prepare_ocp(
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},)
-
-    # Mapping
-    tau_mapping = BidirectionalMapping(Mapping([0, -1],), Mapping([0]))
+    objective_functions = ()
 
     # Dynamics
     problem_type = ProblemType.torque_driven
@@ -35,18 +32,18 @@ def prepare_ocp(
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.first_node_min = [0, 0, 0, 0]
-    X_bounds.first_node_max = [0, 0, 0, 0]
-    X_bounds.last_node_min = [0, 3.14, 0, 0]
-    X_bounds.last_node_max = [0, 3.14, 0, 0]
+    X_bounds.first_node_min = [0, 0, 0, 0, 0, 0]
+    X_bounds.first_node_max = [0, 0, 0, 0, 0, 0]
+    X_bounds.last_node_min = [0, 0, 3.14, 0, 0, 0]
+    X_bounds.last_node_max = [0, 0, 3.14, 0, 0, 0]
 
     # Initial guess
-    X_init = InitialConditions([0, 0, 0, 0])
+    X_init = InitialConditions([0, 0, 0, 0, 0, 0])
 
     # Define control path constraint
-    U_bounds = [Bounds(min_bound=[torque_min], max_bound=[torque_max])]
+    U_bounds = Bounds(min_bound=[torque_min, 0, 0], max_bound=[torque_max, 0, 0])
 
-    U_init = [InitialConditions([torque_init])]
+    U_init = InitialConditions([torque_init, 0, 0])
 
     # ------------- #
 
@@ -61,7 +58,6 @@ def prepare_ocp(
         X_bounds,
         U_bounds,
         constraints,
-        tau_mapping=tau_mapping,
         show_online_optim=show_online_optim,
     )
 
