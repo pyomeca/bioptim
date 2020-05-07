@@ -34,7 +34,7 @@ def test_pendulum(ode_solver):
     # Check constraints
     g = np.array(sol["g"])
     np.testing.assert_equal(g.shape, (200, 1))
-    # TODO: remove or modify? np.testing.assert_almost_equal(g, np.zeros(200, 1))
+    np.testing.assert_almost_equal(g, np.zeros((200, 1)), decimal=-6)
 
     # Check some of the results
     states, controls = Data.get_data_from_V(ocp, sol["x"])
@@ -45,12 +45,15 @@ def test_pendulum(ode_solver):
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-5.9809981)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-11.29898999)))
 
 
 # Load pendulum_min_time_Mayer
@@ -63,7 +66,7 @@ spec.loader.exec_module(pendulum_min_time_Mayer)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_pendulum_min_time_Mayer(ode_solver):
+def test_pendulum_min_time_mayer(ode_solver):
     ocp = pendulum_min_time_Mayer.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
         final_time=2, number_shooting_points=50, show_online_optim=False
@@ -78,7 +81,7 @@ def test_pendulum_min_time_Mayer(ode_solver):
     # Check constraints
     g = np.array(sol["g"])
     np.testing.assert_equal(g.shape, (200, 1))
-    # TODO: remove or modify? np.testing.assert_almost_equal(g, np.zeros(200, 1))
+    np.testing.assert_almost_equal(g, np.zeros((200, 1)), decimal=-6)
 
     # Check some of the results
     states, controls, param = Data.get_data_from_V(ocp, sol["x"], get_parameters=True)
@@ -89,12 +92,15 @@ def test_pendulum_min_time_Mayer(ode_solver):
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.5898199)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-9.39463562)))
 
     # optimized time
     np.testing.assert_almost_equal(tf, 1.5491434695819155)
@@ -109,7 +115,7 @@ spec.loader.exec_module(pendulum_min_time_Lagrange)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_pendulum_min_time_Lagrange(ode_solver):
+def test_pendulum_min_time_lagrange(ode_solver):
     ocp = pendulum_min_time_Lagrange.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
         final_time=2, number_shooting_points=50, show_online_optim=False
@@ -124,7 +130,7 @@ def test_pendulum_min_time_Lagrange(ode_solver):
     # Check constraints
     g = np.array(sol["g"])
     np.testing.assert_equal(g.shape, (200, 1))
-    # TODO: remove or modify? np.testing.assert_almost_equal(g, np.zeros(200, 1))
+    np.testing.assert_almost_equal(g, np.zeros((200, 1)), decimal=-6)
 
     # Check some of the results
     states, controls, param = Data.get_data_from_V(ocp, sol["x"], get_parameters=True)
@@ -135,12 +141,15 @@ def test_pendulum_min_time_Lagrange(ode_solver):
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-3.7492435)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-4.69850209)))
 
     # optimized time
     np.testing.assert_almost_equal(tf, 1.6540746733051912)
