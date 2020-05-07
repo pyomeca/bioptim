@@ -11,9 +11,7 @@ from biorbd_optim import Data, OdeSolver
 
 # Load pendulum
 PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
-)
+spec = importlib.util.spec_from_file_location("pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py")
 pendulum = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pendulum)
 
@@ -22,7 +20,9 @@ spec.loader.exec_module(pendulum)
 def test_pendulum(ode_solver):
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
-        final_time=2, number_shooting_points=50, show_online_optim=False
+        final_time=2,
+        number_shooting_points=50,
+        show_online_optim=False,
     )
     sol = ocp.solve()
 
@@ -42,7 +42,6 @@ def test_pendulum(ode_solver):
     qdot = states["q_dot"].to_matrix()
     tau = controls["tau"].to_matrix()
 
-
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
@@ -59,7 +58,7 @@ def test_pendulum(ode_solver):
 # Load pendulum_min_time_Mayer
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum_min_time_Mayer.py"
+    "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum_min_time_Mayer.py",
 )
 pendulum_min_time_Mayer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pendulum_min_time_Mayer)
@@ -69,7 +68,9 @@ spec.loader.exec_module(pendulum_min_time_Mayer)
 def test_pendulum_min_time_mayer(ode_solver):
     ocp = pendulum_min_time_Mayer.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
-        final_time=2, number_shooting_points=50, show_online_optim=False
+        final_time=2,
+        number_shooting_points=50,
+        show_online_optim=False,
     )
     sol = ocp.solve()
 
@@ -105,10 +106,11 @@ def test_pendulum_min_time_mayer(ode_solver):
     # optimized time
     np.testing.assert_almost_equal(tf, 1.5491434695819155)
 
+
 # Load pendulum_min_time_Lagrange
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "pendulum_min_time_Lagrange", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum_min_time_Lagrange.py"
+    "pendulum_min_time_Lagrange", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum_min_time_Lagrange.py",
 )
 pendulum_min_time_Lagrange = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pendulum_min_time_Lagrange)
@@ -118,7 +120,9 @@ spec.loader.exec_module(pendulum_min_time_Lagrange)
 def test_pendulum_min_time_lagrange(ode_solver):
     ocp = pendulum_min_time_Lagrange.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
-        final_time=2, number_shooting_points=50, show_online_optim=False
+        final_time=2,
+        number_shooting_points=50,
+        show_online_optim=False,
     )
     sol = ocp.solve()
 

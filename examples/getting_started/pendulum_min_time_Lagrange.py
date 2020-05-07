@@ -23,7 +23,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
     # Add objective functions
     objective_functions = (
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
-        {"type": Objective.Lagrange.MINIMIZE_TIME}
+        {"type": Objective.Lagrange.MINIMIZE_TIME},
     )
 
     # Mapping
@@ -46,9 +46,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
     X_init = InitialConditions([0, 0, 0, 0])
 
     # Define control path constraint
-    U_bounds = [
-        Bounds(min_bound=[torque_min], max_bound=[torque_max])
-    ]
+    U_bounds = [Bounds(min_bound=[torque_min], max_bound=[torque_max])]
 
     U_init = [InitialConditions([torque_init])]
 
@@ -71,13 +69,15 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50, show_online_optim=False)
+    ocp = prepare_ocp(
+        biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50, show_online_optim=False,
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve()
 
     # --- Show results --- #
-    param = Data.get_data_from_V(ocp, sol['x'], get_states=False, get_controls=False, get_parameters=True)
+    param = Data.get_data_from_V(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
     print(f"The optimized phase time is: {param['time'][0, 0]}, good job Lagrange!")
 
     result = ShowResult(ocp, sol)
