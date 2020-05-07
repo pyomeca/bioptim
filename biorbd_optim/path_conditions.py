@@ -111,7 +111,7 @@ class QAndQDotBounds(Bounds):
 
 
 class InitialConditions(PathCondition):
-    def __init__(self, initial_guess=()):
+    def __init__(self, initial_guess=(), init_lineaire = False):
         """
         Organises initial values (for solver)
         There are 3 groups of nodes :
@@ -125,6 +125,7 @@ class InitialConditions(PathCondition):
         self.first_node_init = list(initial_guess)
         self.init = list(initial_guess)
         self.last_node_init = list(initial_guess)
+        self.init_lineaire = init_lineaire
 
     def regulation(self, nb_elements):
         """
@@ -134,15 +135,26 @@ class InitialConditions(PathCondition):
         """
         if len(self.init) == 0:
             self.init = [0] * nb_elements
-        self.regulation_private(self.init, nb_elements, "Init")
+        if self.init_lineaire:
+            self.regulation_private(self.init, 2 * nb_elements, "Init")
+        else:
+            self.regulation_private(self.init, nb_elements, "Init")
 
         if len(self.first_node_init) == 0:
             self.first_node_init = self.init
         if len(self.last_node_init) == 0:
             self.last_node_init = self.init
 
-        self.regulation_private(self.first_node_init, nb_elements, "First node init")
-        self.regulation_private(self.last_node_init, nb_elements, "Last node init")
+        if self.init_lineaire:
+            self.regulation_private(self.first_node_init,
+                                    2 * nb_elements, "First node init")
+            self.regulation_private(self.last_node_init,
+                                    2 * nb_elements, "Last node init")
+        else:
+            self.regulation_private(self.first_node_init,
+                                    nb_elements, "First node init")
+            self.regulation_private(self.last_node_init,
+                                    nb_elements, "Last node init")
 
     def expand(self, other):
         self.init += other.init
