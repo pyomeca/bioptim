@@ -191,6 +191,7 @@ def prepare_ocp(
         show_online_optim=show_online_optim,
     )
 
+
 def run_and_save_ocp(model_path):
     ocp = prepare_ocp(
         model_path=model_path,
@@ -201,6 +202,7 @@ def run_and_save_ocp(model_path):
     )
     sol = ocp.solve()
     OptimalControlProgram.save(ocp, sol, "jumper2contacts_sol")
+
 
 if __name__ == "__main__":
     model_path = ("jumper2contacts.bioMod", "jumper1contacts.bioMod")

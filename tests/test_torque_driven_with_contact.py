@@ -13,7 +13,6 @@ import numpy as np
 
 from biorbd_optim import Data, OdeSolver
 
-# Load symmetry
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
     "maximize_predicted_height_CoM",
@@ -26,8 +25,15 @@ spec = importlib.util.spec_from_file_location(
     "contact_forces_inequality_constraint",
     str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/contact_forces_inequality_constraint.py",
 )
-contact_forces_inequality_constraint = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(contact_forces_inequality_constraint)
+contact_forces_inequality_GREATER_THAN_constraint = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(contact_forces_inequality_GREATER_THAN_constraint)
+
+spec = importlib.util.spec_from_file_location(
+    "contact_forces_inequality_constraint",
+    str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/contact_forces_inequality_constraint.py",
+)
+contact_forces_inequality_LESSER_THAN_constraint = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(contact_forces_inequality_LESSER_THAN_constraint)
 
 spec = importlib.util.spec_from_file_location(
     "non_slipping_constraint", str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/non_slipping_constraint.py",
@@ -74,11 +80,12 @@ def test_maximize_predicted_height_CoM(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
-    ocp = contact_forces_inequality_constraint_GREATER_THAN.prepare_ocp(
+    ocp = contact_forces_inequality_GREATER_THAN_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
         number_shooting_points=10,
-        direction="GREATER_THAN"
+        direction="GREATER_THAN",
+        boundary=0,
     )
     sol = ocp.solve()
 
@@ -133,14 +140,16 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-70.1205906)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-17.5866089)))
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
-    ocp = contact_forces_inequality_constraint_LESSER_THAN.prepare_ocp(
+    ocp = contact_forces_inequality_LESSER_THAN_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
         number_shooting_points=10,
-        direction="LESSER_THAN"
+        direction="LESSER_THAN",
+        boundary=100,
     )
     sol = ocp.solve()
 
@@ -153,32 +162,31 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     g = np.array(sol["g"])
     np.testing.assert_equal(g.shape, (100, 1))
     np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)), decimal=6)
-    np.testing.assert_array_less(-g[80:], 0)
-    expected_pos_g = np.array(
+    expected_non_zero_g = np.array(
         [
-            [4.14326709e01],
-            [5.89469050e01],
-            [6.31668706e01],
-            [6.62340130e01],
-            [6.81979220e01],
-            [6.85259469e01],
-            [6.66231189e01],
-            [6.18915213e01],
-            [5.39938053e01],
-            [4.34594467e01],
-            [2.057260303e02],
-            [9.16286233e01],
-            [6.65898730e01],
-            [5.81849733e01],
-            [5.50995044e01],
-            [5.44123368e01],
-            [5.48895651e01],
-            [5.55906536e01],
-            [5.52487885e01],
-            [5.19858748e01],
+            [6.33300172e01],
+            [6.30924763e01],
+            [6.22223911e01],
+            [6.04798867e01],
+            [5.74020442e01],
+            [5.22248905e01],
+            [4.37852538e01],
+            [3.04995553e01],
+            [1.10270236e01],
+            [-6.76304498e00],
+            [9.87817806e01],
+            [9.85377711e01],
+            [9.82318797e01],
+            [9.78374940e01],
+            [9.73084164e01],
+            [9.65582419e01],
+            [9.54049506e01],
+            [9.33886854e01],
+            [8.89152124e01],
+            [7.00615656e01],
         ]
     )
-    np.testing.assert_almost_equal(g[80:], expected_pos_g)
+    np.testing.assert_almost_equal(g[80:], expected_non_zero_g)
 
     # Check some of the results
     states, controls = Data.get_data_from_V(ocp, sol["x"])
@@ -188,13 +196,14 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-3.4081740e-01, 1.3415556e-01, -3.9566794e-06, 3.9566794e-06)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-3.4069700e-01, 1.3415561e-01, -2.4475991e-04, 2.4475991e-04)))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-2.0922416e00, 8.2778459e-06, 4.1844833e00, -4.1844833e00)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-2.8792536e00, 7.0516405e-04, 5.7585070e00, -5.7585070e00)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-70.1205906)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-17.5866089)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-32.6901032)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-25.0122505)))
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_non_slipping_constraint(ode_solver):

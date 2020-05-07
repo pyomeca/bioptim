@@ -80,6 +80,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_opti
         show_online_optim=show_online_optim,
     )
 
+
 if __name__ == "__main__":
     model_path = "2segments_4dof_2contacts.bioMod"
     ocp = prepare_ocp(model_path=model_path, phase_time=0.5, number_shooting_points=20, show_online_optim=False)
