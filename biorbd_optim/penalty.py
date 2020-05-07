@@ -229,14 +229,14 @@ class PenaltyFunctionAbstract:
                 q = nlp["q_mapping"].expand.map(v[:nq])
 
                 r_rt = nlp["model"].globalJCS(q, segment_idx)
-                n_seg = nlp["model"].marker(q, marker_idx)
-                n_seg.applyRT(r_rt.transpose())
-                n_seg = n_seg.to_mx()
+                marker = nlp["model"].marker(q, marker_idx)
+                marker.applyRT(r_rt.transpose())
+                marker = marker.to_mx()
 
                 for axe in Axe:
                     if axe != axis:
                         # To align an axis, the other must be equal to 0
-                        val = n_seg[axe, 0]
+                        val = marker[axe, 0]
                         penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
