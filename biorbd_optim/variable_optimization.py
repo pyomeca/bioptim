@@ -68,8 +68,17 @@ class Data:
             return np.array(t_concat)
 
     @staticmethod
-    def get_data(ocp, V, get_states=True, get_controls=True, get_parameters=False,
-                 phase_idx=None, integrate=False, interpolate_nb_frames=-1, concatenate=True):
+    def get_data(
+        ocp,
+        V,
+        get_states=True,
+        get_controls=True,
+        get_parameters=False,
+        phase_idx=None,
+        integrate=False,
+        interpolate_nb_frames=-1,
+        concatenate=True,
+    ):
         data_states, data_controls, data_parameters = Data.get_data_object(
             ocp, V, phase_idx, integrate, interpolate_nb_frames, concatenate
         )

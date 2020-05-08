@@ -161,7 +161,9 @@ class PlotOcp:
     def update_data(self, V):
         self.ydata = [[] for _ in range(self.ocp.nb_phases)]
 
-        data_states, data_controls, data_param = Data.get_data(self.ocp, V, get_parameters=True, integrate=True, concatenate=False)
+        data_states, data_controls, data_param = Data.get_data(
+            self.ocp, V, get_parameters=True, integrate=True, concatenate=False
+        )
         for i, nlp in enumerate(self.ocp.nlp):
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
