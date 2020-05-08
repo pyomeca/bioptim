@@ -95,7 +95,7 @@ class PlotOcp:
                                 ax.plot(
                                     self.t_integrated[2 * cmp + idx_phase : 2 * (cmp + 1) + idx_phase],
                                     np.zeros(2),
-                                    color="g",
+                                    color="tab:brown",
                                     linewidth=0.8,
                                 )[0]
                             )
@@ -103,7 +103,7 @@ class PlotOcp:
                                 ax.plot(
                                     self.t_integrated[2 * cmp + idx_phase],
                                     np.zeros(1),
-                                    color="g",
+                                    color="tab:brown",
                                     marker=".",
                                     markersize=6,
                                 )[0]
@@ -111,7 +111,7 @@ class PlotOcp:
                             cmp += 1
                     self.plots.append(plots)
                 elif var_type == "control":
-                    self.plots.append(ax.step(self.t, np.zeros((self.ns, 1)), where="post", color="r"))
+                    self.plots.append(ax.step(self.t, np.zeros((self.ns, 1)), where="post", color="tab:orange", zorder=0))
                 else:
                     raise RuntimeError("Plot of parameters is not supported yet")
 
