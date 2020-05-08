@@ -17,6 +17,14 @@ from biorbd_optim import (
     ShowResult,
 )
 
+def custom_func_phase_transition(ocp, nlp, t, x, u, first_marker_idx, second_marker_idx):
+    nq = nlp["q_mapping"].reduce.len
+    for v in x:
+        q = nlp["q_mapping"].expand.map(v[:nq])
+        first_marker = nlp["model"].marker(q, first_marker_idx).to_mx()
+        second_marker = nlp["model"].marker(q, second_marker_idx).to_mx()
+
+    return nlp - ocp.nlp[nlp["phase_idx"] + 1]
 
 def prepare_ocp(
     model_path, phase_time, number_shooting_points, show_online_optim=False, use_symmetry=True,
