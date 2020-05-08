@@ -89,7 +89,7 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     from matplotlib import pyplot as plt
-    from casadi import vertcat, Function, MX
+    from casadi import vertcat, Function
 
     nlp = ocp.nlp[0]
     contact_forces = np.ndarray((nlp["model"].nbContacts(), nlp["ns"] + 1))
