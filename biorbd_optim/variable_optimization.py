@@ -66,8 +66,17 @@ class Data:
             return np.array(t_concat)
 
     @staticmethod
-    def get_data_from_V(ocp, V, get_states=True, get_controls=True, get_parameters=False, phase_idx=None,
-                        integrate=False, interpolate_nb_frames=-1, concatenate=True):
+    def get_data_from_V(
+        ocp,
+        V,
+        get_states=True,
+        get_controls=True,
+        get_parameters=False,
+        phase_idx=None,
+        integrate=False,
+        interpolate_nb_frames=-1,
+        concatenate=True,
+    ):
         V_array = np.array(V).squeeze()
 
         if phase_idx is None:
@@ -107,11 +116,11 @@ class Data:
                 )
                 offset += nlp["has_controls"][key]
 
-        offset = sum([nlp['nx'] * (nlp['ns'] + 1) + nlp['nu'] * nlp['ns'] for nlp in ocp.nlp])
+        offset = sum([nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"] for nlp in ocp.nlp])
         for key in ocp.param_to_optimize:
             if ocp.param_to_optimize[key]:
                 nb_param = len(ocp.param_to_optimize[key])
-                data_parameters[key] = np.array(V[offset:offset+nb_param])
+                data_parameters[key] = np.array(V[offset : offset + nb_param])
                 offset += nb_param
 
                 if key == "time":

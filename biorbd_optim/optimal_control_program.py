@@ -271,11 +271,14 @@ class OptimalControlProgram:
         for i, nlp in enumerate(self.nlp):
             if "objective_functions" in nlp:
                 for obj_fun in nlp["objective_functions"]:
-                    if obj_fun['type'] == Objective.Mayer.MINIMIZE_TIME or obj_fun['type'] == Objective.Lagrange.MINIMIZE_TIME:
+                    if (
+                        obj_fun["type"] == Objective.Mayer.MINIMIZE_TIME
+                        or obj_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
+                    ):
                         initial_time_guess.append(phase_time[i])
                         phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
-                        time_min.append(obj_fun['minimum'] if 'minimum' in obj_fun else 0)
-                        time_max.append(obj_fun['maximum'] if 'maximum' in obj_fun else inf)
+                        time_min.append(obj_fun["minimum"] if "minimum" in obj_fun else 0)
+                        time_max.append(obj_fun["maximum"] if "maximum" in obj_fun else inf)
         return phase_time, initial_time_guess, time_min, time_max
 
     def __define_variable_time(self, initial_guess, minimum, maximum):
@@ -292,7 +295,7 @@ class OptimalControlProgram:
             if isinstance(nlp["tf"], MX):
                 self.V = vertcat(self.V, nlp["tf"])
                 P.append(self.V[-1])
-        self.param_to_optimize['time'] = P
+        self.param_to_optimize["time"] = P
 
         nV = len(initial_guess)
         V_bounds = Bounds(minimum, maximum)

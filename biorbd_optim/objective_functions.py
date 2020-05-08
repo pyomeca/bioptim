@@ -11,6 +11,7 @@ class ObjectiveFunction:
         """
         Different conditions between biorbd geometric structures.
         """
+
         class Functions:
             @staticmethod
             def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
@@ -41,6 +42,7 @@ class ObjectiveFunction:
         """
         Different conditions between biorbd geometric structures.
         """
+
         class Functions:
             @staticmethod
             def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
@@ -79,7 +81,6 @@ class ObjectiveFunction:
 
         PenaltyFunctionAbstract._add(ocp, nlp, "objective_functions")
 
-
     #
     # @staticmethod
     # def cyclic(ocp, weight=1):
@@ -97,7 +98,8 @@ class Objective:
         """
         Different conditions between biorbd geometric structures.
         """
-        MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time, )
+
+        MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
         MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
         TRACK_STATE = (PenaltyType.TRACK_STATE,)
         MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
@@ -126,7 +128,8 @@ class Objective:
         """
         Different conditions between biorbd geometric structures.
         """
-        MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time, )
+
+        MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
         MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
         TRACK_STATE = (PenaltyType.TRACK_STATE,)
         MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)

@@ -159,7 +159,9 @@ class PlotOcp:
     def update_data(self, V):
         self.ydata = [[] for _ in range(self.ocp.nb_phases)]
         for i, nlp in enumerate(self.ocp.nlp):
-            data_states, data_controls, data_param = Data.get_data_from_V(self.ocp, V, get_parameters=True, integrate=True)
+            data_states, data_controls, data_param = Data.get_data_from_V(
+                self.ocp, V, get_parameters=True, integrate=True
+            )
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
                     self.tf[i_in_tf] = data_param["time"][i_in_time]
@@ -175,9 +177,9 @@ class PlotOcp:
         self.__init_time_vector()
         for i, p in enumerate(self.plots):
             if i < self.ocp.nlp[0]["nx"]:
-                for j in range(int(len(p)/2)):
-                    p[2*j].set_xdata(self.t_integrated[j*2 : 2*j + 2])
-                    p[2*j+1].set_xdata(self.t_integrated[j*2])
+                for j in range(int(len(p) / 2)):
+                    p[2 * j].set_xdata(self.t_integrated[j * 2 : 2 * j + 2])
+                    p[2 * j + 1].set_xdata(self.t_integrated[j * 2])
             else:
                 p[0].set_xdata(self.t)
             ax = p[0].axes
@@ -188,7 +190,7 @@ class PlotOcp:
         if n > 0:
             for p in range(int(len(self.plots_vertical_lines) / n)):
                 for i, time in enumerate(intersections_time):
-                    self.plots_vertical_lines[p*n + i].set_xdata([time, time])
+                    self.plots_vertical_lines[p * n + i].set_xdata([time, time])
 
     def __update_ydata(self, data, phase_idx):
         for i in range(data.nb_elements):

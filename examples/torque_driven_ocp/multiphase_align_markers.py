@@ -29,15 +29,9 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", show_online_optim=False, ode_so
 
     # Add objective functions
     objective_functions = (
-        (
-            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
-        ),
-        (
-            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
-        ),
-        (
-            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
-        ),
+        ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},),
+        ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},),
+        ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},),
     )
 
     # Dynamics
