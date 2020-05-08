@@ -1,12 +1,11 @@
 from enum import Enum
 from math import inf
-from casadi import Function
 
+from casadi import Function
 import numpy as np
 import biorbd
 
-from .enums import Instant
-from .enums import Axe
+from .enums import Instant, Axe
 from .dynamics import Dynamics
 
 
@@ -284,7 +283,7 @@ class PenaltyFunctionAbstract:
             or penalty_function == PenaltyType.MINIMIZE_TORQUE
             or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
             or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
-            or penalty_function == PenaltyType.TRACK_CONTACT_FORCES
+            or penalty_function == PenaltyType.MINIMIZE_CONTACT_FORCES
             or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
             or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
         ):

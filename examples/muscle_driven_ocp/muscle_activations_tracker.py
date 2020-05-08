@@ -166,7 +166,7 @@ if __name__ == "__main__":
     # Define the problem
     biorbd_model = biorbd.Model("arm26.bioMod")
     final_time = 2
-    n_shooting_points = 9
+    n_shooting_points = 29
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
@@ -190,11 +190,11 @@ if __name__ == "__main__":
     # --- Show the results --- #
     muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
 
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
-    mus = controls["muscles"].to_matrix()
+    states, controls = Data.get_data(ocp, sol["x"])
+    q = states["q"]
+    qdot = states["q_dot"]
+    tau = controls["tau"]
+    mus = controls["muscles"]
 
     n_q = ocp.nlp[0]["model"].nbQ()
     n_mark = ocp.nlp[0]["model"].nbMarkers()
