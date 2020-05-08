@@ -217,8 +217,8 @@ class PenaltyFunctionAbstract:
             weight = None
             if "weight" in parameters.keys():
                 weight = parameters["weight"]
+                del parameters["weight"]
             del parameters["function"]
-            del parameters["weight"]
             val = func(ocp, nlp, t, x, u, **parameters)
             if weight is not None:
                 parameters["weight"] = weight
