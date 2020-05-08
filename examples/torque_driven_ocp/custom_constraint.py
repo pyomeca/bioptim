@@ -3,6 +3,7 @@ File that shows an example of using a custom constraint.
 As an example, this custom constraint reproduces exactly the behavior of the ALIGN_MARKERS constraint.
 """
 import biorbd
+from casadi import vertcat
 
 from biorbd_optim import (
     Instant,
@@ -19,12 +20,13 @@ from biorbd_optim import (
 
 def custom_func_align_markers(ocp, nlp, t, x, u, first_marker_idx, second_marker_idx):
     nq = nlp["q_mapping"].reduce.len
+    val = []
     for v in x:
         q = nlp["q_mapping"].expand.map(v[:nq])
         first_marker = nlp["model"].marker(q, first_marker_idx).to_mx()
         second_marker = nlp["model"].marker(q, second_marker_idx).to_mx()
-
-        return first_marker - second_marker
+        val = vertcat(val, first_marker - second_marker)
+    return val
 
 def prepare_ocp(biorbd_model_path, show_online_optim=False, ode_solver=OdeSolver.RK):
     # --- Options --- #
