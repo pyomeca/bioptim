@@ -36,6 +36,22 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
+    def forward_dynamics_torque_driven_with_external_forces(states, controls, nlp):
+        """
+        :param states: MX.sym from CasADi.
+        :param controls: MX.sym from CasADi.
+        :param nlp: An OptimalControlProgram class
+        :return: Vertcat of derived states.
+        """
+        q, qdot, tau = Dynamics.__dispatch_data(states, controls, nlp)
+
+        qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau, nlp["f_ext"][0]).to_mx()
+
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
+        return vertcat(qdot_reduced, qddot_reduced)
+
+    @staticmethod
     def forces_from_forward_dynamics_with_contact(states, controls, nlp):
         q, qdot, tau = Dynamics.__dispatch_data(states, controls, nlp)
 

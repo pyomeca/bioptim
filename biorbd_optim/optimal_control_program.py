@@ -23,24 +23,25 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        biorbd_model,
-        problem_type,
-        number_shooting_points,
-        phase_time,
-        objective_functions,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
-        constraints=(),
-        ode_solver=OdeSolver.RK,
-        all_generalized_mapping=None,
-        q_mapping=None,
-        q_dot_mapping=None,
-        tau_mapping=None,
-        is_cyclic_objective=False,
-        is_cyclic_constraint=False,
-        show_online_optim=False,
+            biorbd_model,
+            problem_type,
+            number_shooting_points,
+            phase_time,
+            objective_functions,
+            X_init,
+            U_init,
+            X_bounds,
+            U_bounds,
+            constraints=(),
+            forces_and_moments=(),
+            ode_solver=OdeSolver.RK,
+            all_generalized_mapping=None,
+            q_mapping=None,
+            q_dot_mapping=None,
+            tau_mapping=None,
+            is_cyclic_objective=False,
+            is_cyclic_constraint=False,
+            show_online_optim=False,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -81,6 +82,10 @@ class OptimalControlProgram:
         )
         self.is_cyclic_constraint = is_cyclic_constraint
         self.is_cyclic_objective = is_cyclic_objective
+
+        # External forces
+        if forces_and_moments != ():
+            self.__add_to_nlp("forces_and_moments", forces_and_moments, False)
 
         # Compute problem size
         if all_generalized_mapping is not None:
@@ -311,12 +316,14 @@ class OptimalControlProgram:
             reduced_ocp.symbolic_states,
         )
         for nlp in reduced_ocp.nlp:
+            nlp["f_ext"] = 0
             del (
                 nlp["model"],
                 nlp["x"],
                 nlp["u"],
                 nlp["X"],
                 nlp["U"],
+                nlp["f_ext"]
             )
         return reduced_ocp
 
@@ -334,6 +341,9 @@ class OptimalControlProgram:
             data = pickle.load(file)
             ocp = data["ocp"]
             sol = data["sol"]
+
+            ocp.symbolic_states = MX.sym("x", ocp.nlp[0]["nx"], 1)
+            ocp.symbolic_controls = MX.sym("u", ocp.nlp[0]["nu"], 1)
             for nlp in ocp.nlp:
                 nlp["model"] = biorbd.Model(biorbd_model_path)
         return (ocp, sol)

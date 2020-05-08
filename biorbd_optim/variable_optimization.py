@@ -131,7 +131,9 @@ class Data:
 
     @staticmethod
     def _get_data_interpolated_from_V(data_states, nb_frames, concatenate):
+        data_states_interpolated = {}
         for key in data_states:
+            data_states_interpolated[key] = Data()
             t = data_states[key].get_time_per_phase(concatenate=concatenate)
             d = data_states[key].to_matrix(concatenate_phases=concatenate)
             if not isinstance(d, list):
@@ -147,7 +149,10 @@ class Data:
                 for j in range(data_states[key].nb_elements):
                     s = interpolate.splrep(t_phase, x_phase[j, :])
                     x_interpolate[j, :] = interpolate.splev(t_int, s)
+                data_states_interpolated[key]._append_phase()
+                # todo retirer deuxième éléments si concaténation
                 data_states[key].phase[idx_phase] = x_interpolate
+
         return data_states
 
     def _horzcat_node(self, dt, x_to_add, idx_phase, idx_node):

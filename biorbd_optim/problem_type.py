@@ -1,3 +1,4 @@
+import biorbd
 from casadi import MX, vertcat
 
 from .dynamics import Dynamics
@@ -27,6 +28,16 @@ class ProblemType:
         :param nlp: An OptimalControlProgram class.
         """
         nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_driven_with_contact
+        ProblemType.__configure_torque_driven(nlp)
+
+    @staticmethod
+    def torque_driven_with_external_forces(nlp):
+        nlp["f_ext"] = []
+        nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_driven_with_external_forces
+        for external in nlp["forces_and_moments"]:
+            m1, m2, m3 = biorbd.Scalar(external[0]), biorbd.Scalar(external[1]), biorbd.Scalar(external[2])
+            f1, f2, f3 = biorbd.Scalar(external[3]), biorbd.Scalar(external[4]), biorbd.Scalar(external[5])
+            nlp["f_ext"].append(biorbd.VecBiorbdSpatialVector([biorbd.SpatialVector(m1, m2, m3, f1, f2, f3)]))
         ProblemType.__configure_torque_driven(nlp)
 
     @staticmethod
