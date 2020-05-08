@@ -36,10 +36,8 @@ def test_align_markers(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -79,12 +77,8 @@ def test_multiphase_align_markers(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((444, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data_from_V(ocp, sol["x"], concatenate=False)
-    q, qdot, tau = [], [], []
-    for i in range(ocp.nb_phases):
-        q.append(states["q"].to_matrix(phase_idx=i))
-        qdot.append(states["q_dot"].to_matrix(phase_idx=i))
-        tau.append(controls["tau"].to_matrix(phase_idx=i))
+    states, controls = Data.get_data(ocp, sol["x"], concatenate=False)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[0][:, 0], np.array((1, 0, 0)))

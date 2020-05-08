@@ -78,7 +78,7 @@ if __name__ == "__main__":
     sol = ocp.solve()
 
     # --- Show results --- #
-    param = Data.get_data_from_V(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
+    param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
     print(f"The optimized phase time is: {param['time'][0, 0]}, good job Lagrange!")
 
     result = ShowResult(ocp, sol)

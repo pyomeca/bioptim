@@ -8,7 +8,7 @@ class Data:
         def __init__(self, time, phase):
             self.node = [node.reshape(node.shape[0], 1) for node in phase.T]
             self.nb_elements = phase.shape[0]
-            self.t = np.linspace(time[0], time[1], len(self.node))
+            self.t = time
             self.nb_t = self.t.shape[0]
 
     def __init__(self):
@@ -21,11 +21,11 @@ class Data:
             return np.ndarray((0, 1))
 
         phase_idx = phase_idx if isinstance(phase_idx, (list, tuple)) else [phase_idx]
-        if self.has_same_nb_elements and concatenate_phases:
+        range_phases = range(len(self.phase)) if phase_idx == () else phase_idx
+        if (self.has_same_nb_elements and concatenate_phases) or len(range_phases) == 1:
             node_idx = node_idx if isinstance(node_idx, (list, tuple)) else [node_idx]
             idx = idx if isinstance(idx, (list, tuple)) else [idx]
 
-            range_phases = range(len(self.phase)) if phase_idx == () else phase_idx
             range_idx = range(self.nb_elements) if idx == () else idx
 
             data = np.ndarray((len(range_idx), 0))
@@ -39,8 +39,8 @@ class Data:
                     data = np.concatenate((data, node), axis=1)
         else:
             data = [
-                Data.to_matrix(idx=idx, phase_idx=phase, node_idx=node_idx, concatenate_phases=False)
-                for phase in phase_idx
+                self.to_matrix(idx=idx, phase_idx=phase, node_idx=node_idx, concatenate_phases=False)
+                for phase in range_phases
             ]
 
         return data
@@ -56,27 +56,47 @@ class Data:
         phases = phases if isinstance(phases, (list, tuple)) else [phases]
         range_phases = range(len(self.phase)) if phases == () else phases
         if not concatenate:
-            return [self.phase[idx_phase].t for idx_phase in range_phases]
+            t = [self.phase[idx_phase].t for idx_phase in range_phases]
+            if len(t) == 1:
+                t = t[0]
+            return t
         else:
             t = [self.phase[idx_phase].t for idx_phase in range_phases]
-            t_concat = []
-            for t_tp in t:
-                t_concat.extend(t_tp[:-1])
-            t_concat.extend([t[-1][-1]])
+            t_concat = np.array(t[0])
+            for t_idx in range(1, len(t)):
+                t_concat = np.concatenate((t_concat[:-1], t_concat[-1] + t[t_idx]))
             return np.array(t_concat)
 
     @staticmethod
-    def get_data_from_V(
-        ocp,
-        V,
-        get_states=True,
-        get_controls=True,
-        get_parameters=False,
-        phase_idx=None,
-        integrate=False,
-        interpolate_nb_frames=-1,
-        concatenate=True,
-    ):
+    def get_data(ocp, V, get_states=True, get_controls=True, get_parameters=False,
+                 phase_idx=None, integrate=False, interpolate_nb_frames=-1, concatenate=True):
+        data_states, data_controls, data_parameters = Data.get_data_object(
+            ocp, V, phase_idx, integrate, interpolate_nb_frames, concatenate
+        )
+
+        out = []
+        if get_states:
+            data_states_out = {}
+            for key in data_states:
+                data_states_out[key] = data_states[key].to_matrix(concatenate_phases=False)
+            out.append(data_states_out)
+
+        if get_controls:
+            data_controls_out = {}
+            for key in data_controls:
+                data_controls_out[key] = data_controls[key].to_matrix(concatenate_phases=False)
+            out.append(data_controls_out)
+
+        if get_parameters:
+            out.append(data_parameters)
+
+        if len(out) == 1:
+            return out[0]
+        else:
+            return out
+
+    @staticmethod
+    def get_data_object(ocp, V, phase_idx=None, integrate=False, interpolate_nb_frames=-1, concatenate=True):
         V_array = np.array(V).squeeze()
 
         if phase_idx is None:
@@ -138,22 +158,16 @@ class Data:
         if integrate:
             data_states = Data._get_data_integrated_from_V(ocp, data_states, data_controls)
 
+        if concatenate:
+            data_states = Data._data_concatenated(data_states)
+            data_controls = Data._data_concatenated(data_controls)
+
         if interpolate_nb_frames > 0:
             if integrate:
                 raise RuntimeError("interpolate values are not compatible yet with integrated values")
-            data_states = Data._get_data_interpolated_from_V(data_states, interpolate_nb_frames, concatenate)
+            data_states = Data._get_data_interpolated_from_V(data_states, interpolate_nb_frames)
 
-        out = []
-        if get_states:
-            out.append(data_states)
-        if get_controls:
-            out.append(data_controls)
-        if get_parameters:
-            out.append(data_parameters)
-        if len(out) == 1:
-            return out[0]
-        else:
-            return out
+        return data_states, data_controls, data_parameters
 
     @staticmethod
     def _get_phase_time(V, nlp):
@@ -192,11 +206,22 @@ class Data:
         return data_states
 
     @staticmethod
-    def _get_data_interpolated_from_V(data_states, nb_frames, concatenate):
+    def _data_concatenated(data):
+        for key in data:
+            if data[key].has_same_nb_elements:
+                data[key].phase = [
+                    Data.Phase(
+                        data[key].get_time_per_phase(concatenate=True), data[key].to_matrix(concatenate_phases=True)
+                    )
+                ]
+        return data
+
+    @staticmethod
+    def _get_data_interpolated_from_V(data_states, nb_frames):
         for key in data_states:
-            t = data_states[key].get_time_per_phase(concatenate=concatenate)
-            d = data_states[key].to_matrix(concatenate_phases=concatenate)
-            if not isinstance(d, list):
+            t = data_states[key].get_time_per_phase(concatenate=False)
+            d = data_states[key].to_matrix(concatenate_phases=False)
+            if not isinstance(d, (tuple, list)):
                 t = [t]
                 d = [d]
 
@@ -209,7 +234,8 @@ class Data:
                 for j in range(data_states[key].nb_elements):
                     s = interpolate.splrep(t_phase, x_phase[j, :])
                     x_interpolate[j, :] = interpolate.splev(t_int, s)
-                data_states[key].phase[idx_phase] = x_interpolate
+                data_states[key].phase[idx_phase] = Data.Phase(t_int, x_interpolate)
+
         return data_states
 
     def _horzcat_node(self, dt, x_to_add, idx_phase, idx_node):
@@ -245,6 +271,7 @@ class Data:
         return data_concat
 
     def _append_phase(self, time, phase):
+        time = np.linspace(time[0], time[1], len(phase[0]))
         self.phase.append(Data.Phase(time, phase))
         if self.nb_elements < 0:
             self.nb_elements = self.phase[-1].nb_elements

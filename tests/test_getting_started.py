@@ -37,10 +37,8 @@ def test_pendulum(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -85,10 +83,8 @@ def test_pendulum_min_time_mayer(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
-    states, controls, param = Data.get_data_from_V(ocp, sol["x"], get_parameters=True)
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
+    states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
     tf = param["time"][0, 0]
 
     # initial and final position
@@ -137,10 +133,8 @@ def test_pendulum_min_time_lagrange(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=-6)
 
     # Check some of the results
-    states, controls, param = Data.get_data_from_V(ocp, sol["x"], get_parameters=True)
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
+    states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
     tf = param["time"][0, 0]
 
     # initial and final position
