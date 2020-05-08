@@ -106,7 +106,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # Loop over shooting nodes
             for k in range(nlp["ns"]):
                 # Create an evaluation node
-                end_node = nlp["dynamics"].call({"x0": nlp["X"][k], "p": nlp["U"][k]})["xf"]
+                end_node = nlp["dynamics"](x0=nlp["X"][k], p=nlp["U"][k])["xf"]
 
                 # Save continuity constraints
                 val = end_node - nlp["X"][k + 1]
@@ -157,23 +157,15 @@ class Constraint(Enum):
     Different conditions between biorbd geometric structures.
     """
 
-    MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
     TRACK_STATE = (PenaltyType.TRACK_STATE,)
-    MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
     TRACK_MARKERS = (PenaltyType.TRACK_MARKERS,)
-    MINIMIZE_MARKERS_DISPLACEMENT = (PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT,)
-    MINIMIZE_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
     TRACK_MARKERS_VELOCITY = (PenaltyType.TRACK_MARKERS_VELOCITY,)
     ALIGN_MARKERS = (PenaltyType.ALIGN_MARKERS,)
     PROPORTIONAL_STATE = (PenaltyType.PROPORTIONAL_STATE,)
     PROPORTIONAL_CONTROL = (PenaltyType.PROPORTIONAL_CONTROL,)
-    MINIMIZE_TORQUE = (PenaltyType.MINIMIZE_TORQUE,)
     TRACK_TORQUE = (PenaltyType.TRACK_TORQUE,)
-    MINIMIZE_MUSCLES_CONTROL = (PenaltyType.MINIMIZE_MUSCLES_CONTROL,)
     TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
-    MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
     TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
-    MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyType.MINIMIZE_PREDICTED_COM_HEIGHT,)
     ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
     ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
     CUSTOM = (PenaltyType.CUSTOM,)

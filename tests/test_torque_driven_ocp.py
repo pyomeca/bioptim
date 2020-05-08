@@ -36,10 +36,8 @@ def test_align_markers(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -71,38 +69,40 @@ def test_multiphase_align_markers(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 9964.984600659047)
+    np.testing.assert_almost_equal(f[0, 0], 17672.950313589874)
 
     # Check constraints
     g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (315, 1))
-    np.testing.assert_almost_equal(g, np.zeros((315, 1)))
+    np.testing.assert_equal(g.shape, (444, 1))
+    np.testing.assert_almost_equal(g, np.zeros((444, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data_from_V(ocp, sol["x"], concatenate=False)
-    q, qdot, tau = [], [], []
-    for i in range(ocp.nb_phases):
-        q.append(states["q"].to_matrix(phase_idx=i))
-        qdot.append(states["q_dot"].to_matrix(phase_idx=i))
-        tau.append(controls["tau"].to_matrix(phase_idx=i))
+    states, controls = Data.get_data(ocp, sol["x"], concatenate=False)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[0][:, 0], np.array((1, 0, 0)))
     np.testing.assert_almost_equal(q[0][:, -1], np.array((2, 0, 0)))
     np.testing.assert_almost_equal(q[1][:, 0], np.array((2, 0, 0)))
-    np.testing.assert_almost_equal(q[1][:, -1], np.array((1, 0, 1.57)))
+    np.testing.assert_almost_equal(q[1][:, -1], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(q[2][:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(q[2][:, -1], np.array((2, 0, 1.57)))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[0][:, 0], np.array((0, 0, 0)))
     np.testing.assert_almost_equal(qdot[0][:, -1], np.array((0, 0, 0)))
     np.testing.assert_almost_equal(qdot[1][:, 0], np.array((0, 0, 0)))
     np.testing.assert_almost_equal(qdot[1][:, -1], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[2][:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[2][:, -1], np.array((0, 0, 0)))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[0][:, 0], np.array((1.42857142, 9.81, 0)))
     np.testing.assert_almost_equal(tau[0][:, -1], np.array((-1.42857144, 9.81, 0)))
-    np.testing.assert_almost_equal(tau[1][:, 0], np.array((-0.2322581, 9.81, 0.36464516)))
-    np.testing.assert_almost_equal(tau[1][:, -1], np.array((0.2322581, 9.81, -0.36464516)))
+    np.testing.assert_almost_equal(tau[1][:, 0], np.array((-0.2322581, 9.81, 0.0)))
+    np.testing.assert_almost_equal(tau[1][:, -1], np.array((0.2322581, 9.81, -0.0)))
+    np.testing.assert_almost_equal(tau[2][:, 0], np.array((0.35714285, 9.81, 0.56071428)))
+    np.testing.assert_almost_equal(tau[2][:, -1], np.array((-0.35714285, 9.81, -0.56071428)))
 
 # Load custom_constraint
 PROJECT_FOLDER = Path(__file__).parent / ".."
