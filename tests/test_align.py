@@ -39,10 +39,8 @@ def test_align_segment_on_rt(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((91, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.305837645, 6.07684988e-18, -1.57, -1.57]))
@@ -86,10 +84,8 @@ def test_align_marker_on_segment(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((308, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0, 0.46364761]))
