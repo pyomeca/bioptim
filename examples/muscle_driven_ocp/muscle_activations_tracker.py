@@ -166,7 +166,7 @@ if __name__ == "__main__":
     # Define the problem
     biorbd_model = biorbd.Model("arm26.bioMod")
     final_time = 2
-    n_shooting_points = 9
+    n_shooting_points = 29
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(biorbd_model, final_time, n_shooting_points)

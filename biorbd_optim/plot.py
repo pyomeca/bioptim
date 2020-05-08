@@ -1,9 +1,10 @@
 import multiprocessing as mp
 import numpy as np
 import tkinter
+from itertools import accumulate
 
 from matplotlib import pyplot as plt
-from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
+from casadi import MX, Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
 from .variable_optimization import Data
 
@@ -18,17 +19,21 @@ class PlotOcp:
         self.ydata = []
         self.ns = 0
 
-        self.t = [0]
+        self.t = []
         self.t_integrated = []
-        for nlp in self.ocp.nlp:
-            self.ns += nlp["ns"] + 1
-            time_phase = np.linspace(self.t[-1], self.t[-1] + nlp["tf"], nlp["ns"] + 1)
-            self.t = np.append(self.t, time_phase)
-            self.t_integrated = np.append(self.t_integrated, PlotOcp.generate_integrated_time(time_phase))
-        self.t = self.t[1:]
+        if isinstance(self.ocp.initial_phase_time, (int, float)):
+            self.tf = [self.ocp.initial_phase_time]
+        else:
+            self.tf = list(self.ocp.initial_phase_time)
+        self.t_idx_to_optimize = []
+        for i, nlp in enumerate(self.ocp.nlp):
+            if isinstance(nlp["tf"], MX):
+                self.t_idx_to_optimize.append(i)
+        self.__init_time_vector()
 
         self.axes = []
         self.plots = []
+        self.plots_vertical_lines = []
         self.all_figures = []
 
         running_cmp = 0
@@ -52,6 +57,16 @@ class PlotOcp:
                 horz += 1
                 vert = 0
             fig.canvas.draw()
+
+    def __init_time_vector(self):
+        self.t = [0]
+        self.t_integrated = []
+        for phase_idx, nlp in enumerate(self.ocp.nlp):
+            self.ns += nlp["ns"] + 1
+            time_phase = np.linspace(self.t[-1], self.t[-1] + self.tf[phase_idx], nlp["ns"] + 1)
+            self.t = np.append(self.t, time_phase)
+            self.t_integrated = np.append(self.t_integrated, PlotOcp.generate_integrated_time(time_phase))
+        self.t = self.t[1:]
 
     def create_plots(self, has, var_type):
         for variable in has:
@@ -84,7 +99,6 @@ class PlotOcp:
                 self.axes.extend(axes)
                 self.all_figures[-1].tight_layout()
 
-            intersections_time = PlotOcp.find_phases_intersections(self.ocp)
             for i, ax in enumerate(axes):
                 if var_type == "state":
                     cmp = 0
@@ -117,8 +131,9 @@ class PlotOcp:
                 else:
                     raise RuntimeError("Plot of parameters is not supported yet")
 
+                intersections_time = self.find_phases_intersections()
                 for time in intersections_time:
-                    ax.axvline(time, linestyle="--", linewidth=1.2, c="k")
+                    self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
                 ax.grid(color="k", linestyle="--", linewidth=0.5)
                 ax.set_xlim(0, self.t[-1])
 
@@ -136,14 +151,8 @@ class PlotOcp:
             t = np.insert(t, i, t[i])
         return t
 
-    @staticmethod
-    def find_phases_intersections(ocp):
-        intersections_time = []
-        time = 0
-        for i in range(len(ocp.nlp) - 1):
-            time += ocp.nlp[i]["tf"]
-            intersections_time.append(time)
-        return intersections_time
+    def find_phases_intersections(self):
+        return list(accumulate(self.tf))[:-1]
 
     @staticmethod
     def show():
@@ -152,11 +161,36 @@ class PlotOcp:
     def update_data(self, V):
         self.ydata = [[] for _ in range(self.ocp.nb_phases)]
 
-        data_states, data_controls = Data.get_data(self.ocp, V, integrate=True, concatenate=False)
+        data_states, data_controls, data_param = Data.get_data(
+            self.ocp, V, get_parameters=True, integrate=True, concatenate=False
+        )
         for i, nlp in enumerate(self.ocp.nlp):
+            if self.t_idx_to_optimize:
+                for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
+                    self.tf[i_in_tf] = data_param["time"][i_in_time]
+                self.__update_xdata()
             self.__update_ydata(data_states, i)
             self.__update_ydata(data_controls, i)
         self.__update_axes()
+
+    def __update_xdata(self):
+        self.__init_time_vector()
+        for i, p in enumerate(self.plots):
+            if i < self.ocp.nlp[0]["nx"]:
+                for j in range(int(len(p) / 2)):
+                    p[2 * j].set_xdata(self.t_integrated[j * 2 : 2 * j + 2])
+                    p[2 * j + 1].set_xdata(self.t_integrated[j * 2])
+            else:
+                p[0].set_xdata(self.t)
+            ax = p[0].axes
+            ax.set_xlim(0, self.t[-1])
+
+        intersections_time = self.find_phases_intersections()
+        n = len(intersections_time)
+        if n > 0:
+            for p in range(int(len(self.plots_vertical_lines) / n)):
+                for i, time in enumerate(intersections_time):
+                    self.plots_vertical_lines[p * n + i].set_xdata([time, time])
 
     def __update_ydata(self, data, phase_idx):
         for key in data:

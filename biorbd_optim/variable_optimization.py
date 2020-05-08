@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import interpolate
+from casadi import MX
 
 
 class Data:
@@ -44,8 +45,12 @@ class Data:
 
         return data
 
+    def set_time_per_phase(self, new_t):
+        for i, phase in enumerate(self.phase):
+            phase.t = np.linspace(new_t[i][0], new_t[i][1], len(phase.node))
+
     def get_time_per_phase(self, phases=(), concatenate=False):
-        if self.phase == []:
+        if not self.phase:
             return np.ndarray((0,))
 
         phases = phases if isinstance(phases, (list, tuple)) else [phases]
@@ -57,27 +62,47 @@ class Data:
             return t
         else:
             t = [self.phase[idx_phase].t for idx_phase in range_phases]
-            t_concat = []
-            for t_tp in t:
-                t_concat.extend(t_tp[:-1])
-            t_concat.extend([t[-1][-1]])
+            t_concat = np.array(t[0])
+            for t_idx in range(1, len(t)):
+                t_concat = np.concatenate((t_concat[:-1], t_concat[-1] + t[t_idx]))
             return np.array(t_concat)
 
     @staticmethod
-    def get_data(ocp, V, phase_idx=None, integrate=False, interpolate_nb_frames=-1, concatenate=True):
-        data_states, data_controls = Data.get_data_object(
+    def get_data(
+        ocp,
+        V,
+        get_states=True,
+        get_controls=True,
+        get_parameters=False,
+        phase_idx=None,
+        integrate=False,
+        interpolate_nb_frames=-1,
+        concatenate=True,
+    ):
+        data_states, data_controls, data_parameters = Data.get_data_object(
             ocp, V, phase_idx, integrate, interpolate_nb_frames, concatenate
         )
 
-        data_states_out = {}
-        for key in data_states:
-            data_states_out[key] = data_states[key].to_matrix(concatenate_phases=False)
+        out = []
+        if get_states:
+            data_states_out = {}
+            for key in data_states:
+                data_states_out[key] = data_states[key].to_matrix(concatenate_phases=False)
+            out.append(data_states_out)
 
-        data_controls_out = {}
-        for key in data_controls:
-            data_controls_out[key] = data_controls[key].to_matrix(concatenate_phases=False)
+        if get_controls:
+            data_controls_out = {}
+            for key in data_controls:
+                data_controls_out[key] = data_controls[key].to_matrix(concatenate_phases=False)
+            out.append(data_controls_out)
 
-        return data_states_out, data_controls_out
+        if get_parameters:
+            out.append(data_parameters)
+
+        if len(out) == 1:
+            return out[0]
+        else:
+            return out
 
     @staticmethod
     def get_data_object(ocp, V, phase_idx=None, integrate=False, interpolate_nb_frames=-1, concatenate=True):
@@ -91,7 +116,7 @@ class Data:
         for i, nlp in enumerate(ocp.nlp):
             offsets.append(offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"]))
 
-        data_states, data_controls = {}, {}
+        data_states, data_controls, data_parameters = {}, {}, {}
         for i in phase_idx:
             nlp = ocp.nlp[i]
             for key in nlp["has_states"].keys():
@@ -108,17 +133,36 @@ class Data:
 
             for key in nlp["has_states"]:
                 data_states[key]._append_phase(
-                    (nlp["t0"], nlp["tf"]),
+                    (Data._get_phase_time(V_phase, nlp)),
                     Data._get_phase(V_phase, nlp["has_states"][key], nlp["ns"] + 1, offset, nb_var, False),
                 )
                 offset += nlp["has_states"][key]
 
             for key in nlp["has_controls"]:
                 data_controls[key]._append_phase(
-                    (nlp["t0"], nlp["tf"]),
+                    (Data._get_phase_time(V_phase, nlp)),
                     Data._get_phase(V_phase, nlp["has_controls"][key], nlp["ns"], offset, nb_var, True),
                 )
                 offset += nlp["has_controls"][key]
+
+        offset = sum([nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"] for nlp in ocp.nlp])
+        for key in ocp.param_to_optimize:
+            if ocp.param_to_optimize[key]:
+                nb_param = len(ocp.param_to_optimize[key])
+                data_parameters[key] = np.array(V[offset : offset + nb_param])
+                offset += nb_param
+
+                if key == "time":
+                    new_t = []
+                    cmp = 0
+                    for nlp in ocp.nlp:
+                        if isinstance(nlp["tf"], MX):
+                            new_t.append((0, data_parameters["time"][cmp, 0]))
+                            cmp += 1
+                        else:
+                            new_t.append((0, nlp["tf"]))
+                    for key_stat in data_states:
+                        data_states[key_stat].set_time_per_phase(new_t)
 
         if integrate:
             data_states = Data._get_data_integrated_from_V(ocp, data_states, data_controls)
@@ -132,17 +176,35 @@ class Data:
                 raise RuntimeError("interpolate values are not compatible yet with integrated values")
             data_states = Data._get_data_interpolated_from_V(data_states, interpolate_nb_frames)
 
-        return data_states, data_controls
+        return data_states, data_controls, data_parameters
+
+    @staticmethod
+    def _get_phase_time(V, nlp):
+        if isinstance(nlp["tf"], (int, float)):
+            return 0, nlp["tf"]
+        else:
+            return 0, V[-1]
 
     @staticmethod
     def _get_data_integrated_from_V(ocp, data_states, data_controls):
+        # Check if time is optimized
+        time_is_optimized = False
+        for nlp in ocp.nlp:
+            if isinstance(nlp["tf"], MX):
+                time_is_optimized = True
+                break
+
         for idx_phase in range(ocp.nb_phases):
             dt = ocp.nlp[idx_phase]["dt"]
             nlp = ocp.nlp[idx_phase]
             for idx_node in reversed(range(ocp.nlp[idx_phase]["ns"])):
                 x0 = Data._vertcat(data_states, list(nlp["has_states"].keys()), idx_phase, idx_node)
                 p = Data._vertcat(data_controls, list(nlp["has_controls"].keys()), idx_phase, idx_node)
-                xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"](x0=x0, p=p)["xf"])  # Integrate
+                if time_is_optimized:
+                    # TODO: Allow integrate when optimizing time
+                    xf_dof = x0
+                else:
+                    xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"](x0=x0, p=p)["xf"])  # Integrate
 
                 offset = 0
                 for key in nlp["has_states"]:
@@ -161,7 +223,7 @@ class Data:
                         data[key].get_time_per_phase(concatenate=True), data[key].to_matrix(concatenate_phases=True)
                     )
                 ]
-            return data
+        return data
 
     @staticmethod
     def _get_data_interpolated_from_V(data_states, nb_frames):

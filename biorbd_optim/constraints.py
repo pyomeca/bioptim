@@ -97,7 +97,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # Loop over shooting nodes
             for k in range(nlp["ns"]):
                 # Create an evaluation node
-                end_node = nlp["dynamics"].call({"x0": nlp["X"][k], "p": nlp["U"][k]})["xf"]
+                end_node = nlp["dynamics"](x0=nlp["X"][k], p=nlp["U"][k])["xf"]
 
                 # Save continuity constraints
                 val = end_node - nlp["X"][k + 1]
