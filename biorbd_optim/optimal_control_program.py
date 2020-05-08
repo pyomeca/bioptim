@@ -71,6 +71,8 @@ class OptimalControlProgram:
         self.nb_phases = len(biorbd_model)
         self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
+        self.__add_to_nlp("phase_idx", range(self.nb_phases), False)
+
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
