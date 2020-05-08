@@ -3,9 +3,6 @@ import biorbd
 from biorbd_optim import (
     OptimalControlProgram,
     ProblemType,
-    Objective,
-    BidirectionalMapping,
-    Mapping,
     Bounds,
     QAndQDotBounds,
     InitialConditions,
@@ -24,7 +21,7 @@ def prepare_ocp(
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = ({"type": Objective.Lagrange.MINIMIZE_TORQUE})
+    objective_functions = ()
 
     # Dynamics
     problem_type = ProblemType.torque_driven
