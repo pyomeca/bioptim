@@ -17,7 +17,7 @@ from biorbd_optim import (
     OdeSolver,
 )
 
-def custom_func(ocp, nlp, t, x, u, first_marker_idx, second_marker_idx):
+def custom_func_align_markers(ocp, nlp, t, x, u, first_marker_idx, second_marker_idx):
     nq = nlp["q_mapping"].reduce.len
     for v in x:
         q = nlp["q_mapping"].expand.map(v[:nq])
@@ -26,7 +26,7 @@ def custom_func(ocp, nlp, t, x, u, first_marker_idx, second_marker_idx):
 
         return first_marker - second_marker
 
-def prepare_ocp(biorbd_model_path="cube.bioMod", show_online_optim=False, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path, show_online_optim=False, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -44,8 +44,8 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", show_online_optim=False, ode_so
 
     # Constraints
     constraints = (
-        {"type": Constraint.CUSTOM, "function":custom_func, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
-        {"type": Constraint.CUSTOM, "function": custom_func, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
+        {"type": Constraint.CUSTOM, "function":custom_func_align_markers, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
+        {"type": Constraint.CUSTOM, "function": custom_func_align_markers, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
     )
 
     # Path constraint
@@ -87,7 +87,8 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", show_online_optim=False, ode_so
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=False)
+    model_path = "cube.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=model_path, show_online_optim=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()
