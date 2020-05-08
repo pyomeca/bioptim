@@ -12,9 +12,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(
-    biorbd_model_path, final_time, number_shooting_points, show_online_optim=False
-):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_online_optim=False):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -23,7 +21,7 @@ def prepare_ocp(
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = ({"type": Objective.Mayer.MINIMIZE_TIME})
+    objective_functions = {"type": Objective.Mayer.MINIMIZE_TIME}
 
     # Dynamics
     problem_type = ProblemType.torque_driven

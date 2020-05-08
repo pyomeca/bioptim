@@ -105,7 +105,7 @@ def test_multiphase_align_markers(ode_solver):
     # initial and final controls
     np.testing.assert_almost_equal(tau[0][:, 0], np.array((1.42857142, 9.81, 0)))
     np.testing.assert_almost_equal(tau[0][:, -1], np.array((-1.42857144, 9.81, 0)))
-    np.testing.assert_almost_equal(tau[1][:, 0], np.array((-0.2322581, 9.81, 0.)))
-    np.testing.assert_almost_equal(tau[1][:, -1], np.array((0.2322581, 9.81, -0.)))
+    np.testing.assert_almost_equal(tau[1][:, 0], np.array((-0.2322581, 9.81, 0.0)))
+    np.testing.assert_almost_equal(tau[1][:, -1], np.array((0.2322581, 9.81, -0.0)))
     np.testing.assert_almost_equal(tau[2][:, 0], np.array((0.35714285, 9.81, 0.56071428)))
     np.testing.assert_almost_equal(tau[2][:, -1], np.array((-0.35714285, 9.81, -0.56071428)))
