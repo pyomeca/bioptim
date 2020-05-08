@@ -202,12 +202,12 @@ if __name__ == "__main__":
     # --- Show the results --- #
     muscle_excitations_ref = np.append(muscle_excitations_ref, muscle_excitations_ref[-1:, :], axis=0)
 
-    states_sol, controls_sol = Data.get_data_from_V(ocp, sol["x"])
-    q = states_sol["q"].to_matrix()
-    q_dot = states_sol["q_dot"].to_matrix()
-    activations = states_sol["muscles"].to_matrix()
-    tau = controls_sol["tau"].to_matrix()
-    excitations = controls_sol["muscles"].to_matrix()
+    states_sol, controls_sol = Data.get_data(ocp, sol["x"])
+    q = states_sol["q"]
+    q_dot = states_sol["q_dot"]
+    activations = states_sol["muscles"]
+    tau = controls_sol["tau"]
+    excitations = controls_sol["muscles"]
 
     n_q = ocp.nlp[0]["model"].nbQ()
     n_qdot = ocp.nlp[0]["model"].nbQdot()

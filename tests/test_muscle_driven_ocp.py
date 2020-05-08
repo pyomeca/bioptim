@@ -41,11 +41,8 @@ def test_muscle_driven_ocp():
     np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
 
     # Check some of the results
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
-    mus = controls["muscles"].to_matrix()
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
@@ -85,11 +82,8 @@ def test_muscle_with_contact_driven_ocp():
     np.testing.assert_almost_equal(g, np.zeros((60, 1)), decimal=6)
 
     # Check some of the results
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
-    mus = controls["muscles"].to_matrix()
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0, 0.07, 1.4]))
