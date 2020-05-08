@@ -107,4 +107,4 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.graphs()
+    result.animate()
