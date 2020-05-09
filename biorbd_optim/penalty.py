@@ -292,9 +292,7 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def _check_and_fill_tracking_data_size(data_to_track, target_size):
-        if data_to_track == ():
-            data_to_track = np.zeros(target_size)
-        else:
+        if (isinstance(data_to_track, np.ndarray) and data_to_track.any()) or data_to_track:
             if len(data_to_track.shape) != len(target_size):
                 if target_size[1] == 1 and len(data_to_track.shape) == 1:
                     # If we have a vector it is still okay
@@ -308,6 +306,8 @@ class PenaltyFunctionAbstract:
                     raise RuntimeError(
                         f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}"
                     )
+        else:
+            data_to_track = np.zeros(target_size)
         return data_to_track
 
     @staticmethod
