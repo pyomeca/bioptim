@@ -224,28 +224,15 @@ if __name__ == "__main__":
     cs_map = (range(6), (0, 1, 3, 4))
 
     for i, nlp in enumerate(ocp.nlp):
-        symbolic_states = MX.sym("x", nlp["nx"], 1)
-        symbolic_controls = MX.sym("u", nlp["nu"], 1)
-        nlp["model"] = biorbd.Model(model_path[i])
-        contact_forces_func = Function(
-            "contact_forces_func",
-            [symbolic_states, symbolic_controls],
-            [Dynamics.forces_from_forward_dynamics_with_contact(symbolic_states, symbolic_controls, nlp)],
-            ["x", "u"],
-            ["contact_forces"],
-        ).expand()
-
-        states, controls = Data.get_data_from_V(ocp, sol["x"], phase_idx=i)
-        q = states["q"].to_matrix()
-        q_dot = states["q_dot"].to_matrix()
-        u = controls["tau"].to_matrix()
-        x = vertcat(q, q_dot)
+        states, controls = Data.get_data(ocp, sol["x"], phase_idx=i)
+        q = states["q"], q_dot = states["q_dot"], u = controls["tau"]
+        x = np.concatenate(q, q_dot)
         if i == 0:
-            contact_forces[cs_map[i], : nlp["ns"] + 1] = contact_forces_func(x, u)
+            contact_forces[cs_map[i], : nlp["ns"] + 1] = nlp["contact_forces_func"](x, u)
         else:
             contact_forces[
                 cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1
-            ] = contact_forces_func(x, u)
+            ] = nlp["contact_forces_func"](x, u)
 
     names_contact_forces = ocp.nlp[0]["model"].contactNames()
     for i, elt in enumerate(contact_forces):

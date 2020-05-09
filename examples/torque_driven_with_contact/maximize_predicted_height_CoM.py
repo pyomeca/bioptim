@@ -1,15 +1,11 @@
-from math import inf
-
+from matplotlib import pyplot as plt
 import numpy as np
 import biorbd
 
 from biorbd_optim import (
-    Instant,
     OptimalControlProgram,
-    Constraint,
     Objective,
     ProblemType,
-    Dynamics,
     BidirectionalMapping,
     Mapping,
     Bounds,
@@ -83,36 +79,24 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_opti
 
 if __name__ == "__main__":
     model_path = "2segments_4dof_2contacts.bioMod"
-    ocp = prepare_ocp(model_path=model_path, phase_time=0.5, number_shooting_points=20, show_online_optim=False)
+    t = 0.5
+    ns = 20
+    ocp = prepare_ocp(model_path=model_path, phase_time=t, number_shooting_points=ns, show_online_optim=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    from matplotlib import pyplot as plt
-    from casadi import vertcat, Function
-
     nlp = ocp.nlp[0]
-    contact_forces = np.ndarray((nlp["model"].nbContacts(), nlp["ns"] + 1))
 
     nlp["model"] = biorbd.Model(model_path)
-    contact_forces_func = Function(
-        "contact_forces_func",
-        [ocp.symbolic_states, ocp.symbolic_controls],
-        [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
-        ["x", "u"],
-        ["contact_forces"],
-    ).expand()
-
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    q_dot = states["q_dot"].to_matrix()
-    u = controls["tau"].to_matrix()
-    x = vertcat(q, q_dot)
-    contact_forces[:, : nlp["ns"] + 1] = contact_forces_func(x, u)
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, q_dot, u = states["q"], states["q_dot"], controls["tau"]
+    x = np.concatenate((q, q_dot))
+    contact_forces = np.array(nlp["contact_forces_func"](x[:, :-1], u[:, :-1]))
 
     names_contact_forces = ocp.nlp[0]["model"].contactNames()
     for i, elt in enumerate(contact_forces):
-        plt.plot(elt.T, label=f"{names_contact_forces[i].to_string()}")
+        plt.plot(np.linspace(0, t, ns+1)[:-1], elt, label=f"{names_contact_forces[i].to_string()}")
     plt.legend()
     plt.grid()
     plt.title("Contact forces")

@@ -1,11 +1,10 @@
 from math import inf
 from enum import Enum
 
-from casadi import vertcat, Function, fabs
+from casadi import vertcat, sum1
 
 from .enums import Instant
 from .penalty import PenaltyType, PenaltyFunctionAbstract
-from .dynamics import Dynamics
 
 # TODO: Convert the constraint in CasADi function?
 
@@ -24,16 +23,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             with in the 1st index the number of the contact force and in the 2nd index the associated bound.
             """
             # To be modified later so that it can handle something other than lower bounds for greater than
-            CS_func = Function(
-                "Contact_force_inequality",
-                [ocp.symbolic_states, ocp.symbolic_controls],
-                [nlp["contact_forces_func"](ocp.symbolic_states, ocp.symbolic_controls, nlp)],
-                ["x", "u"],
-                ["CS"],
-            ).expand()
-
             for i in range(len(u)):
-                ocp.g = vertcat(ocp.g, CS_func(x[i], u[i])[contact_force_idx])
+                ocp.g = vertcat(ocp.g, nlp["contact_forces_func"](x[i], u[i])[contact_force_idx, 0])
                 if direction == "GREATER_THAN":
                     ocp.g_bounds.min.append(boundary)
                     ocp.g_bounds.max.append(inf)
@@ -63,26 +54,21 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not isinstance(tangential_component_idx, int):
                 raise RuntimeError("tangential_component_idx must be a unique integer")
 
-            CS_func = Function(
-                "Contact_force_inequality",
-                [ocp.symbolic_states, ocp.symbolic_controls],
-                [Dynamics.forces_from_forward_dynamics_with_contact(ocp.symbolic_states, ocp.symbolic_controls, nlp)],
-                ["x", "u"],
-                ["CS"],
-            ).expand()
-
             if isinstance(normal_component_idx, int):
                 normal_component_idx = [normal_component_idx]
 
             mu = static_friction_coefficient
             for i in range(len(u)):
-                normal_contact_force = tangential_contact_force = 0
-                for idx in normal_component_idx:
-                    normal_contact_force += CS_func(x[i], u[i])[idx]
-                tangential_contact_force += CS_func(x[i], u[i])[tangential_component_idx]
+                contact = nlp["contact_forces_func"](x[i], u[i])
+                normal_contact_force = sum1(contact[normal_component_idx, 0])
+                tangential_contact_force = contact[tangential_component_idx, 0]
 
-                # Proposal : only case normal_contact_force >= 0 and with two ocp.g
-                ocp.g = vertcat(ocp.g, mu * fabs(normal_contact_force) - fabs(tangential_contact_force))
+                # Since it is non-slipping normal forces are supposed to be greater than zero
+                ocp.g = vertcat(ocp.g, mu * normal_contact_force - tangential_contact_force)
+                ocp.g_bounds.min.append(0)
+                ocp.g_bounds.max.append(inf)
+
+                ocp.g = vertcat(ocp.g, mu * normal_contact_force + tangential_contact_force)
                 ocp.g_bounds.min.append(0)
                 ocp.g_bounds.max.append(inf)
 

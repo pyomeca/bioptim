@@ -112,6 +112,7 @@ spec = importlib.util.spec_from_file_location(
 custom_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(custom_constraint)
 
+
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_custom_constraint_align_markers(ode_solver):
     ocp = custom_constraint.prepare_ocp(
@@ -130,10 +131,8 @@ def test_custom_constraint_align_markers(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))

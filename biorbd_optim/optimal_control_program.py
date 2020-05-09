@@ -132,8 +132,6 @@ class OptimalControlProgram:
 
         # Define dynamic problem
         self.__add_to_nlp("ode_solver", ode_solver, True)
-        self.symbolic_states = MX.sym("x", self.nlp[0]["nx"], 1)
-        self.symbolic_controls = MX.sym("u", self.nlp[0]["nu"], 1)
         for i in range(self.nb_phases):
             if self.nlp[0]["nx"] != self.nlp[i]["nx"] or self.nlp[0]["nu"] != self.nlp[i]["nu"]:
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
@@ -189,14 +187,7 @@ class OptimalControlProgram:
         :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
         """
 
-        dynamics = casadi.Function(
-            "ForwardDyn",
-            [self.symbolic_states, self.symbolic_controls],
-            [nlp["dynamics_func"](self.symbolic_states, self.symbolic_controls, nlp)],
-            ["x", "u"],
-            ["xdot"],
-        ).expand()  # .map(nlp["ns"], "thread", 2)
-
+        dynamics = nlp["dynamics_func"]
         ode_opt = {"t0": 0, "tf": nlp["dt"]}
         if nlp["ode_solver"] == OdeSolver.RK or nlp["ode_solver"] == OdeSolver.COLLOCATION:
             ode_opt["number_of_finite_elements"] = 5
@@ -362,8 +353,6 @@ class OptimalControlProgram:
             reduced_ocp.g,
             reduced_ocp.g_bounds,
             reduced_ocp.show_online_optim_callback,
-            reduced_ocp.symbolic_controls,
-            reduced_ocp.symbolic_states,
         )
         for nlp in reduced_ocp.nlp:
             del (

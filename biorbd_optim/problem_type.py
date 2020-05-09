@@ -1,4 +1,4 @@
-from casadi import MX, vertcat
+from casadi import MX, vertcat, Function
 
 from .dynamics import Dynamics
 from .mapping import BidirectionalMapping, Mapping
@@ -16,8 +16,17 @@ class ProblemType:
         Works with torques but without muscles, must be used with dynamics without contacts.
         :param nlp: An instance of the OptimalControlProgram class.
         """
-        nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_driven
         ProblemType.__configure_torque_driven(nlp)
+
+        symbolic_states = MX.sym("x", nlp["nx"], 1)
+        symbolic_controls = MX.sym("u", nlp["nu"], 1)
+        nlp["dynamics_func"] = Function(
+            "ForwardDyn",
+            [symbolic_states, symbolic_controls],
+            [Dynamics.forward_dynamics_torque_driven(symbolic_states, symbolic_controls, nlp)],
+            ["x", "u"],
+            ["xdot"],
+        ).expand()  # .map(nlp["ns"], "thread", 2)
 
     @staticmethod
     def torque_driven_with_contact(nlp):
@@ -26,9 +35,26 @@ class ProblemType:
         Works with torques, without muscles, must be used with dynamics with contacts.
         :param nlp: An OptimalControlProgram class.
         """
-        nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_driven_with_contact
-        nlp["contact_forces_func"] = Dynamics.forces_from_forward_dynamics_with_contact
+
         ProblemType.__configure_torque_driven(nlp)
+
+        symbolic_states = MX.sym("x", nlp["nx"], 1)
+        symbolic_controls = MX.sym("u", nlp["nu"], 1)
+        nlp["dynamics_func"] = Function(
+            "ForwardDyn",
+            [symbolic_states, symbolic_controls],
+            [Dynamics.forward_dynamics_torque_driven_with_contact(symbolic_states, symbolic_controls, nlp)],
+            ["x", "u"],
+            ["xdot"],
+        ).expand()  # .map(nlp["ns"], "thread", 2)
+
+        nlp["contact_forces_func"] = Function(
+            "contact_forces_func",
+            [symbolic_states, symbolic_controls],
+            [Dynamics.forces_from_forward_dynamics_with_contact(symbolic_states, symbolic_controls, nlp)],
+            ["x", "u"],
+            ["contact_forces"],
+        ).expand()
 
     @staticmethod
     def __configure_torque_driven(nlp):
@@ -53,14 +79,14 @@ class ProblemType:
         q = MX()
         q_dot = MX()
         for i in nlp["q_mapping"].reduce.map_idx:
-            q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string()))
+            q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
         for i in nlp["q_dot_mapping"].reduce.map_idx:
-            q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string()))
+            q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
         nlp["x"] = vertcat(q, q_dot)
 
         u = MX()
         for i in nlp["tau_mapping"].reduce.map_idx:
-            u = vertcat(u, MX.sym("Tau_" + dof_names[i].to_string()))
+            u = vertcat(u, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
         nlp["u"] = u
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()
@@ -79,7 +105,6 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_muscle_driven
         ProblemType.__configure_torque_driven(nlp)
 
         u = MX()
@@ -92,6 +117,16 @@ class ProblemType:
 
         nlp["has_controls"]["muscles"] = nlp["nbMuscle"]
 
+        symbolic_states = MX.sym("x", nlp["nx"], 1)
+        symbolic_controls = MX.sym("u", nlp["nu"], 1)
+        nlp["dynamics_func"] = Function(
+            "ForwardDyn",
+            [symbolic_states, symbolic_controls],
+            [Dynamics.forward_dynamics_torque_muscle_driven(symbolic_states, symbolic_controls, nlp)],
+            ["x", "u"],
+            ["xdot"],
+        ).expand()  # .map(nlp["ns"], "thread", 2)
+
     @staticmethod
     def muscle_excitations_and_torque_driven(nlp):
         """
@@ -99,7 +134,6 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        nlp["dynamics_func"] = Dynamics.forward_dynamics_muscle_excitations_and_torque_driven
         ProblemType.__configure_torque_driven(nlp)
 
         u = MX()
@@ -117,6 +151,16 @@ class ProblemType:
         nlp["has_states"]["muscles"] = nlp["nbMuscle"]
         nlp["has_controls"]["muscles"] = nlp["nbMuscle"]
 
+        symbolic_states = MX.sym("x", nlp["nx"], 1)
+        symbolic_controls = MX.sym("u", nlp["nu"], 1)
+        nlp["dynamics_func"] = Function(
+            "ForwardDyn",
+            [symbolic_states, symbolic_controls],
+            [Dynamics.forward_dynamics_muscle_excitations_and_torque_driven(symbolic_states, symbolic_controls, nlp)],
+            ["x", "u"],
+            ["xdot"],
+        ).expand()  # .map(nlp["ns"], "thread", 2)
+
     @staticmethod
     def muscles_and_torque_driven_with_contact(nlp):
         """
@@ -124,7 +168,6 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        nlp["dynamics_func"] = Dynamics.forward_dynamics_torque_muscle_driven_with_contact
         ProblemType.__configure_torque_driven(nlp)
 
         u = MX()
@@ -136,3 +179,13 @@ class ProblemType:
         nlp["nu"] = nlp["u"].rows()
 
         nlp["has_controls"]["muscles"] = nlp["nbMuscle"]
+
+        symbolic_states = MX.sym("x", nlp["nx"], 1)
+        symbolic_controls = MX.sym("u", nlp["nu"], 1)
+        nlp["dynamics_func"] = Function(
+            "ForwardDyn",
+            [symbolic_states, symbolic_controls],
+            [Dynamics.forward_dynamics_torque_muscle_driven_with_contact(symbolic_states, symbolic_controls, nlp)],
+            ["x", "u"],
+            ["xdot"],
+        ).expand()  # .map(nlp["ns"], "thread", 2)
