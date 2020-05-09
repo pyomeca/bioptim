@@ -27,25 +27,25 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-            biorbd_model,
-            problem_type,
-            number_shooting_points,
-            phase_time,
-            objective_functions,
-            X_init,
-            U_init,
-            X_bounds,
-            U_bounds,
-            constraints=(),
-            external_forces=(),
-            ode_solver=OdeSolver.RK,
-            all_generalized_mapping=None,
-            q_mapping=None,
-            q_dot_mapping=None,
-            tau_mapping=None,
-            is_cyclic_objective=False,
-            is_cyclic_constraint=False,
-            show_online_optim=False,
+        biorbd_model,
+        problem_type,
+        number_shooting_points,
+        phase_time,
+        X_init,
+        U_init,
+        X_bounds,
+        U_bounds,
+        objective_functions=(),
+        constraints=(),
+        external_forces=(),
+        ode_solver=OdeSolver.RK,
+        all_generalized_mapping=None,
+        q_mapping=None,
+        q_dot_mapping=None,
+        tau_mapping=None,
+        is_cyclic_objective=False,
+        is_cyclic_constraint=False,
+        show_online_optim=False,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -376,14 +376,7 @@ class OptimalControlProgram:
         )
         for nlp in reduced_ocp.nlp:
             nlp["f_ext"] = 0
-            del (
-                nlp["model"],
-                nlp["x"],
-                nlp["u"],
-                nlp["X"],
-                nlp["U"],
-                nlp["f_ext"]
-            )
+            del (nlp["model"], nlp["x"], nlp["u"], nlp["X"], nlp["U"], nlp["f_ext"])
         return reduced_ocp
 
     @staticmethod
@@ -396,6 +389,9 @@ class OptimalControlProgram:
 
     @staticmethod
     def load(biorbd_model_path, name):
+        if isinstance(biorbd_model_path, str):
+            biorbd_model_path = [biorbd_model_path]
+
         with open(name, "rb") as file:
             data = pickle.load(file)
             ocp = data["ocp"]

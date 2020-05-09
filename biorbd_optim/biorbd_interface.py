@@ -8,18 +8,23 @@ def convert_array_to_external_forces(all_f_ext):
 
     if not isinstance(all_f_ext, (list, tuple)):
         raise RuntimeError(
-            "f_ext should be a list of (6 x nb_external_forces x nb_shooting) or (6 x nb_shooting) matrix")
+            "f_ext should be a list of (6 x nb_external_forces x nb_shooting) or (6 x nb_shooting) matrix"
+        )
 
     sv_over_all_phases = []
     for f_ext in all_f_ext:
         f_ext = np.array(f_ext)
         if len(f_ext.shape) < 2 or len(f_ext.shape) > 3:
-            raise RuntimeError("f_ext should be a list of (6 x nb_external_forces x nb_shooting) or (6 x nb_shooting) matrix")
+            raise RuntimeError(
+                "f_ext should be a list of (6 x nb_external_forces x nb_shooting) or (6 x nb_shooting) matrix"
+            )
         if len(f_ext.shape) == 2:
             f_ext = f_ext[:, :, np.newaxis]
 
         if f_ext.shape[0] != 6:
-            raise RuntimeError("f_ext should be a list of (6 x nb_external_forces x nb_shooting) or (6 x nb_shooting) matrix")
+            raise RuntimeError(
+                "f_ext should be a list of (6 x nb_external_forces x nb_shooting) or (6 x nb_shooting) matrix"
+            )
 
         sv_over_phase = []
         for node in range(f_ext.shape[2]):
