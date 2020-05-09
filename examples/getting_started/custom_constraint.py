@@ -1,5 +1,5 @@
 """
-File that shows an example of using a custom constraint.
+File that shows an example of a custom constraint.
 As an example, this custom constraint reproduces exactly the behavior of the ALIGN_MARKERS constraint.
 """
 import biorbd
@@ -18,15 +18,17 @@ from biorbd_optim import (
     OdeSolver,
 )
 
+
 def custom_func_align_markers(ocp, nlp, t, x, u, first_marker_idx, second_marker_idx):
-    nq = nlp["q_mapping"].reduce.len
+    nq = nlp['nbQ']
     val = []
     for v in x:
-        q = nlp["q_mapping"].expand.map(v[:nq])
+        q = v[:nq]
         first_marker = nlp["model"].marker(q, first_marker_idx).to_mx()
         second_marker = nlp["model"].marker(q, second_marker_idx).to_mx()
         val = vertcat(val, first_marker - second_marker)
     return val
+
 
 def prepare_ocp(biorbd_model_path, show_online_optim=False, ode_solver=OdeSolver.RK):
     # --- Options --- #
@@ -46,13 +48,12 @@ def prepare_ocp(biorbd_model_path, show_online_optim=False, ode_solver=OdeSolver
 
     # Constraints
     constraints = (
-        {"type": Constraint.CUSTOM, "function":custom_func_align_markers, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
+        {"type": Constraint.CUSTOM, "function": custom_func_align_markers, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
         {"type": Constraint.CUSTOM, "function": custom_func_align_markers, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
     )
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
-
     for i in range(1, 6):
         X_bounds.first_node_min[i] = 0
         X_bounds.last_node_min[i] = 0
