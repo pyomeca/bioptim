@@ -20,7 +20,7 @@ from biorbd_optim import (
 
 
 def custom_func_align_markers(ocp, nlp, t, x, u, first_marker_idx, second_marker_idx):
-    nq = nlp['nbQ']
+    nq = nlp["nbQ"]
     val = []
     for v in x:
         q = v[:nq]
@@ -48,8 +48,20 @@ def prepare_ocp(biorbd_model_path, show_online_optim=False, ode_solver=OdeSolver
 
     # Constraints
     constraints = (
-        {"type": Constraint.CUSTOM, "function": custom_func_align_markers, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
-        {"type": Constraint.CUSTOM, "function": custom_func_align_markers, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
+        {
+            "type": Constraint.CUSTOM,
+            "function": custom_func_align_markers,
+            "instant": Instant.START,
+            "first_marker_idx": 0,
+            "second_marker_idx": 1,
+        },
+        {
+            "type": Constraint.CUSTOM,
+            "function": custom_func_align_markers,
+            "instant": Instant.END,
+            "first_marker_idx": 0,
+            "second_marker_idx": 2,
+        },
     )
 
     # Path constraint

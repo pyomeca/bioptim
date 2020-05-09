@@ -17,6 +17,7 @@ from biorbd_optim import (
     ShowResult,
 )
 
+
 def custom_func_phase_transition(ocp, nlp, t, x, u, first_marker_idx, second_marker_idx):
     nq = nlp["q_mapping"].reduce.len
     for v in x:
@@ -25,6 +26,7 @@ def custom_func_phase_transition(ocp, nlp, t, x, u, first_marker_idx, second_mar
         second_marker = nlp["model"].marker(q, second_marker_idx).to_mx()
 
     return nlp - ocp.nlp[nlp["phase_idx"] + 1]
+
 
 def prepare_ocp(
     model_path, phase_time, number_shooting_points, show_online_optim=False, use_symmetry=True,
@@ -230,9 +232,9 @@ if __name__ == "__main__":
         if i == 0:
             contact_forces[cs_map[i], : nlp["ns"] + 1] = nlp["contact_forces_func"](x, u)
         else:
-            contact_forces[
-                cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1
-            ] = nlp["contact_forces_func"](x, u)
+            contact_forces[cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1] = nlp[
+                "contact_forces_func"
+            ](x, u)
 
     names_contact_forces = ocp.nlp[0]["model"].contactNames()
     for i, elt in enumerate(contact_forces):

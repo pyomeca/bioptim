@@ -201,7 +201,7 @@ if __name__ == "__main__":
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
-    symbolic_states = MX.sym("x", n_q , 1)
+    symbolic_states = MX.sym("x", n_q, 1)
     markers_func = Function(
         "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"],
     ).expand()

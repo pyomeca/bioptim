@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
     names_contact_forces = ocp.nlp[0]["model"].contactNames()
     for i, elt in enumerate(contact_forces):
-        plt.plot(np.linspace(0, t, ns+1)[:-1], elt, label=f"{names_contact_forces[i].to_string()}")
+        plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, label=f"{names_contact_forces[i].to_string()}")
     plt.legend()
     plt.grid()
     plt.title("Contact forces")
