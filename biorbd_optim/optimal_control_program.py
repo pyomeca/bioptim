@@ -36,7 +36,7 @@ class OptimalControlProgram:
             X_bounds,
             U_bounds,
             constraints=(),
-            forces_and_moments=(),
+            external_forces=(),
             ode_solver=OdeSolver.RK,
             all_generalized_mapping=None,
             q_mapping=None,
@@ -94,8 +94,9 @@ class OptimalControlProgram:
         self.is_cyclic_objective = is_cyclic_objective
 
         # External forces
-        if forces_and_moments != ():
-            self.__add_to_nlp("forces_and_moments", forces_and_moments, False)
+        if external_forces != ():
+            external_forces = convert_array_to_external_forces(external_forces)
+            self.__add_to_nlp("external_forces", external_forces, False)
 
         # Compute problem size
         if all_generalized_mapping is not None:
