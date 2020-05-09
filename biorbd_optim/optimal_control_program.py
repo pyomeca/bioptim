@@ -10,10 +10,11 @@ from casadi import MX, vertcat
 from .enums import OdeSolver
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions
-from .constraints import Constraint, ConstraintFunction
+from .constraints import ConstraintFunction
 from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback
 from .integrator import RK4
+from .biorbd_interface import convert_array_to_external_forces
 from .__version__ import __version__
 
 
@@ -198,17 +199,31 @@ class OptimalControlProgram:
             ode_opt["number_of_finite_elements"] = 5
 
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
+        nlp["dynamics"] = []
         if nlp["ode_solver"] == OdeSolver.RK:
+            ode_opt["idx"] = 0
             ode["ode"] = dynamics
-            nlp["dynamics"] = RK4(ode, ode_opt)
+            if "external_forces" in nlp:
+                for idx in range(len(nlp["external_forces"])):
+                    ode_opt["idx"] = idx
+                    nlp["dynamics"].append(RK4(ode, ode_opt))
+            else:
+                nlp["dynamics"].append(RK4(ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
             if isinstance(nlp["tf"], casadi.MX):
                 raise RuntimeError("OdeSolver.COLLOCATION cannot be used while optimizing the time parameter")
-            nlp["dynamics"] = casadi.integrator("integrator", "collocation", ode, ode_opt)
+            if "external_forces" in nlp:
+                raise RuntimeError("COLLOCATION cannot be used with external_forces")
+            nlp["dynamics"].append(casadi.integrator("integrator", "collocation", ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.CVODES:
             if isinstance(nlp["tf"], casadi.MX):
                 raise RuntimeError("OdeSolver.CVODES cannot be used while optimizing the time parameter")
-            nlp["dynamics"] = casadi.integrator("integrator", "cvodes", ode, ode_opt)
+            if "external_forces" in nlp:
+                raise RuntimeError("CVODES cannot be used with external_forces")
+            nlp["dynamics"].append(casadi.integrator("integrator", "cvodes", ode, ode_opt))
+
+        if len(nlp["dynamics"]) == 1:
+            nlp["dynamics"] = nlp["dynamics"] * nlp["ns"]
 
     def __define_multiple_shooting_nodes_per_phase(self, nlp, idx_phase):
         """
