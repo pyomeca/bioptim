@@ -74,8 +74,7 @@ class OptimalControlProgram:
         self.nb_phases = len(biorbd_model)
         self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
-        self.__add_to_nlp("phase_idx", range(self.nb_phases), True)
-
+        self.__add_to_nlp("phase_idx", [i for i in range(self.nb_phases)], False)
 
         # Prepare some variables
         self.__init_penality(constraints, "constraints")
