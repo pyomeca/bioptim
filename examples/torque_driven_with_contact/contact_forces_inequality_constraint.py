@@ -23,8 +23,6 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     # Model path
     biorbd_model = biorbd.Model(model_path)
     torque_min, torque_max, torque_init = -500, 500, 0
-
-    q_mapping = BidirectionalMapping(Mapping(range(biorbd_model.nbQ())), Mapping(range(biorbd_model.nbQ())))
     tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
 
     # Add objective functions
@@ -83,8 +81,6 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
         X_bounds,
         U_bounds,
         constraints,
-        q_mapping=q_mapping,
-        q_dot_mapping=q_mapping,
         tau_mapping=tau_mapping,
         show_online_optim=show_online_optim,
     )
