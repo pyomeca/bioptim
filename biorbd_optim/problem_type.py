@@ -189,3 +189,15 @@ class ProblemType:
             ["x", "u"],
             ["xdot"],
         ).expand()  # .map(nlp["ns"], "thread", 2)
+
+        nlp["contact_forces_func"] = Function(
+            "contact_forces_func",
+            [symbolic_states, symbolic_controls],
+            [
+                Dynamics.forces_from_forward_dynamics_torque_muscle_driven_with_contact(
+                    symbolic_states, symbolic_controls, nlp
+                )
+            ],
+            ["x", "u"],
+            ["contact_forces"],
+        ).expand()
