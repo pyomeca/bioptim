@@ -1,10 +1,4 @@
-version 3
-
-// Informations générales
-root_actuated	0
-external_forces	0
-
-// DEFINITION DES SEGMENTS
+version 4
 
 // Seg0
 segment Seg0
@@ -40,25 +34,25 @@ segment Seg1
 endsegment
 
 // Contact
-    contact    Seg1_contact1
-        parent    Seg1
-        position    0 0 0
-        axis    yz
-    endcontact
+contact    Seg1_contact1
+    parent    Seg1
+    position    0 0 0
+    axis    yz
+endcontact
 
-    contact    Seg1_contact2
-        parent    Seg1
-        position    0 0.35 0
-        axis    z
-    endcontact
+contact    Seg1_contact2
+    parent    Seg1
+    position    0 0.35 0
+    axis    z
+endcontact
 
 // Markers
-    marker    Seg1_contact_marker1
-        parent    Seg1
-        position    0 0 0
-    endmarker
+marker    Seg1_contact_marker1
+    parent    Seg1
+    position    0 0 0
+endmarker
 
-    marker    Seg1_contact_marker2
-        parent    Seg1
-        position    0 0.35 0
-    endmarker
+marker    Seg1_contact_marker2
+    parent    Seg1
+    position    0 0.35 0
+endmarker
