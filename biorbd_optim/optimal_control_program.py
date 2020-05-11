@@ -14,7 +14,7 @@ from .constraints import ConstraintFunction
 from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback
 from .integrator import RK4
-from .biorbd_interface import convert_array_to_external_forces
+from .biorbd_interface import BiorbdInterface
 from .__version__ import __version__
 
 
@@ -96,7 +96,7 @@ class OptimalControlProgram:
 
         # External forces
         if external_forces != ():
-            external_forces = convert_array_to_external_forces(external_forces)
+            external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)
             self.__add_to_nlp("external_forces", external_forces, False)
 
         # Compute problem size
