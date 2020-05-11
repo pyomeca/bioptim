@@ -136,22 +136,30 @@ class InitialConditions(PathCondition):
         """
         if len(self.init) == 0:
             self.init = [0] * nb_elements
-        if self.init_lineaire:
+            self.initial_type = Initialization.CONSTANT
+
+        if self.initial_type == Initialization.CONSTANT:
+            if len(self.first_node_init) == 0:
+                self.first_node_init = self.init
+            if len(self.last_node_init) == 0:
+                self.last_node_init = self.init
+        elif self.initial_type == Initialization.LINEAR:
+            if len(self.first_node_init) == 0:
+                self.first_node_init = self.init[0::2]
+            if len(self.last_node_init) == 0:
+                self.last_node_init = self.init[1::2]
+
+        if self.initial_type == Initialization.LINEAR:
             self.regulation_private(self.init, 2 * nb_elements, "Init")
-        else:
+        elif self.initial_type == Initialization.CONSTANT:
             self.regulation_private(self.init, nb_elements, "Init")
 
-        if len(self.first_node_init) == 0:
-            self.first_node_init = self.init
-        if len(self.last_node_init) == 0:
-            self.last_node_init = self.init
-
-        if self.init_lineaire:
-            self.regulation_private(self.first_node_init,
-                                    2 * nb_elements, "First node init")
-            self.regulation_private(self.last_node_init,
-                                    2 * nb_elements, "Last node init")
-        else:
+        # if self.initial_type == Initialization.LINEAR:
+        #     self.regulation_private(self.first_node_init,
+        #                             2*nb_elements, "First node init")
+        #     self.regulation_private(self.last_node_init,
+        #                             2*nb_elements, "Last node init")
+        if self.initial_type == Initialization.CONSTANT:
             self.regulation_private(self.first_node_init,
                                     nb_elements, "First node init")
             self.regulation_private(self.last_node_init,
