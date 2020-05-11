@@ -51,11 +51,15 @@ class PlotOcp:
 
         horz, vert = 0, 0
         for i, fig in enumerate(self.all_figures):
-            fig.canvas.manager.window.move(int(vert * self.width_step), int(self.top_margin + horz * self.height_step))
-            vert += 1
-            if vert >= self.nb_vertical_windows:
-                horz += 1
-                vert = 0
+            try:
+                fig.canvas.manager.window.move(int(vert * self.width_step),
+                                               int(self.top_margin + horz * self.height_step))
+                vert += 1
+                if vert >= self.nb_vertical_windows:
+                    horz += 1
+                    vert = 0
+            except AttributeError:
+                pass
             fig.canvas.draw()
 
     def __init_time_vector(self):
