@@ -166,7 +166,7 @@ if __name__ == "__main__":
     # Define the problem
     biorbd_model = biorbd.Model("arm26.bioMod")
     final_time = 2
-    n_shooting_points = 9
+    n_shooting_points = 29
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
@@ -190,22 +190,23 @@ if __name__ == "__main__":
     # --- Show the results --- #
     muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
 
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
-    mus = controls["muscles"].to_matrix()
+    states, controls = Data.get_data(ocp, sol["x"])
+    q = states["q"]
+    qdot = states["q_dot"]
+    tau = controls["tau"]
+    mus = controls["muscles"]
 
     n_q = ocp.nlp[0]["model"].nbQ()
     n_mark = ocp.nlp[0]["model"].nbMarkers()
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
+    symbolic_states = MX.sym("x", n_q, 1)
     markers_func = Function(
-        "ForwardKin", [ocp.symbolic_states], [biorbd_model.markers(ocp.symbolic_states[:n_q])], ["q"], ["markers"],
+        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"],
     ).expand()
     for i in range(n_frames):
-        markers[:, :, i] = markers_func(np.concatenate((q[:, i], qdot[:, i])))
+        markers[:, :, i] = markers_func(q[:, i])
 
     plt.figure("Markers")
     for i in range(markers.shape[1]):

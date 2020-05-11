@@ -202,12 +202,12 @@ if __name__ == "__main__":
     # --- Show the results --- #
     muscle_excitations_ref = np.append(muscle_excitations_ref, muscle_excitations_ref[-1:, :], axis=0)
 
-    states_sol, controls_sol = Data.get_data_from_V(ocp, sol["x"])
-    q = states_sol["q"].to_matrix()
-    q_dot = states_sol["q_dot"].to_matrix()
-    activations = states_sol["muscles"].to_matrix()
-    tau = controls_sol["tau"].to_matrix()
-    excitations = controls_sol["muscles"].to_matrix()
+    states_sol, controls_sol = Data.get_data(ocp, sol["x"])
+    q = states_sol["q"]
+    q_dot = states_sol["q_dot"]
+    activations = states_sol["muscles"]
+    tau = controls_sol["tau"]
+    excitations = controls_sol["muscles"]
 
     n_q = ocp.nlp[0]["model"].nbQ()
     n_qdot = ocp.nlp[0]["model"].nbQdot()
@@ -215,11 +215,12 @@ if __name__ == "__main__":
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
+    symbolic_states = MX.sym("x", n_q, 1)
     markers_func = Function(
-        "ForwardKin", [ocp.symbolic_states], [biorbd_model.markers(ocp.symbolic_states[:n_q])], ["q"], ["markers"],
+        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"],
     ).expand()
     for i in range(n_frames):
-        markers[:, :, i] = markers_func(np.concatenate((q[:, i], q_dot[:, i], activations[:, i])))
+        markers[:, :, i] = markers_func(q[:, i])
 
     plt.figure("Markers")
     for i in range(markers.shape[1]):
