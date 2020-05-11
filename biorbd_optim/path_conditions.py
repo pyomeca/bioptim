@@ -1,82 +1,67 @@
+import numpy as np
+
 from .mapping import BidirectionalMapping, Mapping
-from .enums import Initialization
+from .enums import InterpolationType
 
 
 class PathCondition:
-    """
-    Parent class of Bounds and InitialConditions.
-    Uses only for methods overloading.
-    """
+    def __init__(self, val, nb_nodes=0, interpolation_type=InterpolationType.CONSTANT):
+        if nb_nodes == 0 and interpolation_type != InterpolationType.CONSTANT:
+            raise RuntimeError("nb_nodes must be defined for interpolation_type != InterpolationType.CONSTANT")
+        self.nb_nodes = nb_nodes
+        self.type = interpolation_type
 
-    @staticmethod
-    def regulation(var, nb_elements):
-        pass
+        val = np.array(val)
+        if len(val) == 1:
+            val = val[:, np.newaxis]
+        self.value = np.ndarray((val.shape[0], nb_nodes))
+        self.value[:, 0] = val[:, 0]
+        if interpolation_type == InterpolationType.LINEAR:
+            self.value[:, -1] = val[:, -1]
 
-    @staticmethod
-    def regulation_private(var, nb_elements, type):
-        if len(var) != nb_elements:
-            raise RuntimeError(f"Invalid number of {type} ({str(len(var))}), the expected size is {str(nb_elements)}")
+    def check_dimensions(self, nb_elements, condition_type):
+        if self.value.shape[0] != nb_elements:
+            raise RuntimeError(f"Invalid number of {condition_type} ({self.value.shape[1] }), the expected size is {str(nb_elements)}")
+
+        if self.type == InterpolationType.CONSTANT and self.value.shape[1] != 1:
+            raise RuntimeError(f"Invalid number of {condition_type} for InterpolationType.CONSTANT (ncols = {self.value.shape[1]}), the expected number of column is 1")
+        elif self.type == InterpolationType.LINEAR and self.value.shape[1] != 2:
+            raise RuntimeError(f"Invalid number of {condition_type} for InterpolationType.LINEAR (ncols = {self.value.shape[1]}), the expected number of column is 2")
+        else:
+            raise RuntimeError(f"InterpolationType is not implemented yet")
 
     def expand(self, other):
-        pass
+        self.value += other.value
 
 
-class Bounds(PathCondition):
+class Bounds:
     """
     Organizes bounds of states("X"), controls("U") and "V".
     """
 
-    def __init__(self, min_bound=(), max_bound=()):
-        """
-        There are 3 groups of nodes :
-        1. First node
-        2. Intermediates (= all nodes except first and last nodes)
-        3. Last node
-        Each group have 2 lists of bounds : one of minimum and one of maximum values.
+    def __init__(self, min_bound=(), max_bound=(), interpolation_type=InterpolationType.CONSTANT):
+        if isinstance(min_bound, PathCondition):
+            self.min = min_bound
+        else:
+            self.min = PathCondition(min_bound, interpolation_type)
 
-        For X and Y bounds, lists have the number of degree of freedom elements.
-        For V bounds, lists have number of degree of freedom elements * number of shooting points.
-        """
-        self.min = list(min_bound)
-        self.first_node_min = list(min_bound)
-        self.last_node_min = list(min_bound)
+        if isinstance(max_bound, PathCondition):
+            self.max = max_bound
+        else:
+            self.max = PathCondition(max_bound, interpolation_type)
 
-        self.max = list(max_bound)
-        self.first_node_max = list(max_bound)
-        self.last_node_max = list(max_bound)
-
-    def regulation(self, nb_elements):
+    def check_dimensions(self, nb_elements):
         """
         Detects if bounds are not correct (wrong size of list: different than degrees of freedom).
         Detects if first or last nodes are not complete, in that case they have same bounds than intermediates nodes.
         :param nb_elements: Length of each list.
         """
-        self.regulation_private(self.min, nb_elements, "Bound min")
-        self.regulation_private(self.max, nb_elements, "Bound max")
-
-        if len(self.first_node_min) == 0:
-            self.first_node_min = self.min
-        if len(self.last_node_min) == 0:
-            self.last_node_min = self.min
-
-        if len(self.first_node_max) == 0:
-            self.first_node_max = self.max
-        if len(self.last_node_max) == 0:
-            self.last_node_max = self.max
-
-        self.regulation_private(self.first_node_min, nb_elements, "Bound first node min")
-        self.regulation_private(self.first_node_max, nb_elements, "Bound first node max")
-        self.regulation_private(self.last_node_min, nb_elements, "Bound last node min")
-        self.regulation_private(self.last_node_max, nb_elements, "Bound last node max")
+        self.min.check_dimensions(nb_elements, "Bound min")
+        self.max.check_dimensions(nb_elements, "Bound max")
 
     def expand(self, other):
-        self.min += other.min
-        self.first_node_min += other.first_node_min
-        self.last_node_min += other.last_node_min
-
-        self.max += other.max
-        self.first_node_max += other.first_node_max
-        self.last_node_max += other.last_node_max
+        self.min.expand(other.min)
+        self.max.expand(other.max)
 
 
 class QAndQDotBounds(Bounds):
@@ -111,24 +96,14 @@ class QAndQDotBounds(Bounds):
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
 
-class InitialConditions(PathCondition):
-    def __init__(self, initial_guess=(), initial_type = Initialization.CONSTANT):
-        """
-        Organises initial values (for solver)
-        There are 3 groups of nodes :
-        1. First node
-        2. Intermediates (= all nodes without first and last nodes)
-        3. Last node
-        Each group have a list of initial values.
-        """
+class InitialConditions:
+    def __init__(self, initial_guess=(), interpolation_type=InterpolationType.CONSTANT):
+        if isinstance(initial_guess, PathCondition):
+            self.init = initial_guess
+        else:
+            self.init = PathCondition(initial_guess, interpolation_type)
 
-        # TODO: Add the capability to initialize using initial and final frame that linearly complete between
-        self.first_node_init = list(initial_guess)
-        self.init = list(initial_guess)
-        self.last_node_init = list(initial_guess)
-        self.initial_type = initial_type
-
-    def regulation(self, nb_elements):
+    def check_dimensions(self, nb_elements):
         """
         Detects if initial values are not given, in that case "0" is given for all degrees of freedom.
         Detects if initial values are not correct (wrong size of list: different than degrees of freedom).
@@ -167,8 +142,6 @@ class InitialConditions(PathCondition):
 
     def expand(self, other):
         self.init += other.init
-        self.first_node_init += other.first_node_init
-        self.last_node_init += other.last_node_init
 
     def get_init(self, initial, type = Initialization.CONSTANT, facteur = 1):
         if type == Initialization.CONSTANT:
