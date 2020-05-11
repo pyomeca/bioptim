@@ -132,17 +132,11 @@ def prepare_ocp(
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
-    X_bounds.first_node_min[0] = X_bounds.min[0] = X_bounds.last_node_min[0] = -2 * np.pi
-    X_bounds.first_node_max[0] = X_bounds.max[0] = X_bounds.last_node_max[0] = 2 * np.pi
-    X_bounds.first_node_min[1] = X_bounds.min[1] = X_bounds.last_node_min[1] = -2 * np.pi
-    X_bounds.first_node_max[1] = X_bounds.max[1] = X_bounds.last_node_max[1] = 2 * np.pi
+    X_bounds.min[[0, 1], :] = -2 * np.pi
+    X_bounds.max[[0, 1], :] = 2 * np.pi
 
-    X_bounds.first_node_min += [activation_min] * biorbd_model.nbMuscles()
-    X_bounds.first_node_max += [activation_max] * biorbd_model.nbMuscles()
-    X_bounds.min += [activation_min] * biorbd_model.nbMuscles()
-    X_bounds.max += [activation_max] * biorbd_model.nbMuscles()
-    X_bounds.last_node_min += [activation_min] * biorbd_model.nbMuscles()
-    X_bounds.last_node_max += [activation_max] * biorbd_model.nbMuscles()
+    # Add muscle to the bounds
+    X_bounds.concatenate(Bounds([activation_min] * biorbd_model.nbMuscles(), [activation_max] * biorbd_model.nbMuscles()))
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()) + [0] * biorbd_model.nbMuscles())

@@ -166,8 +166,8 @@ def prepare_ocp(
 
     # Initialize X_bounds
     X_bounds = [QAndQDotBounds(biorbd_model[i], all_generalized_mapping=q_mapping[i]) for i in range(nb_phases)]
-    X_bounds[0].first_node_min = pose_at_first_node + [0] * nb_qdot
-    X_bounds[0].first_node_max = pose_at_first_node + [0] * nb_qdot
+    X_bounds[0].min[:, 0] = pose_at_first_node + [0] * nb_qdot
+    X_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
     X_init = [

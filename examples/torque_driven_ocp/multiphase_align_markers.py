@@ -56,18 +56,13 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", show_online_optim=False, ode_so
     X_bounds = [QAndQDotBounds(biorbd_model[0]), QAndQDotBounds(biorbd_model[0]), QAndQDotBounds(biorbd_model[0])]
 
     for bounds in X_bounds:
-        for i in range(6):
-            if i != 0 and i != 2:
-                bounds.first_node_min[i] = 0
-                bounds.last_node_min[i] = 0
-                bounds.first_node_max[i] = 0
-                bounds.last_node_max[i] = 0
-    X_bounds[0].first_node_min[2] = 0.0
-    X_bounds[0].first_node_max[2] = 0.0
-    X_bounds[2].first_node_min[2] = 0.0
-    X_bounds[2].first_node_max[2] = 0.0
-    X_bounds[2].last_node_min[2] = 1.57
-    X_bounds[2].last_node_max[2] = 1.57
+        for i in [1, 3, 4, 5]:
+            bounds.min[i, [0, -1]] = 0
+            bounds.max[i, [0, -1]] = 0
+    X_bounds[0].min[2, 0] = 0.0
+    X_bounds[0].max[2, 0] = 0.0
+    X_bounds[2].min[2, [0, -1]] = [0.0, 1.57]
+    X_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
