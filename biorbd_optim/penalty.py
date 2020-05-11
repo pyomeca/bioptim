@@ -168,7 +168,6 @@ class PenaltyFunctionAbstract:
                 CoM = nlp["model"].CoM(q).to_mx()
                 CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
-
                 penalty_type._add_to_penalty(ocp, nlp, CoM_height, **extra_param)
 
         @staticmethod
@@ -218,8 +217,8 @@ class PenaltyFunctionAbstract:
             weight = None
             if "weight" in parameters.keys():
                 weight = parameters["weight"]
+                del parameters["weight"]
             del parameters["function"]
-            del parameters["weight"]
             val = func(ocp, nlp, t, x, u, **parameters)
             if weight is not None:
                 parameters["weight"] = weight
@@ -293,9 +292,7 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def _check_and_fill_tracking_data_size(data_to_track, target_size):
-        if data_to_track == ():
-            data_to_track = np.zeros(target_size)
-        else:
+        if (isinstance(data_to_track, np.ndarray) and data_to_track.any()) or data_to_track:
             if len(data_to_track.shape) != len(target_size):
                 if target_size[1] == 1 and len(data_to_track.shape) == 1:
                     # If we have a vector it is still okay
@@ -309,6 +306,8 @@ class PenaltyFunctionAbstract:
                     raise RuntimeError(
                         f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}"
                     )
+        else:
+            data_to_track = np.zeros(target_size)
         return data_to_track
 
     @staticmethod

@@ -12,24 +12,31 @@ from biorbd_optim import (
     Bounds,
     QAndQDotBounds,
     InitialConditions,
+    Dynamics,
+    Data,
+    ShowResult,
 )
 
 
+def custom_func_phase_transition(ocp, nlp, t, x, u, first_marker_idx, second_marker_idx):
+    nq = nlp["q_mapping"].reduce.len
+    for v in x:
+        q = nlp["q_mapping"].expand.map(v[:nq])
+        first_marker = nlp["model"].marker(q, first_marker_idx).to_mx()
+        second_marker = nlp["model"].marker(q, second_marker_idx).to_mx()
+
+    return nlp - ocp.nlp[nlp["phase_idx"] + 1]
+
+
 def prepare_ocp(
-    show_online_optim=False, use_symmetry=True,
+    model_path, phase_time, number_shooting_points, show_online_optim=False, use_symmetry=True,
 ):
     # --- Options --- #
     # Model path
-    biorbd_model = (
-        biorbd.Model("jumper2contacts.bioMod"),
-        biorbd.Model("jumper1contacts.bioMod"),
-    )
+    biorbd_model = [biorbd.Model(elt) for elt in model_path]
+
     nb_phases = len(biorbd_model)
     torque_min, torque_max, torque_init = -1000, 1000, 0
-
-    # Problem parameters
-    number_shooting_points = [8, 8]
-    phase_time = [0.4, 0.2]
 
     if use_symmetry:
         q_mapping = BidirectionalMapping(
@@ -69,19 +76,31 @@ def prepare_ocp(
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
         constraints_first_phase.append(
-            {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0,}
+            {
+                "type": Constraint.CONTACT_FORCE_INEQUALITY,
+                "direction": "GREATER_THAN",
+                "instant": Instant.ALL,
+                "contact_force_idx": i,
+                "boundary": 0,
+            }
         )
     contact_axes = (1, 3)
     for i in contact_axes:
         constraints_second_phase.append(
-            {"type": Constraint.CONTACT_FORCE_GREATER_THAN, "instant": Instant.ALL, "idx": i, "boundary": 0,}
+            {
+                "type": Constraint.CONTACT_FORCE_INEQUALITY,
+                "direction": "GREATER_THAN",
+                "instant": Instant.ALL,
+                "contact_force_idx": i,
+                "boundary": 0,
+            }
         )
     constraints_first_phase.append(
         {
             "type": Constraint.NON_SLIPPING,
             "instant": Instant.ALL,
-            "normal_component_idx": (1, 2, 4, 5),
-            "tangential_component_idx": (0, 3),
+            "normal_component_idx": (1, 2),
+            "tangential_component_idx": 0,
             "static_friction_coefficient": 0.5,
         }
     )
@@ -89,8 +108,8 @@ def prepare_ocp(
         {
             "type": Constraint.NON_SLIPPING,
             "instant": Instant.ALL,
-            "normal_component_idx": (1, 3),
-            "tangential_component_idx": (0, 2),
+            "normal_component_idx": 1,
+            "tangential_component_idx": 0,
             "static_friction_coefficient": 0.5,
         }
     )
@@ -183,55 +202,75 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True, use_symmetry=False)
-
-    # --- Solve the program --- #
+def run_and_save_ocp(model_path):
+    ocp = prepare_ocp(
+        model_path=model_path,
+        phase_time=[0.4, 0.2],
+        number_shooting_points=[6, 6],
+        show_online_optim=False,
+        use_symmetry=True,
+    )
     sol = ocp.solve()
+    OptimalControlProgram.save(ocp, sol, "jumper2contacts_sol")
+
+
+if __name__ == "__main__":
+    model_path = ("jumper2contacts.bioMod", "jumper1contacts.bioMod")
+    run_and_save_ocp(model_path)
+    ocp, sol = OptimalControlProgram.load(biorbd_model_path=model_path, name="jumper2contacts_sol.bo")
 
     from matplotlib import pyplot as plt
-    from casadi import vertcat, Function
+    from casadi import vertcat, Function, MX
 
     contact_forces = np.zeros((6, sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
     cs_map = (range(6), (0, 1, 3, 4))
 
     for i, nlp in enumerate(ocp.nlp):
-        CS_func = Function(
-            "Contact_force_inequality",
-            [ocp.symbolic_states, ocp.symbolic_controls],
-            [nlp["model"].getConstraints().getForce().to_mx()],
-            ["x", "u"],
-            ["CS"],
-        ).expand()
-
-        q, q_dot, u = ProblemType.get_data_from_V(ocp, sol["x"], i)
-        x = vertcat(q, q_dot)
+        states, controls = Data.get_data(ocp, sol["x"], phase_idx=i)
+        q = states["q"], q_dot = states["q_dot"], u = controls["tau"]
+        x = np.concatenate(q, q_dot)
         if i == 0:
-            contact_forces[cs_map[i], : nlp["ns"] + 1] = CS_func(x, u)
+            contact_forces[cs_map[i], : nlp["ns"] + 1] = nlp["contact_forces_func"](x, u)
         else:
-            contact_forces[cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1] = CS_func(x, u)
-    plt.plot(contact_forces.T)
+            contact_forces[cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1] = nlp[
+                "contact_forces_func"
+            ](x, u)
+
+    names_contact_forces = ocp.nlp[0]["model"].contactNames()
+    for i, elt in enumerate(contact_forces):
+        plt.plot(elt.T, label=f"{names_contact_forces[i].to_string()}")
+    plt.legend()
+    plt.grid()
+    plt.title("Contact forces")
     plt.show()
 
-    try:
-        from BiorbdViz import BiorbdViz
+    # try:
+    #     from BiorbdViz import BiorbdViz
+    #
+    #     states, _ = Data.get_data_from_V(ocp, sol["x"])
+    #     q = states["q"].to_matrix()
+    #     q_dot = states["q_dot"].to_matrix()
+    #     x = vertcat(q, q_dot)
+    #     q_total = np.ndarray((ocp.nlp[0]["model"].nbQ(), sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
+    #     for i in range(len(ocp.nlp)):
+    #         if i == 0:
+    #             q_total[:, : ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(x[i])[:, :-1]
+    #         else:
+    #             q_total[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i][
+    #                 "q_mapping"
+    #             ].expand.map(x[i])[:, :-1]
+    #     q_total[:, -1] = ocp.nlp[-1]["q_mapping"].expand.map(x[-1])[:, -1]
+    #
+    #     # np.save("results2", q.T)
+    #
+    #     b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
+    #     b.load_movement(q_total.T)
+    #     b.exec()
+    # except ModuleNotFoundError:
+    #     print("Install BiorbdViz if you want to have a live view of the optimization")
+    #     plt.show()
 
-        x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
-        q = np.ndarray((ocp.nlp[0]["model"].nbQ(), sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
-        for i in range(len(ocp.nlp)):
-            if i == 0:
-                q[:, : ocp.nlp[i]["ns"]] = ocp.nlp[i]["q_mapping"].expand.map(x[i])[:, :-1]
-            else:
-                q[:, ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + ocp.nlp[i]["ns"]] = ocp.nlp[i][
-                    "q_mapping"
-                ].expand.map(x[i])[:, :-1]
-        q[:, -1] = ocp.nlp[-1]["q_mapping"].expand.map(x[-1])[:, -1]
-
-        # np.save("results2", q.T)
-
-        b = BiorbdViz(loaded_model=ocp.nlp[0]["model"])
-        b.load_movement(q.T)
-        b.exec()
-    except ModuleNotFoundError:
-        print("Install BiorbdViz if you want to have a live view of the optimization")
-        plt.show()
+    # --- Show results --- #
+    result = ShowResult(ocp, sol)
+    result.graphs()
+    result.animate(nb_frames=40)
