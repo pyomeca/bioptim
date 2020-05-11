@@ -35,12 +35,12 @@ class Instant(Enum):
     END = "end"
     ALL = "all"
 
-class Initialization(Enum):
+
+class InterpolationType(Enum):
     """
-    Two kind of initialization of your problem value (State X or Control U)
-    CONSTANT: constant initialization. Give the list of your unic value.
-    LINEAR: linear initialization. Give the list of the first and last value.
-    By default, the Initialization will be CONSTANT.
+    Type of interpolation
+    CONSTANT: Constant value
+    LINEAR: Linear
     """
 
     CONSTANT = 0
