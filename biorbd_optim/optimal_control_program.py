@@ -5,7 +5,7 @@ import biorbd
 import casadi
 from casadi import MX, vertcat
 
-from .enums import OdeSolver
+from .enums import OdeSolver, Initialization
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions
 from .constraints import Constraint, ConstraintFunction

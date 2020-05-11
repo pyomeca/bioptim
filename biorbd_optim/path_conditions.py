@@ -1,4 +1,5 @@
 from .mapping import BidirectionalMapping, Mapping
+from .enums import Initialization
 
 
 class PathCondition:
