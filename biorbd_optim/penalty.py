@@ -173,18 +173,6 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_contact_forces(penalty_type, ocp, nlp, t, x, u, contacts_idx=(), data_to_track=(), **extra_param):
-            contact_forces_func = Function(
-                "contact_forces",
-                [ocp.symbolic_states, ocp.symbolic_controls],
-                [
-                    Dynamics.forces_from_forward_dynamics_torque_muscle_driven_with_contact(
-                        ocp.symbolic_states, ocp.symbolic_controls, nlp
-                    )
-                ],
-                ["x", "u"],
-                ["contact_forces"],
-            ).expand()
-
             n_contact = nlp["model"].nbContacts()
             contacts_idx = PenaltyFunctionAbstract._check_and_fill_index(contacts_idx, n_contact, "contacts_idx")
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
@@ -192,7 +180,7 @@ class PenaltyFunctionAbstract:
             )
 
             for i, v in enumerate(u):
-                force = contact_forces_func(x[i], u[i])
+                force = nlp["contact_forces_func"](x[i], u[i])
                 val = force[contacts_idx] - data_to_track[t[i], contacts_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
