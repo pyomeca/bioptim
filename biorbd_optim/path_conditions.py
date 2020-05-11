@@ -112,7 +112,7 @@ class QAndQDotBounds(Bounds):
 
 
 class InitialConditions(PathCondition):
-    def __init__(self, initial_guess=(), init_lineaire = False):
+    def __init__(self, initial_guess=(), initial_type = Initialization.CONSTANT):
         """
         Organises initial values (for solver)
         There are 3 groups of nodes :
@@ -126,7 +126,7 @@ class InitialConditions(PathCondition):
         self.first_node_init = list(initial_guess)
         self.init = list(initial_guess)
         self.last_node_init = list(initial_guess)
-        self.init_lineaire = init_lineaire
+        self.initial_type = initial_type
 
     def regulation(self, nb_elements):
         """

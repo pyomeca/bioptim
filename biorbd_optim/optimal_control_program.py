@@ -254,12 +254,12 @@ class OptimalControlProgram:
             else:
                 V_bounds.min[offset : offset + nlp["nu"]] = nlp["U_bounds"].min
                 V_bounds.max[offset : offset + nlp["nu"]] = nlp["U_bounds"].max
-            if nlp["U_init"].init_lineaire:
+            if nlp["U_init"].initial_type == Initialization.LINEAR:
                 V_init.init[offset : offset + nlp["nu"]] = [
                     (nlp["U_init"].init[1 + 2*i] - nlp["U_init"].init[2*i]) * (k/nlp["ns"]) +
                     nlp["U_init"].init[2*i] for i in range(nlp["nu"])
                 ]
-            else:
+            elif nlp["U_init"].initial_type == Initialization.CONSTANT:
                 V_init.init[offset: offset + nlp["nu"]] = nlp["U_init"].init
             offset += nlp["nu"]
 
