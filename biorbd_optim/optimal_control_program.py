@@ -7,9 +7,9 @@ import biorbd
 import casadi
 from casadi import MX, vertcat
 
-from .enums import OdeSolver, Initialization
+from .enums import OdeSolver
 from .mapping import BidirectionalMapping
-from .path_conditions import Bounds, InitialConditions
+from .path_conditions import Bounds, InitialConditions, InterpolationType
 from .constraints import Constraint, ConstraintFunction
 from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback
@@ -108,20 +108,20 @@ class OptimalControlProgram:
         self.__add_to_nlp("X_bounds", X_bounds, False)
         self.__add_to_nlp("U_bounds", U_bounds, False)
         for i in range(self.nb_phases):
-            self.nlp[i]["X_bounds"].regulation(self.nlp[i]["nx"])
-            self.nlp[i]["U_bounds"].regulation(self.nlp[i]["nu"])
+            self.nlp[i]["X_bounds"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
+            self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"])
 
         # Prepare initial guesses
         self.__add_to_nlp("X_init", X_init, False)
         self.__add_to_nlp("U_init", U_init, False)
         for i in range(self.nb_phases):
-            self.nlp[i]["X_init"].regulation(self.nlp[i]["nx"])
-            self.nlp[i]["U_init"].regulation(self.nlp[i]["nu"])
+            self.nlp[i]["X_init"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
+            self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"])
 
         # Variables and constraint for the optimization program
         self.V = []
-        self.V_bounds = Bounds()
-        self.V_init = InitialConditions()
+        self.V_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
+        self.V_init = InitialConditions(interpolation_type=InterpolationType.CONSTANT)
         for i in range(self.nb_phases):
             self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
 
@@ -138,7 +138,7 @@ class OptimalControlProgram:
 
         # Prepare constraints
         self.g = []
-        self.g_bounds = Bounds()
+        self.g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
         ConstraintFunction.continuity_constraint(self)
         if len(constraints) > 0:
             for i in range(self.nb_phases):
@@ -215,62 +215,37 @@ class OptimalControlProgram:
 
         nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
         V = MX.sym("V_" + str(idx_phase), nV)
-        V_bounds = Bounds([0] * nV, [0] * nV)
-        V_init = InitialConditions([0] * nV)
+        V_bounds = Bounds([0] * nV, [0] * nV, interpolation_type=InterpolationType.CONSTANT)
+        V_init = InitialConditions([0] * nV, interpolation_type=InterpolationType.CONSTANT)
 
         offset = 0
         for k in range(nlp["ns"]):
             X.append(V.nz[offset : offset + nlp["nx"]])
-            if k == 0:
-                V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].first_node_min
-                V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].first_node_max
-            else:
-                V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].min
-                V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].max
-            V_init.init[offset : offset + nlp["nx"]] = V_init.get_init(
-                nlp["X_init"], nlp["X_init"].initial_type, (k/nlp["ns"])
-            )
+            V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
+            V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
+            V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
             offset += nlp["nx"]
-            # if nlp["X_init"].initial_type:
-            #     V_init.init[offset : offset + nlp["nx"]] = [
-            #         (nlp["X_init"].init[1 + 2*i] - nlp["X_init"].init[2*i]) * (k/nlp["ns"]) +
-            #         nlp["X_init"].init[2*i] for i in range(nlp["nx"])
-            #     ]
-            # else:
-            #     V_init.init[offset: offset + nlp["nx"]] = nlp["X_init"].init
-            # offset += nlp["nx"]
 
             U.append(V.nz[offset : offset + nlp["nu"]])
-            if k == 0:
-                V_bounds.min[offset : offset + nlp["nu"]] = nlp["U_bounds"].first_node_min
-                V_bounds.max[offset : offset + nlp["nu"]] = nlp["U_bounds"].first_node_max
-            else:
-                V_bounds.min[offset : offset + nlp["nu"]] = nlp["U_bounds"].min
-                V_bounds.max[offset : offset + nlp["nu"]] = nlp["U_bounds"].max
-            if nlp["U_init"].initial_type == Initialization.LINEAR:
-                V_init.init[offset : offset + nlp["nu"]] = [
-                    (nlp["U_init"].init[1 + 2*i] - nlp["U_init"].init[2*i]) * (k/nlp["ns"]) +
-                    nlp["U_init"].init[2*i] for i in range(nlp["nu"])
-                ]
-            elif nlp["U_init"].initial_type == Initialization.CONSTANT:
-                V_init.init[offset: offset + nlp["nu"]] = nlp["U_init"].init
+            V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
+            V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
+            V_init.init[offset: offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
             offset += nlp["nu"]
 
         X.append(V.nz[offset : offset + nlp["nx"]])
-        V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].last_node_min
-        V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].last_node_max
-        V_init.init[offset: offset + nlp["nx"]] = V_init.get_init(
-            nlp["X_init"], nlp["X_init"].initial_type
-        )
+        V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=nlp["ns"])
+        V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=nlp["ns"])
+        V_init.init[offset: offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=nlp["ns"])
 
-        V_bounds.regulation(nV)
-        V_init.regulation(nV)
+        V_bounds.check_and_adjust_dimensions(nV, 1)
+        V_init.check_and_adjust_dimensions(nV, 1)
 
         nlp["X"] = X
         nlp["U"] = U
         self.V = vertcat(self.V, V)
-        self.V_bounds.expand(V_bounds)
-        self.V_init.expand(V_init)
+
+        self.V_bounds.concatenate(V_bounds)
+        self.V_init.concatenate(V_init)
 
     def __init_phase_time(self, phase_time):
         if isinstance(phase_time, (int, float)):
@@ -307,13 +282,13 @@ class OptimalControlProgram:
         self.param_to_optimize["time"] = P
 
         nV = len(initial_guess)
-        V_bounds = Bounds(minimum, maximum)
-        V_bounds.regulation(nV)
-        self.V_bounds.expand(V_bounds)
+        V_bounds = Bounds(minimum, maximum, interpolation_type=InterpolationType.CONSTANT)
+        V_bounds.check_and_adjust_dimensions(nV, 1)
+        self.V_bounds.concatenate(V_bounds)
 
-        V_init = InitialConditions(initial_guess)
-        V_init.regulation(nV)
-        self.V_init.expand(V_init)
+        V_init = InitialConditions(initial_guess, interpolation_type=InterpolationType.CONSTANT)
+        V_init.check_and_adjust_dimensions(nV, 1)
+        self.V_init.concatenate(V_init)
 
     def __init_penality(self, penalities, penality_type):
         if len(penalities) > 0:
