@@ -169,3 +169,11 @@ class InitialConditions(PathCondition):
         self.init += other.init
         self.first_node_init += other.first_node_init
         self.last_node_init += other.last_node_init
+
+    def get_init(self, initial, type = Initialization.CONSTANT, facteur = 1):
+        if type == Initialization.CONSTANT:
+            return initial
+        elif type == Initialization.LINEAR:
+            return [(initial.init[1 + 2*i] - initial.init[2*i]) * facteur +
+                    initial.init[2*i] for i in range(len(initial.init)//2)
+                    ]
