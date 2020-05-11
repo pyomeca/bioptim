@@ -238,14 +238,18 @@ class OptimalControlProgram:
             else:
                 V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].min
                 V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].max
-            if nlp["X_init"].init_lineaire:
-                V_init.init[offset : offset + nlp["nx"]] = [
-                    (nlp["X_init"].init[1 + 2*i] - nlp["X_init"].init[2*i]) * (k/nlp["ns"]) +
-                    nlp["X_init"].init[2*i] for i in range(nlp["nx"])
-                ]
-            else:
-                V_init.init[offset: offset + nlp["nx"]] = nlp["X_init"].init
+            V_init.init[offset : offset + nlp["nx"]] = V_init.get_init(
+                nlp["X_init"], nlp["X_init"].initial_type, (k/nlp["ns"])
+            )
             offset += nlp["nx"]
+            # if nlp["X_init"].initial_type:
+            #     V_init.init[offset : offset + nlp["nx"]] = [
+            #         (nlp["X_init"].init[1 + 2*i] - nlp["X_init"].init[2*i]) * (k/nlp["ns"]) +
+            #         nlp["X_init"].init[2*i] for i in range(nlp["nx"])
+            #     ]
+            # else:
+            #     V_init.init[offset: offset + nlp["nx"]] = nlp["X_init"].init
+            # offset += nlp["nx"]
 
             U.append(V.nz[offset : offset + nlp["nu"]])
             if k == 0:
@@ -266,14 +270,9 @@ class OptimalControlProgram:
         X.append(V.nz[offset : offset + nlp["nx"]])
         V_bounds.min[offset : offset + nlp["nx"]] = nlp["X_bounds"].last_node_min
         V_bounds.max[offset : offset + nlp["nx"]] = nlp["X_bounds"].last_node_max
-        if nlp["X_init"].init_lineaire:
-            V_init.init[offset: offset + nlp["nx"]] = [
-                (nlp["X_init"].init[1 + 2*i] - nlp["X_init"].init[2*i]) +
-                nlp["X_init"].init[2*i] for i in range(nlp["nx"])
-            ]
-        else:
-            V_init.init[offset: offset + nlp["nx"]] = nlp["X_init"].init
-        offset += nlp["nx"]
+        V_init.init[offset: offset + nlp["nx"]] = V_init.get_init(
+            nlp["X_init"], nlp["X_init"].initial_type
+        )
 
         V_bounds.regulation(nV)
         V_init.regulation(nV)
