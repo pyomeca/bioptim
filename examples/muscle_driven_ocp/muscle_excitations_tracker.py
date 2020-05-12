@@ -220,14 +220,26 @@ if __name__ == "__main__":
     for i in range(markers.shape[1]):
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers[:, i, :].T, "r--")
+    plt.xlabel('Time')
+    plt.ylabel('Markers Position')
+
+    plt.figure("Q")
+    plt.plot(np.linspace(0, 2, n_shooting_points + 1), x_ref[:n_q, :].T, "k")
+    plt.plot(np.linspace(0, 2, n_shooting_points + 1), q.T, "r--")
+    plt.xlabel('Time')
+    plt.ylabel('Q values')
 
     plt.figure("Muscle activations")
     plt.plot(np.linspace(0, 2, n_shooting_points + 1), muscle_activations_ref, "k")
     plt.plot(np.linspace(0, 2, n_shooting_points + 1), activations.T, "r--")
+    plt.xlabel('Time')
+    plt.ylabel('Torques values (N.m)')
 
     plt.figure("Muscle excitations")
     plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_excitations_ref, "k", where="post")
     plt.step(np.linspace(0, 2, n_shooting_points + 1), excitations.T, "r--", where="post")
+    plt.xlabel('Time')
+    plt.ylabel('Excitation values')
 
     # --- Plot --- #
     plt.show()
