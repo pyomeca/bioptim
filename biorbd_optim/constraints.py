@@ -3,8 +3,9 @@ from enum import Enum
 
 from casadi import vertcat, sum1
 
-from .enums import Instant
+from .enums import Instant, InterpolationType
 from .penalty import PenaltyType, PenaltyFunctionAbstract
+from .path_conditions import Bounds
 
 # TODO: Convert the constraint in CasADi function?
 
@@ -26,11 +27,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             for i in range(len(u)):
                 ocp.g = vertcat(ocp.g, nlp["contact_forces_func"](x[i], u[i])[contact_force_idx, 0])
                 if direction == "GREATER_THAN":
-                    ocp.g_bounds.min.append(boundary)
-                    ocp.g_bounds.max.append(inf)
+                    ocp.g_bounds.concatenate(Bounds(boundary, inf, interpolation_type=InterpolationType.CONSTANT))
                 elif direction == "LESSER_THAN":
-                    ocp.g_bounds.min.append(-inf)
-                    ocp.g_bounds.max.append(boundary)
+                    ocp.g_bounds.concatenate(Bounds(-inf, boundary, interpolation_type=InterpolationType.CONSTANT))
                 else:
                     raise RuntimeError(
                         "direction parameter of contact_force_inequality must either be GREATER_THAN or LESSER_THAN"
@@ -65,12 +64,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                 # Since it is non-slipping normal forces are supposed to be greater than zero
                 ocp.g = vertcat(ocp.g, mu * normal_contact_force - tangential_contact_force)
-                ocp.g_bounds.min.append(0)
-                ocp.g_bounds.max.append(inf)
+                ocp.g_bounds.concatenate(Bounds(0, inf, interpolation_type=InterpolationType.CONSTANT))
 
                 ocp.g = vertcat(ocp.g, mu * normal_contact_force + tangential_contact_force)
-                ocp.g_bounds.min.append(0)
-                ocp.g_bounds.max.append(inf)
+                ocp.g_bounds.concatenate(Bounds(0, inf, interpolation_type=InterpolationType.CONSTANT))
 
     @staticmethod
     def add(ocp, nlp):
@@ -118,8 +115,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     def _add_to_penalty(ocp, nlp, val, inf_bound=0, max_bound=0, **extra_param):
         ocp.g = vertcat(ocp.g, val)
         for _ in range(val.rows()):
-            ocp.g_bounds.min.append(inf_bound)
-            ocp.g_bounds.max.append(max_bound)
+            ocp.g_bounds.concatenate(Bounds(inf_bound, max_bound, interpolation_type=InterpolationType.CONSTANT))
 
     @staticmethod
     def _parameter_modifier(constraint_function, parameters):
