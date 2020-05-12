@@ -1,12 +1,10 @@
 from enum import Enum
 from math import inf
 
-from casadi import Function
 import numpy as np
 import biorbd
 
 from .enums import Instant, Axe
-from .dynamics import Dynamics
 
 
 class PenaltyFunctionAbstract:
