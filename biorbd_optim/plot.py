@@ -52,8 +52,9 @@ class PlotOcp:
         horz, vert = 0, 0
         for i, fig in enumerate(self.all_figures):
             try:
-                fig.canvas.manager.window.move(int(vert * self.width_step),
-                                               int(self.top_margin + horz * self.height_step))
+                fig.canvas.manager.window.move(
+                    int(vert * self.width_step), int(self.top_margin + horz * self.height_step)
+                )
                 vert += 1
                 if vert >= self.nb_vertical_windows:
                     horz += 1
