@@ -56,6 +56,9 @@ class ProblemType:
             ["contact_forces"],
         ).expand()
 
+        nlp["nbContact"] = nlp["model"].nbContacts()
+        nlp["additional_plots"] = {"contact_forces": nlp["contact_forces_func"]}
+
     @staticmethod
     def __configure_torque_driven(nlp):
         """
@@ -189,3 +192,6 @@ class ProblemType:
             ["x", "u"],
             ["xdot"],
         ).expand()  # .map(nlp["ns"], "thread", 2)
+
+        nlp["nbContact"] = nlp["model"].nbContacts()
+        nlp["additional_plots"] = {"contact_forces": nlp["nbContact"]}
