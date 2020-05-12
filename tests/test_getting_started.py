@@ -6,8 +6,18 @@ from pathlib import Path
 
 import pytest
 import numpy as np
+from casadi import MX
+import biorbd
 
-from biorbd_optim import Data, OdeSolver, OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping
+from biorbd_optim import (
+    Data,
+    OdeSolver,
+    OptimalControlProgram,
+    Bounds,
+    InitialConditions,
+    BidirectionalMapping,
+    Mapping,
+)
 
 # Load pendulum
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -57,27 +67,25 @@ def test_pendulum(ode_solver):
     ocp_load, sol_load = OptimalControlProgram.load(name="pendulum_ocp_sol.bo")
     for key in sol.keys():
         np.testing.assert_almost_equal(np.array(sol[key]), np.array(sol_load[key]))
+    sol_from_load = ocp_load.solve()
+    for key in sol.keys():
+        np.testing.assert_almost_equal(np.array(sol[key]), np.array(sol_from_load[key]))
 
-    np.testing.assert_almost_equal(np.array(ocp.nb_phases),  np.array(ocp_load.nb_phases))
-
-    #todo key before and after
     def deep_assert(dict_loaded, dict_original):
         if isinstance(dict_loaded, dict):
             for key in dict_loaded:
-                print(f"\t{key}")
-                try:
-                    deep_assert(dict_loaded[key], dict_original[key])
-                except:
-                    print("coucou")
+                deep_assert(dict_loaded[key], dict_original[key])
         elif isinstance(dict_loaded, (list, tuple)):
             for i in range(len(dict_loaded)):
                 deep_assert(dict_loaded[i], dict_original[i])
-        elif isinstance(dict_loaded, (OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping, OdeSolver)):
+        elif isinstance(
+                dict_loaded,
+                (OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping, OdeSolver)
+        ):
             for key in dir(dict_loaded):
-                print(key)
                 deep_assert(getattr(dict_loaded, key), getattr(dict_original, key))
         else:
-            if not callable(dict_loaded):
+            if not callable(dict_loaded) and not isinstance(dict_loaded, (MX, biorbd.Model)):
                 try:
                     elem_loaded = np.asarray(dict_loaded, dtype=float)
                     elem_original = np.array(dict_original, dtype=float)
@@ -86,25 +94,7 @@ def test_pendulum(ode_solver):
                     pass
 
     deep_assert(ocp_load, ocp)
-
-    for idx_phase in range (len(ocp.nlp)):
-        for key in ocp.nlp[idx_phase].keys():
-            print(key)
-            if key not in ['model', 'q_mapping', 'q_dot_mapping', 'tau_mapping', 'problem_type', 'has_states', 'has_controls', 'dynamics_func', 'X_bounds', 'U_bounds', 'X_init', 'U_init', 'ode_solver', 'dynamics']:
-                np.testing.assert_almost_equal(np.array(ocp.nlp[idx_phase][key]), np.array(ocp_load.nlp[idx_phase][key]))
-
-            if key in ['has_states', 'has_controls']:
-                for k in ocp.nlp[idx_phase][key].keys():
-                    np.testing.assert_almost_equal(np.array(ocp.nlp[idx_phase][key][k]),np.array(ocp_load.nlp[idx_phase][key][k]))
-
-            # if key in ['dynamics_func', 'dynamics']:
-            #todo    test with str ??
-            #     np.testing.assert_almost_equal(np.array(str(ocp.nlp[idx_phase][key])), np.array(str(ocp_load.nlp[idx_phase][key])))
-
-            if key in ['ode_solver']:
-                np.testing.assert_almost_equal(np.array(ocp.nlp[idx_phase][key].value), np.array(ocp_load.nlp[idx_phase][key].value))
-
-           #todo check 'q_mapping','q_dot_mapping','tau_mapping','problem_type','X_bounds','U_bounds','X_init','U_init'
+    deep_assert(ocp, ocp_load)
 
 
 # Load pendulum_min_time_Mayer
