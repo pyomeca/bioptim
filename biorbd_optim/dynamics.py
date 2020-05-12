@@ -17,7 +17,7 @@ class Dynamics:
         if "external_forces" in nlp:
             dxdt = MX(nlp["nx"], nlp["ns"])
             for i, f_ext in enumerate(nlp["external_forces"]):
-                qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau, f_ext).to_mx()
+                qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau, f_ext[i]).to_mx()
                 qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
                 dxdt[:, i] = vertcat(qdot_reduced, qddot_reduced)
         else:
