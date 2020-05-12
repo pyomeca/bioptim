@@ -34,3 +34,15 @@ class Instant(Enum):
     INTERMEDIATES = "intermediates"
     END = "end"
     ALL = "all"
+
+
+class InterpolationType(Enum):
+    """
+    Type of interpolation
+    CONSTANT: Constant value
+    LINEAR: Linear
+    """
+
+    CONSTANT = 0
+    CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT = 1
+    # LINEAR = 2

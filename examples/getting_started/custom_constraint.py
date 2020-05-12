@@ -66,13 +66,10 @@ def prepare_ocp(biorbd_model_path, show_online_optim=False, ode_solver=OdeSolver
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
-    for i in range(1, 6):
-        X_bounds.first_node_min[i] = 0
-        X_bounds.last_node_min[i] = 0
-        X_bounds.first_node_max[i] = 0
-        X_bounds.last_node_max[i] = 0
-    X_bounds.last_node_min[2] = 1.57
-    X_bounds.last_node_max[2] = 1.57
+    X_bounds.min[1:6, [0, -1]] = 0
+    X_bounds.max[1:6, [0, -1]] = 0
+    X_bounds.min[2, -1] = 1.57
+    X_bounds.max[2, -1] = 1.57
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
