@@ -83,7 +83,7 @@ class OptimalControlProgram:
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
         for nlp in self.nlp:
-            if nlp["number_shooting_points"] < 1:
+            if nlp["ns"] < 1:
                 raise RuntimeError("Number of shooting points must be at least 1")
         self.initial_phase_time = phase_time
         phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time)

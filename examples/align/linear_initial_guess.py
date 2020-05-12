@@ -18,7 +18,7 @@ from biorbd_optim import (
 
 
 def prepare_ocp(
-    biorbd_model_path, final_time, number_shooting_points, ode_solver, initialize_near_solution, show_online_optim=False
+    biorbd_model_path, final_time, number_shooting_points, ode_solver, show_online_optim=False
 ):
     # --- Options --- #
     # Model path
@@ -57,20 +57,15 @@ def prepare_ocp(
     X_bounds.max[2, -1] = 1.57
 
     # Initial guess
-    if initialize_near_solution:
-        # TODO: Verify these values
-        q_init = np.array(((1.5, 1.5, 1, 1), (1.5, 1.5, -1, -1))).T
-        q_dot_init = np.array(((0.7, 0.7, 0.6, 0.6), (0.7, 0.7, 0.6, 0.6))).T
-    else:
-        q_init = np.array(((1., 1., 1, 1), (-1., -1., -1, -1))).T
-        q_dot_init = np.array(((2, 2, 2, 2), (0.5, 0.5, 0.5, 0.5))).T
+    q_init = np.array(((1., 0., 0., 0.46364761), (2., 0., 1.57, 0.78539785))).T
+    q_dot_init = np.array(((0, 0, 0, 0), (0, 0, 0, 0))).T
     X_init = InitialConditions(np.concatenate((q_init, q_dot_init)), interpolation_type=InterpolationType.LINEAR)
 
     # Define control path constraint
     U_bounds = Bounds(
         [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque(),
     )
-    tau_init = np.array(((25, 25, 25, 25), (-25, -25, -25, -25))).T
+    tau_init = np.array(((6.45997035, 10.47049302, 8.55628251, 3.57204643), (-4.46859579, 11.15084889, -10.15098446, 1.519847 ))).T
     U_init = InitialConditions(tau_init, interpolation_type=InterpolationType.LINEAR)
 
     # ------------- #
@@ -94,10 +89,9 @@ def prepare_ocp(
 if __name__ == "__main__":
     ocp = prepare_ocp(
         biorbd_model_path="cube_and_line.bioMod",
-        number_shooting_points=5,
-        final_time=1,
+        number_shooting_points=30,
+        final_time=1.0,
         ode_solver=OdeSolver.RK,
-        initialize_near_solution=True,
         show_online_optim=False,
     )
 
