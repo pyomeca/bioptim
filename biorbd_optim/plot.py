@@ -8,8 +8,6 @@ from casadi import MX, Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
 from .variable_optimization import Data
 
-double_screen = True
-
 class PlotOcp:
     def __init__(self, ocp):
         for i in range(1, ocp.nb_phases):
@@ -146,9 +144,8 @@ class PlotOcp:
 
     def _organize_windows(self, nb_windows):
         height = tkinter.Tk().winfo_screenheight()
-        width = tkinter.Tk().winfo_screenwidth()
-        if double_screen:
-            width /=2
+        width = tkinter.Tk().winfo_screenwidth() if True else tkinter.Tk().winfo_screenwidth() / 2
+
         self.nb_vertical_windows, self.nb_horizontal_windows = PlotOcp._generate_windows_size(nb_windows)
         self.top_margin = height / 15
         self.height_step = (height - self.top_margin) / self.nb_horizontal_windows
