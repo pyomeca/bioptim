@@ -59,22 +59,27 @@ def prepare_ocp(
     # Initial guess
     if initialize_near_solution:
         # TODO: Verify these values
-        X_init = InitialConditions(np.array(((1.5, 1.5, 1, 1, 0.7, 0.7, 0.6, 0.6),
-                                             (1.5, 1.5, -1, -1, 0.7, 0.7, 0.6, 0.6))).T,
-                                   nb_shooting=number_shooting_points,
-                                   interpolation_type=InterpolationType.LINEAR)
+        X_init = InitialConditions(
+            np.array(((1.5, 1.5, 1, 1, 0.7, 0.7, 0.6, 0.6), (1.5, 1.5, -1, -1, 0.7, 0.7, 0.6, 0.6))).T,
+            nb_shooting=number_shooting_points,
+            interpolation_type=InterpolationType.LINEAR,
+        )
     else:
-        X_init = InitialConditions(np.array(((1, 1, 1, 1, 0, 0, 0, 0), (-1, -1, -1, -1, 0, 0, 0, 0))).T,
-                                   nb_shooting=number_shooting_points,
-                                   interpolation_type=InterpolationType.LINEAR)
+        X_init = InitialConditions(
+            np.array(((1, 1, 1, 1, 0, 0, 0, 0), (-1, -1, -1, -1, 0, 0, 0, 0))).T,
+            nb_shooting=number_shooting_points,
+            interpolation_type=InterpolationType.LINEAR,
+        )
 
     # Define control path constraint
     U_bounds = Bounds(
         [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque(),
     )
-    U_init = InitialConditions(np.array(((25, 25, 25, 25), (-25, -25, -25, -25))).T,
-                               nb_shooting=number_shooting_points-1,
-                               interpolation_type=InterpolationType.LINEAR)
+    U_init = InitialConditions(
+        np.array(((25, 25, 25, 25), (-25, -25, -25, -25))).T,
+        nb_shooting=number_shooting_points - 1,
+        interpolation_type=InterpolationType.LINEAR,
+    )
 
     # ------------- #
 

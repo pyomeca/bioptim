@@ -229,13 +229,13 @@ class OptimalControlProgram:
             U.append(V.nz[offset : offset + nlp["nu"]])
             V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
             V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
-            V_init.init[offset: offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
+            V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
             offset += nlp["nu"]
 
         X.append(V.nz[offset : offset + nlp["nx"]])
         V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=nlp["ns"])
         V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=nlp["ns"])
-        V_init.init[offset: offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=nlp["ns"])
+        V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=nlp["ns"])
 
         V_bounds.check_and_adjust_dimensions(nV, 1)
         V_init.check_and_adjust_dimensions(nV, 1)
