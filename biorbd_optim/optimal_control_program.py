@@ -73,6 +73,29 @@ class OptimalControlProgram:
             raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "biorbd_optim": __version__}
 
+        biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
+        self.original_values = {
+            "biorbd_model": biorbd_model_path,
+            "problem_type": problem_type,
+            "number_shooting_points": number_shooting_points,
+            "phase_time": phase_time,
+            "X_init": copy(X_init),
+            "U_init": copy(U_init),
+            "X_bounds": copy(X_bounds),
+            "U_bounds": copy(X_bounds),
+            "objective_functions": objective_functions,
+            "constraints": constraints,
+            "external_forces": external_forces,
+            "ode_solver": ode_solver,
+            "all_generalized_mapping": all_generalized_mapping,
+            "q_mapping": q_mapping,
+            "q_dot_mapping": q_dot_mapping,
+            "tau_mapping": tau_mapping,
+            "is_cyclic_objective": is_cyclic_objective,
+            "is_cyclic_constraint": is_cyclic_constraint,
+            "show_online_optim": show_online_optim
+        }
+
         self.nb_phases = len(biorbd_model)
         self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
@@ -355,39 +378,21 @@ class OptimalControlProgram:
         # Solve the problem
         return solver.call(arg)
 
-    def _get_a_reduced_ocp(self):
-        reduced_ocp = copy(self)
-        del (
-            reduced_ocp.J,
-            reduced_ocp.V,
-            reduced_ocp.V_bounds,
-            reduced_ocp.V_init,
-            reduced_ocp.g,
-            reduced_ocp.g_bounds,
-            reduced_ocp.show_online_optim_callback,
-        )
-        for nlp in reduced_ocp.nlp:
-            nlp["f_ext"] = 0
-            del (nlp["model"], nlp["x"], nlp["u"], nlp["X"], nlp["U"], nlp["f_ext"])
-        return reduced_ocp
-
-    @staticmethod
-    def save(ocp, sol, name):
+    def save(self, sol, name):
         _, ext = os.path.splitext(name)
         if ext == "":
             name = name + ".bo"
         with open(name, "wb") as file:
-            pickle.dump({"ocp": OptimalControlProgram._get_a_reduced_ocp(ocp), "sol": sol}, file)
+            pickle.dump({"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file)
 
     @staticmethod
-    def load(biorbd_model_path, name):
-        if isinstance(biorbd_model_path, str):
-            biorbd_model_path = [biorbd_model_path]
-
+    def load(name):
         with open(name, "rb") as file:
             data = pickle.load(file)
-            ocp = data["ocp"]
+            ocp = OptimalControlProgram(**data["ocp_initilializer"])
+            for key in data["version"].keys:
+                if data[key] != ocp.version[key]:
+                    raise RuntimeError(f"Version of {key} from file ({data[key]}) is not the same as the installed "
+                                       f"version (ocp.version[key])")
             sol = data["sol"]
-            for i, nlp in enumerate(ocp.nlp):
-                nlp["model"] = biorbd.Model(biorbd_model_path[i])
         return (ocp, sol)
