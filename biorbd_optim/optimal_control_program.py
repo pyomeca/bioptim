@@ -79,10 +79,10 @@ class OptimalControlProgram:
             "problem_type": problem_type,
             "number_shooting_points": number_shooting_points,
             "phase_time": phase_time,
-            "X_init": copy(X_init),
-            "U_init": copy(U_init),
-            "X_bounds": copy(X_bounds),
-            "U_bounds": copy(X_bounds),
+            "X_init": X_init,
+            "U_init": U_init,
+            "X_bounds": X_bounds,
+            "U_bounds": U_bounds,
             "objective_functions": objective_functions,
             "constraints": constraints,
             "external_forces": external_forces,
@@ -93,7 +93,7 @@ class OptimalControlProgram:
             "tau_mapping": tau_mapping,
             "is_cyclic_objective": is_cyclic_objective,
             "is_cyclic_constraint": is_cyclic_constraint,
-            "show_online_optim": show_online_optim
+            "show_online_optim": show_online_optim,
         }
 
         self.nb_phases = len(biorbd_model)
@@ -390,9 +390,11 @@ class OptimalControlProgram:
         with open(name, "rb") as file:
             data = pickle.load(file)
             ocp = OptimalControlProgram(**data["ocp_initilializer"])
-            for key in data["version"].keys:
-                if data[key] != ocp.version[key]:
-                    raise RuntimeError(f"Version of {key} from file ({data[key]}) is not the same as the installed "
-                                       f"version (ocp.version[key])")
+            for key in data["versions"].keys():
+                if data["versions"][key] != ocp.version[key]:
+                    raise RuntimeError(
+                        f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
+                        f"installed version ({ocp.version[key]})"
+                    )
             sol = data["sol"]
         return (ocp, sol)
