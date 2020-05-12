@@ -69,7 +69,13 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
+    # --- Save the optimal control program and the solution --- #
+    ocp.save(sol, "pendulum")
+
+    # --- Load the optimal control program and the solution --- #
+    ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")
+
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
+    result = ShowResult(ocp_load, sol_load)
     result.graphs()
     result.animate()
