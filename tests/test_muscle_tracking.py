@@ -25,6 +25,14 @@ spec = importlib.util.spec_from_file_location(
 muscle_excitations_tracker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(muscle_excitations_tracker)
 
+# Load muscle_activations_contact_tracker
+PROJECT_FOLDER = Path(__file__).parent / ".."
+spec = importlib.util.spec_from_file_location(
+    "muscle_activations_contact_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/muscle_activations_contacts_tracker.py",
+)
+muscle_activations_contact_tracker = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(muscle_activations_contact_tracker)
+
 
 def test_muscle_activations_and_states_tracking():
     # Define the problem
@@ -150,4 +158,71 @@ def test_muscle_excitation_and_markers_tracking():
     )
     np.testing.assert_almost_equal(
         mus_controls[:, -1], np.array([0.54672713, 0.18492921, 0.96888485, 0.77504726, 0.93912423, 0.89459345]),
+    )
+
+def test_muscle_activation_and_contacts_tracking():
+    # Define the problem
+    model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod"
+    biorbd_model = biorbd.Model(model_path)
+    final_time = 0.3
+    nb_shooting = 10
+
+    # Generate random data to fit
+    contact_forces_ref = np.array([[-81.76167127, -69.61586405, -35.68564618, -15.37939873,
+            -15.79649488, -19.48643318, -24.83072827, -31.37006652,
+            -38.72133782, -45.3732221],
+           [51.10694314, 52.00705138, 57.14841462, 63.25205608,
+            65.99940832, 67.33152066, 66.99052864, 64.46060997,
+            59.00664793, 50.29377455],
+           [158.47794037, 139.07750225, 89.50719005, 59.7699281,
+            55.18121509, 53.45748305, 52.5388107, 51.95213223,
+            51.51348129, 50.34932116]])
+    muscle_activations_ref = np.array([[0.49723853, 0.49488324, 0.50091057, 0.51505782, 0.53542531,
+        0.56369329, 0.60171651, 0.64914307, 0.70026122, 0.47032099,
+        0.47032099]])
+
+    biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
+    ocp = muscle_activations_contact_tracker.prepare_ocp(
+        model_path,
+        final_time,
+        nb_shooting,
+        muscle_activations_ref[:, :-1].T,
+        contact_forces_ref.T,
+        show_online_optim=False,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 7.06749952e-11)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (80, 1))
+    np.testing.assert_almost_equal(g, np.zeros((80, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau, mus_controls = (
+        states["q"],
+        states["q_dot"],
+        controls["tau"],
+        controls["muscles"],
+    )
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([ 0.  ,  0.  , -0.75,  0.75]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([-0.28197616,  0.13068096, -0.1179598 ,  0.1179598]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0., 0., 0., 0.]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([-1.05077202,  0.12452694,  2.11625027, -2.11625027]))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([-9.97208713,   9.2899607 ,  -2.72577237, -54.82441629]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([61.5351003 ,  13.60300419,  12.83275737, -21.52321688]))
+    np.testing.assert_almost_equal(
+        mus_controls[:, 0], np.array([0.49723965]),
+    )
+    np.testing.assert_almost_equal(
+        mus_controls[:, -1], np.array([0.47037075]),
     )
