@@ -18,13 +18,9 @@ from biorbd_optim import (
     ShowResult,
 )
 
+
 def prepare_ocp(
-    model_path,
-    phase_time,
-    number_shooting_points,
-    muscle_activations_ref,
-    contact_forces_ref,
-    show_online_optim,
+    model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref, show_online_optim,
 ):
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -58,10 +54,18 @@ def prepare_ocp(
 
     # Define control path constraint
     U_bounds = [
-        Bounds(min_bound=[torque_min] * biorbd_model.nbGeneralizedTorque() + [activation_min] * biorbd_model.nbMuscleTotal(), max_bound=[torque_max] * biorbd_model.nbGeneralizedTorque() + [activation_max] * biorbd_model.nbMuscleTotal())
+        Bounds(
+            min_bound=[torque_min] * biorbd_model.nbGeneralizedTorque()
+            + [activation_min] * biorbd_model.nbMuscleTotal(),
+            max_bound=[torque_max] * biorbd_model.nbGeneralizedTorque()
+            + [activation_max] * biorbd_model.nbMuscleTotal(),
+        )
     ]
     U_init = [
-        InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque() + [activation_init] * biorbd_model.nbMuscleTotal())]
+        InitialConditions(
+            [torque_init] * biorbd_model.nbGeneralizedTorque() + [activation_init] * biorbd_model.nbMuscleTotal()
+        )
+    ]
 
     # ------------- #
 

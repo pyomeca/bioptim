@@ -65,10 +65,15 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
 
     # Define control path constraint
     U_bounds = [
-        Bounds(min_bound=[torque_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(), max_bound=[torque_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal())
+        Bounds(
+            min_bound=[torque_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(),
+            max_bound=[torque_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal(),
+        )
     ]
 
-    U_init = [InitialConditions([torque_init] * tau_mapping.reduce.len + [activation_init] * biorbd_model.nbMuscleTotal())]
+    U_init = [
+        InitialConditions([torque_init] * tau_mapping.reduce.len + [activation_init] * biorbd_model.nbMuscleTotal())
+    ]
     # ------------- #
 
     return OptimalControlProgram(
