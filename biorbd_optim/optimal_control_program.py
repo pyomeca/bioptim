@@ -303,7 +303,7 @@ class OptimalControlProgram:
                         raise RuntimeError(f"Each phase must declares its {penality_type} (even if it is empty)")
             self.__add_to_nlp(penality_type, penalities, False)
 
-    def solve(self):
+    def solve(self, solver='ipopt', options_ipopt={}):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
@@ -312,15 +312,23 @@ class OptimalControlProgram:
         # NLP
         nlp = {"x": self.V, "f": self.J, "g": self.g}
 
-        opts = {
-            "ipopt.tol": 1e-6,
-            "ipopt.max_iter": 1000,
-            "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
-            "ipopt.limited_memory_max_history": 50,
-            "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
-            "iteration_callback": self.show_online_optim_callback,
-        }
-        solver = casadi.nlpsol("nlpsol", "ipopt", nlp, opts)
+        options_common = {"iteration_callback": self.show_online_optim_callback,}
+        if solver == "ipopt":
+            options_default = {
+                "ipopt.tol": 1e-6,
+                "ipopt.max_iter": 1000,
+                "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
+                "ipopt.limited_memory_max_history": 50,
+                "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
+            }
+            for key in options_ipopt:
+                if key[:6] != "ipopt.":
+                    options_ipopt[f"ipopt.{key}"] = options_ipopt[key]
+                    del options_ipopt[key]
+            opts = {**options_default, **options_common, **options_ipopt}
+            solver = casadi.nlpsol("nlpsol", "ipopt", nlp, opts)
+        else:
+            raise RuntimeError("Available solvers are: 'ipopt'")
 
         # Bounds and initial guess
         arg = {
