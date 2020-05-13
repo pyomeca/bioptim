@@ -97,8 +97,8 @@ class ProblemType:
         nlp["nbQdot"] = nlp["q_dot_mapping"].reduce.len
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
 
-        nlp["has_states"] = {"q": nlp["q_mapping"].reduce.len, "q_dot": nlp["q_dot_mapping"].reduce.len}
-        nlp["has_controls"] = {"tau": nlp["tau_mapping"].reduce.len}
+        nlp["var_states"] = {"q": nlp["q_mapping"].reduce.len, "q_dot": nlp["q_dot_mapping"].reduce.len}
+        nlp["var_controls"] = {"tau": nlp["tau_mapping"].reduce.len}
 
     @staticmethod
     def __configure_contact(nlp):
@@ -124,7 +124,7 @@ class ProblemType:
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["nu"] = nlp["u"].rows()
 
-        nlp["has_controls"]["muscles"] = nlp["nbMuscle"]
+        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
@@ -157,8 +157,8 @@ class ProblemType:
         nlp["nu"] = nlp["u"].rows()
         nlp["nx"] = nlp["x"].rows()
 
-        nlp["has_states"]["muscles"] = nlp["nbMuscle"]
-        nlp["has_controls"]["muscles"] = nlp["nbMuscle"]
+        nlp["var_states"]["muscles"] = nlp["nbMuscle"]
+        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
@@ -187,7 +187,7 @@ class ProblemType:
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["nu"] = nlp["u"].rows()
 
-        nlp["has_controls"]["muscles"] = nlp["nbMuscle"]
+        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
@@ -198,4 +198,16 @@ class ProblemType:
             ["x", "u"],
             ["xdot"],
         ).expand()  # .map(nlp["ns"], "thread", 2)
+
+        nlp["contact_forces_func"] = Function(
+            "contact_forces_func",
+            [symbolic_states, symbolic_controls],
+            [
+                Dynamics.forces_from_forward_dynamics_torque_muscle_driven_with_contact(
+                    symbolic_states, symbolic_controls, nlp
+                )
+            ],
+            ["x", "u"],
+            ["contact_forces"],
+        ).expand()
         ProblemType.__configure_contact(nlp)

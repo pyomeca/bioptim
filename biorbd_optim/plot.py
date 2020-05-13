@@ -48,19 +48,18 @@ class PlotOcp:
 
         running_cmp = 0
         self.matching_mapping = dict()
-        for state in ocp.nlp[0]["has_states"]:
-            if state in ocp.nlp[0]["has_controls"]:
+        for state in ocp.nlp[0]["var_states"]:
+            if state in ocp.nlp[0]["var_controls"]:
                 self.matching_mapping[state] = running_cmp
-            running_cmp += ocp.nlp[0]["has_states"][state]
+            running_cmp += ocp.nlp[0]["var_states"][state]
         self._organize_windows(
-            len(self.ocp.nlp[0]["has_states"]) + len(self.ocp.nlp[0]["has_controls"]) - len(self.matching_mapping)
+            len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]) - len(self.matching_mapping)
         )
 
-        self.__create_plots(ocp.nlp[0]["has_states"], "state")
-        self.__create_plots(ocp.nlp[0]["has_controls"], "control")
-
-        self.custom_plots_func = []
-        self.custom_variable_sizes = {}
+        self.plot_func = {}
+        self.variable_sizes = {}
+        self.__create_plots(ocp.nlp[0]["var_states"], "state")
+        self.__create_plots(ocp.nlp[0]["var_controls"], "control")
         self.__create_custom_plots(ocp.nlp, "custom_plots")
 
         horz, vert = 0, 0
@@ -146,31 +145,34 @@ class PlotOcp:
                         variable_sizes[key] = nlp[var_type][key].size
                     else:
                         variable_sizes[key] = max(variable_sizes[key], nlp[var_type][key].size)
-        self.custom_variable_sizes[var_type] = variable_sizes
-        if not self.custom_variable_sizes[var_type]:
+        self.variable_sizes[var_type] = variable_sizes
+        if not variable_sizes:
             return
 
-        for variable in self.custom_variable_sizes[var_type]:
-            nb = self.custom_variable_sizes[var_type][variable]
+        self.plot_func[var_type] = []
+        for variable in variable_sizes:
+            nb = variable_sizes[variable]
             nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
             axes = self.__add_new_axis(variable, nb, nb_rows, nb_cols)
 
             plots = []
-            for i, t in enumerate(self.t_per_phase):
+            for i, nlp in enumerate(all_nlp):
+                t = self.t_per_phase[i]
                 if variable in all_nlp[i][var_type]:
-                    self.custom_plots_func.append([variable, all_nlp[i][var_type][variable]])
+                    self.plot_func[var_type].append([variable, all_nlp[i][var_type][variable]])
                 else:
                     pass
 
                 for k, ax in enumerate(axes):
-                    mapping = self.custom_plots_func[-1][1].phase_mappings.map_idx
-                    if k < len(mapping) - 1:
-                        axes[k].set_title(self.custom_plots_func[-1][1].legend[mapping[k]])
-                    plots.append(
-                        ax.plot(t, np.zeros((t.shape[0], 1)), '.-', color="tab:green", zorder=0)
-                    )
+                    mapping = self.plot_func[var_type][-1][1].phase_mappings.map_idx
+                    if k < len(mapping):
+                        axes[k].set_title(self.plot_func[var_type][-1][1].legend[mapping[k]])
                     ax.grid(color="k", linestyle="--", linewidth=0.5)
                     ax.set_xlim(0, self.t[-1])
+                    if var_type == "custom_plots":
+                        plots.append(
+                            ax.plot(t, np.zeros((t.shape[0], 1)), '.-', color="tab:green", zorder=0)
+                        )
 
             for ax in axes:
                 intersections_time = self.find_phases_intersections()
@@ -193,7 +195,8 @@ class PlotOcp:
 
         for k in range(nb):
             if "q" in variable or "q_dot" in variable or "tau" in variable:
-                axes[k].set_title(self.ocp.nlp[0]["model"].nameDof()[k].to_string())
+                mapping = self.ocp.nlp[0][f"{variable}_mapping"].expand.map_idx
+                axes[k].set_title(self.ocp.nlp[0]["model"].nameDof()[mapping[k]].to_string())
             elif "muscles" in variable:
                 axes[k].set_title(self.ocp.nlp[0]["model"].muscleNames()[k].to_string())
         idx_center = nb_rows * nb_cols - int(nb_cols / 2) - 1
@@ -241,23 +244,23 @@ class PlotOcp:
             self.__update_ydata(data_states, i)
             self.__update_ydata(data_controls, i)
 
-        if self.custom_plots_func:
+        if "custom_plots" in self.plot_func:
             data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, concatenate=False)
             for i, nlp in enumerate(self.ocp.nlp):
                 state = np.ndarray((0, nlp['ns'] + 1))
-                for s in nlp['has_states']:
+                for s in nlp['var_states']:
                     if isinstance(data_states_per_phase[s], (list, tuple)):
                         state = np.concatenate((state, data_states_per_phase[s][i]))
                     else:
                         state = np.concatenate((state, data_states_per_phase[s]))
                 control = np.ndarray((0, nlp['ns'] + 1))
-                for s in nlp['has_controls']:
+                for s in nlp['var_controls']:
                     if isinstance(data_controls_per_phase[s], (list, tuple)):
                         control = np.concatenate((control, data_controls_per_phase[s][i]))
                     else:
                         control = np.concatenate((control, data_controls_per_phase[s]))
-                plot = self.custom_plots_func[i]
-                y = {"y": np.empty((self.custom_variable_sizes["custom_plots"][plot[0]], len(self.t_per_phase[i])))}
+                plot = self.plot_func["custom_plots"][i]
+                y = {"y": np.empty((self.variable_sizes["custom_plots"][plot[0]], len(self.t_per_phase[i])))}
                 y["y"].fill(np.nan)
                 y["y"][plot[1].phase_mappings.map_idx, :] = plot[1].function(state, control)
                 self.__update_ydata(y, 0)
@@ -330,6 +333,10 @@ class PlotOcp:
                 if isinstance(p, lines.Line2D):
                     y_min = min(y_min, np.min(p.get_ydata()))
                     y_max = max(y_max, np.max(p.get_ydata()))
+            if np.isnan(y_min) or np.isinf(y_min):
+                y_min = 0
+            if np.isnan(y_max) or np.isinf(y_max):
+                y_max = 1
             data_range = y_max - y_min
             if data_range == 0:
                 data_range = 1
