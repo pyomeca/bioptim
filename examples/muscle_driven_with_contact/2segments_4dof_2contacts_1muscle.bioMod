@@ -69,10 +69,10 @@ endmusclegroup
         Type    hillthelen
         musclegroup    musclegroup1
         OriginPosition    0.0 0.0 -0.25
-        InsertionPosition    0.0 0.12 0.0
-        optimalLength    0.3
-        maximalForce    700
-        tendonSlackLength    0.15
-        pennationAngle    0.21
+        InsertionPosition    0.0 0.06 0.0
+        optimalLength    0.1
+        maximalForce    600
+        tendonSlackLength    0.22
+        pennationAngle    0.08
         maxVelocity    10
     endmuscle
