@@ -2,6 +2,7 @@ from casadi import MX, vertcat, Function
 
 from .dynamics import Dynamics
 from .mapping import BidirectionalMapping, Mapping
+from .plot import CustomPlot
 
 
 class ProblemType:
@@ -55,6 +56,7 @@ class ProblemType:
             ["x", "u"],
             ["contact_forces"],
         ).expand()
+        ProblemType.__configure_contact(nlp)
 
     @staticmethod
     def __configure_torque_driven(nlp):
@@ -95,8 +97,19 @@ class ProblemType:
         nlp["nbQdot"] = nlp["q_dot_mapping"].reduce.len
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
 
-        nlp["has_states"] = {"q": nlp["q_mapping"].reduce.len, "q_dot": nlp["q_dot_mapping"].reduce.len}
-        nlp["has_controls"] = {"tau": nlp["tau_mapping"].reduce.len}
+        nlp["var_states"] = {"q": nlp["q_mapping"].reduce.len, "q_dot": nlp["q_dot_mapping"].reduce.len}
+        nlp["var_controls"] = {"tau": nlp["tau_mapping"].reduce.len}
+
+    @staticmethod
+    def __configure_contact(nlp):
+        nlp["nbContact"] = nlp["model"].nbContacts()
+        contact_names = [n.to_string() for n in nlp["model"].contactNames()]
+        plot_mappings = nlp["plot_mappings"]["contact_forces"] if "contact_forces" in nlp["plot_mappings"] else None
+        nlp["custom_plots"] = {
+            "contact_forces": CustomPlot(
+                nlp["nbContact"], nlp["contact_forces_func"], legend=contact_names, phase_mappings=plot_mappings
+            )
+        }
 
     @staticmethod
     def muscle_activations_and_torque_driven(nlp):
@@ -115,7 +128,7 @@ class ProblemType:
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["nu"] = nlp["u"].rows()
 
-        nlp["has_controls"]["muscles"] = nlp["nbMuscle"]
+        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
@@ -148,8 +161,8 @@ class ProblemType:
         nlp["nu"] = nlp["u"].rows()
         nlp["nx"] = nlp["x"].rows()
 
-        nlp["has_states"]["muscles"] = nlp["nbMuscle"]
-        nlp["has_controls"]["muscles"] = nlp["nbMuscle"]
+        nlp["var_states"]["muscles"] = nlp["nbMuscle"]
+        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
@@ -178,7 +191,7 @@ class ProblemType:
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["nu"] = nlp["u"].rows()
 
-        nlp["has_controls"]["muscles"] = nlp["nbMuscle"]
+        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
@@ -189,3 +202,16 @@ class ProblemType:
             ["x", "u"],
             ["xdot"],
         ).expand()  # .map(nlp["ns"], "thread", 2)
+
+        nlp["contact_forces_func"] = Function(
+            "contact_forces_func",
+            [symbolic_states, symbolic_controls],
+            [
+                Dynamics.forces_from_forward_dynamics_torque_muscle_driven_with_contact(
+                    symbolic_states, symbolic_controls, nlp
+                )
+            ],
+            ["x", "u"],
+            ["contact_forces"],
+        ).expand()
+        ProblemType.__configure_contact(nlp)
