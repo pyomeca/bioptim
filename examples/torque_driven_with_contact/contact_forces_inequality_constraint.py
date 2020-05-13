@@ -100,22 +100,6 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
-    nlp = ocp.nlp[0]
-    nlp["model"] = biorbd.Model(model_path)
-
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, q_dot, u = states["q"], states["q_dot"], controls["tau"]
-    x = np.concatenate((q, q_dot))
-    contact_forces = np.array(nlp["contact_forces_func"](x[:, :-1], u[:, :-1]))
-
-    names_contact_forces = ocp.nlp[0]["model"].contactNames()
-    for i, elt in enumerate(contact_forces):
-        plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, ".-", label=f"{names_contact_forces[i].to_string()}")
-    plt.legend()
-    plt.grid()
-    plt.title("Contact forces")
-    plt.show()
-
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.animate()
+    result.graphs()

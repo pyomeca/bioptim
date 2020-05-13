@@ -27,6 +27,7 @@ class PlotOcp:
         self.ns = 0
 
         self.t = []
+        self.t_per_phase = []
         self.t_integrated = []
         if isinstance(self.ocp.initial_phase_time, (int, float)):
             self.tf = [self.ocp.initial_phase_time]
@@ -75,10 +76,12 @@ class PlotOcp:
 
     def __init_time_vector(self):
         self.t = [0]
+        self.t_per_phase = []
         self.t_integrated = []
         for phase_idx, nlp in enumerate(self.ocp.nlp):
             self.ns += nlp["ns"] + 1
             time_phase = np.linspace(self.t[-1], self.t[-1] + self.tf[phase_idx], nlp["ns"] + 1)
+            self.t_per_phase.append(time_phase)
             self.t = np.append(self.t, time_phase)
             self.t_integrated = np.append(self.t_integrated, PlotOcp.generate_integrated_time(time_phase))
         self.t = self.t[1:]
@@ -86,8 +89,8 @@ class PlotOcp:
     def create_plots(self, has, var_type):
         for variable in has:
             if var_type == "custom_plots":
-                self.custom_plots_func.append(has[variable])
-                nb = self.custom_plots_func[-1].size
+                self.custom_plots_func.append([variable, has[variable]])
+                nb = self.custom_plots_func[-1][1].size
             else:
                 nb = has[variable]
 
@@ -108,7 +111,7 @@ class PlotOcp:
 
                 for k in range(nb):
                     if var_type == "custom_plots":
-                        axes[k].set_title(self.custom_plots_func[-1].legend[k])
+                        axes[k].set_title(self.custom_plots_func[-1][1].legend[k])
                     else:
                         if "q" in variable or "q_dot" in variable or "tau" in variable:
                             axes[k].set_title(self.ocp.nlp[0]["model"].nameDof()[k].to_string())
@@ -152,9 +155,12 @@ class PlotOcp:
                         ax.step(self.t, np.zeros((self.ns, 1)), where="post", color="tab:orange", zorder=0)
                     )
                 elif var_type == "custom_plots":
-                    self.plots.append(
-                        ax.plot(self.t, np.zeros((self.ns, 1)), '.-', color="tab:green", zorder=0)
-                    )
+                    plots = []
+                    for t in self.t_per_phase:
+                        plots.append(
+                            ax.plot(t, np.zeros((t.shape[0], 1)), '.-', color="tab:green", zorder=0)[0]
+                        )
+                    self.plots.append(plots)
                 else:
                     raise RuntimeError("Plot of parameters is not supported yet")
 
@@ -201,16 +207,28 @@ class PlotOcp:
             self.__update_ydata(data_controls, i)
 
         if self.custom_plots_func:
+            y = {}
+            data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, concatenate=False)
             for i, nlp in enumerate(self.ocp.nlp):
-                data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, phase_idx=i)
                 state = np.ndarray((0, nlp['ns'] + 1))
                 for s in nlp['has_states']:
-                    state = np.concatenate((state, data_states_per_phase[s]))
+                    if isinstance(data_states_per_phase[s], (list, tuple)):
+                        state = np.concatenate((state, data_states_per_phase[s][i]))
+                    else:
+                        state = np.concatenate((state, data_states_per_phase[s]))
                 control = np.ndarray((0, nlp['ns'] + 1))
                 for s in nlp['has_controls']:
-                    control = np.concatenate((control, data_controls_per_phase[s]))
+                    if isinstance(data_controls_per_phase[s], (list, tuple)):
+                        control = np.concatenate((control, data_controls_per_phase[s][i]))
+                    else:
+                        control = np.concatenate((control, data_controls_per_phase[s]))
                 for plot in self.custom_plots_func:
-                    self.__update_ydata({'val': np.array(plot.function(state, control))}, i)
+                    if not plot[0] in y:
+                        y[plot[0]] = []
+                    y[plot[0]].append(np.array(plot[1].function(state, control)))
+
+            for i in range(len(self.ocp.nlp)):
+                self.__update_ydata(y, i)
         self.__update_axes()
 
     def __update_xdata(self):
@@ -245,8 +263,10 @@ class PlotOcp:
         for i, p in enumerate(self.plots):
             ax = p[0].axes
             y = np.array([])
+            y_per_phase = []
             for phase in self.ydata:
                 y = np.append(y, phase[i])
+                y_per_phase.append(phase[i])
 
             y_range = np.max([np.max(y) - np.min(y), 0.5])
             mean = y_range / 2 + np.min(y)
@@ -266,6 +286,9 @@ class PlotOcp:
                         p[2 * cmp].set_ydata(y[2 * cmp + idx_phase : 2 * (cmp + 1) + idx_phase])
                         p[2 * cmp + 1].set_ydata(y[2 * cmp + idx_phase])
                         cmp += 1
+            elif i >= self.ocp.nlp[0]["nx"] + self.ocp.nlp[0]["nu"]:
+                for idx_phase in range(len(self.t_per_phase)):
+                    p[idx_phase].set_ydata(y_per_phase[idx_phase])
 
             else:
                 p[0].set_ydata(y)
