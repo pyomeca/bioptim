@@ -8,7 +8,7 @@ import casadi
 from casadi import MX, vertcat
 
 from .enums import OdeSolver
-from .mapping import BidirectionalMapping
+from .mapping import Mapping, BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
 from .constraints import Constraint, ConstraintFunction
 from .objective_functions import Objective, ObjectiveFunction
@@ -41,6 +41,7 @@ class OptimalControlProgram:
         q_mapping=None,
         q_dot_mapping=None,
         tau_mapping=None,
+        plot_mappings=None,
         is_cyclic_objective=False,
         is_cyclic_constraint=False,
         show_online_optim=False,
@@ -100,6 +101,13 @@ class OptimalControlProgram:
         self.__add_to_nlp("q_mapping", q_mapping, q_mapping is None, BidirectionalMapping)
         self.__add_to_nlp("q_dot_mapping", q_dot_mapping, q_dot_mapping is None, BidirectionalMapping)
         self.__add_to_nlp("tau_mapping", tau_mapping, tau_mapping is None, BidirectionalMapping)
+        plot_mappings = plot_mappings if plot_mappings is not None else {}
+        reshaped_plot_mappings = []
+        for i in range(self.nb_phases):
+            reshaped_plot_mappings.append({})
+            for key in plot_mappings:
+                reshaped_plot_mappings[i][key] = plot_mappings[key][i]
+        self.__add_to_nlp("plot_mappings", reshaped_plot_mappings, False)
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
             self.nlp[i]["problem_type"](self.nlp[i])
