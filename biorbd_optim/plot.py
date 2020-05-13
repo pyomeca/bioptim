@@ -4,9 +4,16 @@ import tkinter
 from itertools import accumulate
 
 from matplotlib import pyplot as plt
-from casadi import MX, Callback, nlpsol_out, nlpsol_n_out, Sparsity
+from casadi import MX, Callback, nlpsol_out, nlpsol_n_out, Sparsity, Function
 
 from .variable_optimization import Data
+
+
+class CustomPlot:
+    def __init__(self, size, function, legend=()):
+        self.size = size
+        self.function = function
+        self.legend = legend
 
 
 class PlotOcp:
@@ -37,17 +44,20 @@ class PlotOcp:
         self.all_figures = []
 
         running_cmp = 0
-        self.matching_variables = dict()
+        self.matching_mapping = dict()
         for state in ocp.nlp[0]["has_states"]:
             if state in ocp.nlp[0]["has_controls"]:
-                self.matching_variables[state] = running_cmp
+                self.matching_mapping[state] = running_cmp
             running_cmp += ocp.nlp[0]["has_states"][state]
         self._organize_windows(
-            len(self.ocp.nlp[0]["has_states"]) + len(self.ocp.nlp[0]["has_controls"]) - len(self.matching_variables)
+            len(self.ocp.nlp[0]["has_states"]) + len(self.ocp.nlp[0]["has_controls"]) - len(self.matching_mapping)
         )
 
         self.create_plots(ocp.nlp[0]["has_states"], "state")
         self.create_plots(ocp.nlp[0]["has_controls"], "control")
+
+        self.custom_plots_func = []
+        self.create_plots(ocp.nlp[0]["custom_plots"], "custom_plots")
 
         horz, vert = 0, 0
         for i, fig in enumerate(self.all_figures):
@@ -75,10 +85,15 @@ class PlotOcp:
 
     def create_plots(self, has, var_type):
         for variable in has:
-            nb = has[variable]
+            if var_type == "custom_plots":
+                self.custom_plots_func.append(has[variable])
+                nb = self.custom_plots_func[-1].size
+            else:
+                nb = has[variable]
+
             nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
-            if var_type == "control" and variable in self.matching_variables:
-                axes = self.axes[self.matching_variables[variable] : self.matching_variables[variable] + nb]
+            if var_type == "control" and variable in self.matching_mapping:
+                axes = self.axes[self.matching_mapping[variable] : self.matching_mapping[variable] + nb]
             else:
                 self.all_figures.append(plt.figure(variable, figsize=(self.width_step / 100, self.height_step / 131)))
                 axes = self.all_figures[-1].subplots(nb_rows, nb_cols)
@@ -92,10 +107,13 @@ class PlotOcp:
                 axes = axes[:nb]
 
                 for k in range(nb):
-                    if "q" in variable or "q_dot" in variable or "tau" in variable:
-                        axes[k].set_title(self.ocp.nlp[0]["model"].nameDof()[k].to_string())
-                    elif "muscles" in variable:
-                        axes[k].set_title(self.ocp.nlp[0]["model"].muscleNames()[k].to_string())
+                    if var_type == "custom_plots":
+                        axes[k].set_title(self.custom_plots_func[-1].legend[k])
+                    else:
+                        if "q" in variable or "q_dot" in variable or "tau" in variable:
+                            axes[k].set_title(self.ocp.nlp[0]["model"].nameDof()[k].to_string())
+                        elif "muscles" in variable:
+                            axes[k].set_title(self.ocp.nlp[0]["model"].muscleNames()[k].to_string())
                 idx_center = nb_rows * nb_cols - int(nb_cols / 2) - 1
                 if idx_center >= len(axes):
                     idx_center = len(axes) - 1
@@ -133,6 +151,10 @@ class PlotOcp:
                     self.plots.append(
                         ax.step(self.t, np.zeros((self.ns, 1)), where="post", color="tab:orange", zorder=0)
                     )
+                elif var_type == "custom_plots":
+                    self.plots.append(
+                        ax.plot(self.t, np.zeros((self.ns, 1)), '.-', color="tab:green", zorder=0)
+                    )
                 else:
                     raise RuntimeError("Plot of parameters is not supported yet")
 
@@ -169,6 +191,7 @@ class PlotOcp:
         data_states, data_controls, data_param = Data.get_data(
             self.ocp, V, get_parameters=True, integrate=True, concatenate=False
         )
+
         for i, nlp in enumerate(self.ocp.nlp):
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
@@ -176,6 +199,18 @@ class PlotOcp:
                 self.__update_xdata()
             self.__update_ydata(data_states, i)
             self.__update_ydata(data_controls, i)
+
+        if self.custom_plots_func:
+            for i, nlp in enumerate(self.ocp.nlp):
+                data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, phase_idx=i)
+                state = np.ndarray((0, nlp['ns'] + 1))
+                for s in nlp['has_states']:
+                    state = np.concatenate((state, data_states_per_phase[s]))
+                control = np.ndarray((0, nlp['ns'] + 1))
+                for s in nlp['has_controls']:
+                    control = np.concatenate((control, data_controls_per_phase[s]))
+                for plot in self.custom_plots_func:
+                    self.__update_ydata({'val': np.array(plot.function(state, control))}, i)
         self.__update_axes()
 
     def __update_xdata(self):

@@ -62,19 +62,17 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, mu, show_online_
     pose_at_first_node = [0, 0, -0.5, 0.5]
 
     # Initialize X_bounds
-    X_bounds = [QAndQDotBounds(biorbd_model)]
-    X_bounds[0].min[:, 0] = pose_at_first_node + [0] * nb_qdot
-    X_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot
+    X_bounds = QAndQDotBounds(biorbd_model)
+    X_bounds.min[:, 0] = pose_at_first_node + [0] * nb_qdot
+    X_bounds.max[:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
-    X_init = [InitialConditions(pose_at_first_node + [0] * nb_qdot)]
+    X_init = InitialConditions(pose_at_first_node + [0] * nb_qdot)
 
     # Define control path constraint
-    U_bounds = [
-        Bounds(min_bound=[torque_min] * tau_mapping.reduce.len, max_bound=[torque_max] * tau_mapping.reduce.len)
-    ]
+    U_bounds = Bounds(min_bound=[torque_min] * tau_mapping.reduce.len, max_bound=[torque_max] * tau_mapping.reduce.len)
 
-    U_init = [InitialConditions([torque_init] * tau_mapping.reduce.len)]
+    U_init = InitialConditions([torque_init] * tau_mapping.reduce.len)
     # ------------- #
 
     return OptimalControlProgram(

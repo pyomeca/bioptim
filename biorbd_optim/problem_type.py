@@ -2,6 +2,7 @@ from casadi import MX, vertcat, Function
 
 from .dynamics import Dynamics
 from .mapping import BidirectionalMapping, Mapping
+from .plot import CustomPlot
 
 
 class ProblemType:
@@ -55,9 +56,7 @@ class ProblemType:
             ["x", "u"],
             ["contact_forces"],
         ).expand()
-
-        nlp["nbContact"] = nlp["model"].nbContacts()
-        nlp["additional_plots"] = {"contact_forces": nlp["contact_forces_func"]}
+        ProblemType.__configure_contact(nlp)
 
     @staticmethod
     def __configure_torque_driven(nlp):
@@ -100,6 +99,12 @@ class ProblemType:
 
         nlp["has_states"] = {"q": nlp["q_mapping"].reduce.len, "q_dot": nlp["q_dot_mapping"].reduce.len}
         nlp["has_controls"] = {"tau": nlp["tau_mapping"].reduce.len}
+
+    @staticmethod
+    def __configure_contact(nlp):
+        nlp["nbContact"] = nlp["model"].nbContacts()
+        contact_names = [n.to_string() for n in nlp["model"].contactNames()]
+        nlp["custom_plots"] = {"contact_forces": CustomPlot(nlp["nbContact"], nlp["contact_forces_func"], legend=contact_names)}
 
     @staticmethod
     def muscle_activations_and_torque_driven(nlp):
@@ -192,6 +197,4 @@ class ProblemType:
             ["x", "u"],
             ["xdot"],
         ).expand()  # .map(nlp["ns"], "thread", 2)
-
-        nlp["nbContact"] = nlp["model"].nbContacts()
-        nlp["additional_plots"] = {"contact_forces": nlp["nbContact"]}
+        ProblemType.__configure_contact(nlp)
