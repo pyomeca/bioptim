@@ -105,7 +105,11 @@ class ProblemType:
         nlp["nbContact"] = nlp["model"].nbContacts()
         contact_names = [n.to_string() for n in nlp["model"].contactNames()]
         plot_mappings = nlp["plot_mappings"]["contact_forces"] if "contact_forces" in nlp["plot_mappings"] else None
-        nlp["custom_plots"] = {"contact_forces": CustomPlot(nlp["nbContact"], nlp["contact_forces_func"], legend=contact_names, phase_mappings=plot_mappings)}
+        nlp["custom_plots"] = {
+            "contact_forces": CustomPlot(
+                nlp["nbContact"], nlp["contact_forces_func"], legend=contact_names, phase_mappings=plot_mappings
+            )
+        }
 
     @staticmethod
     def muscle_activations_and_torque_driven(nlp):

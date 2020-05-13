@@ -170,9 +170,7 @@ class PlotOcp:
                     ax.grid(color="k", linestyle="--", linewidth=0.5)
                     ax.set_xlim(0, self.t[-1])
                     if var_type == "custom_plots":
-                        plots.append(
-                            ax.plot(t, np.zeros((t.shape[0], 1)), '.-', color="tab:green", zorder=0)
-                        )
+                        plots.append(ax.plot(t, np.zeros((t.shape[0], 1)), ".-", color="tab:green", zorder=0))
 
             for ax in axes:
                 intersections_time = self.find_phases_intersections()
@@ -247,14 +245,14 @@ class PlotOcp:
         if "custom_plots" in self.plot_func:
             data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, concatenate=False)
             for i, nlp in enumerate(self.ocp.nlp):
-                state = np.ndarray((0, nlp['ns'] + 1))
-                for s in nlp['var_states']:
+                state = np.ndarray((0, nlp["ns"] + 1))
+                for s in nlp["var_states"]:
                     if isinstance(data_states_per_phase[s], (list, tuple)):
                         state = np.concatenate((state, data_states_per_phase[s][i]))
                     else:
                         state = np.concatenate((state, data_states_per_phase[s]))
-                control = np.ndarray((0, nlp['ns'] + 1))
-                for s in nlp['var_controls']:
+                control = np.ndarray((0, nlp["ns"] + 1))
+                for s in nlp["var_controls"]:
                     if isinstance(data_controls_per_phase[s], (list, tuple)):
                         control = np.concatenate((control, data_controls_per_phase[s][i]))
                     else:
@@ -317,7 +315,7 @@ class PlotOcp:
             elif i >= self.ocp.nlp[0]["nx"] + self.ocp.nlp[0]["nu"]:
                 for idx_phase in range(len(self.t_per_phase)):
                     # TODO: To be removed when phases are directly in ydata (as for custom_plots)
-                    if idx_phase < len(y_per_phase) :
+                    if idx_phase < len(y_per_phase):
                         p[idx_phase].set_ydata(y_per_phase[idx_phase])
 
             else:
@@ -344,13 +342,7 @@ class PlotOcp:
             y_range = (1.3 * data_range) / 2
             y_range = mean - y_range, mean + y_range
             ax.set_ylim(y_range)
-            ax.set_yticks(
-                np.arange(
-                    y_range[0],
-                    y_range[1],
-                    step=data_range/4,
-                )
-            )
+            ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))

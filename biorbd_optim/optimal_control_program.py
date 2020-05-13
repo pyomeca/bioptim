@@ -311,7 +311,7 @@ class OptimalControlProgram:
                         raise RuntimeError(f"Each phase must declares its {penality_type} (even if it is empty)")
             self.__add_to_nlp(penality_type, penalities, False)
 
-    def solve(self, solver='ipopt', options_ipopt={}):
+    def solve(self, solver="ipopt", options_ipopt={}):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
@@ -320,7 +320,9 @@ class OptimalControlProgram:
         # NLP
         nlp = {"x": self.V, "f": self.J, "g": self.g}
 
-        options_common = {"iteration_callback": self.show_online_optim_callback,}
+        options_common = {
+            "iteration_callback": self.show_online_optim_callback,
+        }
         if solver == "ipopt":
             options_default = {
                 "ipopt.tol": 1e-6,
