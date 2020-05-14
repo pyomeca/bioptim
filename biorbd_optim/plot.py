@@ -62,6 +62,7 @@ class PlotOcp:
                     vert = 0
             except AttributeError:
                 pass
+
             fig.canvas.draw()
 
     def __init_time_vector(self):
