@@ -34,12 +34,16 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", show_online_optim=False, ode_so
 
     # Constraints
     constraints = (
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1, },
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 3, },
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 1,},
     )
 
     # External forces
-    external_forces = [np.repeat(np.array([[0, 0, 0, 0, 0, 0]]).reshape(6, 1), number_shooting_points, axis=1)]
+    external_forces = [
+        np.repeat(
+            np.array([[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 5]]).T[:, :, np.newaxis], number_shooting_points, axis=2
+        )
+    ]
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
