@@ -76,8 +76,8 @@ def prepare_ocp(show_online_optim=False,):
     # Add objective functions
     objective_functions = (
         (
-            # {"type": Objective.Mayer.MINIMIZE_STATE, "instant": number_shooting_intervals-1, "states_idx": 5, "data_to_track": np.zeros((number_shooting_intervals+1,nb_q)), "weight": -1}, # "instant": Instant.END ??
-            {"type": Objective.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1 / 100},
+            {"type": Objective.Mayer.MINIMIZE_STATE, "instant": number_shooting_intervals-1, "states_idx": 5, "data_to_track": np.zeros((number_shooting_intervals+1,nb_q)), "weight": -1}, # "instant": Instant.END ??
+            # {"type": Objective.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1 / 100},
         ),
     )
 
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     try:
         from BiorbdViz import BiorbdViz
 
-        x, _, _ = ProblemType.get_data_from_V(ocp, sol["x"])
+        x, _, _ = ProblemType.get_data(ocp, sol["x"])
         q = np.ndarray((ocp.nlp[0]["model"].nbQ(), sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
         # for i in range(len(ocp.nlp)):
         #     if i == 0:
