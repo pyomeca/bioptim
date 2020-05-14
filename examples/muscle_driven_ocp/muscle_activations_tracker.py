@@ -97,6 +97,7 @@ def prepare_ocp(
     # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
+    nq = biorbd_model.nbQ()
 
     # Add objective functions
     objective_functions = [
@@ -128,8 +129,8 @@ def prepare_ocp(
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
-    X_bounds.min[[0, 1], :] = -2 * np.pi
-    X_bounds.max[[0, 1], :] = 2 * np.pi
+    X_bounds.min[:nq, :] = -2 * np.pi
+    X_bounds.max[:nq, :] = 2 * np.pi
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))

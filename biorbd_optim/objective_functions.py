@@ -50,7 +50,7 @@ class ObjectiveFunction:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **extra_param):
+        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **parameters):
             if quadratic:
                 ocp.J += casadi.dot(val, val) * weight
             else:
@@ -116,6 +116,8 @@ class Objective:
         TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
         MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
         TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
+        MINIMIZE_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
+        TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
         ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
         ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
         CUSTOM = (PenaltyType.CUSTOM,)
@@ -146,6 +148,8 @@ class Objective:
         TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
         MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
         TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
+        MINIMIZE_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
+        TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
         MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyType.MINIMIZE_PREDICTED_COM_HEIGHT,)
         ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
         ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
