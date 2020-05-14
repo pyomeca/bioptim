@@ -100,6 +100,12 @@ class ProblemType:
         nlp["var_states"] = {"q": nlp["q_mapping"].reduce.len, "q_dot": nlp["q_dot_mapping"].reduce.len}
         nlp["var_controls"] = {"tau": nlp["tau_mapping"].reduce.len}
 
+        nlp["custom_plots"] = {
+            "controls": CustomPlot(
+                nlp["tau_mapping"].reduce.len, lambda x, u: u
+            )
+        }
+
     @staticmethod
     def __configure_contact(nlp):
         nlp["nbContact"] = nlp["model"].nbContacts()

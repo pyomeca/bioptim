@@ -59,7 +59,6 @@ class PlotOcp:
         self.plot_func = {}
         self.variable_sizes = {}
         self.__create_plots(ocp.nlp[0]["var_states"], "state")
-        self.__create_plots(ocp.nlp[0]["var_controls"], "control")
         self.__create_custom_plots(ocp.nlp, "custom_plots")
 
         horz, vert = 0, 0
@@ -123,10 +122,6 @@ class PlotOcp:
                             )
                             cmp += 1
                     self.plots.append(plots)
-                elif var_type == "control":
-                    self.plots.append(
-                        ax.step(self.t, np.zeros((self.ns, 1)), where="post", color="tab:orange", zorder=0)
-                    )
                 else:
                     raise RuntimeError("Plot of parameters is not supported yet")
 
@@ -171,6 +166,11 @@ class PlotOcp:
                     ax.set_xlim(0, self.t[-1])
                     if var_type == "custom_plots":
                         plots.append(ax.plot(t, np.zeros((t.shape[0], 1)), ".-", color="tab:green", zorder=0))
+
+                    elif var_type == "controls":
+                        self.plots.append(
+                            ax.step(self.t, np.zeros((self.ns, 1)), where="post", color="tab:orange", zorder=0)
+                        )
 
             for ax in axes:
                 intersections_time = self.find_phases_intersections()
