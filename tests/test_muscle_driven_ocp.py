@@ -25,10 +25,13 @@ spec.loader.exec_module(static_arm_with_contact)
 
 # Load contact_forces_inequality_constraint_muscle_excitations
 spec = importlib.util.spec_from_file_location(
-    "contact_forces_inequality_constraint_muscle_excitations", str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle_excitations.py",
+    "contact_forces_inequality_constraint_muscle_excitations",
+    str(PROJECT_FOLDER)
+    + "/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle_excitations.py",
 )
 contact_forces_inequality_constraint_muscle_excitations = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(contact_forces_inequality_constraint_muscle_excitations)
+
 
 def test_muscle_driven_ocp():
     ocp = static_arm.prepare_ocp(
@@ -109,6 +112,7 @@ def test_muscle_with_contact_driven_ocp():
         np.array([1.96721725e-02, 3.42398501e-05, 3.29454916e-05, 8.61757459e-03, 8.57946846e-03, 7.07152302e-03]),
     )
 
+
 def test_muscle_excitation_with_contact_driven_ocp():
     boundary = 50
     ocp = contact_forces_inequality_constraint_muscle_excitations.prepare_ocp(
@@ -132,26 +136,28 @@ def test_muscle_excitation_with_contact_driven_ocp():
     np.testing.assert_almost_equal(g[:90], np.zeros((90, 1)))
     np.testing.assert_array_less(-g[90:], -boundary)
     expected_pos_g = np.array(
-        [[51.5673555],
-         [52.82179693],
-         [57.5896514],
-         [62.60246484],
-         [65.13414631],
-         [66.29498636],
-         [65.77592127],
-         [62.98288508],
-         [57.0934291],
-         [50.47918162],
-         [156.22933663],
-         [135.96633458],
-         [89.93755291],
-         [63.57705684],
-         [57.59613028],
-         [55.17020948],
-         [53.83337907],
-         [52.95213608],
-         [52.20317604],
-         [50.57048159]]
+        [
+            [51.5673555],
+            [52.82179693],
+            [57.5896514],
+            [62.60246484],
+            [65.13414631],
+            [66.29498636],
+            [65.77592127],
+            [62.98288508],
+            [57.0934291],
+            [50.47918162],
+            [156.22933663],
+            [135.96633458],
+            [89.93755291],
+            [63.57705684],
+            [57.59613028],
+            [55.17020948],
+            [53.83337907],
+            [52.95213608],
+            [52.20317604],
+            [50.57048159],
+        ]
     )
     np.testing.assert_almost_equal(g[90:], expected_pos_g)
 
@@ -166,11 +172,15 @@ def test_muscle_excitation_with_contact_driven_ocp():
     )
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([ 0.,  0., -0.75,  0.75]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([-3.40710032e-01,  1.34155565e-01, -2.18684502e-04,  2.18684502e-04]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0, -0.75, 0.75]))
+    np.testing.assert_almost_equal(
+        q[:, -1], np.array([-3.40710032e-01, 1.34155565e-01, -2.18684502e-04, 2.18684502e-04])
+    )
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([0., 0., 0., 0.]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.01607708e+00,  4.40761528e-04,  4.03215433e+00, -4.03215433e+00]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(
+        qdot[:, -1], np.array([-2.01607708e00, 4.40761528e-04, 4.03215433e00, -4.03215433e00])
+    )
     # initial and final muscle state
     np.testing.assert_almost_equal(
         mus_states[:, 0], np.array([0.5]),

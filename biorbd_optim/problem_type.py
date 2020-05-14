@@ -245,8 +245,11 @@ class ProblemType:
         nlp["dynamics_func"] = Function(
             "ForwardDyn",
             [symbolic_states, symbolic_controls],
-            [Dynamics.forward_dynamics_muscle_excitations_and_torque_driven_with_contact(symbolic_states, symbolic_controls,
-                                                                            nlp)],
+            [
+                Dynamics.forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
+                    symbolic_states, symbolic_controls, nlp
+                )
+            ],
             ["x", "u"],
             ["xdot"],
         ).expand()  # .map(nlp["ns"], "thread", 2)
