@@ -99,12 +99,12 @@ def test_align_marker_on_segment(ode_solver):
 
 
 # Load linear_initial_guess
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "linear_initial_guess", str(PROJECT_FOLDER) + "/examples/align/align_marker_on_segment.py"
+PROJECT_FOLDER2 = Path(__file__).parent / ".."
+spec2 = importlib.util.spec_from_file_location(
+    "linear_initial_guess", str(PROJECT_FOLDER2) + "/examples/align/linear_initial_guess.py"
 )
-linear_initial_guess = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(linear_initial_guess)
+linear_initial_guess = importlib.util.module_from_spec(spec2)
+spec2.loader.exec_module(linear_initial_guess)
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_linear_initial_guess(ode_solver):
