@@ -8,7 +8,7 @@ import casadi
 from casadi import MX, vertcat
 
 from .enums import OdeSolver
-from .mapping import BidirectionalMapping
+from .mapping import Mapping, BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
 from .constraints import Constraint, ConstraintFunction
 from .objective_functions import Objective, ObjectiveFunction
@@ -41,6 +41,7 @@ class OptimalControlProgram:
         q_mapping=None,
         q_dot_mapping=None,
         tau_mapping=None,
+        plot_mappings=None,
         is_cyclic_objective=False,
         is_cyclic_constraint=False,
         show_online_optim=False,
@@ -103,6 +104,13 @@ class OptimalControlProgram:
         self.__add_to_nlp("q_mapping", q_mapping, q_mapping is None, BidirectionalMapping)
         self.__add_to_nlp("q_dot_mapping", q_dot_mapping, q_dot_mapping is None, BidirectionalMapping)
         self.__add_to_nlp("tau_mapping", tau_mapping, tau_mapping is None, BidirectionalMapping)
+        plot_mappings = plot_mappings if plot_mappings is not None else {}
+        reshaped_plot_mappings = []
+        for i in range(self.nb_phases):
+            reshaped_plot_mappings.append({})
+            for key in plot_mappings:
+                reshaped_plot_mappings[i][key] = plot_mappings[key][i]
+        self.__add_to_nlp("plot_mappings", reshaped_plot_mappings, False)
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
             self.nlp[i]["problem_type"](self.nlp[i])
@@ -302,7 +310,7 @@ class OptimalControlProgram:
                         raise RuntimeError(f"Each phase must declares its {penality_type} (even if it is empty)")
             self.__add_to_nlp(penality_type, penalities, False)
 
-    def solve(self):
+    def solve(self, solver="ipopt", options_ipopt={}):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
@@ -311,15 +319,25 @@ class OptimalControlProgram:
         # NLP
         nlp = {"x": self.V, "f": self.J, "g": self.g}
 
-        opts = {
-            "ipopt.tol": 1e-6,
-            "ipopt.max_iter": 1000,
-            "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
-            "ipopt.limited_memory_max_history": 50,
-            "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
+        options_common = {
             "iteration_callback": self.show_online_optim_callback,
         }
-        solver = casadi.nlpsol("nlpsol", "ipopt", nlp, opts)
+        if solver == "ipopt":
+            options_default = {
+                "ipopt.tol": 1e-6,
+                "ipopt.max_iter": 1000,
+                "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
+                "ipopt.limited_memory_max_history": 50,
+                "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
+            }
+            for key in options_ipopt:
+                if key[:6] != "ipopt.":
+                    options_ipopt[f"ipopt.{key}"] = options_ipopt[key]
+                    del options_ipopt[key]
+            opts = {**options_default, **options_common, **options_ipopt}
+            solver = casadi.nlpsol("nlpsol", "ipopt", nlp, opts)
+        else:
+            raise RuntimeError("Available solvers are: 'ipopt'")
 
         # Bounds and initial guess
         arg = {
