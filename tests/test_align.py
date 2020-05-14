@@ -96,3 +96,76 @@ def test_align_marker_on_segment(ode_solver):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([1.61499455, 9.97512191, 2.13907245, 0.89301203]))
     np.testing.assert_almost_equal(tau[:, -1], np.array([-1.11715165, 10.14520729, -2.5377627, 0.37996436]))
+
+
+# Load linear_initial_guess
+PROJECT_FOLDER = Path(__file__).parent / ".."
+spec = importlib.util.spec_from_file_location(
+    "linear_initial_guess", str(PROJECT_FOLDER) + "/examples/align/align_marker_on_segment.py"
+)
+linear_initial_guess = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(linear_initial_guess)
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
+def test_linear_initial_guess(ode_solver):
+    ocp = linear_initial_guess.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+        final_time=1,
+        number_shooting_points=5,
+        ode_solver=ode_solver,
+        initialize_near_solution=True,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 2902.6472871572496)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (58, 1))
+    np.testing.assert_almost_equal(g, np.zeros((58, 1)))
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    Init = np.array(ocp.V_init.init.flatten())
+    q_init = np.append(np.append(Init[0::12], Init[1::12]), np.append(Init[2::12], Init[3::12]))
+    qdot_init = np.append(np.append(Init[4::12], Init[5::12]), np.append(Init[6::12], Init[7::12]))
+    tau_init = np.append(np.append(Init[8::12], Init[9::12]), np.append(Init[10::12], Init[11::12]))
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0, 0.46364762]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([2, 0, 1.57, 0.78539785]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([5.67652177, 10.42020872,  7.69924608,  3.08364264]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-3.84193883, 11.02262624, -7.65468351,  0.65631757]))
+
+    # initialization of the position
+    np.testing.assert_almost_equal(q_init, np.array([
+        1., 1.2, 1.4, 1.6, 1.8, 2.,
+        0., 0., 0., 0., 0., 0.,
+        0., 0.314, 0.628, 0.942, 1.256, 1.57,
+        0.46364761, 0.52799766, 0.59234771, 0.65669775, 0.7210478, 0.78539785
+        ])
+    )
+    # initialization of the velocity
+    np.testing.assert_almost_equal(qdot_init, np.array([
+        0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0.
+        ])
+    )
+    # initialization of the torque
+    np.testing.assert_almost_equal(tau_init, np.array([
+        6.45997035, 3.72782881, 0.99568728, -1.73645426, -4.46859579,
+        10.47049302, 10.64058199, 10.81067095, 10.98075992, 11.15084889,
+        8.55628251, 3.87946577, -0.79735097, -5.47416772, -10.15098446,
+        3.57204643, 3.05899657, 2.54594671, 2.03289686, 1.519847
+        ])
+    )
