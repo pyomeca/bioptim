@@ -215,3 +215,51 @@ class ProblemType:
             ["contact_forces"],
         ).expand()
         ProblemType.__configure_contact(nlp)
+
+    @staticmethod
+    def muscle_excitations_and_torque_driven_with_contact(nlp):
+        """
+        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
+        Works with torques and muscles.
+        :param nlp: An OptimalControlProgram class.
+        """
+        ProblemType.__configure_torque_driven(nlp)
+
+        u = MX()
+        x = MX()
+        nlp["nbMuscle"] = nlp["model"].nbMuscles()
+        muscle_names = nlp["model"].muscleNames()
+        for i in range(nlp["nbMuscle"]):
+            u = vertcat(u, MX.sym("Muscle_" + muscle_names[i].to_string() + "_excitation"))
+            x = vertcat(x, MX.sym("Muscle_" + muscle_names[i].to_string() + "_activation"))
+        nlp["u"] = vertcat(nlp["u"], u)
+        nlp["x"] = vertcat(nlp["x"], x)
+        nlp["nu"] = nlp["u"].rows()
+        nlp["nx"] = nlp["x"].rows()
+
+        nlp["var_states"]["muscles"] = nlp["nbMuscle"]
+        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
+
+        symbolic_states = MX.sym("x", nlp["nx"], 1)
+        symbolic_controls = MX.sym("u", nlp["nu"], 1)
+        nlp["dynamics_func"] = Function(
+            "ForwardDyn",
+            [symbolic_states, symbolic_controls],
+            [Dynamics.forward_dynamics_muscle_excitations_and_torque_driven_with_contact(symbolic_states, symbolic_controls,
+                                                                            nlp)],
+            ["x", "u"],
+            ["xdot"],
+        ).expand()  # .map(nlp["ns"], "thread", 2)
+
+        nlp["contact_forces_func"] = Function(
+            "contact_forces_func",
+            [symbolic_states, symbolic_controls],
+            [
+                Dynamics.forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
+                    symbolic_states, symbolic_controls, nlp
+                )
+            ],
+            ["x", "u"],
+            ["contact_forces"],
+        ).expand()
+        ProblemType.__configure_contact(nlp)
