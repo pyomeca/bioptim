@@ -97,6 +97,7 @@ def prepare_ocp(
     # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
+    nq = biorbd_model.nbQ()
 
     # Add objective functions
     objective_functions = [
@@ -128,10 +129,8 @@ def prepare_ocp(
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
-    X_bounds.first_node_min[0] = X_bounds.min[0] = X_bounds.last_node_min[0] = -2 * np.pi
-    X_bounds.first_node_max[0] = X_bounds.max[0] = X_bounds.last_node_max[0] = 2 * np.pi
-    X_bounds.first_node_min[1] = X_bounds.min[1] = X_bounds.last_node_min[1] = -2 * np.pi
-    X_bounds.first_node_max[1] = X_bounds.max[1] = X_bounds.last_node_max[1] = 2 * np.pi
+    X_bounds.min[:nq, :] = -2 * np.pi
+    X_bounds.max[:nq, :] = 2 * np.pi
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
@@ -166,7 +165,7 @@ if __name__ == "__main__":
     # Define the problem
     biorbd_model = biorbd.Model("arm26.bioMod")
     final_time = 2
-    n_shooting_points = 9
+    n_shooting_points = 29
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
@@ -190,22 +189,23 @@ if __name__ == "__main__":
     # --- Show the results --- #
     muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
 
-    states, controls = Data.get_data_from_V(ocp, sol["x"])
-    q = states["q"].to_matrix()
-    qdot = states["q_dot"].to_matrix()
-    tau = controls["tau"].to_matrix()
-    mus = controls["muscles"].to_matrix()
+    states, controls = Data.get_data(ocp, sol["x"])
+    q = states["q"]
+    qdot = states["q_dot"]
+    tau = controls["tau"]
+    mus = controls["muscles"]
 
     n_q = ocp.nlp[0]["model"].nbQ()
     n_mark = ocp.nlp[0]["model"].nbMarkers()
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
+    symbolic_states = MX.sym("x", n_q, 1)
     markers_func = Function(
-        "ForwardKin", [ocp.symbolic_states], [biorbd_model.markers(ocp.symbolic_states[:n_q])], ["q"], ["markers"],
+        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"],
     ).expand()
     for i in range(n_frames):
-        markers[:, :, i] = markers_func(np.concatenate((q[:, i], qdot[:, i])))
+        markers[:, :, i] = markers_func(q[:, i])
 
     plt.figure("Markers")
     for i in range(markers.shape[1]):

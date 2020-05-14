@@ -132,17 +132,13 @@ def prepare_ocp(
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
-    X_bounds.first_node_min[0] = X_bounds.min[0] = X_bounds.last_node_min[0] = -2 * np.pi
-    X_bounds.first_node_max[0] = X_bounds.max[0] = X_bounds.last_node_max[0] = 2 * np.pi
-    X_bounds.first_node_min[1] = X_bounds.min[1] = X_bounds.last_node_min[1] = -2 * np.pi
-    X_bounds.first_node_max[1] = X_bounds.max[1] = X_bounds.last_node_max[1] = 2 * np.pi
+    X_bounds.min[[0, 1], :] = -2 * np.pi
+    X_bounds.max[[0, 1], :] = 2 * np.pi
 
-    X_bounds.first_node_min += [activation_min] * biorbd_model.nbMuscles()
-    X_bounds.first_node_max += [activation_max] * biorbd_model.nbMuscles()
-    X_bounds.min += [activation_min] * biorbd_model.nbMuscles()
-    X_bounds.max += [activation_max] * biorbd_model.nbMuscles()
-    X_bounds.last_node_min += [activation_min] * biorbd_model.nbMuscles()
-    X_bounds.last_node_max += [activation_max] * biorbd_model.nbMuscles()
+    # Add muscle to the bounds
+    X_bounds.concatenate(
+        Bounds([activation_min] * biorbd_model.nbMuscles(), [activation_max] * biorbd_model.nbMuscles())
+    )
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()) + [0] * biorbd_model.nbMuscles())
@@ -202,12 +198,12 @@ if __name__ == "__main__":
     # --- Show the results --- #
     muscle_excitations_ref = np.append(muscle_excitations_ref, muscle_excitations_ref[-1:, :], axis=0)
 
-    states_sol, controls_sol = Data.get_data_from_V(ocp, sol["x"])
-    q = states_sol["q"].to_matrix()
-    q_dot = states_sol["q_dot"].to_matrix()
-    activations = states_sol["muscles"].to_matrix()
-    tau = controls_sol["tau"].to_matrix()
-    excitations = controls_sol["muscles"].to_matrix()
+    states_sol, controls_sol = Data.get_data(ocp, sol["x"])
+    q = states_sol["q"]
+    q_dot = states_sol["q_dot"]
+    activations = states_sol["muscles"]
+    tau = controls_sol["tau"]
+    excitations = controls_sol["muscles"]
 
     n_q = ocp.nlp[0]["model"].nbQ()
     n_qdot = ocp.nlp[0]["model"].nbQdot()
@@ -215,24 +211,37 @@ if __name__ == "__main__":
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
+    symbolic_states = MX.sym("x", n_q, 1)
     markers_func = Function(
-        "ForwardKin", [ocp.symbolic_states], [biorbd_model.markers(ocp.symbolic_states[:n_q])], ["q"], ["markers"],
+        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"],
     ).expand()
     for i in range(n_frames):
-        markers[:, :, i] = markers_func(np.concatenate((q[:, i], q_dot[:, i], activations[:, i])))
+        markers[:, :, i] = markers_func(q[:, i])
 
     plt.figure("Markers")
     for i in range(markers.shape[1]):
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers[:, i, :].T, "r--")
+    plt.xlabel("Time")
+    plt.ylabel("Markers Position")
+
+    plt.figure("Q")
+    plt.plot(np.linspace(0, 2, n_shooting_points + 1), x_ref[:n_q, :].T, "k")
+    plt.plot(np.linspace(0, 2, n_shooting_points + 1), q.T, "r--")
+    plt.xlabel("Time")
+    plt.ylabel("Q values")
 
     plt.figure("Muscle activations")
     plt.plot(np.linspace(0, 2, n_shooting_points + 1), muscle_activations_ref, "k")
     plt.plot(np.linspace(0, 2, n_shooting_points + 1), activations.T, "r--")
+    plt.xlabel("Time")
+    plt.ylabel("Torques values (N.m)")
 
     plt.figure("Muscle excitations")
     plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_excitations_ref, "k", where="post")
     plt.step(np.linspace(0, 2, n_shooting_points + 1), excitations.T, "r--", where="post")
+    plt.xlabel("Time")
+    plt.ylabel("Excitation values")
 
     # --- Plot --- #
     plt.show()

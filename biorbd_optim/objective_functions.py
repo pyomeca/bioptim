@@ -12,8 +12,14 @@ class ObjectiveFunction:
         Different conditions between biorbd geometric structures.
         """
 
+        class Functions:
+            @staticmethod
+            def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
+                val = 1
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False):
+        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **extra_param):
             if quadratic:
                 ocp.J += casadi.dot(val, val) * weight * nlp["dt"] * nlp["dt"]
             else:
@@ -23,6 +29,9 @@ class ObjectiveFunction:
         def _parameter_modifier(penalty_function, parameters):
             # Everything that should change the entry parameters depending on the penalty can be added here
             PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
+            if penalty_function == Objective.Lagrange.MINIMIZE_TIME.value[0]:
+                if "quadratic" not in parameters.keys():
+                    parameters["quadratic"] = True
 
         @staticmethod
         def _span_checker(penalty_function, instant, nlp):
@@ -34,8 +43,14 @@ class ObjectiveFunction:
         Different conditions between biorbd geometric structures.
         """
 
+        class Functions:
+            @staticmethod
+            def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
+                val = nlp["tf"]
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False):
+        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **parameters):
             if quadratic:
                 ocp.J += casadi.dot(val, val) * weight
             else:
@@ -84,6 +99,7 @@ class Objective:
         Different conditions between biorbd geometric structures.
         """
 
+        MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
         MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
         TRACK_STATE = (PenaltyType.TRACK_STATE,)
         MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
@@ -100,6 +116,8 @@ class Objective:
         TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
         MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
         TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
+        MINIMIZE_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
+        TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
         ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
         ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
         CUSTOM = (PenaltyType.CUSTOM,)
@@ -113,6 +131,7 @@ class Objective:
         Different conditions between biorbd geometric structures.
         """
 
+        MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
         MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
         TRACK_STATE = (PenaltyType.TRACK_STATE,)
         MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
@@ -129,6 +148,8 @@ class Objective:
         TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
         MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
         TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
+        MINIMIZE_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
+        TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
         MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyType.MINIMIZE_PREDICTED_COM_HEIGHT,)
         ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
         ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)

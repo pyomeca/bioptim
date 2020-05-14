@@ -4,8 +4,7 @@ from math import inf
 import numpy as np
 import biorbd
 
-from .enums import Instant
-from .enums import Axe
+from .enums import Instant, Axe
 
 
 class PenaltyFunctionAbstract:
@@ -168,8 +167,20 @@ class PenaltyFunctionAbstract:
                 CoM = nlp["model"].CoM(q).to_mx()
                 CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
-
                 penalty_type._add_to_penalty(ocp, nlp, CoM_height, **extra_param)
+
+        @staticmethod
+        def minimize_contact_forces(penalty_type, ocp, nlp, t, x, u, contacts_idx=(), data_to_track=(), **extra_param):
+            n_contact = nlp["model"].nbContacts()
+            contacts_idx = PenaltyFunctionAbstract._check_and_fill_index(contacts_idx, n_contact, "contacts_idx")
+            data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                data_to_track, [nlp["ns"], max(contacts_idx) + 1]
+            )
+
+            for i, v in enumerate(u):
+                force = nlp["contact_forces_func"](x[i], u[i])
+                val = force[contacts_idx] - data_to_track[t[i], contacts_idx]
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
         def align_segment_with_custom_rt(penalty_type, ocp, nlp, t, x, u, segment_idx, rt_idx, **extra_param):
@@ -218,8 +229,8 @@ class PenaltyFunctionAbstract:
             weight = None
             if "weight" in parameters.keys():
                 weight = parameters["weight"]
+                del parameters["weight"]
             del parameters["function"]
-            del parameters["weight"]
             val = func(ocp, nlp, t, x, u, **parameters)
             if weight is not None:
                 parameters["weight"] = weight
@@ -257,6 +268,7 @@ class PenaltyFunctionAbstract:
             or penalty_function == PenaltyType.MINIMIZE_TORQUE
             or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
             or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
+            or penalty_function == PenaltyType.MINIMIZE_CONTACT_FORCES
             or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
             or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
         ):
@@ -293,9 +305,7 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def _check_and_fill_tracking_data_size(data_to_track, target_size):
-        if data_to_track == ():
-            data_to_track = np.zeros(target_size)
-        else:
+        if (isinstance(data_to_track, np.ndarray) and data_to_track.any()) or data_to_track:
             if len(data_to_track.shape) != len(target_size):
                 if target_size[1] == 1 and len(data_to_track.shape) == 1:
                     # If we have a vector it is still okay
@@ -309,6 +319,8 @@ class PenaltyFunctionAbstract:
                     raise RuntimeError(
                         f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}"
                     )
+        else:
+            data_to_track = np.zeros(target_size)
         return data_to_track
 
     @staticmethod
@@ -401,6 +413,8 @@ class PenaltyType(Enum):
     TRACK_MUSCLES_CONTROL = MINIMIZE_MUSCLES_CONTROL
     MINIMIZE_ALL_CONTROLS = PenaltyFunctionAbstract.Functions.minimize_all_controls
     TRACK_ALL_CONTROLS = MINIMIZE_ALL_CONTROLS
+    MINIMIZE_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
+    TRACK_CONTACT_FORCES = MINIMIZE_CONTACT_FORCES
     MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height
     ALIGN_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.align_segment_with_custom_rt
     ALIGN_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.align_marker_with_segment_axis
