@@ -49,13 +49,19 @@ class PlotOcp:
         self.create_plots(ocp.nlp[0]["has_states"], "state")
         self.create_plots(ocp.nlp[0]["has_controls"], "control")
 
-        horz, vert = 0, 0
+        horz = 0
+        vert = 1 if len(self.all_figures) < self.nb_vertical_windows * self.nb_horizontal_windows else 0
         for i, fig in enumerate(self.all_figures):
-            fig.canvas.manager.window.move(int(vert * self.width_step), int(self.top_margin + horz * self.height_step))
-            vert += 1
-            if vert >= self.nb_vertical_windows:
-                horz += 1
-                vert = 0
+            try:
+                fig.canvas.manager.window.move(
+                    int(vert * self.width_step), int(self.top_margin + horz * self.height_step)
+                )
+                vert += 1
+                if vert >= self.nb_vertical_windows:
+                    horz += 1
+                    vert = 0
+            except AttributeError:
+                pass
             fig.canvas.draw()
 
     def __init_time_vector(self):
@@ -139,10 +145,10 @@ class PlotOcp:
 
     def _organize_windows(self, nb_windows):
         height = tkinter.Tk().winfo_screenheight()
-        width = tkinter.Tk().winfo_screenwidth()
-        self.nb_vertical_windows, nb_horizontal_windows = PlotOcp._generate_windows_size(nb_windows)
+        width = tkinter.Tk().winfo_screenwidth() / 2
+        self.nb_vertical_windows, self.nb_horizontal_windows = PlotOcp._generate_windows_size(nb_windows)
         self.top_margin = height / 15
-        self.height_step = (height - self.top_margin) / nb_horizontal_windows
+        self.height_step = (height - self.top_margin) / self.nb_horizontal_windows
         self.width_step = width / self.nb_vertical_windows
 
     @staticmethod
