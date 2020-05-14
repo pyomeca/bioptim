@@ -30,9 +30,10 @@ class BiorbdInterface:
 
             sv_over_phase = []
             for node in range(f_ext.shape[2]):
-                sv = []
+                sv = biorbd.VecBiorbdSpatialVector()
                 for idx in range(f_ext.shape[1]):
-                    sv.append(biorbd.VecBiorbdSpatialVector([biorbd.SpatialVector(MX(f_ext[:, idx, node]))]))
+                    print(f_ext[:, idx, node])
+                    sv.append(biorbd.SpatialVector(MX(f_ext[:, idx, node])))
                 sv_over_phase.append(sv)
             sv_over_all_phases.append(sv_over_phase)
 
