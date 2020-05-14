@@ -58,7 +58,7 @@ class PathCondition(np.ndarray):
 
         if self.shape[0] != nb_elements:
             raise RuntimeError(
-                f"Invalid number of {condition_type} ({self.shape[1] }), the expected size is {nb_elements}"
+                f"Invalid number of {condition_type} ({self.shape[0] }), the expected size is {nb_elements}"
             )
 
         if self.type == InterpolationType.CONSTANT:
