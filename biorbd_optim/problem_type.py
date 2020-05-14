@@ -4,7 +4,6 @@ from .dynamics import Dynamics
 from .mapping import BidirectionalMapping, Mapping
 from .plot import CustomPlot
 
-
 class ProblemType:
     """
     Includes methods suitable for several situations
@@ -76,7 +75,7 @@ class ProblemType:
             nlp["tau_mapping"] = BidirectionalMapping(
                 Mapping(range(nlp["model"].nbGeneralizedTorque())), Mapping(range(nlp["model"].nbGeneralizedTorque()))
             )
-
+        
         dof_names = nlp["model"].nameDof()
         q = MX()
         q_dot = MX()
