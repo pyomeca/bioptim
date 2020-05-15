@@ -20,7 +20,7 @@ class CustomPlot:
 
 
 class PlotOcp:
-    def __init__(self, ocp):
+    def __init__(self, ocp, automatically_organize=True):
         for i in range(1, ocp.nb_phases):
             if ocp.nlp[0]["nbQ"] != ocp.nlp[i]["nbQ"]:
                 raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
@@ -53,8 +53,9 @@ class PlotOcp:
             if state in ocp.nlp[0]["var_controls"]:
                 self.matching_mapping[state] = running_cmp
             running_cmp += ocp.nlp[0]["var_states"][state]
+        self.automatically_organize = automatically_organize
         self._organize_windows(
-            len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]) - len(self.matching_mapping)
+            len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]) - len(self.matching_mapping),
         )
 
         self.plot_func = {}
@@ -65,16 +66,17 @@ class PlotOcp:
 
         horz, vert = 0, 0
         for i, fig in enumerate(self.all_figures):
-            try:
-                fig.canvas.manager.window.move(
-                    int(vert * self.width_step), int(self.top_margin + horz * self.height_step)
-                )
-                vert += 1
-                if vert >= self.nb_vertical_windows:
-                    horz += 1
-                    vert = 0
-            except AttributeError:
-                pass
+            if self.automatically_organize:
+                try:
+                    fig.canvas.manager.window.move(
+                        int(vert * self.width_step), int(self.top_margin + horz * self.height_step)
+                    )
+                    vert += 1
+                    if vert >= self.nb_vertical_windows:
+                        horz += 1
+                        vert = 0
+                except AttributeError:
+                    pass
             fig.canvas.draw()
 
     def __init_time_vector(self):
@@ -181,7 +183,10 @@ class PlotOcp:
             self.plots.extend(plots)
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
-        self.all_figures.append(plt.figure(variable))  # , figsize=(self.width_step / 100, self.height_step / 131)))
+        if self.automatically_organize:
+            self.all_figures.append(plt.figure(variable, figsize=(self.width_step / 100, self.height_step / 131)))
+        else:
+            self.all_figures.append(plt.figure(variable))
         axes = self.all_figures[-1].subplots(nb_rows, nb_cols)
         if isinstance(axes, np.ndarray):
             axes = axes.flatten()
@@ -208,13 +213,17 @@ class PlotOcp:
         return axes
 
     def _organize_windows(self, nb_windows):
-        pass
-        # height = tkinter.Tk().winfo_screenheight()
-        # width = tkinter.Tk().winfo_screenwidth()
-        # self.nb_vertical_windows, nb_horizontal_windows = PlotOcp._generate_windows_size(nb_windows)
-        # self.top_margin = height / 15
-        # self.height_step = (height - self.top_margin) / nb_horizontal_windows
-        # self.width_step = width / self.nb_vertical_windows
+        self.nb_vertical_windows, nb_horizontal_windows = PlotOcp._generate_windows_size(nb_windows)
+        if self.automatically_organize:
+            height = tkinter.Tk().winfo_screenheight()
+            width = tkinter.Tk().winfo_screenwidth()
+            self.top_margin = height / 15
+            self.height_step = (height - self.top_margin) / nb_horizontal_windows
+            self.width_step = width / self.nb_vertical_windows
+        else:
+            self.top_margin = None
+            self.height_step = None
+            self.width_step = None
 
     @staticmethod
     def generate_integrated_time(t):
@@ -360,8 +369,8 @@ class ShowResult:
         self.ocp = ocp
         self.sol = sol
 
-    def graphs(self):
-        plot_ocp = PlotOcp(self.ocp)
+    def graphs(self, automatically_organize=True):
+        plot_ocp = PlotOcp(self.ocp, automatically_organize=automatically_organize)
         plot_ocp.update_data(self.sol["x"])
         plt.show()
 
