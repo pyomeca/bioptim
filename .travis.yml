@@ -13,6 +13,7 @@ before_install:
 install:
   - conda env update -n root -f environment.yml
   - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
+  - conda install xorg-libx11 xorg-libxtst -cconda-forge
 
 script:
   - black --check . --line-length 120

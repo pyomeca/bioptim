@@ -25,3 +25,4 @@ def test_plot_graphs_one_phase():
 
     plt = ShowResult(ocp, sol)
     plt.graphs()
+    plt.animate()
