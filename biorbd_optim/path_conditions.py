@@ -133,12 +133,8 @@ class Bounds:
         self.max.check_and_adjust_dimensions(nb_elements, nb_shooting, "Bound max")
 
     def concatenate(self, other):
-        self.min = PathCondition(
-            np.concatenate((self.min, other.min)), interpolation_type=self.min.type
-        )
-        self.max = PathCondition(
-            np.concatenate((self.max, other.max)), interpolation_type=self.max.type
-        )
+        self.min = PathCondition(np.concatenate((self.min, other.min)), interpolation_type=self.min.type)
+        self.max = PathCondition(np.concatenate((self.max, other.max)), interpolation_type=self.max.type)
 
 
 class QAndQDotBounds(Bounds):
@@ -189,7 +185,4 @@ class InitialConditions:
         self.init.check_and_adjust_dimensions(nb_elements, nb_shooting, "InitialConditions")
 
     def concatenate(self, other):
-        self.init = PathCondition(
-            np.concatenate((self.init, other.init)),
-            interpolation_type=self.init.type,
-        )
+        self.init = PathCondition(np.concatenate((self.init, other.init)), interpolation_type=self.init.type,)
