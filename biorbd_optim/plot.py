@@ -1,8 +1,14 @@
+import os
 import multiprocessing as mp
 import numpy as np
 import tkinter
 from itertools import accumulate
 
+import matplotlib
+
+if os.environ.get("DISPLAY", "") == "":
+    print("no display found. Using non-interactive Agg backend")
+    matplotlib.use("Agg")
 from matplotlib import pyplot as plt, lines
 from casadi import MX, Callback, nlpsol_out, nlpsol_n_out, Sparsity
 

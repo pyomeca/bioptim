@@ -19,9 +19,7 @@ spec.loader.exec_module(align_markers)
 
 
 def test_plot_graphs_one_phase():
-    ocp = align_markers.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod"
-    )
+    ocp = align_markers.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod")
     sol = ocp.solve()
 
     plt = ShowResult(ocp, sol)
