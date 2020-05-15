@@ -43,6 +43,17 @@ class PathCondition(np.ndarray):
         self.nb_shooting = getattr(obj, "nb_shooting", None)
         self.type = getattr(obj, "type", None)
 
+    def __reduce__(self):
+        pickled_state = super(PathCondition, self).__reduce__()
+        new_state = pickled_state[2] + (self.nb_shooting, self.type)
+        return (pickled_state[0], pickled_state[1], new_state)
+
+    def __setstate__(self, state):
+        self.nb_shooting = state[-2]
+        self.type = state[-1]
+        # Call the parent's __setstate__ with the other tuple elements.
+        super(PathCondition, self).__setstate__(state[0:-2])
+
     def check_and_adjust_dimensions(self, nb_elements, nb_shooting, condition_type):
         if (
             self.type == InterpolationType.CONSTANT
