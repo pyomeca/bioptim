@@ -113,7 +113,6 @@ def test_linear_initial_guess(ode_solver):
         final_time=1,
         number_shooting_points=5,
         ode_solver=ode_solver,
-        initialize_near_solution=True,
     )
     sol = ocp.solve()
 
