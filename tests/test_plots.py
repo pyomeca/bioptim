@@ -5,7 +5,8 @@ import importlib.util
 from pathlib import Path
 
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 
 from biorbd_optim import Data, OdeSolver, ShowResult
 

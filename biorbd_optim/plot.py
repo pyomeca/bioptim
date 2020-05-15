@@ -181,7 +181,7 @@ class PlotOcp:
             self.plots.extend(plots)
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
-        self.all_figures.append(plt.figure(variable, figsize=(self.width_step / 100, self.height_step / 131)))
+        self.all_figures.append(plt.figure(variable))  # , figsize=(self.width_step / 100, self.height_step / 131)))
         axes = self.all_figures[-1].subplots(nb_rows, nb_cols)
         if isinstance(axes, np.ndarray):
             axes = axes.flatten()
