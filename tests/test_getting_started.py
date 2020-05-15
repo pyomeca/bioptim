@@ -62,8 +62,19 @@ def test_pendulum(ode_solver):
     np.testing.assert_almost_equal(tau[:, 0], np.array((9.55000247, 0)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-21.18945819, 0)))
 
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
+def test_save_and_load(ode_solver):
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        final_time=2,
+        number_shooting_points=10,
+        show_online_optim=False,
+    )
+    sol = ocp.solve()
+
     # save and load
-    OptimalControlProgram.save(ocp, sol, "pendulum_ocp_sol")
+    ocp.save(sol, "pendulum_ocp_sol")
     ocp_load, sol_load = OptimalControlProgram.load(name="pendulum_ocp_sol.bo")
     for key in sol.keys():
         np.testing.assert_almost_equal(np.array(sol[key]), np.array(sol_load[key]))
@@ -79,8 +90,7 @@ def test_pendulum(ode_solver):
             for i in range(len(dict_loaded)):
                 deep_assert(dict_loaded[i], dict_original[i])
         elif isinstance(
-                dict_loaded,
-                (OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping, OdeSolver)
+            dict_loaded, (OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping, OdeSolver)
         ):
             for key in dir(dict_loaded):
                 deep_assert(getattr(dict_loaded, key), getattr(dict_original, key))

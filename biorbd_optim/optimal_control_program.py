@@ -84,7 +84,7 @@ class OptimalControlProgram:
             "U_bounds": U_bounds,
             "objective_functions": objective_functions,
             "constraints": constraints,
-            "external_forces": external_forces,
+            # "external_forces": external_forces,
             "ode_solver": ode_solver,
             "all_generalized_mapping": all_generalized_mapping,
             "q_mapping": q_mapping,
