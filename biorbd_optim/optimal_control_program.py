@@ -83,6 +83,9 @@ class OptimalControlProgram:
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
+        for nlp in self.nlp:
+            if nlp["ns"] < 1:
+                raise RuntimeError("Number of shooting points must be at least 1")
         self.initial_phase_time = phase_time
         phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time)
         self.__add_to_nlp("tf", phase_time, False)
@@ -117,14 +120,14 @@ class OptimalControlProgram:
         self.__add_to_nlp("U_bounds", U_bounds, False)
         for i in range(self.nb_phases):
             self.nlp[i]["X_bounds"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
-            self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"])
+            self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
 
         # Prepare initial guesses
         self.__add_to_nlp("X_init", X_init, False)
         self.__add_to_nlp("U_init", U_init, False)
         for i in range(self.nb_phases):
             self.nlp[i]["X_init"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
-            self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"])
+            self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
 
         # Variables and constraint for the optimization program
         self.V = []
@@ -227,23 +230,19 @@ class OptimalControlProgram:
         V_init = InitialConditions([0] * nV, interpolation_type=InterpolationType.CONSTANT)
 
         offset = 0
-        for k in range(nlp["ns"]):
+        for k in range(nlp["ns"] + 1):
             X.append(V.nz[offset : offset + nlp["nx"]])
             V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
             V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
             V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
             offset += nlp["nx"]
 
-            U.append(V.nz[offset : offset + nlp["nu"]])
-            V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
-            V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
-            V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
-            offset += nlp["nu"]
-
-        X.append(V.nz[offset : offset + nlp["nx"]])
-        V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=nlp["ns"])
-        V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=nlp["ns"])
-        V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=nlp["ns"])
+            if k != nlp["ns"]:
+                U.append(V.nz[offset : offset + nlp["nu"]])
+                V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
+                V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
+                V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
+                offset += nlp["nu"]
 
         V_bounds.check_and_adjust_dimensions(nV, 1)
         V_init.check_and_adjust_dimensions(nV, 1)

@@ -21,7 +21,10 @@ spec.loader.exec_module(align_markers)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
 def test_align_markers(ode_solver):
     ocp = align_markers.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod", ode_solver=ode_solver
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
+        number_shooting_points=30,
+        final_time=2,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 

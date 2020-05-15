@@ -5,7 +5,7 @@ from .enums import InterpolationType
 
 
 class PathCondition(np.ndarray):
-    def __new__(cls, input_array, nb_shooting=-1, interpolation_type=InterpolationType.CONSTANT):
+    def __new__(cls, input_array, interpolation_type=InterpolationType.CONSTANT):
         # Check and reinterpret input
         input_array = np.asarray(input_array, dtype=float)
         if len(input_array.shape) == 0:
@@ -24,8 +24,6 @@ class PathCondition(np.ndarray):
             if input_array.shape[1] == 1:
                 input_array = np.repeat(input_array, 3, axis=1)
         elif interpolation_type == InterpolationType.LINEAR:
-            if nb_shooting < 0:
-                raise RuntimeError("nb_shooting must be defined for InterpolationType.LINEAR")
             if input_array.shape[1] != 2:
                 raise RuntimeError("Value for InterpolationType.LINEAR must have exactly two columns")
         else:
@@ -33,7 +31,7 @@ class PathCondition(np.ndarray):
         obj = np.asarray(input_array).view(cls)
 
         # Additional information
-        obj.nb_shooting = nb_shooting
+        obj.nb_shooting = None
         obj.type = interpolation_type
 
         return obj
@@ -46,31 +44,48 @@ class PathCondition(np.ndarray):
         self.type = getattr(obj, "type", None)
 
     def check_and_adjust_dimensions(self, nb_elements, nb_shooting, condition_type):
+        if (
+            self.type == InterpolationType.CONSTANT
+            or self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
+            or self.type == InterpolationType.LINEAR
+        ):
+            self.nb_shooting = nb_shooting
+        else:
+            if self.nb_shooting != nb_shooting:
+                raise RuntimeError(
+                    f"Invalid number of shooting ({self.nb_shooting}), the expected number is {nb_shooting}"
+                )
+
         if self.shape[0] != nb_elements:
             raise RuntimeError(
-                f"Invalid number of {condition_type} ({self.shape[1] }), the expected size is {str(nb_elements)}"
+                f"Invalid number of {condition_type} ({self.shape[0] }), the expected size is {nb_elements}"
             )
 
         if self.type == InterpolationType.CONSTANT:
             if self.shape[1] != 1:
                 raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.CONSTANT (ncols = {self.shape[1]}), the expected number of column is 1"
+                    f"Invalid number of {condition_type} for InterpolationType.CONSTANT (ncols = {self.shape[1]}), "
+                    f"the expected number of column is 1"
                 )
         elif self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             if self.shape[1] != 3:
                 raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.CONSTANT (ncols = {self.shape[1]}), the expected number of column is 3"
+                    f"Invalid number of {condition_type} for InterpolationType.CONSTANT (ncols = {self.shape[1]}), "
+                    f"the expected number of column is 3"
                 )
-            self.nb_shooting = nb_shooting
         elif self.type == InterpolationType.LINEAR:
             if self.shape[1] != 2:
                 raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.LINEAR (ncols = {self.shape[1]}), the expected number of column is 2"
+                    f"Invalid number of {condition_type} for InterpolationType.LINEAR (ncols = {self.shape[1]}), "
+                    f"the expected number of column is 2"
                 )
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
     def evaluate_at(self, shooting_point):
+        if self.nb_shooting is None:
+            raise RuntimeError(f"check_and_adjust_dimensions must be called at least once before evaluating at")
+
         if self.type == InterpolationType.CONSTANT:
             return self[:, 0]
         elif self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
@@ -118,12 +133,8 @@ class Bounds:
         self.max.check_and_adjust_dimensions(nb_elements, nb_shooting, "Bound max")
 
     def concatenate(self, other):
-        self.min = PathCondition(
-            np.concatenate((self.min, other.min)), interpolation_type=self.min.type, nb_shooting=self.min.nb_shooting
-        )
-        self.max = PathCondition(
-            np.concatenate((self.max, other.max)), interpolation_type=self.max.type, nb_shooting=self.max.nb_shooting
-        )
+        self.min = PathCondition(np.concatenate((self.min, other.min)), interpolation_type=self.min.type)
+        self.max = PathCondition(np.concatenate((self.max, other.max)), interpolation_type=self.max.type)
 
 
 class QAndQDotBounds(Bounds):
@@ -174,8 +185,4 @@ class InitialConditions:
         self.init.check_and_adjust_dimensions(nb_elements, nb_shooting, "InitialConditions")
 
     def concatenate(self, other):
-        self.init = PathCondition(
-            np.concatenate((self.init, other.init)),
-            interpolation_type=self.init.type,
-            nb_shooting=self.init.nb_shooting,
-        )
+        self.init = PathCondition(np.concatenate((self.init, other.init)), interpolation_type=self.init.type,)
