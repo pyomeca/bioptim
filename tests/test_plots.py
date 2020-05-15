@@ -4,8 +4,8 @@ Test for file IO
 import importlib.util
 from pathlib import Path
 
-import pytest
-import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 
 from biorbd_optim import Data, OdeSolver, ShowResult
 
