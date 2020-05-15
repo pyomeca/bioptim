@@ -337,12 +337,12 @@ class PlotOcp:
                 y_min = 0
             if np.isnan(y_max) or np.isinf(y_max):
                 y_max = 1
+            data_mean = np.mean((y_min, y_max))
             data_range = y_max - y_min
-            if data_range == 0:
-                data_range = 1
-            mean = data_range / 2 + y_min
-            y_range = (1.3 * data_range) / 2
-            y_range = mean - y_range, mean + y_range
+            if np.abs(data_range) < 0.8:
+                data_range = 0.8
+            y_range = (1.25 * data_range) / 2
+            y_range = data_mean - y_range, data_mean + y_range
             ax.set_ylim(y_range)
             ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
 

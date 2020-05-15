@@ -14,14 +14,12 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path="cube.bioMod", show_online_optim=False, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, show_online_optim=False, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    number_shooting_points = 30
-    final_time = 2
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
@@ -71,7 +69,7 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", show_online_optim=False, ode_so
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=False)
+    ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, show_online_optim=False)
 
     # --- Solve the program --- #
     sol = ocp.solve()
