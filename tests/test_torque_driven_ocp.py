@@ -104,6 +104,7 @@ def test_multiphase_align_markers(ode_solver):
     np.testing.assert_almost_equal(tau[2][:, 0], np.array((0.35714285, 9.81, 0.56071428)))
     np.testing.assert_almost_equal(tau[2][:, -1], np.array((-0.35714285, 9.81, -0.56071428)))
 
+
 # Load external_forces
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
@@ -116,7 +117,8 @@ spec.loader.exec_module(external_forces)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_external_forces(ode_solver):
     ocp = external_forces.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube_with_forces.bioMod", ode_solver=ode_solver
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube_with_forces.bioMod",
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
