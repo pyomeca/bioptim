@@ -23,13 +23,14 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     # Model path
     biorbd_model = biorbd.Model(model_path)
     torque_min, torque_max, torque_init = -500, 500, 0
+    activation_min, activation_max, activation_init = 0, 1, 0.5
     tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
 
     # Add objective functions
     objective_functions = ({"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},)
 
     # Dynamics
-    problem_type = ProblemType.torque_driven_with_contact
+    problem_type = ProblemType.muscle_excitations_and_torque_driven_with_contact
 
     # Constraints
     constraints = (
@@ -52,20 +53,29 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     # Path constraint
     nb_q = biorbd_model.nbQ()
     nb_qdot = nb_q
+    nb_mus = biorbd_model.nbMuscleTotal()
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize X_bounds
     X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.min[:, 0] = pose_at_first_node + [0] * nb_qdot
-    X_bounds.max[:, 0] = pose_at_first_node + [0] * nb_qdot
+    X_bounds.concatenate(Bounds([activation_min] * nb_mus, [activation_max] * nb_mus))
+    X_bounds.min[:, 0] = pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus
+    X_bounds.max[:, 0] = pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus
 
     # Initial guess
-    X_init = InitialConditions(pose_at_first_node + [0] * nb_qdot)
+    X_init = [InitialConditions(pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus)]
 
     # Define control path constraint
-    U_bounds = Bounds(min_bound=[torque_min] * tau_mapping.reduce.len, max_bound=[torque_max] * tau_mapping.reduce.len)
+    U_bounds = [
+        Bounds(
+            min_bound=[torque_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(),
+            max_bound=[torque_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal(),
+        )
+    ]
 
-    U_init = InitialConditions([torque_init] * tau_mapping.reduce.len)
+    U_init = [
+        InitialConditions([torque_init] * tau_mapping.reduce.len + [activation_init] * biorbd_model.nbMuscleTotal())
+    ]
     # ------------- #
 
     return OptimalControlProgram(
@@ -73,11 +83,11 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
         problem_type,
         number_shooting_points,
         phase_time,
+        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
-        objective_functions,
         constraints,
         tau_mapping=tau_mapping,
         show_online_optim=show_online_optim,
@@ -85,7 +95,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
 
 
 if __name__ == "__main__":
-    model_path = "2segments_4dof_2contacts.bioMod"
+    model_path = "2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.3
     ns = 10
     ocp = prepare_ocp(
@@ -100,6 +110,29 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
+    nlp = ocp.nlp[0]
+    nlp["model"] = biorbd.Model(model_path)
+
+    states_sol, controls_sol = Data.get_data(ocp, sol["x"])
+    q = states_sol["q"]
+    q_dot = states_sol["q_dot"]
+    activations = states_sol["muscles"]
+    tau = controls_sol["tau"]
+    excitations = controls_sol["muscles"]
+
+    x = np.concatenate((q, q_dot, activations))
+    u = np.concatenate((tau, excitations))
+    contact_forces = np.array(nlp["contact_forces_func"](x[:, :-1], u[:, :-1]))
+
+    names_contact_forces = ocp.nlp[0]["model"].contactNames()
+    for i, elt in enumerate(contact_forces):
+        plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, ".-", label=f"{names_contact_forces[i].to_string()}")
+    plt.legend()
+    plt.grid()
+    plt.title("Contact forces")
+    plt.show()
+
     # --- Show results --- #
     result = ShowResult(ocp, sol)
+    result.animate()
     result.graphs()

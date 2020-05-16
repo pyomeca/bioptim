@@ -132,17 +132,13 @@ def prepare_ocp(
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
-    X_bounds.first_node_min[0] = X_bounds.min[0] = X_bounds.last_node_min[0] = -2 * np.pi
-    X_bounds.first_node_max[0] = X_bounds.max[0] = X_bounds.last_node_max[0] = 2 * np.pi
-    X_bounds.first_node_min[1] = X_bounds.min[1] = X_bounds.last_node_min[1] = -2 * np.pi
-    X_bounds.first_node_max[1] = X_bounds.max[1] = X_bounds.last_node_max[1] = 2 * np.pi
+    X_bounds.min[[0, 1], :] = -2 * np.pi
+    X_bounds.max[[0, 1], :] = 2 * np.pi
 
-    X_bounds.first_node_min += [activation_min] * biorbd_model.nbMuscles()
-    X_bounds.first_node_max += [activation_max] * biorbd_model.nbMuscles()
-    X_bounds.min += [activation_min] * biorbd_model.nbMuscles()
-    X_bounds.max += [activation_max] * biorbd_model.nbMuscles()
-    X_bounds.last_node_min += [activation_min] * biorbd_model.nbMuscles()
-    X_bounds.last_node_max += [activation_max] * biorbd_model.nbMuscles()
+    # Add muscle to the bounds
+    X_bounds.concatenate(
+        Bounds([activation_min] * biorbd_model.nbMuscles(), [activation_max] * biorbd_model.nbMuscles())
+    )
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()) + [0] * biorbd_model.nbMuscles())
@@ -226,14 +222,26 @@ if __name__ == "__main__":
     for i in range(markers.shape[1]):
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers[:, i, :].T, "r--")
+    plt.xlabel("Time")
+    plt.ylabel("Markers Position")
+
+    plt.figure("Q")
+    plt.plot(np.linspace(0, 2, n_shooting_points + 1), x_ref[:n_q, :].T, "k")
+    plt.plot(np.linspace(0, 2, n_shooting_points + 1), q.T, "r--")
+    plt.xlabel("Time")
+    plt.ylabel("Q values")
 
     plt.figure("Muscle activations")
     plt.plot(np.linspace(0, 2, n_shooting_points + 1), muscle_activations_ref, "k")
     plt.plot(np.linspace(0, 2, n_shooting_points + 1), activations.T, "r--")
+    plt.xlabel("Time")
+    plt.ylabel("Torques values (N.m)")
 
     plt.figure("Muscle excitations")
     plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_excitations_ref, "k", where="post")
     plt.step(np.linspace(0, 2, n_shooting_points + 1), excitations.T, "r--", where="post")
+    plt.xlabel("Time")
+    plt.ylabel("Excitation values")
 
     # --- Plot --- #
     plt.show()

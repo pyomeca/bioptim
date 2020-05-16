@@ -119,11 +119,11 @@ class Data:
         data_states, data_controls, data_parameters = {}, {}, {}
         for i in phase_idx:
             nlp = ocp.nlp[i]
-            for key in nlp["has_states"].keys():
+            for key in nlp["var_states"].keys():
                 if key not in data_states.keys():
                     data_states[key] = Data()
 
-            for key in nlp["has_controls"].keys():
+            for key in nlp["var_controls"].keys():
                 if key not in data_controls.keys():
                     data_controls[key] = Data()
 
@@ -131,19 +131,19 @@ class Data:
             nb_var = nlp["nx"] + nlp["nu"]
             offset = 0
 
-            for key in nlp["has_states"]:
+            for key in nlp["var_states"]:
                 data_states[key]._append_phase(
                     (Data._get_phase_time(V_phase, nlp)),
-                    Data._get_phase(V_phase, nlp["has_states"][key], nlp["ns"] + 1, offset, nb_var, False),
+                    Data._get_phase(V_phase, nlp["var_states"][key], nlp["ns"] + 1, offset, nb_var, False),
                 )
-                offset += nlp["has_states"][key]
+                offset += nlp["var_states"][key]
 
-            for key in nlp["has_controls"]:
+            for key in nlp["var_controls"]:
                 data_controls[key]._append_phase(
                     (Data._get_phase_time(V_phase, nlp)),
-                    Data._get_phase(V_phase, nlp["has_controls"][key], nlp["ns"], offset, nb_var, True),
+                    Data._get_phase(V_phase, nlp["var_controls"][key], nlp["ns"], offset, nb_var, True),
                 )
-                offset += nlp["has_controls"][key]
+                offset += nlp["var_controls"][key]
 
         offset = sum([nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"] for nlp in ocp.nlp])
         for key in ocp.param_to_optimize:
@@ -198,8 +198,8 @@ class Data:
             dt = ocp.nlp[idx_phase]["dt"]
             nlp = ocp.nlp[idx_phase]
             for idx_node in reversed(range(ocp.nlp[idx_phase]["ns"])):
-                x0 = Data._vertcat(data_states, list(nlp["has_states"].keys()), idx_phase, idx_node)
-                p = Data._vertcat(data_controls, list(nlp["has_controls"].keys()), idx_phase, idx_node)
+                x0 = Data._vertcat(data_states, list(nlp["var_states"].keys()), idx_phase, idx_node)
+                p = Data._vertcat(data_controls, list(nlp["var_controls"].keys()), idx_phase, idx_node)
                 if time_is_optimized:
                     # TODO: Allow integrate when optimizing time
                     xf_dof = x0
@@ -207,11 +207,11 @@ class Data:
                     xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"][idx_node](x0=x0, p=p)["xf"])  # Integrate
 
                 offset = 0
-                for key in nlp["has_states"]:
+                for key in nlp["var_states"]:
                     data_states[key]._horzcat_node(
-                        dt, xf_dof[offset : offset + nlp["has_states"][key]], idx_phase, idx_node
+                        dt, xf_dof[offset : offset + nlp["var_states"][key]], idx_phase, idx_node
                     )
-                    offset += nlp["has_states"][key]
+                    offset += nlp["var_states"][key]
         return data_states
 
     @staticmethod

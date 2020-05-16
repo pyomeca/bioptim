@@ -29,24 +29,18 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.first_node_min = [0] * (n_q + n_qdot)
-    X_bounds.first_node_max = [0] * (n_q + n_qdot)
-    X_bounds.last_node_min = [0] * (n_q + n_qdot)
-    X_bounds.last_node_max = [0] * (n_q + n_qdot)
-    X_bounds.last_node_min[n_q - 1] = 3.14
-    X_bounds.last_node_max[n_q - 1] = 3.14
+    X_bounds.min[:, [0, -1]] = 0
+    X_bounds.max[:, [0, -1]] = 0
+    X_bounds.min[1, -1] = 3.14
+    X_bounds.max[1, -1] = 3.14
 
     # Initial guess
     X_init = InitialConditions([0] * (n_q + n_qdot))
 
     # Define control path constraint
     U_bounds = Bounds(min_bound=[torque_min] * n_tau, max_bound=[torque_max] * n_tau)
-    U_bounds.first_node_min[n_tau - 1] = 0
-    U_bounds.first_node_max[n_tau - 1] = 0
-    U_bounds.min[n_tau - 1] = 0
-    U_bounds.max[n_tau - 1] = 0
-    U_bounds.last_node_min[n_tau - 1] = 0
-    U_bounds.last_node_max[n_tau - 1] = 0
+    U_bounds.min[n_tau - 1, :] = 0
+    U_bounds.max[n_tau - 1, :] = 0
 
     U_init = InitialConditions([torque_init] * n_tau)
 
@@ -75,7 +69,13 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     sol = ocp.solve()
 
+    # --- Save the optimal control program and the solution --- #
+    ocp.save(sol, "pendulum")
+
+    # --- Load the optimal control program and the solution --- #
+    ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")
+
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
+    result = ShowResult(ocp_load, sol_load)
     result.graphs()
     result.animate()

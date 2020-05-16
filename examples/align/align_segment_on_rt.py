@@ -16,9 +16,10 @@ from biorbd_optim import (
 
 
 def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver, show_online_optim=False):
-    # --- Options --- #
+    # --- Options --- #nq
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
+    nq = biorbd_model.nbQ()
 
     # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -36,17 +37,10 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
-
-    for i in range(4, 8):
-        X_bounds.first_node_min[i] = 0
-        X_bounds.last_node_min[i] = 0
-        X_bounds.first_node_max[i] = 0
-        X_bounds.last_node_max[i] = 0
-    X_bounds.first_node_min[2] = -1.57
-    X_bounds.first_node_max[2] = -1.57
-
-    X_bounds.last_node_min[2] = 1.57
-    X_bounds.last_node_max[2] = 1.57
+    X_bounds.min[2, [0, -1]] = [-1.57, 1.57]
+    X_bounds.max[2, [0, -1]] = [-1.57, 1.57]
+    X_bounds.min[nq:, [0, -1]] = 0
+    X_bounds.max[nq:, [0, -1]] = 0
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))

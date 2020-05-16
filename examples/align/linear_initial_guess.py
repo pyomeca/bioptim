@@ -1,3 +1,4 @@
+import numpy as np
 import biorbd
 
 from biorbd_optim import (
@@ -12,19 +13,16 @@ from biorbd_optim import (
     InitialConditions,
     ShowResult,
     OdeSolver,
+    InterpolationType,
 )
 
 
-def prepare_ocp(
-    biorbd_model_path, final_time, number_shooting_points, ode_solver, initialize_near_solution, show_online_optim=False
-):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver, show_online_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    number_shooting_points = 30
-    final_time = 2
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
@@ -57,20 +55,18 @@ def prepare_ocp(
     X_bounds.max[2, -1] = 1.57
 
     # Initial guess
-    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
-    if initialize_near_solution:
-        for i in range(2):
-            X_init.init[i] = 1.5
-        for i in range(4, 6):
-            X_init.init[i] = 0.7
-        for i in range(6, 8):
-            X_init.init[i] = 0.6
+    q_init = np.array(((1.0, 0.0, 0.0, 0.46364761), (2.0, 0.0, 1.57, 0.78539785))).T
+    q_dot_init = np.array(((0, 0, 0, 0), (0, 0, 0, 0))).T
+    X_init = InitialConditions(np.concatenate((q_init, q_dot_init)), interpolation_type=InterpolationType.LINEAR)
 
     # Define control path constraint
     U_bounds = Bounds(
         [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque(),
     )
-    U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
+    tau_init = np.array(
+        ((6.45997035, 10.47049302, 8.55628251, 3.57204643), (-4.46859579, 11.15084889, -10.15098446, 1.519847))
+    ).T
+    U_init = InitialConditions(tau_init, interpolation_type=InterpolationType.LINEAR)
 
     # ------------- #
 
@@ -79,11 +75,11 @@ def prepare_ocp(
         problem_type,
         number_shooting_points,
         final_time,
+        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
-        objective_functions,
         constraints,
         ode_solver=ode_solver,
         show_online_optim=show_online_optim,
@@ -94,9 +90,8 @@ if __name__ == "__main__":
     ocp = prepare_ocp(
         biorbd_model_path="cube_and_line.bioMod",
         number_shooting_points=30,
-        final_time=1,
+        final_time=1.0,
         ode_solver=OdeSolver.RK,
-        initialize_near_solution=True,
         show_online_optim=False,
     )
 

@@ -42,19 +42,17 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_opti
     pose_at_first_node = [0, 0, -0.5, 0.5]
 
     # Initialize X_bounds
-    X_bounds = [QAndQDotBounds(biorbd_model)]
-    X_bounds[0].first_node_min = pose_at_first_node + [0] * nb_qdot
-    X_bounds[0].first_node_max = pose_at_first_node + [0] * nb_qdot
+    X_bounds = QAndQDotBounds(biorbd_model)
+    X_bounds.min[:, 0] = pose_at_first_node + [0] * nb_qdot
+    X_bounds.max[:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
-    X_init = [InitialConditions(pose_at_first_node + [0] * nb_qdot)]
+    X_init = InitialConditions(pose_at_first_node + [0] * nb_qdot)
 
     # Define control path constraint
-    U_bounds = [
-        Bounds(min_bound=[torque_min] * tau_mapping.reduce.len, max_bound=[torque_max] * tau_mapping.reduce.len)
-    ]
+    U_bounds = Bounds(min_bound=[torque_min] * tau_mapping.reduce.len, max_bound=[torque_max] * tau_mapping.reduce.len)
 
-    U_init = [InitialConditions([torque_init] * tau_mapping.reduce.len)]
+    U_init = InitialConditions([torque_init] * tau_mapping.reduce.len)
     # ------------- #
 
     return OptimalControlProgram(
@@ -81,22 +79,6 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     sol = ocp.solve()
-
-    nlp = ocp.nlp[0]
-
-    nlp["model"] = biorbd.Model(model_path)
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, q_dot, u = states["q"], states["q_dot"], controls["tau"]
-    x = np.concatenate((q, q_dot))
-    contact_forces = np.array(nlp["contact_forces_func"](x[:, :-1], u[:, :-1]))
-
-    names_contact_forces = ocp.nlp[0]["model"].contactNames()
-    for i, elt in enumerate(contact_forces):
-        plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, label=f"{names_contact_forces[i].to_string()}")
-    plt.legend()
-    plt.grid()
-    plt.title("Contact forces")
-    plt.show()
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
