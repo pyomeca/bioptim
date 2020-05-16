@@ -21,9 +21,6 @@ def run_and_save_ocp():
 if __name__ == "__main__":
     run_and_save_ocp()
 
-    ocp, sol = OptimalControlProgram.load(
-        biorbd_model_path=["cube.bioMod", "cube.bioMod", "cube.bioMod"], name="cube_ocp_sol.bo"
-    )
+    ocp, sol = OptimalControlProgram.load(name="cube_ocp_sol.bo")
     result = ShowResult(ocp, sol)
-    # result.graphs()
-    result.animate(nb_frames=40)
+    result.graphs()
