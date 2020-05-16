@@ -47,11 +47,8 @@ def prepare_ocp(biorbd_model_path="cube_with_forces.bioMod", show_online_optim=F
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
-    for i in range(3, 6):
-        X_bounds.first_node_min[i] = 0
-        X_bounds.last_node_min[i] = 0
-        X_bounds.first_node_max[i] = 0
-        X_bounds.last_node_max[i] = 0
+    X_bounds.min[3:6, [0, -1]] = 0
+    X_bounds.max[3:6, [0, -1]] = 0
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
@@ -73,9 +70,9 @@ def prepare_ocp(biorbd_model_path="cube_with_forces.bioMod", show_online_optim=F
         U_init,
         X_bounds,
         U_bounds,
-        external_forces=external_forces,
-        constraints=constraints,
         objective_functions=objective_functions,
+        constraints=constraints,
+        external_forces=external_forces,
         ode_solver=ode_solver,
         show_online_optim=show_online_optim,
     )

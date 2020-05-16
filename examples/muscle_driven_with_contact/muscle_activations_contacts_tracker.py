@@ -74,12 +74,12 @@ def prepare_ocp(
         problem_type,
         number_shooting_points,
         phase_time,
-        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
-        constraints,
+        objective_functions=objective_functions,
+        constraints=constraints,
         show_online_optim=show_online_optim,
     )
 

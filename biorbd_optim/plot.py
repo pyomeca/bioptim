@@ -217,7 +217,7 @@ class PlotOcp:
         self.nb_vertical_windows, self.nb_horizontal_windows = PlotOcp._generate_windows_size(nb_windows)
         if self.automatically_organize:
             height = tkinter.Tk().winfo_screenheight()
-            width = tkinter.Tk().winfo_screenwidth() / 2
+            width = tkinter.Tk().winfo_screenwidth()
             self.top_margin = height / 15
             self.height_step = (height - self.top_margin) / self.nb_horizontal_windows
             self.width_step = width / self.nb_vertical_windows
