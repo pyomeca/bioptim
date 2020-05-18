@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from biorbd_optim import Data, OdeSolver
+from biorbd_optim import Data, OdeSolver, Tests
 
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
@@ -75,6 +75,9 @@ def test_maximize_predicted_height_CoM(ode_solver):
     np.testing.assert_almost_equal(tau[:, 0], np.array((-27.2604552)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-0.2636804)))
 
+    # save and load
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/maximize_predicted_height_CoM", False)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
@@ -137,6 +140,9 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-54.1684018)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-15.69338332)))
+
+    # save and load
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/maximize_predicted_height_CoM", False)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
@@ -202,6 +208,9 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-32.78862874)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-25.23729156)))
+
+    # save and load
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/contact_forces_inequality_LESSER_THAN_constraint", False)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
@@ -283,3 +292,6 @@ def test_non_slipping_constraint(ode_solver):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-14.33813755)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-13.21317493)))
+
+    # save and load
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/non_slipping_constraint", False)
