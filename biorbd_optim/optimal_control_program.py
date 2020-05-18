@@ -1,5 +1,5 @@
 from math import inf
-from copy import copy
+from copy import deepcopy
 import pickle
 import os
 
@@ -84,8 +84,8 @@ class OptimalControlProgram:
             "U_init": U_init,
             "X_bounds": X_bounds,
             "U_bounds": U_bounds,
-            "objective_functions": objective_functions,
-            "constraints": constraints,
+            "objective_functions": deepcopy(objective_functions),
+            "constraints": deepcopy(constraints),
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "all_generalized_mapping": all_generalized_mapping,
