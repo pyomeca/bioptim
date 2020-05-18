@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from biorbd_optim import Data, OdeSolver
+from biorbd_optim import Data, OdeSolver, Tests
 
 # Load align_markers
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -51,6 +51,9 @@ def test_align_markers(ode_solver):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
+
+    # save and load
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/align_markers", False)
 
 
 # Load multiphase_align_markers
@@ -107,6 +110,9 @@ def test_multiphase_align_markers(ode_solver):
     np.testing.assert_almost_equal(tau[2][:, 0], np.array((0.35714285, 9.81, 0.56071428)))
     np.testing.assert_almost_equal(tau[2][:, -1], np.array((-0.35714285, 9.81, -0.56071428)))
 
+    # save and load
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/multiphase_align_markers", False)
+
 
 # Load external_forces
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -152,3 +158,6 @@ def test_external_forces(ode_solver):
     np.testing.assert_almost_equal(tau[:, 10], np.array((0, 7.71100122, 0, 0)))
     np.testing.assert_almost_equal(tau[:, 20], np.array((0, 5.70877651, 0, 0)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((0, 3.90677425, 0, 0)))
+
+    # save and load
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/external_forces", True)
