@@ -158,12 +158,14 @@ initial_guess = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(initial_guess)
 
 
-@pytest.mark.parametrize("ode_solver", InterpolationType)
-def test_initial_guesses(ode_solver):
+@pytest.mark.parametrize("interpolation_type", InterpolationType)
+def test_initial_guesses(interpolation_type):
+    np.random.seed(42)
     ocp = initial_guess.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
         final_time=1,
         number_shooting_points=5,
+        initial_guess=interpolation_type
     )
     sol = ocp.solve()
 

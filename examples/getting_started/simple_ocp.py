@@ -58,9 +58,11 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_g
     elif initial_guess == InterpolationType.LINEAR:
         x = np.array([[1.0, 0.0, 0.0, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T
         u = np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T
-    elif initial_guess == InterpolationType.CUSTOM:
+    elif initial_guess == InterpolationType.EACH_FRAME:
         x = np.random.random((nq + nqdot, number_shooting_points + 1))
         u = np.random.random((ntau, number_shooting_points))
+    else:
+        raise RuntimeError("Initial guess not implemented yet")
     X_init = InitialConditions(x, interpolation_type=initial_guess)
     U_init = InitialConditions(u, interpolation_type=initial_guess)
     # ------------- #

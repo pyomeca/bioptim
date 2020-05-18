@@ -26,9 +26,9 @@ class PathCondition(np.ndarray):
         elif interpolation_type == InterpolationType.LINEAR:
             if input_array.shape[1] != 2:
                 raise RuntimeError("Value for InterpolationType.LINEAR must have exactly two columns")
-        elif interpolation_type == InterpolationType.CUSTOM:
+        elif interpolation_type == InterpolationType.EACH_FRAME:
             if input_array.shape[1] < 2:
-                raise RuntimeError("Value for InterpolationType.CUSTOM must exactly match the number of points")
+                raise RuntimeError("Value for InterpolationType.EACH_FRAME must exactly match the number of points")
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
         obj = np.asarray(input_array).view(cls)
@@ -64,7 +64,7 @@ class PathCondition(np.ndarray):
             or self.type == InterpolationType.LINEAR
         ):
             self.nb_shooting = nb_shooting
-        elif self.type == InterpolationType.CUSTOM:
+        elif self.type == InterpolationType.EACH_FRAME:
             self.nb_shooting = nb_shooting + 1
         else:
             if self.nb_shooting != nb_shooting:
@@ -95,7 +95,7 @@ class PathCondition(np.ndarray):
                     f"Invalid number of {condition_type} for InterpolationType.LINEAR (ncols = {self.shape[1]}), "
                     f"the expected number of column is 2"
                 )
-        elif self.type == InterpolationType.CUSTOM:
+        elif self.type == InterpolationType.EACH_FRAME:
             if self.shape[1] != self.nb_shooting:
                 raise RuntimeError(
                     f"Invalid number of {condition_type} for InterpolationType.LINEAR (ncols = {self.shape[1]}), "
@@ -119,7 +119,7 @@ class PathCondition(np.ndarray):
                 return self[:, 1]
         elif self.type == InterpolationType.LINEAR:
             return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / self.nb_shooting
-        elif self.type == InterpolationType.CUSTOM:
+        elif self.type == InterpolationType.EACH_FRAME:
             return self[:, shooting_point]
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
