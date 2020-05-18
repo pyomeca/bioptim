@@ -396,16 +396,16 @@ class OptimalControlProgram:
         # Solve the problem
         return solver.call(arg)
 
-    def save(self, sol, name):
-        _, ext = os.path.splitext(name)
+    def save(self, sol, file_path):
+        _, ext = os.path.splitext(file_path)
         if ext == "":
-            name = name + ".bo"
-        with open(name, "wb") as file:
+            file_path = file_path + ".bo"
+        with open(file_path, "wb") as file:
             pickle.dump({"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file)
 
     @staticmethod
-    def load(name):
-        with open(name, "rb") as file:
+    def load(file_path):
+        with open(file_path, "rb") as file:
             data = pickle.load(file)
             ocp = OptimalControlProgram(**data["ocp_initilializer"])
             for key in data["versions"].keys():
