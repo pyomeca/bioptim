@@ -15,9 +15,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(
-    biorbd_model_path, number_shooting_points, final_time, initial_guess=InterpolationType.CONSTANT
-):
+def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_guess=InterpolationType.CONSTANT):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -55,10 +53,10 @@ def prepare_ocp(
         x = [0] * (nq + nqdot)
         u = [torque_init] * ntau
     elif initial_guess == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-        x = np.array([[1., 0., 0., 0, 0, 0], [1.5, 0., 0.785, 0, 0, 0], [2., 0., 1.57, 0, 0, 0]]).T
+        x = np.array([[1.0, 0.0, 0.0, 0, 0, 0], [1.5, 0.0, 0.785, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T
         u = np.array([[1.45, 9.81, 2.28], [0, 9.81, 0], [-1.45, 9.81, -2.28]]).T
     elif initial_guess == InterpolationType.LINEAR:
-        x = np.array([[1., 0., 0., 0, 0, 0], [2., 0., 1.57, 0, 0, 0]]).T
+        x = np.array([[1.0, 0.0, 0.0, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T
         u = np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T
     elif initial_guess == InterpolationType.CUSTOM:
         x = np.random.random((nq + nqdot, number_shooting_points + 1))

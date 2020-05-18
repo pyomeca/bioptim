@@ -188,5 +188,5 @@ def test_initial_guesses(ode_solver):
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([5., 9.81, 7.85]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-5., 9.81, -7.85]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([5.0, 9.81, 7.85]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-5.0, 9.81, -7.85]))
