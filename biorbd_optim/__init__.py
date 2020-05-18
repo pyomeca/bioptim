@@ -1,5 +1,5 @@
 from .__version__ import __version__
-from .enums import Axe, OdeSolver, Instant, InterpolationType
+from .enums import Axe, OdeSolver, Instant, InterpolationType, PlotType
 from .constraints import Constraint
 from .objective_functions import Objective
 from .problem_type import ProblemType
