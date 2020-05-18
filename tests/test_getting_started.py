@@ -6,17 +6,11 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-from casadi import MX
-import biorbd
 
 from biorbd_optim import (
     Data,
     OdeSolver,
-    OptimalControlProgram,
-    Bounds,
-    InitialConditions,
-    BidirectionalMapping,
-    Mapping,
+    Tests,
 )
 
 # Load pendulum
@@ -62,49 +56,8 @@ def test_pendulum(ode_solver):
     np.testing.assert_almost_equal(tau[:, 0], np.array((9.55000247, 0)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-21.18945819, 0)))
 
-
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_save_and_load(ode_solver):
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
-        number_shooting_points=10,
-        show_online_optim=False,
-    )
-    sol = ocp.solve()
-
     # save and load
-    ocp.save(sol, "pendulum_ocp_sol")
-    ocp_load, sol_load = OptimalControlProgram.load(name="pendulum_ocp_sol.bo")
-    for key in sol.keys():
-        np.testing.assert_almost_equal(np.array(sol[key]), np.array(sol_load[key]))
-    sol_from_load = ocp_load.solve()
-    for key in sol.keys():
-        np.testing.assert_almost_equal(np.array(sol[key]), np.array(sol_from_load[key]))
-
-    def deep_assert(dict_loaded, dict_original):
-        if isinstance(dict_loaded, dict):
-            for key in dict_loaded:
-                deep_assert(dict_loaded[key], dict_original[key])
-        elif isinstance(dict_loaded, (list, tuple)):
-            for i in range(len(dict_loaded)):
-                deep_assert(dict_loaded[i], dict_original[i])
-        elif isinstance(
-            dict_loaded, (OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping, OdeSolver)
-        ):
-            for key in dir(dict_loaded):
-                deep_assert(getattr(dict_loaded, key), getattr(dict_original, key))
-        else:
-            if not callable(dict_loaded) and not isinstance(dict_loaded, (MX, biorbd.Model)):
-                try:
-                    elem_loaded = np.asarray(dict_loaded, dtype=float)
-                    elem_original = np.array(dict_original, dtype=float)
-                    np.testing.assert_almost_equal(elem_original, elem_loaded)
-                except ValueError:
-                    pass
-
-    deep_assert(ocp_load, ocp)
-    deep_assert(ocp, ocp_load)
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/pendulum", True)
 
 
 # Load pendulum_min_time_Mayer
@@ -156,6 +109,9 @@ def test_pendulum_min_time_mayer(ode_solver):
     # optimized time
     np.testing.assert_almost_equal(tf, 0.6209213032003106)
 
+    # save and load
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/pendulum_min_time_mayer", False)
+
 
 # Load pendulum_min_time_Lagrange
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -205,6 +161,9 @@ def test_pendulum_min_time_lagrange(ode_solver):
 
     # optimized time
     np.testing.assert_almost_equal(tf, 0.6023985224766413)
+
+    # save and load
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/pendulum_min_time_lagrange", True)
 
 
 # Load custom_constraint
