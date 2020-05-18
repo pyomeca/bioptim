@@ -165,7 +165,7 @@ def test_initial_guesses(interpolation_type):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
         final_time=1,
         number_shooting_points=5,
-        initial_guess=interpolation_type
+        initial_guess=interpolation_type,
     )
     sol = ocp.solve()
 
