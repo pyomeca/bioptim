@@ -12,12 +12,13 @@ from .enums import PlotType
 
 
 class CustomPlot:
-    def __init__(self, size, update_function, plot_type=PlotType.PLOT, phase_mappings=None, legend=()):
+    def __init__(self, size, update_function, plot_type=PlotType.PLOT, phase_mappings=None, legend=(), combine_to=None):
         self.size = size
         self.function = update_function
         self.type = plot_type
         self.phase_mappings = Mapping(range(size)) if phase_mappings is None else phase_mappings
         self.legend = legend
+        self.combine_to = combine_to
 
 
 class PlotOcp:
@@ -47,15 +48,8 @@ class PlotOcp:
         self.all_figures = []
 
         running_cmp = 0
-        self.matching_mapping = dict()
-        for state in ocp.nlp[0]["var_states"]:
-            if state in ocp.nlp[0]["var_controls"]:
-                self.matching_mapping[state] = running_cmp
-            running_cmp += ocp.nlp[0]["var_states"][state]
         self.automatically_organize = automatically_organize
-        self._organize_windows(
-            len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]) - len(self.matching_mapping),
-        )
+        self._organize_windows(len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]),)
 
         self.plot_func = {}
         self.variable_sizes = {}
@@ -104,8 +98,8 @@ class PlotOcp:
             for variable in self.variable_sizes:
                 nb = self.variable_sizes[variable]
                 nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
-                if variable == "control" and variable in self.matching_mapping:
-                    axes = self.axes["control"][self.matching_mapping[variable] : self.matching_mapping[variable] + nb]
+                if nlp["plot"][variable].combine_to:
+                    axes = self.axes[nlp["plot"][variable].combine_to]
                 elif i > 0:
                     axes = self.axes[variable]
                 else:
@@ -132,12 +126,21 @@ class PlotOcp:
                         plots_integrated = []
                         for cmp in range(nlp["ns"]):
                             plots_integrated.append(
-                                ax.plot(self.t[i][[cmp, cmp+1]], (0, 0), ".-", color="tab:brown", markersize=6, linewidth=0.8,)[0]
+                                ax.plot(
+                                    self.t[i][[cmp, cmp + 1]],
+                                    (0, 0),
+                                    ".-",
+                                    color="tab:brown",
+                                    markersize=6,
+                                    linewidth=0.8,
+                                )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
 
                     elif plot_type == PlotType.STEP:
-                        self.plots.append([plot_type, i, ax.step(t, zero, where="post", color="tab:orange", zorder=0)[0]])
+                        self.plots.append(
+                            [plot_type, i, ax.step(t, zero, where="post", color="tab:orange", zorder=0)[0]]
+                        )
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
@@ -230,7 +233,7 @@ class PlotOcp:
             phase_idx = plot[1]
             if plot[0] == PlotType.INTEGRATED:
                 for cmp, p in enumerate(plot[2]):
-                    p.set_xdata(self.t[phase_idx][[cmp, cmp+1]])
+                    p.set_xdata(self.t[phase_idx][[cmp, cmp + 1]])
                 ax = plot[2][-1].axes
             else:
                 plot[2].set_xdata(self.t[phase_idx])
@@ -254,7 +257,7 @@ class PlotOcp:
 
             if plot[0] == PlotType.INTEGRATED:
                 for cmp, p in enumerate(plot[2]):
-                    p.set_ydata(y[[cmp, cmp+1]])
+                    p.set_ydata(y[[cmp, cmp + 1]])
             else:
                 plot[2].set_ydata(y)
 
