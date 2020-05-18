@@ -87,3 +87,7 @@ if __name__ == "__main__":
         ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, initial_guess=initial_guess)
         sol = ocp.solve()
         print("\n")
+
+    # Print the last solution
+    result_plot = ShowResult(ocp, sol)
+    result_plot.graphs()
