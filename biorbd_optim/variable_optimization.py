@@ -70,7 +70,7 @@ class Data:
     @staticmethod
     def get_data(
         ocp,
-        V,
+        sol_x,
         get_states=True,
         get_controls=True,
         get_parameters=False,
@@ -79,8 +79,11 @@ class Data:
         interpolate_nb_frames=-1,
         concatenate=True,
     ):
+        if isinstance(sol_x, dict) and "x" in sol_x:
+            sol_x = sol_x["x"]
+
         data_states, data_controls, data_parameters = Data.get_data_object(
-            ocp, V, phase_idx, integrate, interpolate_nb_frames, concatenate
+            ocp, sol_x, phase_idx, integrate, interpolate_nb_frames, concatenate
         )
 
         out = []

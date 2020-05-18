@@ -22,8 +22,6 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_g
     nq = biorbd_model.nbQ()
     nqdot = biorbd_model.nbQdot()
     ntau = biorbd_model.nbGeneralizedTorque()
-
-    # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
@@ -87,3 +85,7 @@ if __name__ == "__main__":
         ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, initial_guess=initial_guess)
         sol = ocp.solve()
         print("\n")
+
+    # Print the last solution
+    result_plot = ShowResult(ocp, sol)
+    result_plot.graphs()
