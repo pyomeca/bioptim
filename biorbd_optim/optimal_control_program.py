@@ -72,6 +72,29 @@ class OptimalControlProgram:
             raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "biorbd_optim": __version__}
 
+        biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
+        self.original_values = {
+            "biorbd_model": biorbd_model_path,
+            "problem_type": problem_type,
+            "number_shooting_points": number_shooting_points,
+            "phase_time": phase_time,
+            "X_init": X_init,
+            "U_init": U_init,
+            "X_bounds": X_bounds,
+            "U_bounds": U_bounds,
+            "objective_functions": objective_functions,
+            "constraints": constraints,
+            # "external_forces": external_forces,
+            "ode_solver": ode_solver,
+            "all_generalized_mapping": all_generalized_mapping,
+            "q_mapping": q_mapping,
+            "q_dot_mapping": q_dot_mapping,
+            "tau_mapping": tau_mapping,
+            "is_cyclic_objective": is_cyclic_objective,
+            "is_cyclic_constraint": is_cyclic_constraint,
+            "show_online_optim": show_online_optim,
+        }
+
         self.nb_phases = len(biorbd_model)
         self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
@@ -83,6 +106,9 @@ class OptimalControlProgram:
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
+        for nlp in self.nlp:
+            if nlp["ns"] < 1:
+                raise RuntimeError("Number of shooting points must be at least 1")
         self.initial_phase_time = phase_time
         phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time)
         self.__add_to_nlp("tf", phase_time, False)
@@ -117,14 +143,14 @@ class OptimalControlProgram:
         self.__add_to_nlp("U_bounds", U_bounds, False)
         for i in range(self.nb_phases):
             self.nlp[i]["X_bounds"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
-            self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"])
+            self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
 
         # Prepare initial guesses
         self.__add_to_nlp("X_init", X_init, False)
         self.__add_to_nlp("U_init", U_init, False)
         for i in range(self.nb_phases):
             self.nlp[i]["X_init"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
-            self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"])
+            self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
 
         # Variables and constraint for the optimization program
         self.V = []
@@ -227,23 +253,19 @@ class OptimalControlProgram:
         V_init = InitialConditions([0] * nV, interpolation_type=InterpolationType.CONSTANT)
 
         offset = 0
-        for k in range(nlp["ns"]):
+        for k in range(nlp["ns"] + 1):
             X.append(V.nz[offset : offset + nlp["nx"]])
             V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
             V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
             V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
             offset += nlp["nx"]
 
-            U.append(V.nz[offset : offset + nlp["nu"]])
-            V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
-            V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
-            V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
-            offset += nlp["nu"]
-
-        X.append(V.nz[offset : offset + nlp["nx"]])
-        V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=nlp["ns"])
-        V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=nlp["ns"])
-        V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=nlp["ns"])
+            if k != nlp["ns"]:
+                U.append(V.nz[offset : offset + nlp["nu"]])
+                V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
+                V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
+                V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
+                offset += nlp["nu"]
 
         V_bounds.check_and_adjust_dimensions(nV, 1)
         V_init.check_and_adjust_dimensions(nV, 1)
@@ -352,41 +374,23 @@ class OptimalControlProgram:
         # Solve the problem
         return solver.call(arg)
 
-    def _get_a_reduced_ocp(self):
-        reduced_ocp = copy(self)
-        del (
-            reduced_ocp.J,
-            reduced_ocp.V,
-            reduced_ocp.V_bounds,
-            reduced_ocp.V_init,
-            reduced_ocp.g,
-            reduced_ocp.g_bounds,
-            reduced_ocp.show_online_optim_callback,
-        )
-        for nlp in reduced_ocp.nlp:
-            del (
-                nlp["model"],
-                nlp["x"],
-                nlp["u"],
-                nlp["X"],
-                nlp["U"],
-            )
-        return reduced_ocp
-
-    @staticmethod
-    def save(ocp, sol, name):
+    def save(self, sol, name):
         _, ext = os.path.splitext(name)
         if ext == "":
             name = name + ".bo"
         with open(name, "wb") as file:
-            pickle.dump({"ocp": OptimalControlProgram._get_a_reduced_ocp(ocp), "sol": sol}, file)
+            pickle.dump({"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file)
 
     @staticmethod
-    def load(biorbd_model_path, name):
+    def load(name):
         with open(name, "rb") as file:
             data = pickle.load(file)
-            ocp = data["ocp"]
+            ocp = OptimalControlProgram(**data["ocp_initilializer"])
+            for key in data["versions"].keys():
+                if data["versions"][key] != ocp.version[key]:
+                    raise RuntimeError(
+                        f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
+                        f"installed version ({ocp.version[key]})"
+                    )
             sol = data["sol"]
-            for i, nlp in enumerate(ocp.nlp):
-                nlp["model"] = biorbd.Model(biorbd_model_path[i])
         return (ocp, sol)
