@@ -127,17 +127,17 @@ class PlotOcp:
                     zero = np.zeros((t.shape[0], 1))
                     plot_type = self.plot_func[variable][0].type
                     if plot_type == PlotType.PLOT:
-                        self.plots.append([plot_type, ax.plot(t, zero, ".-", color="tab:green", zorder=0)[0]])
+                        self.plots.append([plot_type, i, ax.plot(t, zero, ".-", color="tab:green", zorder=0)[0]])
                     elif plot_type == PlotType.INTEGRATED:
                         plots_integrated = []
                         for cmp in range(nlp["ns"]):
                             plots_integrated.append(
                                 ax.plot(self.t[i][[cmp, cmp+1]], (0, 0), ".-", color="tab:brown", markersize=6, linewidth=0.8,)[0]
                             )
-                        self.plots.append([plot_type, plots_integrated])
+                        self.plots.append([plot_type, i, plots_integrated])
 
                     elif plot_type == PlotType.STEP:
-                        self.plots.append([plot_type, ax.step(t, zero, where="post", color="tab:orange", zorder=0)[0]])
+                        self.plots.append([plot_type, i, ax.step(t, zero, where="post", color="tab:orange", zorder=0)[0]])
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
@@ -161,13 +161,6 @@ class PlotOcp:
             axes[i].remove()
         axes = axes[:nb]
 
-        # for k in range(nb):
-        #     if "q" in variable or "q_dot" in variable or "tau" in variable:
-        #         pass
-        #         mapping = self.ocp.nlp[0][f"{variable}_mapping"].expand.map_idx
-        #         axes[k].set_title(self.ocp.nlp[0]["model"].nameDof()[mapping[k]].to_string())
-        #     elif "muscles" in variable:
-        #         axes[k].set_title(self.ocp.nlp[0]["model"].muscleNames()[k].to_string())
         idx_center = nb_rows * nb_cols - int(nb_cols / 2) - 1
         if idx_center >= len(axes):
             idx_center = len(axes) - 1
@@ -204,12 +197,11 @@ class PlotOcp:
             self.ocp, V, get_parameters=True, integrate=True, concatenate=False
         )
 
-        # for i, nlp in enumerate(self.ocp.nlp):
-        #     if self.t_idx_to_optimize:
-        #         for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
-        #             self.tf[i_in_tf] = data_param["time"][i_in_time]
-        #         self.__update_xdata()
-        #     self.__update_ydata(data_states, i)
+        for _ in self.ocp.nlp:
+            if self.t_idx_to_optimize:
+                for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
+                    self.tf[i_in_tf] = data_param["time"][i_in_time]
+            self.__update_xdata()
 
         data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, concatenate=False)
         for i, nlp in enumerate(self.ocp.nlp):
@@ -234,15 +226,16 @@ class PlotOcp:
 
     def __update_xdata(self):
         self.__init_time_vector()
-        for i, p in enumerate(self.plots):
-            if i < self.ocp.nlp[0]["nx"]:
-                for j in range(int(len(p) / 2)):
-                    p[2 * j].set_xdata(self.t_integrated[j * 2 : 2 * j + 2])
-                    p[2 * j + 1].set_xdata(self.t_integrated[j * 2])
+        for plot in self.plots:
+            phase_idx = plot[1]
+            if plot[0] == PlotType.INTEGRATED:
+                for cmp, p in enumerate(plot[2]):
+                    p.set_xdata(self.t[phase_idx][[cmp, cmp+1]])
+                ax = plot[2][-1].axes
             else:
-                p[0].set_xdata(self.t)
-            ax = p[0].axes
-            ax.set_xlim(0, self.t[-1])
+                plot[2].set_xdata(self.t[phase_idx])
+                ax = plot[2].axes
+            ax.set_xlim(0, self.t[-1][-1])
 
         intersections_time = self.find_phases_intersections()
         n = len(intersections_time)
@@ -260,10 +253,10 @@ class PlotOcp:
             y = self.ydata[i]
 
             if plot[0] == PlotType.INTEGRATED:
-                for cmp, p in enumerate(plot[1]):
+                for cmp, p in enumerate(plot[2]):
                     p.set_ydata(y[[cmp, cmp+1]])
             else:
-                plot[1].set_ydata(y)
+                plot[2].set_ydata(y)
 
         for p in self.plots_vertical_lines:
             p.set_ydata((np.nan, np.nan))

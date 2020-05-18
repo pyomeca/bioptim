@@ -101,18 +101,19 @@ class ProblemType:
         nlp["var_states"] = {"q": nlp["q_mapping"].reduce.len, "q_dot": nlp["q_dot_mapping"].reduce.len}
         nlp["var_controls"] = {"tau": nlp["tau_mapping"].reduce.len}
 
-        if nlp["nbQ"] + nlp["nbQdot"] < 3:
+        legend_q = [nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_mapping"].reduce.map_idx]
+        legend_qdot = [nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_dot_mapping"].reduce.map_idx]
+        legend_tau = [nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
+        if nlp["nbQ"] + nlp["nbQdot"] < 12:
             nlp["plot"] = {
-                "states": CustomPlot(nlp["nbQ"] + nlp["nbQdot"], lambda x, u: x, plot_type=PlotType.INTEGRATED),
-                "tau": CustomPlot(nlp["nbTau"], lambda x, u: u, plot_type=PlotType.STEP)
+                "states": CustomPlot(nlp["nbQ"] + nlp["nbQdot"], lambda x, u: x, plot_type=PlotType.INTEGRATED, legend=legend_q + legend_qdot),
             }
         else:
             nlp["plot"] = {
-                "q": CustomPlot(nlp["nbQ"], lambda x, u: x[:nlp["nbQ"]], plot_type=PlotType.INTEGRATED),
-                "q_dot": CustomPlot(nlp["nbQdot"], lambda x, u: x[nlp["nbQ"]:], plot_type=PlotType.INTEGRATED),
-                "q_dot2": CustomPlot(nlp["nbQdot"], lambda x, u: x[nlp["nbQ"]:], plot_type=PlotType.PLOT),
-                "tau": CustomPlot(nlp["nbTau"], lambda x, u: u, plot_type=PlotType.STEP)
+                "q": CustomPlot(nlp["nbQ"], lambda x, u: x[:nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q),
+                "q_dot": CustomPlot(nlp["nbQdot"], lambda x, u: x[nlp["nbQ"]:], plot_type=PlotType.INTEGRATED, legend=legend_qdot),
             }
+        nlp["plot"]["tau"] = CustomPlot(nlp["nbTau"], lambda x, u: u, plot_type=PlotType.STEP, legend=legend_tau)
 
     @staticmethod
     def __configure_contact(nlp):
