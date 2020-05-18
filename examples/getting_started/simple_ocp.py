@@ -22,8 +22,6 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_g
     nq = biorbd_model.nbQ()
     nqdot = biorbd_model.nbQdot()
     ntau = biorbd_model.nbGeneralizedTorque()
-
-    # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions

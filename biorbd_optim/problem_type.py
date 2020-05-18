@@ -3,6 +3,7 @@ from casadi import MX, vertcat, Function
 from .dynamics import Dynamics
 from .mapping import BidirectionalMapping, Mapping
 from .plot import CustomPlot
+from .enums import PlotType
 
 
 class ProblemType:
@@ -100,22 +101,27 @@ class ProblemType:
         nlp["var_states"] = {"q": nlp["q_mapping"].reduce.len, "q_dot": nlp["q_dot_mapping"].reduce.len}
         nlp["var_controls"] = {"tau": nlp["tau_mapping"].reduce.len}
 
-        nlp["custom_plots"] = {
-            "controls": CustomPlot(
-                nlp["tau_mapping"].reduce.len, lambda x, u: u
-            )
-        }
+        if nlp["nbQ"] + nlp["nbQdot"] < 3:
+            nlp["plot"] = {
+                "states": CustomPlot(nlp["nbQ"] + nlp["nbQdot"], lambda x, u: x, plot_type=PlotType.INTEGRATED),
+                "tau": CustomPlot(nlp["nbTau"], lambda x, u: u, plot_type=PlotType.STEP)
+            }
+        else:
+            nlp["plot"] = {
+                "q": CustomPlot(nlp["nbQ"], lambda x, u: x[:nlp["nbQ"]], plot_type=PlotType.INTEGRATED),
+                "q_dot": CustomPlot(nlp["nbQdot"], lambda x, u: x[nlp["nbQ"]:], plot_type=PlotType.INTEGRATED),
+                "q_dot2": CustomPlot(nlp["nbQdot"], lambda x, u: x[nlp["nbQ"]:], plot_type=PlotType.PLOT),
+                "tau": CustomPlot(nlp["nbTau"], lambda x, u: u, plot_type=PlotType.STEP)
+            }
 
     @staticmethod
     def __configure_contact(nlp):
         nlp["nbContact"] = nlp["model"].nbContacts()
         contact_names = [n.to_string() for n in nlp["model"].contactNames()]
-        plot_mappings = nlp["plot_mappings"]["contact_forces"] if "contact_forces" in nlp["plot_mappings"] else None
-        nlp["custom_plots"] = {
-            "contact_forces": CustomPlot(
-                nlp["nbContact"], nlp["contact_forces_func"], legend=contact_names, phase_mappings=plot_mappings
+        phase_mappings = nlp["plot_mappings"]["contact_forces"] if "contact_forces" in nlp["plot_mappings"] else None
+        nlp["plot"]["contact_forces"] = CustomPlot(
+                nlp["nbContact"], nlp["contact_forces_func"], legend=contact_names, phase_mappings=phase_mappings
             )
-        }
 
     @staticmethod
     def muscle_activations_and_torque_driven(nlp):
