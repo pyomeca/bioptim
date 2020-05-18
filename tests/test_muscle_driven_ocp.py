@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-from biorbd_optim import Data
+from biorbd_optim import Data, Tests
 
 # Load static_arm
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -112,6 +112,9 @@ def test_muscle_with_contact_driven_ocp():
         np.array([1.96721725e-02, 3.42398501e-05, 3.29454916e-05, 8.61757459e-03, 8.57946846e-03, 7.07152302e-03]),
     )
 
+    # save and load
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/muscle_with_contact", False)
+
 
 def test_muscle_excitation_with_contact_driven_ocp():
     boundary = 50
@@ -197,3 +200,6 @@ def test_muscle_excitation_with_contact_driven_ocp():
     np.testing.assert_almost_equal(
         mus_controls[:, -1], np.array([0.42519766]),
     )
+
+    # save and load
+    Tests.save_and_load(sol, ocp, "ocp_sol_bo/muscle_excitation_with_contact", False)
