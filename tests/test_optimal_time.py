@@ -8,10 +8,7 @@ import pytest
 import numpy as np
 
 from tests import Utils
-from biorbd_optim import (
-    Data,
-    OdeSolver
-)
+from biorbd_optim import Data, OdeSolver
 
 
 # Load pendulum_min_time_Mayer

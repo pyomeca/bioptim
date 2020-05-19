@@ -38,7 +38,7 @@ class Utils:
             for i in range(len(first_elem)):
                 Utils.deep_assert(first_elem[i], second_elem[i])
         elif isinstance(
-                first_elem, (OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping, OdeSolver)
+            first_elem, (OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping, OdeSolver)
         ):
             for key in dir(first_elem):
                 Utils.deep_assert(getattr(first_elem, key), getattr(second_elem, key))
