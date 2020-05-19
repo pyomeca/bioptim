@@ -70,50 +70,6 @@ pendulum_min_time_Mayer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pendulum_min_time_Mayer)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_pendulum_min_time_mayer(ode_solver):
-    ocp = pendulum_min_time_Mayer.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
-        number_shooting_points=10,
-        show_online_optim=False,
-    )
-    sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.6209213032003106)
-
-    # Check constraints
-    g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
-
-    # Check some of the results
-    states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-    tf = param["time"][0, 0]
-
-    # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-    # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99980141, 0)))
-
-    # optimized time
-    np.testing.assert_almost_equal(tf, 0.6209213032003106)
-
-    # save and load
-    Tests.save_and_load(sol, ocp, "ocp_sol_bo/pendulum_min_time_mayer", False)
-
-
 # Load custom_constraint
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
