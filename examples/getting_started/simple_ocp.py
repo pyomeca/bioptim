@@ -70,11 +70,11 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_g
         problem_type,
         number_shooting_points,
         final_time,
-        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
+        objective_functions,
         constraints,
     )
 
