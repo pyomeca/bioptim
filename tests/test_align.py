@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from tests import Utils
+from .utils import Utils
 from biorbd_optim import Data, OdeSolver
 
 # Load align_segment_on_rt
