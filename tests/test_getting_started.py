@@ -61,15 +61,6 @@ def test_pendulum(ode_solver):
     Tests.save_and_load(sol, ocp, "ocp_sol_bo/pendulum", True)
 
 
-# Load pendulum_min_time_Mayer
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum_min_time_Mayer.py",
-)
-pendulum_min_time_Mayer = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(pendulum_min_time_Mayer)
-
-
 # Load custom_constraint
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
