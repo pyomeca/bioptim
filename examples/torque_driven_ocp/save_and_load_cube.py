@@ -21,6 +21,6 @@ def run_and_save_ocp():
 if __name__ == "__main__":
     run_and_save_ocp()
 
-    ocp, sol = OptimalControlProgram.load(name="cube_ocp_sol.bo")
+    ocp, sol = OptimalControlProgram.load("cube_ocp_sol.bo")
     result = ShowResult(ocp, sol)
     result.graphs()

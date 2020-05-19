@@ -11,6 +11,7 @@ from biorbd_optim import (
     Data,
     OdeSolver,
     Tests,
+    InterpolationType,
 )
 
 # Load pendulum
