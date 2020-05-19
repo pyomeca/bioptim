@@ -31,7 +31,6 @@ class Tests:
     def deep_assert(first_elem, second_elem):
         if isinstance(first_elem, dict):
             for key in first_elem:
-                if key == "objective_functions":
                 Tests.deep_assert(first_elem[key], second_elem[key])
         elif isinstance(first_elem, (list, tuple)):
             for i in range(len(first_elem)):
