@@ -189,7 +189,7 @@ if __name__ == "__main__":
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
         show_online_optim=True,
-        kin_data_to_track="markers",
+        kin_data_to_track="q",
     )
 
     # --- Solve the program --- #
@@ -224,24 +224,6 @@ if __name__ == "__main__":
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers[:, i, :].T, "r--")
     plt.xlabel("Time")
     plt.ylabel("Markers Position")
-
-    plt.figure("Q")
-    plt.plot(np.linspace(0, 2, n_shooting_points + 1), x_ref[:n_q, :].T, "k")
-    plt.plot(np.linspace(0, 2, n_shooting_points + 1), q.T, "r--")
-    plt.xlabel("Time")
-    plt.ylabel("Q values")
-
-    plt.figure("Muscle activations")
-    plt.plot(np.linspace(0, 2, n_shooting_points + 1), muscle_activations_ref, "k")
-    plt.plot(np.linspace(0, 2, n_shooting_points + 1), activations.T, "r--")
-    plt.xlabel("Time")
-    plt.ylabel("Torques values (N.m)")
-
-    plt.figure("Muscle excitations")
-    plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_excitations_ref, "k", where="post")
-    plt.step(np.linspace(0, 2, n_shooting_points + 1), excitations.T, "r--", where="post")
-    plt.xlabel("Time")
-    plt.ylabel("Excitation values")
 
     # --- Plot --- #
     plt.show()
