@@ -371,7 +371,7 @@ class OptimalControlProgram:
         if solver == "ipopt":
             options_default = {
                 "ipopt.tol": 1e-6,
-                "ipopt.max_iter": 2,
+                "ipopt.max_iter": 1000,
                 "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
                 "ipopt.limited_memory_max_history": 50,
                 "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
