@@ -9,5 +9,4 @@ from .dynamics import Dynamics
 from .mapping import Mapping, BidirectionalMapping
 from .optimal_control_program import OptimalControlProgram
 from .biorbd_interface import BiorbdInterface
-from .tests import Tests
 from .variable_optimization import Data

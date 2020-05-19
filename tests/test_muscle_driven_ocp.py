@@ -6,7 +6,8 @@ from pathlib import Path
 
 import numpy as np
 
-from biorbd_optim import Data, Tests
+from tests import Utils
+from biorbd_optim import Data
 
 # Load static_arm
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -71,6 +72,9 @@ def test_muscle_driven_ocp():
         np.array([1.96717613e-02, 3.42406388e-05, 3.29456098e-05, 8.61728932e-03, 8.57918458e-03, 7.07096066e-03]),
     )
 
+    # save and load
+    Utils.save_and_load(sol, ocp, "ocp_sol_bo/muscle_driven", False)
+
 
 def test_muscle_with_contact_driven_ocp():
     ocp = static_arm_with_contact.prepare_ocp(
@@ -113,7 +117,7 @@ def test_muscle_with_contact_driven_ocp():
     )
 
     # save and load
-    Tests.save_and_load(sol, ocp, "ocp_sol_bo/muscle_with_contact", False)
+    Utils.save_and_load(sol, ocp, "ocp_sol_bo/muscle_with_contact", False)
 
 
 def test_muscle_excitation_with_contact_driven_ocp():
@@ -202,4 +206,4 @@ def test_muscle_excitation_with_contact_driven_ocp():
     )
 
     # save and load
-    Tests.save_and_load(sol, ocp, "ocp_sol_bo/muscle_excitation_with_contact", False)
+    Utils.save_and_load(sol, ocp, "ocp_sol_bo/muscle_excitation_with_contact", False)

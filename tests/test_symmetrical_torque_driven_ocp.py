@@ -7,7 +7,8 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from biorbd_optim import Data, OdeSolver, Tests
+from tests import Utils
+from biorbd_optim import Data, OdeSolver
 
 # Load symmetry
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -58,7 +59,7 @@ def test_symmetry_by_construction(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-1.16129033, -1.16129033, 0.58458751)))
 
     # save and load
-    Tests.save_and_load(sol, ocp, "ocp_sol_bo/symmetry_by_construction", False)
+    Utils.save_and_load(sol, ocp, "ocp_sol_bo/symmetry_by_construction", False)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
@@ -94,4 +95,4 @@ def test_symmetry_by_constraint(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-1.16129033, -1.16129033, 0.58458751, -0.58458751)))
 
     # save and load
-    Tests.save_and_load(sol, ocp, "ocp_sol_bo/symmetry_by_constraint", False)
+    Utils.save_and_load(sol, ocp, "ocp_sol_bo/symmetry_by_constraint", False)

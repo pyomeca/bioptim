@@ -13,33 +13,35 @@ from biorbd_optim import (
 )
 
 
-class Tests:
+class Utils:
     @staticmethod
     def save_and_load(sol, ocp, file_path, test_solve_of_loaded=False):
         ocp.save(sol, file_path)
         ocp_load, sol_load = OptimalControlProgram.load(file_path=file_path + ".bo")
 
-        Tests.deep_assert(sol, sol_load)
-
+        Utils.deep_assert(sol, sol_load)
+        Utils.deep_assert(sol_load, sol)
         if test_solve_of_loaded:
             sol_from_load = ocp_load.solve()
-            Tests.deep_assert(sol, sol_from_load)
-        Tests.deep_assert(ocp_load, ocp)
-        Tests.deep_assert(ocp, ocp_load)
+            Utils.deep_assert(sol, sol_from_load)
+            Utils.deep_assert(sol_from_load, sol)
+
+        Utils.deep_assert(ocp_load, ocp)
+        Utils.deep_assert(ocp, ocp_load)
 
     @staticmethod
     def deep_assert(first_elem, second_elem):
         if isinstance(first_elem, dict):
             for key in first_elem:
-                Tests.deep_assert(first_elem[key], second_elem[key])
+                Utils.deep_assert(first_elem[key], second_elem[key])
         elif isinstance(first_elem, (list, tuple)):
             for i in range(len(first_elem)):
-                Tests.deep_assert(first_elem[i], second_elem[i])
+                Utils.deep_assert(first_elem[i], second_elem[i])
         elif isinstance(
                 first_elem, (OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping, OdeSolver)
         ):
             for key in dir(first_elem):
-                Tests.deep_assert(getattr(first_elem, key), getattr(second_elem, key))
+                Utils.deep_assert(getattr(first_elem, key), getattr(second_elem, key))
         else:
             if not callable(first_elem) and not isinstance(first_elem, (MX, biorbd.Model)):
                 try:
