@@ -15,6 +15,7 @@ from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback
 from .integrator import RK4
 from .biorbd_interface import BiorbdInterface
+from .variable_optimization import Data
 from .__version__ import __version__
 
 
@@ -370,7 +371,7 @@ class OptimalControlProgram:
         if solver == "ipopt":
             options_default = {
                 "ipopt.tol": 1e-6,
-                "ipopt.max_iter": 1000,
+                "ipopt.max_iter": 2,
                 "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
                 "ipopt.limited_memory_max_history": 50,
                 "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
@@ -396,12 +397,15 @@ class OptimalControlProgram:
         # Solve the problem
         return solver.call(arg)
 
-    def save(self, sol, file_path):
+    def save(self, sol, file_path, as_numpy=False):
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bo"
         with open(file_path, "wb") as file:
-            pickle.dump({"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file)
+            if as_numpy:
+                pickle.dump({"data": Data.get_data(self, sol["x"])}, file)
+            else:
+                pickle.dump({"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file)
 
     @staticmethod
     def load(file_path):
