@@ -17,7 +17,7 @@ class Utils:
     @staticmethod
     def save_and_load(sol, ocp, file_path, test_solve_of_loaded=False):
         ocp.save(sol, file_path)
-        ocp_load, sol_load = OptimalControlProgram.load(file_path=file_path + ".bo")
+        ocp_load, sol_load = OptimalControlProgram.load(file_path=file_path)
 
         Utils.deep_assert(sol, sol_load)
         Utils.deep_assert(sol_load, sol)
