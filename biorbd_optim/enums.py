@@ -46,3 +46,10 @@ class InterpolationType(Enum):
     CONSTANT = 0
     CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT = 1
     LINEAR = 2
+    EACH_FRAME = 3
+
+
+class PlotType(Enum):
+    PLOT = 0
+    INTEGRATED = 1
+    STEP = 2

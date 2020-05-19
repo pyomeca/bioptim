@@ -100,3 +100,48 @@ def test_custom_constraint_align_markers(ode_solver):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
+
+
+# Load initial_guess
+PROJECT_FOLDER2 = Path(__file__).parent / ".."
+spec = importlib.util.spec_from_file_location(
+    "initial_guess", str(PROJECT_FOLDER2) + "/examples/getting_started/simple_ocp.py"
+)
+initial_guess = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(initial_guess)
+
+
+@pytest.mark.parametrize("interpolation_type", InterpolationType)
+def test_initial_guesses(interpolation_type):
+    np.random.seed(42)
+    ocp = initial_guess.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+        final_time=1,
+        number_shooting_points=5,
+        initial_guess=interpolation_type,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 2790.947)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (36, 1))
+    np.testing.assert_almost_equal(g, np.zeros((36, 1)))
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([2, 0, 1.57]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([5.0, 9.81, 7.85]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-5.0, 9.81, -7.85]))

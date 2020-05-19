@@ -1,4 +1,3 @@
-import os
 import multiprocessing as mp
 import numpy as np
 import tkinter
@@ -9,14 +8,17 @@ from casadi import MX, Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
 from .variable_optimization import Data
 from .mapping import Mapping
+from .enums import PlotType
 
 
 class CustomPlot:
-    def __init__(self, size, update_function, phase_mappings=None, legend=()):
+    def __init__(self, size, update_function, plot_type=PlotType.PLOT, phase_mappings=None, legend=(), combine_to=None):
         self.size = size
         self.function = update_function
+        self.type = plot_type
         self.phase_mappings = Mapping(range(size)) if phase_mappings is None else phase_mappings
         self.legend = legend
+        self.combine_to = combine_to
 
 
 class PlotOcp:
@@ -30,8 +32,6 @@ class PlotOcp:
         self.ns = 0
 
         self.t = []
-        self.t_per_phase = []
-        self.t_integrated = []
         if isinstance(self.ocp.initial_phase_time, (int, float)):
             self.tf = [self.ocp.initial_phase_time]
         else:
@@ -42,27 +42,18 @@ class PlotOcp:
                 self.t_idx_to_optimize.append(i)
         self.__init_time_vector()
 
-        self.axes = []
+        self.axes = {}
         self.plots = []
         self.plots_vertical_lines = []
         self.all_figures = []
 
         running_cmp = 0
-        self.matching_mapping = dict()
-        for state in ocp.nlp[0]["var_states"]:
-            if state in ocp.nlp[0]["var_controls"]:
-                self.matching_mapping[state] = running_cmp
-            running_cmp += ocp.nlp[0]["var_states"][state]
         self.automatically_organize = automatically_organize
-        self._organize_windows(
-            len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]) - len(self.matching_mapping),
-        )
+        self._organize_windows(len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]),)
 
         self.plot_func = {}
         self.variable_sizes = {}
-        self.__create_plots(ocp.nlp[0]["var_states"], "state")
-        self.__create_plots(ocp.nlp[0]["var_controls"], "control")
-        self.__create_custom_plots(ocp.nlp, "custom_plots")
+        self.__create_plots()
 
         horz = 0
         vert = 1 if len(self.all_figures) < self.nb_vertical_windows * self.nb_horizontal_windows else 0
@@ -81,107 +72,83 @@ class PlotOcp:
             fig.canvas.draw()
 
     def __init_time_vector(self):
-        self.t = [0]
-        self.t_per_phase = []
-        self.t_integrated = []
+        self.t = []
+        last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
             self.ns += nlp["ns"] + 1
-            time_phase = np.linspace(self.t[-1], self.t[-1] + self.tf[phase_idx], nlp["ns"] + 1)
-            self.t_per_phase.append(time_phase)
-            self.t = np.append(self.t, time_phase)
-            self.t_integrated = np.append(self.t_integrated, PlotOcp.generate_integrated_time(time_phase))
-        self.t = self.t[1:]
+            time_phase = np.linspace(last_t, last_t + self.tf[phase_idx], nlp["ns"] + 1)
+            last_t = last_t + self.tf[phase_idx]
+            self.t.append(time_phase)
 
-    def __create_plots(self, has, var_type):
-        for variable in has:
-            nb = has[variable]
+    def __create_plots(self):
+        variable_sizes = {}
+        for nlp in self.ocp.nlp:
+            if "plot" in nlp:
+                for key in nlp["plot"]:
+                    if key not in variable_sizes:
+                        variable_sizes[key] = nlp["plot"][key].size
+                    else:
+                        variable_sizes[key] = max(variable_sizes[key], nlp["plot"][key].size)
+        self.variable_sizes = variable_sizes
+        if not variable_sizes:
+            # No graph was setup in problem_type
+            return
 
-            nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
-            if var_type == "control" and variable in self.matching_mapping:
-                axes = self.axes[self.matching_mapping[variable] : self.matching_mapping[variable] + nb]
-            else:
-                axes = self.__add_new_axis(variable, nb, nb_rows, nb_cols)
+        self.plot_func = {}
+        for i, nlp in enumerate(self.ocp.nlp):
+            for variable in self.variable_sizes:
+                nb = self.variable_sizes[variable]
+                nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
+                if nlp["plot"][variable].combine_to:
+                    axes = self.axes[nlp["plot"][variable].combine_to]
+                elif i > 0:
+                    axes = self.axes[variable]
+                else:
+                    axes = self.__add_new_axis(variable, nb, nb_rows, nb_cols)
 
-            for i, ax in enumerate(axes):
-                if var_type == "state":
-                    cmp = 0
-                    plots = []
-                    for idx_phase in range(self.ocp.nb_phases):
-                        for _ in range(self.ocp.nlp[idx_phase]["ns"]):
-                            plots.append(
+                t = self.t[i]
+                if variable not in self.plot_func:
+                    self.plot_func[variable] = [nlp["plot"][variable]]
+                else:
+                    self.plot_func[variable].append(nlp["plot"][variable])
+
+                for k, ax in enumerate(axes):
+                    mapping = self.plot_func[variable][-1].phase_mappings.map_idx
+                    if k < len(mapping) and k < len(self.plot_func[variable][-1].legend):
+                        axes[k].set_title(self.plot_func[variable][-1].legend[mapping[k]])
+                    ax.grid(color="k", linestyle="--", linewidth=0.5)
+                    ax.set_xlim(0, self.t[-1][-1])
+
+                    zero = np.zeros((t.shape[0], 1))
+                    plot_type = self.plot_func[variable][0].type
+                    if plot_type == PlotType.PLOT:
+                        self.plots.append([plot_type, i, ax.plot(t, zero, ".-", color="tab:green", zorder=0)[0]])
+                    elif plot_type == PlotType.INTEGRATED:
+                        plots_integrated = []
+                        for cmp in range(nlp["ns"]):
+                            plots_integrated.append(
                                 ax.plot(
-                                    self.t_integrated[2 * cmp + idx_phase : 2 * (cmp + 1) + idx_phase],
-                                    np.zeros(2),
+                                    self.t[i][[cmp, cmp + 1]],
+                                    (0, 0),
+                                    ".-",
                                     color="tab:brown",
+                                    markersize=6,
                                     linewidth=0.8,
                                 )[0]
                             )
-                            plots.append(
-                                ax.plot(
-                                    self.t_integrated[2 * cmp + idx_phase],
-                                    np.zeros(1),
-                                    color="tab:brown",
-                                    marker=".",
-                                    markersize=6,
-                                )[0]
-                            )
-                            cmp += 1
-                    self.plots.append(plots)
-                elif var_type == "control":
-                    self.plots.append(
-                        ax.step(self.t, np.zeros((self.ns, 1)), where="post", color="tab:orange", zorder=0)
-                    )
-                else:
-                    raise RuntimeError("Plot of parameters is not supported yet")
+                        self.plots.append([plot_type, i, plots_integrated])
 
-                intersections_time = self.find_phases_intersections()
-                for time in intersections_time:
-                    self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
-                ax.grid(color="k", linestyle="--", linewidth=0.5)
-                ax.set_xlim(0, self.t[-1])
-
-    def __create_custom_plots(self, all_nlp, var_type):
-        variable_sizes = {}
-        for nlp in all_nlp:
-            if var_type in nlp:
-                for key in nlp[var_type]:
-                    if key not in variable_sizes:
-                        variable_sizes[key] = nlp[var_type][key].size
+                    elif plot_type == PlotType.STEP:
+                        self.plots.append(
+                            [plot_type, i, ax.step(t, zero, where="post", color="tab:orange", zorder=0)[0]]
+                        )
                     else:
-                        variable_sizes[key] = max(variable_sizes[key], nlp[var_type][key].size)
-        self.variable_sizes[var_type] = variable_sizes
-        if not variable_sizes:
-            return
-
-        self.plot_func[var_type] = []
-        for variable in variable_sizes:
-            nb = variable_sizes[variable]
-            nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
-            axes = self.__add_new_axis(variable, nb, nb_rows, nb_cols)
-
-            plots = []
-            for i, nlp in enumerate(all_nlp):
-                t = self.t_per_phase[i]
-                if variable in all_nlp[i][var_type]:
-                    self.plot_func[var_type].append([variable, all_nlp[i][var_type][variable]])
-                else:
-                    pass
-
-                for k, ax in enumerate(axes):
-                    mapping = self.plot_func[var_type][-1][1].phase_mappings.map_idx
-                    if k < len(mapping):
-                        axes[k].set_title(self.plot_func[var_type][-1][1].legend[mapping[k]])
-                    ax.grid(color="k", linestyle="--", linewidth=0.5)
-                    ax.set_xlim(0, self.t[-1])
-                    if var_type == "custom_plots":
-                        plots.append(ax.plot(t, np.zeros((t.shape[0], 1)), ".-", color="tab:green", zorder=0))
+                        raise RuntimeError(f"{plot_type} is not implemented yet")
 
             for ax in axes:
                 intersections_time = self.find_phases_intersections()
                 for time in intersections_time:
                     self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
-
-            self.plots.extend(plots)
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
         if self.automatically_organize:
@@ -198,18 +165,12 @@ class PlotOcp:
             axes[i].remove()
         axes = axes[:nb]
 
-        for k in range(nb):
-            if "q" in variable or "q_dot" in variable or "tau" in variable:
-                mapping = self.ocp.nlp[0][f"{variable}_mapping"].expand.map_idx
-                axes[k].set_title(self.ocp.nlp[0]["model"].nameDof()[mapping[k]].to_string())
-            elif "muscles" in variable:
-                axes[k].set_title(self.ocp.nlp[0]["model"].muscleNames()[k].to_string())
         idx_center = nb_rows * nb_cols - int(nb_cols / 2) - 1
         if idx_center >= len(axes):
             idx_center = len(axes) - 1
         axes[idx_center].set_xlabel("time (s)")
 
-        self.axes.extend(axes)
+        self.axes[variable] = axes
         self.all_figures[-1].tight_layout()
         return axes
 
@@ -226,12 +187,6 @@ class PlotOcp:
             self.height_step = None
             self.width_step = None
 
-    @staticmethod
-    def generate_integrated_time(t):
-        for i in range(len(t) - 1, 0, -1):
-            t = np.insert(t, i, t[i])
-        return t
-
     def find_phases_intersections(self):
         return list(accumulate(self.tf))[:-1]
 
@@ -240,53 +195,51 @@ class PlotOcp:
         plt.show()
 
     def update_data(self, V):
-        self.ydata = [[] for _ in range(self.ocp.nb_phases)]
+        self.ydata = []
 
         data_states, data_controls, data_param = Data.get_data(
             self.ocp, V, get_parameters=True, integrate=True, concatenate=False
         )
 
-        for i, nlp in enumerate(self.ocp.nlp):
+        for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
                     self.tf[i_in_tf] = data_param["time"][i_in_time]
-                self.__update_xdata()
-            self.__update_ydata(data_states, i)
-            self.__update_ydata(data_controls, i)
+            self.__update_xdata()
 
-        if "custom_plots" in self.plot_func:
-            data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, concatenate=False)
-            for i, nlp in enumerate(self.ocp.nlp):
-                state = np.ndarray((0, nlp["ns"] + 1))
-                for s in nlp["var_states"]:
-                    if isinstance(data_states_per_phase[s], (list, tuple)):
-                        state = np.concatenate((state, data_states_per_phase[s][i]))
-                    else:
-                        state = np.concatenate((state, data_states_per_phase[s]))
-                control = np.ndarray((0, nlp["ns"] + 1))
-                for s in nlp["var_controls"]:
-                    if isinstance(data_controls_per_phase[s], (list, tuple)):
-                        control = np.concatenate((control, data_controls_per_phase[s][i]))
-                    else:
-                        control = np.concatenate((control, data_controls_per_phase[s]))
-                plot = self.plot_func["custom_plots"][i]
-                y = {"y": np.empty((self.variable_sizes["custom_plots"][plot[0]], len(self.t_per_phase[i])))}
-                y["y"].fill(np.nan)
-                y["y"][plot[1].phase_mappings.map_idx, :] = plot[1].function(state, control)
-                self.__update_ydata(y, 0)
+        data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, concatenate=False)
+        for i, nlp in enumerate(self.ocp.nlp):
+            state = np.ndarray((0, nlp["ns"] + 1))
+            for s in nlp["var_states"]:
+                if isinstance(data_states_per_phase[s], (list, tuple)):
+                    state = np.concatenate((state, data_states_per_phase[s][i]))
+                else:
+                    state = np.concatenate((state, data_states_per_phase[s]))
+            control = np.ndarray((0, nlp["ns"] + 1))
+            for s in nlp["var_controls"]:
+                if isinstance(data_controls_per_phase[s], (list, tuple)):
+                    control = np.concatenate((control, data_controls_per_phase[s][i]))
+                else:
+                    control = np.concatenate((control, data_controls_per_phase[s]))
+            for key in self.plot_func:
+                y = np.empty((self.variable_sizes[key], len(self.t[i])))
+                y.fill(np.nan)
+                y[self.plot_func[key][i].phase_mappings.map_idx, :] = self.plot_func[key][i].function(state, control)
+                self.__append_to_ydata(y)
         self.__update_axes()
 
     def __update_xdata(self):
         self.__init_time_vector()
-        for i, p in enumerate(self.plots):
-            if i < self.ocp.nlp[0]["nx"]:
-                for j in range(int(len(p) / 2)):
-                    p[2 * j].set_xdata(self.t_integrated[j * 2 : 2 * j + 2])
-                    p[2 * j + 1].set_xdata(self.t_integrated[j * 2])
+        for plot in self.plots:
+            phase_idx = plot[1]
+            if plot[0] == PlotType.INTEGRATED:
+                for cmp, p in enumerate(plot[2]):
+                    p.set_xdata(self.t[phase_idx][[cmp, cmp + 1]])
+                ax = plot[2][-1].axes
             else:
-                p[0].set_xdata(self.t)
-            ax = p[0].axes
-            ax.set_xlim(0, self.t[-1])
+                plot[2].set_xdata(self.t[phase_idx])
+                ax = plot[2].axes
+            ax.set_xlim(0, self.t[-1][-1])
 
         intersections_time = self.find_phases_intersections()
         n = len(intersections_time)
@@ -295,66 +248,43 @@ class PlotOcp:
                 for i, time in enumerate(intersections_time):
                     self.plots_vertical_lines[p * n + i].set_xdata([time, time])
 
-    def __update_ydata(self, data, phase_idx):
-        for key in data:
-            y_data = data[key]
-            if not isinstance(y_data, (tuple, list)):
-                y_data = [y_data]
-
-            for y in y_data[phase_idx]:
-                self.ydata[phase_idx].append(y)
+    def __append_to_ydata(self, data):
+        for y in data:
+            self.ydata.append(y)
 
     def __update_axes(self):
-        for i, p in enumerate(self.plots):
-            ax = p[0].axes
-            y = np.array([])
-            y_per_phase = []
-            for phase in self.ydata:
-                # TODO: To be removed when phases are directly in ydata (as for custom_plots)
-                if i < len(phase):
-                    y = np.append(y, phase[i])
-                    y_per_phase.append(phase[i])
-            if not y.any():
-                continue
+        for i, plot in enumerate(self.plots):
+            y = self.ydata[i]
 
-            if i < self.ocp.nlp[0]["nx"]:
-                cmp = 0
-                for idx_phase in range(self.ocp.nb_phases):
-                    for _ in range(self.ocp.nlp[idx_phase]["ns"]):
-                        p[2 * cmp].set_ydata(y[2 * cmp + idx_phase : 2 * (cmp + 1) + idx_phase])
-                        p[2 * cmp + 1].set_ydata(y[2 * cmp + idx_phase])
-                        cmp += 1
-            elif i >= self.ocp.nlp[0]["nx"] + self.ocp.nlp[0]["nu"]:
-                for idx_phase in range(len(self.t_per_phase)):
-                    # TODO: To be removed when phases are directly in ydata (as for custom_plots)
-                    if idx_phase < len(y_per_phase):
-                        p[idx_phase].set_ydata(y_per_phase[idx_phase])
-
+            if plot[0] == PlotType.INTEGRATED:
+                for cmp, p in enumerate(plot[2]):
+                    p.set_ydata(y[[cmp, cmp + 1]])
             else:
-                p[0].set_ydata(y)
+                plot[2].set_ydata(y)
 
         for p in self.plots_vertical_lines:
             p.set_ydata((np.nan, np.nan))
 
-        for i, ax in enumerate(self.axes):
-            y_max = -np.inf
-            y_min = np.inf
-            for p in ax.get_children():
-                if isinstance(p, lines.Line2D):
-                    y_min = min(y_min, np.min(p.get_ydata()))
-                    y_max = max(y_max, np.max(p.get_ydata()))
-            if np.isnan(y_min) or np.isinf(y_min):
-                y_min = 0
-            if np.isnan(y_max) or np.isinf(y_max):
-                y_max = 1
-            data_mean = np.mean((y_min, y_max))
-            data_range = y_max - y_min
-            if np.abs(data_range) < 0.8:
-                data_range = 0.8
-            y_range = (1.25 * data_range) / 2
-            y_range = data_mean - y_range, data_mean + y_range
-            ax.set_ylim(y_range)
-            ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
+        for key in self.axes:
+            for i, ax in enumerate(self.axes[key]):
+                y_max = -np.inf
+                y_min = np.inf
+                for p in ax.get_children():
+                    if isinstance(p, lines.Line2D):
+                        y_min = min(y_min, np.min(p.get_ydata()))
+                        y_max = max(y_max, np.max(p.get_ydata()))
+                if np.isnan(y_min) or np.isinf(y_min):
+                    y_min = 0
+                if np.isnan(y_max) or np.isinf(y_max):
+                    y_max = 1
+                data_mean = np.mean((y_min, y_max))
+                data_range = y_max - y_min
+                if np.abs(data_range) < 0.8:
+                    data_range = 0.8
+                y_range = (1.25 * data_range) / 2
+                y_range = data_mean - y_range, data_mean + y_range
+                ax.set_ylim(y_range)
+                ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
