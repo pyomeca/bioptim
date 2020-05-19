@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from utils import Utils
+from tests import Utils
 from biorbd_optim import Data, OdeSolver
 
 # Load align_segment_on_rt
@@ -54,7 +54,7 @@ def test_align_segment_on_rt(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array([-1.61910771e-23, 9.81, -66.9866667, -66.9866667]))
 
     # save and load
-    Utils.save_and_load(sol, ocp, "ocp_sol_bo/align_segment_on_rt", False)
+    Utils.save_and_load(sol, ocp, "ocp_sol_bo/align_segment_on_rt.bo", False)
 
 
 # Load align_marker_on_segment
@@ -102,7 +102,7 @@ def test_align_marker_on_segment(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array([-1.11715165, 10.14520729, -2.5377627, 0.37996436]))
 
     # save and load
-    Utils.save_and_load(sol, ocp, "ocp_sol_bo/align_marker_on_segment", False)
+    Utils.save_and_load(sol, ocp, "ocp_sol_bo/align_marker_on_segment.bo", False)
 
 
 # Load linear_initial_guess
