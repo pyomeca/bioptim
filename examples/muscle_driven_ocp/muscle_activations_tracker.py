@@ -151,11 +151,11 @@ def prepare_ocp(
         variable_type,
         nb_shooting,
         final_time,
+        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
-        objective_functions,
         constraints,
         show_online_optim=show_online_optim,
     )

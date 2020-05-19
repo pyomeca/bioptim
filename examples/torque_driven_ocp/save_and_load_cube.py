@@ -14,6 +14,7 @@ spec.loader.exec_module(eocar)
 
 def run_and_save_ocp():
     ocp = eocar.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/cube.bioMod",)
+
     sol = ocp.solve()
     OptimalControlProgram.save(ocp, sol, "cube_ocp_sol")
 

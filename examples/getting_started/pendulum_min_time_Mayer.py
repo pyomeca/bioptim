@@ -53,11 +53,11 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
         problem_type,
         number_shooting_points,
         final_time,
+        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
-        objective_functions,
         constraints,
         show_online_optim=show_online_optim,
     )

@@ -73,13 +73,13 @@ def prepare_ocp(
         biorbd_model,
         problem_type,
         number_shooting_points,
+        objective_functions,
         phase_time,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
-        objective_functions=objective_functions,
-        constraints=constraints,
+        constraints,
         show_online_optim=show_online_optim,
     )
 
