@@ -77,7 +77,7 @@ def test_maximize_predicted_height_CoM(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-0.2636804)))
 
     # save and load
-    Utils.save_and_load(sol, ocp, "ocp_sol_bo/maximize_predicted_height_CoM", False)
+    Utils.save_and_load(sol, ocp, False)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
@@ -143,7 +143,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-15.69338332)))
 
     # save and load
-    Utils.save_and_load(sol, ocp, "ocp_sol_bo/maximize_predicted_height_CoM", False)
+    Utils.save_and_load(sol, ocp, False)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
@@ -211,7 +211,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-25.23729156)))
 
     # save and load
-    Utils.save_and_load(sol, ocp, "ocp_sol_bo/contact_forces_inequality_LESSER_THAN_constraint", False)
+    Utils.save_and_load(sol, ocp, False)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
@@ -295,4 +295,4 @@ def test_non_slipping_constraint(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-13.21317493)))
 
     # save and load
-    Utils.save_and_load(sol, ocp, "ocp_sol_bo/non_slipping_constraint", False)
+    Utils.save_and_load(sol, ocp, False)

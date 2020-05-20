@@ -59,7 +59,7 @@ def test_symmetry_by_construction(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-1.16129033, -1.16129033, 0.58458751)))
 
     # save and load
-    Utils.save_and_load(sol, ocp, "ocp_sol_bo/symmetry_by_construction", False)
+    Utils.save_and_load(sol, ocp, False)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
@@ -95,4 +95,4 @@ def test_symmetry_by_constraint(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-1.16129033, -1.16129033, 0.58458751, -0.58458751)))
 
     # save and load
-    Utils.save_and_load(sol, ocp, "ocp_sol_bo/symmetry_by_constraint", False)
+    Utils.save_and_load(sol, ocp, False)

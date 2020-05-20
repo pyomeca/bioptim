@@ -61,7 +61,7 @@ def test_pendulum_min_time_mayer(ode_solver):
     np.testing.assert_almost_equal(tf, 0.6209213032003106)
 
     # save and load
-    Utils.save_and_load(sol, ocp, "ocp_sol_bo/pendulum_min_time_mayer", True)
+    Utils.save_and_load(sol, ocp, True)
 
 
 # Load pendulum_min_time_Lagrange
@@ -114,4 +114,4 @@ def test_pendulum_min_time_lagrange(ode_solver):
     np.testing.assert_almost_equal(tf, 0.6023985224766413)
 
     # save and load
-    Utils.save_and_load(sol, ocp, "ocp_sol_bo/pendulum_min_time_lagrange", True)
+    Utils.save_and_load(sol, ocp, True)

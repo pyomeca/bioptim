@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 from casadi import MX
 import biorbd
@@ -15,9 +16,9 @@ from biorbd_optim import (
 
 class Utils:
     @staticmethod
-    def save_and_load(sol, ocp, file_path, test_solve_of_loaded=False):
-        ocp.save(sol, file_path)
-        ocp_load, sol_load = OptimalControlProgram.load(file_path=file_path)
+    def save_and_load(sol, ocp, test_solve_of_loaded=False):
+        ocp.save(sol, "test.bo")
+        ocp_load, sol_load = OptimalControlProgram.load("test.bo")
 
         Utils.deep_assert(sol, sol_load)
         Utils.deep_assert(sol_load, sol)
@@ -28,6 +29,7 @@ class Utils:
 
         Utils.deep_assert(ocp_load, ocp)
         Utils.deep_assert(ocp, ocp_load)
+        os.remove("test.bo")
 
     @staticmethod
     def deep_assert(first_elem, second_elem):

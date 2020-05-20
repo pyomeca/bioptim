@@ -401,7 +401,7 @@ class OptimalControlProgram:
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bo"
-            
+
         with open(file_path, "wb") as file:
             if to_numpy:
                 pickle.dump({"data": Data.get_data(self, sol["x"])}, file)
