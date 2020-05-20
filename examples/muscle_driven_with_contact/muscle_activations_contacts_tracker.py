@@ -3,7 +3,6 @@ from pathlib import Path
 
 import numpy as np
 import biorbd
-from matplotlib import pyplot as plt
 
 from biorbd_optim import (
     OptimalControlProgram,

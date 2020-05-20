@@ -12,7 +12,7 @@ from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
 from .constraints import ConstraintFunction
 from .objective_functions import Objective, ObjectiveFunction
-from .plot import OnlineCallback
+from .plot import OnlineCallback, CustomPlot
 from .integrator import RK4
 from .biorbd_interface import BiorbdInterface
 from .variable_optimization import Data
@@ -348,6 +348,36 @@ class OptimalControlProgram:
                     if isinstance(constraint, dict):
                         raise RuntimeError(f"Each phase must declares its {penality_type} (even if it is empty)")
             self.__add_to_nlp(penality_type, penalities, False)
+
+    def add_plot(self, fig_name, update_function, phase_number=-1, **parameters):
+        if "combine_to" in parameters:
+            raise RuntimeError("'combine_to' cannot be specified in add_plot, "
+                               "please use same 'fig_name' to combine plots")
+
+        # --- Solve the program --- #
+        if len(self.nlp) == 1:
+            phase_number = 0
+        else:
+            if phase_number < 0:
+                raise RuntimeError("phase_number must be specified for multiphase OCP")
+        nlp = self.nlp[phase_number]
+        custom_plot = CustomPlot(update_function, **parameters)
+
+        if fig_name in nlp["plot"]:
+            # Make sure we add a unique name in the dict
+            custom_plot.combine_to = fig_name
+
+            if fig_name:
+                cmp = 0
+                while True:
+                    plot_name = f"{fig_name}_{cmp}"
+                    if plot_name not in nlp["plot"]:
+                        break
+                    cmp += 1
+        else:
+            plot_name = fig_name
+
+        nlp["plot"][plot_name] = custom_plot
 
     def solve(self, solver="ipopt", show_online_optim=False, options_ipopt={}):
         """
