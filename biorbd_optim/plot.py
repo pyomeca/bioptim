@@ -12,13 +12,23 @@ from .enums import PlotType
 
 
 class CustomPlot:
-    def __init__(self, size, update_function, plot_type=PlotType.PLOT, phase_mappings=None, legend=(), combine_to=None):
+    def __init__(
+        self,
+        size,
+        update_function,
+        plot_type=PlotType.PLOT,
+        phase_mappings=None,
+        legend=(),
+        combine_to=None,
+        color=None,
+    ):
         self.size = size
         self.function = update_function
         self.type = plot_type
         self.phase_mappings = Mapping(range(size)) if phase_mappings is None else phase_mappings
         self.legend = legend
         self.combine_to = combine_to
+        self.color = color
 
 
 class PlotOcp:
@@ -112,9 +122,10 @@ class PlotOcp:
                 else:
                     self.plot_func[variable].append(nlp["plot"][variable])
 
-                for k, ax in enumerate(axes):
-                    mapping = self.plot_func[variable][-1].phase_mappings.map_idx
-                    if k < len(mapping) and k < len(self.plot_func[variable][-1].legend):
+                mapping = self.plot_func[variable][-1].phase_mappings.map_idx
+                for k in mapping:
+                    ax = axes[k]
+                    if k < len(self.plot_func[variable][-1].legend):
                         axes[k].set_title(self.plot_func[variable][-1].legend[mapping[k]])
                     ax.grid(color="k", linestyle="--", linewidth=0.5)
                     ax.set_xlim(0, self.t[-1][-1])
@@ -122,26 +133,22 @@ class PlotOcp:
                     zero = np.zeros((t.shape[0], 1))
                     plot_type = self.plot_func[variable][0].type
                     if plot_type == PlotType.PLOT:
-                        self.plots.append([plot_type, i, ax.plot(t, zero, ".-", color="tab:green", zorder=0)[0]])
+                        color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:green"
+                        self.plots.append([plot_type, i, ax.plot(t, zero, ".-", color=color, zorder=0)[0]])
                     elif plot_type == PlotType.INTEGRATED:
+                        color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:brown"
                         plots_integrated = []
                         for cmp in range(nlp["ns"]):
                             plots_integrated.append(
                                 ax.plot(
-                                    self.t[i][[cmp, cmp + 1]],
-                                    (0, 0),
-                                    ".-",
-                                    color="tab:brown",
-                                    markersize=6,
-                                    linewidth=0.8,
+                                    self.t[i][[cmp, cmp + 1]], (0, 0), ".-", color=color, markersize=6, linewidth=0.8,
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
 
                     elif plot_type == PlotType.STEP:
-                        self.plots.append(
-                            [plot_type, i, ax.step(t, zero, where="post", color="tab:orange", zorder=0)[0]]
-                        )
+                        color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:orange"
+                        self.plots.append([plot_type, i, ax.step(t, zero, where="post", color=color, zorder=0)[0]])
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
@@ -224,7 +231,7 @@ class PlotOcp:
             for key in self.plot_func:
                 y = np.empty((self.variable_sizes[key], len(self.t[i])))
                 y.fill(np.nan)
-                y[self.plot_func[key][i].phase_mappings.map_idx, :] = self.plot_func[key][i].function(state, control)
+                y[:, :] = self.plot_func[key][i].function(state, control)
                 self.__append_to_ydata(y)
         self.__update_axes()
 
