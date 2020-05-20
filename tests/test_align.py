@@ -99,7 +99,7 @@ def test_align_marker_on_segment(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([23.6216484, 12.25908094, 31.52069129, 12.94722946]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-16.65951028,  14.58725991, -36.10090439, 4.41782565]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-16.65951028, 14.58725991, -36.10090439, 4.41782565]))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

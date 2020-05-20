@@ -228,11 +228,7 @@ def test_muscle_activation_and_contacts_tracking():
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = muscle_activations_contact_tracker.prepare_ocp(
-        model_path,
-        final_time,
-        nb_shooting,
-        muscle_activations_ref[:, :-1].T,
-        contact_forces_ref.T,
+        model_path, final_time, nb_shooting, muscle_activations_ref[:, :-1].T, contact_forces_ref.T,
     )
     sol = ocp.solve()
 
