@@ -6,8 +6,6 @@ import biorbd
 class BiorbdInterface:
     @staticmethod
     def convert_array_to_external_forces(all_f_ext):
-        # TODO: Look if f_ext is already what is needed
-
         if not isinstance(all_f_ext, (list, tuple)):
             raise RuntimeError(
                 "f_ext should be a list of (6 x nb_external_forces x nb_shooting) or (6 x nb_shooting) matrix"
