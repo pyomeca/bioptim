@@ -391,13 +391,14 @@ class OptimalControlProgram:
         # Solve the problem
         return solver.call(arg)
 
-    def save(self, sol, file_path, to_numpy=False):
+    def save(self, sol, file_path, to_numpy=False, nb_frames=80):
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bo"
         with open(file_path, "wb") as file:
             if to_numpy:
-                pickle.dump({"data": Data.get_data(self, sol["x"])}, file)
+                pickle.dump({"data": Data.get_data(self, sol["x"], integrate=False, interpolate_nb_frames=nb_frames)},
+                            file)
             else:
                 pickle.dump({"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file)
 
