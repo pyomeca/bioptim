@@ -7,7 +7,7 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
-    PlotType
+    PlotType,
 )
 
 
@@ -72,7 +72,12 @@ if __name__ == "__main__":
     # Add my lovely new plot
     ocp.add_plot("My New Extra Plot", lambda x, u: plot_callback(x, [0, 1, 3]), PlotType.PLOT)
     ocp.add_plot("My New Extra Plot", lambda x, u: plot_callback(x, [1, 3]), plot_type=PlotType.STEP, axes_idx=[1, 2])
-    ocp.add_plot("My Second New Extra Plot", lambda x, u: plot_callback(x, [1, 3]), plot_type=PlotType.INTEGRATED, axes_idx=[1, 2])
+    ocp.add_plot(
+        "My Second New Extra Plot",
+        lambda x, u: plot_callback(x, [1, 3]),
+        plot_type=PlotType.INTEGRATED,
+        axes_idx=[1, 2],
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=False)

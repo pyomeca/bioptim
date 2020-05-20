@@ -351,8 +351,9 @@ class OptimalControlProgram:
 
     def add_plot(self, fig_name, update_function, phase_number=-1, **parameters):
         if "combine_to" in parameters:
-            raise RuntimeError("'combine_to' cannot be specified in add_plot, "
-                               "please use same 'fig_name' to combine plots")
+            raise RuntimeError(
+                "'combine_to' cannot be specified in add_plot, " "please use same 'fig_name' to combine plots"
+            )
 
         # --- Solve the program --- #
         if len(self.nlp) == 1:

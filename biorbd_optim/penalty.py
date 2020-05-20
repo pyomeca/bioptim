@@ -414,7 +414,14 @@ class PenaltyFunctionAbstract:
 
         if data.shape[1] == nlp["ns"]:
             data = np.c_[data, data[:, -1]]
-        ocp.add_plot(combine_to, lambda x, u: data, color="tab:red", plot_type=PlotType.STEP, phase_number=nlp["phase_idx"], axes_idx=axes_idx)
+        ocp.add_plot(
+            combine_to,
+            lambda x, u: data,
+            color="tab:red",
+            plot_type=PlotType.STEP,
+            phase_number=nlp["phase_idx"],
+            axes_idx=axes_idx,
+        )
 
 
 class PenaltyType(Enum):

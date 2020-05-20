@@ -14,6 +14,7 @@ from biorbd_optim import (
     InitialConditions,
     ShowResult,
 )
+
 # Load align_segment_on_rt
 spec = importlib.util.spec_from_file_location(
     "data_to_track", str(Path(__file__).parent) + "/contact_forces_inequality_constraint_muscle.py"
@@ -94,11 +95,7 @@ if __name__ == "__main__":
 
     # Generate data using another optimization that will be feedback in as tracking data
     ocp_to_track = data_to_track.prepare_ocp(
-        model_path=model_path,
-        phase_time=final_time,
-        number_shooting_points=ns,
-        direction="GREATER_THAN",
-        boundary=50,
+        model_path=model_path, phase_time=final_time, number_shooting_points=ns, direction="GREATER_THAN", boundary=50,
     )
     sol_to_track = ocp_to_track.solve()
     states, controls = Data.get_data(ocp_to_track, sol_to_track)

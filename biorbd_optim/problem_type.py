@@ -165,8 +165,11 @@ class ProblemType:
         legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
         nlp["plot"] = {
             "q": CustomPlot(lambda x, u: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q),
-            "q_dot": CustomPlot(lambda x, u: x[nlp["nbQ"]: nlp["nbQ"] + nlp["nbQdot"]], plot_type=PlotType.INTEGRATED,
-                                legend=legend_qdot),
+            "q_dot": CustomPlot(
+                lambda x, u: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
+                plot_type=PlotType.INTEGRATED,
+                legend=legend_qdot,
+            ),
         }
         nlp["plot"]["tau"] = CustomPlot(lambda x, u: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau)
 
@@ -185,8 +188,9 @@ class ProblemType:
         nlp["nbContact"] = nlp["model"].nbContacts()
         contact_names = [n.to_string() for n in nlp["model"].contactNames()]
         phase_mappings = nlp["plot_mappings"]["contact_forces"] if "contact_forces" in nlp["plot_mappings"] else None
-        nlp["plot"]["contact_forces"] = CustomPlot(nlp["contact_forces_func"], axes_idx=phase_mappings,
-                                                   legend=contact_names)
+        nlp["plot"]["contact_forces"] = CustomPlot(
+            nlp["contact_forces_func"], axes_idx=phase_mappings, legend=contact_names
+        )
 
     @staticmethod
     def __configure_muscles(nlp, muscles_are_states=False, muscles_are_controls=False):
@@ -196,13 +200,17 @@ class ProblemType:
         combine = None
         if muscles_are_states:
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
-            nlp["plot"]["muscles_states"] = CustomPlot(lambda x, u: x[nx_q: nx_q + nlp["nbMuscle"]],
-                                                       plot_type=PlotType.INTEGRATED, legend=nlp["muscleNames"])
+            nlp["plot"]["muscles_states"] = CustomPlot(
+                lambda x, u: x[nx_q : nx_q + nlp["nbMuscle"]], plot_type=PlotType.INTEGRATED, legend=nlp["muscleNames"]
+            )
             combine = "muscles_states"
         if muscles_are_controls:
-            nlp["plot"]["muscles_control"] = CustomPlot(lambda x, u: u[nlp["nbTau"]: nlp["nbTau"] + nlp["nbMuscle"]],
-                                                        plot_type=PlotType.STEP, legend=nlp["muscleNames"],
-                                                        combine_to=combine)
+            nlp["plot"]["muscles_control"] = CustomPlot(
+                lambda x, u: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
+                plot_type=PlotType.STEP,
+                legend=nlp["muscleNames"],
+                combine_to=combine,
+            )
 
     @staticmethod
     def __configure_forward_dyn_func(nlp, dyn_func):
