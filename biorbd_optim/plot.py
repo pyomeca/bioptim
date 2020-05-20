@@ -110,7 +110,8 @@ class PlotOcp:
                 nb = self.variable_sizes[variable]
                 nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
                 if nlp["plot"][variable].combine_to:
-                    axes = self.axes[nlp["plot"][variable].combine_to]
+                    self.axes[variable] = self.axes[nlp["plot"][variable].combine_to]
+                    axes = self.axes[variable]
                 elif i > 0:
                     axes = self.axes[variable]
                 else:
