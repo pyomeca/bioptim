@@ -78,7 +78,6 @@ def test_pendulum_min_time_lagrange(ode_solver):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         number_shooting_points=10,
-        show_online_optim=False,
     )
     sol = ocp.solve()
 

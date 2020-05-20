@@ -56,7 +56,6 @@ def test_muscle_activations_and_states_tracking():
         markers_ref,
         muscle_activations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        show_online_optim=False,
         kin_data_to_track="q",
     )
     sol = ocp.solve()
@@ -234,7 +233,6 @@ def test_muscle_activation_and_contacts_tracking():
         nb_shooting,
         muscle_activations_ref[:, :-1].T,
         contact_forces_ref.T,
-        show_online_optim=False,
     )
     sol = ocp.solve()
 

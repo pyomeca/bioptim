@@ -80,12 +80,12 @@ def test_align_marker_on_segment(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 1321.2842914)
+    np.testing.assert_almost_equal(f[0, 0], 2632.9408063562532)
 
     # Check constraints
     g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (308, 1))
-    np.testing.assert_almost_equal(g, np.zeros((308, 1)))
+    np.testing.assert_equal(g.shape, (88, 1))
+    np.testing.assert_almost_equal(g, np.zeros((88, 1)))
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
@@ -98,8 +98,8 @@ def test_align_marker_on_segment(ode_solver):
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([1.61499455, 9.97512191, 2.13907245, 0.89301203]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.11715165, 10.14520729, -2.5377627, 0.37996436]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([23.6216484, 12.25908094, 31.52069129, 12.94722946]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-16.65951028,  14.58725991, -36.10090439, 4.41782565]))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
