@@ -135,14 +135,14 @@ class PlotOcp:
                     plot_type = self.plot_func[variable][0].type
                     if plot_type == PlotType.PLOT:
                         color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:green"
-                        self.plots.append([plot_type, i, ax.plot(t, zero, ".-", color=color, zorder=0)[0]])
+                        self.plots.append([plot_type, i, ax.plot(t, zero, ".-", color=color, markersize=3, zorder=0)[0]])
                     elif plot_type == PlotType.INTEGRATED:
                         color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:brown"
                         plots_integrated = []
                         for cmp in range(nlp["ns"]):
                             plots_integrated.append(
                                 ax.plot(
-                                    self.t[i][[cmp, cmp + 1]], (0, 0), ".-", color=color, markersize=6, linewidth=0.8,
+                                    self.t[i][[cmp, cmp + 1]], (0, 0), ".-", color=color, markersize=3, linewidth=0.8,
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
