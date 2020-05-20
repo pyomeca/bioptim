@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from tests import Utils
 from biorbd_optim import Data, OdeSolver
+from .utils import TestUtils
 
 # Load align_markers
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -54,7 +54,7 @@ def test_align_markers(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
 
     # save and load
-    Utils.save_and_load(sol, ocp, False)
+    TestUtils.save_and_load(sol, ocp, False)
 
 
 # Load multiphase_align_markers
@@ -112,7 +112,7 @@ def test_multiphase_align_markers(ode_solver):
     np.testing.assert_almost_equal(tau[2][:, -1], np.array((-0.35714285, 9.81, -0.56071428)))
 
     # save and load
-    Utils.save_and_load(sol, ocp, False)
+    TestUtils.save_and_load(sol, ocp, False)
 
 
 # Load external_forces
@@ -161,4 +161,4 @@ def test_external_forces(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((0, 3.90677425, 0, 0)))
 
     # save and load
-    Utils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, True)

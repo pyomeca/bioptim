@@ -1,4 +1,3 @@
-import biorbd
 from casadi import MX, vertcat, Function
 
 from .dynamics import Dynamics

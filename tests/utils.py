@@ -14,36 +14,36 @@ from biorbd_optim import (
 )
 
 
-class Utils:
+class TestUtils:
     @staticmethod
     def save_and_load(sol, ocp, test_solve_of_loaded=False):
         ocp.save(sol, "test.bo")
         ocp_load, sol_load = OptimalControlProgram.load("test.bo")
 
-        Utils.deep_assert(sol, sol_load)
-        Utils.deep_assert(sol_load, sol)
+        TestUtils.deep_assert(sol, sol_load)
+        TestUtils.deep_assert(sol_load, sol)
         if test_solve_of_loaded:
             sol_from_load = ocp_load.solve()
-            Utils.deep_assert(sol, sol_from_load)
-            Utils.deep_assert(sol_from_load, sol)
+            TestUtils.deep_assert(sol, sol_from_load)
+            TestUtils.deep_assert(sol_from_load, sol)
 
-        Utils.deep_assert(ocp_load, ocp)
-        Utils.deep_assert(ocp, ocp_load)
+        TestUtils.deep_assert(ocp_load, ocp)
+        TestUtils.deep_assert(ocp, ocp_load)
         os.remove("test.bo")
 
     @staticmethod
     def deep_assert(first_elem, second_elem):
         if isinstance(first_elem, dict):
             for key in first_elem:
-                Utils.deep_assert(first_elem[key], second_elem[key])
+                TestUtils.deep_assert(first_elem[key], second_elem[key])
         elif isinstance(first_elem, (list, tuple)):
             for i in range(len(first_elem)):
-                Utils.deep_assert(first_elem[i], second_elem[i])
+                TestUtils.deep_assert(first_elem[i], second_elem[i])
         elif isinstance(
             first_elem, (OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping, OdeSolver)
         ):
             for key in dir(first_elem):
-                Utils.deep_assert(getattr(first_elem, key), getattr(second_elem, key))
+                TestUtils.deep_assert(getattr(first_elem, key), getattr(second_elem, key))
         else:
             if not callable(first_elem) and not isinstance(first_elem, (MX, biorbd.Model)):
                 try:

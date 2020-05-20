@@ -8,9 +8,9 @@ import casadi
 from casadi import MX, vertcat
 
 from .enums import OdeSolver
-from .mapping import Mapping, BidirectionalMapping
+from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
-from .constraints import Constraint, ConstraintFunction
+from .constraints import ConstraintFunction
 from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback
 from .integrator import RK4

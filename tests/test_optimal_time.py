@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from tests import Utils
 from biorbd_optim import Data, OdeSolver
+from .utils import TestUtils
 
 
 # Load pendulum_min_time_Mayer
@@ -61,7 +61,7 @@ def test_pendulum_min_time_mayer(ode_solver):
     np.testing.assert_almost_equal(tf, 0.6209213032003106)
 
     # save and load
-    Utils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, True)
 
 
 # Load pendulum_min_time_Lagrange
@@ -114,4 +114,4 @@ def test_pendulum_min_time_lagrange(ode_solver):
     np.testing.assert_almost_equal(tf, 0.6023985224766413)
 
     # save and load
-    Utils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, True)

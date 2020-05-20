@@ -1,4 +1,4 @@
-from casadi import vertcat, horzcat, MX
+from casadi import vertcat, MX
 import biorbd
 
 

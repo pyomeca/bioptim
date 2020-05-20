@@ -6,8 +6,8 @@ from pathlib import Path
 
 import numpy as np
 
-from tests import Utils
 from biorbd_optim import Data
+from .utils import TestUtils
 
 # Load static_arm
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -73,7 +73,7 @@ def test_muscle_driven_ocp():
     )
 
     # save and load
-    Utils.save_and_load(sol, ocp, False)
+    TestUtils.save_and_load(sol, ocp, False)
 
 
 def test_muscle_with_contact_driven_ocp():
@@ -117,7 +117,7 @@ def test_muscle_with_contact_driven_ocp():
     )
 
     # save and load
-    Utils.save_and_load(sol, ocp, False)
+    TestUtils.save_and_load(sol, ocp, False)
 
 
 def test_muscle_excitation_with_contact_driven_ocp():
@@ -206,4 +206,4 @@ def test_muscle_excitation_with_contact_driven_ocp():
     )
 
     # save and load
-    Utils.save_and_load(sol, ocp, False)
+    TestUtils.save_and_load(sol, ocp, False)

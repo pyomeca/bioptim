@@ -7,12 +7,12 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from tests import Utils
 from biorbd_optim import (
     Data,
     OdeSolver,
     InterpolationType,
 )
+from .utils import TestUtils
 
 # Load pendulum
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -58,7 +58,7 @@ def test_pendulum(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-21.18945819, 0)))
 
     # save and load
-    Utils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, True)
 
 
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -146,4 +146,4 @@ def test_initial_guesses(interpolation_type):
     np.testing.assert_almost_equal(tau[:, -1], np.array([-5.0, 9.81, -7.85]))
 
     # save and load
-    Utils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, True)
