@@ -1,14 +1,12 @@
-from scipy.integrate import solve_ivp
+import importlib.util
+from pathlib import Path
+
 import numpy as np
 import biorbd
-from casadi import MX, Function
 from matplotlib import pyplot as plt
 
 from biorbd_optim import (
     OptimalControlProgram,
-    BidirectionalMapping,
-    Mapping,
-    Dynamics,
     Data,
     ProblemType,
     Objective,
@@ -17,6 +15,12 @@ from biorbd_optim import (
     InitialConditions,
     ShowResult,
 )
+# Load align_segment_on_rt
+spec = importlib.util.spec_from_file_location(
+    "data_to_track", str(Path(__file__).parent) + "/contact_forces_inequality_constraint_muscle.py"
+)
+data_to_track = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(data_to_track)
 
 
 def prepare_ocp(
@@ -85,16 +89,27 @@ def prepare_ocp(
 
 if __name__ == "__main__":
     # Define the problem
-    biorbd_model = biorbd.Model("2segments_4dof_2contacts_1muscle.bioMod")
-    final_time = 0.3
-    ns = 10
+    model_path = "2segments_4dof_2contacts_1muscle.bioMod"
+    final_time = 0.7
+    ns = 20
 
-    # Load data to fit from previous exemple
-    contact_forces_ref = np.load("contact_forces.npy")
-    muscle_activations_ref = np.load("muscle_activations.npy")
+    # Generate data using another optimization that will be feedback in as tracking data
+    ocp_to_track = data_to_track.prepare_ocp(
+        model_path=model_path,
+        phase_time=final_time,
+        number_shooting_points=ns,
+        direction="GREATER_THAN",
+        boundary=50,
+    )
+    sol_to_track = ocp_to_track.solve()
+    states, controls = Data.get_data(ocp_to_track, sol_to_track)
+    q, q_dot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
+    x = np.concatenate((q, q_dot))
+    u = np.concatenate((tau, mus))
+    contact_forces_ref = np.array(ocp_to_track.nlp[0]["contact_forces_func"](x[:, :-1], u[:, :-1]))
+    muscle_activations_ref = mus
 
     # Track these data
-    model_path = "2segments_4dof_2contacts_1muscle.bioMod"
     ocp = prepare_ocp(
         model_path=model_path,
         phase_time=final_time,
@@ -104,37 +119,7 @@ if __name__ == "__main__":
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=False)
-
-    # --- Show the results --- #
-    nlp = ocp.nlp[0]
-    nlp["model"] = biorbd.Model(model_path)
-
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, q_dot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
-
-    n_q = ocp.nlp[0]["model"].nbQ()
-    n_mark = ocp.nlp[0]["model"].nbMarkers()
-    n_frames = q.shape[1]
-    n_contact = ocp.nlp[0]["model"].nbContacts()
-
-    x = np.concatenate((q, q_dot))
-    u = np.concatenate((tau, mus))
-    contact_forces = np.array(nlp["contact_forces_func"](x[:, :-1], u[:, :-1]))
-
-    t = np.linspace(0, final_time, ns + 1)
-    plt.figure("Muscle activations")
-    plt.step(t, muscle_activations_ref.T, "k", where="post")
-    plt.step(t, mus.T, "r--", where="post")
-
-    plt.figure("Contact forces")
-    plt.plot(t[:-1], contact_forces_ref.T, "k.-")
-    plt.plot(t[:-1], contact_forces.T, "r.--")
-
-    plt.figure("Residual forces")
-    plt.step(t, tau.T, where="post")
-
-    plt.show()
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
