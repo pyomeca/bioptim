@@ -113,7 +113,6 @@ def test_muscle_excitation_and_markers_tracking():
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        show_online_optim=False,
         kin_data_to_track="markers",
     )
     sol = ocp.solve()

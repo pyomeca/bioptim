@@ -18,7 +18,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, direction, boundary, show_online_optim=False):
+def prepare_ocp(model_path, phase_time, number_shooting_points, direction, boundary):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -90,7 +90,6 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
         objective_functions=objective_functions,
         constraints=constraints,
         tau_mapping=tau_mapping,
-        show_online_optim=show_online_optim,
     )
 
 
@@ -104,11 +103,10 @@ if __name__ == "__main__":
         number_shooting_points=ns,
         direction="GREATER_THAN",
         boundary=50,
-        show_online_optim=False,
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=True)
 
     nlp = ocp.nlp[0]
     nlp["model"] = biorbd.Model(model_path)
@@ -135,4 +133,3 @@ if __name__ == "__main__":
     # --- Show results --- #
     result = ShowResult(ocp, sol)
     result.animate()
-    result.graphs()

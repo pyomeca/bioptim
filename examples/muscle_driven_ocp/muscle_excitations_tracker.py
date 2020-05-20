@@ -95,7 +95,6 @@ def prepare_ocp(
     excitations_ref,
     q_ref,
     kin_data_to_track="markers",
-    show_online_optim=False,
 ):
     # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -165,7 +164,6 @@ def prepare_ocp(
         U_bounds,
         objective_functions,
         constraints,
-        show_online_optim=show_online_optim,
     )
 
 
@@ -188,12 +186,11 @@ if __name__ == "__main__":
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        show_online_optim=True,
         kin_data_to_track="q",
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show the results --- #
     muscle_excitations_ref = np.append(muscle_excitations_ref, muscle_excitations_ref[-1:, :], axis=0)

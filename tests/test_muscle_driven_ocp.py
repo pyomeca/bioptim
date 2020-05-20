@@ -128,7 +128,6 @@ def test_muscle_excitation_with_contact_driven_ocp():
         number_shooting_points=10,
         direction="GREATER_THAN",
         boundary=boundary,
-        show_online_optim=False,
     )
     sol = ocp.solve()
 

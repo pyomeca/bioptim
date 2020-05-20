@@ -86,6 +86,13 @@ if __name__ == "__main__":
         sol = ocp.solve()
         print("\n")
 
+    # Save the last ocp
+    ocp.save(sol, "cube_ocp_sol")
+    ocp_loaded, sol_loaded = OptimalControlProgram.load("cube_ocp_sol.bo")
+
+    # Rerun the loaded OCP
+    sol_loaded_and_reran = ocp_loaded.solve()
+
     # Print the last solution
     result_plot = ShowResult(ocp, sol)
     result_plot.graphs()

@@ -15,7 +15,7 @@ from biorbd_optim import (
 
 
 def prepare_ocp(
-    biorbd_model_path, number_shooting_points, final_time, show_online_optim=False, ode_solver=OdeSolver.RK
+    biorbd_model_path, number_shooting_points, final_time, ode_solver=OdeSolver.RK
 ):
     # --- Options --- #
     # Model path
@@ -66,16 +66,15 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, show_online_optim=False)
+    ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2)
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.graphs()
+    result.animate()

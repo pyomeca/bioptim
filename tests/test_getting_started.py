@@ -27,7 +27,6 @@ def test_pendulum(ode_solver):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         number_shooting_points=10,
-        show_online_optim=False,
     )
     sol = ocp.solve()
 

@@ -11,7 +11,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_online_optim=False):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -63,15 +63,14 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
         U_bounds,
         objective_functions,
         constraints,
-        show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, number_shooting_points=20, show_online_optim=True)
+    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, number_shooting_points=20)
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)

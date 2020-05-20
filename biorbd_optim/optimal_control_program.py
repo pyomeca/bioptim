@@ -47,7 +47,6 @@ class OptimalControlProgram:
         plot_mappings=None,
         is_cyclic_objective=False,
         is_cyclic_constraint=False,
-        show_online_optim=False,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -96,7 +95,6 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "is_cyclic_objective": is_cyclic_objective,
             "is_cyclic_constraint": is_cyclic_constraint,
-            "show_online_optim": show_online_optim,
         }
 
         self.nb_phases = len(biorbd_model)
@@ -192,11 +190,6 @@ class OptimalControlProgram:
         if len(objective_functions) > 0:
             for i in range(self.nb_phases):
                 ObjectiveFunction.add(self, self.nlp[i])
-
-        if show_online_optim:
-            self.show_online_optim_callback = OnlineCallback(self)
-        else:
-            self.show_online_optim_callback = None
 
     def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None):
         if isinstance(param, (list, tuple)):
@@ -356,7 +349,7 @@ class OptimalControlProgram:
                         raise RuntimeError(f"Each phase must declares its {penality_type} (even if it is empty)")
             self.__add_to_nlp(penality_type, penalities, False)
 
-    def solve(self, solver="ipopt", options_ipopt={}):
+    def solve(self, solver="ipopt", show_online_optim=False, options_ipopt={}):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
@@ -365,9 +358,10 @@ class OptimalControlProgram:
         # NLP
         nlp = {"x": self.V, "f": self.J, "g": self.g}
 
-        options_common = {
-            "iteration_callback": self.show_online_optim_callback,
-        }
+        options_common = {}
+        if show_online_optim:
+            options_common["iteration_callback"] = OnlineCallback(self)
+
         if solver == "ipopt":
             options_default = {
                 "ipopt.tol": 1e-6,
@@ -381,9 +375,9 @@ class OptimalControlProgram:
                     options_ipopt[f"ipopt.{key}"] = options_ipopt[key]
                     del options_ipopt[key]
             opts = {**options_default, **options_common, **options_ipopt}
-            solver = casadi.nlpsol("nlpsol", "ipopt", nlp, opts)
         else:
             raise RuntimeError("Available solvers are: 'ipopt'")
+        solver = casadi.nlpsol("nlpsol", solver, nlp, opts)
 
         # Bounds and initial guess
         arg = {

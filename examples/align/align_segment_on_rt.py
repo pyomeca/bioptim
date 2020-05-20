@@ -2,7 +2,6 @@ import biorbd
 
 from biorbd_optim import (
     Instant,
-    Axe,
     OptimalControlProgram,
     ProblemType,
     Objective,
@@ -15,7 +14,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver, show_online_optim=False):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver):
     # --- Options --- #nq
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -65,7 +64,6 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        show_online_optim=show_online_optim,
     )
 
 
@@ -75,11 +73,10 @@ if __name__ == "__main__":
         number_shooting_points=30,
         final_time=1,
         ode_solver=OdeSolver.RK,
-        show_online_optim=False,
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)

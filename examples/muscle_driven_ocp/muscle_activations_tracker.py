@@ -92,7 +92,6 @@ def prepare_ocp(
     activations_ref,
     q_ref,
     kin_data_to_track="markers",
-    show_online_optim=False,
 ):
     # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -157,7 +156,6 @@ def prepare_ocp(
         U_bounds,
         objective_functions,
         constraints,
-        show_online_optim=show_online_optim,
     )
 
 
@@ -179,12 +177,11 @@ if __name__ == "__main__":
         markers_ref,
         muscle_activations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        show_online_optim=True,
-        kin_data_to_track="markers",
+        kin_data_to_track="q",
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show the results --- #
     muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
@@ -211,17 +208,6 @@ if __name__ == "__main__":
     for i in range(markers.shape[1]):
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers[:, i, :].T, "r--")
-
-    plt.figure("Q")
-    plt.plot(np.linspace(0, 2, n_shooting_points + 1), x_ref[:n_q, :].T, "k")
-    plt.plot(np.linspace(0, 2, n_shooting_points + 1), q.T, "r--")
-
-    plt.figure("Tau")
-    plt.step(np.linspace(0, 2, n_shooting_points + 1), tau.T, where="post")
-
-    plt.figure("Muscle activations")
-    plt.step(np.linspace(0, 2, n_shooting_points + 1), muscle_activations_ref, "k", where="post")
-    plt.step(np.linspace(0, 2, n_shooting_points + 1), mus.T, "r--", where="post")
 
     # --- Plot --- #
     plt.show()
