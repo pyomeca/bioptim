@@ -20,7 +20,7 @@ from biorbd_optim import (
 
 
 def prepare_ocp(
-    model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref, show_online_optim,
+    model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref,
 ):
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -74,13 +74,12 @@ def prepare_ocp(
         problem_type,
         number_shooting_points,
         phase_time,
-        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
-        constraints,
-        show_online_optim=show_online_optim,
+        objective_functions=objective_functions,
+        constraints=constraints,
     )
 
 
@@ -102,11 +101,10 @@ if __name__ == "__main__":
         number_shooting_points=ns,
         muscle_activations_ref=muscle_activations_ref[:, :-1].T,
         contact_forces_ref=contact_forces_ref.T,
-        show_online_optim=False,
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=False)
 
     # --- Show the results --- #
     nlp = ocp.nlp[0]

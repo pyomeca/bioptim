@@ -154,7 +154,7 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
             PenaltyFunctionAbstract._add_track_data_to_plot(
-                nlp, data_to_track.T, combine_to="muscles_states", mapping=Mapping(muscles_idx)
+                nlp, data_to_track.T, combine_to="muscles_control", mapping=Mapping(muscles_idx)
             )
 
         @staticmethod

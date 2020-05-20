@@ -14,7 +14,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path="HandSpinner.bioMod", show_online_optim=False):
+def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
     end_crank_idx = 0
     hand_marker_idx = 18
 
@@ -76,22 +76,21 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod", show_online_optim=False)
         problem_type,
         number_shooting_points,
         final_time,
-        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
+        objective_functions,
         constraints,
         is_cyclic_objective=True,
-        show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(show_online_optim=True)
+    ocp = prepare_ocp()
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=True, options_ipopt={"hessian_approximation": "limited-memory"})
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)

@@ -70,11 +70,11 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_g
         problem_type,
         number_shooting_points,
         final_time,
-        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
+        objective_functions,
         constraints,
     )
 
@@ -85,6 +85,13 @@ if __name__ == "__main__":
         ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, initial_guess=initial_guess)
         sol = ocp.solve()
         print("\n")
+
+    # Save the last ocp
+    ocp.save(sol, "cube_ocp_sol")
+    ocp_loaded, sol_loaded = OptimalControlProgram.load("cube_ocp_sol.bo")
+
+    # Rerun the loaded OCP
+    sol_loaded_and_reran = ocp_loaded.solve()
 
     # Print the last solution
     result_plot = ShowResult(ocp, sol)

@@ -13,11 +13,19 @@ class Dynamics:
         """
         q, qdot, tau = Dynamics.__dispatch_data(states, controls, nlp)
 
-        qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
-
         qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
-        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
-        return vertcat(qdot_reduced, qddot_reduced)
+        if "external_forces" in nlp:
+            dxdt = MX(nlp["nx"], nlp["ns"])
+            for i, f_ext in enumerate(nlp["external_forces"]):
+                qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau, f_ext).to_mx()
+                qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
+                dxdt[:, i] = vertcat(qdot_reduced, qddot_reduced)
+        else:
+            qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
+            qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
+            dxdt = vertcat(qdot_reduced, qddot_reduced)
+
+        return dxdt
 
     @staticmethod
     def forward_dynamics_torque_driven_with_contact(states, controls, nlp):

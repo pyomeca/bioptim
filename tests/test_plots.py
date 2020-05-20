@@ -27,7 +27,6 @@ def test_plot_graphs_one_phase():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
         final_time=2,
-        show_online_optim=False,
     )
     sol = ocp.solve()
 
@@ -63,7 +62,6 @@ def test_plot_merged_graphs():
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        show_online_optim=False,
         kin_data_to_track="markers",
     )
     sol = ocp.solve()

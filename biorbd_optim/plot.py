@@ -65,7 +65,8 @@ class PlotOcp:
         self.variable_sizes = {}
         self.__create_plots()
 
-        horz, vert = 0, 0
+        horz = 0
+        vert = 1 if len(self.all_figures) < self.nb_vertical_windows * self.nb_horizontal_windows else 0
         for i, fig in enumerate(self.all_figures):
             if self.automatically_organize:
                 try:
@@ -109,7 +110,8 @@ class PlotOcp:
                 nb = self.variable_sizes[variable]
                 nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
                 if nlp["plot"][variable].combine_to:
-                    axes = self.axes[nlp["plot"][variable].combine_to]
+                    self.axes[variable] = self.axes[nlp["plot"][variable].combine_to]
+                    axes = self.axes[variable]
                 elif i > 0:
                     axes = self.axes[variable]
                 else:
@@ -181,12 +183,12 @@ class PlotOcp:
         return axes
 
     def _organize_windows(self, nb_windows):
-        self.nb_vertical_windows, nb_horizontal_windows = PlotOcp._generate_windows_size(nb_windows)
+        self.nb_vertical_windows, self.nb_horizontal_windows = PlotOcp._generate_windows_size(nb_windows)
         if self.automatically_organize:
             height = tkinter.Tk().winfo_screenheight()
             width = tkinter.Tk().winfo_screenwidth()
             self.top_margin = height / 15
-            self.height_step = (height - self.top_margin) / nb_horizontal_windows
+            self.height_step = (height - self.top_margin) / self.nb_horizontal_windows
             self.width_step = width / self.nb_vertical_windows
         else:
             self.top_margin = None

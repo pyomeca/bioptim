@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from biorbd_optim import Data
+from .utils import TestUtils
 
 # Load static_arm
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -71,6 +72,9 @@ def test_muscle_driven_ocp():
         np.array([1.96717613e-02, 3.42406388e-05, 3.29456098e-05, 8.61728932e-03, 8.57918458e-03, 7.07096066e-03]),
     )
 
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
 
 def test_muscle_with_contact_driven_ocp():
     ocp = static_arm_with_contact.prepare_ocp(
@@ -112,6 +116,9 @@ def test_muscle_with_contact_driven_ocp():
         np.array([1.96721725e-02, 3.42398501e-05, 3.29454916e-05, 8.61757459e-03, 8.57946846e-03, 7.07152302e-03]),
     )
 
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
 
 def test_muscle_excitation_with_contact_driven_ocp():
     boundary = 50
@@ -121,7 +128,6 @@ def test_muscle_excitation_with_contact_driven_ocp():
         number_shooting_points=10,
         direction="GREATER_THAN",
         boundary=boundary,
-        show_online_optim=False,
     )
     sol = ocp.solve()
 
@@ -197,3 +203,6 @@ def test_muscle_excitation_with_contact_driven_ocp():
     np.testing.assert_almost_equal(
         mus_controls[:, -1], np.array([0.42519766]),
     )
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)

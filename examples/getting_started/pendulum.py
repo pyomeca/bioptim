@@ -10,7 +10,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_online_optim=False):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -51,23 +51,20 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, show_onli
         problem_type,
         number_shooting_points,
         final_time,
-        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
+        objective_functions,
         constraints,
-        show_online_optim=show_online_optim,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(
-        biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50, show_online_optim=False,
-    )
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50,)
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=False)
 
     # --- Save the optimal control program and the solution --- #
     ocp.save(sol, "pendulum")

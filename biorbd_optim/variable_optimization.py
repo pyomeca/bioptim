@@ -207,7 +207,7 @@ class Data:
                     # TODO: Allow integrate when optimizing time
                     xf_dof = x0
                 else:
-                    xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"](x0=x0, p=p)["xf"])  # Integrate
+                    xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"][idx_node](x0=x0, p=p)["xf"])  # Integrate
 
                 offset = 0
                 for key in nlp["var_states"]:
