@@ -105,7 +105,7 @@ def test_add_new_plot():
 
     # Test 1 - Working plot
     ocp.add_plot("My New Plot", lambda x, u: x[0:2, :])
-    ShowResult(ocp, sol).graphs()
+    ShowResult(ocp, sol).graphs(automatically_organize=False)
 
     # Test 2 - Combine using combine_to is not allowed
     ocp, sol = OptimalControlProgram.load(save_name)
@@ -116,13 +116,13 @@ def test_add_new_plot():
     ocp, sol = OptimalControlProgram.load(save_name)
     ocp.add_plot("My New Plot", lambda x, u: x[0:2, :])
     ocp.add_plot("My Second New Plot", lambda x, u: x[0:2, :])
-    ShowResult(ocp, sol).graphs()
+    ShowResult(ocp, sol).graphs(automatically_organize=False)
 
     # Test 4 - Combine to the first using fig_name
     ocp, sol = OptimalControlProgram.load(save_name)
     ocp.add_plot("My New Plot", lambda x, u: x[0:2, :])
     ocp.add_plot("My New Plot", lambda x, u: x[0:2, :])
-    ShowResult(ocp, sol).graphs()
+    ShowResult(ocp, sol).graphs(automatically_organize=False)
 
     # Delete the saved file
     os.remove(save_name)
