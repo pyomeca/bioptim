@@ -15,7 +15,7 @@ class PenaltyFunctionAbstract:
         def minimize_states(penalty_type, ocp, nlp, t, x, u, data_to_track=(), states_idx=(), **extra_param):
             states_idx = PenaltyFunctionAbstract._check_and_fill_index(states_idx, nlp["nx"], "state_idx")
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [nlp["ns"] + 1, len(states_idx)]
+                data_to_track, [nlp["ns"] + 1, max(states_idx) + 1]
             )
 
             for i, v in enumerate(x):
