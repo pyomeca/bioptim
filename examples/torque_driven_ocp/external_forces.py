@@ -1,11 +1,11 @@
+import numpy as np
+
 import biorbd
 
 from biorbd_optim import (
     Instant,
     OptimalControlProgram,
     ProblemType,
-    BidirectionalMapping,
-    Mapping,
     Objective,
     Constraint,
     Bounds,
@@ -16,7 +16,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path="cubeSym.bioMod", ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path="cube_with_forces.bioMod", ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -25,13 +25,12 @@ def prepare_ocp(biorbd_model_path="cubeSym.bioMod", ode_solver=OdeSolver.RK):
     number_shooting_points = 30
     final_time = 2
     torque_min, torque_max, torque_init = -100, 100, 0
-    all_generalized_mapping = BidirectionalMapping(Mapping([0, 1, 2, 2], [3]), Mapping([0, 1, 2]))
 
     # Add objective functions
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
-    variable_type = ProblemType.torque_driven
+    problem_type = ProblemType.torque_driven
 
     # Constraints
     constraints = (
@@ -39,35 +38,42 @@ def prepare_ocp(biorbd_model_path="cubeSym.bioMod", ode_solver=OdeSolver.RK):
         {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
     )
 
+    # External forces
+    external_forces = [
+        np.repeat(
+            np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T[:, :, np.newaxis], number_shooting_points, axis=2
+        )
+    ]
+
     # Path constraint
-    X_bounds = QAndQDotBounds(biorbd_model, all_generalized_mapping)
+    X_bounds = QAndQDotBounds(biorbd_model)
     X_bounds.min[3:6, [0, -1]] = 0
     X_bounds.max[3:6, [0, -1]] = 0
 
     # Initial guess
-    X_init = InitialConditions([0] * all_generalized_mapping.reduce.len * 2)
+    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * all_generalized_mapping.reduce.len, [torque_max] * all_generalized_mapping.reduce.len,
+        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque(),
     )
-    U_init = InitialConditions([torque_init] * all_generalized_mapping.reduce.len)
+    U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
-        variable_type,
+        problem_type,
         number_shooting_points,
         final_time,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
-        objective_functions,
-        constraints,
+        objective_functions=objective_functions,
+        constraints=constraints,
+        external_forces=external_forces,
         ode_solver=ode_solver,
-        all_generalized_mapping=all_generalized_mapping,
     )
 
 

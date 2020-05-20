@@ -6,18 +6,9 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-from casadi import MX
-import biorbd
 
-from biorbd_optim import (
-    Data,
-    OdeSolver,
-    OptimalControlProgram,
-    Bounds,
-    InitialConditions,
-    BidirectionalMapping,
-    Mapping,
-)
+from biorbd_optim import Data, OdeSolver
+from .utils import TestUtils
 
 
 # Load pendulum_min_time_Mayer
@@ -35,7 +26,6 @@ def test_pendulum_min_time_mayer(ode_solver):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         number_shooting_points=10,
-        show_online_optim=False,
     )
     sol = ocp.solve()
 
@@ -69,6 +59,9 @@ def test_pendulum_min_time_mayer(ode_solver):
     # optimized time
     np.testing.assert_almost_equal(tf, 0.6209213032003106)
 
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
 
 # Load pendulum_min_time_Lagrange
 PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -85,7 +78,6 @@ def test_pendulum_min_time_lagrange(ode_solver):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         number_shooting_points=10,
-        show_online_optim=False,
     )
     sol = ocp.solve()
 
@@ -118,3 +110,6 @@ def test_pendulum_min_time_lagrange(ode_solver):
 
     # optimized time
     np.testing.assert_almost_equal(tf, 0.6023985224766413)
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)

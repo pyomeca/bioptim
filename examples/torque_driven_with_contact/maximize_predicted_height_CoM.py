@@ -1,5 +1,3 @@
-from matplotlib import pyplot as plt
-import numpy as np
 import biorbd
 
 from biorbd_optim import (
@@ -12,11 +10,10 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
-    Data,
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_optim=False):
+def prepare_ocp(model_path, phase_time, number_shooting_points):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -60,14 +57,13 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, show_online_opti
         problem_type,
         number_shooting_points,
         phase_time,
-        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
+        objective_functions,
         constraints,
         tau_mapping=tau_mapping,
-        show_online_optim=show_online_optim,
     )
 
 
@@ -75,12 +71,11 @@ if __name__ == "__main__":
     model_path = "2segments_4dof_2contacts.bioMod"
     t = 0.5
     ns = 20
-    ocp = prepare_ocp(model_path=model_path, phase_time=t, number_shooting_points=ns, show_online_optim=False)
+    ocp = prepare_ocp(model_path=model_path, phase_time=t, number_shooting_points=ns)
 
     # --- Solve the program --- #
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.graphs()
     result.animate(nb_frames=40)

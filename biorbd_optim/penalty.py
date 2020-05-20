@@ -4,7 +4,9 @@ from math import inf
 import numpy as np
 import biorbd
 
-from .enums import Instant, Axe
+from .enums import Instant, Axe, PlotType
+from .plot import CustomPlot
+from .mapping import Mapping
 
 
 class PenaltyFunctionAbstract:
@@ -13,12 +15,16 @@ class PenaltyFunctionAbstract:
         def minimize_states(penalty_type, ocp, nlp, t, x, u, data_to_track=(), states_idx=(), **extra_param):
             states_idx = PenaltyFunctionAbstract._check_and_fill_index(states_idx, nlp["nx"], "state_idx")
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [nlp["ns"] + 1, len(states_idx)]
+                data_to_track, [nlp["ns"] + 1, max(states_idx) + 1]
             )
 
             for i, v in enumerate(x):
                 val = v[states_idx] - data_to_track[t[i], states_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+
+            PenaltyFunctionAbstract._add_track_data_to_plot(
+                ocp, nlp, data_to_track.T, combine_to="q", axes_idx=Mapping(states_idx)
+            )
 
         @staticmethod
         def minimize_markers(penalty_type, ocp, nlp, t, x, u, markers_idx=(), data_to_track=(), **extra_param):
@@ -130,20 +136,26 @@ class PenaltyFunctionAbstract:
                 val = v[controls_idx] - data_to_track[t[i], controls_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
+            PenaltyFunctionAbstract._add_track_data_to_plot(
+                ocp, nlp, data_to_track.T, combine_to="tau", axes_idx=Mapping(controls_idx)
+            )
+
         @staticmethod
         def minimize_muscles_control(penalty_type, ocp, nlp, t, x, u, muscles_idx=(), data_to_track=(), **extra_param):
-            n_tau = nlp["nbTau"]
-            nb_muscle = nlp["nbMuscle"]
-            muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(muscles_idx, nb_muscle, "muscles_idx")
+            muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(muscles_idx, nlp["nbMuscle"], "muscles_idx")
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
                 data_to_track, [nlp["ns"], max(muscles_idx) + 1]
             )
 
             # Add the nbTau offset to the muscle index
-            muscles_idx_plus_tau = [idx + n_tau for idx in muscles_idx]
+            muscles_idx_plus_tau = [idx + nlp["nbTau"] for idx in muscles_idx]
             for i, v in enumerate(u):
                 val = v[muscles_idx_plus_tau] - data_to_track[t[i], muscles_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+
+            PenaltyFunctionAbstract._add_track_data_to_plot(
+                ocp, nlp, data_to_track.T, combine_to="muscles_control", axes_idx=Mapping(muscles_idx)
+            )
 
         @staticmethod
         def minimize_all_controls(penalty_type, ocp, nlp, t, x, u, controls_idx=(), data_to_track=(), **extra_param):
@@ -181,6 +193,10 @@ class PenaltyFunctionAbstract:
                 force = nlp["contact_forces_func"](x[i], u[i])
                 val = force[contacts_idx] - data_to_track[t[i], contacts_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+
+            PenaltyFunctionAbstract._add_track_data_to_plot(
+                ocp, nlp, data_to_track.T, combine_to="contact_forces", axes_idx=Mapping(contacts_idx)
+            )
 
         @staticmethod
         def align_segment_with_custom_rt(penalty_type, ocp, nlp, t, x, u, segment_idx, rt_idx, **extra_param):
@@ -390,6 +406,22 @@ class PenaltyFunctionAbstract:
             else:
                 raise RuntimeError(" is not a valid instant")
         return t, x, u
+
+    @staticmethod
+    def _add_track_data_to_plot(ocp, nlp, data, combine_to, axes_idx=None):
+        if (isinstance(data, np.ndarray) and not data.any()) or (not isinstance(data, np.ndarray) and not data):
+            return
+
+        if data.shape[1] == nlp["ns"]:
+            data = np.c_[data, data[:, -1]]
+        ocp.add_plot(
+            combine_to,
+            lambda x, u: data,
+            color="tab:red",
+            plot_type=PlotType.STEP,
+            phase_number=nlp["phase_idx"],
+            axes_idx=axes_idx,
+        )
 
 
 class PenaltyType(Enum):

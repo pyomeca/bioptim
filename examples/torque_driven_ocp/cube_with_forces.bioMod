@@ -31,6 +31,7 @@ version 4
   mesh 0 -1 0
   mesh 1 -1 0
   mesh 1 -1 -1
+  externalforceindex 0
 endsegment
 	
 // Marker on Seg1
@@ -46,15 +47,16 @@ endsegment
 // Markers on ground
     marker m1
         parent ground
-        position 1 0 0
+        position 0 0 0
     endmarker
     
     marker m2
         parent ground
-        position 2 0 0 
+        position 0 0 2
     endmarker
 
-    marker m3
-        parent ground
-        position 1 0 2
-    endmarker
+segment Test
+        parent Seg1
+	    translations y
+        externalforceindex 1
+    endsegment

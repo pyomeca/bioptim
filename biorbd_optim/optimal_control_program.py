@@ -1,5 +1,5 @@
 from math import inf
-from copy import copy
+from copy import deepcopy
 import pickle
 import os
 
@@ -8,12 +8,14 @@ import casadi
 from casadi import MX, vertcat
 
 from .enums import OdeSolver
-from .mapping import Mapping, BidirectionalMapping
+from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
-from .constraints import Constraint, ConstraintFunction
+from .constraints import ConstraintFunction
 from .objective_functions import Objective, ObjectiveFunction
-from .plot import OnlineCallback
+from .plot import OnlineCallback, CustomPlot
 from .integrator import RK4
+from .biorbd_interface import BiorbdInterface
+from .variable_optimization import Data
 from .__version__ import __version__
 
 
@@ -30,12 +32,13 @@ class OptimalControlProgram:
         problem_type,
         number_shooting_points,
         phase_time,
-        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
+        objective_functions=(),
         constraints=(),
+        external_forces=(),
         ode_solver=OdeSolver.RK,
         all_generalized_mapping=None,
         q_mapping=None,
@@ -44,7 +47,6 @@ class OptimalControlProgram:
         plot_mappings=None,
         is_cyclic_objective=False,
         is_cyclic_constraint=False,
-        show_online_optim=False,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -82,17 +84,17 @@ class OptimalControlProgram:
             "U_init": U_init,
             "X_bounds": X_bounds,
             "U_bounds": U_bounds,
-            "objective_functions": objective_functions,
-            "constraints": constraints,
-            # "external_forces": external_forces,
+            "objective_functions": deepcopy(objective_functions),
+            "constraints": deepcopy(constraints),
+            "external_forces": external_forces,
             "ode_solver": ode_solver,
             "all_generalized_mapping": all_generalized_mapping,
             "q_mapping": q_mapping,
             "q_dot_mapping": q_dot_mapping,
             "tau_mapping": tau_mapping,
+            "plot_mappings": plot_mappings,
             "is_cyclic_objective": is_cyclic_objective,
             "is_cyclic_constraint": is_cyclic_constraint,
-            "show_online_optim": show_online_optim,
         }
 
         self.nb_phases = len(biorbd_model)
@@ -118,6 +120,11 @@ class OptimalControlProgram:
         )
         self.is_cyclic_constraint = is_cyclic_constraint
         self.is_cyclic_objective = is_cyclic_objective
+
+        # External forces
+        if external_forces != ():
+            external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)
+            self.__add_to_nlp("external_forces", external_forces, False)
 
         # Compute problem size
         if all_generalized_mapping is not None:
@@ -184,11 +191,6 @@ class OptimalControlProgram:
             for i in range(self.nb_phases):
                 ObjectiveFunction.add(self, self.nlp[i])
 
-        if show_online_optim:
-            self.show_online_optim_callback = OnlineCallback(self)
-        else:
-            self.show_online_optim_callback = None
-
     def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None):
         if isinstance(param, (list, tuple)):
             if len(param) != self.nb_phases:
@@ -226,17 +228,31 @@ class OptimalControlProgram:
             ode_opt["number_of_finite_elements"] = 5
 
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
+        nlp["dynamics"] = []
         if nlp["ode_solver"] == OdeSolver.RK:
+            ode_opt["idx"] = 0
             ode["ode"] = dynamics
-            nlp["dynamics"] = RK4(ode, ode_opt)
+            if "external_forces" in nlp:
+                for idx in range(len(nlp["external_forces"])):
+                    ode_opt["idx"] = idx
+                    nlp["dynamics"].append(RK4(ode, ode_opt))
+            else:
+                nlp["dynamics"].append(RK4(ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
             if isinstance(nlp["tf"], casadi.MX):
                 raise RuntimeError("OdeSolver.COLLOCATION cannot be used while optimizing the time parameter")
-            nlp["dynamics"] = casadi.integrator("integrator", "collocation", ode, ode_opt)
+            if "external_forces" in nlp:
+                raise RuntimeError("COLLOCATION cannot be used with external_forces")
+            nlp["dynamics"].append(casadi.integrator("integrator", "collocation", ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.CVODES:
             if isinstance(nlp["tf"], casadi.MX):
                 raise RuntimeError("OdeSolver.CVODES cannot be used while optimizing the time parameter")
-            nlp["dynamics"] = casadi.integrator("integrator", "cvodes", ode, ode_opt)
+            if "external_forces" in nlp:
+                raise RuntimeError("CVODES cannot be used with external_forces")
+            nlp["dynamics"].append(casadi.integrator("integrator", "cvodes", ode, ode_opt))
+
+        if len(nlp["dynamics"]) == 1:
+            nlp["dynamics"] = nlp["dynamics"] * nlp["ns"]
 
     def __define_multiple_shooting_nodes_per_phase(self, nlp, idx_phase):
         """
@@ -333,7 +349,38 @@ class OptimalControlProgram:
                         raise RuntimeError(f"Each phase must declares its {penality_type} (even if it is empty)")
             self.__add_to_nlp(penality_type, penalities, False)
 
-    def solve(self, solver="ipopt", options_ipopt={}):
+    def add_plot(self, fig_name, update_function, phase_number=-1, **parameters):
+        if "combine_to" in parameters:
+            raise RuntimeError(
+                "'combine_to' cannot be specified in add_plot, " "please use same 'fig_name' to combine plots"
+            )
+
+        # --- Solve the program --- #
+        if len(self.nlp) == 1:
+            phase_number = 0
+        else:
+            if phase_number < 0:
+                raise RuntimeError("phase_number must be specified for multiphase OCP")
+        nlp = self.nlp[phase_number]
+        custom_plot = CustomPlot(update_function, **parameters)
+
+        if fig_name in nlp["plot"]:
+            # Make sure we add a unique name in the dict
+            custom_plot.combine_to = fig_name
+
+            if fig_name:
+                cmp = 0
+                while True:
+                    plot_name = f"{fig_name}_{cmp}"
+                    if plot_name not in nlp["plot"]:
+                        break
+                    cmp += 1
+        else:
+            plot_name = fig_name
+
+        nlp["plot"][plot_name] = custom_plot
+
+    def solve(self, solver="ipopt", show_online_optim=False, options_ipopt={}):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
@@ -342,9 +389,10 @@ class OptimalControlProgram:
         # NLP
         nlp = {"x": self.V, "f": self.J, "g": self.g}
 
-        options_common = {
-            "iteration_callback": self.show_online_optim_callback,
-        }
+        options_common = {}
+        if show_online_optim:
+            options_common["iteration_callback"] = OnlineCallback(self)
+
         if solver == "ipopt":
             options_default = {
                 "ipopt.tol": 1e-6,
@@ -358,9 +406,9 @@ class OptimalControlProgram:
                     options_ipopt[f"ipopt.{key}"] = options_ipopt[key]
                     del options_ipopt[key]
             opts = {**options_default, **options_common, **options_ipopt}
-            solver = casadi.nlpsol("nlpsol", "ipopt", nlp, opts)
         else:
             raise RuntimeError("Available solvers are: 'ipopt'")
+        solver = casadi.nlpsol("nlpsol", solver, nlp, opts)
 
         # Bounds and initial guess
         arg = {
@@ -374,16 +422,19 @@ class OptimalControlProgram:
         # Solve the problem
         return solver.call(arg)
 
-    def save(self, sol, name):
-        _, ext = os.path.splitext(name)
+    def save(self, sol, file_path, to_numpy=False):
+        _, ext = os.path.splitext(file_path)
         if ext == "":
-            name = name + ".bo"
-        with open(name, "wb") as file:
-            pickle.dump({"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file)
+            file_path = file_path + ".bo"
+        with open(file_path, "wb") as file:
+            if to_numpy:
+                pickle.dump({"data": Data.get_data(self, sol["x"])}, file)
+            else:
+                pickle.dump({"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file)
 
     @staticmethod
-    def load(name):
-        with open(name, "rb") as file:
+    def load(file_path):
+        with open(file_path, "rb") as file:
             data = pickle.load(file)
             ocp = OptimalControlProgram(**data["ocp_initilializer"])
             for key in data["versions"].keys():
