@@ -55,7 +55,7 @@ def test_maximize_predicted_height_CoM(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.2370021957829777)
+    np.testing.assert_almost_equal(f[0, 0], 0.7592028279017864)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -68,13 +68,13 @@ def test_maximize_predicted_height_CoM(ode_solver):
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.2191102, 0.0607841, -0.0412168, 0.0412168)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0.1189651, -0.0904378, -0.7999996, 0.7999996)))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.3689301, 0.0152147, 0.7384873, -0.7384873)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2636414, -1.3010929, -3.6274687, 3.6274687)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-27.2604552)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-0.2636804)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-22.1218282)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array(0.2653957))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
