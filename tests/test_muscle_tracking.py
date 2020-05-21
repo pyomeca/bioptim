@@ -321,7 +321,7 @@ def test_muscle_activation_and_contacts_tracking():
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0, -0.75, 0.75]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([-0.2778512,  0.1301747, -0.1262716,  0.1262716]), decimal=6)
+    np.testing.assert_almost_equal(q[:, -1], np.array([-0.2778512, 0.1301747, -0.1262716, 0.1262716]), decimal=6)
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0, 0.0, 0.0]))
     np.testing.assert_almost_equal(qdot[:, -1], np.array([-1.4213096, 0.1804318, 2.8654331, -2.8654331]))
