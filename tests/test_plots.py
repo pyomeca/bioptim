@@ -64,6 +64,7 @@ def test_plot_merged_graphs():
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
+        with_residual_torque=True,
         kin_data_to_track="markers",
     )
     sol = ocp.solve()

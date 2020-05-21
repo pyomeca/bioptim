@@ -194,7 +194,7 @@ if __name__ == "__main__":
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        False,
+        with_residual_torque=False,
         kin_data_to_track="q",
     )
 

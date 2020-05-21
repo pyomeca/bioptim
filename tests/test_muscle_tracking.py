@@ -112,7 +112,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking():
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        True,
+        with_residual_torque=True,
         kin_data_to_track="markers",
     )
     sol = ocp.solve()
@@ -182,7 +182,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking():
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        False,
+        with_residual_torque=False,
         kin_data_to_track="markers",
     )
     sol = ocp.solve()
