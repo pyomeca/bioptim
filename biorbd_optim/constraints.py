@@ -87,10 +87,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         # Dynamics must be sound within phases
         for nlp in ocp.nlp:
             # Loop over shooting nodes or use parallelization
-            if ocp.parallelize :
+            if ocp.nb_threads > 1 :
                 end_nodes = nlp["par_dynamics"](horzcat(*nlp["X"][:-1]), horzcat(*nlp["U"]))
                 vals = horzcat(*nlp["X"][1:]) - end_nodes
-                ConstraintFunction._add_to_penalty(ocp, None, vals.reshape((1,nlp['nx']*nlp['ns'])))
+                ConstraintFunction._add_to_penalty(ocp, None, vals.reshape((nlp['nx']*nlp['ns'], 1)))
             else:
                 for k in range(nlp["ns"]):
                     # Create an evaluation node

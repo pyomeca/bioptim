@@ -11,7 +11,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_threads):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -58,11 +58,12 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
         U_bounds,
         objective_functions,
         constraints,
+        nb_threads=nb_threads
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100,)
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100, nb_threads=4)
 
     # --- Solve the program --- #
     tic = time()
