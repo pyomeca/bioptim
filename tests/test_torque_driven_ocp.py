@@ -32,7 +32,7 @@ def test_align_markers(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 1317.835541713015)
+    np.testing.assert_almost_equal(f[0, 0], 19767.53312569522)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -76,7 +76,7 @@ def test_multiphase_align_markers(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 17672.950313589874)
+    np.testing.assert_almost_equal(f[0, 0], 106084.82631762947)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -135,7 +135,7 @@ def test_external_forces(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 658.3925125)
+    np.testing.assert_almost_equal(f[0, 0], 9875.88768746912)
 
     # Check constraints
     g = np.array(sol["g"])

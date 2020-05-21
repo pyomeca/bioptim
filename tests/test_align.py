@@ -32,7 +32,7 @@ def test_align_segment_on_rt(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 12320.059717265229)
+    np.testing.assert_almost_equal(f[0, 0], 197120.95524154368)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -44,14 +44,14 @@ def test_align_segment_on_rt(ode_solver):
     q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.305837645, 6.07684988e-18, -1.57, -1.57]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.305837645, 2.34331392e-17, 1.57, 1.57]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.30543155, 0, -1.57, -1.57]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.30543155, 0, 1.57, 1.57]))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([1.09038782e-23, 9.81, 66.9866667, 66.9866667]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.61910771e-23, 9.81, -66.9866667, -66.9866667]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([0, 9.81, 66.98666900582079, 66.98666424580644]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-0, 9.81, -66.98666900582079, -66.98666424580644]))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
@@ -80,7 +80,7 @@ def test_align_marker_on_segment(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 2632.9408063562532)
+    np.testing.assert_almost_equal(f[0, 0], 42127.04677760122)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -98,8 +98,8 @@ def test_align_marker_on_segment(ode_solver):
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([23.6216484, 12.25908094, 31.52069129, 12.94722946]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-16.65951028, 14.58725991, -36.10090439, 4.41782565]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([23.6216587, 12.2590703, 31.520697, 12.9472294]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-16.659525, 14.5872277, -36.1009998, 4.417834]))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

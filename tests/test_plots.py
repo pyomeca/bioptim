@@ -56,7 +56,7 @@ def test_plot_merged_graphs():
     np.random.seed(42)
     t, markers_ref, x_ref, muscle_excitations_ref = merged_graphs.generate_data(biorbd_model, final_time, nb_shooting)
 
-    biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
+    biorbd_model = biorbd.Model(model_path)  # To prevent from non free variable, the model must be reloaded
     ocp = merged_graphs.prepare_ocp(
         biorbd_model,
         final_time,
