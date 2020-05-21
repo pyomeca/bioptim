@@ -88,7 +88,14 @@ def generate_data(biorbd_model, final_time, nb_shooting):
 
 
 def prepare_ocp(
-    biorbd_model, final_time, nb_shooting, markers_ref, excitations_ref, q_ref, with_residual_torque, kin_data_to_track="markers",
+    biorbd_model,
+    final_time,
+    nb_shooting,
+    markers_ref,
+    excitations_ref,
+    q_ref,
+    with_residual_torque,
+    kin_data_to_track="markers",
 ):
     # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0

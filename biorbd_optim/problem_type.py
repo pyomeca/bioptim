@@ -182,7 +182,7 @@ class ProblemType:
             nlp["plot"] = {
                 "q": CustomPlot(lambda x, u: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q),
                 "q_dot": CustomPlot(
-                    lambda x, u: x[nlp["nbQ"]: nlp["nbQ"] + nlp["nbQdot"]],
+                    lambda x, u: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
                     plot_type=PlotType.INTEGRATED,
                     legend=legend_qdot,
                 ),

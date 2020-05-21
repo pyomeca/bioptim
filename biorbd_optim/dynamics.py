@@ -116,7 +116,7 @@ class Dynamics:
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
         muscles_excitation = controls
-        muscles_activations = states[nlp["nbQ"] + nlp["nbQdot"]:]
+        muscles_activations = states[nlp["nbQ"] + nlp["nbQdot"] :]
 
         for k in range(nlp["nbMuscle"]):
             muscles_states[k].setExcitation(muscles_excitation[k])
