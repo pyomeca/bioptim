@@ -143,6 +143,12 @@ class OptimalControlProgram:
         self.__add_to_nlp("plot_mappings", reshaped_plot_mappings, False)
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
+            self.nlp[i]["nbQ"] = 0
+            self.nlp[i]["nbQdot"] = 0
+            self.nlp[i]["nbTau"] = 0
+            self.nlp[i]["nbMuscles"] = 0
+            self.nlp[i]["x"] = MX()
+            self.nlp[i]["u"] = MX()
             self.nlp[i]["problem_type"](self.nlp[i])
 
         # Prepare path constraints
