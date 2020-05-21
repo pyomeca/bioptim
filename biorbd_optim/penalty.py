@@ -15,7 +15,7 @@ class PenaltyFunctionAbstract:
         def minimize_states(penalty_type, ocp, nlp, t, x, u, data_to_track=(), states_idx=(), **extra_param):
             states_idx = PenaltyFunctionAbstract._check_and_fill_index(states_idx, nlp["nx"], "state_idx")
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [nlp["ns"] + 1, len(states_idx)]
+                data_to_track, [nlp["ns"] + 1, max(states_idx) + 1]
             )
 
             for i, v in enumerate(x):
@@ -23,7 +23,7 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
             PenaltyFunctionAbstract._add_track_data_to_plot(
-                nlp, data_to_track.T, combine_to="q", mapping=Mapping(states_idx)
+                ocp, nlp, data_to_track.T, combine_to="q", axes_idx=Mapping(states_idx)
             )
 
         @staticmethod
@@ -137,7 +137,7 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
             PenaltyFunctionAbstract._add_track_data_to_plot(
-                nlp, data_to_track.T, combine_to="tau", mapping=Mapping(controls_idx)
+                ocp, nlp, data_to_track.T, combine_to="tau", axes_idx=Mapping(controls_idx)
             )
 
         @staticmethod
@@ -154,7 +154,7 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
             PenaltyFunctionAbstract._add_track_data_to_plot(
-                nlp, data_to_track.T, combine_to="muscles_control", mapping=Mapping(muscles_idx)
+                ocp, nlp, data_to_track.T, combine_to="muscles_control", axes_idx=Mapping(muscles_idx)
             )
 
         @staticmethod
@@ -195,7 +195,7 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
             PenaltyFunctionAbstract._add_track_data_to_plot(
-                nlp, data_to_track.T, combine_to="contact_forces", mapping=Mapping(contacts_idx)
+                ocp, nlp, data_to_track.T, combine_to="contact_forces", axes_idx=Mapping(contacts_idx)
             )
 
         @staticmethod
@@ -408,30 +408,20 @@ class PenaltyFunctionAbstract:
         return t, x, u
 
     @staticmethod
-    def _add_track_data_to_plot(nlp, data, combine_to=None, mapping=None):
-        name_base = (
-            "penalty_track"
-            if (isinstance(data, np.ndarray) and data.any()) or (not isinstance(data, np.ndarray) and data)
-            else None
-        )
+    def _add_track_data_to_plot(ocp, nlp, data, combine_to, axes_idx=None):
+        if (isinstance(data, np.ndarray) and not data.any()) or (not isinstance(data, np.ndarray) and not data):
+            return
 
-        if name_base:
-            cmp = 0
-            while True:
-                plot_name = f"{name_base}_{cmp}"
-                if plot_name not in nlp["plot"]:
-                    break
-                cmp += 1
-            if data.shape[1] == nlp["ns"]:
-                data = np.c_[data, data[:, -1]]
-            nlp["plot"][plot_name] = CustomPlot(
-                data.shape[0],
-                lambda x, u: data,
-                combine_to=combine_to,
-                plot_type=PlotType.STEP,
-                color="tab:red",
-                phase_mappings=mapping,
-            )
+        if data.shape[1] == nlp["ns"]:
+            data = np.c_[data, data[:, -1]]
+        ocp.add_plot(
+            combine_to,
+            lambda x, u: data,
+            color="tab:red",
+            plot_type=PlotType.STEP,
+            phase_number=nlp["phase_idx"],
+            axes_idx=axes_idx,
+        )
 
 
 class PenaltyType(Enum):

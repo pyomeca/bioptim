@@ -37,7 +37,7 @@ def test_symmetry_by_construction(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 14.437842666006878)
+    np.testing.assert_almost_equal(f[0, 0], 216.56763999010334)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -73,7 +73,7 @@ def test_symmetry_by_constraint(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 16.0614471616022)
+    np.testing.assert_almost_equal(f[0, 0], 240.92170742402698)
 
     # Check constraints
     g = np.array(sol["g"])

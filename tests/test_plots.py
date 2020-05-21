@@ -1,6 +1,8 @@
 """
 Test for file IO
 """
+import os
+import pytest
 import importlib.util
 from pathlib import Path
 
@@ -10,7 +12,7 @@ matplotlib.use("Agg")
 import numpy as np
 import biorbd
 
-from biorbd_optim import ShowResult
+from biorbd_optim import ShowResult, OptimalControlProgram
 
 
 # Load graphs_one_phase
@@ -54,7 +56,7 @@ def test_plot_merged_graphs():
     np.random.seed(42)
     t, markers_ref, x_ref, muscle_excitations_ref = merged_graphs.generate_data(biorbd_model, final_time, nb_shooting)
 
-    biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
+    biorbd_model = biorbd.Model(model_path)  # To prevent from non free variable, the model must be reloaded
     ocp = merged_graphs.prepare_ocp(
         biorbd_model,
         final_time,
@@ -62,6 +64,7 @@ def test_plot_merged_graphs():
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
+        with_residual_torque=True,
         kin_data_to_track="markers",
     )
     sol = ocp.solve()
@@ -87,3 +90,40 @@ def test_plot_graphs_multi_phases():
 
     plt = ShowResult(ocp, sol)
     plt.graphs(automatically_organize=False)
+
+
+def test_add_new_plot():
+    ocp = graphs_one_phase.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
+        number_shooting_points=20,
+        final_time=0.5,
+    )
+    sol = ocp.solve(options_ipopt={"max_iter": 1})
+
+    # Saving/loading files reset the plot settings to normal
+    save_name = "test_plot.bo"
+    ocp.save(sol, save_name)
+
+    # Test 1 - Working plot
+    ocp.add_plot("My New Plot", lambda x, u: x[0:2, :])
+    ShowResult(ocp, sol).graphs(automatically_organize=False)
+
+    # Test 2 - Combine using combine_to is not allowed
+    ocp, sol = OptimalControlProgram.load(save_name)
+    with pytest.raises(RuntimeError):
+        ocp.add_plot("My New Plot", lambda x, u: x[0:2, :], combine_to="NotAllowed")
+
+    # Test 3 - Create a completely new plot
+    ocp, sol = OptimalControlProgram.load(save_name)
+    ocp.add_plot("My New Plot", lambda x, u: x[0:2, :])
+    ocp.add_plot("My Second New Plot", lambda x, u: x[0:2, :])
+    ShowResult(ocp, sol).graphs(automatically_organize=False)
+
+    # Test 4 - Combine to the first using fig_name
+    ocp, sol = OptimalControlProgram.load(save_name)
+    ocp.add_plot("My New Plot", lambda x, u: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda x, u: x[0:2, :])
+    ShowResult(ocp, sol).graphs(automatically_organize=False)
+
+    # Delete the saved file
+    os.remove(save_name)

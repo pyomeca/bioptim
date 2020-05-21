@@ -12,20 +12,17 @@ from .enums import PlotType
 
 
 class CustomPlot:
-    def __init__(
-        self,
-        size,
-        update_function,
-        plot_type=PlotType.PLOT,
-        phase_mappings=None,
-        legend=(),
-        combine_to=None,
-        color=None,
-    ):
-        self.size = size
+    def __init__(self, update_function, plot_type=PlotType.PLOT, axes_idx=None, legend=(), combine_to=None, color=None):
         self.function = update_function
         self.type = plot_type
-        self.phase_mappings = Mapping(range(size)) if phase_mappings is None else phase_mappings
+        if axes_idx is None:
+            self.phase_mappings = None  # Will be set later
+        elif isinstance(axes_idx, (tuple, list)):
+            self.phase_mappings = Mapping(axes_idx)
+        elif isinstance(axes_idx, Mapping):
+            self.phase_mappings = axes_idx
+        else:
+            raise RuntimeError("phase_mapping must be a list or a Mapping")
         self.legend = legend
         self.combine_to = combine_to
         self.color = color
@@ -95,10 +92,15 @@ class PlotOcp:
         for nlp in self.ocp.nlp:
             if "plot" in nlp:
                 for key in nlp["plot"]:
-                    if key not in variable_sizes:
-                        variable_sizes[key] = nlp["plot"][key].size
+                    if nlp["plot"][key].phase_mappings is None:
+                        size = nlp["plot"][key].function(np.zeros((nlp["nx"], 1)), np.zeros((nlp["nu"], 1))).shape[0]
+                        nlp["plot"][key].phase_mappings = Mapping(range(size))
                     else:
-                        variable_sizes[key] = max(variable_sizes[key], nlp["plot"][key].size)
+                        size = len(nlp["plot"][key].phase_mappings.map_idx)
+                    if key not in variable_sizes:
+                        variable_sizes[key] = size
+                    else:
+                        variable_sizes[key] = max(variable_sizes[key], size)
         self.variable_sizes = variable_sizes
         if not variable_sizes:
             # No graph was setup in problem_type
@@ -107,7 +109,7 @@ class PlotOcp:
         self.plot_func = {}
         for i, nlp in enumerate(self.ocp.nlp):
             for variable in self.variable_sizes:
-                nb = self.variable_sizes[variable]
+                nb = max(nlp["plot"][variable].phase_mappings.map_idx) + 1
                 nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
                 if nlp["plot"][variable].combine_to:
                     self.axes[variable] = self.axes[nlp["plot"][variable].combine_to]
@@ -135,14 +137,16 @@ class PlotOcp:
                     plot_type = self.plot_func[variable][0].type
                     if plot_type == PlotType.PLOT:
                         color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:green"
-                        self.plots.append([plot_type, i, ax.plot(t, zero, ".-", color=color, zorder=0)[0]])
+                        self.plots.append(
+                            [plot_type, i, ax.plot(t, zero, ".-", color=color, markersize=3, zorder=0)[0]]
+                        )
                     elif plot_type == PlotType.INTEGRATED:
                         color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:brown"
                         plots_integrated = []
                         for cmp in range(nlp["ns"]):
                             plots_integrated.append(
                                 ax.plot(
-                                    self.t[i][[cmp, cmp + 1]], (0, 0), ".-", color=color, markersize=6, linewidth=0.8,
+                                    self.t[i][[cmp, cmp + 1]], (0, 0), ".-", color=color, markersize=3, linewidth=0.8,
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])

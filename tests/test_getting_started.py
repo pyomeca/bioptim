@@ -78,7 +78,7 @@ def test_custom_constraint_align_markers(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 1317.835541713015)
+    np.testing.assert_almost_equal(f[0, 0], 19767.533125695223)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -123,7 +123,7 @@ def test_initial_guesses(interpolation_type):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 2790.947)
+    np.testing.assert_almost_equal(f[0, 0], 13954.735)
 
     # Check constraints
     g = np.array(sol["g"])
