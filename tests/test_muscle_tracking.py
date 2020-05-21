@@ -327,7 +327,7 @@ def test_muscle_activation_and_contacts_tracking():
     np.testing.assert_almost_equal(qdot[:, -1], np.array([-1.4213149, 0.1804316, 2.8654435, -2.8654435]), decimal=2)
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-1.2645016, 1.1780052, -0.3456392, -54.8244136]), decimal=2)
-    np.testing.assert_almost_equal(tau[:, -1], np.array([12.0124571, 19.759123, 3.1562213, -21.3647376]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([12.0122738, 19.7590172, 3.1561865, -21.3647429]), decimal=2)
     np.testing.assert_almost_equal(
         mus_controls[:, 0], np.array([0.4972386]),
     )
