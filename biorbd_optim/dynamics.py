@@ -109,6 +109,26 @@ class Dynamics:
         return cs.getForce().to_mx()
 
     @staticmethod
+    def forward_dynamics_muscle_excitations_driven(states, controls, nlp):
+        q, qdot, tau = Dynamics.__dispatch_data(states, controls, nlp)
+
+        muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
+        muscles_excitation = controls
+        muscles_activations = states[nlp["nbQ"] + nlp["nbQdot"]:]
+
+        for k in range(nlp["nbMuscle"]):
+            muscles_states[k].setExcitation(muscles_excitation[k])
+            muscles_states[k].setActivation(muscles_activations[k])
+        muscles_activations_dot = nlp["model"].activationDot(muscles_states).to_mx()
+
+        muscles_tau = nlp["model"].muscularJointTorque(muscles_states, q, qdot).to_mx()
+        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, muscles_tau).to_mx()
+
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
+        return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
+    
+    @staticmethod
     def forward_dynamics_muscle_excitations_and_torque_driven(states, controls, nlp):
         q, qdot, residual_tau = Dynamics.__dispatch_data(states, controls, nlp)
 
