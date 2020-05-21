@@ -91,7 +91,7 @@ def test_muscle_activations_and_states_tracking():
     )
 
 
-def test_muscle_excitation_and_markers_tracking():
+def test_muscle_excitation_with_residual_torque_and_markers_tracking():
     # Define the problem
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
@@ -112,6 +112,7 @@ def test_muscle_excitation_and_markers_tracking():
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
+        True,
         kin_data_to_track="markers",
     )
     sol = ocp.solve()
@@ -157,6 +158,76 @@ def test_muscle_excitation_and_markers_tracking():
     )
     np.testing.assert_almost_equal(
         mus_controls[:, -1], np.array([0.54672713, 0.18492921, 0.96888485, 0.77504726, 0.93912423, 0.89459345]),
+    )
+
+
+def test_muscle_excitation_no_residual_torque_and_markers_tracking():
+    # Define the problem
+    model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
+    biorbd_model = biorbd.Model(model_path)
+    final_time = 0.5
+    nb_shooting = 9
+
+    # Generate random data to fit
+    np.random.seed(42)
+    t, markers_ref, x_ref, muscle_excitations_ref = muscle_excitations_tracker.generate_data(
+        biorbd_model, final_time, nb_shooting
+    )
+
+    biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
+    ocp = muscle_excitations_tracker.prepare_ocp(
+        biorbd_model,
+        final_time,
+        nb_shooting,
+        markers_ref,
+        muscle_excitations_ref,
+        x_ref[: biorbd_model.nbQ(), :].T,
+        False,
+        kin_data_to_track="markers",
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 3.2550339194094896e-08)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (90, 1))
+    np.testing.assert_almost_equal(g, np.zeros((90, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, mus_states, mus_controls = (
+        states["q"],
+        states["q_dot"],
+        states["muscles"],
+        controls["muscles"],
+    )
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.00025258, -0.00087203]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.08534087, -0.49791268]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([-0.00934163,  0.01178861]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.13487968, -1.56228474]))
+    # initial and final muscle state
+    np.testing.assert_almost_equal(
+        mus_states[:, 0], np.array([0.42904526, 0.46546372, 0.49949504, 0.48863959, 0.55152209, 0.54538979]),
+    )
+    np.testing.assert_almost_equal(
+        mus_states[:, -1], np.array([0.54336666, 0.31127584, 0.94621301, 0.77129814, 0.91831282,
+       0.88088335]),
+    )
+    # initial and final controls
+    np.testing.assert_almost_equal(
+        mus_controls[:, 0], np.array([0.37454015, 0.95025616, 0.73193708, 0.59861753, 0.15612895,
+       0.15609662]),
+    )
+    np.testing.assert_almost_equal(
+        mus_controls[:, -1], np.array([0.54672714, 0.18492921, 0.96888485, 0.77504726, 0.93912423,
+       0.89459345]),
     )
 
 
