@@ -3,6 +3,7 @@ from math import inf
 
 import numpy as np
 import biorbd
+import casadi
 
 from .enums import Instant, Axe, PlotType
 from .plot import CustomPlot
@@ -42,18 +43,33 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_markers_displacement(penalty_type, ocp, nlp, t, x, u, markers_idx=(), **extra_param):
+        def minimize_markers_displacement(penalty_type, ocp, nlp, t, x, u, rt_idx=-1, markers_idx=(), **extra_param):
             n_q = nlp["nbQ"]
+            nb_rts = nlp["model"].nbSegment()
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
             )
 
-            for i in range(len(x) - 1):
-                val = (
-                    nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx]
-                    - nlp["model"].markers(x[i][:n_q])[:, markers_idx]
-                )
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+            if rt_idx < 0:
+                for i in range(len(x) - 1):
+                    val = (
+                        nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx]
+                        - nlp["model"].markers(x[i][:n_q])[:, markers_idx]
+                    )
+                    penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+            elif rt_idx < nb_rts:
+                for i in range(len(x) - 1):
+                    jcs_1 = nlp["model"].globalJCS(x[i + 1][:n_q], rt_idx).to_mx()
+                    inv_jcs_1 = casadi.vertcat(casadi.horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), casadi.horzcat(0,0,0,1))
+                    jcs_0 = nlp["model"].globalJCS(x[i][:n_q], rt_idx).to_mx()
+                    inv_jcs_0 = casadi.vertcat(casadi.horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), casadi.horzcat(0,0,0,1))
+                    val = (
+                        inv_jcs_1 @ casadi.vertcat(nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx],1)
+                        - inv_jcs_0 @ casadi.vertcat(nlp["model"].markers(x[i][:n_q])[:, markers_idx],1)
+                    )
+                    penalty_type._add_to_penalty(ocp, nlp, val[:3], **extra_param)
+            else:
+                raise RuntimeError(f"Wrong choice of rt_idx. (Negative values refer to global coordinates system, positive values must be between 0 and {nb_rts})")
 
         @staticmethod
         def minimize_markers_velocity(penalty_type, ocp, nlp, t, x, u, markers_idx=(), data_to_track=(), **extra_param):
