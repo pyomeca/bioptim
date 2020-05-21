@@ -1,7 +1,7 @@
 from math import inf
 from enum import Enum
 
-from casadi import vertcat, sum1
+from casadi import vertcat, sum1, horzcat
 
 from .enums import Instant, InterpolationType
 from .penalty import PenaltyType, PenaltyFunctionAbstract
@@ -86,14 +86,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
         # Dynamics must be sound within phases
         for nlp in ocp.nlp:
-            # Loop over shooting nodes
-            for k in range(nlp["ns"]):
-                # Create an evaluation node
-                end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k])["xf"]
+            # Loop over shooting nodes or use parallelization
+            if ocp.parallelize :
+                end_nodes = nlp["par_dynamics"](horzcat(*nlp["X"][:-1]), horzcat(*nlp["U"]))
+                vals = horzcat(*nlp["X"][1:]) - end_nodes
+                ConstraintFunction._add_to_penalty(ocp, None, vals.reshape((1,nlp['nx']*nlp['ns'])))
+            else:
+                for k in range(nlp["ns"]):
+                    # Create an evaluation node
+                    end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k])["xf"]
 
-                # Save continuity constraints
-                val = end_node - nlp["X"][k + 1]
-                ConstraintFunction._add_to_penalty(ocp, None, val)
+                    # Save continuity constraints
+                    val = end_node - nlp["X"][k + 1]
+                    ConstraintFunction._add_to_penalty(ocp, None, val)
 
         # Dynamics must be continuous between phases
         for i in range(len(ocp.nlp) - 1):
