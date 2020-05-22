@@ -258,17 +258,30 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def _add(ocp, nlp, key=None):
-        for parameters in nlp[key]:
-            t, x, u = PenaltyFunctionAbstract.__get_instant(nlp, parameters)
-            penalty_function = parameters["type"].value[0]
-            penalty_type = parameters["type"]._get_type()
-            instant = parameters["instant"]
-            del parameters["instant"], parameters["type"]
+        for penalty in nlp[key]:
+            t, x, u = PenaltyFunctionAbstract.__get_instant(nlp, penalty)
+            penalty_function = penalty["type"].value[0]
+            penalty_type = penalty["type"]._get_type()
+            instant = penalty["instant"]
+            del penalty["instant"], penalty["type"]
 
             penalty_type._span_checker(penalty_function, instant, nlp)
-            penalty_type._parameter_modifier(penalty_function, parameters)
+            penalty_type._parameter_modifier(penalty_function, penalty)
 
-            penalty_function(penalty_type, ocp, nlp, t, x, u, **parameters)
+            penalty_function(penalty_type, ocp, nlp, t, x, u, **penalty)
+
+    @staticmethod
+    def replace(ocp, nlp, penalty, penalty_idx):
+        t, x, u = PenaltyFunctionAbstract.__get_instant(nlp, penalty)
+        penalty_function = penalty["type"].value[0]
+        penalty_type = penalty["type"]._get_type()
+        instant = penalty["instant"]
+        del penalty["instant"], penalty["type"]
+
+        penalty_type._span_checker(penalty_function, instant, nlp)
+        penalty_type._parameter_modifier(penalty_function, penalty)
+
+        penalty_function(penalty_type, ocp, nlp, t, x, u, penalty_idx=penalty_idx)
 
     @staticmethod
     def _parameter_modifier(penalty_function, parameters):

@@ -369,6 +369,15 @@ class OptimalControlProgram:
                         raise RuntimeError(f"Each phase must declares its {penalty_type} (even if it is empty)")
             self.__add_to_nlp(penalty_type, penalties, False)
 
+    def update_objective_function(self, new_objective_function, index, phase_number=-1):
+        if len(self.nlp) == 1:
+            phase_number = 0
+        else:
+            if phase_number < 0:
+                raise RuntimeError("phase_number must be specified for multiphase OCP")
+
+
+
     def add_plot(self, fig_name, update_function, phase_number=-1, **parameters):
         if "combine_to" in parameters:
             raise RuntimeError(

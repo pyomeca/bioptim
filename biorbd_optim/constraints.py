@@ -118,17 +118,25 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ConstraintFunction._add_to_penalty(ocp, None, val)
 
     @staticmethod
-    def _add_to_penalty(ocp, nlp, g, min_bound=0, max_bound=0, **extra_param):
+    def _add_to_penalty(ocp, nlp, g, min_bound=0, max_bound=0, penalty_idx=-1, **extra_param):
         g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
         for _ in range(g.rows()):
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation_type=InterpolationType.CONSTANT))
 
-        if nlp:
-            nlp["g"].append(g)
-            nlp["g_bounds"].append(g_bounds)
+        if penalty_idx < 0:
+            if nlp:
+                nlp["g"].append(g)
+                nlp["g_bounds"].append(g_bounds)
+            else:
+                ocp.g.append(g)
+                ocp.g_bounds.append(g_bounds)
         else:
-            ocp.g.append(g)
-            ocp.g_bounds.append(g_bounds)
+            if nlp:
+                nlp["g"][penalty_idx] = g
+                nlp["g_bounds"][penalty_idx] = g_bounds
+            else:
+                ocp.g[idx] = g
+                ocp.g_bounds[idx] = g_bounds
 
     @staticmethod
     def _parameter_modifier(constraint_function, parameters):

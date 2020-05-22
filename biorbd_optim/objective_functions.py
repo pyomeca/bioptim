@@ -19,17 +19,22 @@ class ObjectiveFunction:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **extra_param):
+        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, penalty_idx=-1, **extra_param):
             if quadratic:
                 J = casadi.dot(val, val) * weight * nlp["dt"]
             else:
                 J = casadi.sum1(val) * weight * nlp["dt"]
 
-            if nlp:
-                nlp["J"].append(J)
+            if penalty_idx < 0:
+                if nlp:
+                    nlp["J"].append(J)
+                else:
+                    ocp.J.append(J)
             else:
-                ocp.J.append(J)
-
+                if nlp:
+                    nlp["J"][penalty_idx] = J
+                else:
+                    ocp.J[penalty_idx] = J
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
             # Everything that should change the entry parameters depending on the penalty can be added here
@@ -55,16 +60,22 @@ class ObjectiveFunction:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **parameters):
+        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, penalty_idx=-1, **parameters):
             if quadratic:
                 J = casadi.dot(val, val) * weight
             else:
                 J = casadi.sum1(val) * weight
 
-            if nlp:
-                nlp["J"].append(J)
+            if penalty_idx < 0:
+                if nlp:
+                    nlp["J"].append(J)
+                else:
+                    ocp.J.append(J)
             else:
-                ocp.J.append(J)
+                if nlp:
+                    nlp["J"][penalty_idx] = J
+                else:
+                    ocp.J[penalty_idx] = J
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
