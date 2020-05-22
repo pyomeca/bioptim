@@ -47,9 +47,9 @@ def prepare_ocp(model_path, phase_time, number_shooting_points):
     X_init = InitialConditions(pose_at_first_node + [0] * nb_qdot)
 
     # Define control path constraint
-    U_bounds = Bounds(min_bound=[torque_min] * tau_mapping.reduce.len, max_bound=[torque_max] * tau_mapping.reduce.len)
+    U_bounds = Bounds(min_bound=[torque_activation_min] * tau_mapping.reduce.len, max_bound=[torque_activation_max] * tau_mapping.reduce.len)
 
-    U_init = InitialConditions([torque_init] * tau_mapping.reduce.len)
+    U_init = InitialConditions([torque_activation_init] * tau_mapping.reduce.len)
     # ------------- #
 
     return OptimalControlProgram(

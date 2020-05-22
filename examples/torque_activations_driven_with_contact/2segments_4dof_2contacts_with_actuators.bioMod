@@ -22,37 +22,37 @@ endsegment
             type    Constant
             dof    TransY
             direction    positive
-            Tmax    10.000000
+            Tmax    100.000000
         endactuator
 	actuator    Seg0
             type    Constant
             dof    TransY
             direction    negative
-            Tmax    5.000000
+            Tmax    50.000000
         endactuator
         actuator    Seg0
             type    Constant
             dof    TransZ
             direction    positive
-            Tmax    10.000000
+            Tmax    100.000000
         endactuator
 	actuator    Seg0
             type    Constant
             dof    TransZ
             direction    negative
-            Tmax    5.000000
+            Tmax    50.000000
         endactuator
         actuator    Seg0
             type    Constant
             dof    RotX
             direction    positive
-            Tmax    10.000000
+            Tmax    100.000000
         endactuator
 	actuator    Seg0
             type    Constant
             dof    RotX
             direction    negative
-            Tmax    5.000000
+            Tmax    50.000000
         endactuator
 
 // Seg1
@@ -76,13 +76,13 @@ endsegment
             type    Constant
             dof    RotX
             direction    positive
-            Tmax    10.000000
+            Tmax    100.000000
         endactuator
 	actuator    Seg1
             type    Constant
             dof    RotX
             direction    negative
-            Tmax    5.000000
+            Tmax    50.000000
         endactuator
 
 // Contact
