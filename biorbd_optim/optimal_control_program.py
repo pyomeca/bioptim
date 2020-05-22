@@ -74,6 +74,7 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "biorbd_optim": __version__}
+        self.nb_phases = len(biorbd_model)
 
         biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
         self.original_values = {
@@ -85,8 +86,8 @@ class OptimalControlProgram:
             "U_init": U_init,
             "X_bounds": X_bounds,
             "U_bounds": U_bounds,
-            "objective_functions": deepcopy(objective_functions),
-            "constraints": deepcopy(constraints),
+            "objective_functions": [],
+            "constraints": [],
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "all_generalized_mapping": all_generalized_mapping,
@@ -99,14 +100,13 @@ class OptimalControlProgram:
             "nb_threads": nb_threads,
         }
 
-        self.nb_phases = len(biorbd_model)
         self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
         self.__add_to_nlp("phase_idx", [i for i in range(self.nb_phases)], False)
 
         # Prepare some variables
-        self.__init_penalty(constraints, "constraints")
-        self.__init_penalty(objective_functions, "objective_functions")
+        constraints = self.__init_penalty(constraints, "constraints")
+        objective_functions = self.__init_penalty(objective_functions, "objective_functions")
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
@@ -114,7 +114,7 @@ class OptimalControlProgram:
             if nlp["ns"] < 1:
                 raise RuntimeError("Number of shooting points must be at least 1")
         self.initial_phase_time = phase_time
-        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time)
+        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time, objective_functions)
         self.__add_to_nlp("tf", phase_time, False)
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         self.__add_to_nlp(
@@ -186,16 +186,16 @@ class OptimalControlProgram:
         self.g_bounds = []
         ConstraintFunction.continuity_constraint(self)
         if len(constraints) > 0:
-            for i in range(self.nb_phases):
-                for constraint in self.nlp[i]["constraints"]:
+            for i, constraint_phase in enumerate(constraints):
+                for constraint in constraint_phase:
                     self.add_constraint(constraint, i)
 
         # Objective functions
         self.J = []
         if len(objective_functions) > 0:
-            for i in range(self.nb_phases):
-                for objective in self.nlp[i]["objective_functions"]:
-                    self.add_objective_function(objective, i)
+            for i, objective_functions_phase in enumerate(objective_functions):
+                for objective_function in objective_functions_phase:
+                    self.add_objective_function(objective_function, i)
 
     @staticmethod
     def __initialize_nlp(nlp):
@@ -315,22 +315,21 @@ class OptimalControlProgram:
         self.V_bounds.concatenate(V_bounds)
         self.V_init.concatenate(V_init)
 
-    def __init_phase_time(self, phase_time):
+    def __init_phase_time(self, phase_time, objective_functions):
         if isinstance(phase_time, (int, float)):
             phase_time = [phase_time]
         phase_time = list(phase_time)
         initial_time_guess, time_min, time_max = [], [], []
-        for i, nlp in enumerate(self.nlp):
-            if "objective_functions" in nlp:
-                for obj_fun in nlp["objective_functions"]:
-                    if (
-                        obj_fun["type"] == Objective.Mayer.MINIMIZE_TIME
-                        or obj_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
-                    ):
-                        initial_time_guess.append(phase_time[i])
-                        phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
-                        time_min.append(obj_fun["minimum"] if "minimum" in obj_fun else 0)
-                        time_max.append(obj_fun["maximum"] if "maximum" in obj_fun else inf)
+        for i, objective_functions_phase in enumerate(objective_functions):
+            for obj_fun in objective_functions_phase:
+                if (
+                    obj_fun["type"] == Objective.Mayer.MINIMIZE_TIME
+                    or obj_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
+                ):
+                    initial_time_guess.append(phase_time[i])
+                    phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
+                    time_min.append(obj_fun["minimum"] if "minimum" in obj_fun else 0)
+                    time_max.append(obj_fun["maximum"] if "maximum" in obj_fun else inf)
         return phase_time, initial_time_guess, time_min, time_max
 
     def __define_variable_time(self, initial_guess, minimum, maximum):
@@ -369,29 +368,46 @@ class OptimalControlProgram:
                 for constraint in penalties:
                     if isinstance(constraint, dict):
                         raise RuntimeError(f"Each phase must declares its {penalty_type} (even if it is empty)")
-            self.__add_to_nlp(penalty_type, penalties, False)
+        return penalties
 
     def add_objective_function(self, new_objective_function, phase_number=-1):
         self.modify_objective_function(new_objective_function, index_in_phase=-1, phase_number=phase_number)
 
     def modify_objective_function(self, new_objective_function, index_in_phase, phase_number=-1):
-        if len(self.nlp) == 1:
-            phase_number = 0
-        else:
-            if phase_number < 0:
-                raise RuntimeError("phase_number must be specified for multiphase OCP")
-        ObjectiveFunction.add_or_replace(self, self.nlp[phase_number], new_objective_function, index_in_phase)
+        self._modify_penalty(new_objective_function, index_in_phase, phase_number, "objective_functions")
 
     def add_constraint(self, new_constraint, phase_number=-1):
         self.modify_constraint(new_constraint, index_in_phase=-1, phase_number=phase_number)
 
-    def modify_constraint(self, new_constraint, index_in_phase=-1, phase_number=-1):
+    def modify_constraint(self, new_constraint, index_in_phase, phase_number=-1):
+        self._modify_penalty(new_constraint, index_in_phase, phase_number, "constraints")
+
+    def _modify_penalty(self, new_penalty, index_in_phase, phase_number, penalty_name):
         if len(self.nlp) == 1:
             phase_number = 0
         else:
             if phase_number < 0:
                 raise RuntimeError("phase_number must be specified for multiphase OCP")
-        ConstraintFunction.add_or_replace(self, self.nlp[phase_number], new_constraint, index_in_phase)
+
+        while phase_number >= len(self.original_values[penalty_name]):
+            self.original_values[penalty_name].append([])
+
+        if index_in_phase < 0:
+            self.original_values[penalty_name][phase_number].append(deepcopy(new_penalty))
+        else:
+            if index_in_phase >= len(self.original_values[penalty_name][phase_number]):
+                raise RuntimeError("It is not possible to modify a penalty when the penalty is not defined")
+            self.original_values[penalty_name][phase_number][index_in_phase] = deepcopy(new_penalty)
+
+        if penalty_name == "objective_functions":
+            ObjectiveFunction.add_or_replace(self, self.nlp[phase_number], new_penalty, index_in_phase)
+        elif penalty_name == "constraints":
+            ConstraintFunction.add_or_replace(self, self.nlp[phase_number], new_penalty, index_in_phase)
+        else:
+            raise RuntimeError("Unrecognized penalty")
+
+
+
 
     def add_plot(self, fig_name, update_function, phase_number=-1, **parameters):
         if "combine_to" in parameters:
