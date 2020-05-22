@@ -47,6 +47,7 @@ class OptimalControlProgram:
         plot_mappings=None,
         is_cyclic_objective=False,
         is_cyclic_constraint=False,
+        nb_threads=1,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -95,6 +96,7 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "is_cyclic_objective": is_cyclic_objective,
             "is_cyclic_constraint": is_cyclic_constraint,
+            "nb_threads": nb_threads,
         }
 
         self.nb_phases = len(biorbd_model)
@@ -120,6 +122,7 @@ class OptimalControlProgram:
         )
         self.is_cyclic_constraint = is_cyclic_constraint
         self.is_cyclic_objective = is_cyclic_objective
+        self.nb_threads = nb_threads
 
         # External forces
         if external_forces != ():
@@ -235,6 +238,7 @@ class OptimalControlProgram:
 
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
         nlp["dynamics"] = []
+        nlp["par_dynamics"] = {}
         if nlp["ode_solver"] == OdeSolver.RK:
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
@@ -258,6 +262,8 @@ class OptimalControlProgram:
             nlp["dynamics"].append(casadi.integrator("integrator", "cvodes", ode, ode_opt))
 
         if len(nlp["dynamics"]) == 1:
+            if self.nb_threads > 1:
+                nlp["par_dynamics"] = nlp["dynamics"][0].map(nlp["ns"], "thread", self.nb_threads)
             nlp["dynamics"] = nlp["dynamics"] * nlp["ns"]
 
     def __define_multiple_shooting_nodes_per_phase(self, nlp, idx_phase):
