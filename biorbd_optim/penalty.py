@@ -5,7 +5,6 @@ import numpy as np
 import biorbd
 
 from .enums import Instant, Axe, PlotType
-from .plot import CustomPlot
 from .mapping import Mapping
 
 
@@ -243,13 +242,16 @@ class PenaltyFunctionAbstract:
         def custom(penalty_type, ocp, nlp, t, x, u, **parameters):
             func = parameters["function"]
             weight = None
+            penalty_idx = parameters["penalty_idx"]
             if "weight" in parameters.keys():
                 weight = parameters["weight"]
                 del parameters["weight"]
             del parameters["function"]
+            del parameters["penalty_idx"]
             val = func(ocp, nlp, t, x, u, **parameters)
             if weight is not None:
                 parameters["weight"] = weight
+            parameters["penalty_idx"] = penalty_idx
             penalty_type._add_to_penalty(ocp, nlp, val, **parameters)
 
     @staticmethod
@@ -257,21 +259,7 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("add cannot be called from an abstract class")
 
     @staticmethod
-    def _add(ocp, nlp, key=None):
-        for penalty in nlp[key]:
-            t, x, u = PenaltyFunctionAbstract.__get_instant(nlp, penalty)
-            penalty_function = penalty["type"].value[0]
-            penalty_type = penalty["type"]._get_type()
-            instant = penalty["instant"]
-            del penalty["instant"], penalty["type"]
-
-            penalty_type._span_checker(penalty_function, instant, nlp)
-            penalty_type._parameter_modifier(penalty_function, penalty)
-
-            penalty_function(penalty_type, ocp, nlp, t, x, u, **penalty)
-
-    @staticmethod
-    def replace(ocp, nlp, penalty, penalty_idx):
+    def add_or_replace(ocp, nlp, penalty, penalty_idx):
         t, x, u = PenaltyFunctionAbstract.__get_instant(nlp, penalty)
         penalty_function = penalty["type"].value[0]
         penalty_type = penalty["type"]._get_type()
@@ -281,7 +269,7 @@ class PenaltyFunctionAbstract:
         penalty_type._span_checker(penalty_function, instant, nlp)
         penalty_type._parameter_modifier(penalty_function, penalty)
 
-        penalty_function(penalty_type, ocp, nlp, t, x, u, penalty_idx=penalty_idx)
+        penalty_function(penalty_type, ocp, nlp, t, x, u, penalty_idx=penalty_idx, **penalty)
 
     @staticmethod
     def _parameter_modifier(penalty_function, parameters):

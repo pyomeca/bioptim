@@ -88,20 +88,17 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._span_checker(penalty_function, instant, nlp)
 
     @staticmethod
-    def add(ocp, nlp):
-        for objective in nlp["objective_functions"]:
-            if objective["type"]._get_type() == ObjectiveFunction.LagrangeFunction:
-                if "instant" in objective.keys() and objective["instant"] != Instant.ALL:
-                    raise RuntimeError("Lagrange objective are for Instant.ALL, did you mean Mayer?")
-                objective["instant"] = Instant.ALL
-            elif objective["type"]._get_type() == ObjectiveFunction.MayerFunction:
-                if "instant" not in objective.keys():
-                    objective["instant"] = Instant.END
-            else:
-                raise RuntimeError("Objective function Type must be either a Lagrange or Mayer type")
-
-        PenaltyFunctionAbstract._add(ocp, nlp, "objective_functions")
-
+    def add_or_replace(ocp, nlp, objective, penalty_idx):
+        if objective["type"]._get_type() == ObjectiveFunction.LagrangeFunction:
+            if "instant" in objective.keys() and objective["instant"] != Instant.ALL:
+                raise RuntimeError("Lagrange objective are for Instant.ALL, did you mean Mayer?")
+            objective["instant"] = Instant.ALL
+        elif objective["type"]._get_type() == ObjectiveFunction.MayerFunction:
+            if "instant" not in objective.keys():
+                objective["instant"] = Instant.END
+        else:
+            raise RuntimeError("Objective function Type must be either a Lagrange or Mayer type")
+        PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective, penalty_idx)
     #
     # @staticmethod
     # def cyclic(ocp, weight=1):
@@ -112,7 +109,6 @@ class ObjectiveFunction:
     #     ocp.J += (
     #         casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
     #     )
-
 
 class Objective:
     class Lagrange(Enum):

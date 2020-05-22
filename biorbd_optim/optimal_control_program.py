@@ -187,13 +187,15 @@ class OptimalControlProgram:
         ConstraintFunction.continuity_constraint(self)
         if len(constraints) > 0:
             for i in range(self.nb_phases):
-                ConstraintFunction.add(self, self.nlp[i])
+                for constraint in self.nlp[i]["constraints"]:
+                    self.add_constraint(constraint, i)
 
         # Objective functions
         self.J = []
         if len(objective_functions) > 0:
             for i in range(self.nb_phases):
-                ObjectiveFunction.add(self, self.nlp[i])
+                for objective in self.nlp[i]["objective_functions"]:
+                    self.add_objective_function(objective, i)
 
     @staticmethod
     def __initialize_nlp(nlp):
@@ -369,14 +371,27 @@ class OptimalControlProgram:
                         raise RuntimeError(f"Each phase must declares its {penalty_type} (even if it is empty)")
             self.__add_to_nlp(penalty_type, penalties, False)
 
-    def update_objective_function(self, new_objective_function, index, phase_number=-1):
+    def add_objective_function(self, new_objective_function, phase_number=-1):
+        self.modify_objective_function(new_objective_function, index_in_phase=-1, phase_number=phase_number)
+
+    def modify_objective_function(self, new_objective_function, index_in_phase, phase_number=-1):
         if len(self.nlp) == 1:
             phase_number = 0
         else:
             if phase_number < 0:
                 raise RuntimeError("phase_number must be specified for multiphase OCP")
+        ObjectiveFunction.add_or_replace(self, self.nlp[phase_number], new_objective_function, index_in_phase)
 
+    def add_constraint(self, new_constraint, phase_number=-1):
+        self.modify_constraint(new_constraint, index_in_phase=-1, phase_number=phase_number)
 
+    def modify_constraint(self, new_constraint, index_in_phase=-1, phase_number=-1):
+        if len(self.nlp) == 1:
+            phase_number = 0
+        else:
+            if phase_number < 0:
+                raise RuntimeError("phase_number must be specified for multiphase OCP")
+        ConstraintFunction.add_or_replace(self, self.nlp[phase_number], new_constraint, index_in_phase)
 
     def add_plot(self, fig_name, update_function, phase_number=-1, **parameters):
         if "combine_to" in parameters:

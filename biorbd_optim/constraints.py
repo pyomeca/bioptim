@@ -17,7 +17,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
     class Functions:
         @staticmethod
-        def contact_force_inequality(constraint_type, ocp, nlp, t, x, u, direction, contact_force_idx, boundary):
+        def contact_force_inequality(constraint_type, ocp, nlp, t, x, u, direction, contact_force_idx, boundary, **parameters):
             """
             To be completed when this function will be fully developed, in particular the fact that policy is either a
             tuple/list or a tuple of tuples/list of lists,
@@ -36,7 +36,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                         "direction parameter of contact_force_inequality must either be GREATER_THAN or LESSER_THAN"
                     )
                 ConstraintFunction._add_to_penalty(
-                    ocp, nlp, nlp["contact_forces_func"](x[i], u[i])[contact_force_idx, 0], min_bound=min_bound, max_bound=max_bound)
+                    ocp, nlp, nlp["contact_forces_func"](x[i], u[i])[contact_force_idx, 0], min_bound=min_bound, max_bound=max_bound, **parameters)
 
         @staticmethod
         def non_slipping(
@@ -48,7 +48,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             u,
             tangential_component_idx,
             normal_component_idx,
-            static_friction_coefficient,
+            static_friction_coefficient, **parameters
+
         ):
             """
             :param coeff: It is the coefficient of static friction.
@@ -66,17 +67,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 tangential_contact_force = contact[tangential_component_idx, 0]
 
                 # Since it is non-slipping normal forces are supposed to be greater than zero
-                ConstraintFunction._add_to_penalty(ocp, nlp, mu * normal_contact_force - tangential_contact_force, min_bound=0, max_bound=inf)
+                ConstraintFunction._add_to_penalty(ocp, nlp, mu * normal_contact_force - tangential_contact_force, min_bound=0, max_bound=inf, **parameters)
                 ConstraintFunction._add_to_penalty(ocp, nlp, mu * normal_contact_force + tangential_contact_force,
-                                                   min_bound=0, max_bound=inf)
-
-    @staticmethod
-    def add(ocp, nlp):
-        """
-        Adds constraints to the requested nodes in (nlp.g) and (nlp.g_bounds).
-        :param ocp: An OptimalControlProgram class.
-        """
-        PenaltyFunctionAbstract._add(ocp, nlp, "constraints")
+                                                   min_bound=0, max_bound=inf, **parameters)
 
     @staticmethod
     def continuity_constraint(ocp):
@@ -135,8 +128,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 nlp["g"][penalty_idx] = g
                 nlp["g_bounds"][penalty_idx] = g_bounds
             else:
-                ocp.g[idx] = g
-                ocp.g_bounds[idx] = g_bounds
+                ocp.g[penalty_idx] = g
+                ocp.g_bounds[penalty_idx] = g_bounds
 
     @staticmethod
     def _parameter_modifier(constraint_function, parameters):
