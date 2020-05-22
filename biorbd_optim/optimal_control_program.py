@@ -5,7 +5,7 @@ import os
 
 import biorbd
 import casadi
-from casadi import MX, vertcat
+from casadi import MX, vertcat, sum1
 
 from .enums import OdeSolver
 from .mapping import BidirectionalMapping
@@ -183,14 +183,14 @@ class OptimalControlProgram:
 
         # Prepare constraints
         self.g = []
-        self.g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
+        self.g_bounds = []
         ConstraintFunction.continuity_constraint(self)
         if len(constraints) > 0:
             for i in range(self.nb_phases):
                 ConstraintFunction.add(self, self.nlp[i])
 
         # Objective functions
-        self.J = 0
+        self.J = []
         if len(objective_functions) > 0:
             for i in range(self.nb_phases):
                 ObjectiveFunction.add(self, self.nlp[i])
@@ -204,6 +204,9 @@ class OptimalControlProgram:
         nlp["plot"] = {}
         nlp["x"] = MX()
         nlp["u"] = MX()
+        nlp["J"] = []
+        nlp["g"] = []
+        nlp["g_bounds"] = []
 
     def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None):
         if isinstance(param, (list, tuple)):
@@ -402,9 +405,23 @@ class OptimalControlProgram:
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
         """
+        all_J = MX()
+        for j in self.J:
+            all_J = vertcat(all_J, j)
+        for nlp in self.nlp:
+            for j in nlp["J"]:
+                all_J = vertcat(all_J, j)
 
-        # NLP
-        nlp = {"x": self.V, "f": self.J, "g": self.g}
+        all_g = MX()
+        all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
+        for i in range(len(self.g)):
+            all_g = vertcat(all_g, self.g[i])
+            all_g_bounds.concatenate(self.g_bounds[i])
+        for nlp in self.nlp:
+            for i in range(len(nlp["g"])):
+                all_g = vertcat(all_g, nlp["g"][i])
+                all_g_bounds.concatenate(nlp["g_bounds"][i])
+        nlp = {"x": self.V, "f": sum1(all_J), "g": all_g}
 
         options_common = {}
         if show_online_optim:
@@ -431,8 +448,8 @@ class OptimalControlProgram:
         arg = {
             "lbx": self.V_bounds.min,
             "ubx": self.V_bounds.max,
-            "lbg": self.g_bounds.min,
-            "ubg": self.g_bounds.max,
+            "lbg": all_g_bounds.min,
+            "ubg": all_g_bounds.max,
             "x0": self.V_init.init,
         }
 

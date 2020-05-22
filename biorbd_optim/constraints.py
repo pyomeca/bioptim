@@ -25,15 +25,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             # To be modified later so that it can handle something other than lower bounds for greater than
             for i in range(len(u)):
-                ocp.g = vertcat(ocp.g, nlp["contact_forces_func"](x[i], u[i])[contact_force_idx, 0])
                 if direction == "GREATER_THAN":
-                    ocp.g_bounds.concatenate(Bounds(boundary, inf, interpolation_type=InterpolationType.CONSTANT))
+                    min_bound = boundary
+                    max_bound = inf
                 elif direction == "LESSER_THAN":
-                    ocp.g_bounds.concatenate(Bounds(-inf, boundary, interpolation_type=InterpolationType.CONSTANT))
+                    min_bound = -inf
+                    max_bound = boundary
                 else:
                     raise RuntimeError(
                         "direction parameter of contact_force_inequality must either be GREATER_THAN or LESSER_THAN"
                     )
+                ConstraintFunction._add_to_penalty(
+                    ocp, nlp, nlp["contact_forces_func"](x[i], u[i])[contact_force_idx, 0], min_bound=min_bound, max_bound=max_bound)
 
         @staticmethod
         def non_slipping(
@@ -63,11 +66,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 tangential_contact_force = contact[tangential_component_idx, 0]
 
                 # Since it is non-slipping normal forces are supposed to be greater than zero
-                ocp.g = vertcat(ocp.g, mu * normal_contact_force - tangential_contact_force)
-                ocp.g_bounds.concatenate(Bounds(0, inf, interpolation_type=InterpolationType.CONSTANT))
-
-                ocp.g = vertcat(ocp.g, mu * normal_contact_force + tangential_contact_force)
-                ocp.g_bounds.concatenate(Bounds(0, inf, interpolation_type=InterpolationType.CONSTANT))
+                ConstraintFunction._add_to_penalty(ocp, nlp, mu * normal_contact_force - tangential_contact_force, min_bound=0, max_bound=inf)
+                ConstraintFunction._add_to_penalty(ocp, nlp, mu * normal_contact_force + tangential_contact_force,
+                                                   min_bound=0, max_bound=inf)
 
     @staticmethod
     def add(ocp, nlp):
@@ -117,10 +118,17 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ConstraintFunction._add_to_penalty(ocp, None, val)
 
     @staticmethod
-    def _add_to_penalty(ocp, nlp, val, inf_bound=0, max_bound=0, **extra_param):
-        ocp.g = vertcat(ocp.g, val)
-        for _ in range(val.rows()):
-            ocp.g_bounds.concatenate(Bounds(inf_bound, max_bound, interpolation_type=InterpolationType.CONSTANT))
+    def _add_to_penalty(ocp, nlp, g, min_bound=0, max_bound=0, **extra_param):
+        g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
+        for _ in range(g.rows()):
+            g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation_type=InterpolationType.CONSTANT))
+
+        if nlp:
+            nlp["g"].append(g)
+            nlp["g_bounds"].append(g_bounds)
+        else:
+            ocp.g.append(g)
+            ocp.g_bounds.append(g_bounds)
 
     @staticmethod
     def _parameter_modifier(constraint_function, parameters):

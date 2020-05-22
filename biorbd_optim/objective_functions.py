@@ -21,9 +21,14 @@ class ObjectiveFunction:
         @staticmethod
         def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **extra_param):
             if quadratic:
-                ocp.J += casadi.dot(val, val) * weight * nlp["dt"]
+                J = casadi.dot(val, val) * weight * nlp["dt"]
             else:
-                ocp.J += casadi.sum1(val) * weight * nlp["dt"]
+                J = casadi.sum1(val) * weight * nlp["dt"]
+
+            if nlp:
+                nlp["J"].append(J)
+            else:
+                ocp.J.append(J)
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
@@ -52,9 +57,14 @@ class ObjectiveFunction:
         @staticmethod
         def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **parameters):
             if quadratic:
-                ocp.J += casadi.dot(val, val) * weight
+                J = casadi.dot(val, val) * weight
             else:
-                ocp.J += casadi.sum1(val) * weight
+                J = casadi.sum1(val) * weight
+
+            if nlp:
+                nlp["J"].append(J)
+            else:
+                ocp.J.append(J)
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):

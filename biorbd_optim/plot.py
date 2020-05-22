@@ -357,7 +357,7 @@ class OnlineCallback(Callback):
         Callback.__init__(self)
         self.nlp = ocp
         self.nx = ocp.V.rows()
-        self.ng = ocp.g.rows()
+        self.ng = 0
         self.construct("AnimateCallback", opts)
 
         self.plot_pipe, plotter_pipe = mp.Pipe()
