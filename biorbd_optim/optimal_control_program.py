@@ -105,8 +105,8 @@ class OptimalControlProgram:
         self.__add_to_nlp("phase_idx", [i for i in range(self.nb_phases)], False)
 
         # Prepare some variables
-        self.__init_penality(constraints, "constraints")
-        self.__init_penality(objective_functions, "objective_functions")
+        self.__init_penalty(constraints, "constraints")
+        self.__init_penalty(objective_functions, "objective_functions")
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
@@ -353,18 +353,18 @@ class OptimalControlProgram:
         V_init.check_and_adjust_dimensions(nV, 1)
         self.V_init.concatenate(V_init)
 
-    def __init_penality(self, penalities, penality_type):
-        if len(penalities) > 0:
+    def __init_penalty(self, penalties, penalty_type):
+        if len(penalties) > 0:
             if self.nb_phases == 1:
-                if isinstance(penalities, dict):
-                    penalities = (penalities,)
-                if isinstance(penalities[0], dict):
-                    penalities = (penalities,)
-            elif isinstance(penalities, (list, tuple)):
-                for constraint in penalities:
+                if isinstance(penalties, dict):
+                    penalties = (penalties,)
+                if isinstance(penalties[0], dict):
+                    penalties = (penalties,)
+            elif isinstance(penalties, (list, tuple)):
+                for constraint in penalties:
                     if isinstance(constraint, dict):
-                        raise RuntimeError(f"Each phase must declares its {penality_type} (even if it is empty)")
-            self.__add_to_nlp(penality_type, penalities, False)
+                        raise RuntimeError(f"Each phase must declares its {penalty_type} (even if it is empty)")
+            self.__add_to_nlp(penalty_type, penalties, False)
 
     def add_plot(self, fig_name, update_function, phase_number=-1, **parameters):
         if "combine_to" in parameters:
