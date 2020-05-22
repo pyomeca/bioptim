@@ -20,6 +20,7 @@ spec = importlib.util.spec_from_file_location("pendulum", str(PROJECT_FOLDER) + 
 pendulum = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pendulum)
 
+
 @pytest.mark.parametrize("nb_threads", [1, 2])
 def test_pendulum(nb_threads):
     ocp = pendulum.prepare_ocp(

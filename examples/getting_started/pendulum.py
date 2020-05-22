@@ -58,7 +58,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
         U_bounds,
         objective_functions,
         constraints,
-        nb_threads=nb_threads
+        nb_threads=nb_threads,
     )
 
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     # --- Solve the program --- #
     tic = time()
     sol = ocp.solve(show_online_optim=False)
-    toc = time()-tic
+    toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
     # --- Save the optimal control program and the solution --- #

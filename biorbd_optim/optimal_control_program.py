@@ -47,7 +47,7 @@ class OptimalControlProgram:
         plot_mappings=None,
         is_cyclic_objective=False,
         is_cyclic_constraint=False,
-        nb_threads=1
+        nb_threads=1,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -256,7 +256,7 @@ class OptimalControlProgram:
             nlp["dynamics"].append(casadi.integrator("integrator", "cvodes", ode, ode_opt))
 
         if len(nlp["dynamics"]) == 1:
-            if self.nb_threads > 1 :
+            if self.nb_threads > 1:
                 nlp["par_dynamics"] = nlp["dynamics"][0].map(nlp["ns"], "thread", self.nb_threads)
             nlp["dynamics"] = nlp["dynamics"] * nlp["ns"]
 
