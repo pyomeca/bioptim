@@ -24,17 +24,8 @@ class ObjectiveFunction:
                 J = casadi.dot(val, val) * weight * nlp["dt"]
             else:
                 J = casadi.sum1(val) * weight * nlp["dt"]
+            ObjectiveFunction._add_to_penalty(ocp, nlp, J, penalty_idx)
 
-            if penalty_idx < 0:
-                if nlp:
-                    nlp["J"].append(J)
-                else:
-                    ocp.J.append(J)
-            else:
-                if nlp:
-                    nlp["J"][penalty_idx] = J
-                else:
-                    ocp.J[penalty_idx] = J
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
             # Everything that should change the entry parameters depending on the penalty can be added here
@@ -65,17 +56,7 @@ class ObjectiveFunction:
                 J = casadi.dot(val, val) * weight
             else:
                 J = casadi.sum1(val) * weight
-
-            if penalty_idx < 0:
-                if nlp:
-                    nlp["J"].append(J)
-                else:
-                    ocp.J.append(J)
-            else:
-                if nlp:
-                    nlp["J"][penalty_idx] = J
-                else:
-                    ocp.J[penalty_idx] = J
+            ObjectiveFunction._add_to_penalty(ocp, nlp, J, penalty_idx)
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
@@ -109,6 +90,19 @@ class ObjectiveFunction:
     #     ocp.J += (
     #         casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
     #     )
+
+    @staticmethod
+    def _add_to_penalty(ocp, nlp, J, penalty_idx):
+        if nlp:
+            J_to_add_to = nlp["J"]
+        else:
+            J_to_add_to = ocp.J
+
+        if penalty_idx < 0:
+            J_to_add_to.append(J)
+        else:
+            J_to_add_to[penalty_idx] = J
+
 
 class Objective:
     class Lagrange(Enum):
