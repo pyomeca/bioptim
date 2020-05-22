@@ -146,12 +146,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("plot_mappings", reshaped_plot_mappings, False)
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
-            self.nlp[i]["nbQ"] = 0
-            self.nlp[i]["nbQdot"] = 0
-            self.nlp[i]["nbTau"] = 0
-            self.nlp[i]["nbMuscles"] = 0
-            self.nlp[i]["x"] = MX()
-            self.nlp[i]["u"] = MX()
+            self.__initialize_nlp(self.nlp[i])
             self.nlp[i]["problem_type"](self.nlp[i])
 
         # Prepare path constraints
@@ -199,6 +194,16 @@ class OptimalControlProgram:
         if len(objective_functions) > 0:
             for i in range(self.nb_phases):
                 ObjectiveFunction.add(self, self.nlp[i])
+
+    @staticmethod
+    def __initialize_nlp(nlp):
+        nlp["nbQ"] = 0
+        nlp["nbQdot"] = 0
+        nlp["nbTau"] = 0
+        nlp["nbMuscles"] = 0
+        nlp["plot"] = {}
+        nlp["x"] = MX()
+        nlp["u"] = MX()
 
     def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None):
         if isinstance(param, (list, tuple)):
