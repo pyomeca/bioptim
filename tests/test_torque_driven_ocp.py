@@ -66,7 +66,9 @@ def test_align_markers_changing_constraints():
     sol = ocp.solve()
 
     # Add a new constraint and reoptimize
-    ocp.add_constraint({"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 2,})
+    ocp.add_constraint(
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 2,}
+    )
     sol = ocp.solve()
 
     # Check objective function value
@@ -91,14 +93,18 @@ def test_align_markers_changing_constraints():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((4.2641129, 9.81, 2.27903226)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((1.36088709,  9.81, -2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((1.36088709, 9.81, -2.27903226)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
     # Replace constraints and reoptimize
-    ocp.modify_constraint({"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 2,}, 0)
-    ocp.modify_constraint({"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 3,}, 2)
+    ocp.modify_constraint(
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 2,}, 0
+    )
+    ocp.modify_constraint(
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 3,}, 2
+    )
     sol = ocp.solve()
 
     # Check objective function value
@@ -122,8 +128,8 @@ def test_align_markers_changing_constraints():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-5.625, 21.06,  2.2790323)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.625, 21.06,  -2.27903226)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-5.625, 21.06, 2.2790323)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.625, 21.06, -2.27903226)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)

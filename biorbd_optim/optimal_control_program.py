@@ -406,9 +406,6 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("Unrecognized penalty")
 
-
-
-
     def add_plot(self, fig_name, update_function, phase_number=-1, **parameters):
         if "combine_to" in parameters:
             raise RuntimeError(
