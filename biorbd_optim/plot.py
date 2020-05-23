@@ -234,7 +234,7 @@ class PlotOcp:
                     control = np.concatenate((control, data_controls_per_phase[s][i]))
                 else:
                     control = np.concatenate((control, data_controls_per_phase[s]))
-            for key in self.plot_func:
+            for key in self.variable_sizes[i]:
                 y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                 y.fill(np.nan)
                 y[:, :] = self.plot_func[key][i].function(state, control)
