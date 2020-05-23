@@ -79,12 +79,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         :param ocp: An OptimalControlProgram class.
         """
         # Dynamics must be sound within phases
-        for nlp in ocp.nlp:
+        for i, nlp in enumerate(ocp.nlp):
+            penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
             # Loop over shooting nodes or use parallelization
             if ocp.nb_threads > 1:
                 end_nodes = nlp["par_dynamics"](horzcat(*nlp["X"][:-1]), horzcat(*nlp["U"]))
                 vals = horzcat(*nlp["X"][1:]) - end_nodes
-                ConstraintFunction._add_to_penalty(ocp, None, vals.reshape((nlp["nx"] * nlp["ns"], 1)))
+                ConstraintFunction._add_to_penalty(ocp, None, vals.reshape((nlp["nx"] * nlp["ns"], 1)), penalty_idx)
             else:
                 for k in range(nlp["ns"]):
                     # Create an evaluation node
@@ -92,15 +93,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                     # Save continuity constraints
                     val = end_node - nlp["X"][k + 1]
-                    ConstraintFunction._add_to_penalty(ocp, None, val)
+                    ConstraintFunction._add_to_penalty(ocp, None, val, penalty_idx)
 
         # Dynamics must be continuous between phases
         for i in range(len(ocp.nlp) - 1):
+            penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
             if ocp.nlp[i]["nx"] != ocp.nlp[i + 1]["nx"]:
                 raise RuntimeError("Phase constraints without same nx is not supported yet")
 
             val = ocp.nlp[i]["X"][-1] - ocp.nlp[i + 1]["X"][0]
-            ConstraintFunction._add_to_penalty(ocp, None, val)
+            ConstraintFunction._add_to_penalty(ocp, None, val, penalty_idx)
 
         if ocp.is_cyclic_constraint:
             # Save continuity constraints between final integration and first node
@@ -111,11 +113,20 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ConstraintFunction._add_to_penalty(ocp, None, val)
 
     @staticmethod
-    def _add_to_penalty(ocp, nlp, g, min_bound=0, max_bound=0, penalty_idx=-1, **extra_param):
+    def _add_to_penalty(ocp, nlp, g, penalty_idx, min_bound=0, max_bound=0, **extra_param):
         g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
         for _ in range(g.rows()):
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation_type=InterpolationType.CONSTANT))
 
+        if nlp:
+            nlp["g"][penalty_idx].append(g)
+            nlp["g_bounds"][penalty_idx].append(g_bounds)
+        else:
+            ocp.g[penalty_idx].append(g)
+            ocp.g_bounds[penalty_idx].append(g_bounds)
+
+    @staticmethod
+    def _reset_penalty(ocp, nlp, penalty_idx):
         if nlp:
             g_to_add_to = nlp["g"]
             g_bounds_to_add_to = nlp["g_bounds"]
@@ -124,11 +135,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             g_bounds_to_add_to = ocp.g_bounds
 
         if penalty_idx < 0:
-            g_to_add_to.append(g)
-            g_bounds_to_add_to.append(g_bounds)
+            g_to_add_to.append([])
+            g_bounds_to_add_to.append([])
+            return len(g_to_add_to) - 1
         else:
-            g_to_add_to[penalty_idx] = g
-            g_bounds_to_add_to[penalty_idx] = g_bounds
+            g_to_add_to[penalty_idx] = []
+            g_bounds_to_add_to[penalty_idx] = []
+            return penalty_idx
+
 
     @staticmethod
     def _parameter_modifier(constraint_function, parameters):

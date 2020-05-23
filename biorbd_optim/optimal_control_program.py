@@ -446,21 +446,25 @@ class OptimalControlProgram:
         Gives others parameters to control how solver works.
         """
         all_J = MX()
-        for j in self.J:
-            all_J = vertcat(all_J, j)
-        for nlp in self.nlp:
-            for j in nlp["J"]:
+        for j_nodes in self.J:
+            for j in j_nodes:
                 all_J = vertcat(all_J, j)
+        for nlp in self.nlp:
+            for obj_nodes in nlp["J"]:
+                for obj in obj_nodes:
+                    all_J = vertcat(all_J, obj)
 
         all_g = MX()
         all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
         for i in range(len(self.g)):
-            all_g = vertcat(all_g, self.g[i])
-            all_g_bounds.concatenate(self.g_bounds[i])
+            for j in range(len(self.g[i])):
+                all_g = vertcat(all_g, self.g[i][j])
+                all_g_bounds.concatenate(self.g_bounds[i][j])
         for nlp in self.nlp:
             for i in range(len(nlp["g"])):
-                all_g = vertcat(all_g, nlp["g"][i])
-                all_g_bounds.concatenate(nlp["g_bounds"][i])
+                for j in range(len(nlp["g"][i])):
+                    all_g = vertcat(all_g, nlp["g"][i][j])
+                    all_g_bounds.concatenate(nlp["g_bounds"][i][j])
         nlp = {"x": self.V, "f": sum1(all_J), "g": all_g}
 
         options_common = {}

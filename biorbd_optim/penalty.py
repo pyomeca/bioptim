@@ -269,6 +269,7 @@ class PenaltyFunctionAbstract:
         penalty_type._span_checker(penalty_function, instant, nlp)
         penalty_type._parameter_modifier(penalty_function, penalty)
 
+        penalty_idx = penalty_type._reset_penalty(ocp, nlp, penalty_idx)
         penalty_function(penalty_type, ocp, nlp, t, x, u, penalty_idx=penalty_idx, **penalty)
 
     @staticmethod
@@ -353,8 +354,12 @@ class PenaltyFunctionAbstract:
                 )
 
     @staticmethod
-    def _add_to_penalty(ocp, nlp, val, **extra_param):
+    def _add_to_penalty(ocp, nlp, val, penalty_idx, **extra_param):
         raise RuntimeError("_add_to_penalty cannot be called from an abstract class")
+
+    @staticmethod
+    def _reset_penalty(ocp, nlp, penalty_idx):
+        raise RuntimeError("_reset_penalty cannot be called from an abstract class")
 
     @staticmethod
     def _get_type():

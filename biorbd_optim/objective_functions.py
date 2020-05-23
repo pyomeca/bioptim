@@ -19,12 +19,16 @@ class ObjectiveFunction:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, penalty_idx=-1, **extra_param):
+        def _add_to_penalty(ocp, nlp, val, penalty_idx, weight=1, quadratic=False, **extra_param):
             if quadratic:
                 J = casadi.dot(val, val) * weight * nlp["dt"]
             else:
                 J = casadi.sum1(val) * weight * nlp["dt"]
             ObjectiveFunction._add_to_penalty(ocp, nlp, J, penalty_idx)
+
+        @staticmethod
+        def _reset_penalty(ocp, nlp, penalty_idx):
+            return ObjectiveFunction._reset_penalty(ocp, nlp, penalty_idx)
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
@@ -51,12 +55,16 @@ class ObjectiveFunction:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, penalty_idx=-1, **parameters):
+        def _add_to_penalty(ocp, nlp, val, penalty_idx, weight=1, quadratic=False, **parameters):
             if quadratic:
                 J = casadi.dot(val, val) * weight
             else:
                 J = casadi.sum1(val) * weight
             ObjectiveFunction._add_to_penalty(ocp, nlp, J, penalty_idx)
+
+        @staticmethod
+        def _reset_penalty(ocp, nlp, penalty_idx):
+            return ObjectiveFunction._reset_penalty(ocp, nlp, penalty_idx)
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
@@ -94,14 +102,23 @@ class ObjectiveFunction:
     @staticmethod
     def _add_to_penalty(ocp, nlp, J, penalty_idx):
         if nlp:
+            nlp["J"][penalty_idx].append(J)
+        else:
+            ocp.J[penalty_idx].append(J)
+
+    @staticmethod
+    def _reset_penalty(ocp, nlp, penalty_idx):
+        if nlp:
             J_to_add_to = nlp["J"]
         else:
             J_to_add_to = ocp.J
 
         if penalty_idx < 0:
-            J_to_add_to.append(J)
+            J_to_add_to.append([])
+            return len(J_to_add_to) - 1
         else:
-            J_to_add_to[penalty_idx] = J
+            J_to_add_to[penalty_idx] = []
+            return penalty_idx
 
 
 class Objective:
