@@ -96,6 +96,38 @@ def test_align_markers_changing_constraints():
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+    # Replace constraints and reoptimize
+    ocp.modify_constraint({"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 2,}, 0)
+    ocp.modify_constraint({"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 3,}, 2)
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 31670.93770220887)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (189, 1))
+    np.testing.assert_almost_equal(g, np.zeros((189, 1)))
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((2, 0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-5.625, 21.06,  2.2790323)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.625, 21.06,  -2.27903226)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
 
 # Load multiphase_align_markers
 PROJECT_FOLDER = Path(__file__).parent / ".."
