@@ -502,7 +502,7 @@ class OptimalControlProgram:
         if ext == "":
             file_path = file_path + ".bo"
         dir, _ = os.path.split(file_path)
-        if dir != '' and not os.path.isdir(dir):
+        if dir != "" and not os.path.isdir(dir):
             os.makedirs(dir)
 
         with open(file_path, "wb") as file:
