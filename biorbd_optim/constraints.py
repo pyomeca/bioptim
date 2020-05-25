@@ -201,6 +201,7 @@ class Constraint(Enum):
     CUSTOM = (PenaltyType.CUSTOM,)
     CONTACT_FORCE_INEQUALITY = (ConstraintFunction.Functions.contact_force_inequality,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
+    TIME_CONSTRAINT = 1
 
     @staticmethod
     def _get_type():

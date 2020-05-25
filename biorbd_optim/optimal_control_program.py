@@ -10,7 +10,7 @@ from casadi import MX, vertcat, sum1
 from .enums import OdeSolver
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
-from .constraints import ConstraintFunction
+from .constraints import ConstraintFunction, Constraint
 from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback, CustomPlot
 from .integrator import RK4
@@ -114,7 +114,7 @@ class OptimalControlProgram:
             if nlp["ns"] < 1:
                 raise RuntimeError("Number of shooting points must be at least 1")
         self.initial_phase_time = phase_time
-        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time, objective_functions)
+        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time, objective_functions, constraints)
         self.__add_to_nlp("tf", phase_time, False)
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         self.__add_to_nlp(
@@ -188,7 +188,8 @@ class OptimalControlProgram:
         if len(constraints) > 0:
             for i, constraint_phase in enumerate(constraints):
                 for constraint in constraint_phase:
-                    self.add_constraint(constraint, i)
+                    if not(constraint["type"] == Constraint.TIME_CONSTRAINT):
+                        self.add_constraint(constraint, i)
 
         # Objective functions
         self.J = []
@@ -315,7 +316,7 @@ class OptimalControlProgram:
         self.V_bounds.concatenate(V_bounds)
         self.V_init.concatenate(V_init)
 
-    def __init_phase_time(self, phase_time, objective_functions):
+    def __init_phase_time(self, phase_time, objective_functions, constraints):
         if isinstance(phase_time, (int, float)):
             phase_time = [phase_time]
         phase_time = list(phase_time)
@@ -326,11 +327,21 @@ class OptimalControlProgram:
                     obj_fun["type"] == Objective.Mayer.MINIMIZE_TIME
                     or obj_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
                 ):
-                    initial_time_guess.append(phase_time[i])
-                    phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
-                    time_min.append(obj_fun["minimum"] if "minimum" in obj_fun else 0)
-                    time_max.append(obj_fun["maximum"] if "maximum" in obj_fun else inf)
+                    self.__define_parameters_phase_time(obj_fun, phase_time, i, initial_time_guess, time_min, time_max)
+        for i, constraints_phase in enumerate(constraints):
+            for constraint in constraints_phase:
+                if(
+                    # constraint["type"] == ConstraintFunction.Functions.time_constraint
+                        constraint["type"] == Constraint.TIME_CONSTRAINT
+                ):
+                    self.__define_parameters_phase_time(constraint, phase_time, i, initial_time_guess, time_min, time_max)
         return phase_time, initial_time_guess, time_min, time_max
+
+    def __define_parameters_phase_time(self, elt, phase_time, idx, initial_time_guess, time_min, time_max):
+        initial_time_guess.append(phase_time[idx])
+        phase_time[idx] = casadi.MX.sym(f"time_phase_{idx}", 1, 1)
+        time_min.append(elt["minimum"] if "minimum" in elt else 0)
+        time_max.append(elt["maximum"] if "maximum" in elt else inf)
 
     def __define_variable_time(self, initial_guess, minimum, maximum):
         """
@@ -339,7 +350,7 @@ class OptimalControlProgram:
         :param nlp: The nlp problem
         :param initial_guess: The initial values taken from the phase_time vector
         :param minimum: variable time minimums as set by user (default: 0)
-        :param maximum: vairable time maximums as set by user (default: inf)
+        :param maximum: variable time maximums as set by user (default: inf)
         """
         P = []
         for nlp in self.nlp:
