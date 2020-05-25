@@ -88,7 +88,14 @@ def generate_data(biorbd_model, final_time, nb_shooting):
 
 
 def prepare_ocp(
-    biorbd_model, final_time, nb_shooting, markers_ref, excitations_ref, q_ref, kin_data_to_track="markers",
+    biorbd_model,
+    final_time,
+    nb_shooting,
+    markers_ref,
+    excitations_ref,
+    q_ref,
+    with_residual_torque,
+    kin_data_to_track="markers",
 ):
     # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -98,8 +105,9 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = [
         {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": excitations_ref},
-        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
     ]
+    if with_residual_torque:
+        objective_functions.append({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1})
     if kin_data_to_track == "markers":
         objective_functions.append(
             {"type": Objective.Lagrange.TRACK_MARKERS, "weight": 100, "data_to_track": markers_ref},
@@ -117,7 +125,10 @@ def prepare_ocp(
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
-    variable_type = ProblemType.muscle_excitations_and_torque_driven
+    if with_residual_torque:
+        variable_type = ProblemType.muscle_excitations_and_torque_driven
+    else:
+        variable_type = ProblemType.muscle_excitations_driven
 
     # Constraints
     constraints = ()
@@ -137,14 +148,17 @@ def prepare_ocp(
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()) + [0] * biorbd_model.nbMuscles())
 
     # Define control path constraint
-    U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque() + [excitation_min] * biorbd_model.nbMuscles(),
-        [torque_max] * biorbd_model.nbGeneralizedTorque() + [excitation_max] * biorbd_model.nbMuscles(),
-    )
-    U_init = InitialConditions(
-        [torque_init] * biorbd_model.nbGeneralizedTorque() + [excitation_init] * biorbd_model.nbMuscles()
-    )
-
+    if with_residual_torque:
+        U_bounds = Bounds(
+            [torque_min] * biorbd_model.nbGeneralizedTorque() + [excitation_min] * biorbd_model.nbMuscles(),
+            [torque_max] * biorbd_model.nbGeneralizedTorque() + [excitation_max] * biorbd_model.nbMuscles(),
+        )
+        U_init = InitialConditions(
+            [torque_init] * biorbd_model.nbGeneralizedTorque() + [excitation_init] * biorbd_model.nbMuscles()
+        )
+    else:
+        U_bounds = Bounds([excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles(),)
+        U_init = InitialConditions([excitation_init] * biorbd_model.nbMuscles())
     # ------------- #
 
     return OptimalControlProgram(
@@ -180,11 +194,12 @@ if __name__ == "__main__":
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
+        with_residual_torque=False,
         kin_data_to_track="q",
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(show_online_optim=False, options_ipopt={"max_iter": 2})
 
     # --- Show the results --- #
     muscle_excitations_ref = np.append(muscle_excitations_ref, muscle_excitations_ref[-1:, :], axis=0)

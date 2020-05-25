@@ -19,11 +19,16 @@ class ObjectiveFunction:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **extra_param):
+        def _add_to_penalty(ocp, nlp, val, penalty_idx, weight=1, quadratic=False, **extra_param):
             if quadratic:
-                ocp.J += casadi.dot(val, val) * weight * nlp["dt"] * nlp["dt"]
+                J = casadi.dot(val, val) * weight * nlp["dt"]
             else:
-                ocp.J += casadi.sum1(val) * weight * nlp["dt"]
+                J = casadi.sum1(val) * weight * nlp["dt"]
+            ObjectiveFunction._add_to_penalty(ocp, nlp, J, penalty_idx)
+
+        @staticmethod
+        def _reset_penalty(ocp, nlp, penalty_idx):
+            return ObjectiveFunction._reset_penalty(ocp, nlp, penalty_idx)
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
@@ -50,11 +55,16 @@ class ObjectiveFunction:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, weight=1, quadratic=False, **parameters):
+        def _add_to_penalty(ocp, nlp, val, penalty_idx, weight=1, quadratic=False, **parameters):
             if quadratic:
-                ocp.J += casadi.dot(val, val) * weight
+                J = casadi.dot(val, val) * weight
             else:
-                ocp.J += casadi.sum1(val) * weight
+                J = casadi.sum1(val) * weight
+            ObjectiveFunction._add_to_penalty(ocp, nlp, J, penalty_idx)
+
+        @staticmethod
+        def _reset_penalty(ocp, nlp, penalty_idx):
+            return ObjectiveFunction._reset_penalty(ocp, nlp, penalty_idx)
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
@@ -67,19 +77,17 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._span_checker(penalty_function, instant, nlp)
 
     @staticmethod
-    def add(ocp, nlp):
-        for objective in nlp["objective_functions"]:
-            if objective["type"]._get_type() == ObjectiveFunction.LagrangeFunction:
-                if "instant" in objective.keys() and objective["instant"] != Instant.ALL:
-                    raise RuntimeError("Lagrange objective are for Instant.ALL, did you mean Mayer?")
-                objective["instant"] = Instant.ALL
-            elif objective["type"]._get_type() == ObjectiveFunction.MayerFunction:
-                if "instant" not in objective.keys():
-                    objective["instant"] = Instant.END
-            else:
-                raise RuntimeError("Objective function Type must be either a Lagrange or Mayer type")
-
-        PenaltyFunctionAbstract._add(ocp, nlp, "objective_functions")
+    def add_or_replace(ocp, nlp, objective, penalty_idx):
+        if objective["type"]._get_type() == ObjectiveFunction.LagrangeFunction:
+            if "instant" in objective.keys() and objective["instant"] != Instant.ALL:
+                raise RuntimeError("Lagrange objective are for Instant.ALL, did you mean Mayer?")
+            objective["instant"] = Instant.ALL
+        elif objective["type"]._get_type() == ObjectiveFunction.MayerFunction:
+            if "instant" not in objective.keys():
+                objective["instant"] = Instant.END
+        else:
+            raise RuntimeError("Objective function Type must be either a Lagrange or Mayer type")
+        PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective, penalty_idx)
 
     #
     # @staticmethod
@@ -91,6 +99,27 @@ class ObjectiveFunction:
     #     ocp.J += (
     #         casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
     #     )
+
+    @staticmethod
+    def _add_to_penalty(ocp, nlp, J, penalty_idx):
+        if nlp:
+            nlp["J"][penalty_idx].append(J)
+        else:
+            ocp.J[penalty_idx].append(J)
+
+    @staticmethod
+    def _reset_penalty(ocp, nlp, penalty_idx):
+        if nlp:
+            J_to_add_to = nlp["J"]
+        else:
+            J_to_add_to = ocp.J
+
+        if penalty_idx < 0:
+            J_to_add_to.append([])
+            return len(J_to_add_to) - 1
+        else:
+            J_to_add_to[penalty_idx] = []
+            return penalty_idx
 
 
 class Objective:

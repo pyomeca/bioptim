@@ -84,7 +84,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.003628839798820405)
+    np.testing.assert_almost_equal(f[0, 0], 0.062092703196434854)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -105,11 +105,11 @@ def test_pendulum_min_time_lagrange(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-20.36604829, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-99.98554494, 0)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((59.9529745, 0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-99.9980341, 0)))
 
     # optimized time
-    np.testing.assert_almost_equal(tf, 0.6023985224766413)
+    np.testing.assert_almost_equal(tf, 0.6209270319643485)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)

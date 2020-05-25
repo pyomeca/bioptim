@@ -43,7 +43,7 @@ def test_muscle_driven_ocp():
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.12145862454010191)
+    np.testing.assert_almost_equal(f[0, 0], 0.14350464848810182)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -56,20 +56,19 @@ def test_muscle_driven_ocp():
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([-0.95746379, 3.09503322]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([-0.9451058, 3.0704789]))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.34608528, -0.42902204]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.4115254, -0.5586797]))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([0.00458156, 0.00423722]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-0.00134814, 0.00312362]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([0.0014793, 0.0052082]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-0.0002795, 0.0006926]))
     np.testing.assert_almost_equal(
-        mus[:, 0],
-        np.array([6.86190724e-06, 1.68975654e-01, 8.70683950e-02, 2.47147957e-05, 2.53934274e-05, 8.45479390e-02]),
+        mus[:, 0], np.array([2.2869218e-06, 1.6503522e-01, 1.0002514e-01, 4.0190181e-06, 4.1294041e-06, 1.0396051e-01]),
     )
     np.testing.assert_almost_equal(
         mus[:, -1],
-        np.array([1.96717613e-02, 3.42406388e-05, 3.29456098e-05, 8.61728932e-03, 8.57918458e-03, 7.07096066e-03]),
+        np.array([4.2599283e-03, 3.2188697e-05, 3.1307377e-05, 2.0121186e-03, 2.0048373e-03, 1.8235679e-03]),
     )
 
     # save and load
@@ -87,7 +86,7 @@ def test_muscle_with_contact_driven_ocp():
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.12145850795787627)
+    np.testing.assert_almost_equal(f[0, 0], 0.1435025030068162)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -100,20 +99,19 @@ def test_muscle_with_contact_driven_ocp():
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0, 0.07, 1.4]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.00806796, -0.95744612, 3.09501746]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.0081671, -0.9450881, 3.0704626]))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0.0, 0.0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.00060479, 0.34617159, -0.42910107]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.0009398, 0.4116121, -0.5587618]))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([-4.67191123e-05, 4.58080354e-03, 4.23701953e-03]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.19345958e-05, -1.34810157e-03, 3.12378179e-03]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([-3.9652660e-07, 1.4785825e-03, 5.2079505e-03]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-2.7248808e-06, -2.7952503e-04, 6.9262306e-04]))
     np.testing.assert_almost_equal(
-        mus[:, 0],
-        np.array([6.86280305e-06, 1.68961894e-01, 8.70635867e-02, 2.47160155e-05, 2.53946780e-05, 8.45438966e-02]),
+        mus[:, 0], np.array([2.2873915e-06, 1.6502014e-01, 1.0001872e-01, 4.0192359e-06, 4.1296273e-06, 1.0395487e-01]),
     )
     np.testing.assert_almost_equal(
         mus[:, -1],
-        np.array([1.96721725e-02, 3.42398501e-05, 3.29454916e-05, 8.61757459e-03, 8.57946846e-03, 7.07152302e-03]),
+        np.array([4.2599697e-03, 3.2187363e-05, 3.1307175e-05, 2.0116712e-03, 2.0043861e-03, 1.8230214e-03]),
     )
 
     # save and load

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from biorbd_optim import Data, OdeSolver
+from biorbd_optim import Data, OdeSolver, Constraint, Instant
 from .utils import TestUtils
 
 # Load align_markers
@@ -32,7 +32,7 @@ def test_align_markers(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 1317.835541713015)
+    np.testing.assert_almost_equal(f[0, 0], 19767.53312569522)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -57,6 +57,84 @@ def test_align_markers(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
+def test_align_markers_changing_constraints():
+    ocp = align_markers.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
+        number_shooting_points=30,
+        final_time=2,
+    )
+    sol = ocp.solve()
+
+    # Add a new constraint and reoptimize
+    ocp.add_constraint(
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 2,}
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 20370.211697123825)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (189, 1))
+    np.testing.assert_almost_equal(g, np.zeros((189, 1)))
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((4.2641129, 9.81, 2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((1.36088709, 9.81, -2.27903226)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+    # Replace constraints and reoptimize
+    ocp.modify_constraint(
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 2,}, 0
+    )
+    ocp.modify_constraint(
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 3,}, 2
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 31670.93770220887)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (189, 1))
+    np.testing.assert_almost_equal(g, np.zeros((189, 1)))
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((2, 0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-5.625, 21.06, 2.2790323)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.625, 21.06, -2.27903226)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+
 # Load multiphase_align_markers
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
@@ -76,7 +154,7 @@ def test_multiphase_align_markers(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 17672.950313589874)
+    np.testing.assert_almost_equal(f[0, 0], 106084.82631762947)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -135,7 +213,7 @@ def test_external_forces(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 658.3925125)
+    np.testing.assert_almost_equal(f[0, 0], 9875.88768746912)
 
     # Check constraints
     g = np.array(sol["g"])
