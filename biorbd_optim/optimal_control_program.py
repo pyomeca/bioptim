@@ -5,7 +5,7 @@ import os
 
 import biorbd
 import casadi
-from casadi import MX, vertcat
+from casadi import MX, vertcat, sum1
 
 from .enums import OdeSolver
 from .mapping import BidirectionalMapping
@@ -47,6 +47,7 @@ class OptimalControlProgram:
         plot_mappings=None,
         is_cyclic_objective=False,
         is_cyclic_constraint=False,
+        nb_threads=1,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -73,6 +74,7 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "biorbd_optim": __version__}
+        self.nb_phases = len(biorbd_model)
 
         biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
         self.original_values = {
@@ -84,8 +86,8 @@ class OptimalControlProgram:
             "U_init": U_init,
             "X_bounds": X_bounds,
             "U_bounds": U_bounds,
-            "objective_functions": deepcopy(objective_functions),
-            "constraints": deepcopy(constraints),
+            "objective_functions": [],
+            "constraints": [],
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "all_generalized_mapping": all_generalized_mapping,
@@ -95,16 +97,16 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "is_cyclic_objective": is_cyclic_objective,
             "is_cyclic_constraint": is_cyclic_constraint,
+            "nb_threads": nb_threads,
         }
 
-        self.nb_phases = len(biorbd_model)
         self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
         self.__add_to_nlp("phase_idx", [i for i in range(self.nb_phases)], False)
 
         # Prepare some variables
-        self.__init_penality(constraints, "constraints")
-        self.__init_penality(objective_functions, "objective_functions")
+        constraints = self.__init_penalty(constraints, "constraints")
+        objective_functions = self.__init_penalty(objective_functions, "objective_functions")
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
@@ -112,7 +114,7 @@ class OptimalControlProgram:
             if nlp["ns"] < 1:
                 raise RuntimeError("Number of shooting points must be at least 1")
         self.initial_phase_time = phase_time
-        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time)
+        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time, objective_functions)
         self.__add_to_nlp("tf", phase_time, False)
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         self.__add_to_nlp(
@@ -120,6 +122,7 @@ class OptimalControlProgram:
         )
         self.is_cyclic_constraint = is_cyclic_constraint
         self.is_cyclic_objective = is_cyclic_objective
+        self.nb_threads = nb_threads
 
         # External forces
         if external_forces != ():
@@ -143,12 +146,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("plot_mappings", reshaped_plot_mappings, False)
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
-            self.nlp[i]["nbQ"] = 0
-            self.nlp[i]["nbQdot"] = 0
-            self.nlp[i]["nbTau"] = 0
-            self.nlp[i]["nbMuscles"] = 0
-            self.nlp[i]["x"] = MX()
-            self.nlp[i]["u"] = MX()
+            self.__initialize_nlp(self.nlp[i])
             self.nlp[i]["problem_type"](self.nlp[i])
 
         # Prepare path constraints
@@ -185,17 +183,32 @@ class OptimalControlProgram:
 
         # Prepare constraints
         self.g = []
-        self.g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
+        self.g_bounds = []
         ConstraintFunction.continuity_constraint(self)
         if len(constraints) > 0:
-            for i in range(self.nb_phases):
-                ConstraintFunction.add(self, self.nlp[i])
+            for i, constraint_phase in enumerate(constraints):
+                for constraint in constraint_phase:
+                    self.add_constraint(constraint, i)
 
         # Objective functions
-        self.J = 0
+        self.J = []
         if len(objective_functions) > 0:
-            for i in range(self.nb_phases):
-                ObjectiveFunction.add(self, self.nlp[i])
+            for i, objective_functions_phase in enumerate(objective_functions):
+                for objective_function in objective_functions_phase:
+                    self.add_objective_function(objective_function, i)
+
+    @staticmethod
+    def __initialize_nlp(nlp):
+        nlp["nbQ"] = 0
+        nlp["nbQdot"] = 0
+        nlp["nbTau"] = 0
+        nlp["nbMuscles"] = 0
+        nlp["plot"] = {}
+        nlp["x"] = MX()
+        nlp["u"] = MX()
+        nlp["J"] = []
+        nlp["g"] = []
+        nlp["g_bounds"] = []
 
     def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None):
         if isinstance(param, (list, tuple)):
@@ -235,6 +248,7 @@ class OptimalControlProgram:
 
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
         nlp["dynamics"] = []
+        nlp["par_dynamics"] = {}
         if nlp["ode_solver"] == OdeSolver.RK:
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
@@ -258,6 +272,8 @@ class OptimalControlProgram:
             nlp["dynamics"].append(casadi.integrator("integrator", "cvodes", ode, ode_opt))
 
         if len(nlp["dynamics"]) == 1:
+            if self.nb_threads > 1:
+                nlp["par_dynamics"] = nlp["dynamics"][0].map(nlp["ns"], "thread", self.nb_threads)
             nlp["dynamics"] = nlp["dynamics"] * nlp["ns"]
 
     def __define_multiple_shooting_nodes_per_phase(self, nlp, idx_phase):
@@ -299,22 +315,21 @@ class OptimalControlProgram:
         self.V_bounds.concatenate(V_bounds)
         self.V_init.concatenate(V_init)
 
-    def __init_phase_time(self, phase_time):
+    def __init_phase_time(self, phase_time, objective_functions):
         if isinstance(phase_time, (int, float)):
             phase_time = [phase_time]
         phase_time = list(phase_time)
         initial_time_guess, time_min, time_max = [], [], []
-        for i, nlp in enumerate(self.nlp):
-            if "objective_functions" in nlp:
-                for obj_fun in nlp["objective_functions"]:
-                    if (
-                        obj_fun["type"] == Objective.Mayer.MINIMIZE_TIME
-                        or obj_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
-                    ):
-                        initial_time_guess.append(phase_time[i])
-                        phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
-                        time_min.append(obj_fun["minimum"] if "minimum" in obj_fun else 0)
-                        time_max.append(obj_fun["maximum"] if "maximum" in obj_fun else inf)
+        for i, objective_functions_phase in enumerate(objective_functions):
+            for obj_fun in objective_functions_phase:
+                if (
+                    obj_fun["type"] == Objective.Mayer.MINIMIZE_TIME
+                    or obj_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
+                ):
+                    initial_time_guess.append(phase_time[i])
+                    phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
+                    time_min.append(obj_fun["minimum"] if "minimum" in obj_fun else 0)
+                    time_max.append(obj_fun["maximum"] if "maximum" in obj_fun else inf)
         return phase_time, initial_time_guess, time_min, time_max
 
     def __define_variable_time(self, initial_guess, minimum, maximum):
@@ -342,18 +357,54 @@ class OptimalControlProgram:
         V_init.check_and_adjust_dimensions(nV, 1)
         self.V_init.concatenate(V_init)
 
-    def __init_penality(self, penalities, penality_type):
-        if len(penalities) > 0:
+    def __init_penalty(self, penalties, penalty_type):
+        if len(penalties) > 0:
             if self.nb_phases == 1:
-                if isinstance(penalities, dict):
-                    penalities = (penalities,)
-                if isinstance(penalities[0], dict):
-                    penalities = (penalities,)
-            elif isinstance(penalities, (list, tuple)):
-                for constraint in penalities:
+                if isinstance(penalties, dict):
+                    penalties = (penalties,)
+                if isinstance(penalties[0], dict):
+                    penalties = (penalties,)
+            elif isinstance(penalties, (list, tuple)):
+                for constraint in penalties:
                     if isinstance(constraint, dict):
-                        raise RuntimeError(f"Each phase must declares its {penality_type} (even if it is empty)")
-            self.__add_to_nlp(penality_type, penalities, False)
+                        raise RuntimeError(f"Each phase must declares its {penalty_type} (even if it is empty)")
+        return penalties
+
+    def add_objective_function(self, new_objective_function, phase_number=-1):
+        self.modify_objective_function(new_objective_function, index_in_phase=-1, phase_number=phase_number)
+
+    def modify_objective_function(self, new_objective_function, index_in_phase, phase_number=-1):
+        self._modify_penalty(new_objective_function, index_in_phase, phase_number, "objective_functions")
+
+    def add_constraint(self, new_constraint, phase_number=-1):
+        self.modify_constraint(new_constraint, index_in_phase=-1, phase_number=phase_number)
+
+    def modify_constraint(self, new_constraint, index_in_phase, phase_number=-1):
+        self._modify_penalty(new_constraint, index_in_phase, phase_number, "constraints")
+
+    def _modify_penalty(self, new_penalty, index_in_phase, phase_number, penalty_name):
+        if len(self.nlp) == 1:
+            phase_number = 0
+        else:
+            if phase_number < 0:
+                raise RuntimeError("phase_number must be specified for multiphase OCP")
+
+        while phase_number >= len(self.original_values[penalty_name]):
+            self.original_values[penalty_name].append([])
+
+        if index_in_phase < 0:
+            self.original_values[penalty_name][phase_number].append(deepcopy(new_penalty))
+        else:
+            if index_in_phase >= len(self.original_values[penalty_name][phase_number]):
+                raise RuntimeError("It is not possible to modify a penalty when the penalty is not defined")
+            self.original_values[penalty_name][phase_number][index_in_phase] = deepcopy(new_penalty)
+
+        if penalty_name == "objective_functions":
+            ObjectiveFunction.add_or_replace(self, self.nlp[phase_number], new_penalty, index_in_phase)
+        elif penalty_name == "constraints":
+            ConstraintFunction.add_or_replace(self, self.nlp[phase_number], new_penalty, index_in_phase)
+        else:
+            raise RuntimeError("Unrecognized penalty")
 
     def add_plot(self, fig_name, update_function, phase_number=-1, **parameters):
         if "combine_to" in parameters:
@@ -391,9 +442,27 @@ class OptimalControlProgram:
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
         """
+        all_J = MX()
+        for j_nodes in self.J:
+            for j in j_nodes:
+                all_J = vertcat(all_J, j)
+        for nlp in self.nlp:
+            for obj_nodes in nlp["J"]:
+                for obj in obj_nodes:
+                    all_J = vertcat(all_J, obj)
 
-        # NLP
-        nlp = {"x": self.V, "f": self.J, "g": self.g}
+        all_g = MX()
+        all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
+        for i in range(len(self.g)):
+            for j in range(len(self.g[i])):
+                all_g = vertcat(all_g, self.g[i][j])
+                all_g_bounds.concatenate(self.g_bounds[i][j])
+        for nlp in self.nlp:
+            for i in range(len(nlp["g"])):
+                for j in range(len(nlp["g"][i])):
+                    all_g = vertcat(all_g, nlp["g"][i][j])
+                    all_g_bounds.concatenate(nlp["g_bounds"][i][j])
+        nlp = {"x": self.V, "f": sum1(all_J), "g": all_g}
 
         options_common = {}
         if show_online_optim:
@@ -420,8 +489,8 @@ class OptimalControlProgram:
         arg = {
             "lbx": self.V_bounds.min,
             "ubx": self.V_bounds.max,
-            "lbg": self.g_bounds.min,
-            "ubg": self.g_bounds.max,
+            "lbg": all_g_bounds.min,
+            "ubg": all_g_bounds.max,
             "x0": self.V_init.init,
         }
 
