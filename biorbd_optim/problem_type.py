@@ -5,7 +5,6 @@ from .mapping import BidirectionalMapping, Mapping
 from .plot import CustomPlot
 from .enums import PlotType
 
-
 class ProblemType:
     """
     Includes methods suitable for several situations

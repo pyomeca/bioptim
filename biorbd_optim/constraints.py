@@ -16,6 +16,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     """
 
     class Functions:
+        """
+        Biomechanical constraints
+        """
         @staticmethod
         def contact_force_inequality(
             constraint_type, ocp, nlp, t, x, u, direction, contact_force_idx, boundary, **parameters
@@ -60,7 +63,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             **parameters
         ):
             """
-            :param coeff: It is the coefficient of static friction.
+            Constraint preventing the contact point from slipping tangentially to the contact surface
+            with a chosen static friction coefficient.
+            One constraint per tangential direction.
+            Normal forces are considered to be greater than zero.
+            :param tangential_component_idx: index of the tangential portion of the contact force (integer)
+            :param normal_component_idx: index of the normal portion of the contact force (integer)
+            :param static_friction_coefficient: static friction coefficient (float)
             """
             if not isinstance(tangential_component_idx, int):
                 raise RuntimeError("tangential_component_idx must be a unique integer")
@@ -135,6 +144,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
     @staticmethod
     def _add_to_penalty(ocp, nlp, g, penalty_idx, min_bound=0, max_bound=0, **extra_param):
+        """
+        Sets minimal and maximal bounds of the parameter g to be constrained.
+        :param g: Parameter to be constrained. (?)
+        :param penalty_idx: Index of the parameter g in the penalty array nlp["g"]. (integer)
+        :param min_bound: Minimal bound of the parameter g. (list)
+        :param max_bound: Maximal bound of the parameter g. (list)
+        """
         g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
         for _ in range(g.rows()):
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation_type=InterpolationType.CONSTANT))
@@ -148,6 +164,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
     @staticmethod
     def _reset_penalty(ocp, nlp, penalty_idx):
+        """
+        Resets specified penalty.
+        Negative penalty index leads to enlargement of the array by one empty space.
+        :param penalty_idx: Index of the penalty to be reset. (integer)
+        :return: penalty_idx: Index of the penalty reset. (integer)
+        """
         if nlp:
             g_to_add_to = nlp["g"]
             g_bounds_to_add_to = nlp["g_bounds"]
@@ -166,12 +188,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
     @staticmethod
     def _parameter_modifier(constraint_function, parameters):
+        """Modification of parameters"""
         # Everything that should change the entry parameters depending on the penalty can be added here
         super(ConstraintFunction, ConstraintFunction)._parameter_modifier(constraint_function, parameters)
 
     @staticmethod
     def _span_checker(constraint_function, instant, nlp):
-        # Everything that is suspicious in terms of the span of the penalty function ca be checked here
+        """Raises errors on the span of penalty functions"""
+        # Everything that is suspicious in terms of the span of the penalty function can be checked here
         super(ConstraintFunction, ConstraintFunction)._span_checker(constraint_function, instant, nlp)
         if (
             constraint_function == Constraint.CONTACT_FORCE_INEQUALITY.value[0]
@@ -204,4 +228,5 @@ class Constraint(Enum):
 
     @staticmethod
     def _get_type():
+        """Returns the type of the constraint function"""
         return ConstraintFunction
