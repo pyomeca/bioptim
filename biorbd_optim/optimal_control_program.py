@@ -505,12 +505,12 @@ class OptimalControlProgram:
         if dir != "" and not os.path.isdir(dir):
             os.makedirs(dir)
 
-        with open(file_path, "wb") as file:
-            dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
-            if to_numpy:
-                dict["get_data"] = Data.get_data(self, sol["x"], **parameters)
-
-            pickle.dump(dict, file)
+        if to_numpy:
+            with open(file_path[:-1] + "bo", "wb") as file:
+                pickle.dump({"data": Data.get_data(self, sol["x"], **parameters)}, file)
+        else:
+            with open(file_path, "wb") as file:
+                pickle.dump({"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file)
 
     @staticmethod
     def load(file_path):
@@ -525,3 +525,36 @@ class OptimalControlProgram:
                     )
             sol = data["sol"]
         return (ocp, sol)
+
+    @staticmethod
+    def read_information(file_path):
+        with open(file_path, "rb") as file:
+            data = pickle.load(file)
+            original_values = data["ocp_initilializer"]
+            print("****************************** Informations ******************************")
+            for key in original_values.keys():
+                if key not in [
+                    "X_init",
+                    "U_init",
+                    "X_bounds",
+                    "U_bounds",
+                ]:
+                    print(f"{key} : ")
+                    OptimalControlProgram._deep_print(original_values[key])
+                    print("")
+
+    @staticmethod
+    def _deep_print(elem, label=""):
+        if isinstance(elem, (list, tuple)):
+            for k in range(len(elem)):
+                OptimalControlProgram._deep_print(elem[k])
+                if k != len(elem) - 1:
+                    print("")
+        elif isinstance(elem, dict):
+            for key in elem.keys():
+                OptimalControlProgram._deep_print(elem[key], label=key)
+        else:
+            if label == "":
+                print(f"   {elem}")
+            else:
+                print(f"   [{label}] = {elem}")
