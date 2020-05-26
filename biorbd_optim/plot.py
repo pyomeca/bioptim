@@ -285,7 +285,7 @@ class PlotOcp:
                 if "muscles" in key:
                     y_range = [0, 1]
                     ax.set_ylim(y_range)
-                    ax.set_yticks(np.arange(y_range[0], y_range[1], step=1/5, ))
+                    ax.set_yticks(np.arange(y_range[0], y_range[1], step=1 / 5,))
                 else:
                     y_max = -np.inf
                     y_min = np.inf
