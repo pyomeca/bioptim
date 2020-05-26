@@ -12,7 +12,9 @@ from .enums import PlotType
 
 
 class CustomPlot:
-    def __init__(self, update_function, plot_type=PlotType.PLOT, axes_idx=None, legend=(), combine_to=None, color=None):
+    def __init__(
+        self, update_function, plot_type=PlotType.PLOT, axes_idx=None, legend=(), combine_to=None, color=None, ylim=None
+    ):
         self.function = update_function
         self.type = plot_type
         if axes_idx is None:
@@ -26,6 +28,7 @@ class CustomPlot:
         self.legend = legend
         self.combine_to = combine_to
         self.color = color
+        self.ylim = ylim
 
 
 class PlotOcp:
@@ -114,11 +117,12 @@ class PlotOcp:
                 nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
                 if nlp["plot"][variable].combine_to:
                     self.axes[variable] = self.axes[nlp["plot"][variable].combine_to]
-                    axes = self.axes[variable]
+                    axes = self.axes[variable][1]
                 elif i > 0:
-                    axes = self.axes[variable]
+                    axes = self.axes[variable][1]
                 else:
                     axes = self.__add_new_axis(variable, nb, nb_rows, nb_cols)
+                    self.axes[variable] = [nlp["plot"][variable], axes]
 
                 t = self.t[i]
                 if variable not in self.plot_func:
@@ -133,8 +137,8 @@ class PlotOcp:
                         axes[k].set_title(self.plot_func[variable][-1].legend[mapping[k]])
                     ax.grid(color="k", linestyle="--", linewidth=0.5)
                     ax.set_xlim(0, self.t[-1][-1])
-                    if "muscles" in variable:
-                        ax.set_ylim(0, 1)
+                    if nlp["plot"][variable].ylim:
+                        ax.set_ylim(nlp["plot"][variable].ylim)
 
                     zero = np.zeros((t.shape[0], 1))
                     plot_type = self.plot_func[variable][0].type
@@ -185,7 +189,6 @@ class PlotOcp:
             idx_center = len(axes) - 1
         axes[idx_center].set_xlabel("time (s)")
 
-        self.axes[variable] = axes
         self.all_figures[-1].tight_layout()
         return axes
 
@@ -281,12 +284,8 @@ class PlotOcp:
             p.set_ydata((np.nan, np.nan))
 
         for key in self.axes:
-            for i, ax in enumerate(self.axes[key]):
-                if "muscles" in key:
-                    y_range = [0, 1]
-                    ax.set_ylim(y_range)
-                    ax.set_yticks(np.arange(y_range[0], y_range[1], step=1 / 5,))
-                else:
+            for i, ax in enumerate(self.axes[key][1]):
+                if not self.axes[key][0].ylim:
                     y_max = -np.inf
                     y_min = np.inf
                     for p in ax.get_children():
