@@ -263,7 +263,10 @@ class ProblemType:
         if as_states:
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
             nlp["plot"]["muscles_states"] = CustomPlot(
-                lambda x, u: x[nx_q : nx_q + nlp["nbMuscle"]], plot_type=PlotType.INTEGRATED, legend=nlp["muscleNames"]
+                lambda x, u: x[nx_q : nx_q + nlp["nbMuscle"]],
+                plot_type=PlotType.INTEGRATED,
+                legend=nlp["muscleNames"],
+                ylim=[0, 1],
             )
             combine = "muscles_states"
         if as_controls:
@@ -272,6 +275,7 @@ class ProblemType:
                 plot_type=PlotType.STEP,
                 legend=nlp["muscleNames"],
                 combine_to=combine,
+                ylim=[0, 1],
             )
 
     @staticmethod
