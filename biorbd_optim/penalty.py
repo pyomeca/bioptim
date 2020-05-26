@@ -25,8 +25,6 @@ class PenaltyFunctionAbstract:
                 data_to_track, [nlp["ns"] + 1, max(states_idx) + 1]
             )
 
-            embed()
-
             for i, v in enumerate(x):
                 # print(i)
                 # print(v)
@@ -60,11 +58,10 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_markers_displacement(penalty_type, ocp, nlp, t, x, u, rt_idx=-1, markers_idx=(), **extra_param):
+        def minimize_markers_displacement(penalty_type, ocp, nlp, t, x, u, markers_idx=(), **extra_param):
             """
             Adds the objective that the specific markers displacement (difference between the position of the
             markers at each neighbour frame)should be minimized.
-            :param rt_idx: Index of the local reference in which the markers are expressed. (integer)
             :param markers_idx: Index of the markers to minimize. (list of integers)
             """
             n_q = nlp["nbQ"]
@@ -72,27 +69,12 @@ class PenaltyFunctionAbstract:
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
             )
-
-            if rt_idx < 0:
-                for i in range(len(x) - 1):
-                    val = (
-                        nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx]
-                        - nlp["model"].markers(x[i][:n_q])[:, markers_idx]
-                    )
-                    penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
-            elif rt_idx < nb_rts:
-                for i in range(len(x) - 1):
-                    jcs_1 = nlp["model"].globalJCS(x[i + 1][:n_q], rt_idx).to_mx()
-                    inv_jcs_1 = casadi.vertcat(casadi.horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), casadi.horzcat(0,0,0,1))
-                    jcs_0 = nlp["model"].globalJCS(x[i][:n_q], rt_idx).to_mx()
-                    inv_jcs_0 = casadi.vertcat(casadi.horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), casadi.horzcat(0,0,0,1))
-                    val = (
-                        inv_jcs_1 @ casadi.vertcat(nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx],1)
-                        - inv_jcs_0 @ casadi.vertcat(nlp["model"].markers(x[i][:n_q])[:, markers_idx],1)
-                    )
-                    penalty_type._add_to_penalty(ocp, nlp, val[:3], **extra_param)
-            else:
-                raise RuntimeError(f"Wrong choice of rt_idx. (Negative values refer to global coordinates system, positive values must be between 0 and {nb_rts})")
+            for i in range(len(x) - 1):
+                val = (
+                    nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx]
+                    - nlp["model"].markers(x[i][:n_q])[:, markers_idx]
+                )
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
 
         @staticmethod
