@@ -18,7 +18,7 @@ from biorbd_optim import (
 )
 
 
-def generate_data(biorbd_model, final_time, nb_shooting, residual_torques=True):
+def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torques=True):
     # Aliases
     nb_q = biorbd_model.nbQ()
     nb_qdot = biorbd_model.nbQdot()
@@ -27,13 +27,14 @@ def generate_data(biorbd_model, final_time, nb_shooting, residual_torques=True):
     nb_markers = biorbd_model.nbMarkers()
     dt = final_time / nb_shooting
 
+    if use_residual_torques:
+        nu = nb_tau + nb_mus
+    else:
+        nu = nb_mus
+
     # Casadi related stuff
     symbolic_states = MX.sym("x", nb_q + nb_qdot, 1)
-
-    if residual_torques:
-        symbolic_controls = MX.sym("u", nb_tau + nb_mus, 1)
-    else:
-        symbolic_controls = MX.sym("u", nb_mus, 1)
+    symbolic_controls = MX.sym("u", nu, 1)
 
     markers_func = []
     for i in range(nb_markers):
@@ -47,42 +48,27 @@ def generate_data(biorbd_model, final_time, nb_shooting, residual_torques=True):
             ).expand()
         )
 
-    if residual_torques:
-        nlp = {
-            "model": biorbd_model,
-            "nbTau": nb_tau,
-            "nbMuscle": nb_mus,
-            "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
-            "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
-            "tau_mapping": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
-        }
-        dynamics_func = Function(
-            "ForwardDyn",
-            [symbolic_states, symbolic_controls],
-            [Dynamics.forward_dynamics_torque_muscle_driven(symbolic_states, symbolic_controls, nlp)],
-            ["x", "u"],
-            ["xdot"],
-        ).expand()
-    else:
-        nlp = {
-            "model": biorbd_model,
-            "nbMuscle": nb_mus,
-            "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
-            "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
-        }
-        dynamics_func = Function(
-            "ForwardDyn",
-            [symbolic_states, symbolic_controls],
-            [Dynamics.forward_dynamics_muscle_activations_driven(symbolic_states, symbolic_controls, nlp)],
-            ["x", "u"],
-            ["xdot"],
-        ).expand()
+    nlp = {
+        "model": biorbd_model,
+        "nbMuscle": nb_mus,
+        "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
+        "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
+    }
+    if use_residual_torques:
+        nlp["nbTau"] = nb_tau
+        nlp["tau_mapping"] = BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau)))
 
-    def dyn_interface_true(t, x, u):
-        u = np.concatenate([np.zeros(nb_tau), u])
-        return np.array(dynamics_func(x, u)).squeeze()
+    dynamics_func = Function(
+        "ForwardDyn",
+        [symbolic_states, symbolic_controls],
+        [Dynamics.forward_dynamics_muscle_activations_driven(symbolic_states, symbolic_controls, nlp)],
+        ["x", "u"],
+        ["xdot"],
+    ).expand()
 
-    def dyn_interface_false(t, x, u):
+    def dyn_interface(t, x, u):
+        if use_residual_torques:
+            u = np.concatenate([np.zeros(nb_tau), u])
         return np.array(dynamics_func(x, u)).squeeze()
 
     # Generate some muscle activation
@@ -100,10 +86,7 @@ def generate_data(biorbd_model, final_time, nb_shooting, residual_torques=True):
     x_init = np.array([0] * nb_q + [0] * nb_qdot)
     add_to_data(0, x_init)
     for i, u in enumerate(U):
-        if residual_torques:
-            sol = solve_ivp(dyn_interface_true, (0, dt), x_init, method="RK45", args=(u,))
-        else:
-            sol = solve_ivp(dyn_interface_false, (0, dt), x_init, method="RK45", args=(u,))
+        sol = solve_ivp(dyn_interface, (0, dt), x_init, method="RK45", args=(u,))
 
         x_init = sol["y"][:, -1]
         add_to_data(i + 1, x_init)
@@ -120,7 +103,7 @@ def prepare_ocp(
     activations_ref,
     q_ref,
     kin_data_to_track="markers",
-    residual_torques=True,
+    use_residual_torques=True,
 ):
     # Problem parameters
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -132,7 +115,7 @@ def prepare_ocp(
         {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": activations_ref},
     ]
 
-    if residual_torques:
+    if use_residual_torques:
         objective_functions.append({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1})
 
     if kin_data_to_track == "markers":
@@ -152,7 +135,7 @@ def prepare_ocp(
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
-    if residual_torques:
+    if use_residual_torques:
         variable_type = ProblemType.muscle_activations_and_torque_driven
     else:
         variable_type = ProblemType.muscle_activations_driven
@@ -170,7 +153,7 @@ def prepare_ocp(
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    if residual_torques:
+    if use_residual_torques:
         U_bounds = Bounds(
             [torque_min] * biorbd_model.nbGeneralizedTorque() + [activation_min] * biorbd_model.nbMuscleTotal(),
             [torque_max] * biorbd_model.nbGeneralizedTorque() + [activation_max] * biorbd_model.nbMuscleTotal(),
@@ -204,12 +187,11 @@ if __name__ == "__main__":
     biorbd_model = biorbd.Model("arm26.bioMod")
     final_time = 2
     n_shooting_points = 29
-
-    residual_torques = False
+    use_residual_torques = True
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(
-        biorbd_model, final_time, n_shooting_points, residual_torques
+        biorbd_model, final_time, n_shooting_points, use_residual_torques=use_residual_torques
     )
 
     # Track these data
@@ -222,11 +204,11 @@ if __name__ == "__main__":
         muscle_activations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
         kin_data_to_track="q",
-        residual_torques=residual_torques,
+        use_residual_torques=use_residual_torques,
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=False)
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show the results --- #
     muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
@@ -236,7 +218,7 @@ if __name__ == "__main__":
     qdot = states["q_dot"]
     mus = controls["muscles"]
 
-    if residual_torques:
+    if use_residual_torques:
         tau = controls["tau"]
 
     n_q = ocp.nlp[0]["model"].nbQ()

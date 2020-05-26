@@ -72,8 +72,6 @@ class ProblemType:
 
         ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_torque_muscle_driven)
 
-
-
     def muscle_excitations_driven(nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
@@ -94,6 +92,7 @@ class ProblemType:
         nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
 
         ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_muscle_excitations_driven)
+
     @staticmethod
     def muscle_excitations_and_torque_driven(nlp):
         """

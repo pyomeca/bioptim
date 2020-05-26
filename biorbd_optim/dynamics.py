@@ -127,7 +127,6 @@ class Dynamics:
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
-
     @staticmethod
     def forward_dynamics_muscle_excitations_driven(states, controls, nlp):
         nq = nlp["q_mapping"].reduce.len
