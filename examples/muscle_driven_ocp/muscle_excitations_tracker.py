@@ -94,7 +94,7 @@ def prepare_ocp(
     markers_ref,
     excitations_ref,
     q_ref,
-    with_residual_torque,
+    use_residual_torque,
     kin_data_to_track="markers",
 ):
     # Problem parameters
@@ -106,7 +106,7 @@ def prepare_ocp(
     objective_functions = [
         {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": excitations_ref},
     ]
-    if with_residual_torque:
+    if use_residual_torque:
         objective_functions.append({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1})
     if kin_data_to_track == "markers":
         objective_functions.append(
@@ -125,7 +125,7 @@ def prepare_ocp(
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
-    if with_residual_torque:
+    if use_residual_torque:
         variable_type = ProblemType.muscle_excitations_and_torque_driven
     else:
         variable_type = ProblemType.muscle_excitations_driven
@@ -148,7 +148,7 @@ def prepare_ocp(
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()) + [0] * biorbd_model.nbMuscles())
 
     # Define control path constraint
-    if with_residual_torque:
+    if use_residual_torque:
         U_bounds = Bounds(
             [torque_min] * biorbd_model.nbGeneralizedTorque() + [excitation_min] * biorbd_model.nbMuscles(),
             [torque_max] * biorbd_model.nbGeneralizedTorque() + [excitation_max] * biorbd_model.nbMuscles(),
@@ -180,6 +180,7 @@ if __name__ == "__main__":
     biorbd_model = biorbd.Model("arm26.bioMod")
     final_time = 1.5
     n_shooting_points = 29
+    use_residual_torque = True
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_excitations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
@@ -194,12 +195,12 @@ if __name__ == "__main__":
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        with_residual_torque=False,
+        use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=False, options_ipopt={"max_iter": 2})
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show the results --- #
     muscle_excitations_ref = np.append(muscle_excitations_ref, muscle_excitations_ref[-1:, :], axis=0)
@@ -208,7 +209,8 @@ if __name__ == "__main__":
     q = states_sol["q"]
     q_dot = states_sol["q_dot"]
     activations = states_sol["muscles"]
-    tau = controls_sol["tau"]
+    if use_residual_torque:
+        tau = controls_sol["tau"]
     excitations = controls_sol["muscles"]
 
     n_q = ocp.nlp[0]["model"].nbQ()
