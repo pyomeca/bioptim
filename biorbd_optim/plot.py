@@ -234,7 +234,7 @@ class PlotOcp:
                     control = np.concatenate((control, data_controls_per_phase[s][i]))
                 else:
                     control = np.concatenate((control, data_controls_per_phase[s]))
-            for key in self.plot_func:
+            for key in self.variable_sizes[i]:
                 y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                 y.fill(np.nan)
                 y[:, :] = self.plot_func[key][i].function(state, control)
@@ -357,7 +357,7 @@ class OnlineCallback(Callback):
         Callback.__init__(self)
         self.nlp = ocp
         self.nx = ocp.V.rows()
-        self.ng = ocp.g.rows()
+        self.ng = 0
         self.construct("AnimateCallback", opts)
 
         self.plot_pipe, plotter_pipe = mp.Pipe()
