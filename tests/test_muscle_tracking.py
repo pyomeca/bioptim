@@ -41,11 +41,12 @@ def test_muscle_activations_and_states_tracking():
     biorbd_model = biorbd.Model(model_path)
     final_time = 2
     nb_shooting = 9
+    use_residual_torque = True
 
     # Generate random data to fit
     np.random.seed(42)
     t, markers_ref, x_ref, muscle_activations_ref = muscle_activations_tracker.generate_data(
-        biorbd_model, final_time, nb_shooting
+        biorbd_model, final_time, nb_shooting, use_residual_torque=use_residual_torque
     )
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
@@ -56,6 +57,7 @@ def test_muscle_activations_and_states_tracking():
         markers_ref,
         muscle_activations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
+        use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
     )
     sol = ocp.solve()
@@ -91,6 +93,62 @@ def test_muscle_activations_and_states_tracking():
     )
 
 
+def test_muscle_activation_no_residual_torque_and_markers_tracking():
+    # Define the problem
+    model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
+    biorbd_model = biorbd.Model(model_path)
+    final_time = 2
+    nb_shooting = 9
+    use_residual_torque = False
+
+    # Generate random data to fit
+    np.random.seed(42)
+    t, markers_ref, x_ref, muscle_activations_ref = muscle_activations_tracker.generate_data(
+        biorbd_model, final_time, nb_shooting, use_residual_torque=use_residual_torque
+    )
+
+    biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
+    ocp = muscle_activations_tracker.prepare_ocp(
+        biorbd_model,
+        final_time,
+        nb_shooting,
+        markers_ref,
+        muscle_activations_ref,
+        x_ref[: biorbd_model.nbQ(), :].T,
+        use_residual_torque=use_residual_torque,
+        kin_data_to_track="q",
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 6.5736277330517424e-06)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (36, 1))
+    np.testing.assert_almost_equal(g, np.zeros((36, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, mus = states["q"], states["q_dot"], controls["muscles"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([-1.1123547e-05, -1.2705707e-05]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([-0.49387905, -1.4492478]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([-9.07884121e-05, -1.34382832e-04]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.87808434, -2.64742889]))
+    # initial and final controls
+    np.testing.assert_almost_equal(
+        mus[:, 0], np.array([0.37439988, 0.95074914, 0.73202991, 0.598561, 0.15593039, 0.15595677]),
+    )
+    np.testing.assert_almost_equal(
+        mus[:, -1], np.array([0.54686681, 0.18481157, 0.969487, 0.7751264, 0.9394903, 0.89483438]),
+    )
+
+
 def test_muscle_excitation_with_residual_torque_and_markers_tracking():
     # Define the problem
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
@@ -112,7 +170,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking():
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        with_residual_torque=True,
+        use_residual_torque=True,
         kin_data_to_track="markers",
     )
     sol = ocp.solve()
@@ -182,7 +240,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking():
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
-        with_residual_torque=False,
+        use_residual_torque=False,
         kin_data_to_track="markers",
     )
     sol = ocp.solve()

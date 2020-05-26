@@ -35,6 +35,24 @@ class ProblemType:
         ProblemType.__configure_contact(nlp, Dynamics.forces_from_forward_dynamics_with_contact)
 
     @staticmethod
+    def muscle_activations_driven(nlp):
+        """
+        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
+        Works with torques and muscles.
+        :param nlp: An OptimalControlProgram class.
+        """
+        ProblemType.__configure_q_qdot(nlp, True, False)
+        ProblemType.__configure_muscles(nlp, False, True)
+
+        u = MX()
+        for i in range(nlp["nbMuscle"]):
+            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+        nlp["u"] = vertcat(nlp["u"], u)
+        nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
+
+        ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_muscle_activations_driven)
+
+    @staticmethod
     def muscle_activations_and_torque_driven(nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
@@ -54,7 +72,6 @@ class ProblemType:
 
         ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_torque_muscle_driven)
 
-    @staticmethod
     def muscle_excitations_driven(nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
