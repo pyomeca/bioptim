@@ -188,8 +188,7 @@ class OptimalControlProgram:
         if len(constraints) > 0:
             for i, constraint_phase in enumerate(constraints):
                 for constraint in constraint_phase:
-                    if not(constraint["type"] == Constraint.TIME_CONSTRAINT):
-                        self.add_constraint(constraint, i)
+                    self.add_constraint(constraint, i)
 
         # Objective functions
         self.J = []
@@ -321,27 +320,27 @@ class OptimalControlProgram:
             phase_time = [phase_time]
         phase_time = list(phase_time)
         initial_time_guess, time_min, time_max = [], [], []
-        for i, objective_functions_phase in enumerate(objective_functions):
-            for obj_fun in objective_functions_phase:
-                if (
-                    obj_fun["type"] == Objective.Mayer.MINIMIZE_TIME
-                    or obj_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
-                ):
-                    self.__define_parameters_phase_time(obj_fun, phase_time, i, initial_time_guess, time_min, time_max)
-        for i, constraints_phase in enumerate(constraints):
-            for constraint in constraints_phase:
-                if(
-                    # constraint["type"] == ConstraintFunction.Functions.time_constraint
-                        constraint["type"] == Constraint.TIME_CONSTRAINT
-                ):
-                    self.__define_parameters_phase_time(constraint, phase_time, i, initial_time_guess, time_min, time_max)
+        has_penalty = self.__define_parameters_phase_time(objective_functions, initial_time_guess, phase_time, time_min, time_max)
+        self.__define_parameters_phase_time(constraints, initial_time_guess, phase_time, time_min, time_max, has_penalty=has_penalty)
         return phase_time, initial_time_guess, time_min, time_max
 
-    def __define_parameters_phase_time(self, elt, phase_time, idx, initial_time_guess, time_min, time_max):
-        initial_time_guess.append(phase_time[idx])
-        phase_time[idx] = casadi.MX.sym(f"time_phase_{idx}", 1, 1)
-        time_min.append(elt["minimum"] if "minimum" in elt else 0)
-        time_max.append(elt["maximum"] if "maximum" in elt else inf)
+    def __define_parameters_phase_time(self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=False):
+        for i, penalty_functions_phase in enumerate(penalty_functions):
+            for pen_fun in penalty_functions_phase:
+                if (
+                        pen_fun["type"] == Objective.Mayer.MINIMIZE_TIME
+                        or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
+                        or pen_fun["type"] == Constraint.TIME_CONSTRAINT
+                ):
+                    if has_penalty:
+                        raise RuntimeError("Time cannot have twice objective or constraint functions")
+                    has_penalty = True
+
+                    initial_time_guess.append(phase_time[i])
+                    phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
+                    time_min.append(pen_fun["minimum"] if "minimum" in pen_fun else 0)
+                    time_max.append(pen_fun["maximum"] if "maximum" in pen_fun else inf)
+        return has_penalty
 
     def __define_variable_time(self, initial_guess, minimum, maximum):
         """

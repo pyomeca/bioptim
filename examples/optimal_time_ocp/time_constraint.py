@@ -38,8 +38,8 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     constraints = (
         {
             "type": Constraint.TIME_CONSTRAINT,
-            "minimum": 0.2,
-            "maximum": 10,
+            "minimum": 0.6,
+            "maximum": 1,
         },
     )
 
