@@ -130,8 +130,11 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = [
         {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": activations_ref},
-        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
     ]
+
+    if residual_torques:
+        objective_functions.append({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1})
+
     if kin_data_to_track == "markers":
         objective_functions.append(
             {"type": Objective.Lagrange.TRACK_MARKERS, "weight": 100, "data_to_track": markers_ref},
@@ -231,8 +234,10 @@ if __name__ == "__main__":
     states, controls = Data.get_data(ocp, sol["x"])
     q = states["q"]
     qdot = states["q_dot"]
-    tau = controls["tau"]
     mus = controls["muscles"]
+
+    if residual_torques:
+        tau = controls["tau"]
 
     n_q = ocp.nlp[0]["model"].nbQ()
     n_mark = ocp.nlp[0]["model"].nbMarkers()
