@@ -133,6 +133,8 @@ class PlotOcp:
                         axes[k].set_title(self.plot_func[variable][-1].legend[mapping[k]])
                     ax.grid(color="k", linestyle="--", linewidth=0.5)
                     ax.set_xlim(0, self.t[-1][-1])
+                    if "muscles" in variable:
+                        ax.set_ylim(0, 1)
 
                     zero = np.zeros((t.shape[0], 1))
                     plot_type = self.plot_func[variable][0].type
@@ -280,24 +282,29 @@ class PlotOcp:
 
         for key in self.axes:
             for i, ax in enumerate(self.axes[key]):
-                y_max = -np.inf
-                y_min = np.inf
-                for p in ax.get_children():
-                    if isinstance(p, lines.Line2D):
-                        y_min = min(y_min, np.min(p.get_ydata()))
-                        y_max = max(y_max, np.max(p.get_ydata()))
-                if np.isnan(y_min) or np.isinf(y_min):
-                    y_min = 0
-                if np.isnan(y_max) or np.isinf(y_max):
-                    y_max = 1
-                data_mean = np.mean((y_min, y_max))
-                data_range = y_max - y_min
-                if np.abs(data_range) < 0.8:
-                    data_range = 0.8
-                y_range = (1.25 * data_range) / 2
-                y_range = data_mean - y_range, data_mean + y_range
-                ax.set_ylim(y_range)
-                ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
+                if "muscles" in key:
+                    y_range = [0, 1]
+                    ax.set_ylim(y_range)
+                    ax.set_yticks(np.arange(y_range[0], y_range[1], step=1/5, ))
+                else:
+                    y_max = -np.inf
+                    y_min = np.inf
+                    for p in ax.get_children():
+                        if isinstance(p, lines.Line2D):
+                            y_min = min(y_min, np.min(p.get_ydata()))
+                            y_max = max(y_max, np.max(p.get_ydata()))
+                    if np.isnan(y_min) or np.isinf(y_min):
+                        y_min = 0
+                    if np.isnan(y_max) or np.isinf(y_max):
+                        y_max = 1
+                    data_mean = np.mean((y_min, y_max))
+                    data_range = y_max - y_min
+                    if np.abs(data_range) < 0.8:
+                        data_range = 0.8
+                    y_range = (1.25 * data_range) / 2
+                    y_range = data_mean - y_range, data_mean + y_range
+                    ax.set_ylim(y_range)
+                    ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
