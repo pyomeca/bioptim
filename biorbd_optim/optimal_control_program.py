@@ -498,19 +498,23 @@ class OptimalControlProgram:
         return solver.call(arg)
 
     def save(self, sol, file_path, to_numpy=False, **parameters):
-        _, ext = os.path.splitext(file_path)
-        if ext == "":
-            file_path = file_path + ".bo"
         dir, _ = os.path.split(file_path)
         if dir != "" and not os.path.isdir(dir):
             os.makedirs(dir)
 
+        _, ext = os.path.splitext(file_path)
         if to_numpy:
-            with open(file_path[:-1] + "bo", "wb") as file:
-                pickle.dump({"data": Data.get_data(self, sol["x"], **parameters)}, file)
+            if ext == "":
+                file_path = file_path + ".bob"
+            dict = {"data": Data.get_data(self, sol["x"], **parameters)}
+
         else:
-            with open(file_path, "wb") as file:
-                pickle.dump({"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file)
+            if ext == "":
+                file_path = file_path + ".bo"
+            dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
+
+        with open(file_path, "wb") as file:
+            pickle.dump(dict, file)
 
     @staticmethod
     def load(file_path):
