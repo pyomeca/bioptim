@@ -11,8 +11,7 @@ before_install:
   - conda update -q conda
 
 install:
-  - conda env create -f environment.yml
-  - conda activate biorbd_optim
+  - conda env update -n root -f environment.yml
   - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
   - conda install xorg-libx11 xorg-libxtst -cconda-forge
 
