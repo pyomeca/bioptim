@@ -11,7 +11,7 @@ before_install:
   - conda update -q conda
 
 install:
-  - conda env update -n root -f environment.yml
+  - conda install biorbd-viz=*=*casadi* -cconda-forge
   - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
   - conda install xorg-libx11 xorg-libxtst -cconda-forge
 
