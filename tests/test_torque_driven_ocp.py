@@ -135,6 +135,7 @@ def test_align_markers_changing_constraints():
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_align_markers_with_actuators(ode_solver):
     ocp = align_markers.prepare_ocp(
@@ -172,6 +173,7 @@ def test_align_markers_with_actuators(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
 
 # Load multiphase_align_markers
 PROJECT_FOLDER = Path(__file__).parent / ".."

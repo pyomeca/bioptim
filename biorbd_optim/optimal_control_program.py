@@ -114,7 +114,9 @@ class OptimalControlProgram:
             if nlp["ns"] < 1:
                 raise RuntimeError("Number of shooting points must be at least 1")
         self.initial_phase_time = phase_time
-        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time, objective_functions, constraints)
+        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(
+            phase_time, objective_functions, constraints
+        )
         self.__add_to_nlp("tf", phase_time, False)
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         self.__add_to_nlp(
@@ -320,17 +322,23 @@ class OptimalControlProgram:
             phase_time = [phase_time]
         phase_time = list(phase_time)
         initial_time_guess, time_min, time_max = [], [], []
-        has_penalty = self.__define_parameters_phase_time(objective_functions, initial_time_guess, phase_time, time_min, time_max)
-        self.__define_parameters_phase_time(constraints, initial_time_guess, phase_time, time_min, time_max, has_penalty=has_penalty)
+        has_penalty = self.__define_parameters_phase_time(
+            objective_functions, initial_time_guess, phase_time, time_min, time_max
+        )
+        self.__define_parameters_phase_time(
+            constraints, initial_time_guess, phase_time, time_min, time_max, has_penalty=has_penalty
+        )
         return phase_time, initial_time_guess, time_min, time_max
 
-    def __define_parameters_phase_time(self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=False):
+    def __define_parameters_phase_time(
+        self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=False
+    ):
         for i, penalty_functions_phase in enumerate(penalty_functions):
             for pen_fun in penalty_functions_phase:
                 if (
-                        pen_fun["type"] == Objective.Mayer.MINIMIZE_TIME
-                        or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
-                        or pen_fun["type"] == Constraint.TIME_CONSTRAINT
+                    pen_fun["type"] == Objective.Mayer.MINIMIZE_TIME
+                    or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
+                    or pen_fun["type"] == Constraint.TIME_CONSTRAINT
                 ):
                     if has_penalty:
                         raise RuntimeError("Time cannot have twice objective or constraint functions")

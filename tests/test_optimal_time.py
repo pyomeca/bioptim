@@ -114,6 +114,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+
 # Load time_constraint
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(

@@ -80,6 +80,7 @@ def test_maximize_predicted_height_CoM(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
+
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     ocp = maximize_predicted_height_CoM.prepare_ocp(
@@ -106,16 +107,19 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.2393758,  0.0612086, -0.0006739,  0.0006739)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.2393758, 0.0612086, -0.0006739, 0.0006739)))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-4.8768219e-01,  3.2867302e-04,  9.7536459e-01, -9.7536459e-01)))
+    np.testing.assert_almost_equal(
+        qdot[:, -1], np.array((-4.8768219e-01, 3.2867302e-04, 9.7536459e-01, -9.7536459e-01))
+    )
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.550905)))
     np.testing.assert_almost_equal(tau[:, -1], np.array(-0.0050623))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
