@@ -72,7 +72,7 @@ if __name__ == "__main__":
     print(f"Time to solve : {toc}sec")
 
     # --- Save the optimal control program and the solution --- #
-    ocp.save(sol, "pendulum")
+    ocp.save(sol, "pendulum.bo")
 
     # --- Load the optimal control program and the solution --- #
     ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")
