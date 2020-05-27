@@ -49,6 +49,7 @@ def test_maximize_predicted_height_CoM(ode_solver):
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         number_shooting_points=20,
+        use_actuators=False,
     )
     sol = ocp.solve()
 
