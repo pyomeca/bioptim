@@ -7,6 +7,5 @@ dependencies:
 - python
 - numpy
 - matplotlib
-- biorbd=*=*casadi*
 - biorbd-viz=*=*casadi*
 - scipy
