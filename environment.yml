@@ -1,5 +1,5 @@
 # create a dev conda environment with: `make create_env` or `conda env create -f environment.yml`
-name: pyomeca
+name: biorbd_optim
 channels:
 - conda-forge
 - default
@@ -7,5 +7,5 @@ dependencies:
 - python
 - numpy
 - matplotlib
-- biorbd-viz=*=*casadi*
+- biorbd-viz =*=*casadi*
 - scipy
