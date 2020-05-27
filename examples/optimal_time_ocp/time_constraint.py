@@ -13,7 +13,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min, time_max):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -22,14 +22,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = (
-        (
-            {"type": Objective.Lagrange.MINIMIZE_TORQUE}
-        ),
-        (
-            {"type": Objective.Lagrange.MINIMIZE_TORQUE}
-        ),
-    )
+    objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE}
 
     # Dynamics
     problem_type = ProblemType.torque_driven
@@ -38,8 +31,8 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     constraints = (
         {
             "type": Constraint.TIME_CONSTRAINT,
-            "minimum": 0.6,
-            "maximum": 1,
+            "minimum": time_min,
+            "maximum": time_max,
         },
     )
 
@@ -77,14 +70,16 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50,)
+    time_min = 0.6
+    time_max = 1
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50, time_min=time_min, time_max=time_max)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
-    print(f"The optimized phase time is: {param['time'][0, 0]}, good job Lagrange!")
+    print(f"The optimized phase time is: {param['time'][0, 0]}")
 
     result = ShowResult(ocp, sol)
     result.animate()
