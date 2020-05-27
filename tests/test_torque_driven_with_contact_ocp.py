@@ -81,7 +81,7 @@ def test_maximize_predicted_height_CoM(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_maximize_predicted_height_CoM(ode_solver):
+def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     ocp = maximize_predicted_height_CoM.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,

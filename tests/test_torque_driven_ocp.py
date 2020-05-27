@@ -136,7 +136,7 @@ def test_align_markers_changing_constraints():
     TestUtils.save_and_load(sol, ocp, True)
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_align_markers(ode_solver):
+def test_align_markers_with_actuators(ode_solver):
     ocp = align_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
