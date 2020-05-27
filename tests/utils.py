@@ -17,8 +17,9 @@ from biorbd_optim import (
 class TestUtils:
     @staticmethod
     def save_and_load(sol, ocp, test_solve_of_loaded=False):
-        ocp.save(sol, "test.bo")
-        ocp_load, sol_load = OptimalControlProgram.load("test.bo")
+        file_path = "test.bo"
+        ocp.save(sol, file_path)
+        ocp_load, sol_load = OptimalControlProgram.load(file_path)
 
         TestUtils.deep_assert(sol, sol_load)
         TestUtils.deep_assert(sol_load, sol)
@@ -29,7 +30,7 @@ class TestUtils:
 
         TestUtils.deep_assert(ocp_load, ocp)
         TestUtils.deep_assert(ocp, ocp_load)
-        os.remove("test.bo")
+        os.remove(file_path)
 
     @staticmethod
     def deep_assert(first_elem, second_elem):
