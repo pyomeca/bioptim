@@ -14,15 +14,16 @@ from biorbd_optim import (
 )
 from .utils import TestUtils
 
-# Load pendulum
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location("pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py")
-pendulum = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(pendulum)
-
 
 @pytest.mark.parametrize("nb_threads", [1, 2])
 def test_pendulum(nb_threads):
+    # Load pendulum
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location("pendulum",
+                                                  str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py")
+    pendulum = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum)
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
@@ -61,16 +62,15 @@ def test_pendulum(nb_threads):
     TestUtils.save_and_load(sol, ocp, True)
 
 
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "custom_constraint", str(PROJECT_FOLDER) + "/examples/getting_started/custom_constraint.py"
-)
-custom_constraint = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(custom_constraint)
-
-
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_custom_constraint_align_markers(ode_solver):
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "custom_constraint", str(PROJECT_FOLDER) + "/examples/getting_started/custom_constraint.py"
+    )
+    custom_constraint = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(custom_constraint)
+
     ocp = custom_constraint.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver
     )
@@ -101,17 +101,16 @@ def test_custom_constraint_align_markers(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
 
 
-#  Load initial_guess
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/simple_ocp.py"
-)
-initial_guess = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(initial_guess)
-
-
 @pytest.mark.parametrize("interpolation_type", InterpolationType)
 def test_initial_guesses(interpolation_type):
+    #  Load initial_guess
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/simple_ocp.py"
+    )
+    initial_guess = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(initial_guess)
+    
     np.random.seed(42)
     ocp = initial_guess.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
