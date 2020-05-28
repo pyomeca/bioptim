@@ -21,12 +21,13 @@ pendulum = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pendulum)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_pendulum(ode_solver):
+@pytest.mark.parametrize("nb_threads", [1, 2])
+def test_pendulum(nb_threads):
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         number_shooting_points=10,
+        nb_threads=nb_threads,
     )
     sol = ocp.solve()
 
@@ -53,8 +54,8 @@ def test_pendulum(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((9.55000247, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-21.18945819, 0)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((17.4928172, 0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-24.2842703, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)

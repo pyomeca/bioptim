@@ -75,7 +75,7 @@ def test_muscle_driven_ocp():
     TestUtils.save_and_load(sol, ocp, False)
 
 
-def test_muscle_with_contact_driven_ocp():
+def test_muscle_activations_with_contact_driven_ocp():
     ocp = static_arm_with_contact.prepare_ocp(
         str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26_with_contact.bioMod",
         final_time=2,

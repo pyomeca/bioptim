@@ -49,6 +49,7 @@ def test_maximize_predicted_height_CoM(ode_solver):
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         number_shooting_points=20,
+        use_actuators=False,
     )
     sol = ocp.solve()
 
@@ -75,6 +76,46 @@ def test_maximize_predicted_height_CoM(ode_solver):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-22.1218282)))
     np.testing.assert_almost_equal(tau[:, -1], np.array(0.2653957))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
+def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
+    ocp = maximize_predicted_height_CoM.prepare_ocp(
+        model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
+        phase_time=0.5,
+        number_shooting_points=20,
+        use_actuators=True,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 0.21850679397314332)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (160, 1))
+    np.testing.assert_almost_equal(g, np.zeros((160, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.2393758, 0.0612086, -0.0006739, 0.0006739)))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
+    np.testing.assert_almost_equal(
+        qdot[:, -1], np.array((-4.8768219e-01, 3.2867302e-04, 9.7536459e-01, -9.7536459e-01))
+    )
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.550905)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array(-0.0050623))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
