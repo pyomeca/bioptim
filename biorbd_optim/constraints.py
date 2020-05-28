@@ -92,6 +92,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     **parameters
                 )
 
+        @staticmethod
+        def time_constraint(constraint_type, ocp, nlp, t, x, u, **parameters):
+            pass
+
+    @staticmethod
+    def add_or_replace(ocp, nlp, penalty, penalty_idx):
+        if penalty["type"] == Constraint.TIME_CONSTRAINT:
+            penalty["instant"] = Instant.END
+        PenaltyFunctionAbstract.add_or_replace(ocp, nlp, penalty, penalty_idx)
+
     @staticmethod
     def continuity_constraint(ocp):
         """
@@ -201,6 +211,7 @@ class Constraint(Enum):
     CUSTOM = (PenaltyType.CUSTOM,)
     CONTACT_FORCE_INEQUALITY = (ConstraintFunction.Functions.contact_force_inequality,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
+    TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
 
     @staticmethod
     def _get_type():
