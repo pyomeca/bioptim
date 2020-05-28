@@ -1,7 +1,5 @@
 import biorbd
 
-from IPython import embed
-
 from biorbd_optim import (
     Instant,
     Axe,
