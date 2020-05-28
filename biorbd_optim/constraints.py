@@ -6,6 +6,8 @@ from casadi import vertcat, sum1, horzcat
 from .enums import Instant, InterpolationType
 from .penalty import PenaltyType, PenaltyFunctionAbstract
 from .path_conditions import Bounds
+from .phase_transition import PhaseTransitionFunctions
+
 
 # TODO: Convert the constraint in CasADi function?
 
@@ -131,7 +133,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if ocp.nlp[i]["nx"] != ocp.nlp[i + 1]["nx"]:
                 raise RuntimeError("Phase constraints without same nx is not supported yet")
             penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
-            val = ocp.phase_transitions[i](ocp, i)
+            phase_transition_function = ocp.phase_transitions[i]["type"]
+            val = phase_transition_function(ocp, i)
             ConstraintFunction._add_to_penalty(ocp, None, val, penalty_idx)
 
         if ocp.is_cyclic_constraint:
