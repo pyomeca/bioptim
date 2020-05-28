@@ -10,17 +10,17 @@ import numpy as np
 from biorbd_optim import Data, OdeSolver, Constraint, Instant
 from .utils import TestUtils
 
-# Load align_markers
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
-)
-align_markers = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(align_markers)
-
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
 def test_align_markers(ode_solver):
+    # Load align_markers
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
+    )
+    align_markers = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(align_markers)
+
     ocp = align_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
@@ -59,6 +59,14 @@ def test_align_markers(ode_solver):
 
 
 def test_align_markers_changing_constraints():
+    # Load align_markers
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
+    )
+    align_markers = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(align_markers)
+
     ocp = align_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
@@ -138,6 +146,14 @@ def test_align_markers_changing_constraints():
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_align_markers_with_actuators(ode_solver):
+    # Load align_markers
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
+    )
+    align_markers = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(align_markers)
+
     ocp = align_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
@@ -175,17 +191,16 @@ def test_align_markers_with_actuators(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-# Load multiphase_align_markers
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "multiphase_align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/multiphase_align_markers.py"
-)
-multiphase_align_markers = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(multiphase_align_markers)
-
-
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
 def test_multiphase_align_markers(ode_solver):
+    # Load multiphase_align_markers
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "multiphase_align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/multiphase_align_markers.py"
+    )
+    multiphase_align_markers = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(multiphase_align_markers)
+
     ocp = multiphase_align_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod", ode_solver=ode_solver
     )
@@ -233,17 +248,16 @@ def test_multiphase_align_markers(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-# Load external_forces
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "external_forces", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/external_forces.py"
-)
-external_forces = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(external_forces)
-
-
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_external_forces(ode_solver):
+    # Load external_forces
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "external_forces", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/external_forces.py"
+    )
+    external_forces = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(external_forces)
+
     ocp = external_forces.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube_with_forces.bioMod",
         ode_solver=ode_solver,
