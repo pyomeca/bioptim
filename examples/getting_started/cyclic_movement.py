@@ -37,12 +37,8 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, loop_from
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.min[1, [0, -1]] = 0
-    X_bounds.max[1, [0, -1]] = 0
-    X_bounds.min[3:6, [0, -1]] = 0
-    X_bounds.max[3:6, [0, -1]] = 0
-    X_bounds.min[2, -1] = 1.57
-    X_bounds.max[2, -1] = 1.57
+    X_bounds.min[2:6, -1] = [1.57, 0, 0, 0]
+    X_bounds.max[2:6, -1] = [1.57, 0, 0, 0]
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
@@ -75,10 +71,10 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, loop_from
 if __name__ == "__main__":
     # First node is free but mid and last are constrained to be exactly at a certain point.
     # The cyclic penalty ensures that the first node and the last node are the same.
-    ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, loop_from_constraint=False)
+    ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, loop_from_constraint=True)
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=False)
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)

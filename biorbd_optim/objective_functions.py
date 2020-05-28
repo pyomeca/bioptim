@@ -89,7 +89,6 @@ class ObjectiveFunction:
             raise RuntimeError("Objective function Type must be either a Lagrange or Mayer type")
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective, penalty_idx)
 
-
     @staticmethod
     def cyclic(ocp, weight=1):
 
