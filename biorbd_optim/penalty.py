@@ -86,7 +86,6 @@ class PenaltyFunctionAbstract:
             )
 
             for m in markers_idx:
-                print(m)
                 for i, v in enumerate(x):
                     val = (
                         nlp["model"].markerVelocity(v[:n_q], v[n_q : n_q + n_qdot], m).to_mx()
