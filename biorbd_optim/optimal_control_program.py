@@ -487,7 +487,7 @@ class OptimalControlProgram:
             options_common["iteration_callback"] = OnlineCallback(self)
 
         if solver == "ipopt":
-            options_default = {
+            options = {
                 "ipopt.tol": 1e-6,
                 "ipopt.max_iter": 1000,
                 "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
@@ -495,10 +495,11 @@ class OptimalControlProgram:
                 "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
             }
             for key in options_ipopt:
+                ipopt_key = key
                 if key[:6] != "ipopt.":
-                    options_ipopt[f"ipopt.{key}"] = options_ipopt[key]
-                    del options_ipopt[key]
-            opts = {**options_default, **options_common, **options_ipopt}
+                    ipopt_key = "ipopt." + key
+                options[ipopt_key] = options_ipopt[key]
+            opts = {**options, **options_common}
         else:
             raise RuntimeError("Available solvers are: 'ipopt'")
         solver = casadi.nlpsol("nlpsol", solver, nlp, opts)

@@ -94,7 +94,7 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_torque_muscle_driven_with_contact(states, controls, nlp):
+    def forward_dynamics_muscle_activations_and_torque_driven_with_contact(states, controls, nlp):
         q, qdot, residual_tau = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
@@ -113,7 +113,7 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forces_from_forward_dynamics_torque_muscle_driven_with_contact(states, controls, nlp):
+    def forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(states, controls, nlp):
         q, qdot, residual_tau = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
