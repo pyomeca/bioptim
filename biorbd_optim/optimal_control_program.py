@@ -340,7 +340,7 @@ class OptimalControlProgram:
                     or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
                     or pen_fun["type"] == Constraint.TIME_CONSTRAINT
                 ):
-                    if has_penalty:
+                    if has_penalty and i == 0:
                         raise RuntimeError("Time constraint/objective cannot declare more than once")
                     has_penalty = True
 
