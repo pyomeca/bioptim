@@ -128,11 +128,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         # Dynamics must be continuous between phases
         for i in range(len(ocp.nlp) - 1):
-            penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
             if ocp.nlp[i]["nx"] != ocp.nlp[i + 1]["nx"]:
                 raise RuntimeError("Phase constraints without same nx is not supported yet")
-
-            val = ocp.nlp[i]["X"][-1] - ocp.nlp[i + 1]["X"][0]
+            penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
+            val = ocp.phase_transitions[i](ocp, i)
             ConstraintFunction._add_to_penalty(ocp, None, val, penalty_idx)
 
         if ocp.is_cyclic_constraint:
