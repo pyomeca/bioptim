@@ -36,8 +36,10 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, ode_solve
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.min[1:6, [0, -1]] = 0
-    X_bounds.max[1:6, [0, -1]] = 0
+    X_bounds.min[1, [0, -1]] = 0
+    X_bounds.max[1, [0, -1]] = 0
+    X_bounds.min[3:6, [0, -1]] = 0
+    X_bounds.max[3:6, [0, -1]] = 0
     X_bounds.min[2, -1] = 1.57
     X_bounds.max[2, -1] = 1.57
 

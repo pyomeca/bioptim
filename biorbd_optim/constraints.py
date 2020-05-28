@@ -141,7 +141,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise RuntimeError("Cyclic constraint without same nx is not supported yet")
 
             val = ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]
-            ConstraintFunction._add_to_penalty(ocp, None, val)
+            penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
+            ConstraintFunction._add_to_penalty(ocp, None, val, penalty_idx)
 
     @staticmethod
     def _add_to_penalty(ocp, nlp, g, penalty_idx, min_bound=0, max_bound=0, **extra_param):
