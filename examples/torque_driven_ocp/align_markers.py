@@ -14,19 +14,25 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, use_actuators=False, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    torque_min, torque_max, torque_init = -100, 100, 0
+    if use_actuators:
+        torque_min, torque_max, torque_init = -1, 1, 0
+    else:
+        torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    if use_actuators:
+        problem_type = ProblemType.torque_activations_driven
+    else:
+        problem_type = ProblemType.torque_driven
 
     # Constraints
     constraints = (
@@ -68,7 +74,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, ode_solve
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2)
+    ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, use_actuators=False)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

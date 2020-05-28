@@ -38,7 +38,7 @@ def prepare_ocp(
     )
 
     # Dynamics
-    problem_type = ProblemType.muscles_and_torque_driven_with_contact
+    problem_type = ProblemType.muscles_activations_and_torque_driven_with_contact
 
     # Constraints
     constraints = ()

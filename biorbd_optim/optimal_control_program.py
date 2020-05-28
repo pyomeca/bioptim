@@ -10,7 +10,7 @@ from casadi import MX, vertcat, sum1
 from .enums import OdeSolver
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
-from .constraints import ConstraintFunction
+from .constraints import ConstraintFunction, Constraint
 from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback, CustomPlot
 from .integrator import RK4
@@ -114,7 +114,9 @@ class OptimalControlProgram:
             if nlp["ns"] < 1:
                 raise RuntimeError("Number of shooting points must be at least 1")
         self.initial_phase_time = phase_time
-        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(phase_time, objective_functions)
+        phase_time, initial_time_guess, time_min, time_max = self.__init_phase_time(
+            phase_time, objective_functions, constraints
+        )
         self.__add_to_nlp("tf", phase_time, False)
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         self.__add_to_nlp(
@@ -315,22 +317,38 @@ class OptimalControlProgram:
         self.V_bounds.concatenate(V_bounds)
         self.V_init.concatenate(V_init)
 
-    def __init_phase_time(self, phase_time, objective_functions):
+    def __init_phase_time(self, phase_time, objective_functions, constraints):
         if isinstance(phase_time, (int, float)):
             phase_time = [phase_time]
         phase_time = list(phase_time)
         initial_time_guess, time_min, time_max = [], [], []
-        for i, objective_functions_phase in enumerate(objective_functions):
-            for obj_fun in objective_functions_phase:
+        has_penalty = self.__define_parameters_phase_time(
+            objective_functions, initial_time_guess, phase_time, time_min, time_max
+        )
+        self.__define_parameters_phase_time(
+            constraints, initial_time_guess, phase_time, time_min, time_max, has_penalty=has_penalty
+        )
+        return phase_time, initial_time_guess, time_min, time_max
+
+    def __define_parameters_phase_time(
+        self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=False
+    ):
+        for i, penalty_functions_phase in enumerate(penalty_functions):
+            for pen_fun in penalty_functions_phase:
                 if (
-                    obj_fun["type"] == Objective.Mayer.MINIMIZE_TIME
-                    or obj_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
+                    pen_fun["type"] == Objective.Mayer.MINIMIZE_TIME
+                    or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
+                    or pen_fun["type"] == Constraint.TIME_CONSTRAINT
                 ):
+                    if has_penalty:
+                        raise RuntimeError("Time constraint/objective cannot declare more than once")
+                    has_penalty = True
+
                     initial_time_guess.append(phase_time[i])
                     phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
-                    time_min.append(obj_fun["minimum"] if "minimum" in obj_fun else 0)
-                    time_max.append(obj_fun["maximum"] if "maximum" in obj_fun else inf)
-        return phase_time, initial_time_guess, time_min, time_max
+                    time_min.append(pen_fun["minimum"] if "minimum" in pen_fun else 0)
+                    time_max.append(pen_fun["maximum"] if "maximum" in pen_fun else inf)
+        return has_penalty
 
     def __define_variable_time(self, initial_guess, minimum, maximum):
         """
@@ -339,7 +357,7 @@ class OptimalControlProgram:
         :param nlp: The nlp problem
         :param initial_guess: The initial values taken from the phase_time vector
         :param minimum: variable time minimums as set by user (default: 0)
-        :param maximum: vairable time maximums as set by user (default: inf)
+        :param maximum: variable time maximums as set by user (default: inf)
         """
         P = []
         for nlp in self.nlp:
@@ -469,7 +487,7 @@ class OptimalControlProgram:
             options_common["iteration_callback"] = OnlineCallback(self)
 
         if solver == "ipopt":
-            options_default = {
+            options = {
                 "ipopt.tol": 1e-6,
                 "ipopt.max_iter": 1000,
                 "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
@@ -477,10 +495,11 @@ class OptimalControlProgram:
                 "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
             }
             for key in options_ipopt:
+                ipopt_key = key
                 if key[:6] != "ipopt.":
-                    options_ipopt[f"ipopt.{key}"] = options_ipopt[key]
-                    del options_ipopt[key]
-            opts = {**options_default, **options_common, **options_ipopt}
+                    ipopt_key = "ipopt." + key
+                options[ipopt_key] = options_ipopt[key]
+            opts = {**options, **options_common}
         else:
             raise RuntimeError("Available solvers are: 'ipopt'")
         solver = casadi.nlpsol("nlpsol", solver, nlp, opts)
