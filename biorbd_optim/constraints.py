@@ -92,8 +92,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     **parameters
                 )
 
+        @staticmethod
+        def time_constraint(constraint_type, ocp, nlp, t, x, u, **parameters):
+            pass
+
     @staticmethod
-    def continuity_constraint(ocp):
+    def add_or_replace(ocp, nlp, penalty, penalty_idx):
+        if penalty["type"] == Constraint.TIME_CONSTRAINT:
+            penalty["instant"] = Instant.END
+        PenaltyFunctionAbstract.add_or_replace(ocp, nlp, penalty, penalty_idx)
+
+    @staticmethod
+    def continuity(ocp):
         """
         Adds continuity constraints between each nodes and its neighbours. It is possible to add a continuity
         constraint between first and last nodes to have a loop (nlp.is_cyclic_constraint).
@@ -130,8 +140,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
                 raise RuntimeError("Cyclic constraint without same nx is not supported yet")
 
-            val = ocp.nlp[-1]["X"][-1][1:] - ocp.nlp[0]["X"][0][1:]
-            ConstraintFunction._add_to_penalty(ocp, None, val)
+            val = ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]
+            penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
+            ConstraintFunction._add_to_penalty(ocp, None, val, penalty_idx)
 
     @staticmethod
     def _add_to_penalty(ocp, nlp, g, penalty_idx, min_bound=0, max_bound=0, **extra_param):
@@ -201,6 +212,7 @@ class Constraint(Enum):
     CUSTOM = (PenaltyType.CUSTOM,)
     CONTACT_FORCE_INEQUALITY = (ConstraintFunction.Functions.contact_force_inequality,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
+    TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
 
     @staticmethod
     def _get_type():

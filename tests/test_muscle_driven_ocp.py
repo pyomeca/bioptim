@@ -9,32 +9,16 @@ import numpy as np
 from biorbd_optim import Data
 from .utils import TestUtils
 
-# Load static_arm
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "static_arm", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/static_arm.py",
-)
-static_arm = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(static_arm)
-
-# Load static_arm_with_contact
-spec = importlib.util.spec_from_file_location(
-    "static_arm_with_contact", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/static_arm_with_contact.py",
-)
-static_arm_with_contact = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(static_arm_with_contact)
-
-# Load contact_forces_inequality_constraint_muscle_excitations
-spec = importlib.util.spec_from_file_location(
-    "contact_forces_inequality_constraint_muscle_excitations",
-    str(PROJECT_FOLDER)
-    + "/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle_excitations.py",
-)
-contact_forces_inequality_constraint_muscle_excitations = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(contact_forces_inequality_constraint_muscle_excitations)
-
 
 def test_muscle_driven_ocp():
+    # Load static_arm
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "static_arm", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/static_arm.py",
+    )
+    static_arm = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(static_arm)
+
     ocp = static_arm.prepare_ocp(
         str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod", final_time=2, number_shooting_points=10
     )
@@ -75,7 +59,15 @@ def test_muscle_driven_ocp():
     TestUtils.save_and_load(sol, ocp, False)
 
 
-def test_muscle_with_contact_driven_ocp():
+def test_muscle_activations_with_contact_driven_ocp():
+    # Load static_arm_with_contact
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "static_arm_with_contact", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/static_arm_with_contact.py",
+    )
+    static_arm_with_contact = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(static_arm_with_contact)
+
     ocp = static_arm_with_contact.prepare_ocp(
         str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26_with_contact.bioMod",
         final_time=2,
@@ -119,6 +111,16 @@ def test_muscle_with_contact_driven_ocp():
 
 
 def test_muscle_excitation_with_contact_driven_ocp():
+    # Load contact_forces_inequality_constraint_muscle_excitations
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "contact_forces_inequality_constraint_muscle_excitations",
+        str(PROJECT_FOLDER)
+        + "/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle_excitations.py",
+    )
+    contact_forces_inequality_constraint_muscle_excitations = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(contact_forces_inequality_constraint_muscle_excitations)
+
     boundary = 50
     ocp = contact_forces_inequality_constraint_muscle_excitations.prepare_ocp(
         str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod",

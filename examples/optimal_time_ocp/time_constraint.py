@@ -1,18 +1,19 @@
 import biorbd
-import pickle
-from time import time
 
 from biorbd_optim import (
     OptimalControlProgram,
     ProblemType,
+    Objective,
+    Constraint,
     Bounds,
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
+    Data,
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_threads):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min, time_max):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -21,20 +22,20 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = ()
+    objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE}
 
     # Dynamics
     problem_type = ProblemType.torque_driven
 
     # Constraints
-    constraints = ()
+    constraints = ({"type": Constraint.TIME_CONSTRAINT, "minimum": time_min, "maximum": time_max,},)
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
     X_bounds.min[:, [0, -1]] = 0
     X_bounds.max[:, [0, -1]] = 0
-    X_bounds.min[1, -1] = 3.14
-    X_bounds.max[1, -1] = 3.14
+    X_bounds.min[n_q - 1, -1] = 3.14
+    X_bounds.max[n_q - 1, -1] = 3.14
 
     # Initial guess
     X_init = InitialConditions([0] * (n_q + n_qdot))
@@ -59,33 +60,26 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
         U_bounds,
         objective_functions,
         constraints,
-        nb_threads=nb_threads,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100, nb_threads=4)
+    time_min = 0.6
+    time_max = 1
+    ocp = prepare_ocp(
+        biorbd_model_path="pendulum.bioMod",
+        final_time=2,
+        number_shooting_points=50,
+        time_min=time_min,
+        time_max=time_max,
+    )
 
     # --- Solve the program --- #
-    tic = time()
-    sol = ocp.solve(show_online_optim=False)
-    toc = time() - tic
-    print(f"Time to solve : {toc}sec")
-
-    # --- Save result of get_data --- #
-    ocp.save_get_data(sol, "pendulum.bob")  # you don't have to specify the extension ".bob"
-
-    # --- Load result of get_data --- #
-    with open("pendulum.bob", "rb") as file:
-        data = pickle.load(file)["data"]
-
-    # --- Save the optimal control program and the solution --- #
-    ocp.save(sol, "pendulum.bo")  # you don't have to specify the extension ".bo"
-
-    # --- Load the optimal control program and the solution --- #
-    ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
-    result = ShowResult(ocp_load, sol_load)
-    result.graphs()
+    param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
+    print(f"The optimized phase time is: {param['time'][0, 0]}")
+
+    result = ShowResult(ocp, sol)
     result.animate()
