@@ -341,7 +341,7 @@ class OptimalControlProgram:
                     or pen_fun["type"] == Constraint.TIME_CONSTRAINT
                 ):
                     if has_penalty:
-                        raise RuntimeError("Time cannot have twice objective or constraint functions")
+                        raise RuntimeError("Time constraint/objective cannot declare more than once")
                     has_penalty = True
 
                     initial_time_guess.append(phase_time[i])
