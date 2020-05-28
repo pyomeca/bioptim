@@ -133,8 +133,12 @@ class ProblemType:
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
-        ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_muscle_activations_and_torque_driven_with_contact)
-        ProblemType.__configure_contact(nlp, Dynamics.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact)
+        ProblemType.__configure_forward_dyn_func(
+            nlp, Dynamics.forward_dynamics_muscle_activations_and_torque_driven_with_contact
+        )
+        ProblemType.__configure_contact(
+            nlp, Dynamics.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact
+        )
 
     @staticmethod
     def muscle_excitations_and_torque_driven_with_contact(nlp):
