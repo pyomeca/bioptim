@@ -66,6 +66,28 @@ class Dynamics:
         return cs.getForce().to_mx()
 
     @staticmethod
+    def forward_dynamics_torque_activations_driven(states, controls, nlp):
+        q, qdot, torque_act = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
+
+        tau = nlp["model"].torque(torque_act, q, qdot).to_mx()
+        qddot = nlp["model"].ForwardDynamics(q, qdot, tau).to_mx()
+
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
+        return vertcat(qdot_reduced, qddot_reduced)
+
+    @staticmethod
+    def forward_dynamics_torque_activations_driven_with_contact(states, controls, nlp):
+        q, qdot, torque_act = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
+
+        tau = nlp["model"].torque(torque_act, q, qdot).to_mx()
+        qddot = nlp["model"].ForwardDynamicsConstraintsDirect(q, qdot, tau).to_mx()
+
+        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
+        return vertcat(qdot_reduced, qddot_reduced)
+
+    @staticmethod
     def forward_dynamics_torque_muscle_driven(states, controls, nlp):
         """
         Forward dynamics (q, qdot, qddot -> tau) without external forces driven by joint torques and muscles (controls).
@@ -92,7 +114,7 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_torque_muscle_driven_with_contact(states, controls, nlp):
+    def forward_dynamics_muscle_activations_and_torque_driven_with_contact(states, controls, nlp):
         """
         Forward dynamics (q, qdot, qddot -> tau) with contact force driven by joint torques and muscles (controls).
         :param states: Sates. (MX.sym from CasADi)
@@ -118,7 +140,7 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forces_from_forward_dynamics_torque_muscle_driven_with_contact(states, controls, nlp):
+    def forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(states, controls, nlp):
         """
         Returns contact forces computed from forward dynamics with contact force
         (forward_dynamics_torque_muscle_driven_with_contact)

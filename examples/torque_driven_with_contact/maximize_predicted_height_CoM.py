@@ -13,12 +13,16 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points):
+def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
 
-    torque_min, torque_max, torque_init = -500, 500, 0
+    if use_actuators:
+        torque_min, torque_max, torque_init = -1, 1, 0
+    else:
+        torque_min, torque_max, torque_init = -500, 500, 0
+
     tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
 
     # Add objective functions
@@ -28,7 +32,10 @@ def prepare_ocp(model_path, phase_time, number_shooting_points):
     )
 
     # Dynamics
-    problem_type = ProblemType.torque_driven_with_contact
+    if use_actuators:
+        problem_type = ProblemType.torque_activations_driven_with_contact
+    else:
+        problem_type = ProblemType.torque_driven_with_contact
 
     # Constraints
     constraints = ()
@@ -71,7 +78,7 @@ if __name__ == "__main__":
     model_path = "2segments_4dof_2contacts.bioMod"
     t = 0.5
     ns = 20
-    ocp = prepare_ocp(model_path=model_path, phase_time=t, number_shooting_points=ns)
+    ocp = prepare_ocp(model_path=model_path, phase_time=t, number_shooting_points=ns, use_actuators=False)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

@@ -58,3 +58,57 @@ endsegment
         parent ground
         position 1 0 2
     endmarker
+
+// Markers on ground
+    marker m1
+        parent ground
+        position 1 0 0
+    endmarker
+
+    marker m2
+        parent ground
+        position 2 0 0
+    endmarker
+
+    marker m3
+        parent ground
+        position 1 0 2
+    endmarker
+
+// Actuators Seg1
+        actuator    Seg1
+            type    Constant
+            dof    TransX
+            direction    positive
+            Tmax    10.000000
+        endactuator
+	actuator    Seg1
+            type    Constant
+            dof    TransX
+            direction    negative
+            Tmax    5.000000
+        endactuator
+        actuator    Seg1
+            type    Constant
+            dof    TransZ
+            direction    positive
+            Tmax    10.000000
+        endactuator
+	actuator    Seg1
+            type    Constant
+            dof    TransZ
+            direction    negative
+            Tmax    5.000000
+        endactuator
+        actuator    Seg1
+            type    Constant
+            dof    RotY
+            direction    positive
+            Tmax    10.000000
+        endactuator
+	actuator    Seg1
+            type    Constant
+            dof    RotY
+            direction    negative
+            Tmax    5.000000
+        endactuator
