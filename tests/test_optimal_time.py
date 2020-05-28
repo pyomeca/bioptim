@@ -11,17 +11,16 @@ from biorbd_optim import Data, OdeSolver
 from .utils import TestUtils
 
 
-# Load pendulum_min_time_Mayer
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py",
-)
-pendulum_min_time_Mayer = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(pendulum_min_time_Mayer)
-
-
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_pendulum_min_time_mayer(ode_solver):
+    # Load pendulum_min_time_Mayer
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py",
+    )
+    pendulum_min_time_Mayer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum_min_time_Mayer)
+
     ocp = pendulum_min_time_Mayer.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
@@ -63,17 +62,16 @@ def test_pendulum_min_time_mayer(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
 
-# Load pendulum_min_time_Lagrange
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "pendulum_min_time_Lagrange", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py",
-)
-pendulum_min_time_Lagrange = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(pendulum_min_time_Lagrange)
-
-
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_pendulum_min_time_lagrange(ode_solver):
+    # Load pendulum_min_time_Lagrange
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "pendulum_min_time_Lagrange", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py",
+    )
+    pendulum_min_time_Lagrange = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum_min_time_Lagrange)
+
     ocp = pendulum_min_time_Lagrange.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
@@ -115,17 +113,16 @@ def test_pendulum_min_time_lagrange(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
 
-# Load time_constraint
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/time_constraint.py",
-)
-time_constraint = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(time_constraint)
-
-
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_time_constraint(ode_solver):
+    # Load time_constraint
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/time_constraint.py",
+    )
+    time_constraint = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(time_constraint)
+
     ocp = time_constraint.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,

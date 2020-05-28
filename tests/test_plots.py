@@ -15,16 +15,15 @@ import biorbd
 from biorbd_optim import ShowResult, OptimalControlProgram
 
 
-# Load graphs_one_phase
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
-)
-graphs_one_phase = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(graphs_one_phase)
-
-
 def test_plot_graphs_one_phase():
+    # Load graphs_one_phase
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
+    )
+    graphs_one_phase = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(graphs_one_phase)
+
     ocp = graphs_one_phase.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
@@ -36,16 +35,15 @@ def test_plot_graphs_one_phase():
     plt.graphs(automatically_organize=False)
 
 
-# Load graphs_one_phase
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "align_markers", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py"
-)
-merged_graphs = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(merged_graphs)
-
-
 def test_plot_merged_graphs():
+    # Load graphs_one_phase
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "align_markers", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py"
+    )
+    merged_graphs = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(merged_graphs)
+
     # Define the problem
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
@@ -73,16 +71,15 @@ def test_plot_merged_graphs():
     plt.graphs(automatically_organize=False)
 
 
-# Load graphs_one_phase
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/multiphase_align_markers.py"
-)
-graphs_multi_phases = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(graphs_multi_phases)
-
-
 def test_plot_graphs_multi_phases():
+    # Load graphs_one_phase
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/multiphase_align_markers.py"
+    )
+    graphs_multi_phases = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(graphs_multi_phases)
+
     ocp = graphs_multi_phases.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod"
     )
@@ -93,6 +90,14 @@ def test_plot_graphs_multi_phases():
 
 
 def test_add_new_plot():
+    # Load graphs_one_phase
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
+    )
+    graphs_one_phase = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(graphs_one_phase)
+
     ocp = graphs_one_phase.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=20,
