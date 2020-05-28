@@ -19,8 +19,9 @@ from .utils import TestUtils
 def test_pendulum(nb_threads):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location("pendulum",
-                                                  str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py")
+    spec = importlib.util.spec_from_file_location(
+        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
+    )
     pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum)
 
@@ -110,7 +111,7 @@ def test_initial_guesses(interpolation_type):
     )
     initial_guess = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(initial_guess)
-    
+
     np.random.seed(42)
     ocp = initial_guess.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
