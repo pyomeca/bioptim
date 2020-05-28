@@ -103,7 +103,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, penalty, penalty_idx)
 
     @staticmethod
-    def continuity_constraint(ocp):
+    def continuity(ocp):
         """
         Adds continuity constraints between each nodes and its neighbours. It is possible to add a continuity
         constraint between first and last nodes to have a loop (nlp.is_cyclic_constraint).
