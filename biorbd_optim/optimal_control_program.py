@@ -497,32 +497,31 @@ class OptimalControlProgram:
         # Solve the problem
         return solver.call(arg)
 
-    def save(self, sol, file_path, to_numpy=(), **parameters):
+    def save(self, sol, file_path):
+        _, ext = os.path.splitext(file_path)
+        if ext == "":
+            file_path = file_path + ".bo"
+        elif ext != ".bo":
+            raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
+
+        OptimalControlProgram._save_with_pickle(
+            {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file_path
+        )
+
+    def save_get_data(self, sol, file_path, **parameters):
+        _, ext = os.path.splitext(file_path)
+        if ext == "":
+            file_path = file_path + ".bob"
+        elif ext != ".bob":
+            raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
+
+        OptimalControlProgram._save_with_pickle({"data": Data.get_data(self, sol["x"], **parameters)}, file_path)
+
+    @staticmethod
+    def _save_with_pickle(dict, file_path):
         dir, _ = os.path.split(file_path)
         if dir != "" and not os.path.isdir(dir):
             os.makedirs(dir)
-
-        _, ext = os.path.splitext(file_path)
-
-        if to_numpy == ():
-            if ext == ".bob":
-                to_numpy = True
-            elif ext == ".bo":
-                to_numpy = False
-            else:
-                raise RuntimeError(f"Invalid extension, it must be (.bo) or (.bob) and not incompatible with to_numpy.")
-
-        elif (ext == ".bo" and to_numpy == True) or (ext == ".bob" and to_numpy == False):
-            correct_ext = ".bob" if to_numpy else ".bo"
-            raise RuntimeError(f"Incorrect extension({ext}), it should be ({correct_ext}) if to_numpy={to_numpy}.")
-
-        if ext == "":
-            file_path = file_path + (".bob" if to_numpy else ".bo")
-
-        if to_numpy:
-            dict = {"data": Data.get_data(self, sol["x"], **parameters)}
-        else:
-            dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
 
         with open(file_path, "wb") as file:
             pickle.dump(dict, file)
