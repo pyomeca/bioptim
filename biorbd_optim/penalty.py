@@ -42,8 +42,9 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_markers_displacement(penalty_type, ocp, nlp, t, x, u, coordinates_system_idx=-1, markers_idx=(),
-                                          **extra_param):
+        def minimize_markers_displacement(
+            penalty_type, ocp, nlp, t, x, u, coordinates_system_idx=-1, markers_idx=(), **extra_param
+        ):
             n_q = nlp["nbQ"]
             nb_rts = nlp["model"].nbSegment()
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
@@ -72,7 +73,6 @@ class PenaltyFunctionAbstract:
                     nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx], 1
                 ) - inv_jcs_0 @ casadi.vertcat(nlp["model"].markers(x[i][:n_q])[:, markers_idx], 1)
                 penalty_type._add_to_penalty(ocp, nlp, val[:3], **extra_param)
-
 
         @staticmethod
         def minimize_markers_velocity(penalty_type, ocp, nlp, t, x, u, markers_idx=(), data_to_track=(), **extra_param):

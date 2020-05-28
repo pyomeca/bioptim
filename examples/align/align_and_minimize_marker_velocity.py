@@ -17,8 +17,14 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver, marker_velocity_or_displacement,
-                marker_in_first_coordinates_system):
+def prepare_ocp(
+    biorbd_model_path,
+    final_time,
+    number_shooting_points,
+    ode_solver,
+    marker_velocity_or_displacement,
+    marker_in_first_coordinates_system,
+):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -35,24 +41,26 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
     if marker_velocity_or_displacement == "disp":
         objective_functions = (
-            {"type": Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, "coordinates_system_idx": coordinates_system_idx,
-             "markers_idx": 6, "weight": 1000},
-            {"type": Objective.Lagrange.MINIMIZE_STATE, "states_idx": 6,
-             "weight": -1},
-            {"type": Objective.Lagrange.MINIMIZE_STATE, "states_idx": 7,
-             "weight": -1},
+            {
+                "type": Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT,
+                "coordinates_system_idx": coordinates_system_idx,
+                "markers_idx": 6,
+                "weight": 1000,
+            },
+            {"type": Objective.Lagrange.MINIMIZE_STATE, "states_idx": 6, "weight": -1},
+            {"type": Objective.Lagrange.MINIMIZE_STATE, "states_idx": 7, "weight": -1},
         )
     elif marker_velocity_or_displacement == "velo":
         objective_functions = (
             {"type": Objective.Lagrange.MINIMIZE_MARKERS_VELOCITY, "markers_idx": 6, "weight": 1000},
-            {"type": Objective.Lagrange.MINIMIZE_STATE, "states_idx": 6,
-             "weight": -1},
-            {"type": Objective.Lagrange.MINIMIZE_STATE, "states_idx": 7,
-             "weight": -1},
+            {"type": Objective.Lagrange.MINIMIZE_STATE, "states_idx": 6, "weight": -1},
+            {"type": Objective.Lagrange.MINIMIZE_STATE, "states_idx": 7, "weight": -1},
         )
     else:
-        raise RuntimeError("Wrong choice of marker_velocity_or_displacement, actual value is "
-                           "{marker_velocity_or_displacement}, should be 'velo' or 'disp'.")
+        raise RuntimeError(
+            "Wrong choice of marker_velocity_or_displacement, actual value is "
+            "{marker_velocity_or_displacement}, should be 'velo' or 'disp'."
+        )
 
     # Dynamics
     problem_type = ProblemType.torque_driven
@@ -60,7 +68,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
 
-    for i in range(nq, 2*nq):
+    for i in range(nq, 2 * nq):
         X_bounds.min[i, :] = -10
         X_bounds.max[i, :] = 10
 
@@ -101,7 +109,7 @@ if __name__ == "__main__":
         number_shooting_points=30,
         final_time=2,
         ode_solver=OdeSolver.RK,
-        marker_velocity_or_displacement="disp", # "velo"
+        marker_velocity_or_displacement="disp",  # "velo"
         marker_in_first_coordinates_system=True,
     )
 
