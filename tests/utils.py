@@ -1,11 +1,13 @@
 import numpy as np
 import os
+import pickle
 
 from casadi import MX
 import biorbd
 
 from biorbd_optim import (
     OptimalControlProgram,
+    Data,
     Bounds,
     InitialConditions,
     BidirectionalMapping,
@@ -18,9 +20,7 @@ class TestUtils:
     @staticmethod
     def save_and_load(sol, ocp, test_solve_of_loaded=False):
         file_path = "test.bo"
-        file_path_bob = "test.bob"
         ocp.save(sol, file_path)
-        ocp.save_get_data(sol, file_path_bob, interpolate_nb_frames=-1, concatenate=True)
         ocp_load, sol_load = OptimalControlProgram.load(file_path)
 
         TestUtils.deep_assert(sol, sol_load)
@@ -33,6 +33,18 @@ class TestUtils:
         TestUtils.deep_assert(ocp_load, ocp)
         TestUtils.deep_assert(ocp, ocp_load)
         os.remove(file_path)
+
+        file_path_bob = "test.bob"
+        ocp.save_get_data(sol, file_path_bob, interpolate_nb_frames=-1, concatenate=True)
+        data = Data.get_data(ocp, sol, file_path_bob, interpolate_nb_frames=-1, concatenate=True)
+
+        with open(file_path_bob, "rb") as file:
+            data_load = pickle.load(file)["data"]
+
+        TestUtils.deep_assert(data, data_load)
+        TestUtils.deep_assert(data_load, data)
+        os.remove(file_path_bob)
+
 
     @staticmethod
     def deep_assert(first_elem, second_elem):
