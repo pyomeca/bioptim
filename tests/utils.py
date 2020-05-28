@@ -18,7 +18,9 @@ class TestUtils:
     @staticmethod
     def save_and_load(sol, ocp, test_solve_of_loaded=False):
         file_path = "test.bo"
+        file_path_bob = "test.bob"
         ocp.save(sol, file_path)
+        ocp.save_get_data(sol, file_path_bob, interpolate_nb_frames=-1, concatenate=True)
         ocp_load, sol_load = OptimalControlProgram.load(file_path)
 
         TestUtils.deep_assert(sol, sol_load)
