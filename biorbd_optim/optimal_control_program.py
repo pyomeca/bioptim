@@ -555,7 +555,10 @@ class OptimalControlProgram:
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
         dict = {"data": Data.get_data(self, sol["x"], **parameters)}
         if sol_iterations != None:
-            dict["sol_iterations"] = sol_iterations
+            get_data_sol_iterations = []
+            for iter in sol_iterations:
+                get_data_sol_iterations.append(Data.get_data(self, iter, **parameters))
+            dict["sol_iterations"] = get_data_sol_iterations
 
         OptimalControlProgram._save_with_pickle(dict, file_path)
 
