@@ -72,11 +72,9 @@ if __name__ == "__main__":
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
-
     # --- Access to all iterations  --- #
     nb_iter = len(sol_iterations)
     third_iteration = sol_iterations[2]
-
 
     # --- Save result of get_data --- #
     ocp.save_get_data(sol, "pendulum.bob", sol_iterations)  # you don't have to specify the extension ".bob"

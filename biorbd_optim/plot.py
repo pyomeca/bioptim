@@ -427,6 +427,7 @@ class OnlineCallback(Callback):
                 fig.canvas.draw()
             return True
 
+
 class Iterations:
     @staticmethod
     def save(V):

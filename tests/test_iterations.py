@@ -24,7 +24,6 @@ def test_iterations():
         os.remove(file_path)
         os.rmdir(directory)
 
-
     for i in range(len(V)):
         np.testing.assert_almost_equal(V[i], sol_iterations[i])
 
