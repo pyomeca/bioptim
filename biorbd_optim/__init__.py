@@ -3,7 +3,7 @@ from .enums import Axe, OdeSolver, Instant, InterpolationType, PlotType
 from .constraints import Constraint
 from .objective_functions import Objective
 from .problem_type import ProblemType
-from .plot import ShowResult, Iterations
+from .plot import ShowResult
 from .path_conditions import Bounds, QAndQDotBounds, InitialConditions
 from .dynamics import Dynamics
 from .mapping import Mapping, BidirectionalMapping
