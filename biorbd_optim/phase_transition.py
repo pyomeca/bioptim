@@ -3,6 +3,7 @@ from enum import Enum
 import biorbd
 from casadi import vertcat
 
+
 class PhaseTransitionFunctions:
     @staticmethod
     def continuous(ocp, phase_before_idx):
