@@ -1,6 +1,8 @@
 import multiprocessing as mp
 import numpy as np
 import tkinter
+import pickle
+import os
 from itertools import accumulate
 
 from matplotlib import pyplot as plt, lines
@@ -420,7 +422,18 @@ class OnlineCallback(Callback):
             while self.pipe.poll():
                 V = self.pipe.recv()
                 self.plot.update_data(V)
-
+                Iterations.save(V)
             for i, fig in enumerate(self.plot.all_figures):
                 fig.canvas.draw()
             return True
+
+class Iterations:
+    @staticmethod
+    def save(V):
+        file_path = "temp_save_iter"
+        if os.path.isfile(file_path):
+            with open(file_path, "rb") as file:
+                previews_iterations = pickle.load(file)
+            previews_iterations.append(np.array(V))
+            with open(file_path, "wb") as file:
+                pickle.dump(previews_iterations, file)
