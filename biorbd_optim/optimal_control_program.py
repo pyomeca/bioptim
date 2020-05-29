@@ -198,7 +198,7 @@ class OptimalControlProgram:
         # Prepare constraints
         self.g = []
         self.g_bounds = []
-        ConstraintFunction.continuity_constraint(self)
+        ConstraintFunction.continuity(self)
         if len(constraints) > 0:
             for i, constraint_phase in enumerate(constraints):
                 for constraint in constraint_phase:
@@ -206,6 +206,7 @@ class OptimalControlProgram:
 
         # Objective functions
         self.J = []
+        ObjectiveFunction.continuity(self)
         if len(objective_functions) > 0:
             for i, objective_functions_phase in enumerate(objective_functions):
                 for objective_function in objective_functions_phase:
@@ -528,19 +529,33 @@ class OptimalControlProgram:
         # Solve the problem
         return solver.call(arg)
 
-    def save(self, sol, file_path, to_numpy=False, **parameters):
+    def save(self, sol, file_path):
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bo"
+        elif ext != ".bo":
+            raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
+
+        OptimalControlProgram._save_with_pickle(
+            {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file_path
+        )
+
+    def save_get_data(self, sol, file_path, **parameters):
+        _, ext = os.path.splitext(file_path)
+        if ext == "":
+            file_path = file_path + ".bob"
+        elif ext != ".bob":
+            raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
+
+        OptimalControlProgram._save_with_pickle({"data": Data.get_data(self, sol["x"], **parameters)}, file_path)
+
+    @staticmethod
+    def _save_with_pickle(dict, file_path):
         dir, _ = os.path.split(file_path)
         if dir != "" and not os.path.isdir(dir):
             os.makedirs(dir)
 
         with open(file_path, "wb") as file:
-            dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
-            if to_numpy:
-                dict["get_data"] = Data.get_data(self, sol["x"], **parameters)
-
             pickle.dump(dict, file)
 
     @staticmethod
@@ -556,3 +571,36 @@ class OptimalControlProgram:
                     )
             sol = data["sol"]
         return (ocp, sol)
+
+    @staticmethod
+    def read_information(file_path):
+        with open(file_path, "rb") as file:
+            data = pickle.load(file)
+            original_values = data["ocp_initilializer"]
+            print("****************************** Informations ******************************")
+            for key in original_values.keys():
+                if key not in [
+                    "X_init",
+                    "U_init",
+                    "X_bounds",
+                    "U_bounds",
+                ]:
+                    print(f"{key} : ")
+                    OptimalControlProgram._deep_print(original_values[key])
+                    print("")
+
+    @staticmethod
+    def _deep_print(elem, label=""):
+        if isinstance(elem, (list, tuple)):
+            for k in range(len(elem)):
+                OptimalControlProgram._deep_print(elem[k])
+                if k != len(elem) - 1:
+                    print("")
+        elif isinstance(elem, dict):
+            for key in elem.keys():
+                OptimalControlProgram._deep_print(elem[key], label=key)
+        else:
+            if label == "":
+                print(f"   {elem}")
+            else:
+                print(f"   [{label}] = {elem}")
