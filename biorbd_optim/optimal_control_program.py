@@ -490,7 +490,9 @@ class OptimalControlProgram:
         if show_online_optim:
             options_common["iteration_callback"] = OnlineCallback(self)
             if return_iterations:
-                file_path = "temp_save_iter"
+                directory = ".__tmp_biorbd_optim"
+                file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
+                os.mkdir(directory)
                 if os.path.isfile(file_path):
                     os.remove(file_path)
                 with open(file_path, "wb") as file:
@@ -528,32 +530,32 @@ class OptimalControlProgram:
 
         if return_iterations:
             with open(file_path, "rb") as file:
-                iterations = pickle.load(file)
-                out = out, iterations
+                out = out, pickle.load(file)
                 os.remove(file_path)
+                os.rmdir(directory)
         return out
 
-    def save(self, sol, file_path, iterations=None):
+    def save(self, sol, file_path, sol_iterations=None):
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bo"
         elif ext != ".bo":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
         dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
-        if iterations != None:
-            dict["iterations"] = iterations
+        if sol_iterations != None:
+            dict["sol_iterations"] = sol_iterations
 
         OptimalControlProgram._save_with_pickle(dict, file_path)
 
-    def save_get_data(self, sol, file_path, iterations=None, **parameters):
+    def save_get_data(self, sol, file_path, sol_iterations=None, **parameters):
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bob"
         elif ext != ".bob":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
         dict = {"data": Data.get_data(self, sol["x"], **parameters)}
-        if iterations != None:
-            dict["iterations"] = iterations
+        if sol_iterations != None:
+            dict["sol_iterations"] = sol_iterations
 
         OptimalControlProgram._save_with_pickle(dict, file_path)
 
@@ -578,8 +580,8 @@ class OptimalControlProgram:
                         f"installed version ({ocp.version[key]})"
                     )
             out = [ocp, data["sol"]]
-            if "iterations" in data.keys():
-                out.append(data["iterations"])
+            if "sol_iterations" in data.keys():
+                out.append(data["sol_iterations"])
         return out
 
     @staticmethod
