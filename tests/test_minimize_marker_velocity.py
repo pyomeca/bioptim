@@ -47,17 +47,17 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
     q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.71797344, -0.44573002, -3.00001922, 0.02378758]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([1.08530972, -0.3869361, 2.99998083, -0.02378757]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.71797344, -0.44573002, -3.00001922, 0.02378758]), decimal=2)
+    np.testing.assert_almost_equal(q[:, -1], np.array([1.08530972, -0.3869361, 2.99998083, -0.02378757]), decimal=2)
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([0.37791617, 3.70167396, 10.0, 10.0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.37675299, -3.40771446, 10.0, 10.0]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0.37791617, 3.70167396, 10.0, 10.0]), decimal=2)
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.37675299, -3.40771446, 10.0, 10.0]), decimal=2)
     # initial and final controls
     np.testing.assert_almost_equal(
-        tau[:, 0], np.array([-4.52595667e-02, 9.25475333e-01, -4.34001849e-08, -9.24667407e01])
+        tau[:, 0], np.array([-4.52595667e-02, 9.25475333e-01, -4.34001849e-08, -9.24667407e01]), decimal=2
     )
     np.testing.assert_almost_equal(
-        tau[:, -1], np.array([4.42976253e-02, 1.40077846e00, -7.28864793e-13, 9.24667396e01])
+        tau[:, -1], np.array([4.42976253e-02, 1.40077846e00, -7.28864793e-13, 9.24667396e01]), decimal=2
     )
 
     # # save and load
