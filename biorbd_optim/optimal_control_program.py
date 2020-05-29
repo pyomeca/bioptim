@@ -456,13 +456,13 @@ class OptimalControlProgram:
 
         nlp["plot"][plot_name] = custom_plot
 
-    def solve(self, solver="ipopt", show_online_optim=False, save_iterations=False, options_ipopt={}):
+    def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, options_ipopt={}):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
         """
-        if save_iterations and not show_online_optim:
-            raise RuntimeError("save_iterations without show_online_optim is not implemented yet.")
+        if return_iterations and not show_online_optim:
+            raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
 
         all_J = MX()
         for j_nodes in self.J:
@@ -489,7 +489,7 @@ class OptimalControlProgram:
         options_common = {}
         if show_online_optim:
             options_common["iteration_callback"] = OnlineCallback(self)
-            if save_iterations:
+            if return_iterations:
                 file_path = "temp_save_iter"
                 if os.path.isfile(file_path):
                     os.remove(file_path)
@@ -526,33 +526,33 @@ class OptimalControlProgram:
         # Solve the problem
         out = solver.call(arg)
 
-        if save_iterations:
+        if return_iterations:
             with open(file_path, "rb") as file:
                 iterations = pickle.load(file)
                 out = out, iterations
                 os.remove(file_path)
         return out
 
-    def save(self, sol, file_path, iterations=[]):
+    def save(self, sol, file_path, iterations=None):
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bo"
         elif ext != ".bo":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
         dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
-        if iterations != []:
+        if iterations != None:
             dict["iterations"] = iterations
 
         OptimalControlProgram._save_with_pickle(dict, file_path)
 
-    def save_get_data(self, sol, file_path, iterations=[], **parameters):
+    def save_get_data(self, sol, file_path, iterations=None, **parameters):
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bob"
         elif ext != ".bob":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
         dict = {"data": Data.get_data(self, sol["x"], **parameters)}
-        if iterations != []:
+        if iterations != None:
             dict["iterations"] = iterations
 
         OptimalControlProgram._save_with_pickle(dict, file_path)
