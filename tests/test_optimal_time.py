@@ -200,16 +200,16 @@ def test_monophase_time_constraint(ode_solver):
     tf = param["time"][0, 0]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+    np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((22.49775, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-33.9047809, 0)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.71428583, 9.81, 0)))
 
     # optimized time
     np.testing.assert_almost_equal(tf, 1.0)
