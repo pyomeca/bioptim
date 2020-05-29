@@ -108,7 +108,7 @@ if __name__ == "__main__":
     final_time = (2, 5, 4)
     time_min = [1, 3, 0.1]
     time_max = [2, 4, 0.8]
-    nb_phases = 1
+    nb_phases = 3
     ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, nb_phases=nb_phases)
 
     # --- Solve the program --- #
