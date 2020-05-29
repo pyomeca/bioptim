@@ -18,10 +18,15 @@ from biorbd_optim import (
 
 class TestUtils:
     @staticmethod
-    def save_and_load(sol, ocp, test_solve_of_loaded=False):
+    def save_and_load(sol, ocp, test_solve_of_loaded=False, iterations=[]):
         file_path = "test.bo"
-        ocp.save(sol, file_path)
-        ocp_load, sol_load = OptimalControlProgram.load(file_path)
+        ocp.save(sol, file_path) if iterations == [] else ocp.save(sol, file_path, iterations)
+        if iterations == []:
+            ocp_load, sol_load = OptimalControlProgram.load(file_path)
+        else:
+            ocp_load, sol_load, iterations_load = OptimalControlProgram.load(file_path)
+            TestUtils.deep_assert(iterations, iterations_load)
+            TestUtils.deep_assert(iterations_load, iterations)
 
         TestUtils.deep_assert(sol, sol_load)
         TestUtils.deep_assert(sol_load, sol)
