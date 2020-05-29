@@ -68,13 +68,13 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     tic = time()
-    sol, iterations = ocp.solve(show_online_optim=True, return_iterations=True)
+    sol, sol_iterations = ocp.solve(show_online_optim=True, return_iterations=True)
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
     # --- Access to all iterations  --- #
-    nb_iter = len(iterations)
-    third_iteration = iterations[2]
+    nb_iter = len(sol_iterations)
+    third_iteration = sol_iterations[2]
 
     # --- Save result of get_data --- #
     ocp.save_get_data(sol, "pendulum.bob")  # you don't have to specify the extension ".bob"
