@@ -68,9 +68,14 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     tic = time()
-    sol = ocp.solve(show_online_optim=False)
+    sol, iterations = ocp.solve(show_online_optim=True, save_iterations=True)
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
+
+
+    # --- Access to all iterations  --- #
+    nb_iter = len(iterations)
+    third_iteration = iterations[2]
 
 
     # --- Save result of get_data --- #
