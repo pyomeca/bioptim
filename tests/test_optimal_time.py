@@ -269,3 +269,40 @@ def test_multiphase_time_constraint(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+def partial_ocp_parameters():
+    biorbd_model_path = str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/cube.bioMod"
+    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model = biorbd_model, biorbd_model, biorbd_model
+    number_shooting_points = (2, 2, 2)
+    final_time = (2, 5, 4)
+    time_min = [1, 3, 0.1]
+    time_max = [2, 4, 0.8]
+    torque_min, torque_max, torque_init = -100, 100, 0
+    problem_type = (ProblemType.torque_driven, ProblemType.torque_driven, ProblemType.torque_driven)
+    X_bounds = [QAndQDotBounds(biorbd_model[0]), QAndQDotBounds(biorbd_model[0]), QAndQDotBounds(biorbd_model[0])]
+    for bounds in X_bounds:
+        for i in [1, 3, 4, 5]:
+            bounds.min[i, [0, -1]] = 0
+            bounds.max[i, [0, -1]] = 0
+    X_bounds[0].min[2, 0] = 0.0
+    X_bounds[0].max[2, 0] = 0.0
+    X_bounds[2].min[2, [0, -1]] = [0.0, 1.57]
+    X_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
+    X_init = InitialConditions([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    X_init = (X_init, X_init, X_init)
+    U_bounds = [
+        Bounds(
+            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque(),
+        ),
+        Bounds(
+            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque(),
+        ),
+        Bounds(
+            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque(),
+        ),
+    ]
+    U_init = InitialConditions([torque_init] * biorbd_model[0].nbGeneralizedTorque())
+    U_init = (U_init, U_init, U_init)
+
+    return biorbd_model, number_shooting_points,final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init
