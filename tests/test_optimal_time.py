@@ -164,3 +164,55 @@ def test_time_constraint(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
+def test_monophase_time_constraint(ode_solver):
+    # Load time_constraint
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "monophase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+    )
+    monophase_time_constraint = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(monophase_time_constraint)
+
+    ocp = monophase_time_constraint.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/cube.bioMod",
+        final_time=(2, 5, 4),
+        time_min=[1, 3, 0.1],
+        time_max=[2, 4, 0.8],
+        nb_phases=1,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 10826.61745874204)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (126, 1))
+    np.testing.assert_almost_equal(g, np.zeros((126, 1)))
+
+    # Check some of the results
+    states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    tf = param["time"][0, 0]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((22.49775, 0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-33.9047809, 0)))
+
+    # optimized time
+    np.testing.assert_almost_equal(tf, 1.0)
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
