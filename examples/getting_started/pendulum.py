@@ -1,4 +1,5 @@
 import biorbd
+import pickle
 from time import time
 
 from biorbd_optim import (
@@ -71,8 +72,15 @@ if __name__ == "__main__":
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
+    # --- Save result of get_data --- #
+    ocp.save_get_data(sol, "pendulum.bob")  # you don't have to specify the extension ".bob"
+
+    # --- Load result of get_data --- #
+    with open("pendulum.bob", "rb") as file:
+        data = pickle.load(file)["data"]
+
     # --- Save the optimal control program and the solution --- #
-    ocp.save(sol, "pendulum")
+    ocp.save(sol, "pendulum.bo")  # you don't have to specify the extension ".bo"
 
     # --- Load the optimal control program and the solution --- #
     ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")

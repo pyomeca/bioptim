@@ -10,24 +10,17 @@ import numpy as np
 from biorbd_optim import Data, OdeSolver
 from .utils import TestUtils
 
-# Load symmetry
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "symmetry_by_construction",
-    str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_construction.py",
-)
-symmetry_by_construction = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(symmetry_by_construction)
-
-spec = importlib.util.spec_from_file_location(
-    "symmetry_by_constraint", str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_constraint.py",
-)
-symmetry_by_constraint = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(symmetry_by_constraint)
-
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
 def test_symmetry_by_construction(ode_solver):
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "symmetry_by_construction",
+        str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_construction.py",
+    )
+    symmetry_by_construction = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(symmetry_by_construction)
+
     ocp = symmetry_by_construction.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
         ode_solver=ode_solver,
@@ -64,6 +57,14 @@ def test_symmetry_by_construction(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
 def test_symmetry_by_constraint(ode_solver):
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "symmetry_by_constraint",
+        str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_constraint.py",
+    )
+    symmetry_by_constraint = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(symmetry_by_constraint)
+
     ocp = symmetry_by_constraint.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
         ode_solver=ode_solver,
