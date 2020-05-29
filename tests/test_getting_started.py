@@ -31,7 +31,7 @@ def test_pendulum(nb_threads):
         number_shooting_points=10,
         nb_threads=nb_threads,
     )
-    sol, iterations = ocp.solve(show_online_optim=True, save_iterations=True)
+    sol, iterations = ocp.solve(show_online_optim=True, return_iterations=True)
 
     # Check objective function value
     f = np.array(sol["f"])
