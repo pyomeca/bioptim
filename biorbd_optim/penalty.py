@@ -354,6 +354,10 @@ class PenaltyFunctionAbstract:
                 )
 
     @staticmethod
+    def continuity(ocp):
+        raise RuntimeError("continuity cannot be called from an abstract class")
+
+    @staticmethod
     def _add_to_penalty(ocp, nlp, val, penalty_idx, **extra_param):
         raise RuntimeError("_add_to_penalty cannot be called from an abstract class")
 
@@ -388,7 +392,7 @@ class PenaltyFunctionAbstract:
             elif node == Instant.MID:
                 if nlp["ns"] % 2 == 1:
                     raise (ValueError("Number of shooting points must be even to use MID"))
-                t.append(nlp["X"][nlp["ns"] // 2])
+                t.append(nlp["ns"] // 2)
                 x.append(nlp["X"][nlp["ns"] // 2])
                 u.append(nlp["U"][nlp["ns"] // 2])
 
@@ -399,7 +403,7 @@ class PenaltyFunctionAbstract:
                     u.append(nlp["U"][i])
 
             elif node == Instant.END:
-                t.append(nlp["X"][nlp["ns"]])
+                t.append(nlp["ns"])
                 x.append(nlp["X"][nlp["ns"]])
 
             elif node == Instant.ALL:

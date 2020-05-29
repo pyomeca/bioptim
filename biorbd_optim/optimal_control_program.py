@@ -186,7 +186,7 @@ class OptimalControlProgram:
         # Prepare constraints
         self.g = []
         self.g_bounds = []
-        ConstraintFunction.continuity_constraint(self)
+        ConstraintFunction.continuity(self)
         if len(constraints) > 0:
             for i, constraint_phase in enumerate(constraints):
                 for constraint in constraint_phase:
@@ -194,6 +194,7 @@ class OptimalControlProgram:
 
         # Objective functions
         self.J = []
+        ObjectiveFunction.continuity(self)
         if len(objective_functions) > 0:
             for i, objective_functions_phase in enumerate(objective_functions):
                 for objective_function in objective_functions_phase:

@@ -50,7 +50,6 @@ class TestUtils:
         TestUtils.deep_assert(data_load, data)
         os.remove(file_path_bob)
 
-
     @staticmethod
     def deep_assert(first_elem, second_elem):
         if isinstance(first_elem, dict):

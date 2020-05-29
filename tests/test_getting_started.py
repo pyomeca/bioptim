@@ -14,15 +14,17 @@ from biorbd_optim import (
 )
 from .utils import TestUtils
 
-# Load pendulum
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location("pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py")
-pendulum = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(pendulum)
-
 
 @pytest.mark.parametrize("nb_threads", [1, 2])
 def test_pendulum(nb_threads):
+    # Load pendulum
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
+    )
+    pendulum = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum)
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
@@ -61,16 +63,15 @@ def test_pendulum(nb_threads):
     TestUtils.save_and_load(sol, ocp, True, iterations)
 
 
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "custom_constraint", str(PROJECT_FOLDER) + "/examples/getting_started/custom_constraint.py"
-)
-custom_constraint = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(custom_constraint)
-
-
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_custom_constraint_align_markers(ode_solver):
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "custom_constraint", str(PROJECT_FOLDER) + "/examples/getting_started/custom_constraint.py"
+    )
+    custom_constraint = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(custom_constraint)
+
     ocp = custom_constraint.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver
     )
@@ -101,17 +102,16 @@ def test_custom_constraint_align_markers(ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
 
 
-#  Load initial_guess
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/simple_ocp.py"
-)
-initial_guess = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(initial_guess)
-
-
 @pytest.mark.parametrize("interpolation_type", InterpolationType)
 def test_initial_guesses(interpolation_type):
+    #  Load initial_guess
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/simple_ocp.py"
+    )
+    initial_guess = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(initial_guess)
+
     np.random.seed(42)
     ocp = initial_guess.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
@@ -144,6 +144,98 @@ def test_initial_guesses(interpolation_type):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([5.0, 9.81, 7.85]))
     np.testing.assert_almost_equal(tau[:, -1], np.array([-5.0, 9.81, -7.85]))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+
+def test_cyclic_objective():
+    #  Load initial_guess
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/cyclic_movement.py"
+    )
+    cyclic_movement = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cyclic_movement)
+
+    np.random.seed(42)
+    ocp = cyclic_movement.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+        final_time=1,
+        number_shooting_points=10,
+        loop_from_constraint=False,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 56851.881815451816)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (67, 1))
+    np.testing.assert_almost_equal(g, np.zeros((67, 1)))
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([1.60205103, -0.01069317, 0.62477988]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([1, 0, 1.57]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0.12902365, 0.09340155, -0.20256713)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([9.89210954, 9.39362112, -15.53061197]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([17.16370432, 9.78643138, -26.94701577]))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+
+def test_cyclic_constraint():
+    #  Load initial_guess
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/cyclic_movement.py"
+    )
+    cyclic_movement = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cyclic_movement)
+
+    np.random.seed(42)
+    ocp = cyclic_movement.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+        final_time=1,
+        number_shooting_points=10,
+        loop_from_constraint=True,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 78921.61000000016)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (73, 1))
+    np.testing.assert_almost_equal(g, np.zeros((73, 1)))
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 1.57]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([1, 0, 1.57]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([20.0, 9.81, -31.4]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([20.0, 9.81, -31.4]))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
