@@ -43,16 +43,16 @@ def prepare_ocp(final_time, time_min, time_max, biorbd_model_path="cube.bioMod",
                 "first_marker_idx": 0,
                 "second_marker_idx": 1,
             },
-            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2, },
-            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[0], "maximum": time_max[0], },
+            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
+            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[0], "maximum": time_max[0],},
         ),
         (
-            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 1, },
-            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1], },
+            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 1,},
+            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
         ),
         (
-            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2, },
-            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[2], "maximum": time_max[2], },
+            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
+            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[2], "maximum": time_max[2],},
         ),
     )
 
