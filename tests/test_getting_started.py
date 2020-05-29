@@ -31,7 +31,7 @@ def test_pendulum(nb_threads):
         number_shooting_points=10,
         nb_threads=nb_threads,
     )
-    sol, iterations = ocp.solve(show_online_optim=True, return_iterations=True)
+    sol = ocp.solve()
 
     # Check objective function value
     f = np.array(sol["f"])
@@ -60,7 +60,7 @@ def test_pendulum(nb_threads):
     np.testing.assert_almost_equal(tau[:, -1], np.array((-24.2842703, 0)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True, iterations)
+    TestUtils.save_and_load(sol, ocp, True)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
