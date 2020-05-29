@@ -68,15 +68,13 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     tic = time()
-    sol, iterations = ocp.solve(show_online_optim=True, save_iterations=True)
+    sol, iterations = ocp.solve(show_online_optim=True, return_iterations=True)
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
-
 
     # --- Access to all iterations  --- #
     nb_iter = len(iterations)
     third_iteration = iterations[2]
-
 
     # --- Save result of get_data --- #
     ocp.save_get_data(sol, "pendulum.bob")  # you don't have to specify the extension ".bob"
@@ -84,7 +82,6 @@ if __name__ == "__main__":
     # --- Load result of get_data --- #
     with open("pendulum.bob", "rb") as file:
         data = pickle.load(file)["data"]
-
 
     # --- Save the optimal control program and the solution --- #
     ocp.save(sol, "pendulum.bo")  # you don't have to specify the extension ".bo"
