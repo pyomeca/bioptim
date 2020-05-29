@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pytest
 import numpy as np
+import biorbd
 
-from biorbd_optim import Data, OdeSolver
+from biorbd_optim import Data, OdeSolver, Constraint, QAndQDotBounds, ProblemType, InitialConditions, Bounds, Instant, Objective, OptimalControlProgram
 from .utils import TestUtils
 
 
