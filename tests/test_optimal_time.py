@@ -438,3 +438,55 @@ def test_mayer2_neg_multiphase_time_constraint():
             constraints,
             ode_solver=OdeSolver.RK,
         )
+
+spec = importlib.util.spec_from_file_location(
+    "test_mayer_multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+)
+test_mayer_multiphase_time_constraint = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(test_mayer_multiphase_time_constraint)
+
+
+def test_mayer_multiphase_time_constraint():
+    with pytest.raises(RuntimeError, match="Function with free symbols cannot be expanded. List of free variables in your Function: u,x"):
+        biorbd_model, number_shooting_points, final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init = partial_ocp_parameters()
+        # biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/cube.bioMod")
+        # biorbd_model = (biorbd_model, biorbd_model, biorbd_model)
+        nb_phases = 3
+
+        objective_functions = (
+            (
+                {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
+                {"type": Objective.Mayer.MINIMIZE_TIME},
+            ),
+            (),
+            (),
+        )
+        constraints =(
+            (),
+            (),
+            (
+                {
+                    "type": Constraint.ALIGN_MARKERS,
+                    "instant": Instant.START,
+                    "first_marker_idx": 0,
+                    "second_marker_idx": 1,
+                },
+                {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1], },
+            ),
+        )
+
+        OptimalControlProgram(
+            biorbd_model[:nb_phases],
+            problem_type[:nb_phases],
+            number_shooting_points[:nb_phases],
+            final_time[:nb_phases],
+            X_init[:nb_phases],
+            U_init[:nb_phases],
+            X_bounds[:nb_phases],
+            U_bounds[:nb_phases],
+            objective_functions,
+            constraints,
+            ode_solver=OdeSolver.RK,
+        )
+
+#TODO : Need to test error if the same objective function or constraint on time is set two times within the same phase ?
