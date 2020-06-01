@@ -273,8 +273,7 @@ def test_multiphase_time_constraint(ode_solver):
 
 def partial_ocp_parameters():
     biorbd_model_path = str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/cube.bioMod"
-    biorbd_model = biorbd.Model(biorbd_model_path)
-    biorbd_model = biorbd_model, biorbd_model, biorbd_model
+    biorbd_model = biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path)
     number_shooting_points = (2, 2, 2)
     final_time = (2, 5, 4)
     time_min = [1, 3, 0.1]
@@ -308,6 +307,7 @@ def partial_ocp_parameters():
 
     return biorbd_model, number_shooting_points,final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init
 
+PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
     "test_mayer_neg_monophase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
@@ -345,6 +345,7 @@ def test_mayer_neg_monophase_time_constraint(ode_solver):
             ode_solver=ode_solver,
         )
 
+PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
     "test_mayer1_neg_multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
@@ -392,6 +393,7 @@ def test_mayer1_neg_multiphase_time_constraint():
             ode_solver=OdeSolver.RK,
         )
 
+PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
     "test_mayer2_neg_multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
@@ -439,6 +441,7 @@ def test_mayer2_neg_multiphase_time_constraint():
             ode_solver=OdeSolver.RK,
         )
 
+PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
     "test_mayer_multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
