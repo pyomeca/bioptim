@@ -332,8 +332,11 @@ class OptimalControlProgram:
         return phase_time, initial_time_guess, time_min, time_max
 
     def __define_parameters_phase_time(
-        self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=False
+        self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=None
     ):
+        if has_penalty is None:
+            has_penalty = [False] * self.nb_phases
+
         for i, penalty_functions_phase in enumerate(penalty_functions):
             for pen_fun in penalty_functions_phase:
                 if (
@@ -341,9 +344,9 @@ class OptimalControlProgram:
                     or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
                     or pen_fun["type"] == Constraint.TIME_CONSTRAINT
                 ):
-                    if has_penalty and i == 0:
+                    if has_penalty[i]:
                         raise RuntimeError("Time constraint/objective cannot declare more than once")
-                    has_penalty = True
+                    has_penalty[i] = True
 
                     initial_time_guess.append(phase_time[i])
                     phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
