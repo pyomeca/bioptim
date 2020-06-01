@@ -8,7 +8,18 @@ import pytest
 import numpy as np
 import biorbd
 
-from biorbd_optim import Data, OdeSolver, Constraint, QAndQDotBounds, ProblemType, InitialConditions, Bounds, Instant, Objective, OptimalControlProgram
+from biorbd_optim import (
+    Data,
+    OdeSolver,
+    Constraint,
+    QAndQDotBounds,
+    ProblemType,
+    InitialConditions,
+    Bounds,
+    Instant,
+    Objective,
+    OptimalControlProgram,
+)
 from .utils import TestUtils
 
 
@@ -166,6 +177,7 @@ def test_time_constraint(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_monophase_time_constraint(ode_solver):
     # Load time_constraint
@@ -218,6 +230,7 @@ def test_monophase_time_constraint(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+
 # Load time_constraint
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
@@ -225,6 +238,7 @@ spec = importlib.util.spec_from_file_location(
 )
 multiphase_time_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(multiphase_time_constraint)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_multiphase_time_constraint(ode_solver):
@@ -271,6 +285,7 @@ def test_multiphase_time_constraint(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+
 def partial_ocp_parameters():
     biorbd_model_path = str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/cube.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path)
@@ -305,30 +320,61 @@ def partial_ocp_parameters():
     U_init = InitialConditions([torque_init] * biorbd_model[0].nbGeneralizedTorque())
     U_init = (U_init, U_init, U_init)
 
-    return biorbd_model, number_shooting_points,final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init
+    return (
+        biorbd_model,
+        number_shooting_points,
+        final_time,
+        time_min,
+        time_max,
+        torque_min,
+        torque_max,
+        torque_init,
+        problem_type,
+        X_bounds,
+        X_init,
+        U_bounds,
+        U_init,
+    )
+
 
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "test_mayer_neg_monophase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+    "test_mayer_neg_monophase_time_constraint",
+    str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
 test_mayer_neg_monophase_time_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(test_mayer_neg_monophase_time_constraint)
 
+
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_mayer_neg_monophase_time_constraint(ode_solver):
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
-        biorbd_model, number_shooting_points, final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init = partial_ocp_parameters()
+        (
+            biorbd_model,
+            number_shooting_points,
+            final_time,
+            time_min,
+            time_max,
+            torque_min,
+            torque_max,
+            torque_init,
+            problem_type,
+            X_bounds,
+            X_init,
+            U_bounds,
+            U_init,
+        ) = partial_ocp_parameters()
         nb_phases = 1
 
         objective_functions = {"type": Objective.Mayer.MINIMIZE_TIME}
-        constraints =(
-                {
-                    "type": Constraint.ALIGN_MARKERS,
-                    "instant": Instant.START,
-                    "first_marker_idx": 0,
-                    "second_marker_idx": 1,
-                },
-                {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
+        constraints = (
+            {
+                "type": Constraint.ALIGN_MARKERS,
+                "instant": Instant.START,
+                "first_marker_idx": 0,
+                "second_marker_idx": 1,
+            },
+            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
         )
 
         OptimalControlProgram(
@@ -345,27 +391,41 @@ def test_mayer_neg_monophase_time_constraint(ode_solver):
             ode_solver=ode_solver,
         )
 
+
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "test_mayer1_neg_multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+    "test_mayer1_neg_multiphase_time_constraint",
+    str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
 test_mayer1_neg_multiphase_time_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(test_mayer1_neg_multiphase_time_constraint)
 
+
 def test_mayer1_neg_multiphase_time_constraint():
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
-        biorbd_model, number_shooting_points, final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init = partial_ocp_parameters()
+        (
+            biorbd_model,
+            number_shooting_points,
+            final_time,
+            time_min,
+            time_max,
+            torque_min,
+            torque_max,
+            torque_init,
+            problem_type,
+            X_bounds,
+            X_init,
+            U_bounds,
+            U_init,
+        ) = partial_ocp_parameters()
         nb_phases = 3
 
         objective_functions = (
-            (
-                {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
-                {"type": Objective.Mayer.MINIMIZE_TIME},
-            ),
+            ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}, {"type": Objective.Mayer.MINIMIZE_TIME},),
             (),
-            ()
+            (),
         )
-        constraints =(
+        constraints = (
             (
                 {
                     "type": Constraint.ALIGN_MARKERS,
@@ -393,27 +453,41 @@ def test_mayer1_neg_multiphase_time_constraint():
             ode_solver=OdeSolver.RK,
         )
 
+
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "test_mayer2_neg_multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+    "test_mayer2_neg_multiphase_time_constraint",
+    str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
 test_mayer2_neg_multiphase_time_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(test_mayer2_neg_multiphase_time_constraint)
 
+
 def test_mayer2_neg_multiphase_time_constraint():
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
-        biorbd_model, number_shooting_points, final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init = partial_ocp_parameters()
+        (
+            biorbd_model,
+            number_shooting_points,
+            final_time,
+            time_min,
+            time_max,
+            torque_min,
+            torque_max,
+            torque_init,
+            problem_type,
+            X_bounds,
+            X_init,
+            U_bounds,
+            U_init,
+        ) = partial_ocp_parameters()
         nb_phases = 3
 
         objective_functions = (
             (),
             (),
-            (
-                {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
-                {"type": Objective.Mayer.MINIMIZE_TIME},
-            )
+            ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}, {"type": Objective.Mayer.MINIMIZE_TIME},),
         )
-        constraints =(
+        constraints = (
             (),
             (),
             (
@@ -423,7 +497,7 @@ def test_mayer2_neg_multiphase_time_constraint():
                     "first_marker_idx": 0,
                     "second_marker_idx": 1,
                 },
-                {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1], },
+                {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
             ),
         )
 
@@ -441,27 +515,40 @@ def test_mayer2_neg_multiphase_time_constraint():
             ode_solver=OdeSolver.RK,
         )
 
+
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "test_mayer_multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+    "test_mayer_multiphase_time_constraint",
+    str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
 test_mayer_multiphase_time_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(test_mayer_multiphase_time_constraint)
 
 
 def test_mayer_multiphase_time_constraint():
-    biorbd_model, number_shooting_points, final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init = partial_ocp_parameters()
+    (
+        biorbd_model,
+        number_shooting_points,
+        final_time,
+        time_min,
+        time_max,
+        torque_min,
+        torque_max,
+        torque_init,
+        problem_type,
+        X_bounds,
+        X_init,
+        U_bounds,
+        U_init,
+    ) = partial_ocp_parameters()
     nb_phases = 3
 
     objective_functions = (
-        (
-            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
-            {"type": Objective.Mayer.MINIMIZE_TIME},
-        ),
+        ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}, {"type": Objective.Mayer.MINIMIZE_TIME},),
         (),
         (),
     )
-    constraints =(
+    constraints = (
         (),
         (),
         (
@@ -471,7 +558,7 @@ def test_mayer_multiphase_time_constraint():
                 "first_marker_idx": 0,
                 "second_marker_idx": 1,
             },
-            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1], },
+            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
         ),
     )
 
@@ -489,28 +576,45 @@ def test_mayer_multiphase_time_constraint():
         ode_solver=OdeSolver.RK,
     )
 
+
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "test_lagrange_neg_monophase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+    "test_lagrange_neg_monophase_time_constraint",
+    str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
 test_lagrange_neg_monophase_time_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(test_lagrange_neg_monophase_time_constraint)
 
+
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_lagrange_neg_monophase_time_constraint(ode_solver):
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
-        biorbd_model, number_shooting_points, final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init = partial_ocp_parameters()
+        (
+            biorbd_model,
+            number_shooting_points,
+            final_time,
+            time_min,
+            time_max,
+            torque_min,
+            torque_max,
+            torque_init,
+            problem_type,
+            X_bounds,
+            X_init,
+            U_bounds,
+            U_init,
+        ) = partial_ocp_parameters()
         nb_phases = 1
 
         objective_functions = {"type": Objective.Lagrange.MINIMIZE_TIME}
-        constraints =(
-                {
-                    "type": Constraint.ALIGN_MARKERS,
-                    "instant": Instant.START,
-                    "first_marker_idx": 0,
-                    "second_marker_idx": 1,
-                },
-                {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
+        constraints = (
+            {
+                "type": Constraint.ALIGN_MARKERS,
+                "instant": Instant.START,
+                "first_marker_idx": 0,
+                "second_marker_idx": 1,
+            },
+            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
         )
 
         OptimalControlProgram(
@@ -527,27 +631,41 @@ def test_lagrange_neg_monophase_time_constraint(ode_solver):
             ode_solver=ode_solver,
         )
 
+
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "test_lagrange1_neg_multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+    "test_lagrange1_neg_multiphase_time_constraint",
+    str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
 test_lagrange1_neg_multiphase_time_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(test_lagrange1_neg_multiphase_time_constraint)
 
+
 def test_lagrange1_neg_multiphase_time_constraint():
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
-        biorbd_model, number_shooting_points, final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init = partial_ocp_parameters()
+        (
+            biorbd_model,
+            number_shooting_points,
+            final_time,
+            time_min,
+            time_max,
+            torque_min,
+            torque_max,
+            torque_init,
+            problem_type,
+            X_bounds,
+            X_init,
+            U_bounds,
+            U_init,
+        ) = partial_ocp_parameters()
         nb_phases = 3
 
         objective_functions = (
-            (
-                {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
-                {"type": Objective.Lagrange.MINIMIZE_TIME},
-            ),
+            ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}, {"type": Objective.Lagrange.MINIMIZE_TIME},),
             (),
-            ()
+            (),
         )
-        constraints =(
+        constraints = (
             (
                 {
                     "type": Constraint.ALIGN_MARKERS,
@@ -575,27 +693,41 @@ def test_lagrange1_neg_multiphase_time_constraint():
             ode_solver=OdeSolver.RK,
         )
 
+
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "test_lagrange2_neg_multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+    "test_lagrange2_neg_multiphase_time_constraint",
+    str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
 test_lagrange2_neg_multiphase_time_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(test_lagrange2_neg_multiphase_time_constraint)
 
+
 def test_lagrange2_neg_multiphase_time_constraint():
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
-        biorbd_model, number_shooting_points, final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init = partial_ocp_parameters()
+        (
+            biorbd_model,
+            number_shooting_points,
+            final_time,
+            time_min,
+            time_max,
+            torque_min,
+            torque_max,
+            torque_init,
+            problem_type,
+            X_bounds,
+            X_init,
+            U_bounds,
+            U_init,
+        ) = partial_ocp_parameters()
         nb_phases = 3
 
         objective_functions = (
             (),
             (),
-            (
-                {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
-                {"type": Objective.Lagrange.MINIMIZE_TIME},
-            )
+            ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}, {"type": Objective.Lagrange.MINIMIZE_TIME},),
         )
-        constraints =(
+        constraints = (
             (),
             (),
             (
@@ -605,7 +737,7 @@ def test_lagrange2_neg_multiphase_time_constraint():
                     "first_marker_idx": 0,
                     "second_marker_idx": 1,
                 },
-                {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1], },
+                {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
             ),
         )
 
@@ -623,27 +755,40 @@ def test_lagrange2_neg_multiphase_time_constraint():
             ode_solver=OdeSolver.RK,
         )
 
+
 PROJECT_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location(
-    "test_lagrange_multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+    "test_lagrange_multiphase_time_constraint",
+    str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
 )
 test_lagrange_multiphase_time_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(test_lagrange_multiphase_time_constraint)
 
 
 def test_lagrange_multiphase_time_constraint():
-    biorbd_model, number_shooting_points, final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init = partial_ocp_parameters()
+    (
+        biorbd_model,
+        number_shooting_points,
+        final_time,
+        time_min,
+        time_max,
+        torque_min,
+        torque_max,
+        torque_init,
+        problem_type,
+        X_bounds,
+        X_init,
+        U_bounds,
+        U_init,
+    ) = partial_ocp_parameters()
     nb_phases = 3
 
     objective_functions = (
-        (
-            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
-            {"type": Objective.Lagrange.MINIMIZE_TIME},
-        ),
+        ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}, {"type": Objective.Lagrange.MINIMIZE_TIME},),
         (),
         (),
     )
-    constraints =(
+    constraints = (
         (),
         (),
         (
@@ -653,7 +798,7 @@ def test_lagrange_multiphase_time_constraint():
                 "first_marker_idx": 0,
                 "second_marker_idx": 1,
             },
-            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1], },
+            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
         ),
     )
 
@@ -672,4 +817,4 @@ def test_lagrange_multiphase_time_constraint():
     )
 
 
-#TODO : No need to test error if the same objective function or constraint on time is set two times within the same phase ?
+# TODO : No need to test error if the same objective function or constraint on time is set two times within the same phase ?
