@@ -5,7 +5,6 @@ from casadi import vertcat
 
 
 class PhaseTransitionFunctions:
-
     class Functions:
         @staticmethod
         def continuous(ocp, phase_before_idx):
@@ -41,7 +40,9 @@ class PhaseTransitionFunctions:
     @staticmethod
     def prepare_phase_transitions(ocp, phase_transitions):
         # By default it assume Continuous. It can be change later
-        full_phase_transitions = [{"type": PhaseTransition.CONTINUOUS, "phase_pre_idx": i} for i in range(ocp.nb_phases - 1)]
+        full_phase_transitions = [
+            {"type": PhaseTransition.CONTINUOUS, "phase_pre_idx": i} for i in range(ocp.nb_phases - 1)
+        ]
 
         existing_phases = []
         for pt in phase_transitions:
