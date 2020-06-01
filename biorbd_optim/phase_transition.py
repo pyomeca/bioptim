@@ -1,6 +1,6 @@
+from copy import deepcopy
 from enum import Enum
 
-import biorbd
 from casadi import vertcat
 
 
@@ -36,7 +36,27 @@ class PhaseTransitionFunctions:
 
         @staticmethod
         def custom(ocp, phase_before_idx):
-            pass
+            raise NotImplementedError("Custom transitions constraints are not implemented yet")
+
+    @staticmethod
+    def prepare_phase_transitions(ocp, phase_transitions):
+        # By default it assume Continuous. It can be change later
+        full_phase_transitions = [{"type": PhaseTransition.CONTINUOUS, "phase_pre_idx": i} for i in range(ocp.nb_phases - 1)]
+
+        existing_phases = []
+        for pt in phase_transitions:
+            idx_phase = pt["phase_pre_idx"]
+            if idx_phase in existing_phases:
+                raise RuntimeError("It is not possible to define two phase continuity constraints for the same phase")
+            if idx_phase >= ocp.nb_phases:
+                raise RuntimeError("Phase index of the transition constraint is higher than the number of phases")
+            existing_phases.append(idx_phase)
+            if idx_phase == ocp.nb_phases - 1:
+                # Add a cyclic constraint
+                full_phase_transitions.append(pt)
+            else:
+                full_phase_transitions[idx_phase] = pt
+        return full_phase_transitions
 
 
 class PhaseTransition(Enum):

@@ -11,7 +11,7 @@ from .enums import OdeSolver
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
 from .constraints import ConstraintFunction, Constraint
-from .phase_transition import PhaseTransition
+from .phase_transition import PhaseTransitionFunctions
 from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback, CustomPlot
 from .integrator import RK4
@@ -187,21 +187,7 @@ class OptimalControlProgram:
             self.__prepare_dynamics(self.nlp[i])
 
         # Prepare phase transitions
-        phase_pre_idx = []
-        for i in range(len(phase_transitions)):
-            phase_pre_idx.append(phase_transitions[i]["phase_pre_idx"])
-        sorted_elements = [phase_pre_idx[i] <= phase_pre_idx[i+1] for i in range(len(phase_pre_idx) - 1)]
-        is_sorted = all(sorted_elements)
-        if not is_sorted:
-            RuntimeError("Phase transitions must be declared in the chronological order of the phases.")
-        full_phase_transitions = []
-        j = 0
-        for i in range(self.nb_phases):
-            if i in phase_pre_idx:
-                full_phase_transitions.append(phase_transitions[j])
-            else:
-                full_phase_transitions.append({"type": PhaseTransition.CONTINUOUS, "phase_pre_idx": i})
-        self.phase_transitions = deepcopy(full_phase_transitions)
+        self.phase_transitions = PhaseTransitionFunctions.prepare_phase_transitions(self, phase_transitions)
 
         # Prepare constraints
         self.g = []
