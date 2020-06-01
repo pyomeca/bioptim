@@ -459,11 +459,14 @@ class OptimalControlProgram:
 
         nlp["plot"][plot_name] = custom_plot
 
-    def solve(self, solver="ipopt", show_online_optim=False, options_ipopt={}):
+    def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, options_ipopt={}):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
         """
+        if return_iterations and not show_online_optim:
+            raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
+
         all_J = MX()
         for j_nodes in self.J:
             for j in j_nodes:
@@ -489,6 +492,14 @@ class OptimalControlProgram:
         options_common = {}
         if show_online_optim:
             options_common["iteration_callback"] = OnlineCallback(self)
+            if return_iterations:
+                directory = ".__tmp_biorbd_optim"
+                file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
+                os.mkdir(directory)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+                with open(file_path, "wb") as file:
+                    pickle.dump([], file)
 
         if solver == "ipopt":
             options = {
@@ -518,27 +529,41 @@ class OptimalControlProgram:
         }
 
         # Solve the problem
-        return solver.call(arg)
+        out = solver.call(arg)
 
-    def save(self, sol, file_path):
+        if return_iterations:
+            with open(file_path, "rb") as file:
+                out = out, pickle.load(file)
+                os.remove(file_path)
+                os.rmdir(directory)
+        return out
+
+    def save(self, sol, file_path, sol_iterations=None):
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bo"
         elif ext != ".bo":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
+        dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
+        if sol_iterations != None:
+            dict["sol_iterations"] = sol_iterations
 
-        OptimalControlProgram._save_with_pickle(
-            {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}, file_path
-        )
+        OptimalControlProgram._save_with_pickle(dict, file_path)
 
-    def save_get_data(self, sol, file_path, **parameters):
+    def save_get_data(self, sol, file_path, sol_iterations=None, **parameters):
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bob"
         elif ext != ".bob":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
+        dict = {"data": Data.get_data(self, sol["x"], **parameters)}
+        if sol_iterations != None:
+            get_data_sol_iterations = []
+            for iter in sol_iterations:
+                get_data_sol_iterations.append(Data.get_data(self, iter, **parameters))
+            dict["sol_iterations"] = get_data_sol_iterations
 
-        OptimalControlProgram._save_with_pickle({"data": Data.get_data(self, sol["x"], **parameters)}, file_path)
+        OptimalControlProgram._save_with_pickle(dict, file_path)
 
     @staticmethod
     def _save_with_pickle(dict, file_path):
@@ -560,8 +585,10 @@ class OptimalControlProgram:
                         f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
                         f"installed version ({ocp.version[key]})"
                     )
-            sol = data["sol"]
-        return (ocp, sol)
+            out = [ocp, data["sol"]]
+            if "sol_iterations" in data.keys():
+                out.append(data["sol_iterations"])
+        return out
 
     @staticmethod
     def read_information(file_path):
