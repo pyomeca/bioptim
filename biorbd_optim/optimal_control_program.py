@@ -187,13 +187,21 @@ class OptimalControlProgram:
             self.__prepare_dynamics(self.nlp[i])
 
         # Prepare phase transitions
-        self.phase_transitions = deepcopy(phase_transitions)
-        if len(self.phase_transitions) == 0:
-            for i in range(self.nb_phases - 1):
-                self.phase_transitions.append(PhaseTransition.continuous)
-        else:
-            if len(self.phase_transitions) != self.nb_phases - 1:
-                raise RuntimeError("length of phase_transitions must be exactly nb_phases - 1")
+        phase_pre_idx = []
+        for i in range(len(phase_transitions)):
+            phase_pre_idx.append(phase_transitions[i]["phase_pre_idx"])
+        sorted_elements = [phase_pre_idx[i] <= phase_pre_idx[i+1] for i in range(len(phase_pre_idx) - 1)]
+        is_sorted = all(sorted_elements)
+        if not is_sorted:
+            RuntimeError("Phase transitions must be declared in the chronological order of the phases.")
+        full_phase_transitions = []
+        j = 0
+        for i in range(self.nb_phases):
+            if i in phase_pre_idx:
+                full_phase_transitions.append(phase_transitions[j])
+            else:
+                full_phase_transitions.append({"type": PhaseTransition.CONTINUOUS, "phase_pre_idx": i})
+        self.phase_transitions = deepcopy(full_phase_transitions)
 
         # Prepare constraints
         self.g = []
