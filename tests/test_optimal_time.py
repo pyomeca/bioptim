@@ -365,12 +365,7 @@ def test_mayer_neg_monophase_time_constraint(ode_solver):
 
     objective_functions = {"type": Objective.Mayer.MINIMIZE_TIME}
     constraints = (
-        {
-            "type": Constraint.ALIGN_MARKERS,
-            "instant": Instant.START,
-            "first_marker_idx": 0,
-            "second_marker_idx": 1,
-        },
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
         {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
     )
 
@@ -569,12 +564,7 @@ def test_lagrange_neg_monophase_time_constraint(ode_solver):
 
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TIME}
     constraints = (
-        {
-            "type": Constraint.ALIGN_MARKERS,
-            "instant": Instant.START,
-            "first_marker_idx": 0,
-            "second_marker_idx": 1,
-        },
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
         {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
     )
 
