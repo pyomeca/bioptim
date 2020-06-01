@@ -193,7 +193,7 @@ def test_monophase_time_constraint(ode_solver):
         final_time=(2, 5, 4),
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
-        nb_phases=1,
+        number_shooting_points=(20,),
     )
     sol = ocp.solve()
 
@@ -246,7 +246,7 @@ def test_multiphase_time_constraint(ode_solver):
         final_time=(2, 5, 4),
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
-        nb_phases=3,
+        number_shooting_points=(20, 30, 20),
     )
     sol = ocp.solve()
 
@@ -763,7 +763,7 @@ def test_mayer_neg_two_objectives(ode_solver):
 
     objective_functions = ({"type": Objective.Mayer.MINIMIZE_TIME}, {"type": Objective.Mayer.MINIMIZE_TIME})
 
-    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more thanl once"):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
             biorbd_model[:nb_phases],
             problem_type[:nb_phases],

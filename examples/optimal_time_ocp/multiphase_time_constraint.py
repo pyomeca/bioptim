@@ -15,13 +15,18 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(final_time, time_min, time_max, nb_phases, biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
+def prepare_ocp(
+    final_time, time_min, time_max, number_shooting_points, biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK
+):
     # --- Options --- #
+    nb_phases = len(number_shooting_points)
+    if nb_phases > 3:
+        raise RuntimeError("Number of phases must be 1 to 3")
+
     # Model path
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
 
     # Problem parameters
-    number_shooting_points = (20, 30, 20)
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
@@ -108,8 +113,8 @@ if __name__ == "__main__":
     final_time = (2, 5, 4)
     time_min = [1, 3, 0.1]
     time_max = [2, 4, 0.8]
-    nb_phases = 3
-    ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, nb_phases=nb_phases)
+    ns = (20, 30, 20)
+    ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, number_shooting_points=ns)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
