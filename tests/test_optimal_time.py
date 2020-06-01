@@ -489,4 +489,40 @@ def test_mayer_multiphase_time_constraint():
         ode_solver=OdeSolver.RK,
     )
 
-#TODO : Need to test error if the same objective function or constraint on time is set two times within the same phase ?
+PROJECT_FOLDER = Path(__file__).parent / ".."
+spec = importlib.util.spec_from_file_location(
+    "test_lagrange_neg_monophase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+)
+test_lagrange_neg_monophase_time_constraint = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(test_lagrange_neg_monophase_time_constraint)
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
+def test_lagrange_neg_monophase_time_constraint(ode_solver):
+    with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
+        biorbd_model, number_shooting_points, final_time, time_min, time_max, torque_min, torque_max, torque_init, problem_type, X_bounds, X_init, U_bounds, U_init = partial_ocp_parameters()
+        nb_phases = 1
+
+        objective_functions = {"type": Objective.Lagrange.MINIMIZE_TIME}
+        constraints =(
+                {
+                    "type": Constraint.ALIGN_MARKERS,
+                    "instant": Instant.START,
+                    "first_marker_idx": 0,
+                    "second_marker_idx": 1,
+                },
+                {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
+        )
+
+        OptimalControlProgram(
+            biorbd_model[:nb_phases],
+            problem_type[:nb_phases],
+            number_shooting_points[:nb_phases],
+            final_time[:nb_phases],
+            X_init[:nb_phases],
+            U_init[:nb_phases],
+            X_bounds[:nb_phases],
+            U_bounds[:nb_phases],
+            objective_functions,
+            constraints,
+            ode_solver=ode_solver,
+        )
