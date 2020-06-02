@@ -466,8 +466,8 @@ class OptimalControlProgram:
         from casadi import MX, Function, external, SX, vertcat, sin, cos
 
 
-        m = biorbd.Model("eocar-6D.bioMod")
-        model_name = 'eocar_ode'
+        m = biorbd.Model(self.nlp[0]['model'].path().relativePath().to_string())
+        model_name = "model_name"
 
         # Declare model variables
         x = MX.sym('x', m.nbQ() * 2)
