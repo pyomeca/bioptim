@@ -7,6 +7,8 @@ import biorbd
 import casadi
 from casadi import MX, vertcat, sum1
 
+
+
 from .enums import OdeSolver
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
@@ -459,11 +461,112 @@ class OptimalControlProgram:
 
         nlp["plot"][plot_name] = custom_plot
 
+    def __prepare_acados(self):
+        from acados_template import AcadosOcp, AcadosOcpSolver, AcadosModel
+        import numpy as np
+        import scipy.linalg
+        from casadi import Function, external, SX, sin, cos
+
+        os.environ["ACADOS_SOURCE_DIR"] = "/home/dangzilla/Documents/Programmation/acados"
+        # create ocp object to formulate the OCP
+        ocp = AcadosOcp()
+
+        # # set model
+        # m = biorbd.Model("eocar-6D.bioMod")
+        model_name = 'eocar_ode'
+        m = self.nlp[0]["model"]
+
+        # Declare model variables
+        x = MX.sym('x', m.nbQ() * 2)
+        u = MX.sym('u', m.nbQ())
+        xdot = MX.sym('dx', m.nbQ() * 2)
+
+        f = Function('f', [x, u],
+                     [vertcat(x[m.nbQ():], m.ForwardDynamics(x[:m.nbQ()], x[m.nbQ():], u).to_mx())]).expand()
+        x = SX.sym('x', m.nbQ() * 2)
+        u = SX.sym('u', m.nbQ())
+        xdot = SX.sym('dx', m.nbQ() * 2)
+        f_expl = f(x, u)
+        f_impl = xdot - f_expl
+
+        model = AcadosModel()
+        model.f_impl_expr = f_impl
+        model.f_expl_expr = f_expl
+        model.x = x
+        model.xdot = xdot
+        model.u = u
+        # model.z = z
+        model.p = []
+        model.name = model_name
+        ocp.model = model
+
+        # set time
+        ocp.solver_options.tf = self.nlp[0]["tf"]
+
+        # set dimensions
+        ocp.dims.nx = self.nlp[0]["nx"]
+        ocp.dims.nu = self.nlp[0]["nu"]
+        ocp.dims.ny = ocp.dims.nx + ocp.dims.nu
+        ocp.dims.ny_e = self.nlp[0]["nx"]
+        ocp.dims.N = self.nlp[0]["ns"]
+
+        # set cost module
+        ocp.cost.cost_type = 'AUTO'
+        ocp.cost.cost_type_e = 'AUTO'
+
+        # set weight à modifier avec objective functions (à l'utilisateur de définir)
+        Q = 0.00 * np.eye(ocp.dims.nx)
+        R = 5 * np.eye(ocp.dims.nu)
+
+        ocp.cost.W = scipy.linalg.block_diag(Q, R)
+
+        ocp.cost.W_e = Q
+
+        # set Lagrange term matrices
+        ocp.cost.Vx = np.zeros((ocp.dims.ny, ocp.dims.nx))
+        ocp.cost.Vx[:ocp.dims.nx, :] = np.eye(ocp.dims.nx)
+
+        # Vu = np.zeros((ny, nu))
+        # Vu[nx:, :] = np.eye(nu)
+        # ocp.cost.Vu = Vu
+
+        Vu = np.zeros((ocp.dims.ny, ocp.dims.nu))
+        Vu[ocp.dims.nx:, :] = np.eye(ocp.dims.nu)
+        ocp.cost.Vu = Vu
+
+        # set Mayer term matrices
+        ocp.cost.Vx_e = np.zeros((ocp.dims.nx, ocp.dims.nx))
+
+        ocp.cost.yref = np.zeros((ocp.dims.ny,))
+        ocp.cost.yref_e = np.ones((ocp.dims.ny_e,))
+
+        # set constraints
+        ocp.constraints.x0 = np.array(self.nlp[0]["X_bounds"].min[:, 0])
+        ocp.dims.nbx_0 = ocp.dims.nx
+        ocp.constraints.constr_type = 'BGH'  # TODO: put as an option
+        ocp.constraints.lbu = np.array(self.nlp[0]["U_bounds"].min[:, 0])
+        ocp.constraints.ubu = np.array(self.nlp[0]["U_bounds"].max[:, 0])
+        ocp.constraints.idxbu = np.array(range(ocp.dims.nu))
+        ocp.dims.nbu = ocp.dims.nu
+
+        # set control constraints
+        ocp.constraints.Jbx_e = np.eye(ocp.dims.nx)
+        ocp.constraints.ubx_e = np.array(self.nlp[0]["X_bounds"].max[:, -1])
+        ocp.constraints.lbx_e = np.array(self.nlp[0]["X_bounds"].min[:, -1])
+        ocp.constraints.idxbx_e = np.array(range(ocp.dims.nx))
+        ocp.dims.nbx_e = ocp.dims.nx
+
+        return ocp
+
     def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, options_ipopt={}):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
         """
+
+        if solver == "acados":
+            self.__prepare_acados()
+
         if return_iterations and not show_online_optim:
             raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
 
