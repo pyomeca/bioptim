@@ -40,6 +40,7 @@ class OptimalControlProgram:
         constraints=(),
         external_forces=(),
         ode_solver=OdeSolver.RK,
+        number_of_finite_elements=5,
         all_generalized_mapping=None,
         q_mapping=None,
         q_dot_mapping=None,
@@ -90,6 +91,7 @@ class OptimalControlProgram:
             "constraints": [],
             "external_forces": external_forces,
             "ode_solver": ode_solver,
+            "number_of_finite_elements": number_of_finite_elements,
             "all_generalized_mapping": all_generalized_mapping,
             "q_mapping": q_mapping,
             "q_dot_mapping": q_dot_mapping,
@@ -177,6 +179,7 @@ class OptimalControlProgram:
         self.__define_variable_time(initial_time_guess, time_min, time_max)
 
         # Define dynamic problem
+        self.__add_to_nlp("number_of_finite_elements", number_of_finite_elements, False) # Number of steps of integration (for now only RK4 steps are implemented)
         self.__add_to_nlp("ode_solver", ode_solver, True)
         for i in range(self.nb_phases):
             if self.nlp[0]["nx"] != self.nlp[i]["nx"] or self.nlp[0]["nu"] != self.nlp[i]["nu"]:
@@ -246,8 +249,13 @@ class OptimalControlProgram:
 
         dynamics = nlp["dynamics_func"]
         ode_opt = {"t0": 0, "tf": nlp["dt"]}
-        if nlp["ode_solver"] == OdeSolver.RK or nlp["ode_solver"] == OdeSolver.COLLOCATION:
+        if nlp["ode_solver"] == OdeSolver.COLLOCATION:
             ode_opt["number_of_finite_elements"] = 5
+        elif nlp["ode_solver"] == OdeSolver.RK:
+            if "number_of_finite_elements" in nlp:
+                ode_opt["number_of_finite_elements"] = nlp["number_of_finite_elements"]
+            else:
+                ode_opt["number_of_finite_elements"] = 5
 
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
         nlp["dynamics"] = []

@@ -21,6 +21,6 @@ def RK4(ode, ode_opt):
             k3 = fun(x[:, i - 1] + h / 2 * k2, u)[:, idx]
             k4 = fun(x[:, i - 1] + h * k3, u)[:, idx]
             x[:, i] = x[:, i - 1] + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
-        return x[:, -1]
+        return x
 
-    return Function("integrator", [x_sym, u_sym], [dxdt(h, x_sym, u_sym)], ["x0", "p"], ["xf"])
+    return Function("integrator_xf", [x_sym, u_sym], [dxdt(h, x_sym, u_sym)[:, -1], dxdt(h, x_sym, u_sym)], ["x0", "p"], ["xf", "xall"])
