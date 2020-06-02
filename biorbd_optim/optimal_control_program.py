@@ -464,17 +464,10 @@ class OptimalControlProgram:
     def export_eocar_ode_model(self):
         from acados_template import AcadosModel
         from casadi import MX, Function, external, SX, vertcat, sin, cos
-        import scipy.linalg
-        from casadi import Function, external, SX, sin, cos
 
-        os.environ["ACADOS_SOURCE_DIR"] = "/home/dangzilla/Documents/Programmation/acados"
-        # create ocp object to formulate the OCP
-        ocp = AcadosOcp()
 
         m = biorbd.Model("eocar-6D.bioMod")
-        # m = biorbd.Model("eocar-6D.bioMod")
         model_name = 'eocar_ode'
-        m = self.nlp[0]["model"]
 
         # Declare model variables
         x = MX.sym('x', m.nbQ() * 2)
@@ -526,10 +519,10 @@ class OptimalControlProgram:
         ocp.dims.N = self.nlp[0]["ns"]
 
         # set cost module
-        ocp.cost.cost_type = 'AUTO'
-        ocp.cost.cost_type_e = 'AUTO'
+        ocp.cost.cost_type = 'LINEAR_LS'
+        ocp.cost.cost_type_e = 'LINEAR_LS'
 
-        # set weight à modifier avec objective functions (à l'utilisateur de définir)
+        # set weight à modifier avec objective functions (user needs to define this TODO)
         Q = 0.00 * np.eye(ocp.dims.nx)
         R = 5 * np.eye(ocp.dims.nu)
 
