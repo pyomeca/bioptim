@@ -579,7 +579,10 @@ class OptimalControlProgram:
         """
 
         if solver == "acados":
-            self.__prepare_acados()
+            from acados_template import AcadosOcpSolver
+            ocp = self.__prepare_acados()
+            ocp_solver = AcadosOcpSolver(ocp, json_file='acados_ocp.json')
+            return ocp_solver.solve()
 
         if return_iterations and not show_online_optim:
             raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
