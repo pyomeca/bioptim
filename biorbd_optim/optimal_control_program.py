@@ -556,6 +556,20 @@ class OptimalControlProgram:
         ocp.constraints.idxbx_e = np.array(range(ocp.dims.nx))
         ocp.dims.nbx_e = ocp.dims.nx
 
+        ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM'  # FULL_CONDENSING_QPOASES
+        ocp.solver_options.hessian_approx = 'GAUSS_NEWTON'
+        ocp.solver_options.integrator_type = 'ERK'
+        ocp.solver_options.nlp_solver_type = 'SQP'
+
+        ocp.solver_options.nlp_solver_tol_comp = 1e-02
+        ocp.solver_options.nlp_solver_tol_eq = 1e-02
+        ocp.solver_options.nlp_solver_tol_ineq = 1e-02
+        ocp.solver_options.nlp_solver_tol_stat = 1e-02
+        ocp.solver_options.sim_method_newton_iter = 5
+        ocp.solver_options.sim_method_num_stages = 4
+        ocp.solver_options.sim_method_num_steps = 10
+        ocp.solver_options.print_level = 1
+
         return ocp
 
     def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, options_ipopt={}):
