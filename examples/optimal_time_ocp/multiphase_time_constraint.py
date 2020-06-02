@@ -15,13 +15,18 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(final_time, time_min, time_max, biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
+def prepare_ocp(
+    final_time, time_min, time_max, number_shooting_points, biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK
+):
     # --- Options --- #
+    nb_phases = len(number_shooting_points)
+    if nb_phases > 3:
+        raise RuntimeError("Number of phases must be 1 to 3")
+
     # Model path
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
 
     # Problem parameters
-    number_shooting_points = (20, 30, 20)
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
@@ -32,7 +37,7 @@ def prepare_ocp(final_time, time_min, time_max, biorbd_model_path="cube.bioMod",
     )
 
     # Dynamics
-    variable_type = (ProblemType.torque_driven, ProblemType.torque_driven, ProblemType.torque_driven)
+    problem_type = (ProblemType.torque_driven, ProblemType.torque_driven, ProblemType.torque_driven)
 
     # Constraints
     constraints = (
@@ -70,6 +75,7 @@ def prepare_ocp(final_time, time_min, time_max, biorbd_model_path="cube.bioMod",
 
     # Initial guess
     X_init = InitialConditions([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    X_init = (X_init, X_init, X_init)
 
     # Define control path constraint
     U_bounds = [
@@ -84,20 +90,21 @@ def prepare_ocp(final_time, time_min, time_max, biorbd_model_path="cube.bioMod",
         ),
     ]
     U_init = InitialConditions([torque_init] * biorbd_model[0].nbGeneralizedTorque())
+    U_init = (U_init, U_init, U_init)
 
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
-        variable_type,
-        number_shooting_points,
-        final_time,
-        (X_init, X_init, X_init),
-        (U_init, U_init, U_init),
-        X_bounds,
-        U_bounds,
-        objective_functions,
-        constraints,
+        biorbd_model[:nb_phases],
+        problem_type[:nb_phases],
+        number_shooting_points[:nb_phases],
+        final_time[:nb_phases],
+        X_init[:nb_phases],
+        U_init[:nb_phases],
+        X_bounds[:nb_phases],
+        U_bounds[:nb_phases],
+        objective_functions[:nb_phases],
+        constraints[:nb_phases],
         ode_solver=ode_solver,
     )
 
@@ -106,14 +113,15 @@ if __name__ == "__main__":
     final_time = (2, 5, 4)
     time_min = [1, 3, 0.1]
     time_max = [2, 4, 0.8]
-    ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max)
+    ns = (20, 30, 20)
+    ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, number_shooting_points=ns)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
-    print(f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s and {param['time'][2, 0]}s.")
+    print(f"The optimized phase time are: {param['time'][0, 0]}s, {param['time'][1, 0]}s and {param['time'][2, 0]}s.")
 
     result = ShowResult(ocp, sol)
     result.animate()
