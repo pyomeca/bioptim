@@ -20,9 +20,7 @@ from biorbd_optim import (
 
 # Load align_segment_on_rt
 EXAMPLES_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "data_to_track", str(EXAMPLES_FOLDER) + "/getting_started/pendulum.py"
-)
+spec = importlib.util.spec_from_file_location("data_to_track", str(EXAMPLES_FOLDER) + "/getting_started/pendulum.py")
 data_to_track = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data_to_track)
 
@@ -34,6 +32,7 @@ def get_markers_pos(x, idx_coord, fun):
     marker_pos = vertcat(*marker_pos)
     return marker_pos[idx_coord::3, :].T
 
+
 def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, tau_ref):
     # --- Options --- #
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -43,7 +42,12 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
 
     # Add objective functions
     objective_functions = (
-        {"type": Objective.Lagrange.TRACK_MARKERS, "axis_tot_track": [Axe.Y, Axe.Z], "weight": 100, "data_to_track": markers_ref},
+        {
+            "type": Objective.Lagrange.TRACK_MARKERS,
+            "axis_tot_track": [Axe.Y, Axe.Z],
+            "weight": 100,
+            "data_to_track": markers_ref,
+        },
         {"type": Objective.Lagrange.TRACK_TORQUE, "weight": 1, "data_to_track": tau_ref.T},
     )
 
@@ -100,30 +104,60 @@ if __name__ == "__main__":
 
     symbolic_states = MX.sym("x", nb_q + nb_qdot, 1)
     symbolic_controls = MX.sym("u", nb_tau, 1)
-    markers_fun = Function("ForwardKin",
-                [symbolic_states],
-                [biorbd_model.markers(symbolic_states[:nb_q])],
-                ["q"],
-                ["marker"],
-        ).expand()
+    markers_fun = Function(
+        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states[:nb_q])], ["q"], ["marker"],
+    ).expand()
     markers_ref = np.zeros((3, nb_marker, number_shooting_points + 1))
     for i in range(number_shooting_points + 1):
         markers_ref[:, :, i] = np.array(markers_fun(x[:, i]))
     tau_ref = tau
 
-    ocp = prepare_ocp(biorbd_model, final_time=final_time, number_shooting_points=number_shooting_points, markers_ref=markers_ref, tau_ref=tau_ref)
+    ocp = prepare_ocp(
+        biorbd_model,
+        final_time=final_time,
+        number_shooting_points=number_shooting_points,
+        markers_ref=markers_ref,
+        tau_ref=tau_ref,
+    )
 
     # --- plot markers position --- #
     label_markers = []
-    title_markers = ['x', 'y', 'z']
+    title_markers = ["x", "y", "z"]
     for mark in range(biorbd_model.nbMarkers()):
         label_markers.append(ocp.nlp[0]["model"].markerNames()[mark].to_string())
 
-    ocp.add_plot("Markers plot coordinates", update_function=lambda x, u: get_markers_pos(x, 0, markers_fun), plot_type=PlotType.PLOT, color="tab:red")
-    ocp.add_plot("Markers plot coordinates", update_function=lambda x, u: markers_ref[1, :, :], plot_type=PlotType.STEP, color="black", legend = label_markers)
-    ocp.add_plot("Markers plot coordinates", update_function=lambda x, u: get_markers_pos(x, 1, markers_fun), plot_type=PlotType.PLOT, color="tab:green")
-    ocp.add_plot("Markers plot coordinates", update_function=lambda x, u: markers_ref[2, :, :], plot_type=PlotType.STEP, color="black", legend = label_markers)
-    ocp.add_plot("Markers plot coordinates", update_function=lambda x, u: get_markers_pos(x, 2, markers_fun), plot_type=PlotType.PLOT, color="tab:blue")
+    ocp.add_plot(
+        "Markers plot coordinates",
+        update_function=lambda x, u: get_markers_pos(x, 0, markers_fun),
+        plot_type=PlotType.PLOT,
+        color="tab:red",
+    )
+    ocp.add_plot(
+        "Markers plot coordinates",
+        update_function=lambda x, u: markers_ref[1, :, :],
+        plot_type=PlotType.STEP,
+        color="black",
+        legend=label_markers,
+    )
+    ocp.add_plot(
+        "Markers plot coordinates",
+        update_function=lambda x, u: get_markers_pos(x, 1, markers_fun),
+        plot_type=PlotType.PLOT,
+        color="tab:green",
+    )
+    ocp.add_plot(
+        "Markers plot coordinates",
+        update_function=lambda x, u: markers_ref[2, :, :],
+        plot_type=PlotType.STEP,
+        color="black",
+        legend=label_markers,
+    )
+    ocp.add_plot(
+        "Markers plot coordinates",
+        update_function=lambda x, u: get_markers_pos(x, 2, markers_fun),
+        plot_type=PlotType.PLOT,
+        color="tab:blue",
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=False)
