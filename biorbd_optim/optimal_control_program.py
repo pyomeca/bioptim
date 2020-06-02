@@ -179,7 +179,9 @@ class OptimalControlProgram:
         self.__define_variable_time(initial_time_guess, time_min, time_max)
 
         # Define dynamic problem
-        self.__add_to_nlp("number_of_finite_elements", number_of_finite_elements, False) # Number of steps of integration (for now only RK4 steps are implemented)
+        self.__add_to_nlp(
+            "number_of_finite_elements", number_of_finite_elements, False
+        )  # Number of steps of integration (for now only RK4 steps are implemented)
         self.__add_to_nlp("ode_solver", ode_solver, True)
         for i in range(self.nb_phases):
             if self.nlp[0]["nx"] != self.nlp[i]["nx"] or self.nlp[0]["nu"] != self.nlp[i]["nu"]:
