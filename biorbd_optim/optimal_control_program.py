@@ -461,9 +461,9 @@ class OptimalControlProgram:
 
         nlp["plot"][plot_name] = custom_plot
 
-    def __prepare_acados(self):
-        from acados_template import AcadosOcp, AcadosOcpSolver, AcadosModel
-        import numpy as np
+    def export_eocar_ode_model(self):
+        from acados_template import AcadosModel
+        from casadi import MX, Function, external, SX, vertcat, sin, cos
         import scipy.linalg
         from casadi import Function, external, SX, sin, cos
 
@@ -471,7 +471,7 @@ class OptimalControlProgram:
         # create ocp object to formulate the OCP
         ocp = AcadosOcp()
 
-        # # set model
+        m = biorbd.Model("eocar-6D.bioMod")
         # m = biorbd.Model("eocar-6D.bioMod")
         model_name = 'eocar_ode'
         m = self.nlp[0]["model"]
@@ -498,6 +498,21 @@ class OptimalControlProgram:
         # model.z = z
         model.p = []
         model.name = model_name
+
+        return model
+
+    def __prepare_acados(self):
+        from acados_template import AcadosOcp, AcadosOcpSolver, AcadosModel
+        import numpy as np
+        import scipy.linalg
+        from casadi import Function, external, SX, sin, cos
+
+        os.environ["ACADOS_SOURCE_DIR"] = "/home/dangzilla/Documents/Programmation/acados"
+        # create ocp object to formulate the OCP
+        ocp = AcadosOcp()
+
+        # # set model
+        model = self.export_eocar_ode_model()
         ocp.model = model
 
         # set time
