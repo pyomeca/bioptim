@@ -28,7 +28,16 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_markers(
-            penalty_type, ocp, nlp, t, x, u, axis_to_track=range(3), markers_idx=(), data_to_track=(), **extra_param
+            penalty_type,
+            ocp,
+            nlp,
+            t,
+            x,
+            u,
+            axis_to_track=(Axe.X, Axe.Y, Axe.Z),
+            markers_idx=(),
+            data_to_track=(),
+            **extra_param,
         ):
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"

@@ -87,7 +87,7 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
 
 
 if __name__ == "__main__":
-    biorbd_path = (str(EXAMPLES_FOLDER) + "/getting_started/pendulum.bioMod")
+    biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_path)
     final_time = 3
     number_shooting_points = 20
