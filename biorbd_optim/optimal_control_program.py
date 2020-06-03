@@ -482,103 +482,102 @@ class OptimalControlProgram:
         f_expl = f(x, u)
         f_impl = xdot - f_expl
 
-        model = AcadosModel()
-        model.f_impl_expr = f_impl
-        model.f_expl_expr = f_expl
-        model.x = x
-        model.xdot = xdot
-        model.u = u
+        acados_model = AcadosModel()
+        acados_model.f_impl_expr = f_impl
+        acados_model.f_expl_expr = f_expl
+        acados_model.x = x
+        acados_model.xdot = xdot
+        acados_model.u = u
         # model.z = z
-        model.p = []
-        model.name = model_name
+        acados_model.p = []
+        acados_model.name = model_name
 
-        return model
+        return acados_model
 
     def __prepare_acados(self):
-        from acados_template import AcadosOcp, AcadosOcpSolver, AcadosModel
+        from acados_template import AcadosOcp
         import numpy as np
         import scipy.linalg
-        from casadi import Function, external, SX, sin, cos
 
         os.environ["ACADOS_SOURCE_DIR"] = "/home/dangzilla/Documents/Programmation/acados"
         # create ocp object to formulate the OCP
-        ocp = AcadosOcp()
+        acados_ocp = AcadosOcp()
 
         # # set model
-        model = self.export_eocar_ode_model()
-        ocp.model = model
+        acados_model = self.export_eocar_ode_model()
+        acados_ocp.model = acados_model
 
         # set time
-        ocp.solver_options.tf = self.nlp[0]["tf"]
+        acados_ocp.solver_options.tf = self.nlp[0]["tf"]
 
         # set dimensions
-        ocp.dims.nx = self.nlp[0]["nx"]
-        ocp.dims.nu = self.nlp[0]["nu"]
-        ocp.dims.ny = ocp.dims.nx + ocp.dims.nu
-        ocp.dims.ny_e = self.nlp[0]["nx"]
-        ocp.dims.N = self.nlp[0]["ns"]
+        acados_ocp.dims.nx = self.nlp[0]["nx"]
+        acados_ocp.dims.nu = self.nlp[0]["nu"]
+        acados_ocp.dims.ny = acados_ocp.dims.nx + acados_ocp.dims.nu
+        acados_ocp.dims.ny_e = self.nlp[0]["nx"]
+        acados_ocp.dims.N = self.nlp[0]["ns"]
 
         # set cost module
-        ocp.cost.cost_type = 'LINEAR_LS'
-        ocp.cost.cost_type_e = 'LINEAR_LS'
+        acados_ocp.cost.cost_type = 'LINEAR_LS'
+        acados_ocp.cost.cost_type_e = 'LINEAR_LS'
 
         # set weight à modifier avec objective functions (user needs to define this TODO)
-        Q = 0.00 * np.eye(ocp.dims.nx)
-        R = 5 * np.eye(ocp.dims.nu)
+        Q = 0.00 * np.eye(acados_ocp.dims.nx)
+        R = 5 * np.eye(acados_ocp.dims.nu)
 
-        ocp.cost.W = scipy.linalg.block_diag(Q, R)
+        acados_ocp.cost.W = scipy.linalg.block_diag(Q, R)
 
-        ocp.cost.W_e = Q
+        acados_ocp.cost.W_e = Q
 
         # set Lagrange term matrices
-        ocp.cost.Vx = np.zeros((ocp.dims.ny, ocp.dims.nx))
-        ocp.cost.Vx[:ocp.dims.nx, :] = np.eye(ocp.dims.nx)
+        acados_ocp.cost.Vx = np.zeros((acados_ocp.dims.ny, acados_ocp.dims.nx))
+        acados_ocp.cost.Vx[:acados_ocp.dims.nx, :] = np.eye(acados_ocp.dims.nx)
 
         # Vu = np.zeros((ny, nu))
         # Vu[nx:, :] = np.eye(nu)
         # ocp.cost.Vu = Vu
 
-        Vu = np.zeros((ocp.dims.ny, ocp.dims.nu))
-        Vu[ocp.dims.nx:, :] = np.eye(ocp.dims.nu)
-        ocp.cost.Vu = Vu
+        Vu = np.zeros((acados_ocp.dims.ny, acados_ocp.dims.nu))
+        Vu[acados_ocp.dims.nx:, :] = np.eye(acados_ocp.dims.nu)
+        acados_ocp.cost.Vu = Vu
 
         # set Mayer term matrices
-        ocp.cost.Vx_e = np.zeros((ocp.dims.nx, ocp.dims.nx))
+        acados_ocp.cost.Vx_e = np.zeros((acados_ocp.dims.nx, acados_ocp.dims.nx))
 
-        ocp.cost.yref = np.zeros((ocp.dims.ny,))
-        ocp.cost.yref_e = np.ones((ocp.dims.ny_e,))
+        acados_ocp.cost.yref = np.zeros((acados_ocp.dims.ny,))
+        acados_ocp.cost.yref_e = np.ones((acados_ocp.dims.ny_e,))
 
         # set constraints
-        ocp.constraints.x0 = np.array(self.nlp[0]["X_bounds"].min[:, 0])
-        ocp.dims.nbx_0 = ocp.dims.nx
-        ocp.constraints.constr_type = 'BGH'  # TODO: put as an option
-        ocp.constraints.lbu = np.array(self.nlp[0]["U_bounds"].min[:, 0])
-        ocp.constraints.ubu = np.array(self.nlp[0]["U_bounds"].max[:, 0])
-        ocp.constraints.idxbu = np.array(range(ocp.dims.nu))
-        ocp.dims.nbu = ocp.dims.nu
+        acados_ocp.constraints.x0 = np.array(self.nlp[0]["X_bounds"].min[:, 0])
+        acados_ocp.dims.nbx_0 = acados_ocp.dims.nx
+        acados_ocp.constraints.constr_type = 'BGH'  # TODO: put as an option
+        acados_ocp.constraints.lbu = np.array(self.nlp[0]["U_bounds"].min[:, 0])
+        acados_ocp.constraints.ubu = np.array(self.nlp[0]["U_bounds"].max[:, 0])
+        acados_ocp.constraints.idxbu = np.array(range(acados_ocp.dims.nu))
+        acados_ocp.dims.nbu = acados_ocp.dims.nu
 
         # set control constraints
-        ocp.constraints.Jbx_e = np.eye(ocp.dims.nx)
-        ocp.constraints.ubx_e = np.array(self.nlp[0]["X_bounds"].max[:, -1])
-        ocp.constraints.lbx_e = np.array(self.nlp[0]["X_bounds"].min[:, -1])
-        ocp.constraints.idxbx_e = np.array(range(ocp.dims.nx))
-        ocp.dims.nbx_e = ocp.dims.nx
+        acados_ocp.constraints.Jbx_e = np.eye(acados_ocp.dims.nx)
+        acados_ocp.constraints.ubx_e = np.array(self.nlp[0]["X_bounds"].max[:, -1])
+        acados_ocp.constraints.lbx_e = np.array(self.nlp[0]["X_bounds"].min[:, -1])
+        acados_ocp.constraints.idxbx_e = np.array(range(acados_ocp.dims.nx))
+        acados_ocp.dims.nbx_e = acados_ocp.dims.nx
 
-        ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM'  # FULL_CONDENSING_QPOASES
-        ocp.solver_options.hessian_approx = 'GAUSS_NEWTON'
-        ocp.solver_options.integrator_type = 'ERK'
-        ocp.solver_options.nlp_solver_type = 'SQP'
+        acados_ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM'  # FULL_CONDENSING_QPOASES
+        acados_ocp.solver_options.hessian_approx = 'GAUSS_NEWTON'
+        acados_ocp.solver_options.integrator_type = 'ERK'
+        acados_ocp.solver_options.nlp_solver_type = 'SQP'
 
-        ocp.solver_options.nlp_solver_tol_comp = 1e-02
-        ocp.solver_options.nlp_solver_tol_eq = 1e-02
-        ocp.solver_options.nlp_solver_tol_ineq = 1e-02
-        ocp.solver_options.nlp_solver_tol_stat = 1e-02
-        ocp.solver_options.sim_method_newton_iter = 5
-        ocp.solver_options.sim_method_num_stages = 4
-        ocp.solver_options.sim_method_num_steps = 10
-        ocp.solver_options.print_level = 1
+        acados_ocp.solver_options.nlp_solver_tol_comp = 1e-02
+        acados_ocp.solver_options.nlp_solver_tol_eq = 1e-02
+        acados_ocp.solver_options.nlp_solver_tol_ineq = 1e-02
+        acados_ocp.solver_options.nlp_solver_tol_stat = 1e-02
+        acados_ocp.solver_options.sim_method_newton_iter = 5
+        acados_ocp.solver_options.sim_method_num_stages = 4
+        acados_ocp.solver_options.sim_method_num_steps = 10
+        acados_ocp.solver_options.print_level = 1
 
-        return ocp
+        return acados_ocp
 
     def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, options_ipopt={}):
         """
@@ -588,8 +587,8 @@ class OptimalControlProgram:
 
         if solver == "acados":
             from acados_template import AcadosOcpSolver
-            ocp = self.__prepare_acados()
-            ocp_solver = AcadosOcpSolver(ocp, json_file='acados_ocp.json')
+            acados_ocp = self.__prepare_acados()
+            ocp_solver = AcadosOcpSolver(acados_ocp, json_file='acados_ocp.json')
             return ocp_solver.solve()
 
         if return_iterations and not show_online_optim:
