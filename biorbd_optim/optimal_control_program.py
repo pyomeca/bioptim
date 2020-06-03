@@ -499,6 +499,7 @@ class OptimalControlProgram:
         import numpy as np
         import scipy.linalg
 
+
         os.environ["ACADOS_SOURCE_DIR"] = "/home/dangzilla/Documents/Programmation/acados"
         # create ocp object to formulate the OCP
         acados_ocp = AcadosOcp()
@@ -507,15 +508,16 @@ class OptimalControlProgram:
         acados_model = self.export_eocar_ode_model()
         acados_ocp.model = acados_model
 
-        # set time
-        acados_ocp.solver_options.tf = self.nlp[0]["tf"]
+        for i in range(self.nb_phases):
+            # set time
+            acados_ocp.solver_options.tf = self.nlp[i]["tf"]
+            # set dimensions
+            acados_ocp.dims.nx = self.nlp[i]["nx"]
+            acados_ocp.dims.nu = self.nlp[i]["nu"]
+            acados_ocp.dims.ny = acados_ocp.dims.nx + acados_ocp.dims.nu
+            acados_ocp.dims.ny_e = self.nlp[i]["nx"]
+            acados_ocp.dims.N = self.nlp[i]["ns"]
 
-        # set dimensions
-        acados_ocp.dims.nx = self.nlp[0]["nx"]
-        acados_ocp.dims.nu = self.nlp[0]["nu"]
-        acados_ocp.dims.ny = acados_ocp.dims.nx + acados_ocp.dims.nu
-        acados_ocp.dims.ny_e = self.nlp[0]["nx"]
-        acados_ocp.dims.N = self.nlp[0]["ns"]
 
         # set cost module
         acados_ocp.cost.cost_type = 'LINEAR_LS'
@@ -547,21 +549,22 @@ class OptimalControlProgram:
         acados_ocp.cost.yref = np.zeros((acados_ocp.dims.ny,))
         acados_ocp.cost.yref_e = np.ones((acados_ocp.dims.ny_e,))
 
-        # set constraints
-        acados_ocp.constraints.x0 = np.array(self.nlp[0]["X_bounds"].min[:, 0])
-        acados_ocp.dims.nbx_0 = acados_ocp.dims.nx
-        acados_ocp.constraints.constr_type = 'BGH'  # TODO: put as an option
-        acados_ocp.constraints.lbu = np.array(self.nlp[0]["U_bounds"].min[:, 0])
-        acados_ocp.constraints.ubu = np.array(self.nlp[0]["U_bounds"].max[:, 0])
-        acados_ocp.constraints.idxbu = np.array(range(acados_ocp.dims.nu))
-        acados_ocp.dims.nbu = acados_ocp.dims.nu
+        for i in range(self.nb_phases):
+            # set constraints
+            acados_ocp.constraints.x0 = np.array(self.nlp[i]["X_bounds"].min[:, 0])
+            acados_ocp.dims.nbx_0 = acados_ocp.dims.nx
+            acados_ocp.constraints.constr_type = 'BGH'  # TODO: put as an option
+            acados_ocp.constraints.lbu = np.array(self.nlp[i]["U_bounds"].min[:, 0])
+            acados_ocp.constraints.ubu = np.array(self.nlp[i]["U_bounds"].max[:, 0])
+            acados_ocp.constraints.idxbu = np.array(range(acados_ocp.dims.nu))
+            acados_ocp.dims.nbu = acados_ocp.dims.nu
 
-        # set control constraints
-        acados_ocp.constraints.Jbx_e = np.eye(acados_ocp.dims.nx)
-        acados_ocp.constraints.ubx_e = np.array(self.nlp[0]["X_bounds"].max[:, -1])
-        acados_ocp.constraints.lbx_e = np.array(self.nlp[0]["X_bounds"].min[:, -1])
-        acados_ocp.constraints.idxbx_e = np.array(range(acados_ocp.dims.nx))
-        acados_ocp.dims.nbx_e = acados_ocp.dims.nx
+            # set control constraints
+            acados_ocp.constraints.Jbx_e = np.eye(acados_ocp.dims.nx)
+            acados_ocp.constraints.ubx_e = np.array(self.nlp[i]["X_bounds"].max[:, -1])
+            acados_ocp.constraints.lbx_e = np.array(self.nlp[i]["X_bounds"].min[:, -1])
+            acados_ocp.constraints.idxbx_e = np.array(range(acados_ocp.dims.nx))
+            acados_ocp.dims.nbx_e = acados_ocp.dims.nx
 
         acados_ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM'  # FULL_CONDENSING_QPOASES
         acados_ocp.solver_options.hessian_approx = 'GAUSS_NEWTON'
