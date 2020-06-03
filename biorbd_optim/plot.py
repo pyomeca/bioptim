@@ -7,6 +7,7 @@ from itertools import accumulate
 
 from matplotlib import pyplot as plt, lines
 from casadi import MX, Callback, nlpsol_out, nlpsol_n_out, Sparsity
+from scipy.integrate import solve_ivp
 
 from .variable_optimization import Data
 from .mapping import Mapping
@@ -41,6 +42,7 @@ class PlotOcp:
 
         self.ocp = ocp
         self.ydata = []
+        self.ydata_int = []
         self.ns = 0
 
         self.t = []
@@ -214,8 +216,24 @@ class PlotOcp:
     def show():
         plt.show()
 
+    def get_integrated_value(self, state, control):
+        nlp = self.ocp.nlp[0]
+        def dyn_interface(t, x, u):
+            return np.array(nlp["dynamics_func"](x, u)).squeeze()
+
+        dt = nlp["tf"] / nlp["ns"]
+        state_integrated = []
+        x_init = state[:, 0]
+        for i in range(nlp["ns"]):
+            u = control[:, i]
+            sol = solve_ivp(dyn_interface, (0, dt), x_init, method="RK45", args=(u,))
+            state_integrated.append(sol["y"])
+            x_init = sol["y"][:, -1]
+        return state_integrated
+
     def update_data(self, V):
         self.ydata = []
+        self.ydata_int = []
 
         data_states, data_controls, data_param = Data.get_data(
             self.ocp, V, get_parameters=True, integrate=True, concatenate=False
@@ -225,7 +243,6 @@ class PlotOcp:
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
                     self.tf[i_in_tf] = data_param["time"][i_in_time]
-            self.__update_xdata()
 
         data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, concatenate=False)
         for i, nlp in enumerate(self.ocp.nlp):
@@ -241,11 +258,21 @@ class PlotOcp:
                     control = np.concatenate((control, data_controls_per_phase[s][i]))
                 else:
                     control = np.concatenate((control, data_controls_per_phase[s]))
+            state_integrated = self.get_integrated_value(state, control)
+            n_idx = 0
+            for key_state in nlp["var_states"]:
+                y = []
+                for j in range(len(state_integrated)):
+                    y.append(state_integrated[j][n_idx: n_idx + nlp["var_states"][key_state], :])
+                n_idx=nlp["var_states"][key_state]
+                self.__append_to_ydata_int(y)
+
             for key in self.variable_sizes[i]:
                 y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                 y.fill(np.nan)
                 y[:, :] = self.plot_func[key][i].function(state, control)
                 self.__append_to_ydata(y)
+        self.__update_xdata()
         self.__update_axes()
 
     def __update_xdata(self):
@@ -254,7 +281,8 @@ class PlotOcp:
             phase_idx = plot[1]
             if plot[0] == PlotType.INTEGRATED:
                 for cmp, p in enumerate(plot[2]):
-                    p.set_xdata(self.t[phase_idx][[cmp, cmp + 1]])
+                    t2 = np.linspace(self.t[phase_idx][cmp], self.t[phase_idx][cmp + 1], self.ydata_int[0][cmp].shape[0])
+                    p.set_xdata(t2)
                 ax = plot[2][-1].axes
             else:
                 plot[2].set_xdata(self.t[phase_idx])
@@ -272,13 +300,23 @@ class PlotOcp:
         for y in data:
             self.ydata.append(y)
 
+    def __append_to_ydata_int(self, data):
+        for i in range(data[0].shape[0]):
+            y = []
+            for n in range(len(data)):
+                y.append(data[n][i, :])
+            self.ydata_int.append(y)
+
     def __update_axes(self):
+        j=0
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
 
             if plot[0] == PlotType.INTEGRATED:
+                y = self.ydata_int[j]
                 for cmp, p in enumerate(plot[2]):
-                    p.set_ydata(y[[cmp, cmp + 1]])
+                    p.set_ydata(y[cmp])
+                j += 1
             else:
                 plot[2].set_ydata(y)
 
