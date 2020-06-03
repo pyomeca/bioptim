@@ -271,7 +271,7 @@ class PlotOcp:
                 y = []
                 for j in range(len(state_integrated)):
                     y.append(state_integrated[j][n_idx: n_idx + nlp["var_states"][key_state], :])
-                n_idx=nlp["var_states"][key_state]
+                n_idx=n_idx + nlp["var_states"][key_state]
                 self.__append_to_ydata_int(y)
 
             for key in self.variable_sizes[i]:
@@ -284,25 +284,21 @@ class PlotOcp:
 
     def __update_xdata(self):
         self.__init_time_vector()
-        a = 0
+        plot_nodes = False
         for plot in self.plots:
             phase_idx = plot[1]
             if plot[0] == PlotType.INTEGRATED:
-                # for cmp, p in enumerate(plot[2]):
-                #     t2 = np.linspace(self.t[phase_idx][cmp], self.t[phase_idx][cmp + 1], self.ydata_int[0][cmp].shape[0])
-                #     p.set_xdata(t2)
-                # ax = plot[2][-1].axes
-                if a == 0:
+                if plot_nodes:
+                    for cmp, p in enumerate(plot[2]):
+                        p.set_xdata([self.t[phase_idx][cmp], self.t[phase_idx][cmp + 1]])
+                    ax = plot[2][-1].axes
+                    plot_nodes = False
+                else:
                     for cmp, p in enumerate(plot[2]):
                         t2 = np.linspace(self.t[phase_idx][cmp], self.t[phase_idx][cmp + 1], self.ydata_int[0][cmp].shape[0])
                         p.set_xdata(t2)
                     ax = plot[2][-1].axes
-                    a = 1
-                else:
-                    for cmp, p in enumerate(plot[2]):
-                        p.set_xdata([self.t[phase_idx][cmp], self.t[phase_idx][cmp + 1]])
-                    ax = plot[2][-1].axes
-                    a = 0
+                    plot_nodes = True
             else:
                 plot[2].set_xdata(self.t[phase_idx])
                 ax = plot[2].axes
@@ -329,29 +325,20 @@ class PlotOcp:
     def __update_axes(self):
         s = 0
         c = 0
-        a = 0
+        plot_nodes = False
         for i, plot in enumerate(self.plots):
-            # if plot[0] == PlotType.INTEGRATED:
-            #     y = self.ydata_int[s]
-            #     for cmp, p in enumerate(plot[2]):
-            #         p.set_ydata(y[cmp])
-            #     s += 1
-            # else:
-            #     y = self.ydata[i]
-            #     plot[2].set_ydata(y)
-
             if plot[0] == PlotType.INTEGRATED:
                 y = self.ydata_int[s]
-                if a == 0:
-                    for cmp, p in enumerate(plot[2]):
-                        p.set_ydata(y[cmp])
-                    a = 1
-                else:
+                if plot_nodes:
                     for cmp, p in enumerate(plot[2]):
                         p.set_ydata([y[cmp][0], y[cmp][-1]])
-                    a = 0
+                    plot_nodes = False
                     s += 1
                     c += 1
+                else:
+                    for cmp, p in enumerate(plot[2]):
+                        p.set_ydata(y[cmp])
+                    plot_nodes = True
             else:
                 y = self.ydata[c]
                 plot[2].set_ydata(y)
