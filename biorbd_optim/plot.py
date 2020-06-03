@@ -167,7 +167,12 @@ class PlotOcp:
                         for cmp in range(nlp["ns"]):
                             plots_integrated.append(
                                 ax.plot(
-                                    self.t_integrated[i][cmp], np.zeros(nb_int_steps + 1), "-", color=color, markersize=3, linewidth=0.8,
+                                    self.t_integrated[i][cmp],
+                                    np.zeros(nb_int_steps + 1),
+                                    "-",
+                                    color=color,
+                                    markersize=3,
+                                    linewidth=0.8,
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
@@ -263,7 +268,10 @@ class PlotOcp:
                     for idx, t in enumerate(self.t_integrated[i]):
                         y_tp = np.empty((self.variable_sizes[i][key], len(t)))
                         y_tp.fill(np.nan)
-                        y_tp[:, :] = self.plot_func[key][i].function(state[:, step_size*idx:step_size*(idx+1)], np.repeat(control[:, idx:idx+1], step_size, axis=1))
+                        y_tp[:, :] = self.plot_func[key][i].function(
+                            state[:, step_size * idx : step_size * (idx + 1)],
+                            np.repeat(control[:, idx : idx + 1], step_size, axis=1),
+                        )
                         all_y.append(y_tp)
 
                     for idx in range(len(self.plot_func[key][i].phase_mappings.map_idx)):
