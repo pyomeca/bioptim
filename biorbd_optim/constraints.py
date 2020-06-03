@@ -19,6 +19,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
         Biomechanical constraints
         """
+
         @staticmethod
         def contact_force_inequality(
             constraint_type, ocp, nlp, t, x, u, direction, contact_force_idx, boundary, **parameters

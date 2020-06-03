@@ -6,6 +6,7 @@ from .enums import InterpolationType
 
 class PathCondition(np.ndarray):
     """Sets path constraints"""
+
     def __new__(cls, input_array, interpolation_type=InterpolationType.CONSTANT):
         """
         Interpolates path conditions with the chosen interpolation type.
@@ -193,6 +194,7 @@ class Bounds:
 
 class QAndQDotBounds(Bounds):
     """Sets bounds on states which are [generalized coordinates positions, generalized coordinates velocities]"""
+
     def __init__(self, biorbd_model, all_generalized_mapping=None, q_mapping=None, q_dot_mapping=None):
         """
         Initializes and fills up the bounds on the states which are

@@ -6,6 +6,7 @@ class Dynamics:
     """
     Different dynamics types
     """
+
     @staticmethod
     def forward_dynamics_torque_driven(states, controls, nlp):
         """

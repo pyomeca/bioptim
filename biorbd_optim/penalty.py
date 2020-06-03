@@ -95,7 +95,6 @@ class PenaltyFunctionAbstract:
                 ) - inv_jcs_0 @ casadi.vertcat(nlp["model"].markers(x[i][:n_q])[:, markers_idx], 1)
                 penalty_type._add_to_penalty(ocp, nlp, val[:3], **extra_param)
 
-
         @staticmethod
         def minimize_markers_velocity(penalty_type, ocp, nlp, t, x, u, markers_idx=(), data_to_track=(), **extra_param):
             """

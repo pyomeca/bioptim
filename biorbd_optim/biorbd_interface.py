@@ -7,6 +7,7 @@ class BiorbdInterface:
     """
     Type conversions allowing to use Biorbd with numpy arrays
     """
+
     @staticmethod
     def convert_array_to_external_forces(all_f_ext):
         """

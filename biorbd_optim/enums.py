@@ -58,6 +58,7 @@ class PlotType(Enum):
     INTEGRATED: plot nodes and integrate between them.
     STEP: stair plot.
     """
+
     PLOT = 0
     INTEGRATED = 1
     STEP = 2

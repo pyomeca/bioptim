@@ -10,6 +10,7 @@ class ObjectiveFunction:
     """
     Different conditions between biorbd geometric structures.
     """
+
     class LagrangeFunction(PenaltyFunctionAbstract):
         """
         Lagrange type objectives. (integral of the objective over the optimized movement duration)
@@ -19,6 +20,7 @@ class ObjectiveFunction:
             """
             Biomechanical objectives
             """
+
             @staticmethod
             def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
                 """Minimizes the duration of the movement (Lagrange)."""
@@ -71,6 +73,7 @@ class ObjectiveFunction:
             """
             Biomechanical objectives
             """
+
             @staticmethod
             def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
                 """Minimizes the duration of the movement (Mayer)."""
