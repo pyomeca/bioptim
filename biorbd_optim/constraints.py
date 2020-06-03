@@ -132,6 +132,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         for i in range(len(ocp.nlp) - 1):
             if ocp.nlp[i]["nx"] != ocp.nlp[i + 1]["nx"]:
                 raise RuntimeError("Phase constraints without same nx is not supported yet")
+        for i in range(len(ocp.phase_transitions)):
             penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
             phase_transition_function = ocp.phase_transitions[i]["type"]
             val = phase_transition_function(ocp, **ocp.phase_transitions[i])
