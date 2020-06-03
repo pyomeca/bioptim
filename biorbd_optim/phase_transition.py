@@ -28,9 +28,6 @@ class PhaseTransitionFunctions:
                 warn("The chosen model does not have any contact")
             qdot_post = nlp_post["model"].ComputeConstraintImpulsesDirect(q, qdot_pre).to_mx()
 
-            # As a temporary replacement for ComputeConstraintImpulsesDirect:
-            # qdot_post = nlp_post["X"][-1][nbQ:]
-
             val = nlp_pre["X"][-1][:nbQ] - q
             val = vertcat(val, nlp_post["X"][0][nbQ:] - qdot_post)
             return val
