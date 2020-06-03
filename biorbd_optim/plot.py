@@ -154,13 +154,20 @@ class PlotOcp:
                     elif plot_type == PlotType.INTEGRATED:
                         color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:brown"
                         plots_integrated = []
+                        plots_integrated_2 = []
                         for cmp in range(nlp["ns"]):
                             plots_integrated.append(
                                 ax.plot(
-                                    self.t[i][[cmp, cmp + 1]], (0, 0), ".-", color=color, markersize=3, linewidth=0.8,
+                                    self.t[i][[cmp, cmp + 1]], (0, 0), "-", color=color, markersize=3, linewidth=0.8,
+                                )[0]
+                            )
+                            plots_integrated_2.append(
+                                ax.plot(
+                                    self.t[i][[cmp, cmp + 1]], (0, 0), ".", color=color, markersize=3, linewidth=0.8,
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
+                        self.plots.append([plot_type, i, plots_integrated_2])
 
                     elif plot_type == PlotType.STEP:
                         color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:orange"
@@ -277,13 +284,25 @@ class PlotOcp:
 
     def __update_xdata(self):
         self.__init_time_vector()
+        a = 0
         for plot in self.plots:
             phase_idx = plot[1]
             if plot[0] == PlotType.INTEGRATED:
-                for cmp, p in enumerate(plot[2]):
-                    t2 = np.linspace(self.t[phase_idx][cmp], self.t[phase_idx][cmp + 1], self.ydata_int[0][cmp].shape[0])
-                    p.set_xdata(t2)
-                ax = plot[2][-1].axes
+                # for cmp, p in enumerate(plot[2]):
+                #     t2 = np.linspace(self.t[phase_idx][cmp], self.t[phase_idx][cmp + 1], self.ydata_int[0][cmp].shape[0])
+                #     p.set_xdata(t2)
+                # ax = plot[2][-1].axes
+                if a == 0:
+                    for cmp, p in enumerate(plot[2]):
+                        t2 = np.linspace(self.t[phase_idx][cmp], self.t[phase_idx][cmp + 1], self.ydata_int[0][cmp].shape[0])
+                        p.set_xdata(t2)
+                    ax = plot[2][-1].axes
+                    a = 1
+                else:
+                    for cmp, p in enumerate(plot[2]):
+                        p.set_xdata([self.t[phase_idx][cmp], self.t[phase_idx][cmp + 1]])
+                    ax = plot[2][-1].axes
+                    a = 0
             else:
                 plot[2].set_xdata(self.t[phase_idx])
                 ax = plot[2].axes
@@ -308,17 +327,35 @@ class PlotOcp:
             self.ydata_int.append(y)
 
     def __update_axes(self):
-        j=0
+        s = 0
+        c = 0
+        a = 0
         for i, plot in enumerate(self.plots):
-            y = self.ydata[i]
+            # if plot[0] == PlotType.INTEGRATED:
+            #     y = self.ydata_int[s]
+            #     for cmp, p in enumerate(plot[2]):
+            #         p.set_ydata(y[cmp])
+            #     s += 1
+            # else:
+            #     y = self.ydata[i]
+            #     plot[2].set_ydata(y)
 
             if plot[0] == PlotType.INTEGRATED:
-                y = self.ydata_int[j]
-                for cmp, p in enumerate(plot[2]):
-                    p.set_ydata(y[cmp])
-                j += 1
+                y = self.ydata_int[s]
+                if a == 0:
+                    for cmp, p in enumerate(plot[2]):
+                        p.set_ydata(y[cmp])
+                    a = 1
+                else:
+                    for cmp, p in enumerate(plot[2]):
+                        p.set_ydata([y[cmp][0], y[cmp][-1]])
+                    a = 0
+                    s += 1
+                    c += 1
             else:
+                y = self.ydata[c]
                 plot[2].set_ydata(y)
+                c += 1
 
         for p in self.plots_vertical_lines:
             p.set_ydata((np.nan, np.nan))
