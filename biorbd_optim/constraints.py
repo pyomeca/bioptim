@@ -134,7 +134,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise RuntimeError("Phase constraints without same nx is not supported yet")
             penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
             phase_transition_function = ocp.phase_transitions[i]["type"]
-            val = phase_transition_function(ocp, i)
+            val = phase_transition_function(ocp, **ocp.phase_transitions[i])
             ConstraintFunction._add_to_penalty(ocp, None, val, penalty_idx)
 
         if ocp.is_cyclic_constraint:

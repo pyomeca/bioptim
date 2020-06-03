@@ -1,41 +1,51 @@
-from copy import deepcopy
+from warnings import warn
 from enum import Enum
 
 from casadi import vertcat
 
-
 class PhaseTransitionFunctions:
     class Functions:
         @staticmethod
-        def continuous(ocp, phase_before_idx):
+        def continuous(ocp, phase_pre_idx, **unused):
             """
             TODO
             """
-            return ocp.nlp[phase_before_idx]["X"][-1] - ocp.nlp[(phase_before_idx + 1) % ocp.nb_phases]["X"][0]
+            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
+            return nlp_pre["X"][-1] - nlp_post["X"][0]
 
         @staticmethod
-        def impact(ocp, phase_before_idx):
+        def impact(ocp, phase_pre_idx, **unused):
             """
             TODO
             """
             # Aliases
-            nlp_pre = ocp.nlp[phase_before_idx]
-            nlp_post = ocp.nlp[(phase_before_idx + 1) % ocp.nb_phases]
+            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
             nbQ = nlp_pre["nbQ"]
             q = nlp_post["X"][0][:nbQ]
             qdot_pre = nlp_pre["X"][-1][nbQ:]
-            # qdot_post = nlp_post["model"].ComputeConstraintImpulsesDirect(q, qdot_pre)
+
+            if nlp_post["model"].nbContacts() == 0:
+                warn("The chosen model does not have any contact")
+            qdot_post = nlp_post["model"].ComputeConstraintImpulsesDirect(q, qdot_pre).to_mx()
 
             # As a temporary replacement for ComputeConstraintImpulsesDirect:
-            qdot_post = nlp_post["X"][-1][nbQ:]
+            # qdot_post = nlp_post["X"][-1][nbQ:]
 
             val = nlp_pre["X"][-1][:nbQ] - q
             val = vertcat(val, nlp_post["X"][0][nbQ:] - qdot_post)
             return val
 
         @staticmethod
-        def custom(ocp, phase_before_idx):
-            raise NotImplementedError("Custom transitions constraints are not implemented yet")
+        def custom(ocp, phase_pre_idx, **parameters):
+            func = parameters["function"]
+            del parameters["type"]
+            del parameters["function"]
+            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
+            return func(nlp_pre["X"][-1], nlp_post["X"][0], **parameters)
+
+        @staticmethod
+        def __get_nlp_pre_and_post(ocp, phase_pre_idx):
+            return ocp.nlp[phase_pre_idx], ocp.nlp[(phase_pre_idx + 1) % ocp.nb_phases]
 
     @staticmethod
     def prepare_phase_transitions(ocp, phase_transitions):
