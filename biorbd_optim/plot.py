@@ -17,6 +17,15 @@ class CustomPlot:
     def __init__(
         self, update_function, plot_type=PlotType.PLOT, axes_idx=None, legend=(), combine_to=None, color=None, ylim=None
     ):
+        """
+        Initializes the plot.
+        :param update_function: Function to plot.
+        :param plot_type: Type of plot. (PLOT = 0, INTEGRATED = 1 or STEP = 2)
+        :param axes_idx: Index of the axis to be mapped. (integer)
+        :param legend: Legend of the graphs. (?)
+        :param combine_to: Plot in which to add the graph. ??
+        :param color: Color of the graphs. (?)
+        """
         self.function = update_function
         self.type = plot_type
         if axes_idx is None:
@@ -35,6 +44,7 @@ class CustomPlot:
 
 class PlotOcp:
     def __init__(self, ocp, automatically_organize=True):
+        """Prepares the figure"""
         for i in range(1, ocp.nb_phases):
             if ocp.nlp[0]["nbQ"] != ocp.nlp[i]["nbQ"]:
                 raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
@@ -85,6 +95,7 @@ class PlotOcp:
             fig.canvas.draw()
 
     def __init_time_vector(self):
+        """Sets x-axis array"""
         self.t = []
         self.t_integrated = []
         last_t = 0
@@ -104,6 +115,7 @@ class PlotOcp:
             self.t.append(time_phase)
 
     def __create_plots(self):
+        """Actually plots"""
         variable_sizes = []
         for i, nlp in enumerate(self.ocp.nlp):
             variable_sizes.append({})
@@ -189,6 +201,14 @@ class PlotOcp:
                     self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
+        """
+        Sets the axis of the plots.
+        :param variable: Variable to plot (integer)
+        :param nb: Number of the figure. ?? (integer)
+        :param nb_rows: Number of rows of plots in subplots. (integer)
+        :param nb_cols: Number of columns of plots in subplots. (integer)
+        :return: axes: Axes of the plots. (instance of subplot class)
+        """
         if self.automatically_organize:
             self.all_figures.append(plt.figure(variable, figsize=(self.width_step / 100, self.height_step / 131)))
         else:
@@ -212,6 +232,10 @@ class PlotOcp:
         return axes
 
     def _organize_windows(self, nb_windows):
+        """
+        Organizes esthetically the figure.
+        :param nb_windows: Number of variables to plot. (integer)
+        """
         self.nb_vertical_windows, self.nb_horizontal_windows = PlotOcp._generate_windows_size(nb_windows)
         if self.automatically_organize:
             height = tkinter.Tk().winfo_screenheight()
@@ -225,6 +249,7 @@ class PlotOcp:
             self.width_step = None
 
     def find_phases_intersections(self):
+        """Finds the intersection between phases"""
         return list(accumulate(self.tf))[:-1]
 
     @staticmethod
@@ -232,6 +257,7 @@ class PlotOcp:
         plt.show()
 
     def update_data(self, V):
+        """Update of the variable V to plot (dependent axis)"""
         self.ydata = []
 
         data_states, data_controls, data_param = Data.get_data(
@@ -287,6 +313,7 @@ class PlotOcp:
         self.__update_axes()
 
     def __update_xdata(self):
+        """Update of the time in plots (independent axis)"""
         self.__init_time_vector()
         for plot in self.plots:
             phase_idx = plot[1]
@@ -311,6 +338,7 @@ class PlotOcp:
             self.ydata.append(y)
 
     def __update_axes(self):
+        """Updates axes ranges"""
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
 
@@ -350,6 +378,11 @@ class PlotOcp:
 
     @staticmethod
     def _generate_windows_size(nb):
+        """
+        Defines the number of column and rows of subplots in function of the number of variables to plot.
+        :param nb: Number of variables to plot. (integer)
+        :return: nb_rows: Number of rows of subplot. (integer)
+        """
         nb_rows = int(round(np.sqrt(nb)))
         return nb_rows + 1 if nb_rows * nb_rows < nb else nb_rows, nb_rows
 
@@ -365,6 +398,10 @@ class ShowResult:
         plt.show()
 
     def animate(self, nb_frames=80, **kwargs):
+        """
+        Animate solution with BiorbdViz
+        :param nb_frames: Number of frames in the animation. (integer)
+        """
         try:
             from BiorbdViz import BiorbdViz
         except ModuleNotFoundError:

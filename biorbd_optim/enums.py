@@ -9,8 +9,8 @@ class Axe(IntEnum):
 
 class OdeSolver(Enum):
     """
-    Four models to solve.
-    RK is pretty much good balance.
+    Integration methods.
+    (RK is pretty much good balance)
     """
 
     COLLOCATION = 0
@@ -38,9 +38,11 @@ class Instant(Enum):
 
 class InterpolationType(Enum):
     """
-    Type of interpolation
-    CONSTANT: Constant value
-    LINEAR: Linear
+    Type of interpolation.
+    CONSTANT: Constant value.
+    CONSTANT: Constant value except for the first and last nodes.
+    LINEAR: Linear.
+    EACH_FRAME: Values defined for each node (no interpolation).
     """
 
     CONSTANT = 0
@@ -50,6 +52,13 @@ class InterpolationType(Enum):
 
 
 class PlotType(Enum):
+    """
+    Type of plot.
+    PLOT: plot nodes and linear interpolation between them.
+    INTEGRATED: plot nodes and integrate between them.
+    STEP: stair plot.
+    """
+
     PLOT = 0
     INTEGRATED = 1
     STEP = 2
