@@ -100,7 +100,7 @@ class PlotOcp:
         self.t_integrated = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
-            nb_int_steps = nlp["number_of_finite_elements"]
+            nb_int_steps = nlp["nb_integration_steps"]
             dt_ns = self.tf[phase_idx] / nlp["ns"]
             time_phase_integrated = []
             last_t_int = last_t
@@ -175,7 +175,7 @@ class PlotOcp:
                     elif plot_type == PlotType.INTEGRATED:
                         color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:brown"
                         plots_integrated = []
-                        nb_int_steps = nlp["number_of_finite_elements"]
+                        nb_int_steps = nlp["nb_integration_steps"]
                         for cmp in range(nlp["ns"]):
                             plots_integrated.append(
                                 ax.plot(
@@ -272,7 +272,7 @@ class PlotOcp:
 
         data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, integrate=True, concatenate=False)
         for i, nlp in enumerate(self.ocp.nlp):
-            step_size = nlp["number_of_finite_elements"] + 1
+            step_size = nlp["nb_integration_steps"] + 1
             nb_elements = nlp["ns"] * step_size + 1
 
             state = np.ndarray((0, nb_elements))

@@ -98,7 +98,7 @@ def prepare_ocp(
         U_bounds,
         objective_functions,
         ode_solver=ode_solver,
-        number_of_finite_elements=10,
+        nb_integration_steps=10,
     )
 
 
