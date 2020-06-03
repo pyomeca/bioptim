@@ -566,6 +566,8 @@ class OptimalControlProgram:
             acados_ocp.constraints.idxbx_e = np.array(range(acados_ocp.dims.nx))
             acados_ocp.dims.nbx_e = acados_ocp.dims.nx
 
+            if return_iterations or show_online_optim:
+                raise NotImplementedError("return_iterations and show_online_optim are not implemented yet in acados.")
         acados_ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM'  # FULL_CONDENSING_QPOASES
         acados_ocp.solver_options.hessian_approx = 'GAUSS_NEWTON'
         acados_ocp.solver_options.integrator_type = 'ERK'
@@ -589,16 +591,21 @@ class OptimalControlProgram:
         """
 
         if solver == "acados":
-            if self.nb_phases > 1:
-                raise NotImplementedError("more than 1 phase")
+                from acados_template import AcadosOcpSolver
+
+                if return_iterations or show_online_optim:
+                    raise NotImplementedError("return_iterations and show_online_optim are not implemented yet in acados.")
+
+                if self.nb_phases > 1:
+                    raise NotImplementedError("more than 1 phase is not implemented yet in acados.")
 
             from acados_template import AcadosOcpSolver
-            acados_ocp = self.__prepare_acados()
-            ocp_solver = AcadosOcpSolver(acados_ocp, json_file='acados_ocp.json')
-            return ocp_solver.solve()
+                acados_ocp = self.__prepare_acados()
+
+
 
         if return_iterations and not show_online_optim:
-            raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
+                raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
 
         all_J = MX()
         for j_nodes in self.J:
