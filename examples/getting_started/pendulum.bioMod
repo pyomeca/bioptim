@@ -40,3 +40,15 @@ segment Seg1
     mesh 0.2  -0.0  -0.9
     mesh 0.2  -0.0  -1.1
 endsegment
+
+// Marker 1
+    marker marker_1
+        parent Seg1
+        position 0 0 0
+    endmarker
+
+// Marker 2
+    marker marker_2
+        parent Seg1
+        position 0.1 0.1 -1
+    endmarker
