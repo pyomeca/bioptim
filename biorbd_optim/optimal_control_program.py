@@ -586,6 +586,9 @@ class OptimalControlProgram:
         """
 
         if solver == "acados":
+            if self.nb_phases > 1:
+                raise NotImplementedError("more than 1 phase")
+
             from acados_template import AcadosOcpSolver
             acados_ocp = self.__prepare_acados()
             ocp_solver = AcadosOcpSolver(acados_ocp, json_file='acados_ocp.json')
