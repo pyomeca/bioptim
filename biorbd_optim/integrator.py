@@ -2,6 +2,14 @@ from casadi import MX, Function
 
 
 def RK4(ode, ode_opt):
+    """
+    Numerical integration using fourth order Runge-Kutta method.
+    :param ode: ode["x"] -> States. ode["p"] -> Controls. ode["ode"] -> Ordinary differential equation function
+    (dynamics of the system).
+    :param ode_opt: ode_opt["t0"] -> Initial time of the integration. ode_opt["tf"] -> Final time of the integration.
+    ode_opt["number_of_finite_elements"] -> Number of steps between nodes. ode_opt["idx"] -> Index of ??. (integer)
+    :return: Integration function. (CasADi function)
+    """
     t_span = ode_opt["t0"], ode_opt["tf"]
     n_step = ode_opt["number_of_finite_elements"]
     idx = ode_opt["idx"]
