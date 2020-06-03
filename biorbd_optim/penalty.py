@@ -36,13 +36,25 @@ class PenaltyFunctionAbstract:
             )
 
         @staticmethod
-        def minimize_markers(penalty_type, ocp, nlp, t, x, u, markers_idx=(), data_to_track=(), **extra_param):
+        def minimize_markers(
+            penalty_type,
+            ocp,
+            nlp,
+            t,
+            x,
+            u,
+            axis_to_track=(Axe.X, Axe.Y, Axe.Z),
+            markers_idx=(),
+            data_to_track=(),
+            **extra_param,
+        ):
             """
             Adds the objective that the specific markers should be minimized.
             It is possible to track markers, in this case the objective is to minimize
             the mismatch between the optimized markers positions and the reference markers positions (data_to_track).
             :param markers_idx: Index of the markers to minimize. (list of integers)
             :param data_to_track: Reference markers positions for tracking. (list of lists of float)
+            :axis_to_track: Index of axis to keep while tracking (default track 3d trajectories)
             """
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
@@ -54,7 +66,8 @@ class PenaltyFunctionAbstract:
             nq = nlp["q_mapping"].reduce.len
             for i, v in enumerate(x):
                 q = nlp["q_mapping"].expand.map(v[:nq])
-                val = nlp["model"].markers(q)[:, markers_idx] - data_to_track[:, markers_idx, t[i]]
+                data_marker = data_to_track[:, markers_idx, t[i]]
+                val = nlp["model"].markers(q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
