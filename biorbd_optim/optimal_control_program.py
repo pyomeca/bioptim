@@ -198,7 +198,7 @@ class OptimalControlProgram:
         # Prepare constraints
         self.g = []
         self.g_bounds = []
-        ConstraintFunction.continuity_constraint(self)
+        ConstraintFunction.continuity(self)
         if len(constraints) > 0:
             for i, constraint_phase in enumerate(constraints):
                 for constraint in constraint_phase:
@@ -206,6 +206,7 @@ class OptimalControlProgram:
 
         # Objective functions
         self.J = []
+        ObjectiveFunction.continuity(self)
         if len(objective_functions) > 0:
             for i, objective_functions_phase in enumerate(objective_functions):
                 for objective_function in objective_functions_phase:
@@ -355,8 +356,11 @@ class OptimalControlProgram:
         return phase_time, initial_time_guess, time_min, time_max
 
     def __define_parameters_phase_time(
-        self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=False
+        self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=None
     ):
+        if has_penalty is None:
+            has_penalty = [False] * self.nb_phases
+
         for i, penalty_functions_phase in enumerate(penalty_functions):
             for pen_fun in penalty_functions_phase:
                 if (
@@ -364,9 +368,9 @@ class OptimalControlProgram:
                     or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
                     or pen_fun["type"] == Constraint.TIME_CONSTRAINT
                 ):
-                    if has_penalty:
+                    if has_penalty[i]:
                         raise RuntimeError("Time constraint/objective cannot declare more than once")
-                    has_penalty = True
+                    has_penalty[i] = True
 
                     initial_time_guess.append(phase_time[i])
                     phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
@@ -496,7 +500,7 @@ class OptimalControlProgram:
 
         nlp["plot"][plot_name] = custom_plot
 
-    def solve(self, solver="ipopt", show_online_optim=False, options_ipopt={}):
+    def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, options_ipopt={}):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
@@ -505,6 +509,9 @@ class OptimalControlProgram:
         :param options_ipopt: See Ippot documentation for options. (dictionary)
         :return: Solution of the problem. (dictionary)
         """
+        if return_iterations and not show_online_optim:
+            raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
+
         all_J = MX()
         for j_nodes in self.J:
             for j in j_nodes:
@@ -530,6 +537,14 @@ class OptimalControlProgram:
         options_common = {}
         if show_online_optim:
             options_common["iteration_callback"] = OnlineCallback(self)
+            if return_iterations:
+                directory = ".__tmp_biorbd_optim"
+                file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
+                os.mkdir(directory)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+                with open(file_path, "wb") as file:
+                    pickle.dump([], file)
 
         if solver == "ipopt":
             options = {
@@ -559,27 +574,55 @@ class OptimalControlProgram:
         }
 
         # Solve the problem
-        return solver.call(arg)
+        out = solver.call(arg)
 
-    def save(self, sol, file_path, to_numpy=False, **parameters):
+        if return_iterations:
+            with open(file_path, "rb") as file:
+                out = out, pickle.load(file)
+                os.remove(file_path)
+                os.rmdir(directory)
+        return out
+
+    def save(self, sol, file_path, sol_iterations=None):
         """
-        :param to_numpy: if True, results are saved in numpy array. (bool)
-        :param file_path: Path of the file where the solution is saved. (string)
         :param sol: Solution of the optimization returned by CasADi.
+        :param file_path: Path of the file where the solution is saved. (string)
+        :param sol_iterations: The solutions for each iteration
         Saves results of the optimization into a .bo file
         """
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bo"
+        elif ext != ".bo":
+            raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
+        dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
+        if sol_iterations != None:
+            dict["sol_iterations"] = sol_iterations
+
+        OptimalControlProgram._save_with_pickle(dict, file_path)
+
+    def save_get_data(self, sol, file_path, sol_iterations=None, **parameters):
+        _, ext = os.path.splitext(file_path)
+        if ext == "":
+            file_path = file_path + ".bob"
+        elif ext != ".bob":
+            raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
+        dict = {"data": Data.get_data(self, sol["x"], **parameters)}
+        if sol_iterations != None:
+            get_data_sol_iterations = []
+            for iter in sol_iterations:
+                get_data_sol_iterations.append(Data.get_data(self, iter, **parameters))
+            dict["sol_iterations"] = get_data_sol_iterations
+
+        OptimalControlProgram._save_with_pickle(dict, file_path)
+
+    @staticmethod
+    def _save_with_pickle(dict, file_path):
         dir, _ = os.path.split(file_path)
         if dir != "" and not os.path.isdir(dir):
             os.makedirs(dir)
 
         with open(file_path, "wb") as file:
-            dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
-            if to_numpy:
-                dict["get_data"] = Data.get_data(self, sol["x"], **parameters)
-
             pickle.dump(dict, file)
 
     @staticmethod
@@ -599,5 +642,40 @@ class OptimalControlProgram:
                         f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
                         f"installed version ({ocp.version[key]})"
                     )
-            sol = data["sol"]
-        return (ocp, sol)
+            out = [ocp, data["sol"]]
+            if "sol_iterations" in data.keys():
+                out.append(data["sol_iterations"])
+        return out
+
+    @staticmethod
+    def read_information(file_path):
+        with open(file_path, "rb") as file:
+            data = pickle.load(file)
+            original_values = data["ocp_initilializer"]
+            print("****************************** Informations ******************************")
+            for key in original_values.keys():
+                if key not in [
+                    "X_init",
+                    "U_init",
+                    "X_bounds",
+                    "U_bounds",
+                ]:
+                    print(f"{key} : ")
+                    OptimalControlProgram._deep_print(original_values[key])
+                    print("")
+
+    @staticmethod
+    def _deep_print(elem, label=""):
+        if isinstance(elem, (list, tuple)):
+            for k in range(len(elem)):
+                OptimalControlProgram._deep_print(elem[k])
+                if k != len(elem) - 1:
+                    print("")
+        elif isinstance(elem, dict):
+            for key in elem.keys():
+                OptimalControlProgram._deep_print(elem[key], label=key)
+        else:
+            if label == "":
+                print(f"   {elem}")
+            else:
+                print(f"   [{label}] = {elem}")

@@ -129,16 +129,30 @@ class ObjectiveFunction:
             raise RuntimeError("Objective function Type must be either a Lagrange or Mayer type")
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective, penalty_idx)
 
-    #
-    # @staticmethod
-    # def cyclic(ocp, weight=1):
-    #
-    #     if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
-    #         raise RuntimeError("Cyclic constraint without same nx is not supported yet")
-    #
-    #     ocp.J += (
-    #         casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
-    #     )
+    @staticmethod
+    def cyclic(ocp, weight=1):
+
+        if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
+            raise RuntimeError("Cyclic constraint without same nx is not supported yet")
+
+        ocp.J += (
+            casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
+        )
+
+    @staticmethod
+    def continuity(ocp):
+        """
+        Add a continuity objective between first and last nodes to have a loop (nlp.is_cyclic_constraint).
+        :param ocp: An OptimalControlProgram class.
+        """
+        if ocp.is_cyclic_objective:
+            # Save continuity constraints between final integration and first node
+            if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
+                raise RuntimeError("Cyclic objective without same nx is not supported yet")
+
+            val = ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]
+            penalty_idx = ObjectiveFunction._reset_penalty(ocp, None, -1)
+            ObjectiveFunction.MayerFunction._add_to_penalty(ocp, None, val, penalty_idx, weight=10000, quadratic=True)
 
     @staticmethod
     def _add_to_penalty(ocp, nlp, J, penalty_idx):

@@ -97,3 +97,4 @@ examples/biorbd_optim
 examples/sandbox
 *.npy
 *.bo
+*.bob

@@ -9,33 +9,16 @@ import biorbd
 
 from biorbd_optim import Data
 
-# Load muscle_activations_tracker
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "muscle_activations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_activations_tracker.py",
-)
-muscle_activations_tracker = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(muscle_activations_tracker)
-
-# Load muscle_excitations_tracker
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "muscle_excitations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py",
-)
-muscle_excitations_tracker = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(muscle_excitations_tracker)
-
-# Load muscle_activations_contact_tracker
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "muscle_activations_contact_tracker",
-    str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/muscle_activations_contacts_tracker.py",
-)
-muscle_activations_contact_tracker = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(muscle_activations_contact_tracker)
-
 
 def test_muscle_activations_and_states_tracking():
+    # Load muscle_activations_tracker
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "muscle_activations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_activations_tracker.py",
+    )
+    muscle_activations_tracker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(muscle_activations_tracker)
+
     # Define the problem
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
@@ -94,6 +77,14 @@ def test_muscle_activations_and_states_tracking():
 
 
 def test_muscle_activation_no_residual_torque_and_markers_tracking():
+    # Load muscle_activations_tracker
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "muscle_activations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_activations_tracker.py",
+    )
+    muscle_activations_tracker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(muscle_activations_tracker)
+
     # Define the problem
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
@@ -150,6 +141,14 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking():
 
 
 def test_muscle_excitation_with_residual_torque_and_markers_tracking():
+    # Load muscle_excitations_tracker
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "muscle_excitations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py",
+    )
+    muscle_excitations_tracker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(muscle_excitations_tracker)
+
     # Define the problem
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
@@ -220,6 +219,14 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking():
 
 
 def test_muscle_excitation_no_residual_torque_and_markers_tracking():
+    # Load muscle_excitations_tracker
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "muscle_excitations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py",
+    )
+    muscle_excitations_tracker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(muscle_excitations_tracker)
+
     # Define the problem
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
@@ -287,6 +294,15 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking():
 
 
 def test_muscle_activation_and_contacts_tracking():
+    # Load muscle_activations_contact_tracker
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "muscle_activations_contact_tracker",
+        str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/muscle_activations_contacts_tracker.py",
+    )
+    muscle_activations_contact_tracker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(muscle_activations_contact_tracker)
+
     # Define the problem
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod"
     biorbd_model = biorbd.Model(model_path)

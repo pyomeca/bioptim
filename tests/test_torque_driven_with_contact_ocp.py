@@ -14,37 +14,17 @@ import numpy as np
 from biorbd_optim import Data, OdeSolver
 from .utils import TestUtils
 
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "maximize_predicted_height_CoM",
-    str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/maximize_predicted_height_CoM.py",
-)
-maximize_predicted_height_CoM = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(maximize_predicted_height_CoM)
-
-spec = importlib.util.spec_from_file_location(
-    "contact_forces_inequality_constraint",
-    str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/contact_forces_inequality_constraint.py",
-)
-contact_forces_inequality_GREATER_THAN_constraint = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(contact_forces_inequality_GREATER_THAN_constraint)
-
-spec = importlib.util.spec_from_file_location(
-    "contact_forces_inequality_constraint",
-    str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/contact_forces_inequality_constraint.py",
-)
-contact_forces_inequality_LESSER_THAN_constraint = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(contact_forces_inequality_LESSER_THAN_constraint)
-
-spec = importlib.util.spec_from_file_location(
-    "non_slipping_constraint", str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/non_slipping_constraint.py",
-)
-non_slipping_constraint = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(non_slipping_constraint)
-
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_maximize_predicted_height_CoM(ode_solver):
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "maximize_predicted_height_CoM",
+        str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/maximize_predicted_height_CoM.py",
+    )
+    maximize_predicted_height_CoM = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(maximize_predicted_height_CoM)
+
     ocp = maximize_predicted_height_CoM.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
@@ -83,6 +63,14 @@ def test_maximize_predicted_height_CoM(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "maximize_predicted_height_CoM",
+        str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/maximize_predicted_height_CoM.py",
+    )
+    maximize_predicted_height_CoM = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(maximize_predicted_height_CoM)
+
     ocp = maximize_predicted_height_CoM.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
@@ -123,6 +111,14 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "contact_forces_inequality_constraint",
+        str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/contact_forces_inequality_constraint.py",
+    )
+    contact_forces_inequality_GREATER_THAN_constraint = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(contact_forces_inequality_GREATER_THAN_constraint)
+
     boundary = 50
     ocp = contact_forces_inequality_GREATER_THAN_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
@@ -189,6 +185,14 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "contact_forces_inequality_constraint",
+        str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/contact_forces_inequality_constraint.py",
+    )
+    contact_forces_inequality_LESSER_THAN_constraint = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(contact_forces_inequality_LESSER_THAN_constraint)
+
     boundary = 100
     ocp = contact_forces_inequality_LESSER_THAN_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
@@ -257,6 +261,14 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_non_slipping_constraint(ode_solver):
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "non_slipping_constraint",
+        str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/non_slipping_constraint.py",
+    )
+    non_slipping_constraint = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(non_slipping_constraint)
+
     ocp = non_slipping_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.6,

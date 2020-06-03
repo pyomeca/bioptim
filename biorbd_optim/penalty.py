@@ -58,10 +58,13 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_markers_displacement(penalty_type, ocp, nlp, t, x, u, markers_idx=(), **extra_param):
+        def minimize_markers_displacement(
+            penalty_type, ocp, nlp, t, x, u, coordinates_system_idx=-1, markers_idx=(), **extra_param
+        ):
             """
             Adds the objective that the specific markers displacement (difference between the position of the
             markers at each neighbour frame)should be minimized.
+            :coordinates_system_idx: Index of the segment in which to project to displacement
             :param markers_idx: Index of the markers to minimize. (list of integers)
             """
             n_q = nlp["nbQ"]
@@ -70,11 +73,27 @@ class PenaltyFunctionAbstract:
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
             )
             for i in range(len(x) - 1):
-                val = (
-                    nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx]
-                    - nlp["model"].markers(x[i][:n_q])[:, markers_idx]
-                )
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                if coordinates_system_idx < 0:
+                    inv_jcs_1 = casadi.MX.eye(4)
+                    inv_jcs_0 = casadi.MX.eye(4)
+                elif coordinates_system_idx < nb_rts:
+                    jcs_1 = nlp["model"].globalJCS(x[i + 1][:n_q], coordinates_system_idx).to_mx()
+                    inv_jcs_1 = casadi.vertcat(
+                        casadi.horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), casadi.horzcat(0, 0, 0, 1)
+                    )
+                    jcs_0 = nlp["model"].globalJCS(x[i][:n_q], coordinates_system_idx).to_mx()
+                    inv_jcs_0 = casadi.vertcat(
+                        casadi.horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), casadi.horzcat(0, 0, 0, 1)
+                    )
+                else:
+                    raise RuntimeError(
+                        f"Wrong choice of coordinates_system_idx. (Negative values refer to global coordinates system, "
+                        f"positive values must be between 0 and {nb_rts})"
+                    )
+                val = inv_jcs_1 @ casadi.vertcat(
+                    nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx], 1
+                ) - inv_jcs_0 @ casadi.vertcat(nlp["model"].markers(x[i][:n_q])[:, markers_idx], 1)
+                penalty_type._add_to_penalty(ocp, nlp, val[:3], **extra_param)
 
 
         @staticmethod
@@ -95,12 +114,13 @@ class PenaltyFunctionAbstract:
                 data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
             )
 
-            for i, v in enumerate(x):
-                val = (
-                    nlp["model"].markerVelocity(v[:n_q], v[n_q : n_q + n_qdot], markers_idx).to_mx()
-                    - data_to_track[:, markers_idx, t[i]]
-                )
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+            for m in markers_idx:
+                for i, v in enumerate(x):
+                    val = (
+                        nlp["model"].markerVelocity(v[:n_q], v[n_q : n_q + n_qdot], m).to_mx()
+                        - data_to_track[:, markers_idx, t[i]]
+                    )
+                    penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
         def align_markers(penalty_type, ocp, nlp, t, x, u, first_marker_idx, second_marker_idx, **extra_param):
@@ -472,6 +492,10 @@ class PenaltyFunctionAbstract:
                 )
 
     @staticmethod
+    def continuity(ocp):
+        raise RuntimeError("continuity cannot be called from an abstract class")
+
+    @staticmethod
     def _add_to_penalty(ocp, nlp, val, penalty_idx, **extra_param):
         raise RuntimeError("_add_to_penalty cannot be called from an abstract class")
 
@@ -514,7 +538,7 @@ class PenaltyFunctionAbstract:
             elif node == Instant.MID:
                 if nlp["ns"] % 2 == 1:
                     raise (ValueError("Number of shooting points must be even to use MID"))
-                t.append(nlp["X"][nlp["ns"] // 2])
+                t.append(nlp["ns"] // 2)
                 x.append(nlp["X"][nlp["ns"] // 2])
                 u.append(nlp["U"][nlp["ns"] // 2])
 
@@ -525,7 +549,7 @@ class PenaltyFunctionAbstract:
                     u.append(nlp["U"][i])
 
             elif node == Instant.END:
-                t.append(nlp["X"][nlp["ns"]])
+                t.append(nlp["ns"])
                 x.append(nlp["X"][nlp["ns"]])
 
             elif node == Instant.ALL:
