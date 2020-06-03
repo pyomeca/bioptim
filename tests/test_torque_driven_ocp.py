@@ -307,7 +307,7 @@ def test_track_marker_2D_pendulum():
     spec.loader.exec_module(track_markers_2D_pendulum)
 
     # Define the problem
-    model_path = str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/pendulum.bioMod"
+    model_path = str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 3
     nb_shooting = 20

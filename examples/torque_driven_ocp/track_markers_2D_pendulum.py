@@ -87,12 +87,13 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
 
 
 if __name__ == "__main__":
-    biorbd_model = biorbd.Model("pendulum.bioMod")
+    biorbd_path = (str(EXAMPLES_FOLDER) + "/getting_started/pendulum.bioMod")
+    biorbd_model = biorbd.Model(biorbd_path)
     final_time = 3
     number_shooting_points = 20
 
     ocp_to_track = data_to_track.prepare_ocp(
-        biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=20, nb_threads=4
+        biorbd_model_path=biorbd_path, final_time=3, number_shooting_points=20, nb_threads=4
     )
     sol_to_track = ocp_to_track.solve()
     states, controls = Data.get_data(ocp_to_track, sol_to_track)
