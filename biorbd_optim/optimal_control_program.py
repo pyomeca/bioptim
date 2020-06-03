@@ -54,15 +54,27 @@ class OptimalControlProgram:
         Defines also all constraints including continuity constraints.
         Defines the sum of all objective functions weight.
 
-        :param biorbd_model: Biorbd model loaded from the biorbd.Model() function
+        :param biorbd_model: Biorbd model loaded from the biorbd.Model() function.
         :param problem_type: A selected method handler of the class problem_type.ProblemType.
-        :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
-        :param number_shooting_points: Subdivision number.
-        :param phase_time: Simulation time in seconds.
+        :param number_shooting_points: Subdivision number. (integer)
+        :param phase_time: Simulation time in seconds. (float)
+        :param X_init: States initial guess. (MX.sym from CasADi)
+        :param U_init: Controls initial guess. (MX.sym from CasADi)
+        :param X_bounds: States upper and lower bounds. (Instance of the class Bounds)
+        :param U_bounds: Controls upper and lower bounds. (Instance of the class Bounds)
         :param objective_functions: Tuple of tuple of objectives functions handler's and weights.
-        :param X_bounds: Instance of the class Bounds.
-        :param U_bounds: Instance of the class Bounds.
         :param constraints: Tuple of constraints, instant (which node(s)) and tuple of geometric structures used.
+        :param external_forces: Tuple of external forces.
+        :param ode_solver: Name of chosen ode solver to use. (OdeSolver.COLLOCATION, OdeSolver.RK, OdeSolver.CVODES or
+        OdeSolver.NO_SOLVER)
+        :param all_generalized_mapping: States and controls mapping. (Instance of class Mapping)
+        :param q_mapping: Generalized coordinates position states mapping. (Instance of class Mapping)
+        :param q_dot_mapping: Generalized coordinates velocity states mapping. (Instance of class Mapping)
+        :param tau_mapping: Torque controls mapping. (Instance of class Mapping)
+        :param plot_mappings: Plot mapping. (Instance of class Mapping)
+        :param is_cyclic_objective: If True, the objective is to get cyclic motion. (bool)
+        :param is_cyclic_constraint: If True, end point is constrained to be continue with first point. (bool)
+        :param nb_threads: Number of threads used for the resolution of the problem. Default: not parallelized (integer)
         """
 
         if isinstance(biorbd_model, str):
@@ -202,6 +214,7 @@ class OptimalControlProgram:
 
     @staticmethod
     def __initialize_nlp(nlp):
+        """Start with an empty non linear problem"""
         nlp["nbQ"] = 0
         nlp["nbQdot"] = 0
         nlp["nbTau"] = 0
@@ -214,6 +227,7 @@ class OptimalControlProgram:
         nlp["g_bounds"] = []
 
     def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None):
+        """Adds coupled parameters to the non linear problem"""
         if isinstance(param, (list, tuple)):
             if len(param) != self.nb_phases:
                 raise RuntimeError(
@@ -240,8 +254,7 @@ class OptimalControlProgram:
     def __prepare_dynamics(self, nlp):
         """
         Builds CasaDI dynamics function.
-        :param dynamics_func: A selected method handler of the class dynamics.Dynamics.
-        :param ode_solver: Name of chosen ode, available in OdeSolver enum class.
+        :param nlp: The nlp problem
         """
 
         dynamics = nlp["dynamics_func"]
@@ -283,7 +296,8 @@ class OptimalControlProgram:
         """
         For each node, puts X_bounds and U_bounds in V_bounds.
         Links X and U with V.
-        :param nlp: The nlp problem
+        :param nlp: The non linear problem.
+        :param idx_phase: Index of the phase. (integer)
         """
         X = []
         U = []
@@ -319,6 +333,16 @@ class OptimalControlProgram:
         self.V_init.concatenate(V_init)
 
     def __init_phase_time(self, phase_time, objective_functions, constraints):
+        """
+        Initializes phase time bounds and guess.
+        Defines the objectives for each phase.
+        :param phase_time: Phases duration. (list of floats)?
+        :param objective_functions: Instance of class ObjectiveFunction.
+        :param constraints: Instance of class ConstraintFunction.
+        :return: phase_time -> Phases duration. (list) , initial_time_guess -> Initial guess on the duration of the
+        phases. (list), time_min -> Minimal bounds on the duration of the phases. (list)  and time_max -> Maximal
+        bounds on the duration of the phases. (list)
+        """
         if isinstance(phase_time, (int, float)):
             phase_time = [phase_time]
         phase_time = list(phase_time)
@@ -356,9 +380,7 @@ class OptimalControlProgram:
 
     def __define_variable_time(self, initial_guess, minimum, maximum):
         """
-        For each variable time, puts X_bounds and U_bounds in V_bounds.
-        Links X and U with V.
-        :param nlp: The nlp problem
+        For each variable time, sets initial guess and bounds.
         :param initial_guess: The initial values taken from the phase_time vector
         :param minimum: variable time minimums as set by user (default: 0)
         :param maximum: variable time maximums as set by user (default: inf)
@@ -380,6 +402,12 @@ class OptimalControlProgram:
         self.V_init.concatenate(V_init)
 
     def __init_penalty(self, penalties, penalty_type):
+        """
+        Initializes penalties (objective or constraint).
+        :param penalties: Penalties. (dictionary or list of tuples)
+        :param penalty_type: Penalty type (Instance of class PenaltyType)
+        :return: New penalties. (dictionary)
+        """
         if len(penalties) > 0:
             if self.nb_phases == 1:
                 if isinstance(penalties, dict):
@@ -405,6 +433,13 @@ class OptimalControlProgram:
         self._modify_penalty(new_constraint, index_in_phase, phase_number, "constraints")
 
     def _modify_penalty(self, new_penalty, index_in_phase, phase_number, penalty_name):
+        """
+        Modification of a penalty (constraint or objective)
+        :param new_penalty: Penalty to keep after the modification.
+        :param index_in_phase: Index of the penalty to be modified. (integer)
+        :param phase_number: Index of the phase in which the penalty will be modified. (integer)
+        :param penalty_name: Name of the penalty to modify. (string)
+        """
         if len(self.nlp) == 1:
             phase_number = 0
         else:
@@ -429,6 +464,12 @@ class OptimalControlProgram:
             raise RuntimeError("Unrecognized penalty")
 
     def add_plot(self, fig_name, update_function, phase_number=-1, **parameters):
+        """
+        Adds plots to show the result of the optimization
+        :param fig_name: Name of the figure (string)
+        :param update_function: Function to be plotted. (string) ???
+        :param phase_number: Phase to be plotted. (integer)
+        """
         if "combine_to" in parameters:
             raise RuntimeError(
                 "'combine_to' cannot be specified in add_plot, " "please use same 'fig_name' to combine plots"
@@ -463,6 +504,10 @@ class OptimalControlProgram:
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
+        :param solver: Name of the solver to use during the optimization. (string)
+        :param show_online_optim: if True, optimization process is graphed in realtime. (bool)
+        :param options_ipopt: See Ippot documentation for options. (dictionary)
+        :return: Solution of the problem. (dictionary)
         """
         if return_iterations and not show_online_optim:
             raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
@@ -539,6 +584,12 @@ class OptimalControlProgram:
         return out
 
     def save(self, sol, file_path, sol_iterations=None):
+        """
+        :param sol: Solution of the optimization returned by CasADi.
+        :param file_path: Path of the file where the solution is saved. (string)
+        :param sol_iterations: The solutions for each iteration
+        Saves results of the optimization into a .bo file
+        """
         _, ext = os.path.splitext(file_path)
         if ext == "":
             file_path = file_path + ".bo"
@@ -576,6 +627,12 @@ class OptimalControlProgram:
 
     @staticmethod
     def load(file_path):
+        """
+        Loads results of a previous optimization from a .bo file
+        :param file_path: Path of the file where the solution is saved. (string)
+        :return: ocp -> Optimal control program. (instance of OptimalControlProgram class) and
+        sol -> Solution of the optimization. (dictionary)
+        """
         with open(file_path, "rb") as file:
             data = pickle.load(file)
             ocp = OptimalControlProgram(**data["ocp_initilializer"])
