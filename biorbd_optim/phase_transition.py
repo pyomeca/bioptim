@@ -3,6 +3,7 @@ from enum import Enum
 
 from casadi import vertcat
 
+
 class PhaseTransitionFunctions:
     class Functions:
         @staticmethod
