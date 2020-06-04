@@ -23,7 +23,7 @@ class PrepareAcados:
         x = SX.sym('x', m.nbQ() * 2)
         u = SX.sym('u', m.nbQ())
         xdot = SX.sym('dx', m.nbQ() * 2)
-        f_expl = f(x, u)
+    f_expl = self.nlp[0]['dynamics'][0](x,u)
         f_impl = xdot - f_expl
 
         acados_model = AcadosModel()
