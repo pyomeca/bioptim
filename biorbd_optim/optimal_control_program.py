@@ -461,13 +461,15 @@ class OptimalControlProgram:
 
         nlp["plot"][plot_name] = custom_plot
 
-    def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, options_ipopt={}):
+    def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, options_ipopt={}, options_acados={}, acados_dir={} ):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
         """
 
         if solver == "acados":
+
+            os.environ["ACADOS_SOURCE_DIR"] = list(acados_dir)[0]
             from acados_template import AcadosOcpSolver
 
 
