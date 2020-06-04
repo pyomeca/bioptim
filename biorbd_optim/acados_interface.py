@@ -6,21 +6,12 @@ import numpy as np
 import scipy.linalg
 
 
-#TODO: change the name of the function
-
-def export_eocar_ode_model(self):
-    for i in range(self.nb_phases):
-        m = self.nlp[i]['model']
-    model_name = "model_name"
-
+def acados_export_model(self):
+    
     # Declare model variables
     x = self.nlp[0]['x']
     u = self.nlp[0]['u']
     x_dot = MX.sym("x_dot", self.nlp[0]['nx'], 1)
-
-    x = SX.sym('x', m.nbQ() * 2)
-    u = SX.sym('u', m.nbQ())
-    xdot = SX.sym('dx', m.nbQ() * 2)
     f_expl = self.nlp[0]['dynamics'][0](x,u)
     f_impl = x_dot - f_expl
 
@@ -30,21 +21,18 @@ def export_eocar_ode_model(self):
     acados_model.x = self.nlp[0]['x']
     acados_model.xdot = x_dot
     acados_model.u = self.nlp[0]['u']
-    # model.z = z
     acados_model.p = []
-    acados_model.name = model_name
+    acados_model.name = "model_name"
 
     return acados_model
 
 
 def prepare_acados(self):
-    #TODO: Allow user to define source_dir directly in example file
-    os.environ["ACADOS_SOURCE_DIR"] = "/home/dangzilla/Documents/Programmation/acados"
     # create ocp object to formulate the OCP
     acados_ocp = AcadosOcp()
 
     # # set model
-    acados_model = export_eocar_ode_model(self)
+    acados_model = acados_export_model(self)
     acados_ocp.model = acados_model
 
     for i in range(self.nb_phases):
@@ -106,6 +94,5 @@ def prepare_acados(self):
         acados_ocp.constraints.idxbx_e = np.array(range(acados_ocp.dims.nx))
         acados_ocp.dims.nbx_e = acados_ocp.dims.nx
 
+
     return acados_ocp
-
-
