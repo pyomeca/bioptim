@@ -11,6 +11,7 @@ from .enums import OdeSolver
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
 from .constraints import ConstraintFunction, Constraint
+from .phase_transition import PhaseTransitionFunctions
 from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback, CustomPlot
 from .integrator import RK4
@@ -46,6 +47,7 @@ class OptimalControlProgram:
         q_dot_mapping=None,
         tau_mapping=None,
         plot_mappings=None,
+        phase_transitions=[],
         is_cyclic_objective=False,
         is_cyclic_constraint=False,
         nb_threads=1,
@@ -109,6 +111,7 @@ class OptimalControlProgram:
             "q_dot_mapping": q_dot_mapping,
             "tau_mapping": tau_mapping,
             "plot_mappings": plot_mappings,
+            "phase_transitions": phase_transitions,
             "is_cyclic_objective": is_cyclic_objective,
             "is_cyclic_constraint": is_cyclic_constraint,
             "nb_threads": nb_threads,
@@ -199,6 +202,9 @@ class OptimalControlProgram:
             if self.nlp[0]["nx"] != self.nlp[i]["nx"] or self.nlp[0]["nu"] != self.nlp[i]["nu"]:
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
             self.__prepare_dynamics(self.nlp[i])
+
+        # Prepare phase transitions
+        self.phase_transitions = PhaseTransitionFunctions.prepare_phase_transitions(self, phase_transitions)
 
         # Prepare constraints
         self.g = []
