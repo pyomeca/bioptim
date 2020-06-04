@@ -262,12 +262,12 @@ class Data:
                     # TODO: Allow integrate when optimizing time
                     xf_dof = x0
                 else:
-                    xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"][idx_node](x0=x0, p=p)["xf"])  # Integrate
+                    xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"][idx_node](x0=x0, p=p)["xall"])  # Integrate
 
                 offset = 0
                 for key in nlp["var_states"]:
                     data_states[key]._horzcat_node(
-                        dt, xf_dof[offset : offset + nlp["var_states"][key]], idx_phase, idx_node
+                        dt, xf_dof[offset : offset + nlp["var_states"][key], 1:], idx_phase, idx_node
                     )
                     offset += nlp["var_states"][key]
         return data_states
