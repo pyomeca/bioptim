@@ -18,7 +18,7 @@ from .plot import OnlineCallback, CustomPlot
 from .integrator import RK4
 from .biorbd_interface import BiorbdInterface
 from .variable_optimization import Data
-from .__version__ import __version__
+from .acados_interface import *
 
 
 class OptimalControlProgram:
@@ -591,15 +591,16 @@ class OptimalControlProgram:
         """
 
         if solver == "acados":
-                from acados_template import AcadosOcpSolver
-
-                if return_iterations or show_online_optim:
-                    raise NotImplementedError("return_iterations and show_online_optim are not implemented yet in acados.")
-
-                if self.nb_phases > 1:
-                    raise NotImplementedError("more than 1 phase is not implemented yet in acados.")
-
             from acados_template import AcadosOcpSolver
+
+
+            if return_iterations or show_online_optim:
+                raise NotImplementedError("return_iterations and show_online_optim are not implemented yet in acados.")
+
+            if self.nb_phases > 1:
+                raise NotImplementedError("more than 1 phase is not implemented yet in acados.")
+
+            acados_ocp = prepare_acados(self)
                 acados_ocp = self.__prepare_acados()
 
 
