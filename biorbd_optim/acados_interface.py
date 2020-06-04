@@ -10,26 +10,26 @@ import scipy.linalg
 
 def export_eocar_ode_model(self):
     for i in range(self.nb_phases):
-        m = self.nlp[0]['model']
+        m = self.nlp[i]['model']
     model_name = "model_name"
 
     # Declare model variables
-    x = MX.sym('x', m.nbQ() * 2)
-    u = MX.sym('u', m.nbQ())
-    xdot = MX.sym('dx', m.nbQ() * 2)
+    x = self.nlp[0]['x']
+    u = self.nlp[0]['u']
+    x_dot = MX.sym("x_dot", self.nlp[0]['nx'], 1)
 
     x = SX.sym('x', m.nbQ() * 2)
     u = SX.sym('u', m.nbQ())
     xdot = SX.sym('dx', m.nbQ() * 2)
     f_expl = self.nlp[0]['dynamics'][0](x,u)
-    f_impl = xdot - f_expl
+    f_impl = x_dot - f_expl
 
     acados_model = AcadosModel()
     acados_model.f_impl_expr = f_impl
     acados_model.f_expl_expr = f_expl
-    acados_model.x = x
-    acados_model.xdot = xdot
-    acados_model.u = u
+    acados_model.x = self.nlp[0]['x']
+    acados_model.xdot = x_dot
+    acados_model.u = self.nlp[0]['u']
     # model.z = z
     acados_model.p = []
     acados_model.name = model_name
@@ -44,7 +44,7 @@ def prepare_acados(self):
     acados_ocp = AcadosOcp()
 
     # # set model
-    acados_model = self.export_eocar_ode_model()
+    acados_model = export_eocar_ode_model(self)
     acados_ocp.model = acados_model
 
     for i in range(self.nb_phases):
