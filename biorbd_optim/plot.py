@@ -308,7 +308,7 @@ class PlotOcp:
                 else:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
-                    y[:, :] = self.plot_func[key][i].function(state, control)
+                    y[:, :] = self.plot_func[key][i].function(state[:, ::step_size], control)
                     self.__append_to_ydata(y)
         self.__update_axes()
 

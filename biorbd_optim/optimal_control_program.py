@@ -192,7 +192,7 @@ class OptimalControlProgram:
 
         # Define dynamic problem
         self.__add_to_nlp(
-            "nb_integration_steps", nb_integration_steps, False
+            "nb_integration_steps", nb_integration_steps, True
         )  # Number of steps of integration (for now only RK4 steps are implemented)
         self.__add_to_nlp("ode_solver", ode_solver, True)
         for i in range(self.nb_phases):
