@@ -11,8 +11,12 @@ def acados_export_model(self):
     # Declare model variables
     x = self.nlp[0]['x']
     u = self.nlp[0]['u']
-    x_dot = MX.sym("x_dot", self.nlp[0]['nx'], 1)
+    mod = biorbd.Model("eocar-6D.bioMod")
+    x = MX.sym('x', mod.nbQ()*2, 1)
+    u = MX.sym('u', mod.nbQ(), 1)
+    x_dot = MX.sym("x_dot", mod.nbQdot(), 1)
     f_expl = self.nlp[0]['dynamics'][0](x,u)
+    f_expl = mod.ForwardDynamics(x[:6], x[6:], u).to_mx()
     f_impl = x_dot - f_expl
 
     acados_model = AcadosModel()
