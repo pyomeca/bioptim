@@ -15,12 +15,15 @@ from biorbd_optim import (
 )
 
 
-def custom_phase_transition(state_pre, state_post, idx_1, idx_2):
+def custom_phase_transition(nlp_pre, nlp_post, idx_1, idx_2):
     """
     Custom function returning the value to be added in the constraint vector and whose value we want to be 0.
+    For a given nlp, nlp["X"] is the list of states in each node. Same for nlp["U"] with the controls.
     In this example of custom function for phase transition, this custom function ensures continuity between states
     whose index is between idx_1 and idx_2 (idx_2 not included).
     """
+    state_pre = nlp_pre["X"][-1]
+    state_post = nlp_post["X"][0]
     return state_pre[idx_1:idx_2] - state_post[idx_1:idx_2]
 
 

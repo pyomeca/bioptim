@@ -69,7 +69,7 @@ class PhaseTransitionFunctions:
             del parameters["type"]
             del parameters["base"]
             nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
-            return func(nlp_pre["X"][-1], nlp_post["X"][0], **parameters)
+            return func(nlp_pre, nlp_post, **parameters)
 
         @staticmethod
         def __get_nlp_pre_and_post(ocp, phase_pre_idx):
