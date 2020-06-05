@@ -194,10 +194,10 @@ class PlotOcp:
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
-            for ax in axes:
-                intersections_time = self.find_phases_intersections()
-                for time in intersections_time:
-                    self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
+                for ax in axes:
+                    intersections_time = self.find_phases_intersections()
+                    for time in intersections_time:
+                        self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
         """
