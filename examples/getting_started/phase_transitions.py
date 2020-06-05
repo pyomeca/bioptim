@@ -51,7 +51,7 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
     variable_type = (
         ProblemType.torque_driven,
         ProblemType.torque_driven,
-        ProblemType.torque_driven_with_contact,
+        ProblemType.torque_driven,
         ProblemType.torque_driven,
     )
 
