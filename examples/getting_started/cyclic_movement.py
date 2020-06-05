@@ -55,9 +55,9 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, loop_from
     # hard penalty (constraint) if weight is <= 0 [or if no weight is provided], or
     # as a soft penalty (objective) otherwise
     if loop_from_constraint:
-        phase_transitions = ({"type": PhaseTransition.CONTINUOUS, "phase_pre_idx": 0, "weight": 0},)
+        phase_transitions = ({"type": PhaseTransition.CYCLIC, "weight": 0},)
     else:
-        phase_transitions = ({"type": PhaseTransition.CONTINUOUS, "phase_pre_idx": 0, "weight": 10000},)
+        phase_transitions = ({"type": PhaseTransition.CYCLIC, "weight": 10000},)
 
     return OptimalControlProgram(
         biorbd_model,

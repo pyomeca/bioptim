@@ -24,6 +24,13 @@ class PhaseTransitionFunctions:
             return nlp_pre["X"][-1] - nlp_post["X"][0]
 
         @staticmethod
+        def cyclic(ocp, **kwargs):
+            """
+            TODO
+            """
+            return PhaseTransitionFunctions.Functions.continuous(ocp, **kwargs)
+
+        @staticmethod
         def impact(ocp, phase_pre_idx, **unused):
             """
             TODO
@@ -71,6 +78,9 @@ class PhaseTransitionFunctions:
 
         existing_phases = []
         for pt in phase_transitions:
+            if "phase_pre_idx" not in pt and pt["type"] == PhaseTransition.CYCLIC:
+                pt["phase_pre_idx"] = ocp.nb_phases - 1
+
             idx_phase = pt["phase_pre_idx"]
             if idx_phase in existing_phases:
                 raise RuntimeError("It is not possible to define two phase continuity constraints for the same phase")
@@ -106,4 +116,5 @@ class PhaseTransition(Enum):
 
     CONTINUOUS = PhaseTransitionFunctions.Functions.continuous
     IMPACT = PhaseTransitionFunctions.Functions.impact
+    CYCLIC = PhaseTransitionFunctions.Functions.cyclic
     CUSTOM = PhaseTransitionFunctions.Functions.custom
