@@ -11,7 +11,7 @@ from .enums import OdeSolver
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
 from .constraints import ConstraintFunction, Constraint
-from .phase_transition import PhaseTransitionFunctions
+from .continuity import ContinuityFunctions, PhaseTransitionFunctions
 from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback, CustomPlot
 from .integrator import RK4
@@ -48,8 +48,6 @@ class OptimalControlProgram:
         tau_mapping=None,
         plot_mappings=None,
         phase_transitions=[],
-        is_cyclic_objective=False,
-        is_cyclic_constraint=False,
         nb_threads=1,
     ):
         """
@@ -75,8 +73,6 @@ class OptimalControlProgram:
         :param q_dot_mapping: Generalized coordinates velocity states mapping. (Instance of class Mapping)
         :param tau_mapping: Torque controls mapping. (Instance of class Mapping)
         :param plot_mappings: Plot mapping. (Instance of class Mapping)
-        :param is_cyclic_objective: If True, the objective is to get cyclic motion. (bool)
-        :param is_cyclic_constraint: If True, end point is constrained to be continue with first point. (bool)
         :param nb_threads: Number of threads used for the resolution of the problem. Default: not parallelized (integer)
         """
 
@@ -112,8 +108,6 @@ class OptimalControlProgram:
             "tau_mapping": tau_mapping,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
-            "is_cyclic_objective": is_cyclic_objective,
-            "is_cyclic_constraint": is_cyclic_constraint,
             "nb_threads": nb_threads,
         }
 
@@ -139,8 +133,6 @@ class OptimalControlProgram:
         self.__add_to_nlp(
             "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
         )
-        self.is_cyclic_constraint = is_cyclic_constraint
-        self.is_cyclic_objective = is_cyclic_objective
         self.nb_threads = nb_threads
 
         # External forces
@@ -206,18 +198,20 @@ class OptimalControlProgram:
         # Prepare phase transitions
         self.phase_transitions = PhaseTransitionFunctions.prepare_phase_transitions(self, phase_transitions)
 
-        # Prepare constraints
+        # Declare constraints and objective
+        self.J = []
         self.g = []
         self.g_bounds = []
-        ConstraintFunction.continuity(self)
+
+        # Inner- and inter-phase continuity
+        ContinuityFunctions.continuity(self)
+
+        # Prepare constraints
         if len(constraints) > 0:
             for i, constraint_phase in enumerate(constraints):
                 for constraint in constraint_phase:
                     self.add_constraint(constraint, i)
-
-        # Objective functions
-        self.J = []
-        ObjectiveFunction.continuity(self)
+        # Prepare objectives
         if len(objective_functions) > 0:
             for i, objective_functions_phase in enumerate(objective_functions):
                 for objective_function in objective_functions_phase:

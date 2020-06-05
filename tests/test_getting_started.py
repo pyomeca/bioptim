@@ -242,15 +242,15 @@ def test_cyclic_constraint():
 
 
 def test_phase_transitions():
-    # Load cube_phase_transitions
+    # Load phase_transitions
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "phase_transitions", str(PROJECT_FOLDER) + "/examples/getting_started/cube_phase_transitions.py"
+        "phase_transitions", str(PROJECT_FOLDER) + "/examples/getting_started/phase_transitions.py"
     )
-    cube_phase_transitions = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(cube_phase_transitions)
+    phase_transitions = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(phase_transitions)
 
-    ocp = cube_phase_transitions.prepare_ocp(
+    ocp = phase_transitions.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
     )
     sol = ocp.solve()

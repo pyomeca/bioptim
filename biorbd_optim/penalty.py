@@ -505,7 +505,12 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def continuity(ocp):
-        raise RuntimeError("continuity cannot be called from an abstract class")
+        # Dynamics must be continuous between phases
+        for pt in ocp.phase_transitions:
+            penalty_idx = pt["base"]._reset_penalty(ocp, None, -1)
+            phase_transition_function = pt["type"]
+            val = phase_transition_function(ocp, **pt)
+            pt["base"]._add_to_penalty(ocp, None, val, penalty_idx, **pt)
 
     @staticmethod
     def _add_to_penalty(ocp, nlp, val, penalty_idx, **extra_param):
