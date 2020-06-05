@@ -43,16 +43,19 @@ class PhaseTransitionFunctions:
 
             # Aliases
             nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
-            nbQ = nlp_pre["nbQ"]
-            q = nlp_post["X"][0][:nbQ]
-            qdot_pre = nlp_pre["X"][-1][nbQ:]
+            nbQ_reduced = nlp_pre["nbQ"]
+            q_reduced = nlp_post["X"][0][:nbQ_reduced]
+            qdot_pre_reduced = nlp_pre["X"][-1][nbQ_reduced:]
+            q = nlp_post["q_mapping"].expand.map(q_reduced)
+            qdot_pre = nlp_pre["q_dot_mapping"].expand.map(qdot_pre_reduced)
 
             if nlp_post["model"].nbContacts() == 0:
                 warn("The chosen model does not have any contact")
             qdot_post = nlp_post["model"].ComputeConstraintImpulsesDirect(q, qdot_pre).to_mx()
+            qdot_post_reduced = nlp_post["q_dot_mapping"].reduce.map(qdot_post)
 
-            val = nlp_pre["X"][-1][:nbQ] - q
-            val = vertcat(val, nlp_post["X"][0][nbQ:] - qdot_post)
+            val = nlp_pre["X"][-1][:nbQ_reduced] - q_reduced
+            val = vertcat(val, nlp_post["X"][0][nbQ_reduced:] - qdot_post_reduced)
             return val
 
         @staticmethod
