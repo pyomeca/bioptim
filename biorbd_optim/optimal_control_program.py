@@ -39,6 +39,7 @@ class OptimalControlProgram:
         U_bounds,
         objective_functions=(),
         constraints=(),
+        parameters=(),
         external_forces=(),
         ode_solver=OdeSolver.RK,
         nb_integration_steps=5,
@@ -99,6 +100,7 @@ class OptimalControlProgram:
             "U_bounds": U_bounds,
             "objective_functions": [],
             "constraints": [],
+            "parameters": parameters,
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "nb_integration_steps": nb_integration_steps,
@@ -118,6 +120,7 @@ class OptimalControlProgram:
         # Prepare some variables
         constraints = self.__init_penalty(constraints, "constraints")
         objective_functions = self.__init_penalty(objective_functions, "objective_functions")
+        # parameters = self.__init_phase_time(parameters, "parameters")
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
@@ -216,6 +219,9 @@ class OptimalControlProgram:
             for i, objective_functions_phase in enumerate(objective_functions):
                 for objective_function in objective_functions_phase:
                     self.add_objective_function(objective_function, i)
+
+        # Prepare the extra parameters to optimize
+
 
     @staticmethod
     def __initialize_nlp(nlp):
@@ -359,6 +365,9 @@ class OptimalControlProgram:
             constraints, initial_time_guess, phase_time, time_min, time_max, has_penalty=has_penalty
         )
         return phase_time, initial_time_guess, time_min, time_max
+
+    def __define_parameters_to_optimize(self):
+        pass
 
     def __define_parameters_phase_time(
         self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=None
