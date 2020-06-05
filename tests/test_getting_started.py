@@ -258,7 +258,7 @@ def test_phase_transitions():
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    # np.testing.assert_almost_equal(f[0, 0], 110875.0772043361)
+    np.testing.assert_almost_equal(f[0, 0], 110875.0772043361)
 
     # Check constraints
     g = np.array(sol["g"])
