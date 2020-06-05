@@ -117,7 +117,10 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
     IMPACT will cause an impact related discontinuity when defining one or more contact points in the model.
     CUSTOM will allow to call the custom function previously presented in order to have its own phase transition.
     Finally, if you want a phase transition (continuous or not) between the last and the first phase (cyclicity) 
-    you have to specify it as below with phase_pre_idx being the index of the last phase.
+    you can use the dedicated PhaseTransition.Cyclic or use a continuous set at the lase phase_pre_idx.
+    
+    If for some reason, you don't want the phase transition to be hard constraint, you can specify a weight higher than
+    zero. It will thereafter be treated as a Mayer objective function with the specified weight. 
     """
 
     phase_transitions = (
@@ -129,7 +132,7 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
             "idx_1": 1,
             "idx_2": 3,
         },
-        {"type": PhaseTransition.CONTINUOUS, "phase_pre_idx": 3,},
+        {"type": PhaseTransition.CYCLIC},
     )
 
     # ------------- #

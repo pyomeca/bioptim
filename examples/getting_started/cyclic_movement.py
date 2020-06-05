@@ -11,6 +11,7 @@ from biorbd_optim import (
     InitialConditions,
     ShowResult,
     OdeSolver,
+    PhaseTransition,
 )
 
 
@@ -50,6 +51,13 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, loop_from
     U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
+    # A phase transition loop constraint is treated as
+    # hard penalty (constraint) if weight is <= 0 [or if no weight is provided], or
+    # as a soft penalty (objective) otherwise
+    if loop_from_constraint:
+        phase_transitions = ({"type": PhaseTransition.CYCLIC, "weight": 0},)
+    else:
+        phase_transitions = ({"type": PhaseTransition.CYCLIC, "weight": 10000},)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -63,8 +71,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, loop_from
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        is_cyclic_objective=not loop_from_constraint,
-        is_cyclic_constraint=loop_from_constraint,
+        phase_transitions=phase_transitions,
     )
 
 
