@@ -6,7 +6,6 @@ from casadi import vertcat, sum1, horzcat
 from .enums import Instant, InterpolationType
 from .penalty import PenaltyType, PenaltyFunctionAbstract
 from .path_conditions import Bounds
-from .phase_transition import PhaseTransitionFunctions
 
 
 # TODO: Convert the constraint in CasADi function?
@@ -137,25 +136,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     # Save continuity constraints
                     val = end_node - nlp["X"][k + 1]
                     ConstraintFunction._add_to_penalty(ocp, None, val, penalty_idx)
-
-        # Dynamics must be continuous between phases
-        for i in range(len(ocp.nlp) - 1):
-            if ocp.nlp[i]["nx"] != ocp.nlp[i + 1]["nx"]:
-                raise NotImplementedError("Phase constraints without same nx is not supported yet")
-        for pt in ocp.phase_transitions:
-            penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
-            phase_transition_function = pt["type"]
-            val = phase_transition_function(ocp, **pt)
-            ConstraintFunction._add_to_penalty(ocp, None, val, penalty_idx)
-
-        if ocp.is_cyclic_constraint:
-            # Save continuity constraints between final integration and first node
-            if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
-                raise NotImplementedError("Cyclic constraint without same nx is not supported yet")
-
-            val = ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]
-            penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
-            ConstraintFunction._add_to_penalty(ocp, None, val, penalty_idx)
 
     @staticmethod
     def _add_to_penalty(ocp, nlp, g, penalty_idx, min_bound=0, max_bound=0, **extra_param):
