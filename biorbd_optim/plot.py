@@ -143,7 +143,7 @@ class PlotOcp:
                 if nlp["plot"][variable].combine_to:
                     self.axes[variable] = self.axes[nlp["plot"][variable].combine_to]
                     axes = self.axes[variable][1]
-                elif i > 0:
+                elif i > 0 and variable in self.axes:
                     axes = self.axes[variable][1]
                 else:
                     axes = self.__add_new_axis(variable, nb, nb_rows, nb_cols)
@@ -151,29 +151,28 @@ class PlotOcp:
 
                 t = self.t[i]
                 if variable not in self.plot_func:
-                    self.plot_func[variable] = [nlp["plot"][variable]]
-                else:
-                    self.plot_func[variable].append(nlp["plot"][variable])
+                    self.plot_func[variable] = [None] * self.ocp.nb_phases
+                self.plot_func[variable][i] = nlp["plot"][variable]
 
-                mapping = self.plot_func[variable][-1].phase_mappings.map_idx
+                mapping = self.plot_func[variable][i].phase_mappings.map_idx
                 for k in mapping:
                     ax = axes[k]
-                    if k < len(self.plot_func[variable][-1].legend):
-                        axes[k].set_title(self.plot_func[variable][-1].legend[mapping[k]])
+                    if k < len(self.plot_func[variable][i].legend):
+                        axes[k].set_title(self.plot_func[variable][i].legend[mapping[k]])
                     ax.grid(color="k", linestyle="--", linewidth=0.5)
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
 
                     zero = np.zeros((t.shape[0], 1))
-                    plot_type = self.plot_func[variable][0].type
+                    plot_type = self.plot_func[variable][i].type
                     if plot_type == PlotType.PLOT:
-                        color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:green"
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:green"
                         self.plots.append(
                             [plot_type, i, ax.plot(t, zero, ".-", color=color, markersize=3, zorder=0)[0]]
                         )
                     elif plot_type == PlotType.INTEGRATED:
-                        color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:brown"
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         plots_integrated = []
                         nb_int_steps = nlp["nb_integration_steps"]
                         for cmp in range(nlp["ns"]):
@@ -190,15 +189,15 @@ class PlotOcp:
                         self.plots.append([plot_type, i, plots_integrated])
 
                     elif plot_type == PlotType.STEP:
-                        color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:orange"
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:orange"
                         self.plots.append([plot_type, i, ax.step(t, zero, where="post", color=color, zorder=0)[0]])
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
-            for ax in axes:
-                intersections_time = self.find_phases_intersections()
-                for time in intersections_time:
-                    self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
+                for ax in axes:
+                    intersections_time = self.find_phases_intersections()
+                    for time in intersections_time:
+                        self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
         """

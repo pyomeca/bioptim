@@ -47,7 +47,7 @@ class PhaseTransitionFunctions:
             nbQ = nlp_pre["nbQ"]
             nbQdot = nlp_pre["nbQdot"]
             q = nlp_pre["q_mapping"].expand.map(nlp_pre["X"][-1][:nbQ])
-            qdot_pre = nlp_pre["q_dot_mapping"].expand.map(nlp_pre["X"][-1][nbQ: nbQ + nbQdot])
+            qdot_pre = nlp_pre["q_dot_mapping"].expand.map(nlp_pre["X"][-1][nbQ : nbQ + nbQdot])
 
             if nlp_post["model"].nbContacts() == 0:
                 warn("The chosen model does not have any contact")
@@ -56,10 +56,11 @@ class PhaseTransitionFunctions:
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
             model = biorbd.Model(nlp_post["model"].path().absolutePath().to_string())
             qdot_post = model.ComputeConstraintImpulsesDirect(q, qdot_pre).to_mx()
-            qdot_post = nlp_pre["q_dot_mapping"].reduce.map(qdot_post)
+            # qdot_post = nlp_post["model"].ComputeConstraintImpulsesDirect(q, qdot_pre).to_mx()
+            qdot_post = nlp_post["q_dot_mapping"].reduce.map(qdot_post)
 
             val = nlp_pre["X"][-1][:nbQ] - nlp_post["X"][0][:nbQ]
-            val = vertcat(val, qdot_post - nlp_post["X"][0][nbQ: nbQ + nbQdot])
+            val = vertcat(val, qdot_post - nlp_post["X"][0][nbQ : nbQ + nbQdot])
             return val
 
         @staticmethod
