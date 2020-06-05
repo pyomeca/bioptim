@@ -11,7 +11,7 @@ from .enums import OdeSolver
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
 from .constraints import ConstraintFunction, Constraint
-from .continuity import ContinuityFunctions, PhaseTransitionFunctions
+from .continuity import ContinuityFunctions, StateTransitionFunctions
 from .objective_functions import Objective, ObjectiveFunction
 from .plot import OnlineCallback, CustomPlot
 from .integrator import RK4
@@ -47,7 +47,7 @@ class OptimalControlProgram:
         q_dot_mapping=None,
         tau_mapping=None,
         plot_mappings=None,
-        phase_transitions=[],
+        state_transitions_constraints=[],
         nb_threads=1,
     ):
         """
@@ -107,7 +107,7 @@ class OptimalControlProgram:
             "q_dot_mapping": q_dot_mapping,
             "tau_mapping": tau_mapping,
             "plot_mappings": plot_mappings,
-            "phase_transitions": phase_transitions,
+            "state_transitions_constraints": state_transitions_constraints,
             "nb_threads": nb_threads,
         }
 
@@ -196,7 +196,7 @@ class OptimalControlProgram:
             self.__prepare_dynamics(self.nlp[i])
 
         # Prepare phase transitions
-        self.phase_transitions = PhaseTransitionFunctions.prepare_phase_transitions(self, phase_transitions)
+        self.state_transitions_constraints = StateTransitionFunctions.prepare_state_transitions(self, state_transitions_constraints)
 
         # Declare constraints and objective
         self.J = []
