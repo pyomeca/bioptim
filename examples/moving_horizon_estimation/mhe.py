@@ -15,7 +15,7 @@ from biorbd_optim import (
     InterpolationType,
 )
 
-def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, max_torque, initial_guess=InterpolationType.CONSTANT):
+def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, max_torque, initial_guess=InterpolationType.CONSTANT, data_to_track = []):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -25,7 +25,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, max_torqu
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
+    objective_functions = {"type": Objective.Lagrange.MINIMIZE_MARKERS, "weight": 100, "data_to_track" : data_to_track}
 
     # Dynamics
     problem_type = ProblemType.torque_driven
@@ -94,8 +94,8 @@ if __name__ == "__main__":
 
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
-        ocp = prepare_ocp(biorbd_model_path, number_shooting_points=N, final_time=Tf, max_torque=T_max,
-                          initial_guess=initial_guess)
+        ocp = prepare_ocp(biorbd_model_path, number_shooting_points=N-1, final_time=Tf, max_torque=T_max,
+                          initial_guess=initial_guess, data_to_track=Y_N_)
         sol = ocp.solve()
         print("\n")
 
