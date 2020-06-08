@@ -16,7 +16,7 @@ git clone https://github.com/your-user-name/BiorbdOptim.git
 ## Creating and activating conda environment
 
 Before starting any development, we recommend that you create an isolated development environment. 
-The easiest and most efficient way (due to the numerous dependencies of BiorbdOptim) is to use an anaconda virtual environment. 
+The easiest and most efficient way (due to the numerous dependencies of BiorbdOptim) is to use an anaconda virtual environment and to create it based on the `environment.yml` file. 
 
 - Install [miniconda](https://conda.io/miniconda.html)
 - `cd` to the BiorbdOptim source directory
@@ -30,62 +30,48 @@ conda activate biorbd_optim
 ## Implementing new features
 
 Before starting to implement your new awesome feature, please discuss the implementation with the code owner so it doesn't clash with some other current developments. 
+It is also a good idea to have a look at the current opened pull-request so you don't redo something currently being developped. 
+If your feature is mention in the issue section of GitHub, please assign it to yourself.
+Otherwise, please open a new issue explaining what you are currently doing (and assign it to yourself!).
 
-As soon as possible, you are very welcome to open a pull-request (see below) with a short but descriptive name. 
+As soon as possible, you are asked to open a pull-request (see below) with a short but descriptive name. 
 To tag that a pull-request is still in development, please add `[WIP]` at the beginning of the name.
 Send as small commits as possible; 1 to 10 lines is probably a good guess, with again short but descriptive names. 
-Be aware of the review done by the maintainers, they will contain useful tips and advices that should be integrated soon. 
+Be aware of the review done by the maintainers, they will contain useful tips and advices that should be integrated ASAP. 
 Once you have responded to a specific comment, please respond `Done!` and tag it as resolved.
 
 Make sure you add a minimal but meaningful example of your new feature and that you create a test with numerical values to compare with. 
+During your development, you can create a sandbox folder in the examples folder. 
+Everything in this folder will automatically be ignored by Git. 
+If by accident you add a binary file in the history (by not using a sandbox), your pull-request will be rejected and you will have to produce a new way free from the binary file. 
 
-When you have completed the implementation of the new feature, 
+When you have completed the implementation of your new feature, navigate to your pull-resquest in GitHub and select `Pariterre` in the `Reviewers` drop menu. 
+At the same time, if you think your review is ready to be merged, remove the `[WIP]` tag in the name (otherwise, your pull-resquest won't be merged). 
+If your pull-resquest is accepted, there is nothing more to do. 
+If changes are required, answer all the comments and, as stated previously, respond `Done!` and tag it as resolved. 
+Be aware that sometime the maintainer can push modifications directly to your branch, so make sure to pull before to continue to work on the feature.
 
 ## Testing your code
 
-Adding tests is required if you add or modify existing codes in pyomeca.
+Adding tests is required in order to get your development merged to the master branch. 
 Therefore, it is worth getting in the habit of writing tests ahead of time so this is never an issue.
-The pyomeca test suite runs automatically on GitHub Actions, once your pull request is submitted.
-However, we strongly encourage running the tests prior to submitting the pull request.
-To do so, simply run `make test`.
+The BiorbdOptim test suite runs automatically on GitHub Actions, once your pull request is submitted.
+However, we strongly encourage running the tests prior to submitting the pull-request.
+To do so, simply run the tests folder in pytest (`pytest tests`).
 
-## Linting your code
+## Convention of coding
 
-Pyomeca uses several tools to ensure a consistent code format throughout the project.
-The easiest way to use them is to run `make lint` from the source directory.
+BiorbdOptim tries to follow as much as possible the PEP recommendations ([https://www.python.org/dev/peps/]). 
+Unless you have good reasons to disobey, pull-requests are required to follow these recommendations. 
+I won't get into details here, if you haven't yet, you should read these :) 
 
-## Making the pull-request
-
-When you want your changes to appear publicly on your GitHub page, push your forked feature branch’s commits:
-
+Black is used to enforce the code spacing. 
+BiorbdOptim is linted with 120 characters max per line. 
+This means that your pull-resquest tests on GitHub will appear to fail if black fails. 
+The easiest way to make sure black is happy, run locally this command:
 ```bash
-git push origin new-feature
+black . -l120
 ```
+If you need to install black, you can do it via conda using the conda-forge channel.
 
-If everything looks good, you are ready to make a pull request.
-This pull request and its associated changes will eventually be committed to the master branch and available in the next release.
-
-1. Navigate to your repository on GitHub
-2. Click on the `Pull Request` button
-3. You can then click on `Files Changed` to make sure everything looks OK
-4. Write a description of your changes in the Discussion tab
-5. Click `Send Pull Request`
-
-This request then goes to the repository maintainers, and they will review the code.
-If you need to make more changes, you can make them in your branch, add them to a new commit and push them to GitHub.
-The pull request will be automatically updated.
-
-!!! info "PR Checklist"
-
-    Let's summarize the steps needed to get your PR ready for submission.
-
-    1. **Use an isolated Python environment**.
-
-    2. **Properly test your code**. Write new tests if needed and make sure that your modification didn't break anything by running `make test`.
-
-    3. **Properly format your code**. You can verify that it passes the formatting guidelines by running `make lint`.
-
-    4. **Push your code and create a PR**.
-
-    5. **Properly describe your modifications** with a helpful title and description. If this addresses an issue, please reference it.
 
