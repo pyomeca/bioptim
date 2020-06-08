@@ -17,7 +17,7 @@ from biorbd_optim import (
 
 def custom_state_transition(state_pre, state_post, idx_1, idx_2):
     """
-    Custom function returning the value to be added in the constraint vector and whose value we want to be 0.
+    Custom function returning the value to be added in the constraint or objective vector (if there is a weight higher than zero) and whose value we want to be 0.
     In this example of custom function for state transition, this custom function ensures continuity between states
     whose index is between idx_1 and idx_2 (idx_2 not included).
     """
@@ -123,7 +123,7 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
     zero. It will thereafter be treated as a Mayer objective function with the specified weight. 
     """
 
-    state_transitions_constraints = (
+    state_transitions = (
         {"type": StateTransition.IMPACT, "phase_pre_idx": 1,},
         {
             "type": StateTransition.CUSTOM,
@@ -148,7 +148,7 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
         U_bounds,
         objective_functions,
         constraints,
-        state_transitions_constraints=state_transitions_constraints,
+        state_transitions=state_transitions,
         ode_solver=ode_solver,
     )
 
