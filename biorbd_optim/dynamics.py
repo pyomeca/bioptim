@@ -147,7 +147,9 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(states, controls, parameters, nlp):
+    def forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(
+        states, controls, parameters, nlp
+    ):
         """
         Returns contact forces computed from forward dynamics with contact force
         (forward_dynamics_torque_muscle_driven_with_contact)
@@ -286,7 +288,9 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
     @staticmethod
-    def forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states, controls, parameters, nlp):
+    def forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
+        states, controls, parameters, nlp
+    ):
         """
         Returns contact forces computed from forward dynamics with contact force
         (forward_dynamics_muscle_excitations_and_torque_driven_with_contact)

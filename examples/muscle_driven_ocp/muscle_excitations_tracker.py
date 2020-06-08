@@ -41,7 +41,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
         "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
         "tau_mapping": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
-        "parameters_to_optimize": {}
+        "parameters_to_optimize": {},
     }
     markers_func = []
     for i in range(nb_markers):
@@ -57,7 +57,11 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     dynamics_func = Function(
         "ForwardDyn",
         [symbolic_states, symbolic_controls, symbolic_parameters],
-        [Dynamics.forward_dynamics_muscle_excitations_and_torque_driven(symbolic_states, symbolic_controls, symbolic_parameters, nlp)],
+        [
+            Dynamics.forward_dynamics_muscle_excitations_and_torque_driven(
+                symbolic_states, symbolic_controls, symbolic_parameters, nlp
+            )
+        ],
         ["x", "u", "p"],
         ["xdot"],
     ).expand()

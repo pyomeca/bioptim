@@ -351,6 +351,7 @@ class Data:
                 return elem.to_matrix(phase_idx=phases, node_idx=nodes)
             else:
                 return elem
+
         if data:
             data_concat = get_matrix(data[keys[0]])
             for k in range(1, len(keys)):

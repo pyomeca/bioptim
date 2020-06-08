@@ -1,5 +1,6 @@
 from casadi import MX, vertcat
 
+
 class Parameters:
     @staticmethod
     def add_or_replace(ocp, parameter, penalty_idx):
@@ -9,7 +10,9 @@ class Parameters:
         if "target_function" in parameter:
             target_function = parameter["target_function"]
             del parameter["target_function"]
-        penalty_type = parameter["type"]._get_type()
+        if "type" in parameter:
+            penalty_type = parameter["type"]._get_type()
+            del parameter["type"]
         weight = 1
         bounds = parameter["bounds"]
         initial_guess = parameter["initial_guess"]
@@ -21,7 +24,13 @@ class Parameters:
         if "quadratic" in parameter:
             quadratic = parameter["quadratic"]
             del parameter["quadratic"]
-        del parameter["name"], parameter["function"], parameter["type"], parameter["bounds"], parameter["initial_guess"], parameter["size"]
+        del (
+            parameter["name"],
+            parameter["function"],
+            parameter["bounds"],
+            parameter["initial_guess"],
+            parameter["size"],
+        )
 
         mx = Parameters.add_to_V(ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, **parameter)
         if target_function:
@@ -30,7 +39,9 @@ class Parameters:
             penalty_type._add_to_penalty(ocp, None, val, penalty_idx, weight=weight, quadratic=quadratic)
 
     @staticmethod
-    def add_to_V(ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, mx_sym=None, **extra_params):
+    def add_to_V(
+        ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, mx_sym=None, **extra_params
+    ):
         if mx_sym is None:
             mx_sym = MX.sym(param_name, nb_elements, 1)
 
@@ -43,7 +54,7 @@ class Parameters:
                 raise RuntimeError("Pre dynamic function of same parameters must be the same")
             p["size"] += param_to_store["size"]
             if p["extra_params"] != param_to_store["extra_params"]:
-                raise RuntimeError ("Extra parameters of same parameters must be the same")
+                raise RuntimeError("Extra parameters of same parameters must be the same")
         else:
             ocp.param_to_optimize[param_name] = param_to_store
 

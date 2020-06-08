@@ -110,7 +110,9 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val[:3], **extra_param)
 
         @staticmethod
-        def minimize_markers_velocity(penalty_type, ocp, nlp, t, x, u, p, markers_idx=(), data_to_track=(), **extra_param):
+        def minimize_markers_velocity(
+            penalty_type, ocp, nlp, t, x, u, p, markers_idx=(), data_to_track=(), **extra_param
+        ):
             """
             Adds the objective that the specific markers velocity should be minimized.
             It is possible to track markers velocity, in this case the objective is to minimize
@@ -212,7 +214,9 @@ class PenaltyFunctionAbstract:
             )
 
         @staticmethod
-        def minimize_muscles_control(penalty_type, ocp, nlp, t, x, u, p, muscles_idx=(), data_to_track=(), **extra_param):
+        def minimize_muscles_control(
+            penalty_type, ocp, nlp, t, x, u, p, muscles_idx=(), data_to_track=(), **extra_param
+        ):
             """
             Adds the objective that the specific muscle controls should be minimized.
             It is possible to track muscle activation, in this case the objective is to minimize
@@ -271,7 +275,9 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, CoM_height, **extra_param)
 
         @staticmethod
-        def minimize_contact_forces(penalty_type, ocp, nlp, t, x, u, p, contacts_idx=(), data_to_track=(), **extra_param):
+        def minimize_contact_forces(
+            penalty_type, ocp, nlp, t, x, u, p, contacts_idx=(), data_to_track=(), **extra_param
+        ):
             """
             Adds the objective that the contact force should be minimized.
             It is possible to track contact forces, in this case the objective is to minimize
