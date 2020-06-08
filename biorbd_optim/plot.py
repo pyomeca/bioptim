@@ -63,7 +63,7 @@ class PlotOcp:
         for i, nlp in enumerate(self.ocp.nlp):
             if isinstance(nlp["tf"], MX):
                 self.t_idx_to_optimize.append(i)
-        self.__init_time_vector()
+        self.__init_time_vector(self.tf)
 
         self.axes = {}
         self.plots = []
@@ -94,14 +94,14 @@ class PlotOcp:
                     pass
             fig.canvas.draw()
 
-    def __init_time_vector(self):
+    def __init_time_vector(self, tf):
         """Sets x-axis array"""
         self.t = []
         self.t_integrated = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
             nb_int_steps = nlp["nb_integration_steps"]
-            dt_ns = self.tf[phase_idx] / nlp["ns"]
+            dt_ns = tf[phase_idx] / nlp["ns"]
             time_phase_integrated = []
             last_t_int = last_t
             for _ in range(nlp["ns"]):
@@ -110,8 +110,8 @@ class PlotOcp:
             self.t_integrated.append(time_phase_integrated)
 
             self.ns += nlp["ns"] + 1
-            time_phase = np.linspace(last_t, last_t + self.tf[phase_idx], nlp["ns"] + 1)
-            last_t += self.tf[phase_idx]
+            time_phase = np.linspace(last_t, last_t + tf[phase_idx], nlp["ns"] + 1)
+            last_t += tf[phase_idx]
             self.t.append(time_phase)
 
     def __create_plots(self):
@@ -268,7 +268,7 @@ class PlotOcp:
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
                     self.tf[i_in_tf] = data_param["time"][i_in_time]
-            self.__update_xdata()
+            self.__update_xdata(data_param["time"])
 
         data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, integrate=True, concatenate=False)
         for i, nlp in enumerate(self.ocp.nlp):
@@ -313,9 +313,9 @@ class PlotOcp:
                     self.__append_to_ydata(y)
         self.__update_axes()
 
-    def __update_xdata(self):
+    def __update_xdata(self, data_param_time):
         """Update of the time in plots (independent axis)"""
-        self.__init_time_vector()
+        self.__init_time_vector(data_param_time)
         for plot in self.plots:
             phase_idx = plot[1]
             if plot[0] == PlotType.INTEGRATED:
