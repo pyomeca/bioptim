@@ -230,7 +230,9 @@ class ProblemType:
         if as_states:
             nlp["x"] = vertcat(q, q_dot)
             nlp["var_states"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
-            nlp["plot"]["q"] = CustomPlot(lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q)
+            nlp["plot"]["q"] = CustomPlot(
+                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q
+            )
             nlp["plot"]["q_dot"] = CustomPlot(
                 lambda x, u, p: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
                 plot_type=PlotType.INTEGRATED,
@@ -267,7 +269,9 @@ class ProblemType:
         if as_controls:
             nlp["u"] = u
             nlp["var_controls"] = {"tau": nlp["nbTau"]}
-            nlp["plot"]["tau"] = CustomPlot(lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau)
+            nlp["plot"]["tau"] = CustomPlot(
+                lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
+            )
 
     @staticmethod
     def __configure_contact(ocp, nlp, dyn_func):

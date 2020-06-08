@@ -123,7 +123,11 @@ class PlotOcp:
             if "plot" in nlp:
                 for key in nlp["plot"]:
                     if nlp["plot"][key].phase_mappings is None:
-                        size = nlp["plot"][key].function(np.zeros((nlp["nx"], 1)), np.zeros((nlp["nu"], 1)), np.zeros((nlp["np"], 1))).shape[0]
+                        size = (
+                            nlp["plot"][key]
+                            .function(np.zeros((nlp["nx"], 1)), np.zeros((nlp["nu"], 1)), np.zeros((nlp["np"], 1)))
+                            .shape[0]
+                        )
                         nlp["plot"][key].phase_mappings = Mapping(range(size))
                     else:
                         size = len(nlp["plot"][key].phase_mappings.map_idx)
@@ -298,7 +302,7 @@ class PlotOcp:
                         y_tp[:, :] = self.plot_func[key][i].function(
                             state[:, step_size * idx : step_size * (idx + 1)],
                             np.repeat(control[:, idx : idx + 1], step_size, axis=1),
-                            data_param_in_dyn
+                            data_param_in_dyn,
                         )
                         all_y.append(y_tp)
 

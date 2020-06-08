@@ -602,7 +602,7 @@ class PenaltyFunctionAbstract:
             data = np.c_[data, data[:, -1]]
         ocp.add_plot(
             combine_to,
-            lambda x, u: data,
+            lambda x, u, p: data,
             color="tab:red",
             plot_type=PlotType.STEP,
             phase_number=nlp["phase_idx"],
