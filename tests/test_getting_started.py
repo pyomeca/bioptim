@@ -289,3 +289,55 @@ def test_phase_transitions():
     # For some reason, the custom function can't be found from here...
     # The save and load test is therefore skipped
     # TestUtils.save_and_load(sol, ocp, False)
+
+
+def test_parameter_optimization():
+    # Load phase_transitions
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "parameter_optimization", str(PROJECT_FOLDER) + "/examples/getting_started/parameter_optimization.py"
+    )
+    parameter_optimization = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(parameter_optimization)
+
+    ocp = parameter_optimization.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod", final_time=3, number_shooting_points=20, min_g=-10,
+                      max_g=-8
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 838.0826852763831)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (80, 1))
+    np.testing.assert_almost_equal(g, np.zeros((80, 1)))
+
+    # Check some of the results
+    states, controls, params = Data.get_data(ocp, sol["x"], concatenate=False, get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    gravity = params["gravity_z"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((7.70191912, 0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-7.54608159, 0)))
+
+    # gravity parameter
+    np.testing.assert_almost_equal(gravity, np.array([[-9.41274893]]))
+
+    # save and load
+    # TODO: Have a look a this
+    # For some reason, the custom function can't be found from here...
+    # The save and load test is therefore skipped
+    # TestUtils.save_and_load(sol, ocp, True)
