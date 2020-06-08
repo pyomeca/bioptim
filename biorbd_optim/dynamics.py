@@ -8,7 +8,7 @@ class Dynamics:
     """
 
     @staticmethod
-    def forward_dynamics_torque_driven(states, controls, nlp):
+    def forward_dynamics_torque_driven(states, controls, parameters, nlp):
         """
         Forward dynamics (q, qdot, qddot -> tau) with external forces driven by joint torques (controls).
         :param states: States. (MX.sym from CasADi)
@@ -16,6 +16,7 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class.
         :return: Vertcat of derived states. (MX.sym from CasADi)
         """
+        Dynamics.__apply_parameters(parameters, nlp)
         q, qdot, tau = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
@@ -33,7 +34,7 @@ class Dynamics:
         return dxdt
 
     @staticmethod
-    def forward_dynamics_torque_driven_with_contact(states, controls, nlp):
+    def forward_dynamics_torque_driven_with_contact(states, controls, parameters, nlp):
         """
         Forward dynamics (q, qdot, qddot -> tau) with contact force driven by joint torques (controls).
         :param states: States. (MX.sym from CasADi)
@@ -41,6 +42,7 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class.
         :return: Vertcat of derived states. (MX.sym from CasADi)
         """
+        Dynamics.__apply_parameters(parameters, nlp)
         q, qdot, tau = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau).to_mx()
@@ -50,7 +52,7 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forces_from_forward_dynamics_with_contact(states, controls, nlp):
+    def forces_from_forward_dynamics_with_contact(states, controls, parameters, nlp):
         """
         Returns contact forces computed from forward dynamics with contact force
         (forward_dynamics_torque_driven_with_contact)
@@ -59,6 +61,7 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class.
         :return: Contact forces. (MX.sym from CasADi)
         """
+        Dynamics.__apply_parameters(parameters, nlp)
         q, qdot, tau = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         cs = nlp["model"].getConstraints()
@@ -67,7 +70,8 @@ class Dynamics:
         return cs.getForce().to_mx()
 
     @staticmethod
-    def forward_dynamics_torque_activations_driven(states, controls, nlp):
+    def forward_dynamics_torque_activations_driven(states, controls, parameters, nlp):
+        Dynamics.__apply_parameters(parameters, nlp)
         q, qdot, torque_act = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         tau = nlp["model"].torque(torque_act, q, qdot).to_mx()
@@ -78,7 +82,8 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_torque_activations_driven_with_contact(states, controls, nlp):
+    def forward_dynamics_torque_activations_driven_with_contact(states, controls, parameters, nlp):
+        Dynamics.__apply_parameters(parameters, nlp)
         q, qdot, torque_act = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         tau = nlp["model"].torque(torque_act, q, qdot).to_mx()
@@ -89,7 +94,7 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_torque_muscle_driven(states, controls, nlp):
+    def forward_dynamics_torque_muscle_driven(states, controls, parameters, nlp):
         """
         Forward dynamics (q, qdot, qddot -> tau) without external forces driven by joint torques and muscles (controls).
         :param states: States. (MX.sym from CasADi)
@@ -97,6 +102,7 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class.
         :return: Vertcat of derived states. (MX.sym from CasADi)
         """
+        Dynamics.__apply_parameters(parameters, nlp)
         q, qdot, residual_tau = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
@@ -114,7 +120,7 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_muscle_activations_and_torque_driven_with_contact(states, controls, nlp):
+    def forward_dynamics_muscle_activations_and_torque_driven_with_contact(states, controls, parameters, nlp):
         """
         Forward dynamics (q, qdot, qddot -> tau) with contact force driven by joint torques and muscles (controls).
         :param states: Sates. (MX.sym from CasADi)
@@ -122,6 +128,7 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class.
         :return: Vertcat of derived states. (MX.sym from CasADi)
         """
+        Dynamics.__apply_parameters(parameters, nlp)
         q, qdot, residual_tau = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
@@ -140,7 +147,9 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(states, controls, nlp):
+    def forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(
+        states, controls, parameters, nlp
+    ):
         """
         Returns contact forces computed from forward dynamics with contact force
         (forward_dynamics_torque_muscle_driven_with_contact)
@@ -149,6 +158,7 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class.
         :return: Contact forces. (MX.sym from CasADi)
         """
+        Dynamics.__apply_parameters(parameters, nlp)
         q, qdot, residual_tau = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
@@ -166,7 +176,9 @@ class Dynamics:
         return cs.getForce().to_mx()
 
     @staticmethod
-    def forward_dynamics_muscle_activations_driven(states, controls, nlp):
+    def forward_dynamics_muscle_activations_driven(states, controls, parameters, nlp):
+        Dynamics.__apply_parameters(parameters, nlp)
+
         nq = nlp["q_mapping"].reduce.len
         q = nlp["q_mapping"].expand.map(states[:nq])
         qdot = nlp["q_dot_mapping"].expand.map(states[nq:])
@@ -185,7 +197,7 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_muscle_excitations_driven(states, controls, nlp):
+    def forward_dynamics_muscle_excitations_driven(states, controls, parameters, nlp):
         """
         Forward dynamics (q, qdot, qddot -> tau) without external forces driven by muscle excitation (controls).
         :param states: States. (MX.sym from CasADi)
@@ -193,6 +205,8 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class.
         :return: Vertcat of derived states. (MX.sym from CasADi)
         """
+        Dynamics.__apply_parameters(parameters, nlp)
+
         nq = nlp["q_mapping"].reduce.len
         q = nlp["q_mapping"].expand.map(states[:nq])
         qdot = nlp["q_dot_mapping"].expand.map(states[nq:])
@@ -214,7 +228,7 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
     @staticmethod
-    def forward_dynamics_muscle_excitations_and_torque_driven(states, controls, nlp):
+    def forward_dynamics_muscle_excitations_and_torque_driven(states, controls, parameters, nlp):
         """
         Forward dynamics (q, qdot, qddot -> tau) without external forces driven by muscle excitation
         and joint torques (controls).
@@ -223,6 +237,7 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class.
         :return: Vertcat of derived states. (MX.sym from CasADi)
         """
+        Dynamics.__apply_parameters(parameters, nlp)
         q, qdot, residual_tau = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
@@ -243,7 +258,7 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
     @staticmethod
-    def forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states, controls, nlp):
+    def forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states, controls, parameters, nlp):
         """
         Forward dynamics (q, qdot, qddot -> tau) with contact force driven by muscle excitation and
         joint torques (controls).
@@ -252,6 +267,7 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class.
         :return: Vertcat of derived states. (MX.sym from CasADi)
         """
+        Dynamics.__apply_parameters(parameters, nlp)
         q, qdot, residual_tau = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
@@ -272,7 +288,9 @@ class Dynamics:
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
     @staticmethod
-    def forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states, controls, nlp):
+    def forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
+        states, controls, parameters, nlp
+    ):
         """
         Returns contact forces computed from forward dynamics with contact force
         (forward_dynamics_muscle_excitations_and_torque_driven_with_contact)
@@ -281,6 +299,7 @@ class Dynamics:
         :param nlp: An OptimalControlProgram class.
         :return: Contact forces. (MX.sym from CasADi)
         """
+        Dynamics.__apply_parameters(parameters, nlp)
         q, qdot, residual_tau = Dynamics.__dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = biorbd.VecBiorbdMuscleStateDynamics(nlp["nbMuscle"])
@@ -316,3 +335,12 @@ class Dynamics:
         tau = nlp["tau_mapping"].expand.map(controls[: nlp["nbTau"]])
 
         return q, qdot, tau
+
+    @staticmethod
+    def __apply_parameters(mx, nlp):
+        for key in nlp["parameters_to_optimize"]:
+            param = nlp["parameters_to_optimize"][key]
+
+            # Call the pre dynamics function
+            if param["func"]:
+                param["func"](nlp["model"], mx, **param["extra_params"])

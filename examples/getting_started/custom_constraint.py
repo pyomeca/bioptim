@@ -19,7 +19,7 @@ from biorbd_optim import (
 )
 
 
-def custom_func_align_markers(ocp, nlp, t, x, u, first_marker_idx, second_marker_idx):
+def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
     nq = nlp["nbQ"]
     val = []
     for v in x:
