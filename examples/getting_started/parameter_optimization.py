@@ -16,14 +16,22 @@ from biorbd_optim import (
 
 
 def my_parameter_function(biorbd_model, value, target_value_via_custom_param):
+    # The pre dynamics function is called right before defining the dynamics of the system. If one wants to
+    # modify the dynamics (e.g. optimize the gravity in this case), then this function is the proper way to do it
+    # `biorbd_model` and `value` are mandatory. The former is the actual model to modify, the latter is the casadi.MX
+    # used to modify it,  the size of which decribed by the value `size` in the parameter definition.
+    # The rest of the parameter are defined by the user in the parameter
     biorbd_model.setGravity(biorbd.Vector3d(0, 0, value))
 
 
-def my_custom_parameter_target_function(ocp, value, target_value_via_custom_param):
+def my_target_function(ocp, value, target_value_via_custom_param):
+    # The target function is a penalty function.
+    # `ocp` and `value` are mandatory. The rest is defined in the
+    # parameter by the user
     return value - target_value_via_custom_param
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, max_g):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, max_g, target_g):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     torque_min, torque_max, torque_init = -30, 30, 0
@@ -32,7 +40,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 10})
+    objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 10}
 
     # Dynamics
     problem_type = ProblemType.torque_driven
@@ -57,16 +65,23 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
 
     U_init = InitialConditions([torque_init] * n_tau)
 
-    # ------------- #
+    # Define the parameter to optimize
+    # Give the parameter some min and max bounds
     bound_length = Bounds(min_bound=min_g, max_bound=max_g, interpolation_type=InterpolationType.CONSTANT)
+    # and an initial condition
     initial_length = InitialConditions(7)
-    parameters = (
-        {"name": "gravity_z", "type": Objective.Mayer, "function": my_parameter_function,
-         "bounds": bound_length, "initial_guess": initial_length, "size": 1,
-         # "target_function": my_custom_parameter_target_function, "weight": 1000, "quadratic": True,
-         "target_value_via_custom_param": -9.81,
-         }
-    )
+    parameters = {
+        "name": "gravity_z",  # The name of the parameter
+        "function": my_parameter_function,  # The function that modifies the biorbd model
+        "bounds": bound_length,  # The bounds
+        "initial_guess": initial_length,  # The initial guess
+        "size": 1,  # The number of elements this particular parameter vector has
+        "type": Objective.Mayer,  # The type objective or constraint function (if there is any)
+        "target_function": my_target_function,  # The penalty function (if there is any)
+        "weight": 10,  # The weight of the objective function
+        "quadratic": True,  # If the objective function is quadratic
+        "target_value_via_custom_param": target_g,  # Supplementary element defined by the user
+    }
 
     return OptimalControlProgram(
         biorbd_model,
@@ -84,7 +99,9 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100, min_g=-10, max_g=-8)
+    ocp = prepare_ocp(
+        biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100, min_g=-10, max_g=-6, target_g=-8,
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=False)
