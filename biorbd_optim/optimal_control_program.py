@@ -13,6 +13,7 @@ from .path_conditions import Bounds, InitialConditions, InterpolationType
 from .constraints import ConstraintFunction, Constraint
 from .continuity import ContinuityFunctions, PhaseTransitionFunctions
 from .objective_functions import Objective, ObjectiveFunction
+from .parameters import Parameters
 from .plot import OnlineCallback, CustomPlot
 from .integrator import RK4
 from .biorbd_interface import BiorbdInterface
@@ -39,6 +40,7 @@ class OptimalControlProgram:
         U_bounds,
         objective_functions=(),
         constraints=(),
+        parameters=(),
         external_forces=(),
         ode_solver=OdeSolver.RK,
         nb_integration_steps=5,
@@ -47,7 +49,7 @@ class OptimalControlProgram:
         q_dot_mapping=None,
         tau_mapping=None,
         plot_mappings=None,
-        phase_transitions=[],
+        phase_transitions=(),
         nb_threads=1,
     ):
         """
@@ -99,6 +101,7 @@ class OptimalControlProgram:
             "U_bounds": U_bounds,
             "objective_functions": [],
             "constraints": [],
+            "parameters": [],
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "nb_integration_steps": nb_integration_steps,
@@ -111,6 +114,16 @@ class OptimalControlProgram:
             "nb_threads": nb_threads,
         }
 
+        # Declare optimization variables
+        self.J = []
+        self.g = []
+        self.g_bounds = []
+        self.V = []
+        self.V_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
+        self.V_init = InitialConditions(interpolation_type=InterpolationType.CONSTANT)
+        self.param_to_optimize = {}
+
+        # nlp is the core of a phase
         self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
         self.__add_to_nlp("phase_idx", [i for i in range(self.nb_phases)], False)
@@ -118,6 +131,7 @@ class OptimalControlProgram:
         # Prepare some variables
         constraints = self.__init_penalty(constraints, "constraints")
         objective_functions = self.__init_penalty(objective_functions, "objective_functions")
+        parameters = self.__init_penalty(parameters, "parameters")
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
@@ -155,10 +169,20 @@ class OptimalControlProgram:
             for key in plot_mappings:
                 reshaped_plot_mappings[i][key] = plot_mappings[key][i]
         self.__add_to_nlp("plot_mappings", reshaped_plot_mappings, False)
+
+        # Prepare the parameters to optimize
+        if len(parameters) > 0:
+            for parameter in parameters[0]:  # 0 since parameters are not associated with phases
+                self.add_parameter_to_optimize(parameter)
+
+        # Declare the time to optimize
+        self.__define_variable_time(initial_time_guess, time_min, time_max)
+
+        # Prepare the dynamics of the program
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
-            self.nlp[i]["problem_type"](self.nlp[i])
+            self.nlp[i]["problem_type"](self, self.nlp[i])
 
         # Prepare path constraints
         self.__add_to_nlp("X_bounds", X_bounds, False)
@@ -175,15 +199,8 @@ class OptimalControlProgram:
             self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
 
         # Variables and constraint for the optimization program
-        self.V = []
-        self.V_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
-        self.V_init = InitialConditions(interpolation_type=InterpolationType.CONSTANT)
         for i in range(self.nb_phases):
             self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
-
-        # Declare the parameters to optimize
-        self.param_to_optimize = {}
-        self.__define_variable_time(initial_time_guess, time_min, time_max)
 
         # Define dynamic problem
         self.__add_to_nlp(
@@ -197,11 +214,6 @@ class OptimalControlProgram:
 
         # Prepare phase transitions
         self.phase_transitions = PhaseTransitionFunctions.prepare_phase_transitions(self, phase_transitions)
-
-        # Declare constraints and objective
-        self.J = []
-        self.g = []
-        self.g_bounds = []
 
         # Inner- and inter-phase continuity
         ContinuityFunctions.continuity(self)
@@ -267,10 +279,11 @@ class OptimalControlProgram:
         if nlp["ode_solver"] == OdeSolver.COLLOCATION or nlp["ode_solver"] == OdeSolver.RK:
             ode_opt["number_of_finite_elements"] = nlp["nb_integration_steps"]
 
-        ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"])}
+        ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"], nlp["p"])}
         nlp["dynamics"] = []
         nlp["par_dynamics"] = {}
         if nlp["ode_solver"] == OdeSolver.RK:
+            ode_opt["param"] = nlp["p"]
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
             if "external_forces" in nlp:
@@ -280,14 +293,14 @@ class OptimalControlProgram:
             else:
                 nlp["dynamics"].append(RK4(ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
-            if isinstance(nlp["tf"], casadi.MX):
-                raise RuntimeError("OdeSolver.COLLOCATION cannot be used while optimizing the time parameter")
+            if len(self.param_to_optimize) != 0:
+                raise RuntimeError("OdeSolver.COLLOCATION cannot be used while optimizing parameters")
             if "external_forces" in nlp:
                 raise RuntimeError("COLLOCATION cannot be used with external_forces")
             nlp["dynamics"].append(casadi.integrator("integrator", "collocation", ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.CVODES:
-            if isinstance(nlp["tf"], casadi.MX):
-                raise RuntimeError("OdeSolver.CVODES cannot be used while optimizing the time parameter")
+            if len(self.param_to_optimize) != 0:
+                raise RuntimeError("OdeSolver.CVODES cannot be used while optimizing parameters")
             if "external_forces" in nlp:
                 raise RuntimeError("CVODES cannot be used with external_forces")
             nlp["dynamics"].append(casadi.integrator("integrator", "cvodes", ode, ode_opt))
@@ -390,21 +403,13 @@ class OptimalControlProgram:
         :param minimum: variable time minimums as set by user (default: 0)
         :param maximum: variable time maximums as set by user (default: inf)
         """
-        P = []
+        i = 0
         for nlp in self.nlp:
             if isinstance(nlp["tf"], MX):
-                self.V = vertcat(self.V, nlp["tf"])
-                P.append(self.V[-1])
-        self.param_to_optimize["time"] = P
-
-        nV = len(initial_guess)
-        V_bounds = Bounds(minimum, maximum, interpolation_type=InterpolationType.CONSTANT)
-        V_bounds.check_and_adjust_dimensions(nV, 1)
-        self.V_bounds.concatenate(V_bounds)
-
-        V_init = InitialConditions(initial_guess, interpolation_type=InterpolationType.CONSTANT)
-        V_init.check_and_adjust_dimensions(nV, 1)
-        self.V_init.concatenate(V_init)
+                time_bounds = Bounds(minimum[i], maximum[i], interpolation_type=InterpolationType.CONSTANT)
+                time_init = InitialConditions(initial_guess[i])
+                Parameters.add_to_V(self, "time", 1, None, time_bounds, time_init, nlp["tf"])
+                i += 1
 
     def __init_penalty(self, penalties, penalty_type):
         """
@@ -429,42 +434,58 @@ class OptimalControlProgram:
         self.modify_objective_function(new_objective_function, index_in_phase=-1, phase_number=phase_number)
 
     def modify_objective_function(self, new_objective_function, index_in_phase, phase_number=-1):
-        self._modify_penalty(new_objective_function, index_in_phase, phase_number, "objective_functions")
+        self._modify_penalty(new_objective_function, index_in_phase, phase_number, "objective_functions", True)
 
     def add_constraint(self, new_constraint, phase_number=-1):
         self.modify_constraint(new_constraint, index_in_phase=-1, phase_number=phase_number)
 
     def modify_constraint(self, new_constraint, index_in_phase, phase_number=-1):
-        self._modify_penalty(new_constraint, index_in_phase, phase_number, "constraints")
+        self._modify_penalty(new_constraint, index_in_phase, phase_number, "constraints", True)
 
-    def _modify_penalty(self, new_penalty, index_in_phase, phase_number, penalty_name):
+    def add_parameter_to_optimize(self, new_parameter):
+        self.modify_parameter_to_optimize(new_parameter)
+
+    def modify_parameter_to_optimize(self, new_parameter, penalty_idx=-1):
+        self._modify_penalty(new_parameter, penalty_idx, -1, "parameters", False)
+
+    def _modify_penalty(self, new_penalty, penalty_idx, phase_number, penalty_name, penalty_in_a_phase):
         """
         Modification of a penalty (constraint or objective)
         :param new_penalty: Penalty to keep after the modification.
-        :param index_in_phase: Index of the penalty to be modified. (integer)
+        :param penalty_idx: Index of the penalty to be modified. (integer)
         :param phase_number: Index of the phase in which the penalty will be modified. (integer)
         :param penalty_name: Name of the penalty to modify. (string)
         """
         if len(self.nlp) == 1:
             phase_number = 0
         else:
-            if phase_number < 0:
+            if phase_number < 0 and penalty_in_a_phase:
                 raise RuntimeError("phase_number must be specified for multiphase OCP")
 
-        while phase_number >= len(self.original_values[penalty_name]):
+        while phase_number >= len(self.original_values[penalty_name]) and penalty_in_a_phase:
             self.original_values[penalty_name].append([])
 
-        if index_in_phase < 0:
-            self.original_values[penalty_name][phase_number].append(deepcopy(new_penalty))
+        if penalty_in_a_phase:
+            if penalty_idx < 0:
+                self.original_values[penalty_name][phase_number].append(deepcopy(new_penalty))
+            else:
+                if penalty_idx >= len(self.original_values[penalty_name][phase_number]):
+                    raise RuntimeError("It is not possible to modify a penalty when the penalty is not defined")
+                self.original_values[penalty_name][phase_number][penalty_idx] = deepcopy(new_penalty)
         else:
-            if index_in_phase >= len(self.original_values[penalty_name][phase_number]):
-                raise RuntimeError("It is not possible to modify a penalty when the penalty is not defined")
-            self.original_values[penalty_name][phase_number][index_in_phase] = deepcopy(new_penalty)
+            if penalty_idx < 0:
+                self.original_values[penalty_name].append(deepcopy(new_penalty))
+            else:
+                if penalty_idx >= len(self.original_values[penalty_name]):
+                    raise RuntimeError("It is not possible to modify a penalty when the penalty is not defined")
+                self.original_values[penalty_name][penalty_idx] = deepcopy(new_penalty)
 
         if penalty_name == "objective_functions":
-            ObjectiveFunction.add_or_replace(self, self.nlp[phase_number], new_penalty, index_in_phase)
+            ObjectiveFunction.add_or_replace(self, self.nlp[phase_number], new_penalty, penalty_idx)
         elif penalty_name == "constraints":
-            ConstraintFunction.add_or_replace(self, self.nlp[phase_number], new_penalty, index_in_phase)
+            ConstraintFunction.add_or_replace(self, self.nlp[phase_number], new_penalty, penalty_idx)
+        elif penalty_name == "parameters":
+            Parameters.add_or_replace(self, new_penalty, penalty_idx)
         else:
             raise RuntimeError("Unrecognized penalty")
 

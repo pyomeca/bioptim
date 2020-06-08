@@ -35,6 +35,7 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
     # Casadi related stuff
     symbolic_states = MX.sym("x", nb_q + nb_qdot, 1)
     symbolic_controls = MX.sym("u", nu, 1)
+    symbolic_parameters = MX.sym("params", 0, 0)
 
     markers_func = []
     for i in range(nb_markers):
@@ -53,6 +54,7 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
         "nbMuscle": nb_mus,
         "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
         "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
+        "parameters_to_optimize": {},
     }
     if use_residual_torque:
         nlp["nbTau"] = nb_tau
@@ -63,16 +65,16 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
 
     dynamics_func = Function(
         "ForwardDyn",
-        [symbolic_states, symbolic_controls],
-        [dyn_func(symbolic_states, symbolic_controls, nlp)],
-        ["x", "u"],
+        [symbolic_states, symbolic_controls, symbolic_parameters],
+        [dyn_func(symbolic_states, symbolic_controls, symbolic_parameters, nlp)],
+        ["x", "u", "p"],
         ["xdot"],
     ).expand()
 
     def dyn_interface(t, x, u):
         if use_residual_torque:
             u = np.concatenate([np.zeros(nb_tau), u])
-        return np.array(dynamics_func(x, u)).squeeze()
+        return np.array(dynamics_func(x, u, np.empty((0, 0)))).squeeze()
 
     # Generate some muscle activation
     U = np.random.rand(nb_shooting, nb_mus)
