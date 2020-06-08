@@ -36,7 +36,7 @@ def test_pendulum(nb_threads):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.0)
+    np.testing.assert_almost_equal(f[0, 0], 6657.974502951726)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -56,8 +56,8 @@ def test_pendulum(nb_threads):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((17.4928172, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-24.2842703, 0)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((16.25734477, 0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-25.59944635, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
