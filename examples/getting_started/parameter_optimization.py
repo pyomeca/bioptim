@@ -1,6 +1,4 @@
 import biorbd
-import pickle
-from time import time
 
 from biorbd_optim import (
     OptimalControlProgram,
@@ -19,7 +17,7 @@ def my_parameter_function(biorbd_model, value, target_value_via_custom_param):
     # The pre dynamics function is called right before defining the dynamics of the system. If one wants to
     # modify the dynamics (e.g. optimize the gravity in this case), then this function is the proper way to do it
     # `biorbd_model` and `value` are mandatory. The former is the actual model to modify, the latter is the casadi.MX
-    # used to modify it,  the size of which decribed by the value `size` in the parameter definition.
+    # used to modify it,  the size of which described by the value `size` in the parameter definition.
     # The rest of the parameter are defined by the user in the parameter
     biorbd_model.setGravity(biorbd.Vector3d(0, 0, value))
 
@@ -67,20 +65,20 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
 
     # Define the parameter to optimize
     # Give the parameter some min and max bounds
-    bound_length = Bounds(min_bound=min_g, max_bound=max_g, interpolation_type=InterpolationType.CONSTANT)
+    bound_gravity = Bounds(min_bound=min_g, max_bound=max_g, interpolation_type=InterpolationType.CONSTANT)
     # and an initial condition
-    initial_length = InitialConditions(7)
+    initial_gravity = InitialConditions((min_g + max_g) / 2)
     parameters = {
         "name": "gravity_z",  # The name of the parameter
         "function": my_parameter_function,  # The function that modifies the biorbd model
-        "bounds": bound_length,  # The bounds
-        "initial_guess": initial_length,  # The initial guess
+        "bounds": bound_gravity,  # The bounds
+        "initial_guess": initial_gravity,  # The initial guess
         "size": 1,  # The number of elements this particular parameter vector has
-        "type": Objective.Mayer,  # The type objective or constraint function (if there is any)
-        "target_function": my_target_function,  # The penalty function (if there is any)
-        "weight": 10,  # The weight of the objective function
-        "quadratic": True,  # If the objective function is quadratic
-        "target_value_via_custom_param": target_g,  # Supplementary element defined by the user
+        "type": Objective.Mayer,  # The type objective or constraint function (optional)
+        "target_function": my_target_function,  # The penalty function (optional)
+        "weight": 10,  # The weight of the objective function (optional)
+        "quadratic": True,  # If the objective function is quadratic (optional)
+        "target_value_via_custom_param": target_g,  # Supplementary element defined by the user (optional)
     }
 
     return OptimalControlProgram(

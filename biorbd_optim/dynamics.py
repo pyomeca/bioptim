@@ -14,6 +14,7 @@ class Dynamics:
         :param states: States. (MX.sym from CasADi)
         :param controls: Controls. (MX.sym from CasADi)
         :param nlp: An OptimalControlProgram class.
+        :param parameters: The MX associated to the parameters
         :return: Vertcat of derived states. (MX.sym from CasADi)
         """
         Dynamics.__apply_parameters(parameters, nlp)
