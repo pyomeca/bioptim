@@ -241,16 +241,16 @@ def test_cyclic_constraint():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_phase_transitions():
-    # Load phase_transitions
+def test_state_transitions():
+    # Load state_transitions
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "phase_transitions", str(PROJECT_FOLDER) + "/examples/getting_started/phase_transitions.py"
+        "state_transitions", str(PROJECT_FOLDER) + "/examples/getting_started/state_transitions.py"
     )
-    phase_transitions = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(phase_transitions)
+    state_transitions = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(state_transitions)
 
-    ocp = phase_transitions.prepare_ocp(
+    ocp = state_transitions.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
     )
     sol = ocp.solve()

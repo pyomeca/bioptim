@@ -9,7 +9,7 @@ from .objective_functions import ObjectiveFunction
 from .penalty import PenaltyFunctionAbstract
 
 
-class PhaseTransitionFunctions:
+class StateTransitionFunctions:
     class Functions:
         @staticmethod
         def continuous(ocp, phase_pre_idx, **unused):
@@ -18,10 +18,9 @@ class PhaseTransitionFunctions:
             """
             if ocp.nlp[phase_pre_idx]["nx"] != ocp.nlp[(phase_pre_idx + 1) % ocp.nb_phases]["nx"]:
                 raise RuntimeError(
-                    "Continuous phase constraints without same nx is not possible, "
-                    "please provide a custom phase transition"
+                    "Continuous state transitions without same nx is not possible, please provide a custom state transition"
                 )
-            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
+            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
             return nlp_pre["X"][-1] - nlp_post["X"][0]
 
         @staticmethod
@@ -29,7 +28,7 @@ class PhaseTransitionFunctions:
             """
             TODO
             """
-            return PhaseTransitionFunctions.Functions.continuous(ocp, **kwargs)
+            return StateTransitionFunctions.Functions.continuous(ocp, **kwargs)
 
         @staticmethod
         def impact(ocp, phase_pre_idx, **unused):
@@ -38,12 +37,11 @@ class PhaseTransitionFunctions:
             """
             if ocp.nlp[phase_pre_idx]["nx"] != ocp.nlp[(phase_pre_idx + 1) % ocp.nb_phases]["nx"]:
                 raise RuntimeError(
-                    "Impact phase constraints without same nx is not possible, "
-                    "please provide a custom phase transition"
+                    "Impact transition without same nx is not possible, please provide a custom state transition"
                 )
 
             # Aliases
-            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
+            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
             nbQ = nlp_pre["nbQ"]
             nbQdot = nlp_pre["nbQdot"]
             q = nlp_pre["q_mapping"].expand.map(nlp_pre["X"][-1][:nbQ])
@@ -69,7 +67,7 @@ class PhaseTransitionFunctions:
             del parameters["function"]
             del parameters["type"]
             del parameters["base"]
-            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
+            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
             return func(nlp_pre["X"][-1], nlp_post["X"][0], **parameters)
 
         @staticmethod
@@ -77,23 +75,23 @@ class PhaseTransitionFunctions:
             return ocp.nlp[phase_pre_idx], ocp.nlp[(phase_pre_idx + 1) % ocp.nb_phases]
 
     @staticmethod
-    def prepare_phase_transitions(ocp, phase_transitions):
+    def prepare_state_transitions(ocp, state_transitions):
         # By default it assume Continuous. It can be change later
-        full_phase_transitions = [
-            {"type": PhaseTransition.CONTINUOUS, "phase_pre_idx": i, "base": ConstraintFunction}
+        full_state_transitions = [
+            {"type": StateTransition.CONTINUOUS, "phase_pre_idx": i, "base": ConstraintFunction}
             for i in range(ocp.nb_phases - 1)
         ]
 
         existing_phases = []
-        for pt in phase_transitions:
-            if "phase_pre_idx" not in pt and pt["type"] == PhaseTransition.CYCLIC:
+        for pt in state_transitions:
+            if "phase_pre_idx" not in pt and pt["type"] == StateTransition.CYCLIC:
                 pt["phase_pre_idx"] = ocp.nb_phases - 1
 
             idx_phase = pt["phase_pre_idx"]
             if idx_phase in existing_phases:
-                raise RuntimeError("It is not possible to define two phase continuity constraints for the same phase")
+                raise RuntimeError("It is not possible to define two state transitions for the same phase")
             if idx_phase >= ocp.nb_phases:
-                raise RuntimeError("Phase index of the transition constraint is higher than the number of phases")
+                raise RuntimeError("Phase index of the state transition is higher than the number of phases")
             existing_phases.append(idx_phase)
 
             pt["base"] = ConstraintFunction
@@ -104,10 +102,10 @@ class PhaseTransitionFunctions:
 
             if idx_phase == ocp.nb_phases - 1:
                 # Add a cyclic constraint or objective
-                full_phase_transitions.append(pt)
+                full_state_transitions.append(pt)
             else:
-                full_phase_transitions[idx_phase] = pt
-        return full_phase_transitions
+                full_state_transitions[idx_phase] = pt
+        return full_state_transitions
 
 
 class ContinuityFunctions:
@@ -117,12 +115,12 @@ class ContinuityFunctions:
         PenaltyFunctionAbstract.continuity(ocp)  # Inter phase continuity
 
 
-class PhaseTransition(Enum):
+class StateTransition(Enum):
     """
-    Different transitions between nlp phases.
+    Different types of state transitions.
     """
 
-    CONTINUOUS = PhaseTransitionFunctions.Functions.continuous
-    IMPACT = PhaseTransitionFunctions.Functions.impact
-    CYCLIC = PhaseTransitionFunctions.Functions.cyclic
-    CUSTOM = PhaseTransitionFunctions.Functions.custom
+    CONTINUOUS = StateTransitionFunctions.Functions.continuous
+    IMPACT = StateTransitionFunctions.Functions.impact
+    CYCLIC = StateTransitionFunctions.Functions.cyclic
+    CUSTOM = StateTransitionFunctions.Functions.custom
