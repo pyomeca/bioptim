@@ -230,9 +230,9 @@ class ProblemType:
         if as_states:
             nlp["x"] = vertcat(q, q_dot)
             nlp["var_states"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
-            nlp["plot"]["q"] = CustomPlot(lambda x, u: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q)
+            nlp["plot"]["q"] = CustomPlot(lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q)
             nlp["plot"]["q_dot"] = CustomPlot(
-                lambda x, u: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
+                lambda x, u, p: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
             )
@@ -267,7 +267,7 @@ class ProblemType:
         if as_controls:
             nlp["u"] = u
             nlp["var_controls"] = {"tau": nlp["nbTau"]}
-            nlp["plot"]["tau"] = CustomPlot(lambda x, u: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau)
+            nlp["plot"]["tau"] = CustomPlot(lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau)
 
     @staticmethod
     def __configure_contact(ocp, nlp, dyn_func):
@@ -298,7 +298,7 @@ class ProblemType:
         if as_states:
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
             nlp["plot"]["muscles_states"] = CustomPlot(
-                lambda x, u: x[nx_q : nx_q + nlp["nbMuscle"]],
+                lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=nlp["muscleNames"],
                 ylim=[0, 1],
@@ -306,7 +306,7 @@ class ProblemType:
             combine = "muscles_states"
         if as_controls:
             nlp["plot"]["muscles_control"] = CustomPlot(
-                lambda x, u: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
+                lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
                 plot_type=PlotType.STEP,
                 legend=nlp["muscleNames"],
                 combine_to=combine,

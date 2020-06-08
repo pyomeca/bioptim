@@ -102,7 +102,7 @@ if __name__ == "__main__":
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=False)
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Get the results --- #
     states, controls, params = Data.get_data(ocp, sol, get_parameters=True)
