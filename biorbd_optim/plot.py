@@ -1,4 +1,5 @@
 import multiprocessing as mp
+from copy import copy
 import numpy as np
 import tkinter
 import pickle
@@ -63,7 +64,7 @@ class PlotOcp:
         for i, nlp in enumerate(self.ocp.nlp):
             if isinstance(nlp["tf"], MX):
                 self.t_idx_to_optimize.append(i)
-        self.__init_time_vector()
+        self.__update_time_vector()
 
         self.axes = {}
         self.plots = []
@@ -94,7 +95,7 @@ class PlotOcp:
                     pass
             fig.canvas.draw()
 
-    def __init_time_vector(self):
+    def __update_time_vector(self):
         """Sets x-axis array"""
         self.t = []
         self.t_integrated = []
@@ -103,7 +104,7 @@ class PlotOcp:
             nb_int_steps = nlp["nb_integration_steps"]
             dt_ns = self.tf[phase_idx] / nlp["ns"]
             time_phase_integrated = []
-            last_t_int = last_t
+            last_t_int = copy(last_t)
             for _ in range(nlp["ns"]):
                 time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, nb_int_steps + 1))
                 last_t_int += dt_ns
@@ -122,7 +123,11 @@ class PlotOcp:
             if "plot" in nlp:
                 for key in nlp["plot"]:
                     if nlp["plot"][key].phase_mappings is None:
-                        size = nlp["plot"][key].function(np.zeros((nlp["nx"], 1)), np.zeros((nlp["nu"], 1))).shape[0]
+                        size = (
+                            nlp["plot"][key]
+                            .function(np.zeros((nlp["nx"], 1)), np.zeros((nlp["nu"], 1)), np.zeros((nlp["np"], 1)))
+                            .shape[0]
+                        )
                         nlp["plot"][key].phase_mappings = Mapping(range(size))
                     else:
                         size = len(nlp["plot"][key].phase_mappings.map_idx)
@@ -262,6 +267,7 @@ class PlotOcp:
         data_states, data_controls, data_param = Data.get_data(
             self.ocp, V, get_parameters=True, integrate=True, concatenate=False
         )
+        data_param_in_dyn = np.array([data_param[key] for key in data_param if key != "time"]).squeeze()
 
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
@@ -296,6 +302,7 @@ class PlotOcp:
                         y_tp[:, :] = self.plot_func[key][i].function(
                             state[:, step_size * idx : step_size * (idx + 1)],
                             np.repeat(control[:, idx : idx + 1], step_size, axis=1),
+                            data_param_in_dyn,
                         )
                         all_y.append(y_tp)
 
@@ -307,13 +314,13 @@ class PlotOcp:
                 else:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
-                    y[:, :] = self.plot_func[key][i].function(state[:, ::step_size], control)
+                    y[:, :] = self.plot_func[key][i].function(state[:, ::step_size], control, data_param_in_dyn)
                     self.__append_to_ydata(y)
         self.__update_axes()
 
     def __update_xdata(self):
         """Update of the time in plots (independent axis)"""
-        self.__init_time_vector()
+        self.__update_time_vector()
         for plot in self.plots:
             phase_idx = plot[1]
             if plot[0] == PlotType.INTEGRATED:

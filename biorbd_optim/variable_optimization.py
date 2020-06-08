@@ -247,12 +247,6 @@ class Data:
         :return: data_states -> Integrated between node optimal states. (dictionary)
         """
         # Check if time is optimized
-        time_is_optimized = False
-        for nlp in ocp.nlp:
-            if isinstance(nlp["tf"], MX):
-                time_is_optimized = True
-                break
-
         for idx_phase in range(ocp.nb_phases):
             dt = ocp.nlp[idx_phase]["dt"]
             nlp = ocp.nlp[idx_phase]
@@ -260,12 +254,7 @@ class Data:
                 x0 = Data._vertcat(data_states, list(nlp["var_states"].keys()), idx_phase, idx_node)
                 p = Data._vertcat(data_controls, list(nlp["var_controls"].keys()), idx_phase, idx_node)
                 params = Data._vertcat(data_parameters, [key for key in ocp.param_to_optimize if key != "time"])
-                if time_is_optimized:
-                    # TODO: Allow integrate when optimizing time
-                    xf_dof = x0
-                else:
-                    # Integrate
-                    xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"][idx_node](x0=x0, p=p, params=params)["xall"])
+                xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"][idx_node](x0=x0, p=p, params=params)["xall"])
 
                 offset = 0
                 for key in nlp["var_states"]:
@@ -352,7 +341,7 @@ class Data:
             else:
                 return elem
 
-        if data:
+        if keys:
             data_concat = get_matrix(data[keys[0]])
             for k in range(1, len(keys)):
                 data_concat = np.concatenate((data_concat, get_matrix(data[keys[k]])))
