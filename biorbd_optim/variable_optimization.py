@@ -154,16 +154,36 @@ class Data:
         and data_parameters -> Optimal parameters. (dictionary)
         """
         V_array = np.array(V).squeeze()
+        data_states, data_controls, data_parameters = {}, {}, {}
 
         if phase_idx is None:
             phase_idx = range(len(ocp.nlp))
         elif isinstance(phase_idx, int):
             phase_idx = [phase_idx]
-        offsets = [0]
+
+        offset = 0
+        for key in ocp.param_to_optimize:
+            if ocp.param_to_optimize[key]:
+                nb_param = ocp.param_to_optimize[key]["size"]
+                data_parameters[key] = np.array(V[offset : offset + nb_param])
+                offset += nb_param
+
+                if key == "time":
+                    new_t = []
+                    cmp = 0
+                    for nlp in ocp.nlp:
+                        if isinstance(nlp["tf"], MX):
+                            new_t.append((0, data_parameters["time"][cmp, 0]))
+                            cmp += 1
+                        else:
+                            new_t.append((0, nlp["tf"]))
+                    for key_stat in data_states:
+                        data_states[key_stat].set_time_per_phase(new_t)
+
+        offsets = [offset]
         for i, nlp in enumerate(ocp.nlp):
             offsets.append(offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"]))
 
-        data_states, data_controls, data_parameters = {}, {}, {}
         for i in phase_idx:
             nlp = ocp.nlp[i]
             for key in nlp["var_states"].keys():
@@ -192,27 +212,8 @@ class Data:
                 )
                 offset += nlp["var_controls"][key]
 
-        offset = sum([nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"] for nlp in ocp.nlp])
-        for key in ocp.param_to_optimize:
-            if ocp.param_to_optimize[key]:
-                nb_param = len(ocp.param_to_optimize[key])
-                data_parameters[key] = np.array(V[offset : offset + nb_param])
-                offset += nb_param
-
-                if key == "time":
-                    new_t = []
-                    cmp = 0
-                    for nlp in ocp.nlp:
-                        if isinstance(nlp["tf"], MX):
-                            new_t.append((0, data_parameters["time"][cmp, 0]))
-                            cmp += 1
-                        else:
-                            new_t.append((0, nlp["tf"]))
-                    for key_stat in data_states:
-                        data_states[key_stat].set_time_per_phase(new_t)
-
         if integrate:
-            data_states = Data._get_data_integrated_from_V(ocp, data_states, data_controls)
+            data_states = Data._get_data_integrated_from_V(ocp, data_states, data_controls, data_parameters)
 
         if concatenate:
             data_states = Data._data_concatenated(data_states)
@@ -238,7 +239,7 @@ class Data:
             return 0, V[-1]
 
     @staticmethod
-    def _get_data_integrated_from_V(ocp, data_states, data_controls):
+    def _get_data_integrated_from_V(ocp, data_states, data_controls, data_parameters):
         """
         Integrates data between nodes.
         :param data_states: Optimal states. (dictionary)
@@ -258,11 +259,13 @@ class Data:
             for idx_node in reversed(range(ocp.nlp[idx_phase]["ns"])):
                 x0 = Data._vertcat(data_states, list(nlp["var_states"].keys()), idx_phase, idx_node)
                 p = Data._vertcat(data_controls, list(nlp["var_controls"].keys()), idx_phase, idx_node)
+                params = Data._vertcat(data_parameters, [key for key in ocp.param_to_optimize if key != "time"])
                 if time_is_optimized:
                     # TODO: Allow integrate when optimizing time
                     xf_dof = x0
                 else:
-                    xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"][idx_node](x0=x0, p=p)["xall"])  # Integrate
+                    # Integrate
+                    xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"][idx_node](x0=x0, p=p, params=params)["xall"])
 
                 offset = 0
                 for key in nlp["var_states"]:
@@ -343,9 +346,14 @@ class Data:
 
     @staticmethod
     def _vertcat(data, keys, phases=(), nodes=()):
-        data_concat = data[keys[0]].to_matrix(phase_idx=phases, node_idx=nodes)
+        def get_matrix(elem):
+            if isinstance(elem, Data):
+                return elem.to_matrix(phase_idx=phases, node_idx=nodes)
+            else:
+                return elem
+        data_concat = get_matrix(data[keys[0]])
         for k in range(1, len(keys)):
-            data_concat = np.concatenate((data_concat, data[keys[k]].to_matrix(phase_idx=phases, node_idx=nodes)))
+            data_concat = np.concatenate((data_concat, get_matrix(data[keys[k]])))
         return data_concat
 
     def _append_phase(self, time, phase):

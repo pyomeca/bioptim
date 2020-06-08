@@ -377,7 +377,7 @@ class PenaltyFunctionAbstract:
         :param penalty: Penalty to be added. (instance of PenaltyFunctionAbstract class)
         :param penalty_idx: Index to add the penalty. (integer)
         """
-        t, x, u = PenaltyFunctionAbstract.__get_instant(nlp, penalty)
+        t, x, u = PenaltyFunctionAbstract._get_instant(nlp, penalty)
         penalty_function = penalty["type"].value[0]
         penalty_type = penalty["type"]._get_type()
         instant = penalty["instant"]
@@ -525,7 +525,7 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("_get_type cannot be called from an abstract class")
 
     @staticmethod
-    def __get_instant(nlp, constraint):
+    def _get_instant(nlp, constraint):
         """
         Initializes x (states), u (controls) and t (time) with user provided initial guesses.
         :param constraint: constraint["instant"] -> time nodes precision. (integer or instance of Instant class)
