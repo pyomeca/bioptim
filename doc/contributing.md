@@ -61,7 +61,7 @@ To do so, simply run the tests folder in pytest (`pytest tests`).
 
 ## Convention of coding
 
-BiorbdOptim tries to follow as much as possible the PEP recommendations ([https://www.python.org/dev/peps/]). 
+BiorbdOptim tries to follow as much as possible the PEP recommendations (https://www.python.org/dev/peps/). 
 Unless you have good reasons to disobey, pull-requests are required to follow these recommendations. 
 I won't get into details here, if you haven't yet, you should read these :) 
 
