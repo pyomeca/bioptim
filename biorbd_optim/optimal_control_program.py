@@ -75,7 +75,8 @@ class OptimalControlProgram:
         :param q_dot_mapping: Generalized coordinates velocity states mapping. (Instance of class Mapping)
         :param tau_mapping: Torque controls mapping. (Instance of class Mapping)
         :param plot_mappings: Plot mapping. (Instance of class Mapping)
-        :param state_transitions: State transitions (as a constraint, or an objective if there is a weight higher than zero)
+        :param state_transitions: State transitions (as a constraint, or an objective if there is a weight higher
+        than zero)
         :param nb_threads: Number of threads used for the resolution of the problem. Default: not parallelized (integer)
         """
 

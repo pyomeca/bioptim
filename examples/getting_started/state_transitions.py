@@ -17,7 +17,8 @@ from biorbd_optim import (
 
 def custom_state_transition(state_pre, state_post, idx_1, idx_2):
     """
-    Custom function returning the value to be added in the constraint or objective vector (if there is a weight higher than zero) and whose value we want to be 0.
+    Custom function returning the value to be added in the constraint or objective vector (if there is a weight higher
+    than zero) and whose value we want to be 0.
     In this example of custom function for state transition, this custom function ensures continuity between states
     whose index is between idx_1 and idx_2 (idx_2 not included).
     """
