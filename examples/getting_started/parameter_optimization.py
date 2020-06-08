@@ -67,7 +67,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
     # Give the parameter some min and max bounds
     bound_gravity = Bounds(min_bound=min_g, max_bound=max_g, interpolation_type=InterpolationType.CONSTANT)
     # and an initial condition
-    initial_gravity = InitialConditions((min_g + max_g)/2)
+    initial_gravity = InitialConditions((min_g + max_g) / 2)
     parameters = {
         "name": "gravity_z",  # The name of the parameter
         "function": my_parameter_function,  # The function that modifies the biorbd model

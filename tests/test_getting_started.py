@@ -313,7 +313,7 @@ def test_parameter_optimization():
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 853.5406088867209)
+    np.testing.assert_almost_equal(f[0, 0], 853.5406085230834, decimal=6)
 
     # Check constraints
     g = np.array(sol["g"])
