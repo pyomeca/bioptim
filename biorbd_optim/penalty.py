@@ -214,6 +214,22 @@ class PenaltyFunctionAbstract:
             )
 
         @staticmethod
+        def minimize_torque_derivative(penalty_type, ocp, nlp, t, x, u, p, controls_idx=(), **extra_param):
+            """
+            Adds the objective that the specific torques should be minimized.
+            It is possible to track torques, in this case the objective is to minimize
+            the mismatch between the optimized torques and the reference torques (data_to_track).
+            :param controls_idx: Index of the controls to minimize. (list of integers)
+            :param data_to_track: Reference torques for tracking. (list of lists of float)
+            """
+            n_tau = nlp["nbTau"]
+            controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_tau, "controls_idx")
+
+            for i in range(len(u) - 1):
+                val = u[i + 1][controls_idx] - u[i][controls_idx]
+                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+
+        @staticmethod
         def minimize_muscles_control(
             penalty_type, ocp, nlp, t, x, u, p, muscles_idx=(), data_to_track=(), **extra_param
         ):
@@ -419,6 +435,7 @@ class PenaltyFunctionAbstract:
             or penalty_function == PenaltyType.MINIMIZE_CONTACT_FORCES
             or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
             or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
+            or penalty_function == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
         ):
             if "quadratic" not in parameters.keys():
                 parameters["quadratic"] = True
@@ -627,6 +644,7 @@ class PenaltyType(Enum):
     PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_variable
     MINIMIZE_TORQUE = PenaltyFunctionAbstract.Functions.minimize_torque
     TRACK_TORQUE = MINIMIZE_TORQUE
+    MINIMIZE_TORQUE_DERIVATIVE = PenaltyFunctionAbstract.Functions.minimize_torque_derivative
     MINIMIZE_MUSCLES_CONTROL = PenaltyFunctionAbstract.Functions.minimize_muscles_control
     TRACK_MUSCLES_CONTROL = MINIMIZE_MUSCLES_CONTROL
     MINIMIZE_ALL_CONTROLS = PenaltyFunctionAbstract.Functions.minimize_all_controls
