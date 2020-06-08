@@ -11,7 +11,7 @@ from .enums import OdeSolver
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
 from .constraints import ConstraintFunction, Constraint
-from .continuity import ContinuityFunctions, PhaseTransitionFunctions
+from .continuity import ContinuityFunctions, StateTransitionFunctions
 from .objective_functions import Objective, ObjectiveFunction
 from .parameters import Parameters
 from .plot import OnlineCallback, CustomPlot
@@ -49,7 +49,7 @@ class OptimalControlProgram:
         q_dot_mapping=None,
         tau_mapping=None,
         plot_mappings=None,
-        phase_transitions=(),
+        state_transitions=(),
         nb_threads=1,
     ):
         """
@@ -75,6 +75,8 @@ class OptimalControlProgram:
         :param q_dot_mapping: Generalized coordinates velocity states mapping. (Instance of class Mapping)
         :param tau_mapping: Torque controls mapping. (Instance of class Mapping)
         :param plot_mappings: Plot mapping. (Instance of class Mapping)
+        :param state_transitions: State transitions (as a constraint, or an objective if there is a weight higher
+        than zero)
         :param nb_threads: Number of threads used for the resolution of the problem. Default: not parallelized (integer)
         """
 
@@ -110,7 +112,7 @@ class OptimalControlProgram:
             "q_dot_mapping": q_dot_mapping,
             "tau_mapping": tau_mapping,
             "plot_mappings": plot_mappings,
-            "phase_transitions": phase_transitions,
+            "state_transitions": state_transitions,
             "nb_threads": nb_threads,
         }
 
@@ -213,7 +215,7 @@ class OptimalControlProgram:
             self.__prepare_dynamics(self.nlp[i])
 
         # Prepare phase transitions
-        self.phase_transitions = PhaseTransitionFunctions.prepare_phase_transitions(self, phase_transitions)
+        self.state_transitions = StateTransitionFunctions.prepare_state_transitions(self, state_transitions)
 
         # Inner- and inter-phase continuity
         ContinuityFunctions.continuity(self)
