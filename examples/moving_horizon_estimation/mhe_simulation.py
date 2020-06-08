@@ -17,7 +17,8 @@ def run_simulation(biorbd_model, Tf, X0, T_max,  N, noise_std, SHOW_PLOTS=False)
 
     ### Simulated data
     h = Tf/N
-    U_ = (np.random.rand(N)-0.5)*2*T_max # Control trajectory
+    # U_ = (np.random.rand(N)-0.5)*2*T_max # Control trajectory
+    U_ = (-np.ones(N,) + np.sin(np.linspace(0,Tf, num=N)))*T_max# Control trajectory
     X_ = np.zeros((biorbd_model.nbQ() + biorbd_model.nbQdot(), N)) # State trajectory
     Y_ = np.zeros((3, biorbd_model.nbMarkers(), N)) # Measurements trajectory
 
@@ -38,11 +39,13 @@ def run_simulation(biorbd_model, Tf, X0, T_max,  N, noise_std, SHOW_PLOTS=False)
         dq_plot = plt.plot(X_[biorbd_model.nbQ():, :].T,'--')
         plt.legend(q_plot + dq_plot, [i.to_string() for i in biorbd_model.nameDof()]
                    + ['d'+i.to_string() for i in biorbd_model.nameDof()])
+        plt.title('Real position and velocity trajectories')
         plt.figure()
         marker_plot = plt.plot(Y_[1, :, :].T, Y_[2, :, :].T)
         plt.legend(marker_plot, [i.to_string() for i in biorbd_model.markerNames()])
         plt.gca().set_prop_cycle(None)
         marker_plot = plt.plot(Y_N_[1, :, :].T, Y_N_[2, :, :].T, 'x')
+        plt.title('2D plot of markers trajectories + noise')
         plt.show()
 
-    return X_, Y_, Y_N_
+    return X_, Y_, Y_N_, np.vstack([U_, np.zeros((N, ))])
