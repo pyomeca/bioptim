@@ -18,8 +18,7 @@ class StateTransitionFunctions:
             """
             if ocp.nlp[phase_pre_idx]["nx"] != ocp.nlp[(phase_pre_idx + 1) % ocp.nb_phases]["nx"]:
                 raise RuntimeError(
-                    "Continuous state transitions constraints without same nx is not possible, "
-                    "please provide a custom state transition constraint"
+                    "Continuous state transitions without same nx is not possible, please provide a custom state transition"
                 )
             nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
             return nlp_pre["X"][-1] - nlp_post["X"][0]
@@ -38,8 +37,7 @@ class StateTransitionFunctions:
             """
             if ocp.nlp[phase_pre_idx]["nx"] != ocp.nlp[(phase_pre_idx + 1) % ocp.nb_phases]["nx"]:
                 raise RuntimeError(
-                    "Impact transition constraints without same nx is not possible, "
-                    "please provide a custom state transition constraint"
+                    "Impact transition without same nx is not possible, please provide a custom state transition"
                 )
 
             # Aliases
@@ -91,9 +89,9 @@ class StateTransitionFunctions:
 
             idx_phase = pt["phase_pre_idx"]
             if idx_phase in existing_phases:
-                raise RuntimeError("It is not possible to define two state transitions constraints for the same phase")
+                raise RuntimeError("It is not possible to define two state transitions for the same phase")
             if idx_phase >= ocp.nb_phases:
-                raise RuntimeError("Phase index of the state transition constraint is higher than the number of phases")
+                raise RuntimeError("Phase index of the state transition is higher than the number of phases")
             existing_phases.append(idx_phase)
 
             pt["base"] = ConstraintFunction
@@ -119,7 +117,7 @@ class ContinuityFunctions:
 
 class StateTransition(Enum):
     """
-    Different constraints on states between two phases.
+    Different types of state transitions.
     """
 
     CONTINUOUS = StateTransitionFunctions.Functions.continuous

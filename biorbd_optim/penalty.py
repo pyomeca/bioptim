@@ -513,7 +513,7 @@ class PenaltyFunctionAbstract:
     @staticmethod
     def continuity(ocp):
         # Dynamics must be continuous between phases
-        for pt in ocp.state_transitions_constraints:
+        for pt in ocp.state_transitions:
             penalty_idx = pt["base"]._reset_penalty(ocp, None, -1)
             state_transition_function = pt["type"]
             val = state_transition_function(ocp, **pt)
