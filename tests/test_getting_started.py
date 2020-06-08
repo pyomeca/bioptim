@@ -306,7 +306,7 @@ def test_parameter_optimization():
         number_shooting_points=20,
         min_g=-10,
         max_g=-6,
-        target_g=-8
+        target_g=-8,
     )
     sol = ocp.solve()
 
