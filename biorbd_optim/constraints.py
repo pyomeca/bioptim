@@ -3,7 +3,7 @@ from enum import Enum
 
 from casadi import vertcat, sum1, horzcat
 
-from .enums import Instant, InterpolationType
+from .enums import Instant, InterpolationType, OdeSolver
 from .penalty import PenaltyType, PenaltyFunctionAbstract
 from .path_conditions import Bounds
 
@@ -23,7 +23,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def contact_force_inequality(
-            constraint_type, ocp, nlp, t, x, u, direction, contact_force_idx, boundary, **parameters
+            constraint_type, ocp, nlp, t, x, u, p, direction, contact_force_idx, boundary, **parameters
         ):
             """
             To be completed when this function will be fully developed, in particular the fact that policy is either a
@@ -45,7 +45,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 ConstraintFunction._add_to_penalty(
                     ocp,
                     nlp,
-                    nlp["contact_forces_func"](x[i], u[i])[contact_force_idx, 0],
+                    nlp["contact_forces_func"](x[i], u[i], p)[contact_force_idx, 0],
                     min_bound=min_bound,
                     max_bound=max_bound,
                     **parameters
@@ -59,6 +59,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             t,
             x,
             u,
+            p,
             tangential_component_idx,
             normal_component_idx,
             static_friction_coefficient,
@@ -81,7 +82,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             mu = static_friction_coefficient
             for i in range(len(u)):
-                contact = nlp["contact_forces_func"](x[i], u[i])
+                contact = nlp["contact_forces_func"](x[i], u[i], p)
                 normal_contact_force = sum1(contact[normal_component_idx, 0])
                 tangential_contact_force = contact[tangential_component_idx, 0]
 
@@ -104,7 +105,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
 
         @staticmethod
-        def time_constraint(constraint_type, ocp, nlp, t, x, u, **parameters):
+        def time_constraint(constraint_type, ocp, nlp, t, x, u, p, **parameters):
             pass
 
     @staticmethod
@@ -131,7 +132,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             else:
                 for k in range(nlp["ns"]):
                     # Create an evaluation node
-                    end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k], params=nlp["p"])["xf"]
+                    if nlp["ode_solver"] == OdeSolver.RK:
+                        end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k], params=nlp["p"])["xf"]
+                    else:
+                        end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k])["xf"]
 
                     # Save continuity constraints
                     val = end_node - nlp["X"][k + 1]

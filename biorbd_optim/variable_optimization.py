@@ -351,10 +351,13 @@ class Data:
                 return elem.to_matrix(phase_idx=phases, node_idx=nodes)
             else:
                 return elem
-        data_concat = get_matrix(data[keys[0]])
-        for k in range(1, len(keys)):
-            data_concat = np.concatenate((data_concat, get_matrix(data[keys[k]])))
-        return data_concat
+        if data:
+            data_concat = get_matrix(data[keys[0]])
+            for k in range(1, len(keys)):
+                data_concat = np.concatenate((data_concat, get_matrix(data[keys[k]])))
+            return data_concat
+        else:
+            return np.empty((0, 0))
 
     def _append_phase(self, time, phase):
         time = np.linspace(time[0], time[1], len(phase[0]))

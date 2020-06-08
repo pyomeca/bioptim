@@ -22,7 +22,7 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
+            def minimize_time(penalty_type, ocp, nlp, t, x, u, p, **extra_param):
                 """Minimizes the duration of the movement (Lagrange)."""
                 val = 1
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
@@ -75,7 +75,7 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
+            def minimize_time(penalty_type, ocp, nlp, t, x, u, p, **extra_param):
                 """Minimizes the duration of the movement (Mayer)."""
                 val = nlp["tf"]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)

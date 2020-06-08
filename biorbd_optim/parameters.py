@@ -37,7 +37,13 @@ class Parameters:
         ocp.V = vertcat(ocp.V, mx_sym)
         param_to_store = {"mx": mx_sym, "func": pre_dynamic_function, "size": nb_elements, "extra_params": extra_params}
         if param_name in ocp.param_to_optimize:
-            ocp.param_to_optimize[param_name].append(param_to_store)
+            p = ocp.param_to_optimize[param_name]
+            p["mx"] = vertcat(p["mx"], param_to_store["mx"])
+            if p["func"] != param_to_store["func"]:
+                raise RuntimeError("Pre dynamic function of same parameters must be the same")
+            p["size"] += param_to_store["size"]
+            if p["extra_params"] != param_to_store["extra_params"]:
+                raise RuntimeError ("Extra parameters of same parameters must be the same")
         else:
             ocp.param_to_optimize[param_name] = param_to_store
 

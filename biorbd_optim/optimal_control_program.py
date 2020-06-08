@@ -275,7 +275,7 @@ class OptimalControlProgram:
         """
 
         dynamics = nlp["dynamics_func"]
-        ode_opt = {"t0": 0, "tf": nlp["dt"], "param": nlp["p"]}
+        ode_opt = {"t0": 0, "tf": nlp["dt"]}
         if nlp["ode_solver"] == OdeSolver.COLLOCATION or nlp["ode_solver"] == OdeSolver.RK:
             ode_opt["number_of_finite_elements"] = nlp["nb_integration_steps"]
 
@@ -283,6 +283,7 @@ class OptimalControlProgram:
         nlp["dynamics"] = []
         nlp["par_dynamics"] = {}
         if nlp["ode_solver"] == OdeSolver.RK:
+            ode_opt["param"] = nlp["p"]
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
             if "external_forces" in nlp:
@@ -405,9 +406,9 @@ class OptimalControlProgram:
         i = 0
         for nlp in self.nlp:
             if isinstance(nlp["tf"], MX):
-                time_bounds = Bounds(minimum, maximum, interpolation_type=InterpolationType.CONSTANT)
+                time_bounds = Bounds(minimum[i], maximum[i], interpolation_type=InterpolationType.CONSTANT)
                 time_init = InitialConditions(initial_guess[i])
-                Parameters.add_to_V(self, "time", 1, time_bounds, time_init, nlp["tf"])
+                Parameters.add_to_V(self, "time", 1, None, time_bounds, time_init, nlp["tf"])
                 i += 1
 
     def __init_penalty(self, penalties, penalty_type):

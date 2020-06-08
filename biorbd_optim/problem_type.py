@@ -32,7 +32,7 @@ class ProblemType:
         ProblemType.__configure_q_qdot(nlp, True, False)
         ProblemType.__configure_tau(nlp, False, True)
         ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven_with_contact)
-        ProblemType.__configure_contact(nlp, Dynamics.forces_from_forward_dynamics_with_contact)
+        ProblemType.__configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
 
     @staticmethod
     def torque_activations_driven(ocp, nlp):
@@ -57,7 +57,7 @@ class ProblemType:
         ProblemType.__configure_tau(nlp, False, True)
         nlp["nbActuators"] = nlp["nbTau"]
         ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven_with_contact)
-        ProblemType.__configure_contact(nlp, Dynamics.forces_from_forward_dynamics_with_contact)
+        ProblemType.__configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
 
     @staticmethod
     def muscle_activations_driven(ocp, nlp):
@@ -163,7 +163,7 @@ class ProblemType:
             ocp, nlp, Dynamics.forward_dynamics_muscle_activations_and_torque_driven_with_contact
         )
         ProblemType.__configure_contact(
-            nlp, Dynamics.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact
+            ocp, nlp, Dynamics.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact
         )
 
     @staticmethod
@@ -191,7 +191,7 @@ class ProblemType:
             ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven_with_contact
         )
         ProblemType.__configure_contact(
-            nlp, Dynamics.forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact
+            ocp, nlp, Dynamics.forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact
         )
 
     @staticmethod
@@ -266,14 +266,15 @@ class ProblemType:
             nlp["plot"]["tau"] = CustomPlot(lambda x, u: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau)
 
     @staticmethod
-    def __configure_contact(nlp, dyn_func):
+    def __configure_contact(ocp, nlp, dyn_func):
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
+        symbolic_param = nlp["p"]
         nlp["contact_forces_func"] = Function(
             "contact_forces_func",
-            [symbolic_states, symbolic_controls],
-            [dyn_func(symbolic_states, symbolic_controls, nlp)],
-            ["x", "u"],
+            [symbolic_states, symbolic_controls, symbolic_param],
+            [dyn_func(symbolic_states, symbolic_controls, symbolic_param, nlp)],
+            ["x", "u", "p"],
             ["contact_forces"],
         ).expand()
 
@@ -316,15 +317,16 @@ class ProblemType:
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
         symbolic_params = MX()
-        for key in ocp.param_to_optimize:
-            symbolic_params = vertcat(symbolic_params, ocp.param_to_optimize[key]["mx"])
+        nlp["parameters_to_optimize"] = ocp.param_to_optimize
+        for key in nlp["parameters_to_optimize"]:
+            symbolic_params = vertcat(symbolic_params, nlp["parameters_to_optimize"][key]["mx"])
         nlp["p"] = symbolic_params
         nlp["np"] = symbolic_params.rows()
 
         nlp["dynamics_func"] = Function(
             "ForwardDyn",
             [symbolic_states, symbolic_controls, symbolic_params],
-            [dyn_func(symbolic_states, symbolic_controls, symbolic_params, ocp, nlp)],
+            [dyn_func(symbolic_states, symbolic_controls, symbolic_params, nlp)],
             ["x", "u", "p"],
             ["xdot"],
         ).expand()  # .map(nlp["ns"], "thread", 2)
