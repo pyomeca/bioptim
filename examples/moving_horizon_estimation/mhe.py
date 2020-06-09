@@ -100,13 +100,13 @@ if __name__ == "__main__":
     biorbd_model_path = "./cart_pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
 
-    Tf = 4 # duration of the simulation
+    Tf = 4  # duration of the simulation
     X0 = np.array([0, np.pi / 2, 0, 0])
-    N = Tf * 25 # number of shooting nodes per sec
-    noise_std = 0.1 # STD of noise added to measurements
-    T_max = 2 # Max trque applied to the model
-    N_mhe = 30 # size of MHE window
-    Tf_mhe = Tf / N * N_mhe # duration of MHE window
+    N = Tf * 25  # number of shooting nodes per sec
+    noise_std = 0.1  # STD of noise added to measurements
+    T_max = 2  # Max trque applied to the model
+    N_mhe = 30  # size of MHE window
+    Tf_mhe = Tf / N * N_mhe  # duration of MHE window
 
     X_, Y_, Y_N_, U_ = run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=True)
 
@@ -145,19 +145,19 @@ if __name__ == "__main__":
     print(f"Average time per iteration of MHE : {(t1-t0)/(N-N_mhe-2)} s.")
     print(f"Norm of the error on state = {np.linalg.norm(X_[:,:-N_mhe] - X_est)}")
 
-    Y_est = check_results(biorbd_model, N-N_mhe, X_est)
+    Y_est = check_results(biorbd_model, N - N_mhe, X_est)
     # Print estimation vs truth
     import matplotlib.pyplot as plt
 
-    plt.plot(Y_N_[1, :, :N-N_mhe].T, Y_N_[2, :, :N-N_mhe].T, "x", label='markers traj noise')
+    plt.plot(Y_N_[1, :, : N - N_mhe].T, Y_N_[2, :, : N - N_mhe].T, "x", label="markers traj noise")
     plt.gca().set_prop_cycle(None)
-    plt.plot(Y_[1, :, :N-N_mhe].T, Y_[2, :, :N-N_mhe].T,  label='markers traj truth')
+    plt.plot(Y_[1, :, : N - N_mhe].T, Y_[2, :, : N - N_mhe].T, label="markers traj truth")
     plt.gca().set_prop_cycle(None)
-    plt.plot(Y_est[1, :, :].T, Y_est[2, :, :].T, 'o', label='markers traj est')
+    plt.plot(Y_est[1, :, :].T, Y_est[2, :, :].T, "o", label="markers traj est")
     plt.legend()
 
     plt.figure()
-    plt.plot(X_est.T, "--", label='x estimate')
-    plt.plot(X_[:, :-N_mhe].T, label='x truth')
+    plt.plot(X_est.T, "--", label="x estimate")
+    plt.plot(X_[:, :-N_mhe].T, label="x truth")
     plt.legend()
     plt.show()

@@ -64,6 +64,7 @@ def run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False):
 
     return X_, Y_, Y_N_, np.vstack([U_, np.zeros((N,))])
 
+
 def check_results(biorbd_model, N, Xs):
 
     ### Casadi functions
@@ -75,6 +76,6 @@ def check_results(biorbd_model, N, Xs):
     Y_est = np.zeros((3, biorbd_model.nbMarkers(), N))  # Measurements trajectory
 
     for n in range(N):
-        Y_est[:, :, n] = markers_kyn(Xs[:biorbd_model.nbQ(), n])
+        Y_est[:, :, n] = markers_kyn(Xs[: biorbd_model.nbQ(), n])
 
     return Y_est
