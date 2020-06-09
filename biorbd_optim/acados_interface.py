@@ -1,30 +1,29 @@
 import os
 import biorbd
-from acados_template import AcadosModel,  AcadosOcp
+from acados_template import AcadosModel, AcadosOcp
 from casadi import MX, Function, SX, vertcat
 import numpy as np
 import scipy.linalg
 
 
 def acados_export_model(self):
-    
     # Declare model variables
     x = self.nlp[0]['x']
     u = self.nlp[0]['u']
-    mod = biorbd.Model("eocar-6D.bioMod")
-    x = MX.sym('x', mod.nbQ()*2, 1)
-    u = MX.sym('u', mod.nbQ(), 1)
-    x_dot = MX.sym("x_dot", mod.nbQdot(), 1)
-    f_expl = self.nlp[0]['dynamics'][0](x,u)
-    f_expl = mod.ForwardDynamics(x[:6], x[6:], u).to_mx()
+
+    # mod_bopt = biorbd.Model("eocar-6D.bioMod")
+    mod = self.nlp[0]['model']
+    x_dot = MX.sym("x_dot", mod.nbQdot() * 2, 1)
+
+    f_expl = self.nlp[0]['dynamics_func'](x, u)
     f_impl = x_dot - f_expl
 
     acados_model = AcadosModel()
     acados_model.f_impl_expr = f_impl
     acados_model.f_expl_expr = f_expl
-    acados_model.x = self.nlp[0]['x']
+    acados_model.x = x
     acados_model.xdot = x_dot
-    acados_model.u = self.nlp[0]['u']
+    acados_model.u = u
     acados_model.p = []
     acados_model.name = "model_name"
 
@@ -49,9 +48,8 @@ def prepare_acados(self):
         acados_ocp.dims.ny_e = self.nlp[i]["nx"]
         acados_ocp.dims.N = self.nlp[i]["ns"]
 
-
     # set cost module
-    #TODO: test external cost_type
+    # TODO: test external cost_type
     acados_ocp.cost.cost_type = 'LINEAR_LS'
     acados_ocp.cost.cost_type_e = 'LINEAR_LS'
 
@@ -97,6 +95,5 @@ def prepare_acados(self):
         acados_ocp.constraints.lbx_e = np.array(self.nlp[i]["X_bounds"].min[:, -1])
         acados_ocp.constraints.idxbx_e = np.array(range(acados_ocp.dims.nx))
         acados_ocp.dims.nbx_e = acados_ocp.dims.nx
-
 
     return acados_ocp
