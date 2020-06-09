@@ -50,38 +50,42 @@ def prepare_acados(self):
     # set cost module
     # TODO: test external cost_type
     acados_ocp.cost.cost_type = 'EXTERNAL'
-    acados_ocp.cost.cost_type_e = 'EXTERNAL'
+    acados_ocp.cost.cost_type_e = 'LINEAR_LS'
 
-    # acados_ocp.model.cost_expr_ext_cost = self.nlp[0]["J"][0][0]
-
-
-    # set weight à modifier avec objective functions (user needs to define this TODO)
-    Q = 1.00 * np.eye(acados_ocp.dims.nx)
-    R = 5 * np.eye(acados_ocp.dims.nu)
+    # Cost for states and controls (default: 1.00)
+    Q = 1.00 * np.eye(acados_ocp.dims.nx) #TODO Get the weights from J matrix
+    R = 1.00 * np.eye(acados_ocp.dims.nu)
 
     acados_ocp.cost.W = scipy.linalg.block_diag(Q, R)
 
     acados_ocp.cost.W_e = Q
+
+    # set Lagrange term
     if acados_ocp.cost.cost_type == 'LINEAR_LS':
-        # set Lagrange term matrices
         acados_ocp.cost.Vx = np.zeros((acados_ocp.dims.ny, acados_ocp.dims.nx))
         acados_ocp.cost.Vx[:acados_ocp.dims.nx, :] = np.eye(acados_ocp.dims.nx)
-
-        # Vu = np.zeros((ny, nu))
-        # Vu[nx:, :] = np.eye(nu)
-        # ocp.cost.Vu = Vu
 
         Vu = np.zeros((acados_ocp.dims.ny, acados_ocp.dims.nu))
         Vu[acados_ocp.dims.nx:, :] = np.eye(acados_ocp.dims.nu)
         acados_ocp.cost.Vu = Vu
 
-        # set Mayer term matrices
+    elif acados_ocp.cost.cost_type == 'EXTERNAL':
+        # set Lagrange term
+        acados_ocp.model.cost_expr_ext_cost = vertcat(acados_model.x, acados_model.u).T @ acados_ocp.cost.W @ vertcat(acados_model.x, acados_model.u)
+
+    else:
+        raise RuntimeError("Available acados cost type: 'LINEAR_LS' and 'EXTERNAL'.")
+
+    # set Mayer term
+    if acados_ocp.cost.cost_type_e == 'LINEAR_LS':
         acados_ocp.cost.Vx_e = np.zeros((acados_ocp.dims.nx, acados_ocp.dims.nx))
 
-    elif acados_ocp.cost.cost_type == 'EXTERNAL':
-        acados_ocp.model.cost_expr_ext_cost = vertcat(acados_model.x, acados_model.u).T @ acados_ocp.cost.W @ vertcat(acados_model.x, acados_model.u)
-        acados_ocp.model.cost_expr_ext_cost_e = vertcat(acados_model.x).T @ Q @ acados_model.x
-        # acados_ocp.cost.Vx_e = np.zeros((acados_ocp.dims.nx, acados_ocp.dims.nx))
+    elif acados_ocp.cost.cost_type_e == 'EXTERNAL':
+        acados_ocp.model.cost_expr_ext_cost_e = acados_model.x.T @ Q @ acados_model.x
+
+    else:
+        raise RuntimeError("Available acados cost type: 'LINEAR_LS' and 'EXTERNAL'.")
+
 
     acados_ocp.cost.yref = np.zeros((acados_ocp.dims.ny,))
     acados_ocp.cost.yref_e = np.ones((acados_ocp.dims.ny_e,))
