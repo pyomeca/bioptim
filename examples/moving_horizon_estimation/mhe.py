@@ -125,9 +125,17 @@ if __name__ == "__main__":
         U0=U0,
         data_to_track=Y_i,
     )
-    sol = ocp.solve(options_ipopt={"hessian_approximation": "exact", "limited_memory_max_history": 10,
-                                   "print_level": 1, "tol": 1e-2, "linear_solver": "ma57",
-                                   "bound_frac": 1e-5, "bound_push": 1e-5})
+    sol = ocp.solve(
+        options_ipopt={
+            "hessian_approximation": "exact",
+            "limited_memory_max_history": 10,
+            "print_level": 1,
+            "tol": 1e-2,
+            "linear_solver": "ma57",
+            "bound_frac": 1e-5,
+            "bound_push": 1e-5,
+        }
+    )
     data_sol = Data.get_data(ocp, sol)
     X0, U0, X_out = warm_start_mhe(data_sol)
     X_est[:, 0] = X_out
