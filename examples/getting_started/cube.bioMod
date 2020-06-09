@@ -54,3 +54,9 @@ endsegment
         position 2 0 0 
     endmarker
 
+    // Contact
+    contact    Seg1_contact1
+        parent    Seg1
+        position    0 0 0
+        axis    xz
+    endcontact

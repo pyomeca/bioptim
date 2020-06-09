@@ -12,7 +12,7 @@ class ProblemType:
     """
 
     @staticmethod
-    def torque_driven(nlp):
+    def torque_driven(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques but without muscles, must be used with dynamics without contacts.
@@ -20,10 +20,10 @@ class ProblemType:
         """
         ProblemType.__configure_q_qdot(nlp, True, False)
         ProblemType.__configure_tau(nlp, False, True)
-        ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_torque_driven)
+        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven)
 
     @staticmethod
-    def torque_driven_with_contact(nlp):
+    def torque_driven_with_contact(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques, without muscles, must be used with dynamics with contacts.
@@ -31,11 +31,11 @@ class ProblemType:
         """
         ProblemType.__configure_q_qdot(nlp, True, False)
         ProblemType.__configure_tau(nlp, False, True)
-        ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_torque_driven_with_contact)
-        ProblemType.__configure_contact(nlp, Dynamics.forces_from_forward_dynamics_with_contact)
+        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven_with_contact)
+        ProblemType.__configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
 
     @staticmethod
-    def torque_activations_driven(nlp):
+    def torque_activations_driven(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Controls u are torques and torques activations.
@@ -44,10 +44,10 @@ class ProblemType:
         ProblemType.__configure_q_qdot(nlp, True, False)
         ProblemType.__configure_tau(nlp, False, True)
         nlp["nbActuators"] = nlp["nbTau"]
-        ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_torque_activations_driven)
+        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven)
 
     @staticmethod
-    def torque_activations_driven_with_contact(nlp):
+    def torque_activations_driven_with_contact(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Controls u are torques and torques activations.
@@ -56,11 +56,13 @@ class ProblemType:
         ProblemType.__configure_q_qdot(nlp, True, False)
         ProblemType.__configure_tau(nlp, False, True)
         nlp["nbActuators"] = nlp["nbTau"]
-        ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_torque_activations_driven_with_contact)
-        ProblemType.__configure_contact(nlp, Dynamics.forces_from_forward_dynamics_with_contact)
+        ProblemType.__configure_forward_dyn_func(
+            ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven_with_contact
+        )
+        ProblemType.__configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
 
     @staticmethod
-    def muscle_activations_driven(nlp):
+    def muscle_activations_driven(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques and muscles.
@@ -75,10 +77,10 @@ class ProblemType:
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
 
-        ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_muscle_activations_driven)
+        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_activations_driven)
 
     @staticmethod
-    def muscle_activations_and_torque_driven(nlp):
+    def muscle_activations_and_torque_driven(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques and muscles.
@@ -95,9 +97,10 @@ class ProblemType:
         nlp["nu"] = nlp["u"].rows()
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
-        ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_torque_muscle_driven)
+        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_muscle_driven)
 
-    def muscle_excitations_driven(nlp):
+    @staticmethod
+    def muscle_excitations_driven(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques and muscles.
@@ -116,10 +119,10 @@ class ProblemType:
         nlp["var_states"]["muscles"] = nlp["nbMuscle"]
         nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
 
-        ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_muscle_excitations_driven)
+        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_driven)
 
     @staticmethod
-    def muscle_excitations_and_torque_driven(nlp):
+    def muscle_excitations_and_torque_driven(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques and muscles.
@@ -139,10 +142,12 @@ class ProblemType:
         nlp["var_states"]["muscles"] = nlp["nbMuscle"]
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
-        ProblemType.__configure_forward_dyn_func(nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven)
+        ProblemType.__configure_forward_dyn_func(
+            ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven
+        )
 
     @staticmethod
-    def muscles_activations_and_torque_driven_with_contact(nlp):
+    def muscles_activations_and_torque_driven_with_contact(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques and muscles.
@@ -159,14 +164,14 @@ class ProblemType:
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         ProblemType.__configure_forward_dyn_func(
-            nlp, Dynamics.forward_dynamics_muscle_activations_and_torque_driven_with_contact
+            ocp, nlp, Dynamics.forward_dynamics_muscle_activations_and_torque_driven_with_contact
         )
         ProblemType.__configure_contact(
-            nlp, Dynamics.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact
+            ocp, nlp, Dynamics.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact
         )
 
     @staticmethod
-    def muscle_excitations_and_torque_driven_with_contact(nlp):
+    def muscle_excitations_and_torque_driven_with_contact(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques and muscles.
@@ -187,10 +192,10 @@ class ProblemType:
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         ProblemType.__configure_forward_dyn_func(
-            nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven_with_contact
+            ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven_with_contact
         )
         ProblemType.__configure_contact(
-            nlp, Dynamics.forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact
+            ocp, nlp, Dynamics.forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact
         )
 
     @staticmethod
@@ -225,9 +230,11 @@ class ProblemType:
         if as_states:
             nlp["x"] = vertcat(q, q_dot)
             nlp["var_states"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
-            nlp["plot"]["q"] = CustomPlot(lambda x, u: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q)
+            nlp["plot"]["q"] = CustomPlot(
+                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q
+            )
             nlp["plot"]["q_dot"] = CustomPlot(
-                lambda x, u: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
+                lambda x, u, p: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
             )
@@ -262,17 +269,20 @@ class ProblemType:
         if as_controls:
             nlp["u"] = u
             nlp["var_controls"] = {"tau": nlp["nbTau"]}
-            nlp["plot"]["tau"] = CustomPlot(lambda x, u: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau)
+            nlp["plot"]["tau"] = CustomPlot(
+                lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
+            )
 
     @staticmethod
-    def __configure_contact(nlp, dyn_func):
+    def __configure_contact(ocp, nlp, dyn_func):
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
+        symbolic_param = nlp["p"]
         nlp["contact_forces_func"] = Function(
             "contact_forces_func",
-            [symbolic_states, symbolic_controls],
-            [dyn_func(symbolic_states, symbolic_controls, nlp)],
-            ["x", "u"],
+            [symbolic_states, symbolic_controls, symbolic_param],
+            [dyn_func(symbolic_states, symbolic_controls, symbolic_param, nlp)],
+            ["x", "u", "p"],
             ["contact_forces"],
         ).expand()
 
@@ -292,7 +302,7 @@ class ProblemType:
         if as_states:
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
             nlp["plot"]["muscles_states"] = CustomPlot(
-                lambda x, u: x[nx_q : nx_q + nlp["nbMuscle"]],
+                lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=nlp["muscleNames"],
                 ylim=[0, 1],
@@ -300,7 +310,7 @@ class ProblemType:
             combine = "muscles_states"
         if as_controls:
             nlp["plot"]["muscles_control"] = CustomPlot(
-                lambda x, u: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
+                lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
                 plot_type=PlotType.STEP,
                 legend=nlp["muscleNames"],
                 combine_to=combine,
@@ -308,16 +318,23 @@ class ProblemType:
             )
 
     @staticmethod
-    def __configure_forward_dyn_func(nlp, dyn_func):
+    def __configure_forward_dyn_func(ocp, nlp, dyn_func):
         nlp["nu"] = nlp["u"].rows()
         nlp["nx"] = nlp["x"].rows()
 
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
+        symbolic_params = MX()
+        nlp["parameters_to_optimize"] = ocp.param_to_optimize
+        for key in nlp["parameters_to_optimize"]:
+            symbolic_params = vertcat(symbolic_params, nlp["parameters_to_optimize"][key]["mx"])
+        nlp["p"] = symbolic_params
+        nlp["np"] = symbolic_params.rows()
+
         nlp["dynamics_func"] = Function(
             "ForwardDyn",
-            [symbolic_states, symbolic_controls],
-            [dyn_func(symbolic_states, symbolic_controls, nlp)],
-            ["x", "u"],
+            [symbolic_states, symbolic_controls, symbolic_params],
+            [dyn_func(symbolic_states, symbolic_controls, symbolic_params, nlp)],
+            ["x", "u", "p"],
             ["xdot"],
         ).expand()  # .map(nlp["ns"], "thread", 2)

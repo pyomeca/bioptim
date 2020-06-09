@@ -6,6 +6,11 @@ from casadi import MX
 class Data:
     class Phase:
         def __init__(self, time, phase):
+            """
+            Initializes phases with user provided information.
+            :param time: Duration of the movement optimized. (float)
+            :param phase: Phases information. (list of tuples)
+            """
             self.node = [node.reshape(node.shape[0], 1) for node in phase.T]
             self.nb_elements = phase.shape[0]
             self.t = time
@@ -17,6 +22,13 @@ class Data:
         self.has_same_nb_elements = True
 
     def to_matrix(self, idx=(), phase_idx=(), node_idx=(), concatenate_phases=True):
+        """
+        Conversion of lists int matrix.
+        :param idx: Index of the target in the destination variable matrix. (integer)
+        :param phase_idx: Index of the phase targeted in the origin variable list. (integer)
+        :param node_idx: Index of the node targetedin the origin variable list. (integer)
+        :param concatenate_phases: If True, concatenates the phases into one big phase. (bool)
+        """
         if not self.phase:
             return np.ndarray((0, 1))
 
@@ -46,10 +58,20 @@ class Data:
         return data
 
     def set_time_per_phase(self, new_t):
+        """
+        Sets the new time vector in function of the duration of the movement.
+        :param new_t: Duration of the movement. (float)
+        """
         for i, phase in enumerate(self.phase):
             phase.t = np.linspace(new_t[i][0], new_t[i][1], len(phase.node))
 
     def get_time_per_phase(self, phases=(), concatenate=False):
+        """
+        Sets the new time vector for each phases.
+        :param phases: Phases. (list of tuple)
+        :param concatenate: If True, concatenates all the phases into one big phase. (bool)
+        :return t: Time vector.
+        """
         if not self.phase:
             return np.ndarray((0,))
 
@@ -79,6 +101,18 @@ class Data:
         interpolate_nb_frames=-1,
         concatenate=True,
     ):
+        """
+        Rearranges the solution states, controls and parameters of hte optimization into a list (out).
+        :param sol_x: Solution of the optimization. (dictionary)
+        :param get_states: If True, states are included in the out list. (bool)
+        :param get_controls: If True, controls are included in the out list. (bool)
+        :param get_parameters: If True, parameters are included in the out list. (bool)
+        :param phase_idx: Index of the phase. (integer)
+        :param integrate: If True, solution is integrated between nodes. (bool)
+        :param interpolate_nb_frames: Number of frames to interpolate the solution to. (integer)
+        :param concatenate: If True, concatenates all phases into one big phase. (bool)
+        :return out: Rearranged ist of the solution. (list)
+        """
         if isinstance(sol_x, dict) and "x" in sol_x:
             sol_x = sol_x["x"]
 
@@ -109,17 +143,47 @@ class Data:
 
     @staticmethod
     def get_data_object(ocp, V, phase_idx=None, integrate=False, interpolate_nb_frames=-1, concatenate=True):
+        """
+
+        :param V:
+        :param phase_idx: Index of the phase. (integer)
+        :param integrate: If True V is integrated between nodes. (bool)
+        :param interpolate_nb_frames: Number of frames to interpolate the solution to. (integer)
+        :param concatenate: If True, concatenates all phases into one big phase. (bool)
+        :return: data_states -> Optimal states. (dictionary), data_controls -> Optimal controls. (dictionary)
+        and data_parameters -> Optimal parameters. (dictionary)
+        """
         V_array = np.array(V).squeeze()
+        data_states, data_controls, data_parameters = {}, {}, {}
 
         if phase_idx is None:
             phase_idx = range(len(ocp.nlp))
         elif isinstance(phase_idx, int):
             phase_idx = [phase_idx]
-        offsets = [0]
+
+        offset = 0
+        for key in ocp.param_to_optimize:
+            if ocp.param_to_optimize[key]:
+                nb_param = ocp.param_to_optimize[key]["size"]
+                data_parameters[key] = np.array(V[offset : offset + nb_param])
+                offset += nb_param
+
+                if key == "time":
+                    new_t = []
+                    cmp = 0
+                    for nlp in ocp.nlp:
+                        if isinstance(nlp["tf"], MX):
+                            new_t.append((0, data_parameters["time"][cmp, 0]))
+                            cmp += 1
+                        else:
+                            new_t.append((0, nlp["tf"]))
+                    for key_stat in data_states:
+                        data_states[key_stat].set_time_per_phase(new_t)
+
+        offsets = [offset]
         for i, nlp in enumerate(ocp.nlp):
             offsets.append(offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"]))
 
-        data_states, data_controls, data_parameters = {}, {}, {}
         for i in phase_idx:
             nlp = ocp.nlp[i]
             for key in nlp["var_states"].keys():
@@ -148,27 +212,8 @@ class Data:
                 )
                 offset += nlp["var_controls"][key]
 
-        offset = sum([nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"] for nlp in ocp.nlp])
-        for key in ocp.param_to_optimize:
-            if ocp.param_to_optimize[key]:
-                nb_param = len(ocp.param_to_optimize[key])
-                data_parameters[key] = np.array(V[offset : offset + nb_param])
-                offset += nb_param
-
-                if key == "time":
-                    new_t = []
-                    cmp = 0
-                    for nlp in ocp.nlp:
-                        if isinstance(nlp["tf"], MX):
-                            new_t.append((0, data_parameters["time"][cmp, 0]))
-                            cmp += 1
-                        else:
-                            new_t.append((0, nlp["tf"]))
-                    for key_stat in data_states:
-                        data_states[key_stat].set_time_per_phase(new_t)
-
         if integrate:
-            data_states = Data._get_data_integrated_from_V(ocp, data_states, data_controls)
+            data_states = Data._get_data_integrated_from_V(ocp, data_states, data_controls, data_parameters)
 
         if concatenate:
             data_states = Data._data_concatenated(data_states)
@@ -183,42 +228,49 @@ class Data:
 
     @staticmethod
     def _get_phase_time(V, nlp):
+        """
+        Returns phase initial and final times.
+        :param V: Phase variable. (?)
+        :return: t0 -> Initial time of the phase. (float) and tf -> Final time of the phase. (float)
+        """
         if isinstance(nlp["tf"], (int, float)):
             return 0, nlp["tf"]
         else:
             return 0, V[-1]
 
     @staticmethod
-    def _get_data_integrated_from_V(ocp, data_states, data_controls):
+    def _get_data_integrated_from_V(ocp, data_states, data_controls, data_parameters):
+        """
+        Integrates data between nodes.
+        :param data_states: Optimal states. (dictionary)
+        :param data_controls: Optimal controls. (dictionary)
+        :return: data_states -> Integrated between node optimal states. (dictionary)
+        """
         # Check if time is optimized
-        time_is_optimized = False
-        for nlp in ocp.nlp:
-            if isinstance(nlp["tf"], MX):
-                time_is_optimized = True
-                break
-
         for idx_phase in range(ocp.nb_phases):
             dt = ocp.nlp[idx_phase]["dt"]
             nlp = ocp.nlp[idx_phase]
             for idx_node in reversed(range(ocp.nlp[idx_phase]["ns"])):
                 x0 = Data._vertcat(data_states, list(nlp["var_states"].keys()), idx_phase, idx_node)
                 p = Data._vertcat(data_controls, list(nlp["var_controls"].keys()), idx_phase, idx_node)
-                if time_is_optimized:
-                    # TODO: Allow integrate when optimizing time
-                    xf_dof = x0
-                else:
-                    xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"][idx_node](x0=x0, p=p)["xf"])  # Integrate
+                params = Data._vertcat(data_parameters, [key for key in ocp.param_to_optimize if key != "time"])
+                xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"][idx_node](x0=x0, p=p, params=params)["xall"])
 
                 offset = 0
                 for key in nlp["var_states"]:
                     data_states[key]._horzcat_node(
-                        dt, xf_dof[offset : offset + nlp["var_states"][key]], idx_phase, idx_node
+                        dt, xf_dof[offset : offset + nlp["var_states"][key], 1:], idx_phase, idx_node
                     )
                     offset += nlp["var_states"][key]
         return data_states
 
     @staticmethod
     def _data_concatenated(data):
+        """
+        Concatenates phases into one big phase.
+        :param data: Variable to concatenate. (dictionary)
+        :return: data -> Variable concatenated. (dictionary)
+        """
         for key in data:
             if data[key].has_same_nb_elements:
                 data[key].phase = [
@@ -230,6 +282,12 @@ class Data:
 
     @staticmethod
     def _get_data_interpolated_from_V(data_states, nb_frames):
+        """
+        Interpolates data between nodes.
+        :param data_states: Optimal states. (dictionary)
+        :param nb_frames: Number of frames to interpolate to. (integer)
+        :return: data_states -> Integrated between node optimal states. (dictionary)
+        """
         for key in data_states:
             t = data_states[key].get_time_per_phase(concatenate=False)
             d = data_states[key].to_matrix(concatenate_phases=False)
@@ -277,10 +335,19 @@ class Data:
 
     @staticmethod
     def _vertcat(data, keys, phases=(), nodes=()):
-        data_concat = data[keys[0]].to_matrix(phase_idx=phases, node_idx=nodes)
-        for k in range(1, len(keys)):
-            data_concat = np.concatenate((data_concat, data[keys[k]].to_matrix(phase_idx=phases, node_idx=nodes)))
-        return data_concat
+        def get_matrix(elem):
+            if isinstance(elem, Data):
+                return elem.to_matrix(phase_idx=phases, node_idx=nodes)
+            else:
+                return elem
+
+        if keys:
+            data_concat = get_matrix(data[keys[0]])
+            for k in range(1, len(keys)):
+                data_concat = np.concatenate((data_concat, get_matrix(data[keys[k]])))
+            return data_concat
+        else:
+            return np.empty((0, 0))
 
     def _append_phase(self, time, phase):
         time = np.linspace(time[0], time[1], len(phase[0]))
