@@ -100,12 +100,12 @@ if __name__ == "__main__":
     biorbd_model_path = "./cart_pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
 
-    Tf = 4  # duration of the simulation
+    Tf = 3  # duration of the simulation
     X0 = np.array([0, np.pi / 2, 0, 0])
-    N = Tf * 25  # number of shooting nodes per sec
-    noise_std = 0.1  # STD of noise added to measurements
-    T_max = 2  # Max trque applied to the model
-    N_mhe = 30  # size of MHE window
+    N = Tf * 40  # number of shooting nodes per sec
+    noise_std = 0.05  # STD of noise added to measurements
+    T_max = 2  # Max torque applied to the model
+    N_mhe = 15  # size of MHE window
     Tf_mhe = Tf / N * N_mhe  # duration of MHE window
 
     X_, Y_, Y_N_, U_ = run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=True)
@@ -113,6 +113,7 @@ if __name__ == "__main__":
     X0 = np.zeros((biorbd_model.nbQ() * 2, N_mhe))
     U0 = np.zeros((biorbd_model.nbQ(), N_mhe - 1))
     X_est = np.zeros((biorbd_model.nbQ() * 2, N - N_mhe))
+    T_max = 5  # Give a bit of slack on the max torque
 
     Y_i = Y_N_[:, :, :N_mhe]
     ocp = prepare_ocp(
@@ -124,7 +125,9 @@ if __name__ == "__main__":
         U0=U0,
         data_to_track=Y_i,
     )
-    sol = ocp.solve(options_ipopt={"print_level": 0, "bound_frac": 1e-5, "bound_push": 1e-5})
+    sol = ocp.solve(options_ipopt={"hessian_approximation": "exact", "limited_memory_max_history": 10,
+                                   "print_level": 1, "tol": 1e-2, "linear_solver": "ma57",
+                                   "bound_frac": 1e-5, "bound_push": 1e-5})
     data_sol = Data.get_data(ocp, sol)
     X0, U0, X_out = warm_start_mhe(data_sol)
     X_est[:, 0] = X_out
