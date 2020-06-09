@@ -10,11 +10,11 @@ def acados_export_model(self):
     # Declare model variables
     x = self.nlp[0]['x']
     u = self.nlp[0]['u']
-
+    p = self.nlp[0]['p']
     mod = self.nlp[0]['model']
     x_dot = MX.sym("x_dot", mod.nbQdot() * 2, 1)
 
-    f_expl = self.nlp[0]['dynamics_func'](x, u)
+    f_expl = self.nlp[0]['dynamics_func'](x, u, p)
     f_impl = x_dot - f_expl
 
     acados_model = AcadosModel()
