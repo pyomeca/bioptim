@@ -263,4 +263,4 @@ class InitialConditions:
         Concatenates initial guesses.
         :param other: Initial guesses to concatenate. (?)
         """
-        self.init = PathCondition(np.concatenate((self.init, other.init)), interpolation_type=self.init.type,)
+        self.init = PathCondition(np.concatenate((self.init, other.init)), interpolation_type=self.init.type)

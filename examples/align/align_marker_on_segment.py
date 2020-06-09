@@ -31,8 +31,8 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
     # Constraints
     constraints = (
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 4,},
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 5,},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 4},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 5},
         {
             "type": Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS,
             "instant": Instant.ALL,
@@ -64,7 +64,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque(),
+        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque()
     )
     U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
 

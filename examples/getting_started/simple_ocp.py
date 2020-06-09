@@ -32,8 +32,8 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_g
 
     # Constraints
     constraints = (
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2},
     )
 
     # Path constraint
@@ -44,7 +44,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_g
     X_bounds.max[2, -1] = 1.57
 
     # Define control path constraint
-    U_bounds = Bounds([torque_min] * ntau, [torque_max] * ntau,)
+    U_bounds = Bounds([torque_min] * ntau, [torque_max] * ntau)
 
     # Initial guesses
     if initial_guess == InterpolationType.CONSTANT:

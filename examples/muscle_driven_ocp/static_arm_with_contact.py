@@ -22,7 +22,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     objective_functions = (
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1},
         {"type": Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, "weight": 1},
-        {"type": Objective.Mayer.ALIGN_MARKERS, "first_marker_idx": 0, "second_marker_idx": 5, "weight": 1,},
+        {"type": Objective.Mayer.ALIGN_MARKERS, "first_marker_idx": 0, "second_marker_idx": 5, "weight": 1},
     )
 
     # Dynamics
@@ -67,7 +67,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="arm26_with_contact.bioMod", final_time=2, number_shooting_points=20,)
+    ocp = prepare_ocp(biorbd_model_path="arm26_with_contact.bioMod", final_time=2, number_shooting_points=20)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

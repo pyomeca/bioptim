@@ -67,7 +67,7 @@ def plot_callback(x, q_to_plot):
 
 if __name__ == "__main__":
     # Prepare the Optimal Control Program
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50,)
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50)
 
     # Add my lovely new plot
     ocp.add_plot("My New Extra Plot", lambda x, u, p: plot_callback(x, [0, 1, 3]), PlotType.PLOT)

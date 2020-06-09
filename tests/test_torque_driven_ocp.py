@@ -77,7 +77,7 @@ def test_align_markers_changing_constraints():
 
     # Add a new constraint and reoptimize
     ocp.add_constraint(
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 2,}
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 2}
     )
     sol = ocp.solve()
 
@@ -110,10 +110,10 @@ def test_align_markers_changing_constraints():
 
     # Replace constraints and reoptimize
     ocp.modify_constraint(
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 2,}, 0
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 2}, 0
     )
     ocp.modify_constraint(
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 3,}, 2
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 3}, 2
     )
     sol = ocp.solve()
 
@@ -301,7 +301,7 @@ def test_track_marker_2D_pendulum():
     # Load muscle_activations_contact_tracker
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "track_markers_2D_pendulum", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_2D_pendulum.py",
+        "track_markers_2D_pendulum", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_2D_pendulum.py"
     )
     track_markers_2D_pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(track_markers_2D_pendulum)

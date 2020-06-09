@@ -110,13 +110,13 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = [
-        {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": excitations_ref},
+        {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": excitations_ref}
     ]
     if use_residual_torque:
         objective_functions.append({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1})
     if kin_data_to_track == "markers":
         objective_functions.append(
-            {"type": Objective.Lagrange.TRACK_MARKERS, "weight": 100, "data_to_track": markers_ref},
+            {"type": Objective.Lagrange.TRACK_MARKERS, "weight": 100, "data_to_track": markers_ref}
         )
     elif kin_data_to_track == "q":
         objective_functions.append(
@@ -125,7 +125,7 @@ def prepare_ocp(
                 "weight": 100,
                 "data_to_track": q_ref,
                 "states_idx": range(biorbd_model.nbQ()),
-            },
+            }
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
@@ -163,7 +163,7 @@ def prepare_ocp(
             [torque_init] * biorbd_model.nbGeneralizedTorque() + [excitation_init] * biorbd_model.nbMuscles()
         )
     else:
-        U_bounds = Bounds([excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles(),)
+        U_bounds = Bounds([excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles())
         U_init = InitialConditions([excitation_init] * biorbd_model.nbMuscles())
     # ------------- #
 
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     markers = np.ndarray((3, n_mark, q.shape[1]))
     symbolic_states = MX.sym("x", n_q, 1)
     markers_func = Function(
-        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"],
+        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"]
     ).expand()
     for i in range(n_frames):
         markers[:, :, i] = markers_func(q[:, i])

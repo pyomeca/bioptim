@@ -98,7 +98,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
 
 if __name__ == "__main__":
     ocp = prepare_ocp(
-        biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100, min_g=-10, max_g=-6, target_g=-8,
+        biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100, min_g=-10, max_g=-6, target_g=-8
     )
 
     # --- Solve the program --- #

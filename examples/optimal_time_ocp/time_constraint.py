@@ -28,7 +28,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min,
     problem_type = ProblemType.torque_driven
 
     # Constraints
-    constraints = ({"type": Constraint.TIME_CONSTRAINT, "minimum": time_min, "maximum": time_max,},)
+    constraints = ({"type": Constraint.TIME_CONSTRAINT, "minimum": time_min, "maximum": time_max},)
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)

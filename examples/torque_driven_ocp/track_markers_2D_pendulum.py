@@ -106,7 +106,7 @@ if __name__ == "__main__":
     symbolic_states = MX.sym("x", nb_q + nb_qdot, 1)
     symbolic_controls = MX.sym("u", nb_tau, 1)
     markers_fun = Function(
-        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states[:nb_q])], ["q"], ["marker"],
+        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states[:nb_q])], ["q"], ["marker"]
     ).expand()
     markers_ref = np.zeros((3, nb_marker, number_shooting_points + 1))
     for i in range(number_shooting_points + 1):

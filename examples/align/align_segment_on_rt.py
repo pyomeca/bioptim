@@ -31,7 +31,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
     # Constraints
     constraints = (
-        {"type": Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT, "instant": Instant.ALL, "segment_idx": 2, "rt_idx": 0,},
+        {"type": Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT, "instant": Instant.ALL, "segment_idx": 2, "rt_idx": 0},
     )
 
     # Path constraint
@@ -46,7 +46,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque(),
+        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque()
     )
     U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
 
@@ -69,7 +69,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
 if __name__ == "__main__":
     ocp = prepare_ocp(
-        biorbd_model_path="cube_and_line.bioMod", number_shooting_points=30, final_time=1, ode_solver=OdeSolver.RK,
+        biorbd_model_path="cube_and_line.bioMod", number_shooting_points=30, final_time=1, ode_solver=OdeSolver.RK
     )
 
     # --- Solve the program --- #

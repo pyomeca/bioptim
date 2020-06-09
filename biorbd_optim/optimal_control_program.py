@@ -146,9 +146,7 @@ class OptimalControlProgram:
         )
         self.__add_to_nlp("tf", phase_time, False)
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
-        self.__add_to_nlp(
-            "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
-        )
+        self.__add_to_nlp("dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False)
         self.nb_threads = nb_threads
 
         # External forces
@@ -682,12 +680,7 @@ class OptimalControlProgram:
             original_values = data["ocp_initilializer"]
             print("****************************** Informations ******************************")
             for key in original_values.keys():
-                if key not in [
-                    "X_init",
-                    "U_init",
-                    "X_bounds",
-                    "U_bounds",
-                ]:
+                if key not in ["X_init", "U_init", "X_bounds", "U_bounds"]:
                     print(f"{key} : ")
                     OptimalControlProgram._deep_print(original_values[key])
                     print("")

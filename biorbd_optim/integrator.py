@@ -34,9 +34,5 @@ def RK4(ode, ode_opt):
         return x[:, -1], x
 
     return Function(
-        "integrator",
-        [x_sym, u_sym, param_sym],
-        dxdt(h, x_sym, u_sym, param_sym),
-        ["x0", "p", "params"],
-        ["xf", "xall"],
+        "integrator", [x_sym, u_sym, param_sym], dxdt(h, x_sym, u_sym, param_sym), ["x0", "p", "params"], ["xf", "xall"]
     )
