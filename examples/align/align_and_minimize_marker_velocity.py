@@ -98,6 +98,7 @@ def prepare_ocp(
         U_bounds,
         objective_functions,
         ode_solver=ode_solver,
+        nb_integration_steps=5,
     )
 
 

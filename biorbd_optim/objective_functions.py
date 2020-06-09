@@ -22,7 +22,7 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
+            def minimize_time(penalty_type, ocp, nlp, t, x, u, p, **extra_param):
                 """Minimizes the duration of the movement (Lagrange)."""
                 val = 1
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
@@ -75,7 +75,7 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(penalty_type, ocp, nlp, t, x, u, **extra_param):
+            def minimize_time(penalty_type, ocp, nlp, t, x, u, p, **extra_param):
                 """Minimizes the duration of the movement (Mayer)."""
                 val = nlp["tf"]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
@@ -143,21 +143,6 @@ class ObjectiveFunction:
         )
 
     @staticmethod
-    def continuity(ocp):
-        """
-        Add a continuity objective between first and last nodes to have a loop (nlp.is_cyclic_constraint).
-        :param ocp: An OptimalControlProgram class.
-        """
-        if ocp.is_cyclic_objective:
-            # Save continuity constraints between final integration and first node
-            if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
-                raise RuntimeError("Cyclic objective without same nx is not supported yet")
-
-            val = ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]
-            penalty_idx = ObjectiveFunction._reset_penalty(ocp, None, -1)
-            ObjectiveFunction.MayerFunction._add_to_penalty(ocp, None, val, penalty_idx, weight=10000, quadratic=True)
-
-    @staticmethod
     def _add_to_penalty(ocp, nlp, J, penalty_idx):
         """
         Adds objective J to objective array nlp["J"][penalty_idx] or ocp.J[penalty_idx] at index penalty_idx.
@@ -209,6 +194,7 @@ class Objective:
         PROPORTIONAL_CONTROL = (PenaltyType.PROPORTIONAL_CONTROL,)
         MINIMIZE_TORQUE = (PenaltyType.MINIMIZE_TORQUE,)
         TRACK_TORQUE = (PenaltyType.TRACK_TORQUE,)
+        MINIMIZE_TORQUE_DERIVATIVE = (PenaltyType.MINIMIZE_TORQUE_DERIVATIVE,)
         MINIMIZE_MUSCLES_CONTROL = (PenaltyType.MINIMIZE_MUSCLES_CONTROL,)
         TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
         MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)

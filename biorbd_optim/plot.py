@@ -1,4 +1,5 @@
 import multiprocessing as mp
+from copy import copy
 import numpy as np
 import tkinter
 import pickle
@@ -54,6 +55,7 @@ class PlotOcp:
         self.ns = 0
 
         self.t = []
+        self.t_integrated = []
         if isinstance(self.ocp.initial_phase_time, (int, float)):
             self.tf = [self.ocp.initial_phase_time]
         else:
@@ -62,7 +64,7 @@ class PlotOcp:
         for i, nlp in enumerate(self.ocp.nlp):
             if isinstance(nlp["tf"], MX):
                 self.t_idx_to_optimize.append(i)
-        self.__init_time_vector()
+        self.__update_time_vector()
 
         self.axes = {}
         self.plots = []
@@ -93,14 +95,24 @@ class PlotOcp:
                     pass
             fig.canvas.draw()
 
-    def __init_time_vector(self):
+    def __update_time_vector(self):
         """Sets x-axis array"""
         self.t = []
+        self.t_integrated = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
+            nb_int_steps = nlp["nb_integration_steps"]
+            dt_ns = self.tf[phase_idx] / nlp["ns"]
+            time_phase_integrated = []
+            last_t_int = copy(last_t)
+            for _ in range(nlp["ns"]):
+                time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, nb_int_steps + 1))
+                last_t_int += dt_ns
+            self.t_integrated.append(time_phase_integrated)
+
             self.ns += nlp["ns"] + 1
             time_phase = np.linspace(last_t, last_t + self.tf[phase_idx], nlp["ns"] + 1)
-            last_t = last_t + self.tf[phase_idx]
+            last_t += self.tf[phase_idx]
             self.t.append(time_phase)
 
     def __create_plots(self):
@@ -111,7 +123,11 @@ class PlotOcp:
             if "plot" in nlp:
                 for key in nlp["plot"]:
                     if nlp["plot"][key].phase_mappings is None:
-                        size = nlp["plot"][key].function(np.zeros((nlp["nx"], 1)), np.zeros((nlp["nu"], 1))).shape[0]
+                        size = (
+                            nlp["plot"][key]
+                            .function(np.zeros((nlp["nx"], 1)), np.zeros((nlp["nu"], 1)), np.zeros((nlp["np"], 1)))
+                            .shape[0]
+                        )
                         nlp["plot"][key].phase_mappings = Mapping(range(size))
                     else:
                         size = len(nlp["plot"][key].phase_mappings.map_idx)
@@ -132,7 +148,7 @@ class PlotOcp:
                 if nlp["plot"][variable].combine_to:
                     self.axes[variable] = self.axes[nlp["plot"][variable].combine_to]
                     axes = self.axes[variable][1]
-                elif i > 0:
+                elif i > 0 and variable in self.axes:
                     axes = self.axes[variable][1]
                 else:
                     axes = self.__add_new_axis(variable, nb, nb_rows, nb_cols)
@@ -140,48 +156,53 @@ class PlotOcp:
 
                 t = self.t[i]
                 if variable not in self.plot_func:
-                    self.plot_func[variable] = [nlp["plot"][variable]]
-                else:
-                    self.plot_func[variable].append(nlp["plot"][variable])
+                    self.plot_func[variable] = [None] * self.ocp.nb_phases
+                self.plot_func[variable][i] = nlp["plot"][variable]
 
-                mapping = self.plot_func[variable][-1].phase_mappings.map_idx
+                mapping = self.plot_func[variable][i].phase_mappings.map_idx
                 for k in mapping:
                     ax = axes[k]
-                    if k < len(self.plot_func[variable][-1].legend):
-                        axes[k].set_title(self.plot_func[variable][-1].legend[mapping[k]])
+                    if k < len(self.plot_func[variable][i].legend):
+                        axes[k].set_title(self.plot_func[variable][i].legend[mapping[k]])
                     ax.grid(color="k", linestyle="--", linewidth=0.5)
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
 
                     zero = np.zeros((t.shape[0], 1))
-                    plot_type = self.plot_func[variable][0].type
+                    plot_type = self.plot_func[variable][i].type
                     if plot_type == PlotType.PLOT:
-                        color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:green"
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:green"
                         self.plots.append(
                             [plot_type, i, ax.plot(t, zero, ".-", color=color, markersize=3, zorder=0)[0]]
                         )
                     elif plot_type == PlotType.INTEGRATED:
-                        color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:brown"
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         plots_integrated = []
+                        nb_int_steps = nlp["nb_integration_steps"]
                         for cmp in range(nlp["ns"]):
                             plots_integrated.append(
                                 ax.plot(
-                                    self.t[i][[cmp, cmp + 1]], (0, 0), ".-", color=color, markersize=3, linewidth=0.8,
+                                    self.t_integrated[i][cmp],
+                                    np.zeros(nb_int_steps + 1),
+                                    "-",
+                                    color=color,
+                                    markersize=3,
+                                    linewidth=0.8,
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
 
                     elif plot_type == PlotType.STEP:
-                        color = self.plot_func[variable][0].color if self.plot_func[variable][0].color else "tab:orange"
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:orange"
                         self.plots.append([plot_type, i, ax.step(t, zero, where="post", color=color, zorder=0)[0]])
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
-            for ax in axes:
-                intersections_time = self.find_phases_intersections()
-                for time in intersections_time:
-                    self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
+                for ax in axes:
+                    intersections_time = self.find_phases_intersections()
+                    for time in intersections_time:
+                        self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
         """
@@ -246,6 +267,7 @@ class PlotOcp:
         data_states, data_controls, data_param = Data.get_data(
             self.ocp, V, get_parameters=True, integrate=True, concatenate=False
         )
+        data_param_in_dyn = np.array([data_param[key] for key in data_param if key != "time"]).squeeze()
 
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
@@ -253,9 +275,12 @@ class PlotOcp:
                     self.tf[i_in_tf] = data_param["time"][i_in_time]
             self.__update_xdata()
 
-        data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, concatenate=False)
+        data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, integrate=True, concatenate=False)
         for i, nlp in enumerate(self.ocp.nlp):
-            state = np.ndarray((0, nlp["ns"] + 1))
+            step_size = nlp["nb_integration_steps"] + 1
+            nb_elements = nlp["ns"] * step_size + 1
+
+            state = np.ndarray((0, nb_elements))
             for s in nlp["var_states"]:
                 if isinstance(data_states_per_phase[s], (list, tuple)):
                     state = np.concatenate((state, data_states_per_phase[s][i]))
@@ -267,21 +292,40 @@ class PlotOcp:
                     control = np.concatenate((control, data_controls_per_phase[s][i]))
                 else:
                     control = np.concatenate((control, data_controls_per_phase[s]))
+
             for key in self.variable_sizes[i]:
-                y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
-                y.fill(np.nan)
-                y[:, :] = self.plot_func[key][i].function(state, control)
-                self.__append_to_ydata(y)
+                if self.plot_func[key][i].type == PlotType.INTEGRATED:
+                    all_y = []
+                    for idx, t in enumerate(self.t_integrated[i]):
+                        y_tp = np.empty((self.variable_sizes[i][key], len(t)))
+                        y_tp.fill(np.nan)
+                        y_tp[:, :] = self.plot_func[key][i].function(
+                            state[:, step_size * idx : step_size * (idx + 1)],
+                            np.repeat(control[:, idx : idx + 1], step_size, axis=1),
+                            data_param_in_dyn,
+                        )
+                        all_y.append(y_tp)
+
+                    for idx in range(len(self.plot_func[key][i].phase_mappings.map_idx)):
+                        y_tp = []
+                        for y in all_y:
+                            y_tp.append(y[idx, :])
+                        self.__append_to_ydata([y_tp])
+                else:
+                    y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
+                    y.fill(np.nan)
+                    y[:, :] = self.plot_func[key][i].function(state[:, ::step_size], control, data_param_in_dyn)
+                    self.__append_to_ydata(y)
         self.__update_axes()
 
     def __update_xdata(self):
         """Update of the time in plots (independent axis)"""
-        self.__init_time_vector()
+        self.__update_time_vector()
         for plot in self.plots:
             phase_idx = plot[1]
             if plot[0] == PlotType.INTEGRATED:
                 for cmp, p in enumerate(plot[2]):
-                    p.set_xdata(self.t[phase_idx][[cmp, cmp + 1]])
+                    p.set_xdata(self.t_integrated[phase_idx][cmp])
                 ax = plot[2][-1].axes
             else:
                 plot[2].set_xdata(self.t[phase_idx])
@@ -306,7 +350,7 @@ class PlotOcp:
 
             if plot[0] == PlotType.INTEGRATED:
                 for cmp, p in enumerate(plot[2]):
-                    p.set_ydata(y[[cmp, cmp + 1]])
+                    p.set_ydata(y[cmp])
             else:
                 plot[2].set_ydata(y)
 
@@ -377,7 +421,7 @@ class ShowResult:
         all_bioviz = []
         for idx_phase, data in enumerate(data_interpolate["q"]):
             all_bioviz.append(BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs))
-            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase]["q_mapping"].expand.map(data).T)
+            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase]["q_mapping"].expand.map(data))
 
         b_is_visible = [True] * len(all_bioviz)
         while sum(b_is_visible):
