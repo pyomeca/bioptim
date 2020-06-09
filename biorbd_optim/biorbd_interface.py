@@ -4,8 +4,18 @@ import biorbd
 
 
 class BiorbdInterface:
+    """
+    Type conversions allowing to use Biorbd with numpy arrays
+    """
+
     @staticmethod
     def convert_array_to_external_forces(all_f_ext):
+        """
+        Converts type of external forces from numpy array to biorbd.SpatialVector
+        :param all_f_ext: all external forces (numpy array of size : 6 x number of external forces x number of shooting
+        nodes or 6 x number of shooting nodes)
+        :return: sv_over_all_phases -> External phases. (biorbd.SpatialVector)
+        """
         if not isinstance(all_f_ext, (list, tuple)):
             raise RuntimeError(
                 "f_ext should be a list of (6 x nb_external_forces x nb_shooting) or (6 x nb_shooting) matrix"
