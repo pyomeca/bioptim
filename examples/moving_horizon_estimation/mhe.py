@@ -108,7 +108,7 @@ if __name__ == "__main__":
     N = Tf * 50  # number of shooting nodes per sec
     noise_std = 0.05  # STD of noise added to measurements
     T_max = 2  # Max torque applied to the model
-    N_mhe = 20  # size of MHE window
+    N_mhe = 15  # size of MHE window
     Tf_mhe = Tf / N * N_mhe  # duration of MHE window
 
     X_, Y_, Y_N_, U_ = run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False)
