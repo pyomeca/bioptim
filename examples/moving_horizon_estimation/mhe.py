@@ -49,8 +49,11 @@ def prepare_ocp(
     torque_min, torque_max, torque_init = -max_torque, max_torque, 0
 
     # Add objective functions
-    objective_functions = {"type": Objective.Lagrange.MINIMIZE_MARKERS, "weight": 1000, "data_to_track": data_to_track}
 
+    objective_functions = (
+            ({"type": Objective.Lagrange.MINIMIZE_MARKERS, "weight": 1000, "data_to_track": data_to_track},),
+            ({"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 0, "data_to_track": 0, "states_idx": 0},)
+            )
     # Dynamics
     problem_type = ProblemType.torque_driven
 
@@ -59,8 +62,8 @@ def prepare_ocp(
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
-    # X_bounds.min[:, 0] = X0
-    # X_bounds.max[:, 0] = X0
+    # X_bounds.min[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
+    # X_bounds.max[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
 
     # Define control path constraint
     U_bounds = Bounds([torque_min, 0.0], [torque_max, 0.0])
@@ -68,8 +71,8 @@ def prepare_ocp(
     # Initial guesses
     x = X0
     u = U0
-    X_init = InitialConditions(x, interpolation_type=InterpolationType.EACH_FRAME)
-    U_init = InitialConditions(u, interpolation_type=InterpolationType.EACH_FRAME)
+    X_init = InitialConditions(x, interpolation_type=interpolation_type)
+    U_init = InitialConditions(u, interpolation_type=interpolation_type)
     # ------------- #
 
     return OptimalControlProgram(
@@ -102,13 +105,13 @@ if __name__ == "__main__":
 
     Tf = 3  # duration of the simulation
     X0 = np.array([0, np.pi / 2, 0, 0])
-    N = Tf * 40  # number of shooting nodes per sec
+    N = Tf * 50  # number of shooting nodes per sec
     noise_std = 0.05  # STD of noise added to measurements
     T_max = 2  # Max torque applied to the model
-    N_mhe = 15  # size of MHE window
+    N_mhe = 20  # size of MHE window
     Tf_mhe = Tf / N * N_mhe  # duration of MHE window
 
-    X_, Y_, Y_N_, U_ = run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=True)
+    X_, Y_, Y_N_, U_ = run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False)
 
     X0 = np.zeros((biorbd_model.nbQ() * 2, N_mhe))
     U0 = np.zeros((biorbd_model.nbQ(), N_mhe - 1))
@@ -125,28 +128,35 @@ if __name__ == "__main__":
         U0=U0,
         data_to_track=Y_i,
     )
-    sol = ocp.solve(
-        options_ipopt={
-            "hessian_approximation": "exact",
-            "limited_memory_max_history": 10,
-            "print_level": 1,
-            "tol": 1e-2,
-            "linear_solver": "ma57",
-            "bound_frac": 1e-5,
-            "bound_push": 1e-5,
-        }
-    )
+    options_ipopt = {
+        "hessian_approximation": "limited-memory",
+        "limited_memory_max_history": 50,
+        "max_iter": 50,
+        "print_level": 0,
+        "tol": 1e-6,
+        "linear_solver": "ma57",
+        "bound_frac": 1e-10,
+        "bound_push": 1e-10,
+    }
+    sol = ocp.solve(options_ipopt=options_ipopt)
     data_sol = Data.get_data(ocp, sol)
     X0, U0, X_out = warm_start_mhe(data_sol)
     X_est[:, 0] = X_out
     t0 = time.time()
+
+    # Reduce ipopt tol for moving estimation
+    options_ipopt["max_iter"] = 4
+    options_ipopt["tol"] = 1e-1
 
     for i in range(1, N - N_mhe):
         Y_i = Y_N_[:, :, i : i + N_mhe]
         ocp.modify_objective_function(
             {"type": Objective.Lagrange.MINIMIZE_MARKERS, "weight": 1000, "data_to_track": Y_i}, 0
         )
-        sol = ocp.solve(options_ipopt={"print_level": 0, "bound_frac": 1e-5, "bound_push": 1e-5})
+        ocp.modify_objective_function(
+            {"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 1000, "data_to_track": X0.T}, 1
+        )
+        sol = ocp.solve(options_ipopt=options_ipopt)
         data_sol = Data.get_data(ocp, sol)
         X0, U0, X_out = warm_start_mhe(data_sol)
         X_est[:, i] = X_out
