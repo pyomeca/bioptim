@@ -71,7 +71,6 @@ class ProblemType:
         ProblemType.__configure_q_qdot(nlp, True, False)
         ProblemType.__configure_muscles(nlp, False, True)
 
-        u_mx = MX()
         u_sx = SX()
         for i in range(nlp["nbMuscle"]):
             u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
@@ -93,7 +92,6 @@ class ProblemType:
         ProblemType.__configure_tau(nlp, False, True)
         ProblemType.__configure_muscles(nlp, False, True)
 
-        u_mx = MX()
         u_sx = SX()
         for i in range(nlp["nbMuscle"]):
             u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
@@ -115,8 +113,6 @@ class ProblemType:
         ProblemType.__configure_q_qdot(nlp, True, False)
         ProblemType.__configure_muscles(nlp, True, True)
 
-        u_mx = MX()
-        x_mx = MX()
         x_sx = SX()
         u_sx = SX()
         for i in range(nlp["nbMuscle"]):
@@ -144,8 +140,6 @@ class ProblemType:
         ProblemType.__configure_tau(nlp, False, True)
         ProblemType.__configure_muscles(nlp, True, True)
 
-        u_mx = MX()
-        x_mx = MX()
         x_sx = SX()
         u_sx = SX()
         for i in range(nlp["nbMuscle"]):
@@ -175,8 +169,6 @@ class ProblemType:
         ProblemType.__configure_tau(nlp, False, True)
         ProblemType.__configure_muscles(nlp, False, True)
 
-        u_mx = MX()
-        u_sx = SX()
         for i in range(nlp["nbMuscle"]):
             u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
             u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
@@ -202,8 +194,6 @@ class ProblemType:
         ProblemType.__configure_tau(nlp, False, True)
         ProblemType.__configure_muscles(nlp, True, True)
 
-        u_mx = MX()
-        x_mx = MX()
         x_sx = SX()
         u_sx = SX()
         for i in range(nlp["nbMuscle"]):
