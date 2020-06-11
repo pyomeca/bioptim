@@ -626,9 +626,19 @@ class OptimalControlProgram:
 
             ocp_solver = AcadosOcpSolver(acados_ocp, json_file='acados_ocp.json')
             ocp_solver.solve()
-            out={'x': np.array([ocp_solver.get(i, 'x') for i in range(self.nlp[0]['ns'] + 1)]).T,
-                 'u' : np.array([ocp_solver.get(i, 'u') for i in range(self.nlp[0]['ns'])]).T,
-                 'time_tot' : ocp_solver.get_stats('time_tot')[0],}
+            acados_x = np.array([ocp_solver.get(i, 'x') for i in range(self.nlp[0]['ns'] + 1)]).T
+            acados_q = acados_x[ :self.nlp[0]['nu'], :]
+            acados_qdot = acados_x[self.nlp[0]['nu']:, : ]
+            acados_u = np.array([ocp_solver.get(i, 'u') for i in range(self.nlp[0]['ns'])]).T
+
+            out={'qqdot': acados_x, 'x': [], 'u' : acados_u, 'time_tot' : ocp_solver.get_stats('time_tot')[0],}
+            for i in range(self.nlp[0]['ns']):
+                out['x'] = vertcat(out['x'], acados_q[:, i])
+                out['x'] = vertcat(out['x'], acados_qdot[:, i])
+                out['x'] = vertcat(out['x'], acados_u[:, i])
+
+            out['x'] = vertcat(out['x'], acados_q[:, self.nlp[0]['ns'] ])
+            out['x'] = vertcat(out['x'], acados_qdot[:, self.nlp[0]['ns']])
 
             return out
 
