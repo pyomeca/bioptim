@@ -204,7 +204,8 @@ class PenaltyFunctionAbstract:
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
                 data_to_track, [nlp["ns"], max(controls_idx) + 1]
             )
-
+            # val_expl = nlp["u"]
+            # penalty_type._add_to_penalty_expl(ocp, nlp, val_expl)
             for i, v in enumerate(u):
                 val = v[controls_idx] - data_to_track[t[i], controls_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
@@ -410,7 +411,7 @@ class PenaltyFunctionAbstract:
         penalty_type._parameter_modifier(penalty_function, penalty)
 
         penalty_idx = penalty_type._reset_penalty(ocp, nlp, penalty_idx)
-        penalty_function(penalty_type, ocp, nlp, t, x, u, nlp["p"], penalty_idx=penalty_idx, **penalty)
+        penalty_function(penalty_type, ocp, nlp, t, x, u, nlp["p_SX"], penalty_idx=penalty_idx, **penalty)
 
     @staticmethod
     def _parameter_modifier(penalty_function, parameters):

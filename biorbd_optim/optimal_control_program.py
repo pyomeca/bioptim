@@ -241,8 +241,10 @@ class OptimalControlProgram:
         nlp["nbTau"] = 0
         nlp["nbMuscles"] = 0
         nlp["plot"] = {}
-        nlp["x"] = MX()
-        nlp["u"] = MX()
+        nlp["x_MX"] = MX()
+        nlp["u_MX"] = MX()
+        nlp["x_SX"] = SX()
+        nlp["u_SX"] = SX()
         nlp["J"] = []
         nlp["g"] = []
         nlp["g_bounds"] = []
@@ -283,11 +285,11 @@ class OptimalControlProgram:
         if nlp["ode_solver"] == OdeSolver.COLLOCATION or nlp["ode_solver"] == OdeSolver.RK:
             ode_opt["number_of_finite_elements"] = nlp["nb_integration_steps"]
 
-        ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"], nlp["p"])}
+        ode = {"x": nlp["x_SX"], "p": nlp["u_SX"], "ode": dynamics(nlp["x_SX"], nlp["u_SX"], nlp["p_SX"])}
         nlp["dynamics"] = []
         nlp["par_dynamics"] = {}
         if nlp["ode_solver"] == OdeSolver.RK:
-            ode_opt["param"] = nlp["p"]
+            ode_opt["param"] = nlp["p_SX"]
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
             if "external_forces" in nlp:
@@ -321,29 +323,31 @@ class OptimalControlProgram:
         :param nlp: The non linear problem.
         :param idx_phase: Index of the phase. (integer)
         """
+        V = []
         X = []
         U = []
 
         nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
-        V = MX.sym("V_" + str(idx_phase), nV)
         V_bounds = Bounds([0] * nV, [0] * nV, interpolation_type=InterpolationType.CONSTANT)
         V_init = InitialConditions([0] * nV, interpolation_type=InterpolationType.CONSTANT)
 
         offset = 0
         for k in range(nlp["ns"] + 1):
-            X.append(V.nz[offset : offset + nlp["nx"]])
+            X_ = SX.sym("X_" + str(idx_phase) + '_' + str(k), nlp["nx"])
+            X.append(X_)
             V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
             V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
             V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
             offset += nlp["nx"]
-
+            V = vertcat(V, X_)
             if k != nlp["ns"]:
-                U.append(V.nz[offset : offset + nlp["nu"]])
+                U_ = SX.sym("U_" + str(idx_phase) + '_' + str(k), nlp["nu"])
+                U.append(U_)
                 V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
                 V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
                 V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
                 offset += nlp["nu"]
-
+                V = vertcat(V, U_)
         V_bounds.check_and_adjust_dimensions(nV, 1)
         V_init.check_and_adjust_dimensions(nV, 1)
 
@@ -555,7 +559,7 @@ class OptimalControlProgram:
         if return_iterations and not show_online_optim:
                 raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
 
-        all_J = MX()
+        all_J = SX()
         for j_nodes in self.J:
             for j in j_nodes:
                 all_J = vertcat(all_J, j)
@@ -564,7 +568,7 @@ class OptimalControlProgram:
                 for obj in obj_nodes:
                     all_J = vertcat(all_J, obj)
 
-        all_g = MX()
+        all_g = SX()
         all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
         for i in range(len(self.g)):
             for j in range(len(self.g[i])):

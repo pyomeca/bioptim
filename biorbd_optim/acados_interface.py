@@ -8,15 +8,15 @@ import scipy.linalg
 
 def acados_export_model(self):
     # Declare model variables
-    x = self.nlp[0]['x']
-    u = self.nlp[0]['u']
-    p = self.nlp[0]['p']
+    x = self.nlp[0]['X'][0]
+    u = self.nlp[0]['U'][0]
+    p = self.nlp[0]['p_SX']
     mod = self.nlp[0]['model']
-    x_dot = MX.sym("x_dot", mod.nbQdot() * 2, 1)
+    x_dot = SX.sym("x_dot", mod.nbQdot() * 2, 1)
 
     f_expl = self.nlp[0]['dynamics_func'](x, u, p)
     f_impl = x_dot - f_expl
-
+    expl_ode_fun = Function('myFunName', [x, u, p], [f_expl]).expand()
     acados_model = AcadosModel()
     acados_model.f_impl_expr = f_impl
     acados_model.f_expl_expr = f_expl
@@ -53,7 +53,7 @@ def prepare_acados(self):
     acados_ocp.cost.cost_type_e = 'EXTERNAL'
 
     # Cost for states and controls (default: 1.00)
-    Q = 1.00 * np.eye(acados_ocp.dims.nx) #TODO Get the weights from J matrix
+    Q = 1.00 * np.eye(acados_ocp.dims.nx)
     R = 1.00 * np.eye(acados_ocp.dims.nu)
 
     acados_ocp.cost.W = scipy.linalg.block_diag(Q, R)
@@ -71,7 +71,7 @@ def prepare_acados(self):
 
     elif acados_ocp.cost.cost_type == 'EXTERNAL':
         # set Lagrange term
-        acados_ocp.model.cost_expr_ext_cost = self.nlp[0]['J'][0][2]
+        acados_ocp.model.cost_expr_ext_cost = self.nlp[0]['J'][0][0]
         # acados_ocp.model.cost_expr_ext_cost = vertcat(acados_model.x, acados_model.u).T @ acados_ocp.cost.W @ vertcat(acados_model.x, acados_model.u)
 
     else:
@@ -82,7 +82,8 @@ def prepare_acados(self):
         acados_ocp.cost.Vx_e = np.zeros((acados_ocp.dims.nx, acados_ocp.dims.nx))
 
     elif acados_ocp.cost.cost_type_e == 'EXTERNAL':
-        acados_ocp.model.cost_expr_ext_cost_e = acados_model.x.T @ Q @ acados_model.x #Not working for now
+        #  Check that later
+        acados_ocp.model.cost_expr_ext_cost_e = SX(0 ,0)
 
     else:
         raise RuntimeError("Available acados cost type: 'LINEAR_LS' and 'EXTERNAL'.")

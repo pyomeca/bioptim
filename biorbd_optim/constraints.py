@@ -133,7 +133,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 for k in range(nlp["ns"]):
                     # Create an evaluation node
                     if nlp["ode_solver"] == OdeSolver.RK:
-                        end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k], params=nlp["p"])["xf"]
+                        end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k], params=nlp["p_SX"])["xf"]
                     else:
                         end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k])["xf"]
 

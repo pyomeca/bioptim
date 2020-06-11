@@ -1,4 +1,4 @@
-from casadi import MX, vertcat
+from casadi import MX, SX, vertcat
 
 
 class Parameters:
@@ -43,7 +43,7 @@ class Parameters:
         ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, mx_sym=None, **extra_params
     ):
         if mx_sym is None:
-            mx_sym = MX.sym(param_name, nb_elements, 1)
+            mx_sym = SX.sym(param_name, nb_elements, 1)
 
         ocp.V = vertcat(ocp.V, mx_sym)
         param_to_store = {"mx": mx_sym, "func": pre_dynamic_function, "size": nb_elements, "extra_params": extra_params}

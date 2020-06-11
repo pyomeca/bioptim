@@ -1,4 +1,4 @@
-from casadi import MX, vertcat, Function
+from casadi import MX, SX, vertcat, Function
 
 from .dynamics import Dynamics
 from .mapping import BidirectionalMapping, Mapping
@@ -71,10 +71,13 @@ class ProblemType:
         ProblemType.__configure_q_qdot(nlp, True, False)
         ProblemType.__configure_muscles(nlp, False, True)
 
-        u = MX()
+        u_mx = MX()
+        u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
+            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
+        nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
         nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
 
         ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_activations_driven)
@@ -90,11 +93,14 @@ class ProblemType:
         ProblemType.__configure_tau(nlp, False, True)
         ProblemType.__configure_muscles(nlp, False, True)
 
-        u = MX()
+        u_mx = MX()
+        u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["nu"] = nlp["u"].rows()
+            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
+        nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
+        nlp["nu"] = nlp["u_MX"].rows()
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_muscle_driven)
@@ -109,13 +115,19 @@ class ProblemType:
         ProblemType.__configure_q_qdot(nlp, True, False)
         ProblemType.__configure_muscles(nlp, True, True)
 
-        u = MX()
-        x = MX()
+        u_mx = MX()
+        x_mx = MX()
+        x_sx = SX()
+        u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["x"] = vertcat(nlp["x"], x)
+            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            x_mx = vertcat(x_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            x_sx = vertcat(x_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
+        nlp["x_MX"] = vertcat(nlp["x_MX"], x_mx)
+        nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
+        nlp["x_SX"] = vertcat(nlp["x_SX"], x_sx)
         nlp["var_states"]["muscles"] = nlp["nbMuscle"]
         nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
 
@@ -132,13 +144,19 @@ class ProblemType:
         ProblemType.__configure_tau(nlp, False, True)
         ProblemType.__configure_muscles(nlp, True, True)
 
-        u = MX()
-        x = MX()
+        u_mx = MX()
+        x_mx = MX()
+        x_sx = SX()
+        u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["x"] = vertcat(nlp["x"], x)
+            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            x_mx = vertcat(x_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            x_sx = vertcat(x_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
+        nlp["x_MX"] = vertcat(nlp["x_MX"], x_mx)
+        nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
+        nlp["x_SX"] = vertcat(nlp["x_SX"], x_sx)
         nlp["var_states"]["muscles"] = nlp["nbMuscle"]
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
@@ -157,10 +175,13 @@ class ProblemType:
         ProblemType.__configure_tau(nlp, False, True)
         ProblemType.__configure_muscles(nlp, False, True)
 
-        u = MX()
+        u_mx = MX()
+        u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
+            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
+        nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         ProblemType.__configure_forward_dyn_func(
@@ -181,13 +202,19 @@ class ProblemType:
         ProblemType.__configure_tau(nlp, False, True)
         ProblemType.__configure_muscles(nlp, True, True)
 
-        u = MX()
-        x = MX()
+        u_mx = MX()
+        x_mx = MX()
+        x_sx = SX()
+        u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["x"] = vertcat(nlp["x"], x)
+            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            x_mx = vertcat(x_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            x_sx = vertcat(x_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
+        nlp["x_MX"] = vertcat(nlp["x_MX"], x_mx)
+        nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
+        nlp["x_SX"] = vertcat(nlp["x_SX"], x_sx)
         nlp["var_states"]["muscles"] = nlp["nbMuscle"]
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
@@ -214,12 +241,16 @@ class ProblemType:
             )
 
         dof_names = nlp["model"].nameDof()
-        q = MX()
-        q_dot = MX()
+        q_mx = MX()
+        q_dot_mx = MX()
+        q_sx = SX()
+        q_dot_sx = SX()
         for i in nlp["q_mapping"].reduce.map_idx:
-            q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
+            q_mx = vertcat(q_mx, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
+            q_sx = vertcat(q_sx, SX.sym("Q_" + dof_names[i].to_string(), 1, 1))
         for i in nlp["q_dot_mapping"].reduce.map_idx:
-            q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+            q_dot_mx = vertcat(q_dot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+            q_dot_sx = vertcat(q_dot_sx, SX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbQ"] = nlp["q_mapping"].reduce.len
         nlp["nbQdot"] = nlp["q_dot_mapping"].reduce.len
@@ -228,7 +259,8 @@ class ProblemType:
         legend_qdot = ["qdot_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_dot_mapping"].reduce.map_idx]
 
         if as_states:
-            nlp["x"] = vertcat(q, q_dot)
+            nlp["x_MX"] = vertcat(q_mx, q_dot_mx)
+            nlp["x_SX"] = vertcat(q_sx, q_dot_sx)
             nlp["var_states"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
             nlp["plot"]["q"] = CustomPlot(
                 lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q
@@ -239,7 +271,8 @@ class ProblemType:
                 legend=legend_qdot,
             )
         if as_controls:
-            nlp["u"] = vertcat(q, q_dot)
+            nlp["u_MX"] = vertcat(q_mx, q_dot_mx)
+            nlp["u_SX"] = vertcat(q_sx, q_dot_sx)
             nlp["var_controls"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
             # Add plot if it happens
 
@@ -255,19 +288,23 @@ class ProblemType:
             )
 
         dof_names = nlp["model"].nameDof()
-        u = MX()
+        u_mx = MX()
+        u_sx = SX()
         for i in nlp["tau_mapping"].reduce.map_idx:
-            u = vertcat(u, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
+            u_mx = vertcat(u_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
+            u_sx = vertcat(u_sx, SX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
         legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
 
         if as_states:
-            nlp["x"] = u
+            nlp["x_MX"] = u_mx
+            nlp["x_SX"] = u_sx
             nlp["var_states"] = {"tau": nlp["nbTau"]}
             # Add plot if it happens
         if as_controls:
-            nlp["u"] = u
+            nlp["u_MX"] = u_mx
+            nlp["u_SX"] = u_sx
             nlp["var_controls"] = {"tau": nlp["nbTau"]}
             nlp["plot"]["tau"] = CustomPlot(
                 lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
@@ -319,22 +356,26 @@ class ProblemType:
 
     @staticmethod
     def __configure_forward_dyn_func(ocp, nlp, dyn_func):
-        nlp["nu"] = nlp["u"].rows()
-        nlp["nx"] = nlp["x"].rows()
+        nlp["nu"] = nlp["u_MX"].rows()
+        nlp["nx"] = nlp["x_MX"].rows()
 
-        symbolic_states = MX.sym("x", nlp["nx"], 1)
-        symbolic_controls = MX.sym("u", nlp["nu"], 1)
-        symbolic_params = MX()
+        symbolic_params = SX()
         nlp["parameters_to_optimize"] = ocp.param_to_optimize
         for key in nlp["parameters_to_optimize"]:
             symbolic_params = vertcat(symbolic_params, nlp["parameters_to_optimize"][key]["mx"])
-        nlp["p"] = symbolic_params
+        nlp["p_SX"] = symbolic_params
         nlp["np"] = symbolic_params.rows()
+
+        MX_symbolic_states = MX.sym("x", nlp["nx"], 1)
+        MX_symbolic_controls = MX.sym("u", nlp["nu"], 1)
+        MX_symbolic_params = MX.sym("p", nlp["np"], 1)
+        nlp["p_MX"] = MX_symbolic_params
+
 
         nlp["dynamics_func"] = Function(
             "ForwardDyn",
-            [symbolic_states, symbolic_controls, symbolic_params],
-            [dyn_func(symbolic_states, symbolic_controls, symbolic_params, nlp)],
+            [MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params],
+            [dyn_func(MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params, nlp)],
             ["x", "u", "p"],
             ["xdot"],
         ).expand()  # .map(nlp["ns"], "thread", 2)
