@@ -1,4 +1,5 @@
 from casadi import MX, vertcat, Function
+from enum import Enum
 
 from .dynamics import Dynamics
 from .mapping import BidirectionalMapping, Mapping
@@ -10,6 +11,13 @@ class ProblemType:
     """
     Includes methods suitable for several situations
     """
+    @staticmethod
+    def initialize(ocp, nlp):
+        nlp["problem_type"]["type"](ocp, nlp)
+
+    @staticmethod
+    def custom(ocp, nlp):
+        nlp["problem_type"]["function"](ocp, nlp)
 
     @staticmethod
     def torque_driven(ocp, nlp):
@@ -337,4 +345,23 @@ class ProblemType:
             [dyn_func(symbolic_states, symbolic_controls, symbolic_params, nlp)],
             ["x", "u", "p"],
             ["xdot"],
-        ).expand()  # .map(nlp["ns"], "thread", 2)
+        ).expand()
+
+
+class ProblemContext(Enum):
+    """
+    Different conditions between biorbd geometric structures.
+    """
+    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = (ProblemType.muscle_excitations_and_torque_driven,)
+    MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN = (ProblemType.muscle_activations_and_torque_driven)
+    MUSCLE_ACTIVATIONS_DRIVEN = (ProblemType.muscle_activations_driven,)
+    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = (ProblemType.muscle_excitations_and_torque_driven_with_contact,)
+    MUSCLE_EXCITATIONS_DRIVEN = (ProblemType.muscle_excitations_driven,)
+    MUSCLES_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = (ProblemType.muscles_activations_and_torque_driven_with_contact,)
+
+    TORQUE_DRIVEN = (ProblemType.torque_driven,)
+    TORQUE_ACTIVATIONS_DRIVEN = (ProblemType.torque_activations_driven,)
+    TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT = (ProblemType.torque_activations_driven_with_contact,)
+    TORQUE_DRIVEN_WITH_CONTACT = (ProblemType.torque_driven_with_contact,)
+
+    CUSTOM = (ProblemType.custom,)
