@@ -61,6 +61,7 @@ class ProblemType:
         )
         ProblemType.__configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
 
+
     @staticmethod
     def muscle_activations_driven(ocp, nlp):
         """
@@ -275,6 +276,8 @@ class ProblemType:
 
     @staticmethod
     def __configure_contact(ocp, nlp, dyn_func):
+        nlp["nbContact"] = nlp["model"].nbContacts()
+
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
         symbolic_param = nlp["p"]
@@ -286,11 +289,19 @@ class ProblemType:
             ["contact_forces"],
         ).expand()
 
-        nlp["nbContact"] = nlp["model"].nbContacts()
-        contact_names = [n.to_string() for n in nlp["model"].contactNames()]
-        phase_mappings = nlp["plot_mappings"]["contact_forces"] if "contact_forces" in nlp["plot_mappings"] else None
+        all_contact_names = []
+        for elt in ocp.nlp:
+            all_contact_names.extend([name.to_string() for name in elt["model"].contactNames()])
+        all_contact_names = list(set(all_contact_names))  # Unique
+
+        if "contact_forces" in nlp["plot_mappings"]:
+            phase_mappings = nlp["plot_mappings"]["contact_forces"]
+        else:
+            contact_names_in_phase = [name.to_string() for name in nlp["model"].contactNames()]
+            phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
+
         nlp["plot"]["contact_forces"] = CustomPlot(
-            nlp["contact_forces_func"], axes_idx=phase_mappings, legend=contact_names
+            nlp["contact_forces_func"], axes_idx=phase_mappings, legend=all_contact_names
         )
 
     @staticmethod
