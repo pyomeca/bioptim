@@ -136,9 +136,9 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
-        Problem.configure_muscles(nlp, True, True)
+        ProblemType.__configure_q_qdot(nlp, True, False)
+        ProblemType.__configure_tau(nlp, False, True)
+        ProblemType.__configure_muscles(nlp, True, True)
 
         u = MX()
         x = MX()
@@ -207,7 +207,7 @@ class ProblemType:
         )
 
     @staticmethod
-    def configure_q_qdot(nlp, as_states, as_controls):
+    def __configure_q_qdot(nlp, as_states, as_controls):
         """
         Configures common settings for torque driven problems with and without contacts.
         :param nlp: An OptimalControlProgram class.
@@ -252,7 +252,7 @@ class ProblemType:
             # Add plot if it happens
 
     @staticmethod
-    def configure_tau(nlp, as_states, as_controls):
+    def __configure_tau(nlp, as_states, as_controls):
         """
         Configures common settings for torque driven problems with and without contacts.
         :param nlp: An OptimalControlProgram class.
@@ -282,7 +282,7 @@ class ProblemType:
             )
 
     @staticmethod
-    def configure_contact(ocp, nlp, dyn_func):
+    def __configure_contact(ocp, nlp, dyn_func):
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
         symbolic_param = nlp["p"]
@@ -302,7 +302,7 @@ class ProblemType:
         )
 
     @staticmethod
-    def configure_muscles(nlp, as_states, as_controls):
+    def __configure_muscles(nlp, as_states, as_controls):
         nlp["nbMuscle"] = nlp["model"].nbMuscles()
         nlp["muscleNames"] = [names.to_string() for names in nlp["model"].muscleNames()]
 
@@ -326,7 +326,7 @@ class ProblemType:
             )
 
     @staticmethod
-    def configure_forward_dyn_func(ocp, nlp, dyn_func):
+    def __configure_forward_dyn_func(ocp, nlp, dyn_func):
         nlp["nu"] = nlp["u"].rows()
         nlp["nx"] = nlp["x"].rows()
 
@@ -348,20 +348,19 @@ class ProblemType:
         ).expand()
 
 
-class ProblemContext(Enum):
-    """
-    Different conditions between biorbd geometric structures.
-    """
-    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = (ProblemType.muscle_excitations_and_torque_driven,)
-    MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN = (ProblemType.muscle_activations_and_torque_driven)
-    MUSCLE_ACTIVATIONS_DRIVEN = (ProblemType.muscle_activations_driven,)
-    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = (ProblemType.muscle_excitations_and_torque_driven_with_contact,)
-    MUSCLE_EXCITATIONS_DRIVEN = (ProblemType.muscle_excitations_driven,)
-    MUSCLES_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = (ProblemType.muscles_activations_and_torque_driven_with_contact,)
+class ProblemType(Enum):
+    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = Problem.muscle_excitations_and_torque_driven
+    MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN = Problem.muscle_activations_and_torque_driven
+    MUSCLE_ACTIVATIONS_DRIVEN = Problem.muscle_activations_driven
+    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = Problem.muscle_excitations_and_torque_driven_with_contact
+    MUSCLE_EXCITATIONS_DRIVEN = Problem.muscle_excitations_driven
+    MUSCLES_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = Problem.muscles_activations_and_torque_driven_with_contact
 
-    TORQUE_DRIVEN = (ProblemType.torque_driven,)
-    TORQUE_ACTIVATIONS_DRIVEN = (ProblemType.torque_activations_driven,)
-    TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT = (ProblemType.torque_activations_driven_with_contact,)
-    TORQUE_DRIVEN_WITH_CONTACT = (ProblemType.torque_driven_with_contact,)
+    TORQUE_DRIVEN = Problem.torque_driven
+    TORQUE_ACTIVATIONS_DRIVEN = Problem.torque_activations_driven
+    TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT = Problem.torque_activations_driven_with_contact
+    TORQUE_DRIVEN_WITH_CONTACT = Problem.torque_driven_with_contact
+
+    CUSTOM = Problem.custom
 
     CUSTOM = (ProblemType.custom,)
