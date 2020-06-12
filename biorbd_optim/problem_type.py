@@ -43,7 +43,6 @@ class ProblemType:
         """
         ProblemType.__configure_q_qdot(nlp, True, False)
         ProblemType.__configure_tau(nlp, False, True)
-        nlp["nbActuators"] = nlp["nbTau"]
         ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven)
 
     @staticmethod
@@ -55,12 +54,10 @@ class ProblemType:
         """
         ProblemType.__configure_q_qdot(nlp, True, False)
         ProblemType.__configure_tau(nlp, False, True)
-        nlp["nbActuators"] = nlp["nbTau"]
         ProblemType.__configure_forward_dyn_func(
             ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven_with_contact
         )
         ProblemType.__configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
-
 
     @staticmethod
     def muscle_activations_driven(ocp, nlp):
