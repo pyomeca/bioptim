@@ -4,6 +4,7 @@ from acados_template import AcadosModel, AcadosOcp
 from casadi import MX, Function, SX, vertcat
 import numpy as np
 import scipy.linalg
+from .objective_functions import ObjectiveFunction
 
 
 def acados_export_model(self):
@@ -48,13 +49,13 @@ def prepare_acados(self):
         acados_ocp.dims.N = self.nlp[i]["ns"]
 
     # set cost module
-    # TODO: test external cost_type
     acados_ocp.cost.cost_type = 'EXTERNAL'
     acados_ocp.cost.cost_type_e = 'EXTERNAL'
 
     if acados_ocp.cost.cost_type != acados_ocp.cost.cost_type_e:
         raise NotImplementedError("Different cost types for Lagrange and Mayer terms in Acados not implemented yet.")
 
+    # set weight for states and controls (default: 1.00)
     Q = 1.00 * np.eye(acados_ocp.dims.nx)
     R = 1.00 * np.eye(acados_ocp.dims.nu)
 
@@ -62,8 +63,9 @@ def prepare_acados(self):
 
     acados_ocp.cost.W_e = Q
 
-    # set Lagrange term
     if acados_ocp.cost.cost_type == 'LINEAR_LS':
+
+        # set Lagrange terms
         acados_ocp.cost.Vx = np.zeros((acados_ocp.dims.ny, acados_ocp.dims.nx))
         acados_ocp.cost.Vx[:acados_ocp.dims.nx, :] = np.eye(acados_ocp.dims.nx)
 
@@ -71,26 +73,34 @@ def prepare_acados(self):
         Vu[acados_ocp.dims.nx:, :] = np.eye(acados_ocp.dims.nu)
         acados_ocp.cost.Vu = Vu
 
-    elif acados_ocp.cost.cost_type == 'EXTERNAL':
-        # set Lagrange term
-        acados_ocp.model.cost_expr_ext_cost = self.nlp[0]['J'][0][0]
-        # acados_ocp.model.cost_expr_ext_cost = vertcat(acados_model.x, acados_model.u).T @ acados_ocp.cost.W @ vertcat(acados_model.x, acados_model.u)
-
-    else:
-        raise RuntimeError("Available acados cost type: 'LINEAR_LS' and 'EXTERNAL'.")
-
-    # set Mayer term
-    if acados_ocp.cost.cost_type_e == 'LINEAR_LS':
+        # set Mayer term
         acados_ocp.cost.Vx_e = np.zeros((acados_ocp.dims.nx, acados_ocp.dims.nx))
 
-    elif acados_ocp.cost.cost_type_e == 'EXTERNAL':
-        #  Check that later
-        acados_ocp.model.cost_expr_ext_cost_e = SX(0 ,0)
+    elif acados_ocp.cost.cost_type == 'EXTERNAL':
+        acados_ocp.model.cost_expr_ext_cost = SX(0,0)
+        acados_ocp.model.cost_expr_ext_cost_e = SX(0,0)
+
+        for i in range(self.nb_phases):
+            for j in range(len(self.nlp[i]['J'])):
+                if self.original_values['objective_functions'][i][j]['type']._get_type() == ObjectiveFunction.LagrangeFunction:
+                    # set Lagrange term
+                    if acados_ocp.model.cost_expr_ext_cost.shape == (0,0):
+                        acados_ocp.model.cost_expr_ext_cost = self.nlp[i]['J'][j][0]
+                    else:
+                        acados_ocp.model.cost_expr_ext_cost += self.nlp[i]['J'][j][0]
+                elif self.original_values['objective_functions'][i][j]['type']._get_type() == ObjectiveFunction.MayerFunction:
+                    # set Mayer term
+                    if acados_ocp.model.cost_expr_ext_cost_e.shape == (0,0):
+                        acados_ocp.model.cost_expr_ext_cost_e = self.nlp[i]['J'][j][0]
+                    else:
+                        acados_ocp.model.cost_expr_ext_cost_e += self.nlp[i]['J'][j][0]
+                else:
+                    raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
     else:
         raise RuntimeError("Available acados cost type: 'LINEAR_LS' and 'EXTERNAL'.")
 
-    #TODO: link with nlp
+    # set y values
     acados_ocp.cost.yref = np.zeros((acados_ocp.dims.ny,))
     acados_ocp.cost.yref_e = np.ones((acados_ocp.dims.ny_e,))
 
