@@ -5,7 +5,8 @@ from time import time
 from biorbd_optim import (
     OptimalControlProgram,
     ProblemType,
-    ProblemContext,
+    Problem,
+    Dynamics,
     Bounds,
     QAndQDotBounds,
     InitialConditions,
@@ -20,9 +21,9 @@ def custom_torque_driven(ocp, nlp):
     Works with torques but without muscles, must be used with dynamics without contacts.
     :param nlp: An instance of the OptimalControlProgram class.
     """
-    ProblemType.__configure_q_qdot(nlp, True, False)
-    ProblemType.__configure_tau(nlp, False, True)
-    ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven)
+    Problem.configure_q_qdot(nlp, True, False)
+    Problem.configure_tau(nlp, False, True)
+    Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven)
 
 
 def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_threads):
@@ -37,11 +38,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE}
 
     # Dynamics
-    problem_type = {"type": ProblemContext.CUSTOM, "function": custom_torque_driven}
-
-
-
-
+    problem_type = {"type": ProblemType.CUSTOM, "function": custom_torque_driven}
 
     # Constraints
     constraints = ()
