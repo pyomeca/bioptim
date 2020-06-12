@@ -52,7 +52,9 @@ def prepare_acados(self):
     acados_ocp.cost.cost_type = 'EXTERNAL'
     acados_ocp.cost.cost_type_e = 'EXTERNAL'
 
-    # Cost for states and controls (default: 1.00)
+    if acados_ocp.cost.cost_type != acados_ocp.cost.cost_type_e:
+        raise NotImplementedError("Different cost types for Lagrange and Mayer terms in Acados not implemented yet.")
+
     Q = 1.00 * np.eye(acados_ocp.dims.nx)
     R = 1.00 * np.eye(acados_ocp.dims.nu)
 
