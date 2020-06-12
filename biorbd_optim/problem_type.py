@@ -7,10 +7,11 @@ from .plot import CustomPlot
 from .enums import PlotType
 
 
-class ProblemType:
+class Problem:
     """
     Includes methods suitable for several situations
     """
+
     @staticmethod
     def initialize(ocp, nlp):
         nlp["problem_type"]["type"](ocp, nlp)
@@ -26,9 +27,9 @@ class ProblemType:
         Works with torques but without muscles, must be used with dynamics without contacts.
         :param nlp: An instance of the OptimalControlProgram class.
         """
-        ProblemType.__configure_q_qdot(nlp, True, False)
-        ProblemType.__configure_tau(nlp, False, True)
-        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven)
 
     @staticmethod
     def torque_driven_with_contact(ocp, nlp):
@@ -37,10 +38,10 @@ class ProblemType:
         Works with torques, without muscles, must be used with dynamics with contacts.
         :param nlp: An OptimalControlProgram class.
         """
-        ProblemType.__configure_q_qdot(nlp, True, False)
-        ProblemType.__configure_tau(nlp, False, True)
-        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven_with_contact)
-        ProblemType.__configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven_with_contact)
+        Problem.configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
 
     @staticmethod
     def torque_activations_driven(ocp, nlp):
@@ -49,10 +50,10 @@ class ProblemType:
         Controls u are torques and torques activations.
         :param nlp: An OptimalControlProgram class.
         """
-        ProblemType.__configure_q_qdot(nlp, True, False)
-        ProblemType.__configure_tau(nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
         nlp["nbActuators"] = nlp["nbTau"]
-        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven)
+        Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven)
 
     @staticmethod
     def torque_activations_driven_with_contact(ocp, nlp):
@@ -61,13 +62,11 @@ class ProblemType:
         Controls u are torques and torques activations.
         :param nlp: An OptimalControlProgram class.
         """
-        ProblemType.__configure_q_qdot(nlp, True, False)
-        ProblemType.__configure_tau(nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
         nlp["nbActuators"] = nlp["nbTau"]
-        ProblemType.__configure_forward_dyn_func(
-            ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven_with_contact
-        )
-        ProblemType.__configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
+        Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven_with_contact)
+        Problem.configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
 
     @staticmethod
     def muscle_activations_driven(ocp, nlp):
@@ -76,8 +75,8 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        ProblemType.__configure_q_qdot(nlp, True, False)
-        ProblemType.__configure_muscles(nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_muscles(nlp, False, True)
 
         u = MX()
         for i in range(nlp["nbMuscle"]):
@@ -85,7 +84,7 @@ class ProblemType:
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
 
-        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_activations_driven)
+        Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_activations_driven)
 
     @staticmethod
     def muscle_activations_and_torque_driven(ocp, nlp):
@@ -94,9 +93,9 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        ProblemType.__configure_q_qdot(nlp, True, False)
-        ProblemType.__configure_tau(nlp, False, True)
-        ProblemType.__configure_muscles(nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        Problem.configure_muscles(nlp, False, True)
 
         u = MX()
         for i in range(nlp["nbMuscle"]):
@@ -105,7 +104,7 @@ class ProblemType:
         nlp["nu"] = nlp["u"].rows()
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
-        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_muscle_driven)
+        Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_muscle_driven)
 
     @staticmethod
     def muscle_excitations_driven(ocp, nlp):
@@ -114,8 +113,8 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        ProblemType.__configure_q_qdot(nlp, True, False)
-        ProblemType.__configure_muscles(nlp, True, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_muscles(nlp, True, True)
 
         u = MX()
         x = MX()
@@ -127,7 +126,7 @@ class ProblemType:
         nlp["var_states"]["muscles"] = nlp["nbMuscle"]
         nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
 
-        ProblemType.__configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_driven)
+        Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_driven)
 
     @staticmethod
     def muscle_excitations_and_torque_driven(ocp, nlp):
@@ -136,9 +135,9 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        ProblemType.__configure_q_qdot(nlp, True, False)
-        ProblemType.__configure_tau(nlp, False, True)
-        ProblemType.__configure_muscles(nlp, True, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        Problem.configure_muscles(nlp, True, True)
 
         u = MX()
         x = MX()
@@ -150,9 +149,7 @@ class ProblemType:
         nlp["var_states"]["muscles"] = nlp["nbMuscle"]
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
-        ProblemType.__configure_forward_dyn_func(
-            ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven
-        )
+        Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven)
 
     @staticmethod
     def muscles_activations_and_torque_driven_with_contact(ocp, nlp):
@@ -161,9 +158,9 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        ProblemType.__configure_q_qdot(nlp, True, False)
-        ProblemType.__configure_tau(nlp, False, True)
-        ProblemType.__configure_muscles(nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        Problem.configure_muscles(nlp, False, True)
 
         u = MX()
         for i in range(nlp["nbMuscle"]):
@@ -171,10 +168,10 @@ class ProblemType:
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
-        ProblemType.__configure_forward_dyn_func(
+        Problem.configure_forward_dyn_func(
             ocp, nlp, Dynamics.forward_dynamics_muscle_activations_and_torque_driven_with_contact
         )
-        ProblemType.__configure_contact(
+        Problem.configure_contact(
             ocp, nlp, Dynamics.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact
         )
 
@@ -185,9 +182,9 @@ class ProblemType:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        ProblemType.__configure_q_qdot(nlp, True, False)
-        ProblemType.__configure_tau(nlp, False, True)
-        ProblemType.__configure_muscles(nlp, True, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        Problem.configure_muscles(nlp, True, True)
 
         u = MX()
         x = MX()
@@ -199,15 +196,15 @@ class ProblemType:
         nlp["var_states"]["muscles"] = nlp["nbMuscle"]
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
-        ProblemType.__configure_forward_dyn_func(
+        Problem.configure_forward_dyn_func(
             ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven_with_contact
         )
-        ProblemType.__configure_contact(
+        Problem.configure_contact(
             ocp, nlp, Dynamics.forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact
         )
 
     @staticmethod
-    def __configure_q_qdot(nlp, as_states, as_controls):
+    def configure_q_qdot(nlp, as_states, as_controls):
         """
         Configures common settings for torque driven problems with and without contacts.
         :param nlp: An OptimalControlProgram class.
@@ -252,7 +249,7 @@ class ProblemType:
             # Add plot if it happens
 
     @staticmethod
-    def __configure_tau(nlp, as_states, as_controls):
+    def configure_tau(nlp, as_states, as_controls):
         """
         Configures common settings for torque driven problems with and without contacts.
         :param nlp: An OptimalControlProgram class.
@@ -282,7 +279,7 @@ class ProblemType:
             )
 
     @staticmethod
-    def __configure_contact(ocp, nlp, dyn_func):
+    def configure_contact(ocp, nlp, dyn_func):
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
         symbolic_param = nlp["p"]
@@ -302,7 +299,7 @@ class ProblemType:
         )
 
     @staticmethod
-    def __configure_muscles(nlp, as_states, as_controls):
+    def configure_muscles(nlp, as_states, as_controls):
         nlp["nbMuscle"] = nlp["model"].nbMuscles()
         nlp["muscleNames"] = [names.to_string() for names in nlp["model"].muscleNames()]
 
@@ -310,7 +307,7 @@ class ProblemType:
         if as_states:
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
             nlp["plot"]["muscles_states"] = CustomPlot(
-                lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
+                lambda x, u, p: x[nx_q: nx_q + nlp["nbMuscle"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=nlp["muscleNames"],
                 ylim=[0, 1],
@@ -326,7 +323,7 @@ class ProblemType:
             )
 
     @staticmethod
-    def __configure_forward_dyn_func(ocp, nlp, dyn_func):
+    def configure_forward_dyn_func(ocp, nlp, dyn_func):
         nlp["nu"] = nlp["u"].rows()
         nlp["nx"] = nlp["x"].rows()
 
@@ -362,5 +359,3 @@ class ProblemType(Enum):
     TORQUE_DRIVEN_WITH_CONTACT = Problem.torque_driven_with_contact
 
     CUSTOM = Problem.custom
-
-    CUSTOM = (ProblemType.custom,)
