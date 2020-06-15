@@ -413,7 +413,7 @@ class ShowResult:
             import BiorbdViz
         except ModuleNotFoundError:
             raise RuntimeError("BiorbdViz must be install to animate the model")
-        check_version(BiorbdViz, "1.3.2", "2.0.0")
+        check_version(BiorbdViz, "1.3.3", "1.4.0")
         data_interpolate, data_control = Data.get_data(
             self.ocp, self.sol["x"], integrate=False, interpolate_nb_frames=nb_frames
         )
@@ -429,11 +429,7 @@ class ShowResult:
         while sum(b_is_visible):
             for i, b in enumerate(all_bioviz):
                 if b.vtk_window.is_active:
-                    if b.show_analyses_panel and b.is_animating:
-                        b.movement_slider[0].setValue(
-                            (b.movement_slider[0].value() + 1) % b.movement_slider[0].maximum()
-                        )
-                    b.refresh_window()
+                    b.update()
                 else:
                     b_is_visible[i] = False
 
