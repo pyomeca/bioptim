@@ -107,7 +107,10 @@ class Problem:
         nlp["nu"] = nlp["u"].rows()
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
-        Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_muscle_driven)
+        if "dynamic" in nlp["problem_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, nlp["problem_type"]["dynamic"])
+        else:
+            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_muscle_driven)
 
     @staticmethod
     def muscle_excitations_driven(ocp, nlp):
