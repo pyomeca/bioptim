@@ -15,6 +15,7 @@ from biorbd_optim import (
     Objective,
 )
 
+
 def custom_dynamic(states, controls, parameters, nlp):
     Dynamics.apply_parameters(parameters, nlp)
     q, qdot, tau = Dynamics.dispatch_q_qdot_tau_data(states, controls, nlp)
@@ -24,6 +25,7 @@ def custom_dynamic(states, controls, parameters, nlp):
     qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
 
     return vertcat(qdot_reduced, qddot_reduced)
+
 
 def custom_torque_driven(ocp, nlp):
     Problem.configure_q_qdot(nlp, True, False)

@@ -307,7 +307,7 @@ class Problem:
         if as_states:
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
             nlp["plot"]["muscles_states"] = CustomPlot(
-                lambda x, u, p: x[nx_q: nx_q + nlp["nbMuscle"]],
+                lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=nlp["muscleNames"],
                 ylim=[0, 1],
