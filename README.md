@@ -30,3 +30,15 @@ The first hand dependencies (meaning that some dependencies may require other li
 conda install rbdl-casadi pandas numpy scipy matplotlib vtk pyqt pyomeca tinyxml ipopt -cconda-forge
 ```
 Please note that some libraries in this command may have been installed  during the installation of Biorbd and BiorbdViz. 
+
+## Citing
+
+If you use `biorb-optim`, we would be grateful if you could cite it as follows:
+
+@misc{Michaud2018biorbdoptim,
+    author = {Michaud, Benjamin and Begon, Mickael},
+    title = {biorbd-optim: An optimal control framework for biomechanical analyses using biorbd},
+    howpublished={Web page},
+    url = {https://github.com/pyomeca/BiorbOptim},
+    year = {2020}
+}
