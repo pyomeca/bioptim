@@ -29,7 +29,10 @@ class Problem:
         """
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
-        Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven)
+        if "dynamic" in nlp["problem_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, nlp["problem_type"]["dynamic"])
+        else:
+            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven)
 
     @staticmethod
     def torque_driven_with_contact(ocp, nlp):
