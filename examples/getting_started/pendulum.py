@@ -1,6 +1,7 @@
 import biorbd
 import pickle
 from time import time
+from casadi import vertcat
 
 from biorbd_optim import (
     OptimalControlProgram,
@@ -14,16 +15,20 @@ from biorbd_optim import (
     Objective,
 )
 
+def custom_dynamic(states, controls, parameters, nlp):
+    Dynamics.apply_parameters(parameters, nlp)
+    q, qdot, tau = Dynamics.dispatch_q_qdot_tau_data(states, controls, nlp)
+
+    qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+    qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
+    qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
+
+    return vertcat(qdot_reduced, qddot_reduced)
 
 def custom_torque_driven(ocp, nlp):
-    """
-    Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-    Works with torques but without muscles, must be used with dynamics without contacts.
-    :param nlp: An instance of the OptimalControlProgram class.
-    """
     Problem.configure_q_qdot(nlp, True, False)
     Problem.configure_tau(nlp, False, True)
-    Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven)
+    Problem.configure_forward_dyn_func(ocp, nlp, custom_dynamic)
 
 
 def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_threads):
