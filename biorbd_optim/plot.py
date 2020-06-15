@@ -12,6 +12,7 @@ from casadi import MX, Callback, nlpsol_out, nlpsol_n_out, Sparsity
 from .variable_optimization import Data
 from .mapping import Mapping
 from .enums import PlotType
+from .utils import check_version
 
 
 class CustomPlot:
@@ -409,9 +410,10 @@ class ShowResult:
         :param nb_frames: Number of frames in the animation. (integer)
         """
         try:
-            from BiorbdViz import BiorbdViz
+            import BiorbdViz
         except ModuleNotFoundError:
             raise RuntimeError("BiorbdViz must be install to animate the model")
+        check_version(BiorbdViz, "1.3.2", "2.0.0")
         data_interpolate, data_control = Data.get_data(
             self.ocp, self.sol["x"], integrate=False, interpolate_nb_frames=nb_frames
         )
@@ -420,7 +422,7 @@ class ShowResult:
 
         all_bioviz = []
         for idx_phase, data in enumerate(data_interpolate["q"]):
-            all_bioviz.append(BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs))
+            all_bioviz.append(BiorbdViz.BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase]["q_mapping"].expand.map(data))
 
         b_is_visible = [True] * len(all_bioviz)
