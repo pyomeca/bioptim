@@ -46,6 +46,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
 
     # Dynamics
     problem_type = {"type": ProblemType.CUSTOM, "function": custom_torque_driven}
+    # problem_type = {"type": ProblemType.TORQUE_DRIVEN }
 
     # Constraints
     constraints = ()
