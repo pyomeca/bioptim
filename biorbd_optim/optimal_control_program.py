@@ -21,7 +21,7 @@ from .variable_optimization import Data
 from .__version__ import __version__
 from .utils import check_version
 
-check_version(biorbd, "1.3.1", "2.0.0")
+check_version(biorbd, "1.3.1", "1.4.0")
 
 
 class OptimalControlProgram:
