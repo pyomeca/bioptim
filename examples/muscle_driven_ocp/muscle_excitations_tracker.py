@@ -15,7 +15,6 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditions,
     ProblemType,
-    ShowResult,
 )
 
 
