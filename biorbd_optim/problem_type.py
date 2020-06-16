@@ -12,6 +12,7 @@ class Problem:
     Includes methods suitable for several situations
     """
 
+
     @staticmethod
     def initialize(ocp, nlp):
         nlp["problem_type"]["type"](ocp, nlp)
@@ -30,7 +31,7 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, nlp["problem_type"]["dynamic"])
+            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
         else:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven)
 
@@ -341,7 +342,6 @@ class Problem:
             symbolic_params = vertcat(symbolic_params, nlp["parameters_to_optimize"][key]["mx"])
         nlp["p"] = symbolic_params
         nlp["np"] = symbolic_params.rows()
-
         nlp["dynamics_func"] = Function(
             "ForwardDyn",
             [symbolic_states, symbolic_controls, symbolic_params],
