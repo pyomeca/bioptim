@@ -27,7 +27,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Constraints
     constraints = (
