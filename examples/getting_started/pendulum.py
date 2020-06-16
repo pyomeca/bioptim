@@ -12,6 +12,7 @@ from biorbd_optim import (
     Objective,
 )
 
+
 def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_threads):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)

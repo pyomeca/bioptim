@@ -35,7 +35,6 @@ def custom_torque_driven(ocp, nlp):
     Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
 
 
-
 def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
@@ -58,18 +57,8 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
 
     # Constraints
     constraints = (
-        {
-            "type": Constraint.ALIGN_MARKERS,
-            "instant": Instant.START,
-            "first_marker_idx": 0,
-            "second_marker_idx": 1,
-        },
-        {
-            "type": Constraint.ALIGN_MARKERS,
-            "instant": Instant.END,
-            "first_marker_idx": 0,
-            "second_marker_idx": 2,
-        },
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
     )
 
     # Path constraint
