@@ -35,7 +35,7 @@ def custom_configure(ocp, nlp):
     Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
 
 
-def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -49,10 +49,12 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
-    problem_type = {"type": ProblemType.CUSTOM, "configure": custom_configure, "dynamic": custom_dynamic}
-
+    if problem_type_custom:
+        problem_type = {"type": ProblemType.CUSTOM, "configure": custom_configure, "dynamic": custom_dynamic}
+    else:
+        problem_type = {"type": ProblemType.TORQUE_DRIVEN, "dynamic": custom_dynamic}
     # problem_type = {"type": ProblemType.TORQUE_DRIVEN, "dynamic": custom_dynamic}  # only custom dynamic
-    # problem_type = {"type": ProblemType.CUSTOM, "function": custom_torque_driven, "dynamic": custom_dynamic}  # custom problem_type and dynamic
+    # problem_type = {"type": ProblemType.CUSTOM, "configure": custom_torque_driven, "dynamic": custom_dynamic}  # custom problem_type and dynamic
     # problem_type = {"type": ProblemType.TORQUE_DRIVEN }  # no custom
 
     # Constraints
