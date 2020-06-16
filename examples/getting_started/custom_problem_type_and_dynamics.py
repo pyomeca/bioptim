@@ -29,7 +29,7 @@ def custom_dynamic(states, controls, parameters, nlp):
     return (qdot, qddot)
 
 
-def custom_torque_driven(ocp, nlp):
+def custom_configure(ocp, nlp):
     Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
     Problem.configure_tau(nlp, as_states=False, as_controls=True)
     Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -49,7 +49,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
-    problem_type = {"type": ProblemType.CUSTOM, "function": custom_torque_driven, "dynamic": custom_dynamic}
+    problem_type = {"type": ProblemType.CUSTOM, "configure": custom_configure, "dynamic": custom_dynamic}
 
     # problem_type = {"type": ProblemType.TORQUE_DRIVEN, "dynamic": custom_dynamic}  # only custom dynamic
     # problem_type = {"type": ProblemType.CUSTOM, "function": custom_torque_driven, "dynamic": custom_dynamic}  # custom problem_type and dynamic
