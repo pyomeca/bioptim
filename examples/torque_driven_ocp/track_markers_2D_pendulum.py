@@ -52,7 +52,7 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
     )
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Constraints
     constraints = ()
