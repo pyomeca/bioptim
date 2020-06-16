@@ -3,7 +3,6 @@ File that shows an example of a custom dynamic.
 As an example, this custom constraint reproduces exactly the behavior of the TORQUE_DRIVEN problem_type and dynamic.
 """
 import biorbd
-from casadi import vertcat
 
 from biorbd_optim import (
     Instant,

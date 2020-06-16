@@ -6,8 +6,6 @@ from casadi import vertcat
 from biorbd_optim import (
     OptimalControlProgram,
     ProblemType,
-    Problem,
-    Dynamics,
     Bounds,
     QAndQDotBounds,
     InitialConditions,
