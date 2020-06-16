@@ -21,6 +21,10 @@ from .parameters import Parameters
 from .plot import OnlineCallback, CustomPlot
 from .variable_optimization import Data
 from .acados_interface import *
+from .__version__ import __version__
+from .utils import check_version
+
+check_version(biorbd, "1.3.1", "1.4.0")
 
 
 class OptimalControlProgram:

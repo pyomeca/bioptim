@@ -2,7 +2,7 @@
 
 * [ ] Have you followed the guidelines in our Contributing document [docs/contribution.md]?
 * [ ] Have you checked to ensure there aren't other open [Pull Requests] for the same update/change?
-* [ ] Have you open/link the issue related to your pull request?
+* [ ] Have you opened/linked the issue related to your pull request?
 * [ ] Have you used the tag [WIP] for on-going changes, and removed it when the pull request was ready?
 
 ### New Feature Submissions:
