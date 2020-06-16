@@ -18,7 +18,7 @@ class Problem:
 
     @staticmethod
     def custom(ocp, nlp):
-        nlp["problem_type"]["function"](ocp, nlp)
+        nlp["problem_type"]["configure"](ocp, nlp)
 
     @staticmethod
     def torque_driven(ocp, nlp):
