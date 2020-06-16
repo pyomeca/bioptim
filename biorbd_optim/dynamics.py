@@ -8,6 +8,11 @@ class Dynamics:
     """
 
     @staticmethod
+    def custom(states, controls, parameters, nlp):
+        qdot, qddot = nlp["problem_type"]["dynamic"](states, controls, parameters, nlp)
+        return vertcat(qdot, qddot)
+
+    @staticmethod
     def forward_dynamics_torque_driven(states, controls, parameters, nlp):
         """
         Forward dynamics (q, qdot, qddot -> tau) with external forces driven by joint torques (controls).
