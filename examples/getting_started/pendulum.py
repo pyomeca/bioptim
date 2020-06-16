@@ -1,7 +1,6 @@
 import biorbd
 import pickle
 from time import time
-from casadi import vertcat
 
 from biorbd_optim import (
     OptimalControlProgram,
