@@ -41,7 +41,17 @@ class SolverInterface:
     acados_model = acados_export_model(self)
     acados_ocp.model = acados_model
 
-    for i in range(self.nb_phases):
+class AcadosInterface(SolverInterface):
+    def __init__(self, ocp):
+        super().__init__()
+
+        self.acados_ocp = AcadosOcp()
+
+        self.acados_model = AcadosModel()
+        self.acados_export_model(ocp)
+
+        self.ocp_solver = None
+
         # set time
         acados_ocp.solver_options.tf = self.nlp[i]["tf"]
         # set dimensions
