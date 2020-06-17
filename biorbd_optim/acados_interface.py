@@ -191,3 +191,6 @@ class AcadosInterface(SolverInterface):
 
         for key in options:
             setattr(self.acados_ocp.solver_options, key, options[key])
+
+    def get_iterations(self):
+        pass
