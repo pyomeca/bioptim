@@ -172,3 +172,22 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
 
         return self.acados_ocp
+
+    def configure(self, options):
+
+        self.acados_ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM'  # FULL_CONDENSING_QPOASES
+        self.acados_ocp.solver_options.hessian_approx = 'GAUSS_NEWTON'
+        self.acados_ocp.solver_options.integrator_type = 'ERK'
+        self.acados_ocp.solver_options.nlp_solver_type = 'SQP'
+
+        self.acados_ocp.solver_options.nlp_solver_tol_comp = 1e-02
+        self.acados_ocp.solver_options.nlp_solver_tol_eq = 1e-02
+        self.acados_ocp.solver_options.nlp_solver_tol_ineq = 1e-02
+        self.acados_ocp.solver_options.nlp_solver_tol_stat = 1e-02
+        self.acados_ocp.solver_options.sim_method_newton_iter = 5
+        self.acados_ocp.solver_options.sim_method_num_stages = 4
+        self.acados_ocp.solver_options.sim_method_num_steps = 10
+        self.acados_ocp.solver_options.print_level = 1
+
+        for key in options:
+            setattr(self.acados_ocp.solver_options, key, options[key])
