@@ -7,16 +7,16 @@ import scipy.linalg
 from .objective_functions import ObjectiveFunction
 
 
-def acados_export_model(self):
-    # Declare model variables
-    x = self.nlp[0]['X'][0]
+class SolverInterface:
+    def __init__(self):
+        self.solver = None
     u = self.nlp[0]['U'][0]
     p = self.nlp[0]['p_SX']
     mod = self.nlp[0]['model']
     x_dot = SX.sym("x_dot", mod.nbQdot() * 2, 1)
 
-    f_expl = self.nlp[0]['dynamics_func'](x, u, p)
-    f_impl = x_dot - f_expl
+    def configure(self, **options):
+        raise RuntimeError("SolverInterface is an abstract class")
     expl_ode_fun = Function('myFunName', [x, u, p], [f_expl]).expand()
     acados_model = AcadosModel()
     acados_model.f_impl_expr = f_impl
@@ -27,11 +27,14 @@ def acados_export_model(self):
     acados_model.p = []
     acados_model.name = "model_name"
 
-    return acados_model
+    def solve(self):
+        raise RuntimeError("SolverInterface is an abstract class")
 
+    def get_iterations(self):
+        raise RuntimeError("SolverInterface is an abstract class")
 
-def prepare_acados(self):
-    # create ocp object to formulate the OCP
+    def get_optimized_value(self):
+        raise RuntimeError("SolverInterface is an abstract class")
     acados_ocp = AcadosOcp()
 
     # # set model
