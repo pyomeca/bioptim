@@ -80,6 +80,7 @@ def prepare_acados(self):
         acados_ocp.model.cost_expr_ext_cost = SX(0,0)
         acados_ocp.model.cost_expr_ext_cost_e = SX(0,0)
 
+        k = 0;
         for i in range(self.nb_phases):
             for j in range(len(self.nlp[i]['J'])):
                 if self.original_values['objective_functions'][i][j]['type']._get_type() == ObjectiveFunction.LagrangeFunction:
@@ -91,14 +92,17 @@ def prepare_acados(self):
                 elif self.original_values['objective_functions'][i][j]['type']._get_type() == ObjectiveFunction.MayerFunction:
                     # set Mayer term
                     if acados_ocp.model.cost_expr_ext_cost_e.shape == (0,0):
-                        acados_ocp.model.cost_expr_ext_cost_e = self.nlp[i]['J'][j][0]
+                        acados_ocp.model.cost_expr_ext_cost_e = self.nlp[i]['J_acados_mayer'][k][0]
+                        k +=1
                     else:
-                        acados_ocp.model.cost_expr_ext_cost_e += self.nlp[i]['J'][j][0]
+                        acados_ocp.model.cost_expr_ext_cost_e += self.nlp[i]['J_acados_mayer'][k][0]
+                        k += 1
                 else:
                     raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
     else:
         raise RuntimeError("Available acados cost type: 'LINEAR_LS' and 'EXTERNAL'.")
+
 
     # set y values
     acados_ocp.cost.yref = np.zeros((acados_ocp.dims.ny,))
