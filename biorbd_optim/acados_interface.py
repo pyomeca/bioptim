@@ -194,3 +194,20 @@ class AcadosInterface(SolverInterface):
 
     def get_iterations(self):
         pass
+
+    def get_optimized_value(self, ocp):
+        acados_x = np.array([self.ocp_solver.get(i, 'x') for i in range(ocp.nlp[0]['ns'] + 1)]).T
+        acados_q = acados_x[:ocp.nlp[0]['nu'], :]
+        acados_qdot = acados_x[ocp.nlp[0]['nu']:, :]
+        acados_u = np.array([self.ocp_solver.get(i, 'u') for i in range(ocp.nlp[0]['ns'])]).T
+
+        out = {'qqdot': acados_x, 'x': [], 'u': acados_u, 'time_tot': self.ocp_solver.get_stats('time_tot')[0], }
+        for i in range(ocp.nlp[0]['ns']):
+            out['x'] = vertcat(out['x'], acados_q[:, i])
+            out['x'] = vertcat(out['x'], acados_qdot[:, i])
+            out['x'] = vertcat(out['x'], acados_u[:, i])
+
+        out['x'] = vertcat(out['x'], acados_q[:, ocp.nlp[0]['ns']])
+        out['x'] = vertcat(out['x'], acados_qdot[:, ocp.nlp[0]['ns']])
+
+        return out
