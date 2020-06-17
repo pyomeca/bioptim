@@ -52,9 +52,29 @@ class AcadosInterface(SolverInterface):
 
         self.ocp_solver = None
 
+    def acados_export_model(self, ocp):
+        # Declare model variables
+        x = ocp.nlp[0]['X'][0]
+        u = ocp.nlp[0]['U'][0]
+        p = ocp.nlp[0]['p_SX']
+        mod = ocp.nlp[0]['model']
+        x_dot = SX.sym("x_dot", mod.nbQdot() * 2, 1)
+
+        f_expl = ocp.nlp[0]['dynamics_func'](x, u, p)
+        f_impl = x_dot - f_expl
+        # expl_ode_fun = Function('myFunName', [x, u, p], [f_expl]).expand()
+
+        self.acados_model.f_impl_expr = f_impl
+        self.acados_model.f_expl_expr = f_expl
+        self.acados_model.x = x
+        self.acados_model.xdot = x_dot
+        self.acados_model.u = u
+        self.acados_model.p = []
+        self.acados_model.name = "model_name"
+
         # set time
         acados_ocp.solver_options.tf = self.nlp[i]["tf"]
-        # set dimensions
+            # set dimensions
         acados_ocp.dims.nx = self.nlp[i]["nx"]
         acados_ocp.dims.nu = self.nlp[i]["nu"]
         acados_ocp.dims.ny = acados_ocp.dims.nx + acados_ocp.dims.nu
