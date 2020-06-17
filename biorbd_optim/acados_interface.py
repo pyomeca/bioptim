@@ -10,22 +10,9 @@ from .objective_functions import ObjectiveFunction
 class SolverInterface:
     def __init__(self):
         self.solver = None
-    u = self.nlp[0]['U'][0]
-    p = self.nlp[0]['p_SX']
-    mod = self.nlp[0]['model']
-    x_dot = SX.sym("x_dot", mod.nbQdot() * 2, 1)
 
     def configure(self, **options):
         raise RuntimeError("SolverInterface is an abstract class")
-    expl_ode_fun = Function('myFunName', [x, u, p], [f_expl]).expand()
-    acados_model = AcadosModel()
-    acados_model.f_impl_expr = f_impl
-    acados_model.f_expl_expr = f_expl
-    acados_model.x = x
-    acados_model.xdot = x_dot
-    acados_model.u = u
-    acados_model.p = []
-    acados_model.name = "model_name"
 
     def solve(self):
         raise RuntimeError("SolverInterface is an abstract class")
@@ -35,11 +22,7 @@ class SolverInterface:
 
     def get_optimized_value(self):
         raise RuntimeError("SolverInterface is an abstract class")
-    acados_ocp = AcadosOcp()
 
-    # # set model
-    acados_model = acados_export_model(self)
-    acados_ocp.model = acados_model
 
 class AcadosInterface(SolverInterface):
     def __init__(self, ocp):
@@ -144,7 +127,6 @@ class AcadosInterface(SolverInterface):
         else:
             raise RuntimeError("Available acados cost type: 'LINEAR_LS' and 'EXTERNAL'.")
 
-
         # set y values
         self.acados_ocp.cost.yref = np.zeros((self.acados_ocp.dims.ny,))
         self.acados_ocp.cost.yref_e = np.ones((self.acados_ocp.dims.ny_e,))
@@ -211,3 +193,8 @@ class AcadosInterface(SolverInterface):
         out['x'] = vertcat(out['x'], acados_qdot[:, ocp.nlp[0]['ns']])
 
         return out
+
+    def solve(self):
+        from acados_template import AcadosOcpSolver
+        self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file='acados_ocp.json')
+        self.ocp_solver.solve()
