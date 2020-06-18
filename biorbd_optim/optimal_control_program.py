@@ -35,28 +35,28 @@ class OptimalControlProgram:
     """
 
     def __init__(
-        self,
-        biorbd_model,
-        problem_type,
-        number_shooting_points,
-        phase_time,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
-        objective_functions=(),
-        constraints=(),
-        parameters=(),
-        external_forces=(),
-        ode_solver=OdeSolver.RK,
-        nb_integration_steps=5,
-        all_generalized_mapping=None,
-        q_mapping=None,
-        q_dot_mapping=None,
-        tau_mapping=None,
-        plot_mappings=None,
-        state_transitions=(),
-        nb_threads=1,
+            self,
+            biorbd_model,
+            problem_type,
+            number_shooting_points,
+            phase_time,
+            X_init,
+            U_init,
+            X_bounds,
+            U_bounds,
+            objective_functions=(),
+            constraints=(),
+            parameters=(),
+            external_forces=(),
+            ode_solver=OdeSolver.RK,
+            nb_integration_steps=5,
+            all_generalized_mapping=None,
+            q_mapping=None,
+            q_dot_mapping=None,
+            tau_mapping=None,
+            plot_mappings=None,
+            state_transitions=(),
+            nb_threads=1,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -341,17 +341,17 @@ class OptimalControlProgram:
         for k in range(nlp["ns"] + 1):
             X_ = SX.sym("X_" + str(idx_phase) + '_' + str(k), nlp["nx"])
             X.append(X_)
-            V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
-            V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
-            V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
+            V_bounds.min[offset: offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
+            V_bounds.max[offset: offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
+            V_init.init[offset: offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
             offset += nlp["nx"]
             V = vertcat(V, X_)
             if k != nlp["ns"]:
                 U_ = SX.sym("U_" + str(idx_phase) + '_' + str(k), nlp["nu"])
                 U.append(U_)
-                V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
-                V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
-                V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
+                V_bounds.min[offset: offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
+                V_bounds.max[offset: offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
+                V_init.init[offset: offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
                 offset += nlp["nu"]
                 V = vertcat(V, U_)
         V_bounds.check_and_adjust_dimensions(nV, 1)
@@ -388,7 +388,7 @@ class OptimalControlProgram:
         return phase_time, initial_time_guess, time_min, time_max
 
     def __define_parameters_phase_time(
-        self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=None
+            self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=None
     ):
         if has_penalty is None:
             has_penalty = [False] * self.nb_phases
@@ -396,9 +396,9 @@ class OptimalControlProgram:
         for i, penalty_functions_phase in enumerate(penalty_functions):
             for pen_fun in penalty_functions_phase:
                 if (
-                    pen_fun["type"] == Objective.Mayer.MINIMIZE_TIME
-                    or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
-                    or pen_fun["type"] == Constraint.TIME_CONSTRAINT
+                        pen_fun["type"] == Objective.Mayer.MINIMIZE_TIME
+                        or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
+                        or pen_fun["type"] == Constraint.TIME_CONSTRAINT
                 ):
                     if has_penalty[i]:
                         raise RuntimeError("Time constraint/objective cannot declare more than once")
@@ -568,9 +568,6 @@ class OptimalControlProgram:
             if return_iterations or show_online_optim:
                 raise NotImplementedError("return_iterations and show_online_optim are not implemented yet in acados.")
 
-            if self.nb_phases > 1:
-                raise NotImplementedError("more than 1 phase is not implemented yet in acados.")
-
         else:
             raise RuntimeError("Available solvers are: 'ipopt' and 'acados'")
 
@@ -582,7 +579,6 @@ class OptimalControlProgram:
         solver_ocp.configure(solver_options)
         solver_ocp.solve()
         return solver_ocp.get_optimized_value(self)
-
 
     def save(self, sol, file_path, sol_iterations=None):
         """
@@ -680,3 +676,41 @@ class OptimalControlProgram:
                 print(f"   {elem}")
             else:
                 print(f"   [{label}] = {elem}")
+
+
+    def dispatch_obj_func(self):
+        all_J = SX()
+        for j_nodes in self.J:
+            for j in j_nodes:
+                all_J = vertcat(all_J, j)
+        for nlp in self.nlp:
+            for obj_nodes in nlp["J"]:
+                for obj in obj_nodes:
+                    all_J = vertcat(all_J, obj)
+
+        return all_J
+
+    def dispatch_bounds(self):
+        all_J = self.dispatch_obj_func()
+        all_g = SX()
+        all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
+        for i in range(len(self.g)):
+            for j in range(len(self.g[i])):
+                all_g = vertcat(all_g, self.g[i][j])
+                all_g_bounds.concatenate(self.g_bounds[i][j])
+        for nlp in self.nlp:
+            for i in range(len(nlp["g"])):
+                for j in range(len(nlp["g"][i])):
+                    all_g = vertcat(all_g, nlp["g"][i][j])
+                    all_g_bounds.concatenate(nlp["g_bounds"][i][j])
+
+        nlp = {"x": self.V, "f": sum1(all_J), "g": all_g}
+
+        arg = {
+            "lbx": self.V_bounds.min,
+            "ubx": self.V_bounds.max,
+            "lbg": all_g_bounds.min,
+            "ubg": all_g_bounds.max,
+            "x0": self.V_init.init,}
+
+        return nlp, arg

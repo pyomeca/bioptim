@@ -1,12 +1,6 @@
 import pickle
-from casadi import sum1
 import casadi
-from .path_conditions import Bounds, InterpolationType
 from .plot import OnlineCallback
-
-
-
-
 from .acados_interface import *
 
 
@@ -16,38 +10,10 @@ class IpoptInterface(SolverInterface):
         self.ocp_solver = None
         self.options_common = {}
 
+
     def prepare_ipopt(self, ocp):
-        # Dispatch the objective function values
-        # TODO: Put as separate function
-        all_J = SX()
-        for j_nodes in ocp.J:
-            for j in j_nodes:
-                all_J = vertcat(all_J, j)
-        for nlp in ocp.nlp:
-            for obj_nodes in nlp["J"]:
-                for obj in obj_nodes:
-                    all_J = vertcat(all_J, obj)
-
-        #TODO: Put as separate function
-        all_g = SX()
-        all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
-        for i in range(len(ocp.g)):
-            for j in range(len(ocp.g[i])):
-                all_g = vertcat(all_g, ocp.g[i][j])
-                all_g_bounds.concatenate(ocp.g_bounds[i][j])
-        for nlp in ocp.nlp:
-            for i in range(len(nlp["g"])):
-                for j in range(len(nlp["g"][i])):
-                    all_g = vertcat(all_g, nlp["g"][i][j])
-                    all_g_bounds.concatenate(nlp["g_bounds"][i][j])
-        self.nlp = {"x": ocp.V, "f": sum1(all_J), "g": all_g}
-
-        self.arg = {
-            "lbx": ocp.V_bounds.min,
-            "ubx": ocp.V_bounds.max,
-            "lbg": all_g_bounds.min,
-            "ubg": all_g_bounds.max,
-            "x0": ocp.V_init.init,}
+        # Dispatch the objective function values and create arg
+        self.nlp, self.arg = ocp.dispatch_bounds()
 
     def online_optim(self):
         self.options_common["iteration_callback"] = OnlineCallback(self)
