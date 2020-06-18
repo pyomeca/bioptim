@@ -40,8 +40,13 @@ class AcadosInterface(SolverInterface):
         self.acados_model.name = "model_name"
 
     def prepare_acados(self, ocp):
+
+        if ocp.nb_phases > 1:
+            raise NotImplementedError("more than 1 phase is not implemented yet in acados.")
+
         # set model
         self.acados_ocp.model = self.acados_model
+
         # set dimensions
         for i in range(ocp.nb_phases):
             # set time
