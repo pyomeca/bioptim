@@ -12,3 +12,4 @@ dependencies:
 - biorbd =*=*casadi*
 - biorbd-viz =*=*casadi*
 - scipy
+- packaging

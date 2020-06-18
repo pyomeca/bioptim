@@ -155,6 +155,7 @@ class Data:
         """
         V_array = np.array(V).squeeze()
         data_states, data_controls, data_parameters = {}, {}, {}
+        phase_time = [nlp["tf"] for nlp in ocp.nlp]
 
         if phase_idx is None:
             phase_idx = range(len(ocp.nlp))
@@ -169,16 +170,11 @@ class Data:
                 offset += nb_param
 
                 if key == "time":
-                    new_t = []
                     cmp = 0
-                    for nlp in ocp.nlp:
-                        if isinstance(nlp["tf"], MX):
-                            new_t.append((0, data_parameters["time"][cmp, 0]))
+                    for i in range(len(phase_time)):
+                        if isinstance(phase_time[i], MX):
+                            phase_time[i] = data_parameters["time"][cmp, 0]
                             cmp += 1
-                        else:
-                            new_t.append((0, nlp["tf"]))
-                    for key_stat in data_states:
-                        data_states[key_stat].set_time_per_phase(new_t)
 
         offsets = [offset]
         for i, nlp in enumerate(ocp.nlp):
@@ -200,14 +196,14 @@ class Data:
 
             for key in nlp["var_states"]:
                 data_states[key]._append_phase(
-                    (Data._get_phase_time(V_phase, nlp)),
+                    (0, phase_time[i]),
                     Data._get_phase(V_phase, nlp["var_states"][key], nlp["ns"] + 1, offset, nb_var, False),
                 )
                 offset += nlp["var_states"][key]
 
             for key in nlp["var_controls"]:
                 data_controls[key]._append_phase(
-                    (Data._get_phase_time(V_phase, nlp)),
+                    (0, phase_time[i]),
                     Data._get_phase(V_phase, nlp["var_controls"][key], nlp["ns"], offset, nb_var, True),
                 )
                 offset += nlp["var_controls"][key]
@@ -225,18 +221,6 @@ class Data:
             data_states = Data._get_data_interpolated_from_V(data_states, interpolate_nb_frames)
 
         return data_states, data_controls, data_parameters
-
-    @staticmethod
-    def _get_phase_time(V, nlp):
-        """
-        Returns phase initial and final times.
-        :param V: Phase variable. (?)
-        :return: t0 -> Initial time of the phase. (float) and tf -> Final time of the phase. (float)
-        """
-        if isinstance(nlp["tf"], (int, float)):
-            return 0, nlp["tf"]
-        else:
-            return 0, V[-1]
 
     @staticmethod
     def _get_data_integrated_from_V(ocp, data_states, data_controls, data_parameters):

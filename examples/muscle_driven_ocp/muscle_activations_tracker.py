@@ -141,9 +141,9 @@ def prepare_ocp(
 
     # Dynamics
     if use_residual_torque:
-        variable_type = ProblemType.muscle_activations_and_torque_driven
+        variable_type = {"type": ProblemType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN}
     else:
-        variable_type = ProblemType.muscle_activations_driven
+        variable_type = {"type": ProblemType.MUSCLE_ACTIVATIONS_DRIVEN}
 
     # Constraints
     constraints = ()

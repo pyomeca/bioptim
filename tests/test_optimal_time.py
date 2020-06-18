@@ -292,7 +292,11 @@ def partial_ocp_parameters():
     time_min = [1, 3, 0.1]
     time_max = [2, 4, 0.8]
     torque_min, torque_max, torque_init = -100, 100, 0
-    problem_type = (ProblemType.torque_driven, ProblemType.torque_driven, ProblemType.torque_driven)
+    problem_type = (
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+    )
     X_bounds = [QAndQDotBounds(biorbd_model[0]), QAndQDotBounds(biorbd_model[0]), QAndQDotBounds(biorbd_model[0])]
     for bounds in X_bounds:
         for i in [1, 3, 4, 5]:

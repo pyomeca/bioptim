@@ -14,11 +14,15 @@ from .constraints import ConstraintFunction, Constraint
 from .continuity import ContinuityFunctions, StateTransitionFunctions
 from .objective_functions import Objective, ObjectiveFunction
 from .parameters import Parameters
+from .problem_type import Problem
 from .plot import OnlineCallback, CustomPlot
 from .integrator import RK4
 from .biorbd_interface import BiorbdInterface
 from .variable_optimization import Data
 from .__version__ import __version__
+from .utils import check_version
+
+check_version(biorbd, "1.3.1", "1.4.0")
 
 
 class OptimalControlProgram:
@@ -184,7 +188,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
-            self.nlp[i]["problem_type"](self, self.nlp[i])
+            Problem.initialize(self, self.nlp[i])
 
         # Prepare path constraints
         self.__add_to_nlp("X_bounds", X_bounds, False)

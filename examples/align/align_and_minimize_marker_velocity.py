@@ -61,7 +61,7 @@ def prepare_ocp(
         )
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)

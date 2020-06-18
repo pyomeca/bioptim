@@ -9,6 +9,7 @@ from biorbd_optim import (
     Instant,
     OptimalControlProgram,
     ProblemType,
+    Problem,
     Objective,
     Constraint,
     Bounds,
@@ -44,7 +45,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Constraints
     constraints = (
