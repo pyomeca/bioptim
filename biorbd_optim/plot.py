@@ -164,7 +164,7 @@ class PlotOcp:
                 for k in mapping:
                     ax = axes[k]
                     if k < len(self.plot_func[variable][i].legend):
-                        axes[k].set_title(self.plot_func[variable][i].legend[mapping[k]])
+                        axes[k].set_title(self.plot_func[variable][i].legend[k])
                     ax.grid(color="k", linestyle="--", linewidth=0.5)
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp["plot"][variable].ylim:
@@ -346,6 +346,7 @@ class PlotOcp:
 
     def __update_axes(self):
         """Updates axes ranges"""
+        assert len(self.plots) == len(self.ydata)
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
 
