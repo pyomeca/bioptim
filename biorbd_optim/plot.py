@@ -346,7 +346,7 @@ class PlotOcp:
 
     def __update_axes(self):
         """Updates axes ranges"""
-        assert(len(self.plots) == len(self.ydata))
+        assert len(self.plots) == len(self.ydata)
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
 

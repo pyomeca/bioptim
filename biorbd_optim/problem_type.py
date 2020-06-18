@@ -325,7 +325,9 @@ class Problem:
 
         all_contact_names = []
         for elt in ocp.nlp:
-            all_contact_names.extend([name.to_string() for name in elt["model"].contactNames() if name.to_string() not in all_contact_names])
+            all_contact_names.extend(
+                [name.to_string() for name in elt["model"].contactNames() if name.to_string() not in all_contact_names]
+            )
 
         if "contact_forces" in nlp["plot_mappings"]:
             phase_mappings = nlp["plot_mappings"]["contact_forces"]
