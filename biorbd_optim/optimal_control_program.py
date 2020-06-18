@@ -540,8 +540,7 @@ class OptimalControlProgram:
 
         nlp["plot"][plot_name] = custom_plot
 
-    def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, solver_options={},
-              options_acados={}, acados_dir={}):
+    def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, solver_options={}, acados_dir={}):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
@@ -554,59 +553,10 @@ class OptimalControlProgram:
         if return_iterations and not show_online_optim:
             raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
 
-        # Dispatch the objective function values
-        all_J = SX()
-        for j_nodes in self.J:
-            for j in j_nodes:
-                all_J = vertcat(all_J, j)
-        for nlp in self.nlp:
-            for obj_nodes in nlp["J"]:
-                for obj in obj_nodes:
-                    all_J = vertcat(all_J, obj)
-
-        #
-        all_g = SX()
-        all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
-        for i in range(len(self.g)):
-            for j in range(len(self.g[i])):
-                all_g = vertcat(all_g, self.g[i][j])
-                all_g_bounds.concatenate(self.g_bounds[i][j])
-        for nlp in self.nlp:
-            for i in range(len(nlp["g"])):
-                for j in range(len(nlp["g"][i])):
-                    all_g = vertcat(all_g, nlp["g"][i][j])
-                    all_g_bounds.concatenate(nlp["g_bounds"][i][j])
-        nlp = {"x": self.V, "f": sum1(all_J), "g": all_g}
-
-        options_common = {}
-        if show_online_optim:
-            options_common["iteration_callback"] = OnlineCallback(self)
-            if return_iterations:
-                directory = ".__tmp_biorbd_optim"
-                file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
-                os.mkdir(directory)
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-                with open(file_path, "wb") as file:
-                    pickle.dump([], file)
-
         if solver == "ipopt":
             from .ipopt_interface import IpoptInterface
-            solver_ocp = IpoptInterface()
-            # options = {
-            #     "ipopt.tol": 1e-6,
-            #     "ipopt.max_iter": 1000,
-            #     "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
-            #     "ipopt.limited_memory_max_history": 50,
-            #     "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
-            # }
-            # for key in options_ipopt:
-            #     ipopt_key = key
-            #     if key[:6] != "ipopt.":
-            #         ipopt_key = "ipopt." + key
-            #     options[ipopt_key] = options_ipopt[key]
-            # opts = {**options, **options_common}
-            # solver = casadi.nlpsol('nlpsol', solver, nlp, opts)
+            solver_ocp = IpoptInterface(self)
+            solver_ocp.prepare_ipopt(self)
 
         elif solver == "acados":
             os.environ["ACADOS_SOURCE_DIR"] = list(acados_dir)[0]  # TODO: add to options
@@ -624,54 +574,14 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("Available solvers are: 'ipopt' and 'acados'")
 
+        if show_online_optim:
+            solver_ocp.online_optim()
+            if return_iterations:
+                solver_ocp.get_iterations()
+
         solver_ocp.configure(solver_options)
         solver_ocp.solve()
-        if return_iterations:
-            solver_ocp.get_iterations()
         return solver_ocp.get_optimized_value(self)
-
-        # Bounds and initial guess
-        arg = {
-            "lbx": self.V_bounds.min,
-            "ubx": self.V_bounds.max,
-            "lbg": all_g_bounds.min,
-            "ubg": all_g_bounds.max,
-            "x0": self.V_init.init,
-        }
-
-        # Solve the problem
-        out = solver.call(arg)
-        out['time_tot'] = solver.stats()['t_wall_total']
-        if return_iterations:
-            with open(file_path, "rb") as file:
-                out = out, pickle.load(file)
-                os.remove(file_path)
-                os.rmdir(directory)
-            return out
-
-        else:
-            raise RuntimeError("Available solvers are: 'ipopt' and 'acados'")
-
-
-        # Bounds and initial guess
-        arg = {
-            "lbx": self.V_bounds.min,
-            "ubx": self.V_bounds.max,
-            "lbg": all_g_bounds.min,
-            "ubg": all_g_bounds.max,
-            "x0": self.V_init.init,
-        }
-
-        # Solve the problem
-        out = solver.call(arg)
-        out['time_tot'] = solver.stats()['t_wall_total']
-        if return_iterations:
-            with open(file_path, "rb") as file:
-                out = out, pickle.load(file)
-                os.remove(file_path)
-                os.rmdir(directory)
-        return out
-
 
 
     def save(self, sol, file_path, sol_iterations=None):
