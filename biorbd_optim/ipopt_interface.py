@@ -15,8 +15,8 @@ class IpoptInterface(SolverInterface):
         # Dispatch the objective function values and create arg
         self.nlp, self.arg = ocp.dispatch_bounds()
 
-    def online_optim(self):
-        self.options_common["iteration_callback"] = OnlineCallback(self)
+    def online_optim(self, ocp):
+        self.options_common["iteration_callback"] = OnlineCallback(ocp)
 
     def get_iterations(self):
         directory = ".__tmp_biorbd_optim"

@@ -540,7 +540,7 @@ class OptimalControlProgram:
 
         nlp["plot"][plot_name] = custom_plot
 
-    def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, solver_options={}, acados_dir={}):
+    def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, solver_options={}, ):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
@@ -574,7 +574,7 @@ class OptimalControlProgram:
             raise RuntimeError("Available solvers are: 'ipopt' and 'acados'")
 
         if show_online_optim:
-            solver_ocp.online_optim()
+            solver_ocp.online_optim(self)
             if return_iterations:
                 solver_ocp.get_iterations()
 
