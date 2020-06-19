@@ -44,6 +44,8 @@ class PathCondition(np.ndarray):
         elif interpolation_type == InterpolationType.SPLINE:
             if input_array.shape[1] < 2:
                 raise RuntimeError("Value for InterpolationType.SPLINE must have at least 2 columns")
+        elif interpolation_type == InterpolationType.CUSTOM:
+            print("Can not make sure you entered the right argument size for InterpolationType.CUSTOM")
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
         obj = np.asarray(input_array).view(cls)
@@ -84,6 +86,7 @@ class PathCondition(np.ndarray):
             or self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
             or self.type == InterpolationType.LINEAR
             or self.type == InterpolationType.SPLINE
+            or self.type == InterpolationType.CUSTOM
         ):
             self.nb_shooting = nb_shooting
         elif self.type == InterpolationType.EACH_FRAME:
@@ -129,10 +132,10 @@ class PathCondition(np.ndarray):
                     f"Invalid number of {condition_type} for InterpolationType.SPLINE (ncols = {self.shape[1]}), "
                     f"the expected number of column is smaller or equal to {self.nb_shooting}"
                 )
-        else:
+        elif self.type != InterpolationType.CUSTOM:
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
-    def evaluate_at(self, shooting_point, spline_time=(), t0=(), tf=()):
+    def evaluate_at(self, shooting_point, spline_time=(), t0=(), tf=(), custom_bound_function=None):
         """
         Discriminates first and last nodes and evaluates self in function of the interpolation type.
         :param shooting_point: Number of shooting points. (integer)
@@ -159,6 +162,8 @@ class PathCondition(np.ndarray):
                 Spline = interp1d(spline_time, self[i, :])
                 InterpolatedPoints[i] = Spline(shooting_point / self.nb_shooting * (tf-t0))
             return InterpolatedPoints.reshape(self.shape[0])
+        elif self.type == InterpolationType.CUSTOM:
+            return custom_bound_function(self, shooting_point, self.nb_shooting)
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
 

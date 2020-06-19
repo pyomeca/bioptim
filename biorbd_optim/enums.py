@@ -50,7 +50,7 @@ class InterpolationType(Enum):
     LINEAR = 2
     EACH_FRAME = 3
     SPLINE = 4
-
+    CUSTOM = 5
 
 class PlotType(Enum):
     """
