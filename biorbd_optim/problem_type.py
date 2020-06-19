@@ -265,7 +265,7 @@ class Problem:
         legend_qdot = ["qdot_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_dot_mapping"].reduce.map_idx]
 
         if as_states:
-            nlp["x"] = vertcat(q, q_dot)
+            nlp["x"] = vertcat(nlp["x"], q, q_dot)
             nlp["var_states"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
             nlp["plot"]["q"] = CustomPlot(
                 lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q
@@ -276,7 +276,7 @@ class Problem:
                 legend=legend_qdot,
             )
         if as_controls:
-            nlp["u"] = vertcat(q, q_dot)
+            nlp["u"] = vertcat(nlp["u"], q, q_dot)
             nlp["var_controls"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
             # Add plot if it happens
 
