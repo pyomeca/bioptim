@@ -138,6 +138,13 @@ class PenaltyFunctionAbstract:
                     penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
+        def _add_to_sx_func(nlp, name, function, *all_param):
+            if hasattr(nlp['SX_func'], name):
+                 pass
+            else:
+                nlp["sx_func"][name] = biorbd.to_sx_func(name, function, *all_param)
+
+        @staticmethod
         def align_markers(penalty_type, ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx, **extra_param):
             """
             Adds the constraint that the two markers must be coincided at the desired instant(s).
