@@ -295,19 +295,19 @@ class Problem:
             )
 
         dof_names = nlp["model"].nameDof()
-        u = MX()
+        tau = MX()
         for i in nlp["tau_mapping"].reduce.map_idx:
-            u = vertcat(u, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
+            tau = vertcat(tau, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
         legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
 
         if as_states:
-            nlp["x"] = u
+            nlp["x"] = vertcat(nlp["x"], tau)
             nlp["var_states"] = {"tau": nlp["nbTau"]}
             # Add plot if it happens
         if as_controls:
-            nlp["u"] = u
+            nlp["u"] = vertcat(nlp["u"], tau)
             nlp["var_controls"] = {"tau": nlp["nbTau"]}
             nlp["plot"]["tau"] = CustomPlot(
                 lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
