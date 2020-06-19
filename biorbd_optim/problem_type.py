@@ -352,6 +352,12 @@ class Problem:
 
         combine = None
         if as_states:
+            muscles = MX()
+            for i in range(nlp["nbMuscle"]):
+                muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            nlp["x"] = vertcat(nlp["x"], muscles)
+            nlp["var_states"]["muscles"] = nlp["nbMuscle"]
+
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
             nlp["plot"]["muscles_states"] = CustomPlot(
                 lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
@@ -360,7 +366,14 @@ class Problem:
                 ylim=[0, 1],
             )
             combine = "muscles_states"
+
         if as_controls:
+            muscles = MX()
+            for i in range(nlp["nbMuscle"]):
+                muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            nlp["u"] = vertcat(nlp["u"], muscles)
+            nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
+
             nlp["plot"]["muscles_control"] = CustomPlot(
                 lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
                 plot_type=PlotType.STEP,
