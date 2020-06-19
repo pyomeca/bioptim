@@ -559,11 +559,13 @@ class OptimalControlProgram:
             solver_ocp.prepare_ipopt(self)
 
         elif solver == "acados":
-            os.environ["ACADOS_SOURCE_DIR"] = list(acados_dir)[0]  # TODO: add to options
+            if "acados_dir" in solver_options:
+                os.environ["ACADOS_SOURCE_DIR"] = solver_options['acados_dir']
+                del solver_options['acados_dir']
 
             from .acados_interface import AcadosInterface
             solver_ocp = AcadosInterface(self)
-            solver_ocp.prepare_acados(self)
+            solver_ocp.prepare_acados(self, solver_options)
 
             if return_iterations or show_online_optim:
                 raise NotImplementedError("return_iterations and show_online_optim are not implemented yet in acados.")
