@@ -59,8 +59,8 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.N = ocp.nlp[i]["ns"]
 
         # set cost module
-        self.acados_ocp.cost.cost_type = 'EXTERNAL'
-        self.acados_ocp.cost.cost_type_e = 'EXTERNAL'
+        self.acados_ocp.cost.cost_type = "EXTERNAL"
+        self.acados_ocp.cost.cost_type_e = "EXTERNAL"
 
         if self.acados_ocp.cost.cost_type != self.acados_ocp.cost.cost_type_e:
             raise NotImplementedError(
@@ -86,6 +86,34 @@ class AcadosInterface(SolverInterface):
 
             # set Mayer term
             self.acados_ocp.cost.Vx_e = np.zeros((self.acados_ocp.dims.nx, self.acados_ocp.dims.nx))
+
+        elif self.acados_ocp.cost.cost_type == 'NONLINEAR_LS' : #TODO: change cost_expr_ext_cost and cost_expr_ext_cost_e
+            raise NotImplementedError("NONLINEAR_LS cost type not implemented yet in acados.")
+
+            self.acados_ocp.model.cost_expr_ext_cost = SX(0, 0)
+            self.acados_ocp.model.cost_expr_ext_cost_e = SX(0, 0)
+
+            k = 0
+            for i in range(ocp.nb_phases):
+                for j in range(len(ocp.nlp[i]['J'])):
+                    if ocp.original_values['objective_functions'][i][j][
+                        'type']._get_type() == ObjectiveFunction.LagrangeFunction:
+                        # set Lagrange term
+                        if self.acados_ocp.model.cost_expr_ext_cost.shape == (0, 0):
+                            self.acados_ocp.model.cost_expr_ext_cost = ocp.nlp[i]['J'][j][0]
+                        else:
+                            self.acados_ocp.model.cost_expr_ext_cost += ocp.nlp[i]['J'][j][0]
+                    elif ocp.original_values['objective_functions'][i][j][
+                        'type']._get_type() == ObjectiveFunction.MayerFunction:
+                        # set Mayer term
+                        if self.acados_ocp.model.cost_expr_ext_cost_e.shape == (0, 0):
+                            self.acados_ocp.model.cost_expr_ext_cost_e = ocp.nlp[i]['J_acados_mayer'][k][0]
+                            k += 1
+                        else:
+                            self.acados_ocp.model.cost_expr_ext_cost_e += ocp.nlp[i]['J_acados_mayer'][k][0]
+                            k += 1
+                    else:
+                        raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
         elif self.acados_ocp.cost.cost_type == 'EXTERNAL':
             self.acados_ocp.model.cost_expr_ext_cost = SX(0, 0)
