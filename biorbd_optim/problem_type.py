@@ -92,12 +92,6 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_muscles(nlp, False, True)
 
-        u = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
-
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
         else:
@@ -114,13 +108,6 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, False, True)
 
-        u = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["nu"] = nlp["u"].rows()
-        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
-
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, nlp["problem_type"]["dynamic"])
         else:
@@ -135,16 +122,6 @@ class Problem:
         """
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_muscles(nlp, True, True)
-
-        u = MX()
-        x = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["x"] = vertcat(nlp["x"], x)
-        nlp["var_states"]["muscles"] = nlp["nbMuscle"]
-        nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -162,16 +139,6 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, True, True)
 
-        u = MX()
-        x = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["x"] = vertcat(nlp["x"], x)
-        nlp["var_states"]["muscles"] = nlp["nbMuscle"]
-        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
-
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
         else:
@@ -187,12 +154,6 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, False, True)
-
-        u = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -214,16 +175,6 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, True, True)
-
-        u = MX()
-        x = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["x"] = vertcat(nlp["x"], x)
-        nlp["var_states"]["muscles"] = nlp["nbMuscle"]
-        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
