@@ -6,6 +6,7 @@ import os
 import biorbd
 import casadi
 from casadi import MX, vertcat, sum1
+from numpy import all
 
 from .enums import OdeSolver
 from .mapping import BidirectionalMapping
@@ -157,7 +158,7 @@ class OptimalControlProgram:
         self.__add_to_nlp(
             "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
         )
-        if spline_time != () and spline_time != None :
+        if spline_time != () and all(spline_time != None) :
             self.__add_to_nlp("spline_time", spline_time, False,)
         else:
             nlp["spline_time"]=None
