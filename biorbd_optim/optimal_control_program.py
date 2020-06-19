@@ -55,6 +55,7 @@ class OptimalControlProgram:
         plot_mappings=None,
         state_transitions=(),
         nb_threads=1,
+        spline_time=()
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -118,6 +119,7 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "state_transitions": state_transitions,
             "nb_threads": nb_threads,
+            "spline_time": spline_time,
         }
 
         # Declare optimization variables
@@ -153,6 +155,7 @@ class OptimalControlProgram:
         self.__add_to_nlp(
             "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
         )
+        self.__add_to_nlp("spline_time", spline_time, False,)
         self.nb_threads = nb_threads
 
         # External forces
@@ -336,14 +339,14 @@ class OptimalControlProgram:
             X.append(V.nz[offset : offset + nlp["nx"]])
             V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
             V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
-            V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
+            V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k, spline_time=nlp["spline_time"], t0=nlp["t0"], tf=nlp["tf"])
             offset += nlp["nx"]
 
             if k != nlp["ns"]:
                 U.append(V.nz[offset : offset + nlp["nu"]])
                 V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
                 V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
-                V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
+                V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k, spline_time=nlp["spline_time"], t0=nlp["t0"], tf=nlp["tf"])
                 offset += nlp["nu"]
 
         V_bounds.check_and_adjust_dimensions(nV, 1)

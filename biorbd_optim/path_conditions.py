@@ -2,6 +2,8 @@ import numpy as np
 
 from .mapping import BidirectionalMapping, Mapping
 from .enums import InterpolationType
+from scipy.interpolate import interp1d
+from numpy import zeros
 
 
 class PathCondition(np.ndarray):
@@ -39,6 +41,9 @@ class PathCondition(np.ndarray):
         elif interpolation_type == InterpolationType.EACH_FRAME:
             if input_array.shape[1] < 2:
                 raise RuntimeError("Value for InterpolationType.EACH_FRAME must exactly match the number of points")
+        elif interpolation_type == InterpolationType.SPLINE:
+            if input_array.shape[1] < 2:
+                raise RuntimeError("Value for InterpolationType.SPLINE must have at least 2 columns")
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
         obj = np.asarray(input_array).view(cls)
@@ -78,6 +83,7 @@ class PathCondition(np.ndarray):
             self.type == InterpolationType.CONSTANT
             or self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
             or self.type == InterpolationType.LINEAR
+            or self.type == InterpolationType.SPLINE
         ):
             self.nb_shooting = nb_shooting
         elif self.type == InterpolationType.EACH_FRAME:
@@ -114,13 +120,19 @@ class PathCondition(np.ndarray):
         elif self.type == InterpolationType.EACH_FRAME:
             if self.shape[1] != self.nb_shooting:
                 raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.LINEAR (ncols = {self.shape[1]}), "
+                    f"Invalid number of {condition_type} for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
                     f"the expected number of column is {self.nb_shooting}"
+                )
+        elif self.type == InterpolationType.SPLINE:
+            if self.shape[1] > self.nb_shooting:
+                raise RuntimeError(
+                    f"Invalid number of {condition_type} for InterpolationType.SPLINE (ncols = {self.shape[1]}), "
+                    f"the expected number of column is smaller or equal to {self.nb_shooting}"
                 )
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
-    def evaluate_at(self, shooting_point):
+    def evaluate_at(self, shooting_point, spline_time=(), t0=(), tf=()):
         """
         Discriminates first and last nodes and evaluates self in function of the interpolation type.
         :param shooting_point: Number of shooting points. (integer)
@@ -141,6 +153,12 @@ class PathCondition(np.ndarray):
             return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / self.nb_shooting
         elif self.type == InterpolationType.EACH_FRAME:
             return self[:, shooting_point]
+        elif self.type == InterpolationType.SPLINE:
+            InterpolatedPoints = PathCondition(zeros(self.shape[0]))
+            for i in range(self.shape[0]):
+                Spline = interp1d(spline_time, self[i, :])
+                InterpolatedPoints[i] = Spline(shooting_point / self.nb_shooting * (tf-t0))
+            return InterpolatedPoints.reshape(self.shape[0])
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
