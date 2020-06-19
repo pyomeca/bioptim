@@ -280,6 +280,9 @@ class Problem:
             nlp["var_controls"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
             # Add plot if it happens
 
+        nlp["nx"] = nlp["x"].rows()
+        nlp["nu"] = nlp["u"].rows()
+
     @staticmethod
     def configure_tau(nlp, as_states, as_controls):
         """
@@ -309,6 +312,9 @@ class Problem:
             nlp["plot"]["tau"] = CustomPlot(
                 lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
             )
+
+        nlp["nx"] = nlp["x"].rows()
+        nlp["nu"] = nlp["u"].rows()
 
     @staticmethod
     def configure_contact(ocp, nlp, dyn_func):
@@ -362,6 +368,11 @@ class Problem:
                 combine_to=combine,
                 ylim=[0, 1],
             )
+
+        nlp["nx"] = nlp["x"].rows()
+        nlp["nu"] = nlp["u"].rows()
+
+
 
     @staticmethod
     def configure_forward_dyn_func(ocp, nlp, dyn_func):
