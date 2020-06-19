@@ -336,8 +336,6 @@ class Problem:
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()
 
-
-
     @staticmethod
     def configure_forward_dyn_func(ocp, nlp, dyn_func):
         nlp["nu"] = nlp["u"].rows()
