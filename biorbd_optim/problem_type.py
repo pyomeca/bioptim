@@ -217,11 +217,8 @@ class Problem:
 
         if as_states:
             nlp["x"] = vertcat(nlp["x"], q, q_dot)
-            if "var_states" in nlp.keys():
-                nlp["var_states"]["q"] = nlp["nbQ"]
-                nlp["var_states"]["q_dot"] = nlp["nbQdot"]
-            else:
-                nlp["var_states"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
+            nlp["var_states"]["q"] = nlp["nbQ"]
+            nlp["var_states"]["q_dot"] = nlp["nbQdot"]
 
             nlp["plot"]["q"] = CustomPlot(
                 lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q
@@ -233,11 +230,8 @@ class Problem:
             )
         if as_controls:
             nlp["u"] = vertcat(nlp["u"], q, q_dot)
-            if "var_controls" in nlp.keys():
-                nlp["var_controls"]["q"] = nlp["nbQ"]
-                nlp["var_controls"]["q_dot"] = nlp["nbQdot"]
-            else:
-                nlp["var_controls"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
+            nlp["var_controls"]["q"] = nlp["nbQ"]
+            nlp["var_controls"]["q_dot"] = nlp["nbQdot"]
 
             # Add plot if it happens
 
@@ -265,17 +259,13 @@ class Problem:
 
         if as_states:
             nlp["x"] = vertcat(nlp["x"], tau)
-            if "var_states" in nlp.keys():
-                nlp["var_states"]["tau"] = nlp["nbTau"]
-            else:
-                nlp["var_states"] = {"tau": nlp["nbTau"]}
+            nlp["var_states"]["tau"] = nlp["nbTau"]
+
             # Add plot if it happens
         if as_controls:
             nlp["u"] = vertcat(nlp["u"], tau)
-            if "var_controls" in nlp.keys():
-                nlp["var_controls"]["tau"] = nlp["nbTau"]
-            else:
-                nlp["var_controls"] = {"tau": nlp["nbTau"]}
+            nlp["var_controls"]["tau"] = nlp["nbTau"]
+
             nlp["plot"]["tau"] = CustomPlot(
                 lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
             )
@@ -323,11 +313,7 @@ class Problem:
             for i in range(nlp["nbMuscle"]):
                 muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
             nlp["x"] = vertcat(nlp["x"], muscles)
-
-            if "var_states" in nlp.keys():
-                nlp["var_states"]["muscles"] = nlp["nbMuscle"]
-            else:
-                nlp["var_states"] = {"muscles": nlp["nbMuscle"]}
+            nlp["var_states"]["muscles"] = nlp["nbMuscle"]
 
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
             nlp["plot"]["muscles_states"] = CustomPlot(
@@ -343,11 +329,7 @@ class Problem:
             for i in range(nlp["nbMuscle"]):
                 muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
             nlp["u"] = vertcat(nlp["u"], muscles)
-
-            if "var_controls" in nlp.keys():
-                nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
-            else:
-                nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
+            nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
             nlp["plot"]["muscles_control"] = CustomPlot(
                 lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
