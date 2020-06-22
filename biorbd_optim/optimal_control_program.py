@@ -161,7 +161,8 @@ class OptimalControlProgram:
         if spline_time != () and all(spline_time != None) :
             self.__add_to_nlp("spline_time", spline_time, False,)
         else:
-            nlp["spline_time"]=None
+            for i in range(self.nb_phases):
+                self.nlp[i]["spline_time"]=None
         self.nb_threads = nb_threads
 
         # External forces
@@ -208,7 +209,8 @@ class OptimalControlProgram:
         if custom_bound_function != () and custom_bound_function != None :
             self.__add_to_nlp("custom_bound_function", custom_bound_function, False, )
         else:
-            nlp["custom_bound_function"]=None
+            for i in range(self.nb_phases):
+                self.nlp[i]["custom_bound_function"]=None
 
         # Prepare initial guesses
         self.__add_to_nlp("X_init", X_init, False)

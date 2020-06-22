@@ -18,7 +18,7 @@ def custom_bound_func(x, current_shooting_point, number_shooting_points):
     # Linear interpolation created with custom bound function
     return x[:, 0] + (x[:, 1] - x[:, 0]) * current_shooting_point / number_shooting_points
 
-def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_guess=InterpolationType.CONSTANT):
+def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_guess=InterpolationType.CONSTANT, boundsInterpolation=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -39,25 +39,32 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_g
         {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
     )
 
+    spline_time = None
     # Path constraint and control path constraints
-    if initial_guess == InterpolationType.SPLINE:
-        spline_time = np.hstack((0,np.sort(np.random.random((3,)) * final_time),final_time))
-        x_min = np.random.random((nq + nqdot, 5)) - 100
-        x_max = np.random.random((nq + nqdot, 5)) + 100
-        u_min = np.random.random((ntau, 5)) - 100
-        u_max = np.random.random((ntau, 5)) + 100
-        X_bounds = Bounds(x_min, x_max, interpolation_type=InterpolationType.SPLINE)
-        U_bounds = Bounds(u_min, u_max, interpolation_type=InterpolationType.SPLINE)
-    elif initial_guess == InterpolationType.CUSTOM:
-        spline_time=None
-        x_min = np.random.random((nq + nqdot, 2)) - 100
-        x_max = np.random.random((nq + nqdot, 2)) + 100
-        u_min = np.random.random((ntau, 2)) - 100
-        u_max = np.random.random((ntau, 2)) + 100
-        X_bounds = Bounds(x_min, x_max, interpolation_type=InterpolationType.CUSTOM)
-        U_bounds = Bounds(u_min, u_max, interpolation_type=InterpolationType.CUSTOM)
+    if boundsInterpolation:
+        if initial_guess == InterpolationType.SPLINE:
+            spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
+            x_min = np.random.random((nq + nqdot, 5)) - 100
+            x_max = np.random.random((nq + nqdot, 5)) + 100
+            u_min = np.random.random((ntau, 5)) - 100
+            u_max = np.random.random((ntau, 5)) + 100
+            X_bounds = Bounds(x_min, x_max, interpolation_type=InterpolationType.SPLINE)
+            U_bounds = Bounds(u_min, u_max, interpolation_type=InterpolationType.SPLINE)
+        elif initial_guess == InterpolationType.CUSTOM:
+            x_min = np.random.random((nq + nqdot, 2)) - 100
+            x_max = np.random.random((nq + nqdot, 2)) + 100
+            u_min = np.random.random((ntau, 2)) - 100
+            u_max = np.random.random((ntau, 2)) + 100
+            X_bounds = Bounds(x_min, x_max, interpolation_type=InterpolationType.CUSTOM)
+            U_bounds = Bounds(u_min, u_max, interpolation_type=InterpolationType.CUSTOM)
+        else:
+            X_bounds = QAndQDotBounds(biorbd_model)
+            X_bounds.min[1:6, [0, -1]] = 0
+            X_bounds.max[1:6, [0, -1]] = 0
+            X_bounds.min[2, -1] = 1.57
+            X_bounds.max[2, -1] = 1.57
+            U_bounds = Bounds([torque_min] * ntau, [torque_max] * ntau, )
     else:
-        spline_time=None
         X_bounds = QAndQDotBounds(biorbd_model)
         X_bounds.min[1:6, [0, -1]] = 0
         X_bounds.max[1:6, [0, -1]] = 0
@@ -79,6 +86,8 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_g
         x = np.random.random((nq + nqdot, number_shooting_points + 1))
         u = np.random.random((ntau, number_shooting_points))
     elif initial_guess == InterpolationType.SPLINE:
+        if np.all(spline_time == None):
+            spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
         x = np.random.random((nq + nqdot, 5))
         u = np.random.random((ntau, 5))
     elif initial_guess == InterpolationType.CUSTOM:

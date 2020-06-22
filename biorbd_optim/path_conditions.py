@@ -126,13 +126,7 @@ class PathCondition(np.ndarray):
                     f"Invalid number of {condition_type} for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
                     f"the expected number of column is {self.nb_shooting}"
                 )
-        elif self.type == InterpolationType.SPLINE:
-            if self.shape[1] > self.nb_shooting:
-                raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.SPLINE (ncols = {self.shape[1]}), "
-                    f"the expected number of column is smaller or equal to {self.nb_shooting}"
-                )
-        elif self.type != InterpolationType.CUSTOM:
+        elif self.type != InterpolationType.CUSTOM and self.type != InterpolationType.SPLINE:
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
     def evaluate_at(self, shooting_point, spline_time=(), t0=(), tf=(), custom_bound_function=None):
