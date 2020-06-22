@@ -52,6 +52,7 @@ class InterpolationType(Enum):
     SPLINE = 4
     CUSTOM = 5
 
+
 class PlotType(Enum):
     """
     Type of plot.

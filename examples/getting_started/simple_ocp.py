@@ -14,11 +14,19 @@ from biorbd_optim import (
     InterpolationType,
 )
 
+
 def custom_bound_func(x, current_shooting_point, number_shooting_points):
     # Linear interpolation created with custom bound function
     return x[:, 0] + (x[:, 1] - x[:, 0]) * current_shooting_point / number_shooting_points
 
-def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_guess=InterpolationType.CONSTANT, boundsInterpolation=False):
+
+def prepare_ocp(
+    biorbd_model_path,
+    number_shooting_points,
+    final_time,
+    initial_guess=InterpolationType.CONSTANT,
+    boundsInterpolation=False,
+):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -63,14 +71,14 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, initial_g
             X_bounds.max[1:6, [0, -1]] = 0
             X_bounds.min[2, -1] = 1.57
             X_bounds.max[2, -1] = 1.57
-            U_bounds = Bounds([torque_min] * ntau, [torque_max] * ntau, )
+            U_bounds = Bounds([torque_min] * ntau, [torque_max] * ntau,)
     else:
         X_bounds = QAndQDotBounds(biorbd_model)
         X_bounds.min[1:6, [0, -1]] = 0
         X_bounds.max[1:6, [0, -1]] = 0
         X_bounds.min[2, -1] = 1.57
         X_bounds.max[2, -1] = 1.57
-        U_bounds = Bounds([torque_min] * ntau, [torque_max] * ntau, )
+        U_bounds = Bounds([torque_min] * ntau, [torque_max] * ntau,)
 
     # Initial guesses
     if initial_guess == InterpolationType.CONSTANT:

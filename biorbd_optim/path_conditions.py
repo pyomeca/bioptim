@@ -154,7 +154,7 @@ class PathCondition(np.ndarray):
             InterpolatedPoints = PathCondition(zeros(self.shape[0]))
             for i in range(self.shape[0]):
                 Spline = interp1d(spline_time, self[i, :])
-                InterpolatedPoints[i] = Spline(shooting_point / self.nb_shooting * (tf-t0))
+                InterpolatedPoints[i] = Spline(shooting_point / self.nb_shooting * (tf - t0))
             return InterpolatedPoints.reshape(self.shape[0])
         elif self.type == InterpolationType.CUSTOM:
             return custom_bound_function(self, shooting_point, self.nb_shooting)

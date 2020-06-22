@@ -14,6 +14,11 @@ from biorbd_optim import (
 )
 from .utils import TestUtils
 
+# import sys
+# PROJECT_FOLDER = Path(__file__).parent / ".."
+# sys.path.insert(1, str(PROJECT_FOLDER) + "/examples")
+# from simple_ocp import custom_bound_func
+
 
 @pytest.mark.parametrize("nb_threads", [1, 2])
 def test_pendulum(nb_threads):
