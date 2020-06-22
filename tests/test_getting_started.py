@@ -11,6 +11,8 @@ from biorbd_optim import (
     Data,
     OdeSolver,
     InterpolationType,
+    Bounds,
+    InitialConditions,
 )
 from .utils import TestUtils
 
@@ -158,50 +160,460 @@ def test_initial_guesses(interpolation_type):
 
 
 def test_bounds_interpolation():
-    # Goal of the test is just to see if the function can be called. (What about the other types of interpolation ?)
 
-    #  Load initial_guess
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/simple_ocp.py"
+    # SPLINE
+    spline_time = np.hstack((0.0, 1.0, 2.2, 6.0))
+    x_init = np.array(
+        [
+            [0.5, 0.6, 0.2, 0.8],
+            [0.4, 0.6, 0.8, 0.2],
+            [0.0, 0.3, 0.2, 0.5],
+            [0.5, 0.2, 0.9, 0.4],
+            [0.5, 0.6, 0.2, 0.8],
+            [0.5, 0.6, 0.2, 0.8],
+        ]
     )
-    bounds_interpolation = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(bounds_interpolation)
-
-    np.random.seed(42)
-    ocp = bounds_interpolation.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
-        final_time=1,
-        number_shooting_points=5,
-        initial_guess=InterpolationType.SPLINE,
-        boundsInterpolation=True,
+    x_min = np.array(
+        [
+            [-4.0, -6.0, -8.0, -2.0],
+            [-5.0, -6.0, -2.0, -8.0],
+            [-0.0, -3.0, -2.0, -5.0],
+            [-5.0, -6.0, -2.0, -8.0],
+            [-5.0, -2.0, -9.0, -4.0],
+            [-5.0, -6.0, -2.0, -8.0],
+        ]
     )
-    sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
-
-    # Check constraints
-    g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (36, 1))
-
-    ocp = bounds_interpolation.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
-        final_time=1,
-        number_shooting_points=5,
-        initial_guess=InterpolationType.CUSTOM,
-        boundsInterpolation=True,
+    x_max = np.array(
+        [
+            [5.0, 6.0, 2.0, 8.0],
+            [4.0, 6.0, 8.0, 2.0],
+            [0.0, 3.0, 2.0, 5.0],
+            [5.0, 2.0, 9.0, 4.0],
+            [5.0, 6.0, 2.0, 8.0],
+            [5.0, 6.0, 2.0, 8.0],
+        ]
     )
-    sol = ocp.solve()
+    X_bounds = Bounds(x_min, x_max, interpolation_type=InterpolationType.SPLINE)
+    X_init = InitialConditions(x_init, interpolation_type=InterpolationType.SPLINE)
 
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
+    nX = 6
+    nU = 3
+    ns = 5
 
-    # Check constraints
-    g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (36, 1))
+    nV = nX * (ns + 1) + nU * ns
+    V_bounds = Bounds([0] * nV, [0] * nV, interpolation_type=InterpolationType.CONSTANT)
+    V_init = InitialConditions([0] * nV, interpolation_type=InterpolationType.CONSTANT)
+    X_bounds.min.nb_shooting = ns
+    X_bounds.max.nb_shooting = ns
+    X_init.init.nb_shooting = ns
+
+    offset = 0
+    for k in range(ns + 1):
+        V_bounds.min[offset : offset + nX, 0] = X_bounds.min.evaluate_at(
+            shooting_point=k, spline_time=spline_time, t0=0.0, tf=6.0,
+        )
+        V_bounds.max[offset : offset + nX, 0] = X_bounds.max.evaluate_at(
+            shooting_point=k, spline_time=spline_time, t0=0.0, tf=6.0,
+        )
+        V_init.init[offset : offset + nX, 0] = X_init.init.evaluate_at(
+            shooting_point=k, spline_time=spline_time, t0=0.0, tf=6.0,
+        )
+        offset += nX
+
+        V_bounds.check_and_adjust_dimensions(nV, 1)
+        V_init.check_and_adjust_dimensions(nV, 1)
+
+    np.testing.assert_almost_equal(
+        V_bounds.min,
+        np.array(
+            [
+                [-4.0],
+                [-5.0],
+                [-0.0],
+                [-5.0],
+                [-5.0],
+                [-5.0],
+                [-6.33333333],
+                [-5.33333333],
+                [-2.83333333],
+                [-5.33333333],
+                [-3.16666667],
+                [-5.33333333],
+                [-7.68421053],
+                [-2.31578947],
+                [-2.15789474],
+                [-2.31578947],
+                [-8.73684211],
+                [-2.31578947],
+                [-5.78947368],
+                [-4.21052632],
+                [-3.10526316],
+                [-4.21052632],
+                [-7.15789474],
+                [-4.21052632],
+                [-3.89473684],
+                [-6.10526316],
+                [-4.05263158],
+                [-6.10526316],
+                [-5.57894737],
+                [-6.10526316],
+                [-2.0],
+                [-8.0],
+                [-5.0],
+                [-8.0],
+                [-4.0],
+                [-8.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        V_bounds.max,
+        np.array(
+            [
+                [5.0],
+                [4.0],
+                [0.0],
+                [5.0],
+                [5.0],
+                [5.0],
+                [5.33333333],
+                [6.33333333],
+                [2.83333333],
+                [3.16666667],
+                [5.33333333],
+                [5.33333333],
+                [2.31578947],
+                [7.68421053],
+                [2.15789474],
+                [8.73684211],
+                [2.31578947],
+                [2.31578947],
+                [4.21052632],
+                [5.78947368],
+                [3.10526316],
+                [7.15789474],
+                [4.21052632],
+                [4.21052632],
+                [6.10526316],
+                [3.89473684],
+                [4.05263158],
+                [5.57894737],
+                [6.10526316],
+                [6.10526316],
+                [8.0],
+                [2.0],
+                [5.0],
+                [4.0],
+                [8.0],
+                [8.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        V_init.init,
+        np.array(
+            [
+                [0.5],
+                [0.4],
+                [0.0],
+                [0.5],
+                [0.5],
+                [0.5],
+                [0.53333333],
+                [0.63333333],
+                [0.28333333],
+                [0.31666667],
+                [0.53333333],
+                [0.53333333],
+                [0.23157895],
+                [0.76842105],
+                [0.21578947],
+                [0.87368421],
+                [0.23157895],
+                [0.23157895],
+                [0.42105263],
+                [0.57894737],
+                [0.31052632],
+                [0.71578947],
+                [0.42105263],
+                [0.42105263],
+                [0.61052632],
+                [0.38947368],
+                [0.40526316],
+                [0.55789474],
+                [0.61052632],
+                [0.61052632],
+                [0.8],
+                [0.2],
+                [0.5],
+                [0.4],
+                [0.8],
+                [0.8],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+            ]
+        ),
+    )
+
+    # CUSTOM
+    def custom_bound_func(x, current_shooting_point, number_shooting_points):
+        # Linear interpolation created with custom bound function
+        return x[:, 0] + (x[:, 1] - x[:, 0]) * current_shooting_point / number_shooting_points
+
+    x_init = np.array([[0.5, 0.8], [0.4, 0.2], [0.0, 0.5], [0.5, 0.4], [0.5, 0.8], [0.5, 0.8]])
+    x_min = np.array([[-4.0, -2.0], [-5.0, -8.0], [-0.0, -5.0], [-5.0, -8.0], [-5.0, -4.0], [-5.0, -8.0]])
+    x_max = np.array([[5.0, 8.0], [4.0, 2.0], [0.0, 5.0], [5.0, 4.0], [5.0, 8.0], [5.0, 8.0]])
+    X_bounds = Bounds(x_min, x_max, interpolation_type=InterpolationType.CUSTOM)
+    X_init = InitialConditions(x_init, interpolation_type=InterpolationType.CUSTOM)
+
+    nX = 6
+    nU = 3
+    ns = 5
+
+    nV = nX * (ns + 1) + nU * ns
+    V_bounds = Bounds([0] * nV, [0] * nV, interpolation_type=InterpolationType.CONSTANT)
+    V_init = InitialConditions([0] * nV, interpolation_type=InterpolationType.CONSTANT)
+    X_bounds.min.nb_shooting = ns
+    X_bounds.max.nb_shooting = ns
+    X_init.init.nb_shooting = ns
+
+    offset = 0
+    for k in range(ns + 1):
+        V_bounds.min[offset : offset + nX, 0] = X_bounds.min.evaluate_at(
+            shooting_point=k, t0=0.0, tf=6.0, custom_bound_function=custom_bound_func,
+        )
+        V_bounds.max[offset : offset + nX, 0] = X_bounds.max.evaluate_at(
+            shooting_point=k, t0=0.0, tf=6.0, custom_bound_function=custom_bound_func,
+        )
+        V_init.init[offset : offset + nX, 0] = X_init.init.evaluate_at(
+            shooting_point=k, t0=0.0, tf=6.0, custom_bound_function=custom_bound_func,
+        )
+        offset += nX
+
+    V_bounds.check_and_adjust_dimensions(nV, 1)
+    V_init.check_and_adjust_dimensions(nV, 1)
+
+    np.testing.assert_almost_equal(
+        V_bounds.min,
+        np.array(
+            [
+                [-4.0],
+                [-5.0],
+                [-0.0],
+                [-5.0],
+                [-5.0],
+                [-5.0],
+                [-3.6],
+                [-5.6],
+                [-1.0],
+                [-5.6],
+                [-4.8],
+                [-5.6],
+                [-3.2],
+                [-6.2],
+                [-2.0],
+                [-6.2],
+                [-4.6],
+                [-6.2],
+                [-2.8],
+                [-6.8],
+                [-3.0],
+                [-6.8],
+                [-4.4],
+                [-6.8],
+                [-2.4],
+                [-7.4],
+                [-4.0],
+                [-7.4],
+                [-4.2],
+                [-7.4],
+                [-2.0],
+                [-8.0],
+                [-5.0],
+                [-8.0],
+                [-4.0],
+                [-8.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        V_bounds.max,
+        np.array(
+            [
+                [5.0],
+                [4.0],
+                [0.0],
+                [5.0],
+                [5.0],
+                [5.0],
+                [5.6],
+                [3.6],
+                [1.0],
+                [4.8],
+                [5.6],
+                [5.6],
+                [6.2],
+                [3.2],
+                [2.0],
+                [4.6],
+                [6.2],
+                [6.2],
+                [6.8],
+                [2.8],
+                [3.0],
+                [4.4],
+                [6.8],
+                [6.8],
+                [7.4],
+                [2.4],
+                [4.0],
+                [4.2],
+                [7.4],
+                [7.4],
+                [8.0],
+                [2.0],
+                [5.0],
+                [4.0],
+                [8.0],
+                [8.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        V_init.init,
+        np.array(
+            [
+                [0.5],
+                [0.4],
+                [0.0],
+                [0.5],
+                [0.5],
+                [0.5],
+                [0.56],
+                [0.36],
+                [0.1],
+                [0.48],
+                [0.56],
+                [0.56],
+                [0.62],
+                [0.32],
+                [0.2],
+                [0.46],
+                [0.62],
+                [0.62],
+                [0.68],
+                [0.28],
+                [0.3],
+                [0.44],
+                [0.68],
+                [0.68],
+                [0.74],
+                [0.24],
+                [0.4],
+                [0.42],
+                [0.74],
+                [0.74],
+                [0.8],
+                [0.2],
+                [0.5],
+                [0.4],
+                [0.8],
+                [0.8],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+                [0.0],
+            ]
+        ),
+    )
 
 
 def test_cyclic_objective():
