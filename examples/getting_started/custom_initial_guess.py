@@ -15,9 +15,9 @@ from biorbd_optim import (
 )
 
 
-def custom_bound_func(x, current_shooting_point, number_shooting_points):
-    # Linear interpolation created with custom bound function
-    return x[:, 0] + (x[:, 1] - x[:, 0]) * current_shooting_point / number_shooting_points
+def custom_init_func(current_shooting_point, my_values, nb_shooting):
+    # Linear interpolation created with custom function
+    return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting
 
 
 def prepare_ocp(
@@ -81,6 +81,9 @@ def prepare_ocp(
         U_bounds = Bounds([torque_min] * ntau, [torque_max] * ntau,)
 
     # Initial guesses
+    t = None
+    extra_params_x = {}
+    extra_params_u = {}
     if initial_guess == InterpolationType.CONSTANT:
         x = [0] * (nq + nqdot)
         u = [torque_init] * ntau
@@ -94,17 +97,20 @@ def prepare_ocp(
         x = np.random.random((nq + nqdot, number_shooting_points + 1))
         u = np.random.random((ntau, number_shooting_points))
     elif initial_guess == InterpolationType.SPLINE:
-        if np.all(spline_time == None):
-            spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
+        # Bound spline assume the first and last point are 0 and final respectively
+        t = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
         x = np.random.random((nq + nqdot, 5))
         u = np.random.random((ntau, 5))
     elif initial_guess == InterpolationType.CUSTOM:
-        x = np.random.random((nq + nqdot, 2))
-        u = np.random.random((ntau, 2))
+        # The custom function refers to the one at the beginning of the file. It emulates a Linear interpolation
+        x = custom_init_func
+        u = custom_init_func
+        extra_params_x = {"my_values": np.random.random((nq + nqdot, 2)), "nb_shooting": number_shooting_points}
+        extra_params_u = {"my_values": np.random.random((ntau, 2)), "nb_shooting": number_shooting_points}
     else:
         raise RuntimeError("Initial guess not implemented yet")
-    X_init = InitialConditions(x, interpolation_type=initial_guess)
-    U_init = InitialConditions(u, interpolation_type=initial_guess)
+    X_init = InitialConditions(x, t=t, interpolation_type=initial_guess, extra_params=extra_params_x)
+    U_init = InitialConditions(u, t=t, interpolation_type=initial_guess, extra_params=extra_params_u)
     # ------------- #
 
     return OptimalControlProgram(
@@ -118,8 +124,6 @@ def prepare_ocp(
         U_bounds,
         objective_functions,
         constraints,
-        spline_time=spline_time,
-        custom_bound_function=custom_bound_func,
     )
 
 
@@ -129,13 +133,6 @@ if __name__ == "__main__":
         ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, initial_guess=initial_guess)
         sol = ocp.solve()
         print("\n")
-
-    # Save the last ocp
-    ocp.save(sol, "cube_ocp_sol")
-    ocp_loaded, sol_loaded = OptimalControlProgram.load("cube_ocp_sol.bo")
-
-    # Rerun the loaded OCP
-    sol_loaded_and_reran = ocp_loaded.solve()
 
     # Print the last solution
     result_plot = ShowResult(ocp, sol)

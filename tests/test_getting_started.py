@@ -109,7 +109,7 @@ def test_initial_guesses(interpolation_type):
     #  Load initial_guess
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/simple_ocp.py"
+        "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/custom_initial_guess.py"
     )
     initial_guess = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(initial_guess)
