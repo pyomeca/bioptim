@@ -1,15 +1,14 @@
 import numpy as np
+from scipy.interpolate import interp1d
 
 from .mapping import BidirectionalMapping, Mapping
 from .enums import InterpolationType
-from scipy.interpolate import interp1d
-from numpy import zeros
 
 
 class PathCondition(np.ndarray):
     """Sets path constraints"""
 
-    def __new__(cls, input_array, interpolation_type=InterpolationType.CONSTANT):
+    def __new__(cls, input_array, t=None, interpolation_type=InterpolationType.CONSTANT, extra_params={}):
         """
         Interpolates path conditions with the chosen interpolation type.
         :param input_array: Array of path conditions (initial guess). (list)
@@ -19,7 +18,14 @@ class PathCondition(np.ndarray):
         :return: obj -> Objective. (?)
         """
         # Check and reinterpret input
-        input_array = np.asarray(input_array, dtype=float)
+        if interpolation_type == InterpolationType.CUSTOM:
+            if not callable(input_array):
+                raise TypeError("The input when using InterpolationType.CUSTOM should be a callable function")
+            custom_function = input_array
+            input_array = np.array(())
+        else:
+            input_array = np.asarray(input_array, dtype=float)
+
         if len(input_array.shape) == 0:
             input_array = input_array[np.newaxis, np.newaxis]
 
@@ -70,6 +76,10 @@ class PathCondition(np.ndarray):
         # Additional information
         obj.nb_shooting = None
         obj.type = interpolation_type
+        obj.t = t
+        obj.extra_params = extra_params
+        if interpolation_type == InterpolationType.CUSTOM:
+            obj.custom_function = custom_function
 
         return obj
 
@@ -91,12 +101,12 @@ class PathCondition(np.ndarray):
         # Call the parent's __setstate__ with the other tuple elements.
         super(PathCondition, self).__setstate__(state[0:-2])
 
-    def check_and_adjust_dimensions(self, nb_elements, nb_shooting, condition_type):
+    def check_and_adjust_dimensions(self, nb_elements, nb_shooting, element_type):
         """
         Raises errors on the dimensions of the elements to be interpolated.
         :param nb_elements: Number of elements to be interpolated. (integer)
         :param nb_shooting: Number of shooting points. (integer)
-        :param condition_type: Type of interpolation. (instance of InterpolationType class)
+        :param element_type: Type of interpolation. (instance of InterpolationType class)
         """
         if (
             self.type == InterpolationType.CONSTANT
@@ -114,10 +124,12 @@ class PathCondition(np.ndarray):
                     f"Invalid number of shooting ({self.nb_shooting}), the expected number is {nb_shooting}"
                 )
 
-        if self.shape[0] != nb_elements:
-            raise RuntimeError(
-                f"Invalid number of {condition_type} ({self.shape[0] }), the expected size is {nb_elements}"
-            )
+        if self.type == InterpolationType.CUSTOM:
+            val_size = self.custom_function(0, **self.extra_params).shape[0]
+        else:
+            val_size = self.shape[0]
+        if val_size != nb_elements:
+            raise RuntimeError(f"Invalid number of {element_type} ({val_size}), the expected size is {nb_elements}")
 
         if self.type == InterpolationType.EACH_FRAME:
             if self.shape[1] != self.nb_shooting:
@@ -126,7 +138,7 @@ class PathCondition(np.ndarray):
                     f"the expected number of column is {self.nb_shooting}"
                 )
 
-    def evaluate_at(self, shooting_point, spline_time=(), t0=(), tf=(), custom_bound_function=None):
+    def evaluate_at(self, shooting_point):
         """
         Discriminates first and last nodes and evaluates self in function of the interpolation type.
         :param shooting_point: Number of shooting points. (integer)
@@ -148,13 +160,10 @@ class PathCondition(np.ndarray):
         elif self.type == InterpolationType.EACH_FRAME:
             return self[:, shooting_point]
         elif self.type == InterpolationType.SPLINE:
-            InterpolatedPoints = PathCondition(zeros(self.shape[0]))
-            for i in range(self.shape[0]):
-                Spline = interp1d(spline_time, self[i, :])
-                InterpolatedPoints[i] = Spline(shooting_point / self.nb_shooting * (tf - t0))
-            return InterpolatedPoints.reshape(self.shape[0])
+            spline = interp1d(self.t, self)
+            return spline(shooting_point / self.nb_shooting * (self.t[-1] - self.t[0]))
         elif self.type == InterpolationType.CUSTOM:
-            return custom_bound_function(self, shooting_point, self.nb_shooting)
+            return self.custom_function(shooting_point, **self.extra_params)
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
