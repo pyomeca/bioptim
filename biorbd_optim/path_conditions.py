@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.interpolate import interp1d
 
 from .mapping import BidirectionalMapping, Mapping
 from .enums import InterpolationType
@@ -7,7 +8,7 @@ from .enums import InterpolationType
 class PathCondition(np.ndarray):
     """Sets path constraints"""
 
-    def __new__(cls, input_array, interpolation_type=InterpolationType.CONSTANT):
+    def __new__(cls, input_array, t=None, interpolation_type=InterpolationType.CONSTANT, extra_params={}):
         """
         Interpolates path conditions with the chosen interpolation type.
         :param input_array: Array of path conditions (initial guess). (list)
@@ -17,28 +18,57 @@ class PathCondition(np.ndarray):
         :return: obj -> Objective. (?)
         """
         # Check and reinterpret input
-        input_array = np.asarray(input_array, dtype=float)
+        if interpolation_type == InterpolationType.CUSTOM:
+            if not callable(input_array):
+                raise TypeError("The input when using InterpolationType.CUSTOM should be a callable function")
+            custom_function = input_array
+            input_array = np.array(())
+        else:
+            input_array = np.asarray(input_array, dtype=float)
+
         if len(input_array.shape) == 0:
             input_array = input_array[np.newaxis, np.newaxis]
+
         if interpolation_type == InterpolationType.CONSTANT:
             if len(input_array.shape) == 1:
                 input_array = input_array[:, np.newaxis]
             if input_array.shape[1] != 1:
-                raise RuntimeError("Value for InterpolationType.CONSTANT must have exactly one column")
+                raise RuntimeError(
+                    f"Invalid number of column for InterpolationType.CONSTANT "
+                    f"(ncols = {input_array.shape[1]}), the expected number of column is 1"
+                )
 
         elif interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             if len(input_array.shape) == 1:
                 input_array = input_array[:, np.newaxis]
             if input_array.shape[1] != 1 and input_array.shape[1] != 3:
-                raise RuntimeError("Value for InterpolationType.CONSTANT must have exactly one or three columns")
+                raise RuntimeError(
+                    f"Invalid number of column for InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT "
+                    f"(ncols = {input_array.shape[1]}), the expected number of column is 1 or 3"
+                )
             if input_array.shape[1] == 1:
                 input_array = np.repeat(input_array, 3, axis=1)
         elif interpolation_type == InterpolationType.LINEAR:
             if input_array.shape[1] != 2:
-                raise RuntimeError("Value for InterpolationType.LINEAR must have exactly two columns")
+                raise RuntimeError(
+                    f"Invalid number of column for InterpolationType.LINEAR (ncols = {input_array.shape[1]}), "
+                    f"the expected number of column is 2"
+                )
         elif interpolation_type == InterpolationType.EACH_FRAME:
+            # This will be verified when the expected number of columns is set
+            pass
+        elif interpolation_type == InterpolationType.SPLINE:
             if input_array.shape[1] < 2:
-                raise RuntimeError("Value for InterpolationType.EACH_FRAME must exactly match the number of points")
+                raise RuntimeError("Value for InterpolationType.SPLINE must have at least 2 columns")
+            if t is None:
+                raise RuntimeError("Spline necessitate a time vector")
+            t = np.asarray(t)
+            if input_array.shape[1] != t.shape[0]:
+                raise RuntimeError("Spline necessitate a time vector which as the same length as column of data")
+
+        elif interpolation_type == InterpolationType.CUSTOM:
+            # We have to assume dimensions are those the user wants
+            pass
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
         obj = np.asarray(input_array).view(cls)
@@ -46,6 +76,10 @@ class PathCondition(np.ndarray):
         # Additional information
         obj.nb_shooting = None
         obj.type = interpolation_type
+        obj.t = t
+        obj.extra_params = extra_params
+        if interpolation_type == InterpolationType.CUSTOM:
+            obj.custom_function = custom_function
 
         return obj
 
@@ -67,17 +101,19 @@ class PathCondition(np.ndarray):
         # Call the parent's __setstate__ with the other tuple elements.
         super(PathCondition, self).__setstate__(state[0:-2])
 
-    def check_and_adjust_dimensions(self, nb_elements, nb_shooting, condition_type):
+    def check_and_adjust_dimensions(self, nb_elements, nb_shooting, element_type):
         """
         Raises errors on the dimensions of the elements to be interpolated.
         :param nb_elements: Number of elements to be interpolated. (integer)
         :param nb_shooting: Number of shooting points. (integer)
-        :param condition_type: Type of interpolation. (instance of InterpolationType class)
+        :param element_type: Type of interpolation. (instance of InterpolationType class)
         """
         if (
             self.type == InterpolationType.CONSTANT
             or self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
             or self.type == InterpolationType.LINEAR
+            or self.type == InterpolationType.SPLINE
+            or self.type == InterpolationType.CUSTOM
         ):
             self.nb_shooting = nb_shooting
         elif self.type == InterpolationType.EACH_FRAME:
@@ -88,37 +124,19 @@ class PathCondition(np.ndarray):
                     f"Invalid number of shooting ({self.nb_shooting}), the expected number is {nb_shooting}"
                 )
 
-        if self.shape[0] != nb_elements:
-            raise RuntimeError(
-                f"Invalid number of {condition_type} ({self.shape[0] }), the expected size is {nb_elements}"
-            )
+        if self.type == InterpolationType.CUSTOM:
+            val_size = self.custom_function(0, **self.extra_params).shape[0]
+        else:
+            val_size = self.shape[0]
+        if val_size != nb_elements:
+            raise RuntimeError(f"Invalid number of {element_type} ({val_size}), the expected size is {nb_elements}")
 
-        if self.type == InterpolationType.CONSTANT:
-            if self.shape[1] != 1:
-                raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.CONSTANT (ncols = {self.shape[1]}), "
-                    f"the expected number of column is 1"
-                )
-        elif self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-            if self.shape[1] != 3:
-                raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.CONSTANT (ncols = {self.shape[1]}), "
-                    f"the expected number of column is 3"
-                )
-        elif self.type == InterpolationType.LINEAR:
-            if self.shape[1] != 2:
-                raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.LINEAR (ncols = {self.shape[1]}), "
-                    f"the expected number of column is 2"
-                )
-        elif self.type == InterpolationType.EACH_FRAME:
+        if self.type == InterpolationType.EACH_FRAME:
             if self.shape[1] != self.nb_shooting:
                 raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.LINEAR (ncols = {self.shape[1]}), "
+                    f"Invalid number of column for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
                     f"the expected number of column is {self.nb_shooting}"
                 )
-        else:
-            raise RuntimeError(f"InterpolationType is not implemented yet")
 
     def evaluate_at(self, shooting_point):
         """
@@ -141,6 +159,11 @@ class PathCondition(np.ndarray):
             return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / self.nb_shooting
         elif self.type == InterpolationType.EACH_FRAME:
             return self[:, shooting_point]
+        elif self.type == InterpolationType.SPLINE:
+            spline = interp1d(self.t, self)
+            return spline(shooting_point / self.nb_shooting * (self.t[-1] - self.t[0]))
+        elif self.type == InterpolationType.CUSTOM:
+            return self.custom_function(shooting_point, **self.extra_params)
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
