@@ -334,11 +334,16 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract._check_idx("segment", segment_idx, nlp["model"].nbSegment())
             PenaltyFunctionAbstract._check_idx("rt", rt_idx, nlp["model"].nbRTs())
 
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_globalJCS", nlp["model"].globalJCS, nlp["q_MX"], segment_idx)
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_RT", nlp["model"].RT, nlp["q_MX"], rt_idx)
+
             nq = nlp["q_mapping"].reduce.len
             for v in x:
                 q = nlp["q_mapping"].expand.map(v[:nq])
-                r_seg = nlp["model"].globalJCS(q, segment_idx).rot()
-                r_rt = nlp["model"].RT(q, rt_idx).rot()
+                r_seg = nlp["SX_func"]["biorbd_globalJCS"](q, segment_idx).rot()
+                r_rt = nlp["SX_func"]["biorbd_RT"](q, rt_idx).rot()
+                # r_seg = nlp["model"].globalJCS(q, segment_idx).rot()
+                # r_rt = nlp["model"].RT(q, rt_idx).rot()
                 val = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
