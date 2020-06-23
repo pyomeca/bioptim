@@ -16,11 +16,6 @@ from biorbd_optim import (
 )
 from .utils import TestUtils
 
-# import sys
-# PROJECT_FOLDER = Path(__file__).parent / ".."
-# sys.path.insert(1, str(PROJECT_FOLDER) + "/examples")
-# from simple_ocp import custom_bound_func
-
 
 @pytest.mark.parametrize("nb_threads", [1, 2])
 def test_pendulum(nb_threads):
@@ -620,7 +615,7 @@ def test_cyclic_objective():
     #  Load initial_guess
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/cyclic_movement.py"
+        "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/example_cyclic_movement.py"
     )
     cyclic_movement = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cyclic_movement)
@@ -666,7 +661,7 @@ def test_cyclic_constraint():
     #  Load initial_guess
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/cyclic_movement.py"
+        "initial_guess", str(PROJECT_FOLDER) + "/examples/getting_started/example_cyclic_movement.py"
     )
     cyclic_movement = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cyclic_movement)
@@ -712,7 +707,7 @@ def test_state_transitions():
     # Load state_transitions
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "state_transitions", str(PROJECT_FOLDER) + "/examples/getting_started/state_transitions.py"
+        "state_transitions", str(PROJECT_FOLDER) + "/examples/getting_started/custom_phase_transitions.py"
     )
     state_transitions = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(state_transitions)
@@ -762,7 +757,7 @@ def test_parameter_optimization():
     # Load phase_transitions
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "parameter_optimization", str(PROJECT_FOLDER) + "/examples/getting_started/parameter_optimization.py"
+        "parameter_optimization", str(PROJECT_FOLDER) + "/examples/getting_started/custom_parameters.py"
     )
     parameter_optimization = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(parameter_optimization)
@@ -820,7 +815,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "custom_problem_type_and_dynamics",
-        str(PROJECT_FOLDER) + "/examples/getting_started/custom_problem_type_and_dynamics.py",
+        str(PROJECT_FOLDER) + "/examples/getting_started/custom_dynamics.py",
     )
     pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum)
