@@ -285,12 +285,13 @@ class PenaltyFunctionAbstract:
             The height is assumed to be the third axis.
             """
             g = -9.81  # get gravity from biorbd
-
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_CoM", nlp["model"].CoM, nlp["q_MX"])
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_CoMdot", nlp["model"].CoMdot, nlp["q_MX"], nlp["qdot_MX"])
             for i, v in enumerate(x):
                 q = nlp["q_mapping"].expand.map(v[: nlp["nbQ"]])
                 q_dot = nlp["q_dot_mapping"].expand.map(v[nlp["nbQ"] :])
-                CoM = nlp["model"].CoM(q).to_mx()
-                CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
+                CoM = nlp["SX_func"]["biorbd_CoM"](q)
+                CoM_dot = nlp["SX_func"]["biorbd_CoMdot"](q, q_dot)
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
                 penalty_type._add_to_penalty(ocp, nlp, CoM_height, **extra_param)
 
