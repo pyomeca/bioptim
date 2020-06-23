@@ -22,30 +22,47 @@ class PathCondition(np.ndarray):
         input_array = np.asarray(input_array, dtype=float)
         if len(input_array.shape) == 0:
             input_array = input_array[np.newaxis, np.newaxis]
+
         if interpolation_type == InterpolationType.CONSTANT:
             if len(input_array.shape) == 1:
                 input_array = input_array[:, np.newaxis]
             if input_array.shape[1] != 1:
-                raise RuntimeError("Value for InterpolationType.CONSTANT must have exactly one column")
+                raise RuntimeError(
+                    f"Invalid number of column for InterpolationType.CONSTANT "
+                    f"(ncols = {input_array.shape[1]}), the expected number of column is 1"
+                )
 
         elif interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             if len(input_array.shape) == 1:
                 input_array = input_array[:, np.newaxis]
             if input_array.shape[1] != 1 and input_array.shape[1] != 3:
-                raise RuntimeError("Value for InterpolationType.CONSTANT must have exactly one or three columns")
+                raise RuntimeError(
+                    f"Invalid number of column for InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT "
+                    f"(ncols = {input_array.shape[1]}), the expected number of column is 1 or 3"
+                )
             if input_array.shape[1] == 1:
                 input_array = np.repeat(input_array, 3, axis=1)
         elif interpolation_type == InterpolationType.LINEAR:
             if input_array.shape[1] != 2:
-                raise RuntimeError("Value for InterpolationType.LINEAR must have exactly two columns")
+                raise RuntimeError(
+                    f"Invalid number of column for InterpolationType.LINEAR (ncols = {input_array.shape[1]}), "
+                    f"the expected number of column is 2"
+                )
         elif interpolation_type == InterpolationType.EACH_FRAME:
-            if input_array.shape[1] < 2:
-                raise RuntimeError("Value for InterpolationType.EACH_FRAME must exactly match the number of points")
+            # This will be verified when the expected number of columns is set
+            pass
         elif interpolation_type == InterpolationType.SPLINE:
             if input_array.shape[1] < 2:
                 raise RuntimeError("Value for InterpolationType.SPLINE must have at least 2 columns")
+            if t is None:
+                raise RuntimeError("Spline necessitate a time vector")
+            t = np.asarray(t)
+            if input_array.shape[1] != t.shape[0]:
+                raise RuntimeError("Spline necessitate a time vector which as the same length as column of data")
+
         elif interpolation_type == InterpolationType.CUSTOM:
-            print("Can not make sure you entered the right argument size for InterpolationType.CUSTOM")
+            # We have to assume dimensions are those the user wants
+            pass
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
         obj = np.asarray(input_array).view(cls)
@@ -102,32 +119,12 @@ class PathCondition(np.ndarray):
                 f"Invalid number of {condition_type} ({self.shape[0] }), the expected size is {nb_elements}"
             )
 
-        if self.type == InterpolationType.CONSTANT:
-            if self.shape[1] != 1:
-                raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.CONSTANT (ncols = {self.shape[1]}), "
-                    f"the expected number of column is 1"
-                )
-        elif self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-            if self.shape[1] != 3:
-                raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.CONSTANT (ncols = {self.shape[1]}), "
-                    f"the expected number of column is 3"
-                )
-        elif self.type == InterpolationType.LINEAR:
-            if self.shape[1] != 2:
-                raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.LINEAR (ncols = {self.shape[1]}), "
-                    f"the expected number of column is 2"
-                )
-        elif self.type == InterpolationType.EACH_FRAME:
+        if self.type == InterpolationType.EACH_FRAME:
             if self.shape[1] != self.nb_shooting:
                 raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
+                    f"Invalid number of column for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
                     f"the expected number of column is {self.nb_shooting}"
                 )
-        elif self.type != InterpolationType.CUSTOM and self.type != InterpolationType.SPLINE:
-            raise RuntimeError(f"InterpolationType is not implemented yet")
 
     def evaluate_at(self, shooting_point, spline_time=(), t0=(), tf=(), custom_bound_function=None):
         """
