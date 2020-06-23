@@ -355,8 +355,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "custom_problem_type_and_dynamics",
-        str(PROJECT_FOLDER) + "/examples/getting_started/custom_dynamics.py",
+        "custom_problem_type_and_dynamics", str(PROJECT_FOLDER) + "/examples/getting_started/custom_dynamics.py",
     )
     pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum)
