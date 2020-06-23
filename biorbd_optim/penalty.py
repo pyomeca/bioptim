@@ -64,11 +64,12 @@ class PenaltyFunctionAbstract:
                 data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
             )
 
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q_MX"])
             nq = nlp["q_mapping"].reduce.len
             for i, v in enumerate(x):
                 q = nlp["q_mapping"].expand.map(v[:nq])
                 data_marker = data_to_track[:, markers_idx, t[i]]
-                val = nlp["model"].markers(q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
+                val = nlp["SX_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
