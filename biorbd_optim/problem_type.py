@@ -267,13 +267,16 @@ class Problem:
         if as_states:
             nlp["x"] = vertcat(q, q_dot)
             nlp["var_states"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
+            # bounds_q = [nlp["X_bounds"].min[:nlp["nbQ"]].min(), nlp["X_bounds"].max[:nlp["nbQ"]].max()]
+            # bounds_qot = [nlp["X_bounds"].min[nlp["nbQ"]:nlp["nbQ"] + nlp["nbQdot"]].min(), nlp["X_bounds"].max[nlp["nbQ"]:nlp["nbQ"] + nlp["nbQdot"]].max()]
             nlp["plot"]["q"] = CustomPlot(
-                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q
+                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q, bounds=nlp["X_bounds"],
             )
             nlp["plot"]["q_dot"] = CustomPlot(
                 lambda x, u, p: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
+                bounds=bounds_qot,
             )
         if as_controls:
             nlp["u"] = vertcat(q, q_dot)

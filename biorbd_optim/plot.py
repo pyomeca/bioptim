@@ -17,7 +17,7 @@ from .utils import check_version
 
 class CustomPlot:
     def __init__(
-        self, update_function, plot_type=PlotType.PLOT, axes_idx=None, legend=(), combine_to=None, color=None, ylim=None, use_bounds_as_ylimit=True,
+        self, update_function, plot_type=PlotType.PLOT, axes_idx=None, legend=(), combine_to=None, color=None, ylim=None,
     ):
         """
         Initializes the plot.
@@ -42,10 +42,6 @@ class CustomPlot:
         self.combine_to = combine_to
         self.color = color
         self.ylim = ylim
-        self.use_bounds_as_ylimit = use_bounds_as_ylimit
-        if use_bounds_as_ylimit:
-            # TODO: Manage the case where this boolean is true and ylim value is not None
-            pass
 
 
 class PlotOcp:
@@ -74,7 +70,6 @@ class PlotOcp:
         self.axes = {}
         self.plots = []
         self.plots_vertical_lines = []
-        self.use_bounds_as_ylimit = True
         self.all_figures = []
 
         running_cmp = 0
@@ -369,39 +364,22 @@ class PlotOcp:
                 if not self.axes[key][0].ylim:
                     y_max = -np.inf
                     y_min = np.inf
-                if self.use_bounds_as_ylimit:
-                    if key == 'q':
-                        for nlp in self.ocp.nlp:
-                            y_min = min(y_min, nlp["X_bounds"].min[:nlp["nbQ"]].min())
-                            y_max = max(y_max, nlp["X_bounds"].max[:nlp["nbQ"]].max())
-                    elif key == 'q_dot':
-                        for nlp in self.ocp.nlp:
-                            y_min = min(y_min, nlp["X_bounds"].min[nlp["nbQ"]:nlp["nbQ"]+nlp["nbQdot"]].min())
-                            y_max = max(y_max, nlp["X_bounds"].max[nlp["nbQ"]:nlp["nbQ"]+nlp["nbQdot"]].max())
-                    elif key == 'tau':      # TODO: Verify -> Here I assume that if there are tau, then it is stored at the beginning of the controls variable
-                        for nlp in self.ocp.nlp:
-                            y_min = min(y_min, nlp["U_bounds"].min[:nlp["nbTau"]].min())
-                            y_max = max(y_max, nlp["U_bounds"].max[:nlp["nbTau"]].max())
-                    else:
-                        pass
-                        # TODO: Raise a warning to say that using bounds as ylimit is not implemented yet for this variable
-                else:
                     for p in ax.get_children():
                         if isinstance(p, lines.Line2D):
                             y_min = min(y_min, np.min(p.get_ydata()))
                             y_max = max(y_max, np.max(p.get_ydata()))
-                if np.isnan(y_min) or np.isinf(y_min):
-                    y_min = 0
-                if np.isnan(y_max) or np.isinf(y_max):
-                    y_max = 1
-                data_mean = np.mean((y_min, y_max))
-                data_range = y_max - y_min
-                if np.abs(data_range) < 0.8:
-                    data_range = 0.8
-                y_range = (1.25 * data_range) / 2
-                y_range = data_mean - y_range, data_mean + y_range
-                ax.set_ylim(y_range)
-                ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
+                        if np.isnan(y_min) or np.isinf(y_min):
+                            y_min = 0
+                        if np.isnan(y_max) or np.isinf(y_max):
+                            y_max = 1
+                        data_mean = np.mean((y_min, y_max))
+                        data_range = y_max - y_min
+                        if np.abs(data_range) < 0.8:
+                            data_range = 0.8
+                        y_range = (1.25 * data_range) / 2
+                        y_range = data_mean - y_range, data_mean + y_range
+                        ax.set_ylim(y_range)
+                        ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
