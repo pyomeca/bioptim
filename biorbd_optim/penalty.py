@@ -138,10 +138,14 @@ class PenaltyFunctionAbstract:
                 data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
             )
 
+            #TODO: make sure third argument is the right one
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_markerVelocity", nlp["model"].markerVelocity,
+                                                    nlp["q_MX"], nlp["qdot_MX"], markers_idx[0])
+
             for m in markers_idx:
                 for i, v in enumerate(x):
                     val = (
-                        nlp["model"].markerVelocity(v[:n_q], v[n_q : n_q + n_qdot], m).to_mx()
+                        nlp["SX_func"]["biorbd_markerVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
                         - data_to_track[:, markers_idx, t[i]]
                     )
                     penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
