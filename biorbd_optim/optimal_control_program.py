@@ -5,7 +5,7 @@ from math import inf
 
 import biorbd
 import casadi
-from casadi import MX, vertcat, sum1
+from casadi import MX, vertcat, sum1, SX
 
 from .__version__ import __version__
 from .biorbd_interface import BiorbdInterface
@@ -20,7 +20,6 @@ from .objective_functions import Objective, ObjectiveFunction
 from .parameters import Parameters
 from .plot import OnlineCallback, CustomPlot
 from .variable_optimization import Data
-from .acados_interface import *
 from .__version__ import __version__
 from .utils import check_version
 
@@ -245,7 +244,8 @@ class OptimalControlProgram:
         nlp["nbTau"] = 0
         nlp["nbMuscles"] = 0
         nlp["plot"] = {}
-        nlp["x_MX"] = MX()
+        nlp["q_MX"] = MX()
+        nlp["qdot_MX"] = MX()
         nlp["u_MX"] = MX()
         nlp["x_SX"] = SX()
         nlp["u_SX"] = SX()
@@ -253,7 +253,7 @@ class OptimalControlProgram:
         nlp["J_acados_mayer"] = []
         nlp["g"] = []
         nlp["g_bounds"] = []
-        nlp["SX_func"] = []
+        nlp["SX_func"] = {}
 
     def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None):
         """Adds coupled parameters to the non linear problem"""
@@ -559,13 +559,13 @@ class OptimalControlProgram:
             solver_ocp.prepare_ipopt(self)
 
         elif solver == "acados":
+            from .acados_interface import AcadosInterface
             if "acados_dir" in solver_options:
                 os.environ["ACADOS_SOURCE_DIR"] = solver_options['acados_dir']
                 del solver_options['acados_dir']
 
-            from .acados_interface import AcadosInterface
             solver_ocp = AcadosInterface(self)
-            solver_ocp.prepare_acados(self, solver_options)
+            solver_ocp.prepare_acados(self)
 
             if return_iterations or show_online_optim:
                 raise NotImplementedError("return_iterations and show_online_optim are not implemented yet in acados.")
@@ -688,7 +688,7 @@ class OptimalControlProgram:
         for nlp in self.nlp:
             for obj_nodes in nlp["J"]:
                 for obj in obj_nodes:
-                    all_J = vertcat(all_J, obj)
+                        all_J = vertcat(all_J, obj)
 
         return all_J
 

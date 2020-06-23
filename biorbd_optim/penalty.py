@@ -137,12 +137,6 @@ class PenaltyFunctionAbstract:
                     )
                     penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
-        @staticmethod
-        def _add_to_sx_func(nlp, name, function, *all_param):
-            if hasattr(nlp['SX_func'], name):
-                 pass
-            else:
-                nlp["sx_func"][name] = biorbd.to_sx_func(name, function, *all_param)
 
         @staticmethod
         def align_markers(penalty_type, ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx, **extra_param):
@@ -157,11 +151,12 @@ class PenaltyFunctionAbstract:
                 "marker", [first_marker_idx, second_marker_idx], nlp["model"].nbMarkers()
             )
 
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q_MX"])
             nq = nlp["q_mapping"].reduce.len
             for v in x:
                 q = nlp["q_mapping"].expand.map(v[:nq])
-                first_marker = nlp["model"].marker(q, first_marker_idx).to_mx()
-                second_marker = nlp["model"].marker(q, second_marker_idx).to_mx()
+                first_marker = nlp["SX_func"]["biorbd_markers"](q)[:,first_marker_idx]
+                second_marker = nlp["SX_func"]["biorbd_markers"](q)[:, second_marker_idx]
 
                 val = first_marker - second_marker
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
@@ -419,6 +414,13 @@ class PenaltyFunctionAbstract:
 
         penalty_idx = penalty_type._reset_penalty(ocp, nlp, penalty_idx)
         penalty_function(penalty_type, ocp, nlp, t, x, u, nlp["p_SX"], penalty_idx=penalty_idx, **penalty)
+
+    @staticmethod
+    def _add_to_sx_func(nlp, name, function, *all_param):
+        if name in nlp['SX_func']:
+             return
+        else:
+            nlp["SX_func"][name] = biorbd.to_sx_func(name, function, *all_param)
 
     @staticmethod
     def _parameter_modifier(penalty_function, parameters):

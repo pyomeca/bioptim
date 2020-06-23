@@ -249,6 +249,8 @@ class ProblemType:
         legend_qdot = ["qdot_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_dot_mapping"].reduce.map_idx]
 
         if as_states:
+            nlp["q_MX"] = q_mx
+            nlp["qdot_MX"] = q_dot_mx
             nlp["x_MX"] = vertcat(q_mx, q_dot_mx)
             nlp["x_SX"] = vertcat(q_sx, q_dot_sx)
             nlp["var_states"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
