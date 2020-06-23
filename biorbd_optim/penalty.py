@@ -87,16 +87,21 @@ class PenaltyFunctionAbstract:
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
             )
+
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q_MX"])
             for i in range(len(x) - 1):
                 if coordinates_system_idx < 0:
                     inv_jcs_1 = casadi.MX.eye(4)
                     inv_jcs_0 = casadi.MX.eye(4)
                 elif coordinates_system_idx < nb_rts:
-                    jcs_1 = nlp["model"].globalJCS(x[i + 1][:n_q], coordinates_system_idx).to_mx()
+                    # TODO: Make sure second param is correct
+                    PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_globalJCS", nlp["model"].globalJCS,
+                                                            nlp["q_MX"], coordinates_system_idx)
+                    jcs_1 = nlp["SX_func"]["biorbd_globalJCS"](x[i + 1][:n_q])[coordinates_system_idx]
                     inv_jcs_1 = casadi.vertcat(
                         casadi.horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), casadi.horzcat(0, 0, 0, 1)
                     )
-                    jcs_0 = nlp["model"].globalJCS(x[i][:n_q], coordinates_system_idx).to_mx()
+                    jcs_0 = nlp["SX_func"]["biorbd_globalJCS"](x[i][:n_q])
                     inv_jcs_0 = casadi.vertcat(
                         casadi.horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), casadi.horzcat(0, 0, 0, 1)
                     )
@@ -105,9 +110,12 @@ class PenaltyFunctionAbstract:
                         f"Wrong choice of coordinates_system_idx. (Negative values refer to global coordinates system, "
                         f"positive values must be between 0 and {nb_rts})"
                     )
+                #TODO: Does not work with Acados(free variables)
                 val = inv_jcs_1 @ casadi.vertcat(
-                    nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx], 1
-                ) - inv_jcs_0 @ casadi.vertcat(nlp["model"].markers(x[i][:n_q])[:, markers_idx], 1)
+                    nlp["SX_func"]["biorbd_markers"](x[i + 1][:n_q])[:, markers_idx], 1) - inv_jcs_0 @ casadi.vertcat(nlp["SX_func"]["biorbd_markers"](x[i][:n_q])[:, markers_idx], 1)
+                # val = inv_jcs_1 @ casadi.vertcat(
+                #     nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx], 1
+                # ) - inv_jcs_0 @ casadi.vertcat(nlp["model"].markers(x[i][:n_q])[:, markers_idx], 1)
                 penalty_type._add_to_penalty(ocp, nlp, val[:3], **extra_param)
 
         @staticmethod
