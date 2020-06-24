@@ -309,12 +309,13 @@ class Problem:
         if as_states:
             nlp["x"] = u
             nlp["var_states"] = {"tau": nlp["nbTau"]}
-            # Add plot if it happens
+            # Add plot if it happens, do not forget to retrieve bounds by completing the slicing bounds function
         if as_controls:
+            tau_bounds = Problem.slicing_bounds(nlp, "tau")
             nlp["u"] = u
             nlp["var_controls"] = {"tau": nlp["nbTau"]}
             nlp["plot"]["tau"] = CustomPlot(
-                lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
+                lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau, bounds=tau_bounds,
             )
 
     @staticmethod
@@ -415,7 +416,10 @@ class Problem:
             interpolation_type = nlp["U_bounds"].min.type
         # TODO: Managing case else
 
-        return Bounds(min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type)
+        # TODO: Modify nb_elements arg below to become relevant
+        bounds = Bounds(min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type)
+        bounds.check_and_adjust_dimensions(nb_elements=min_bound.shape[0], nb_shooting=nlp["ns"])
+        return bounds
 
 class ProblemType(Enum):
     MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = Problem.muscle_excitations_and_torque_driven
