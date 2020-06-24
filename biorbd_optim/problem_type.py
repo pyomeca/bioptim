@@ -7,13 +7,6 @@ from .mapping import BidirectionalMapping, Mapping
 from .plot import CustomPlot
 from .enums import PlotType
 from .path_conditions import Bounds
-from casadi import MX, vertcat, Function
-from enum import Enum
-
-from .dynamics import Dynamics
-from .mapping import BidirectionalMapping, Mapping
-from .plot import CustomPlot
-from .enums import PlotType
 
 
 class Problem:
