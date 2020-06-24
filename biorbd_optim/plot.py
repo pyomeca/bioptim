@@ -174,8 +174,8 @@ class PlotOcp:
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
                     elif self.use_bounds_as_ylimit and nlp["plot"][variable].bounds is not None:
-                        ymin = nlp["plot"][variable].bounds.min.min()
-                        ymax = nlp["plot"][variable].bounds.max.max()
+                        ymin = 1.25 * nlp["plot"][variable].bounds.min.min()
+                        ymax = 1.25 * nlp["plot"][variable].bounds.max.max()
                         ax.set_ylim(ymin=ymin, ymax=ymax)
                         # TODO: Verify if calling set_yticks (like in the update) is well unnecessary?
                     zero = np.zeros((t.shape[0], 1))
