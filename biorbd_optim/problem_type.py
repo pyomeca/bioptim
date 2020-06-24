@@ -1,3 +1,12 @@
+import numpy as np
+from casadi import MX, vertcat, Function
+from enum import Enum
+
+from .dynamics import Dynamics
+from .mapping import BidirectionalMapping, Mapping
+from .plot import CustomPlot
+from .enums import PlotType
+from .path_conditions import Bounds
 from casadi import MX, vertcat, Function
 from enum import Enum
 
@@ -387,6 +396,31 @@ class Problem:
             ["xdot"],
         ).expand()
 
+    @staticmethod
+    def slicing_bounds(nlp, variable_name):
+        if variable_name == 'q':
+            min_bound = np.array(nlp["X_bounds"].min[:nlp["nbQ"]])
+            max_bound = np.array(nlp["X_bounds"].max[:nlp["nbQ"]])
+            interpolation_type = nlp["X_bounds"].min.type
+        elif variable_name == 'q_dot':
+            min_bound = np.array(nlp["X_bounds"].min[nlp["nbQ"]:nlp["nbQ"]+nlp["nbQdot"]])
+            max_bound = np.array(nlp["X_bounds"].max[nlp["nbQ"]:nlp["nbQ"]+nlp["nbQdot"]])
+            interpolation_type = nlp["X_bounds"].min.type
+        elif variable_name == "muscles_states":      # TODO: Here I assume that tau is always after q and qdot in x
+            min_bound = np.array(nlp["X_bounds"].min[nlp["nbQ"]+nlp["nbQdot"]:nlp["nbQ"]+nlp["nbQdot"]+nlp["nbMuscle"]])
+            max_bound = np.array(nlp["X_bounds"].max[nlp["nbQ"]+nlp["nbQdot"]:nlp["nbQ"]+nlp["nbQdot"]+nlp["nbMuscle"]])
+            interpolation_type = nlp["X_bounds"].min.type
+        elif variable_name == "tau":  # TODO: Here I assume that tau is always in the beginning of u
+            min_bound = np.array(nlp["U_bounds"].min[:nlp["nbTau"]])
+            max_bound = np.array(nlp["U_bounds"].max[:nlp["nbTau"]])
+            interpolation_type = nlp["U_bounds"].min.type
+        elif variable_name == "muscles_control":
+            min_bound = np.array(nlp["U_bounds"].min[:nlp["nbTau"]+nlp["nbMuscle"]])
+            max_bound = np.array(nlp["U_bounds"].max[:nlp["nbTau"]+nlp["nbMuscle"]])
+            interpolation_type = nlp["U_bounds"].min.type
+        # TODO: Managing case else
+
+        return Bounds(min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type)
 
 class ProblemType(Enum):
     MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = Problem.muscle_excitations_and_torque_driven
