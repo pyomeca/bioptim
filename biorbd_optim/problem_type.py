@@ -273,19 +273,21 @@ class Problem:
         legend_q = ["q_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_mapping"].reduce.map_idx]
         legend_qdot = ["qdot_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_dot_mapping"].reduce.map_idx]
 
+        # Retrieving bounds
+        q_bounds = Problem.slicing_bounds(nlp, "q")
+        qdot_bounds = Problem.slicing_bounds(nlp, "q_dot")
+
         if as_states:
             nlp["x"] = vertcat(q, q_dot)
             nlp["var_states"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
-            # bounds_q = [nlp["X_bounds"].min[:nlp["nbQ"]].min(), nlp["X_bounds"].max[:nlp["nbQ"]].max()]
-            # bounds_qot = [nlp["X_bounds"].min[nlp["nbQ"]:nlp["nbQ"] + nlp["nbQdot"]].min(), nlp["X_bounds"].max[nlp["nbQ"]:nlp["nbQ"] + nlp["nbQdot"]].max()]
             nlp["plot"]["q"] = CustomPlot(
-                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q, bounds=nlp["X_bounds"],
+                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q, bounds=q_bounds,
             )
             nlp["plot"]["q_dot"] = CustomPlot(
                 lambda x, u, p: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
-                bounds=bounds_qot,
+                bounds=qdot_bounds,
             )
         if as_controls:
             nlp["u"] = vertcat(q, q_dot)
