@@ -17,7 +17,7 @@ from .utils import check_version
 
 class CustomPlot:
     def __init__(
-        self, update_function, plot_type=PlotType.PLOT, axes_idx=None, legend=(), combine_to=None, color=None, ylim=None,
+        self, update_function, plot_type=PlotType.PLOT, axes_idx=None, legend=(), combine_to=None, color=None, ylim=None, bounds=None
     ):
         """
         Initializes the plot.
@@ -42,10 +42,11 @@ class CustomPlot:
         self.combine_to = combine_to
         self.color = color
         self.ylim = ylim
+        self.bounds = bounds
 
 
 class PlotOcp:
-    def __init__(self, ocp, automatically_organize=True):
+    def __init__(self, ocp, automatically_organize=True, use_bounds_as_ylimit=True, show_bounds=False):
         """Prepares the figure"""
         for i in range(1, ocp.nb_phases):
             if ocp.nlp[0]["nbQ"] != ocp.nlp[i]["nbQ"]:
@@ -78,6 +79,8 @@ class PlotOcp:
 
         self.plot_func = {}
         self.variable_sizes = []
+        self.use_bounds_as_ylimit = use_bounds_as_ylimit
+        self.show_bounds = show_bounds
         self.__create_plots()
 
         horz = 0
@@ -169,7 +172,11 @@ class PlotOcp:
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
-
+                    elif self.use_bounds_as_ylimit:
+                        ymin = nlp["plot"][variable].bounds.min.min()
+                        ymax = nlp["plot"][variable].bounds.max.max()
+                        ax.set_ylim(ymin=ymin, ymax=ymax)
+                        # TODO: Verify if calling set_yticks (like in the update) is well unnecessary?
                     zero = np.zeros((t.shape[0], 1))
                     plot_type = self.plot_func[variable][i].type
                     if plot_type == PlotType.PLOT:
@@ -359,27 +366,28 @@ class PlotOcp:
         for p in self.plots_vertical_lines:
             p.set_ydata((np.nan, np.nan))
 
-        for key in self.axes:
-            for i, ax in enumerate(self.axes[key][1]):
-                if not self.axes[key][0].ylim:
-                    y_max = -np.inf
-                    y_min = np.inf
-                    for p in ax.get_children():
-                        if isinstance(p, lines.Line2D):
-                            y_min = min(y_min, np.min(p.get_ydata()))
-                            y_max = max(y_max, np.max(p.get_ydata()))
-                        if np.isnan(y_min) or np.isinf(y_min):
-                            y_min = 0
-                        if np.isnan(y_max) or np.isinf(y_max):
-                            y_max = 1
-                        data_mean = np.mean((y_min, y_max))
-                        data_range = y_max - y_min
-                        if np.abs(data_range) < 0.8:
-                            data_range = 0.8
-                        y_range = (1.25 * data_range) / 2
-                        y_range = data_mean - y_range, data_mean + y_range
-                        ax.set_ylim(y_range)
-                        ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
+        if not self.use_bounds_as_ylimit:
+            for key in self.axes:
+                for i, ax in enumerate(self.axes[key][1]):
+                    if not self.axes[key][0].ylim:
+                        y_max = -np.inf
+                        y_min = np.inf
+                        for p in ax.get_children():
+                            if isinstance(p, lines.Line2D):
+                                y_min = min(y_min, np.min(p.get_ydata()))
+                                y_max = max(y_max, np.max(p.get_ydata()))
+                            if np.isnan(y_min) or np.isinf(y_min):
+                                y_min = 0
+                            if np.isnan(y_max) or np.isinf(y_max):
+                                y_max = 1
+                            data_mean = np.mean((y_min, y_max))
+                            data_range = y_max - y_min
+                            if np.abs(data_range) < 0.8:
+                                data_range = 0.8
+                            y_range = (1.25 * data_range) / 2
+                            y_range = data_mean - y_range, data_mean + y_range
+                            ax.set_ylim(y_range)
+                            ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
