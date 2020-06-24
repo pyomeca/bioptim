@@ -46,7 +46,7 @@ class CustomPlot:
 
 
 class PlotOcp:
-    def __init__(self, ocp, automatically_organize=True, use_bounds_as_ylimit=True, show_bounds=False):
+    def __init__(self, ocp, automatically_organize=True, use_bounds_as_ylimit=True, show_bounds=True):
         """Prepares the figure"""
         for i in range(1, ocp.nb_phases):
             if ocp.nlp[0]["nbQ"] != ocp.nlp[i]["nbQ"]:
@@ -71,6 +71,7 @@ class PlotOcp:
         self.axes = {}
         self.plots = []
         self.plots_vertical_lines = []
+        self.plots_bounds = []
         self.all_figures = []
 
         running_cmp = 0
@@ -172,7 +173,7 @@ class PlotOcp:
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
-                    elif self.use_bounds_as_ylimit:
+                    elif self.use_bounds_as_ylimit and nlp["plot"][variable].bounds is not None:
                         ymin = nlp["plot"][variable].bounds.min.min()
                         ymax = nlp["plot"][variable].bounds.max.max()
                         ax.set_ylim(ymin=ymin, ymax=ymax)
@@ -207,10 +208,18 @@ class PlotOcp:
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
-                for ax in axes:
+                for j, ax in enumerate(axes):
                     intersections_time = self.find_phases_intersections()
                     for time in intersections_time:
                         self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
+                    if self.show_bounds and self.use_bounds_as_ylimit and self.axes[variable][0].bounds is not None:
+                        # TODO: Manage the cas k = ns + 1 below (incorrect but it's to match with dim of self.t[i])
+                        bounds_min = np.array([self.axes[variable][0].bounds.min.evaluate_at(k)[j] for k in range(nlp["ns"]+1)])
+                        bounds_max = np.array([self.axes[variable][0].bounds.max.evaluate_at(k)[j] for k in range(nlp["ns"]+1)])
+
+                        self.plots_bounds.append(ax.step(self.t[i], bounds_min, labels=('bounds min'), linestyle="--", linewidth=1.2, colors="g"))
+                        self.plots_bounds.append(ax.step(self.t[i], bounds_max, labels=('bounds max'), linestyle="--", linewidth=1.2, colors="g"))
+
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
         """
@@ -340,12 +349,21 @@ class PlotOcp:
                 ax = plot[2].axes
             ax.set_xlim(0, self.t[-1][-1])
 
+        if self.plots_bounds:
+            for plot_bounds in self.plots_bounds[0]:
+                print("test")
+                plot_bounds.set_xdata(self.t[phase_idx])
+                ax = plot[2].axes
+                ax.set_xlim(0, self.t[-1][-1])
+
         intersections_time = self.find_phases_intersections()
         n = len(intersections_time)
         if n > 0:
             for p in range(int(len(self.plots_vertical_lines) / n)):
                 for i, time in enumerate(intersections_time):
                     self.plots_vertical_lines[p * n + i].set_xdata([time, time])
+
+
 
     def __append_to_ydata(self, data):
         for y in data:
@@ -366,8 +384,8 @@ class PlotOcp:
         for p in self.plots_vertical_lines:
             p.set_ydata((np.nan, np.nan))
 
-        if not self.use_bounds_as_ylimit:
-            for key in self.axes:
+        for key in self.axes:
+            if not (self.use_bounds_as_ylimit and self.axes[key][0].bounds is not None):
                 for i, ax in enumerate(self.axes[key][1]):
                     if not self.axes[key][0].ylim:
                         y_max = -np.inf
