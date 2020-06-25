@@ -30,6 +30,7 @@ class Dynamics:
             qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
         else:
             qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+
         if "external_forces" in nlp:
             dxdt = MX(nlp["nx"], nlp["ns"])
             for i, f_ext in enumerate(nlp["external_forces"]):

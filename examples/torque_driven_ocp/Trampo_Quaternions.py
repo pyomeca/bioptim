@@ -12,11 +12,12 @@ from biorbd_optim import (
     InterpolationType,
 )
 
+
 def eul2quat(eul):
     # xyz convention
-    ph  = eul[0]
-    th  = eul[1]
-    ps  = eul[2]
+    ph = eul[0]
+    th = eul[1]
+    ps = eul[2]
     cph = np.cos(ph * 0.5)
     sph = np.sin(ph * 0.5)
     cth = np.cos(th * 0.5)
@@ -24,10 +25,11 @@ def eul2quat(eul):
     cps = np.cos(ps * 0.5)
     sps = np.sin(ps * 0.5)
     w = -sph * sth * sps + cph * cth * cps
-    x =  sph * cth * cps + cph * sth * sps
-    y =  cph * sth * cps - sph * cth * sps
-    z =  sph * sth * cps + cph * cth * sps
-    return np.array([w,x,y,z])
+    x = sph * cth * cps + cph * sth * sps
+    y = cph * sth * cps - sph * cth * sps
+    z = sph * sth * cps + cph * cth * sps
+    return np.array([w, x, y, z])
+
 
 def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
     # --- Options --- #
@@ -35,11 +37,14 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
     biorbd_model = biorbd.Model(biorbd_model_path)
     nq = biorbd_model.nbQ()
     nqdot = biorbd_model.nbQdot()
-    ntau = nqdot # biorbd_model.nbGeneralizedTorque()
+    ntau = nqdot  # biorbd_model.nbGeneralizedTorque()
     torque_min, torque_max, torque_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = ({"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT},{"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100})
+    objective_functions = (
+        {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT},
+        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
+    )
 
     # Dynamics
     problem_type = {"type": ProblemType.TORQUE_DRIVEN}
@@ -54,12 +59,12 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
     U_bounds = Bounds([torque_min] * ntau, [torque_max] * ntau)
 
     # Initial guesses
-    x = np.vstack((np.zeros((biorbd_model.nbQ(),2)), np.ones((biorbd_model.nbQdot(),2))))
+    x = np.vstack((np.zeros((biorbd_model.nbQ(), 2)), np.ones((biorbd_model.nbQdot(), 2))))
     Arm_init = np.zeros((3, 2))
     Arm_init[1, 0] = 0
     Arm_init[1, 1] = -np.pi
     for i in range(2):
-        Arm_Quat = eul2quat(Arm_init[:,i])
+        Arm_Quat = eul2quat(Arm_init[:, i])
         # Arm_Quat = biorbd.Quaternion_fromMatrix(biorbd.Rotation_fromEulerAngles(biorbd.Vector3d(Arm_init[0,i], Arm_init[1,i], Arm_init[2,i]),'xyz')).to_mx() # not the right type
         x[6:9, i] = Arm_Quat[1:]
         x[9, i] = Arm_Quat[0]
@@ -85,8 +90,12 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
 
 if __name__ == "__main__":
 
-# changer le path quand ce sera pret
-    ocp = prepare_ocp("/home/user/Documents/Programmation/BiorbdOptim/examples/sandbox/TruncAndArm_Quaternion.bioMod", number_shooting_points=5, final_time=0.25)
+    # changer le path quand ce sera pret
+    ocp = prepare_ocp(
+        "/home/user/Documents/Programmation/BiorbdOptim/examples/sandbox/TruncAndArm_Quaternion.bioMod",
+        number_shooting_points=5,
+        final_time=0.25,
+    )
     sol = ocp.solve()
     print("\n")
 
