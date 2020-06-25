@@ -25,7 +25,11 @@ class Dynamics:
         Dynamics.apply_parameters(parameters, nlp)
         q, qdot, tau = Dynamics.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        if biorbd.Model.nbQuat(nlp["model"]) > 0:
+            q_dot = biorbd.Model.computeQdot(nlp["model"], q, qdot).to_mx()
+            qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
+        else:
+            qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
         if "external_forces" in nlp:
             dxdt = MX(nlp["nx"], nlp["ns"])
             for i, f_ext in enumerate(nlp["external_forces"]):
