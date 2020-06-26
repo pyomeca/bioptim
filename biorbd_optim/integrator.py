@@ -33,17 +33,17 @@ def RK4(ode, ode_opt):
             k4 = fun(x[:, i - 1] + h * k3, u, p)[:, idx]
             x[:, i] = x[:, i - 1] + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
-        Quat_idx = []
+        quat_idx = []
         for j in range(model.nbQ()):
-            Name = model.nameDof()[j].to_string()
-            if Name[-5:-1] == "Quat":
-                Quat_idx += [j]
+            name = model.nameDof()[j].to_string()
+            if name[-5:-1] == "Quat":
+                quat_idx += [j]
 
         for j in range(model.nbQuat()):
-            quaternion = vertcat(x[Quat_idx[j + 3], i], x[Quat_idx[j], i], x[Quat_idx[j + 1], i], x[Quat_idx[j + 2], i])
+            quaternion = vertcat(x[quat_idx[j + 3], i], x[quat_idx[j], i], x[quat_idx[j + 1], i], x[quat_idx[j + 2], i])
             quaternion /= norm_fro(quaternion)
-            x[Quat_idx[j] : Quat_idx[j + 3], i] = vertcat(quaternion[1:4])
-            x[Quat_idx[j + 3], i] = quaternion[0]
+            x[quat_idx[j] : quat_idx[j + 3], i] = quaternion[1:4]
+            x[quat_idx[j + 3], i] = quaternion[0]
         return x[:, -1], x
 
     return Function(
