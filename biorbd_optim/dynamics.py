@@ -55,7 +55,8 @@ class Dynamics:
 
         qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau).to_mx()
 
-        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        q_dot = nlp["model"].computeQdot(q, qdot).to_mx()
+        qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
@@ -85,7 +86,8 @@ class Dynamics:
         tau = nlp["model"].torque(torque_act, q, qdot).to_mx()
         qddot = nlp["model"].ForwardDynamics(q, qdot, tau).to_mx()
 
-        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        q_dot = nlp["model"].computeQdot(q, qdot).to_mx()
+        qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
@@ -97,7 +99,8 @@ class Dynamics:
         tau = nlp["model"].torque(torque_act, q, qdot).to_mx()
         qddot = nlp["model"].ForwardDynamicsConstraintsDirect(q, qdot, tau).to_mx()
 
-        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        q_dot = nlp["model"].computeQdot(q, qdot).to_mx()
+        qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
@@ -123,7 +126,8 @@ class Dynamics:
 
         qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
 
-        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        q_dot = nlp["model"].computeQdot(q, qdot).to_mx()
+        qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
@@ -150,7 +154,8 @@ class Dynamics:
 
         qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau).to_mx()
 
-        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        q_dot = nlp["model"].computeQdot(q, qdot).to_mx()
+        qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
@@ -200,7 +205,8 @@ class Dynamics:
         muscles_tau = nlp["model"].muscularJointTorque(muscles_states, q, qdot).to_mx()
         qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, muscles_tau).to_mx()
 
-        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        q_dot = nlp["model"].computeQdot(q, qdot).to_mx()
+        qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced)
 
@@ -231,7 +237,8 @@ class Dynamics:
         muscles_tau = nlp["model"].muscularJointTorque(muscles_states, q, qdot).to_mx()
         qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, muscles_tau).to_mx()
 
-        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        q_dot = nlp["model"].computeQdot(q, qdot).to_mx()
+        qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
@@ -261,7 +268,8 @@ class Dynamics:
         tau = muscles_tau + residual_tau
         qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau).to_mx()
 
-        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        q_dot = nlp["model"].computeQdot(q, qdot).to_mx()
+        qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
@@ -291,7 +299,8 @@ class Dynamics:
         tau = muscles_tau + residual_tau
         qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau).to_mx()
 
-        qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        q_dot = nlp["model"].computeQdot(q, qdot).to_mx()
+        qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
         qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
