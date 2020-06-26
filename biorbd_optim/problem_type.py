@@ -416,7 +416,8 @@ class Problem:
             interpolation_type = nlp["U_bounds"].min.type
         # TODO: Managing case else
 
-        # TODO: Modify nb_elements arg below to become relevant
+        # TODO: Modify nb_elements arg below to become relevant (it will be possible with next TODO)
+        # TODO: Deplace this check in plot so in a way that it will be applied at bounds even when we do not use this slicing functions
         bounds = Bounds(min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type)
         bounds.check_and_adjust_dimensions(nb_elements=min_bound.shape[0], nb_shooting=nlp["ns"])
         return bounds

@@ -214,11 +214,17 @@ class PlotOcp:
                         self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
                     if self.show_bounds and self.use_bounds_as_ylimit and self.axes[variable][0].bounds is not None:
                         # TODO: Manage the cas k = ns + 1 below (incorrect but it's to match with dim of self.t[i])
-                        bounds_min = np.array([self.axes[variable][0].bounds.min.evaluate_at(k)[j] for k in range(nlp["ns"]+1)])
-                        bounds_max = np.array([self.axes[variable][0].bounds.max.evaluate_at(k)[j] for k in range(nlp["ns"]+1)])
+                        # bounds_min = np.array([self.axes[variable][0].bounds.min.evaluate_at(k)[j] for k in range(nlp["ns"]+1)])
+                        # bounds_max = np.array([self.axes[variable][0].bounds.max.evaluate_at(k)[j] for k in range(nlp["ns"]+1)])
+                        bounds_min = np.array([nlp["plot"][variable].bounds.min.evaluate_at(k)[j] for k in range(nlp["ns"] + 1)])
+                        bounds_max = np.array([nlp["plot"][variable].bounds.max.evaluate_at(k)[j] for k in range(nlp["ns"] + 1)])
 
-                        self.plots_bounds.append(ax.step(self.t[i], bounds_min, where="post", color='g'))
-                        self.plots_bounds.append(ax.step(self.t[i], bounds_max, where="post", color='g'))
+                        # if variable == 'q' and j == 0:
+                        #     print("Chips")
+
+                        # print(f"\n We fill plot_bounds for variable {variable}")
+                        self.plots_bounds.append([ax.step(self.t[i], bounds_min, where="post", color='k', linestyle="--"), i])
+                        self.plots_bounds.append([ax.step(self.t[i], bounds_max, where="post", color='k', linestyle="--"), i])
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
         """
