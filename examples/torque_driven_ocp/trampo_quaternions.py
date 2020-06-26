@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
     # changer le path quand ce sera pret
     ocp = prepare_ocp(
-        "/home/user/Documents/Programmation/BiorbdOptim/examples/sandbox/TruncAndArm_Quaternion.bioMod",
+        "TruncAndArm_Quaternion.bioMod",
         number_shooting_points=5,
         final_time=0.25,
     )

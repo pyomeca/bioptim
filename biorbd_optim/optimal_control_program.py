@@ -287,6 +287,7 @@ class OptimalControlProgram:
         if nlp["ode_solver"] == OdeSolver.COLLOCATION or nlp["ode_solver"] == OdeSolver.RK:
             ode_opt["number_of_finite_elements"] = nlp["nb_integration_steps"]
 
+        ode_opt["model"] = nlp["model"]
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"], nlp["p"])}
         nlp["dynamics"] = []
         nlp["par_dynamics"] = {}
@@ -297,9 +298,9 @@ class OptimalControlProgram:
             if "external_forces" in nlp:
                 for idx in range(len(nlp["external_forces"])):
                     ode_opt["idx"] = idx
-                    nlp["dynamics"].append(RK4(nlp["model"], ode, ode_opt))
+                    nlp["dynamics"].append(RK4(ode, ode_opt))
             else:
-                nlp["dynamics"].append(RK4(nlp["model"], ode, ode_opt))
+                nlp["dynamics"].append(RK4(ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
             if len(self.param_to_optimize) != 0:
                 raise RuntimeError("OdeSolver.COLLOCATION cannot be used while optimizing parameters")

@@ -1,7 +1,7 @@
 from casadi import MX, Function, vertcat, norm_fro
 
 
-def RK4(Model, ode, ode_opt):
+def RK4(ode, ode_opt):
     """
     Numerical integration using fourth order Runge-Kutta method.
     :param ode: ode["x"] -> States. ode["p"] -> Controls. ode["ode"] -> Ordinary differential equation function
@@ -17,6 +17,7 @@ def RK4(Model, ode, ode_opt):
     u_sym = ode["p"]
     param_sym = ode_opt["param"]
     fun = ode["ode"]
+    model = ode_opt["model"]
     h = (t_span[1] - t_span[0]) / n_step  # Length of steps
 
     def dxdt(h, states, controls, params):
@@ -33,15 +34,15 @@ def RK4(Model, ode, ode_opt):
             x[:, i] = x[:, i - 1] + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
         Quat_idx = []
-        for j in range(Model.nbQ()):
-            Name = Model.nameDof()[j].to_string()
+        for j in range(model.nbQ()):
+            Name = model.nameDof()[j].to_string()
             if Name[-5:-1] == "Quat":
                 Quat_idx += [j]
 
-        for j in range(Model.nbQuat()):
+        for j in range(model.nbQuat()):
             quaternion = vertcat(x[Quat_idx[j + 3], i], x[Quat_idx[j], i], x[Quat_idx[j + 1], i], x[Quat_idx[j + 2], i])
             quaternion /= norm_fro(quaternion)
-            x[Quat_idx[j] : Quat_idx[j + 3], i] = vertcat(quaternion[1], quaternion[2], quaternion[3])
+            x[Quat_idx[j] : Quat_idx[j + 3], i] = vertcat(quaternion[1:4])
             x[Quat_idx[j + 3], i] = quaternion[0]
         return x[:, -1], x
 

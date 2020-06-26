@@ -25,20 +25,17 @@ class Dynamics:
         Dynamics.apply_parameters(parameters, nlp)
         q, qdot, tau = Dynamics.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-        if biorbd.Model.nbQuat(nlp["model"]) > 0:
-            q_dot = biorbd.Model.computeQdot(nlp["model"], q, qdot).to_mx()
-            qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
-        else:
-            qdot_reduced = nlp["q_mapping"].reduce.map(qdot)
+        q_dot = nlp["model"].computeQdot(q, qdot).to_mx()
+        qdot_reduced = nlp["q_mapping"].reduce.map(q_dot)
 
         if "external_forces" in nlp:
             dxdt = MX(nlp["nx"], nlp["ns"])
             for i, f_ext in enumerate(nlp["external_forces"]):
-                qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau, f_ext).to_mx()
+                qddot = nlp["model"].ForwardDynamics(q, qdot, tau, f_ext).to_mx()
                 qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
                 dxdt[:, i] = vertcat(qdot_reduced, qddot_reduced)
         else:
-            qddot = biorbd.Model.ForwardDynamics(nlp["model"], q, qdot, tau).to_mx()
+            qddot = nlp["model"].ForwardDynamics(q, qdot, tau).to_mx()
             qddot_reduced = nlp["q_dot_mapping"].reduce.map(qddot)
             dxdt = vertcat(qdot_reduced, qddot_reduced)
 
