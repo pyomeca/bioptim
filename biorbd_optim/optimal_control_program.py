@@ -332,6 +332,8 @@ class OptimalControlProgram:
         V = []
         X = []
         U = []
+        X_MX = []
+        U_MX = []
 
         nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
         V_bounds = Bounds([0] * nV, [0] * nV, interpolation_type=InterpolationType.CONSTANT)
@@ -340,7 +342,9 @@ class OptimalControlProgram:
         offset = 0
         for k in range(nlp["ns"] + 1):
             X_ = SX.sym("X_" + str(idx_phase) + '_' + str(k), nlp["nx"])
+            X_MX_ = MX.sym("X_" + str(idx_phase) + '_' + str(k), nlp["nx"])
             X.append(X_)
+            X_MX.append(X_MX_)
             V_bounds.min[offset: offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
             V_bounds.max[offset: offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
             V_init.init[offset: offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
@@ -348,7 +352,9 @@ class OptimalControlProgram:
             V = vertcat(V, X_)
             if k != nlp["ns"]:
                 U_ = SX.sym("U_" + str(idx_phase) + '_' + str(k), nlp["nu"])
+                U_MX_ = MX.sym("U_" + str(idx_phase) + '_' + str(k), nlp["nu"])
                 U.append(U_)
+                U_MX.append(U_MX_)
                 V_bounds.min[offset: offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
                 V_bounds.max[offset: offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
                 V_init.init[offset: offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
@@ -358,7 +364,9 @@ class OptimalControlProgram:
         V_init.check_and_adjust_dimensions(nV, 1)
 
         nlp["X"] = X
+        nlp["X_MX"] = X_MX
         nlp["U"] = U
+        nlp["U_MX"] = U_MX
         self.V = vertcat(self.V, V)
 
         self.V_bounds.concatenate(V_bounds)
@@ -405,7 +413,7 @@ class OptimalControlProgram:
                     has_penalty[i] = True
 
                     initial_time_guess.append(phase_time[i])
-                    phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
+                    phase_time[i] = casadi.SX.sym(f"time_phase_{i}", 1, 1)
                     time_min.append(pen_fun["minimum"] if "minimum" in pen_fun else 0)
                     time_max.append(pen_fun["maximum"] if "maximum" in pen_fun else inf)
         return has_penalty
@@ -419,7 +427,7 @@ class OptimalControlProgram:
         """
         i = 0
         for nlp in self.nlp:
-            if isinstance(nlp["tf"], MX):
+            if isinstance(nlp["tf"], SX):
                 time_bounds = Bounds(minimum[i], maximum[i], interpolation_type=InterpolationType.CONSTANT)
                 time_init = InitialConditions(initial_guess[i])
                 Parameters.add_to_V(self, "time", 1, None, time_bounds, time_init, nlp["tf"])

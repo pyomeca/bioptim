@@ -91,13 +91,18 @@ class ObjectiveFunction:
             """
             if quadratic:
                 J = casadi.dot(val, val) * weight
-                J_acados_mayer = casadi.dot(nlp['X'][0], nlp['X'][0]) * weight
             else:
                 J = casadi.sum1(val) * weight
-                J_acados_mayer = casadi.sum1(nlp['X'][0]) * weight
-
             ObjectiveFunction._add_to_penalty(ocp, nlp, J, penalty_idx)
-            ObjectiveFunction._add_to_penalty_acados_mayer(ocp, nlp, J_acados_mayer, penalty_idx)
+
+            if nlp :
+                if quadratic :
+                    J_acados_mayer = casadi.dot(nlp['X'][0], nlp['X'][0]) * weight
+                else :
+                    J_acados_mayer = casadi.sum1(nlp['X'][0]) * weight
+                ObjectiveFunction._add_to_penalty_acados_mayer(ocp, nlp, J_acados_mayer, penalty_idx)
+            else :
+                print("TODO : implement cyclic objective in ACADOS")
 
 
         @staticmethod

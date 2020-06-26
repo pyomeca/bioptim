@@ -73,9 +73,7 @@ class ProblemType:
 
         u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
             u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
         nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
         nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
 
@@ -94,9 +92,7 @@ class ProblemType:
 
         u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
             u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
         nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
         nlp["nu"] = nlp["u_MX"].rows()
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
@@ -116,12 +112,8 @@ class ProblemType:
         x_sx = SX()
         u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x_mx = vertcat(x_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
             u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
             x_sx = vertcat(x_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
-        nlp["x_MX"] = vertcat(nlp["x_MX"], x_mx)
         nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
         nlp["x_SX"] = vertcat(nlp["x_SX"], x_sx)
         nlp["var_states"]["muscles"] = nlp["nbMuscle"]
@@ -143,12 +135,8 @@ class ProblemType:
         x_sx = SX()
         u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x_mx = vertcat(x_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
             u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
             x_sx = vertcat(x_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
-        nlp["x_MX"] = vertcat(nlp["x_MX"], x_mx)
         nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
         nlp["x_SX"] = vertcat(nlp["x_SX"], x_sx)
         nlp["var_states"]["muscles"] = nlp["nbMuscle"]
@@ -169,10 +157,9 @@ class ProblemType:
         ProblemType.__configure_tau(nlp, False, True)
         ProblemType.__configure_muscles(nlp, False, True)
 
+        u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
             u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
         nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
         nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
@@ -197,12 +184,8 @@ class ProblemType:
         x_sx = SX()
         u_sx = SX()
         for i in range(nlp["nbMuscle"]):
-            u_mx = vertcat(u_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x_mx = vertcat(x_mx, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
             u_sx = vertcat(u_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
             x_sx = vertcat(x_sx, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u_MX"] = vertcat(nlp["u_MX"], u_mx)
-        nlp["x_MX"] = vertcat(nlp["x_MX"], x_mx)
         nlp["u_SX"] = vertcat(nlp["u_SX"], u_sx)
         nlp["x_SX"] = vertcat(nlp["x_SX"], x_sx)
         nlp["var_states"]["muscles"] = nlp["nbMuscle"]
@@ -232,15 +215,25 @@ class ProblemType:
 
         dof_names = nlp["model"].nameDof()
         q_mx = MX()
+        q_mx_expand = MX()
         q_dot_mx = MX()
+        q_dot_mx_expand = MX()
         q_sx = SX()
         q_dot_sx = SX()
+        q_sx_expand = SX()
+        q_dot_sx_expand = SX()
         for i in nlp["q_mapping"].reduce.map_idx:
             q_mx = vertcat(q_mx, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
             q_sx = vertcat(q_sx, SX.sym("Q_" + dof_names[i].to_string(), 1, 1))
         for i in nlp["q_dot_mapping"].reduce.map_idx:
             q_dot_mx = vertcat(q_dot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
             q_dot_sx = vertcat(q_dot_sx, SX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+        for i in range(len(nlp["q_mapping"].expand.map_idx)):
+            q_mx_expand = vertcat(q_mx_expand, MX.sym("Q_expand_" + dof_names[i].to_string(), 1, 1))
+            q_sx_expand = vertcat(q_sx_expand, SX.sym("Q_expand_" + dof_names[i].to_string(), 1, 1))
+        for i in range(len(nlp["q_dot_mapping"].expand.map_idx)):
+            q_dot_mx_expand = vertcat(q_dot_mx_expand, MX.sym("Qdot_expand_" + dof_names[i].to_string(), 1, 1))
+            q_dot_sx_expand = vertcat(q_dot_sx_expand, SX.sym("Qdot_expand_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbQ"] = nlp["q_mapping"].reduce.len
         nlp["nbQdot"] = nlp["q_dot_mapping"].reduce.len
@@ -250,7 +243,9 @@ class ProblemType:
 
         if as_states:
             nlp["q_MX"] = q_mx
+            nlp["q_MX_expand"] = q_mx_expand
             nlp["qdot_MX"] = q_dot_mx
+            nlp["qdot_MX_expand"] = q_dot_mx_expand
             nlp["x_MX"] = vertcat(q_mx, q_dot_mx)
             nlp["x_SX"] = vertcat(q_sx, q_dot_sx)
             nlp["var_states"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
@@ -306,7 +301,7 @@ class ProblemType:
     def __configure_contact(ocp, nlp, dyn_func):
         symbolic_states = MX.sym("x", nlp["nx"], 1)
         symbolic_controls = MX.sym("u", nlp["nu"], 1)
-        symbolic_param = nlp["p"]
+        symbolic_param = nlp["p_MX"]
         nlp["contact_forces_func"] = Function(
             "contact_forces_func",
             [symbolic_states, symbolic_controls, symbolic_param],
@@ -348,8 +343,8 @@ class ProblemType:
 
     @staticmethod
     def __configure_forward_dyn_func(ocp, nlp, dyn_func):
-        nlp["nu"] = nlp["u_MX"].rows()
-        nlp["nx"] = nlp["x_MX"].rows()
+        nlp["nu"] = nlp["u_SX"].rows()
+        nlp["nx"] = nlp["x_SX"].rows()
 
         symbolic_params = SX()
         nlp["parameters_to_optimize"] = ocp.param_to_optimize

@@ -88,20 +88,25 @@ class PenaltyFunctionAbstract:
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
             )
 
-            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q_MX"])
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, "markers", nlp["model"].markers, nlp["q_MX"])
+
+            def biorbd_meta_func(q, coordinates_system_idx, ):
+                return nlp["model"].globalJCS(q, coordinates_system_idx)
+
             for i in range(len(x) - 1):
                 if coordinates_system_idx < 0:
-                    inv_jcs_1 = casadi.MX.eye(4)
-                    inv_jcs_0 = casadi.MX.eye(4)
+                    inv_jcs_1 = casadi.SX.eye(4)
+                    inv_jcs_0 = casadi.SX.eye(4)
                 elif coordinates_system_idx < nb_rts:
                     # TODO: Make sure second param is correct
-                    PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_globalJCS", nlp["model"].globalJCS,
+                    PenaltyFunctionAbstract._add_to_sx_func(nlp, f"globalJCS_{coordinates_system_idx}",
+                                                            biorbd_meta_func,
                                                             nlp["q_MX"], coordinates_system_idx)
-                    jcs_1 = nlp["SX_func"]["biorbd_globalJCS"](x[i + 1][:n_q])[coordinates_system_idx]
+                    jcs_1 = nlp["SX_func"][f"globalJCS_{coordinates_system_idx}"](x[i + 1][:n_q])
                     inv_jcs_1 = casadi.vertcat(
                         casadi.horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), casadi.horzcat(0, 0, 0, 1)
                     )
-                    jcs_0 = nlp["SX_func"]["biorbd_globalJCS"](x[i][:n_q])
+                    jcs_0  = nlp["SX_func"][f"globalJCS_{coordinates_system_idx}"](x[i][:n_q])
                     inv_jcs_0 = casadi.vertcat(
                         casadi.horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), casadi.horzcat(0, 0, 0, 1)
                     )
@@ -112,7 +117,8 @@ class PenaltyFunctionAbstract:
                     )
                 #TODO: Does not work with Acados(free variables)
                 val = inv_jcs_1 @ casadi.vertcat(
-                    nlp["SX_func"]["biorbd_markers"](x[i + 1][:n_q])[:, markers_idx], 1) - inv_jcs_0 @ casadi.vertcat(nlp["SX_func"]["biorbd_markers"](x[i][:n_q])[:, markers_idx], 1)
+                    nlp["SX_func"]["markers"](x[i + 1][:n_q])[:, markers_idx], 1) - \
+                      inv_jcs_0 @ casadi.vertcat(nlp["SX_func"]["markers"](x[i][:n_q])[:, markers_idx], 1)
                 # val = inv_jcs_1 @ casadi.vertcat(
                 #     nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx], 1
                 # ) - inv_jcs_0 @ casadi.vertcat(nlp["model"].markers(x[i][:n_q])[:, markers_idx], 1)
@@ -163,13 +169,12 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract._check_idx(
                 "marker", [first_marker_idx, second_marker_idx], nlp["model"].nbMarkers()
             )
-
-            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q_MX"])
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, "markers", nlp["model"].markers, nlp["q_MX_expand"])
             nq = nlp["q_mapping"].reduce.len
             for v in x:
                 q = nlp["q_mapping"].expand.map(v[:nq])
-                first_marker = nlp["SX_func"]["biorbd_markers"](q)[:,first_marker_idx]
-                second_marker = nlp["SX_func"]["biorbd_markers"](q)[:, second_marker_idx]
+                first_marker = nlp["SX_func"]["markers"](q)[:, first_marker_idx]
+                second_marker = nlp["SX_func"]["markers"](q)[:, second_marker_idx]
 
                 val = first_marker - second_marker
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
@@ -346,19 +351,18 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract._check_idx("segment", segment_idx, nlp["model"].nbSegment())
             PenaltyFunctionAbstract._check_idx("rt", rt_idx, nlp["model"].nbRTs())
 
-            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_globalJCS", nlp["model"].globalJCS, nlp["q_MX"], segment_idx)
-            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_RT", nlp["model"].RT, nlp["q_MX"], rt_idx)
+            def biorbd_meta_func(q, segment_idx, rt_idx):
+                r_seg = nlp["model"].globalJCS(q, segment_idx).rot()
+                r_rt = nlp["model"].RT(q, rt_idx).rot()
+                return biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
+
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, f"align_segment_with_custom_rt_{segment_idx}", biorbd_meta_func
+                                                    , nlp["q_MX"], segment_idx, rt_idx)
 
             nq = nlp["q_mapping"].reduce.len
             for v in x:
                 q = nlp["q_mapping"].expand.map(v[:nq])
-                r_seg = nlp["SX_func"]["biorbd_globalJCS"](q)[segment_idx]
-                r_rt = nlp["SX_func"]["biorbd_RT"](q)[rt_idx]
-                # r_seg = nlp["model"].globalJCS(nlp["q_MX"], segment_idx).rot()
-                # r_rt = nlp["model"].RT(nlp["q_MX"], rt_idx).rot()
-                val = r_seg*r_rt
-                #TODO: Do we need Rotation_toEulerAngles?
-                # val = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
+                val = nlp["SX_func"][f"align_segment_with_custom_rt_{segment_idx}"](q)
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
@@ -375,15 +379,18 @@ class PenaltyFunctionAbstract:
             if not isinstance(axis, Axe):
                 raise RuntimeError("axis must be a biorbd_optim.Axe")
 
-            nq = nlp["q_mapping"].reduce.len
-            for v in x:
-                q = nlp["q_mapping"].expand.map(v[:nq])
-
+            def biorbd_meta_func(q, segment_idx, marker_idx):
                 r_rt = nlp["model"].globalJCS(q, segment_idx)
                 marker = nlp["model"].marker(q, marker_idx)
                 marker.applyRT(r_rt.transpose())
-                marker = marker.to_mx()
+                return marker.to_mx()
 
+            PenaltyFunctionAbstract._add_to_sx_func(nlp, f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}",
+                                                    biorbd_meta_func, nlp["q_MX"], segment_idx, marker_idx)
+            nq = nlp["q_mapping"].reduce.len
+            for v in x:
+                q = nlp["q_mapping"].expand.map(v[:nq])
+                marker = nlp["SX_func"][f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
                 for axe in Axe:
                     if axe != axis:
                         # To align an axis, the other must be equal to 0
