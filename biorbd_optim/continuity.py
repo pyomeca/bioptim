@@ -53,9 +53,13 @@ class StateTransitionFunctions:
             # a better way (e.g. create a supplementary variable in V that link the pre and post phase with a
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
             model = biorbd.Model(nlp_post["model"].path().absolutePath().to_string())
-            PenaltyFunctionAbstract._add_to_sx_func(nlp_pre, f"compute_constraint_impulse_direct",
-                                                    model.ComputeConstraintImpulsesDirect,
-                                                    nlp_pre["q_MX"], nlp_pre["qdot_MX"])
+            PenaltyFunctionAbstract._add_to_sx_func(
+                nlp_pre,
+                f"compute_constraint_impulse_direct",
+                model.ComputeConstraintImpulsesDirect,
+                nlp_pre["q_MX"],
+                nlp_pre["qdot_MX"],
+            )
             qdot_post = nlp_pre["SX_func"]["compute_constraint_impulse_direct"](q, qdot_pre)
             # qdot_post = nlp_post["model"].ComputeConstraintImpulsesDirect(q, qdot_pre).to_mx()
             qdot_post = nlp_post["q_dot_mapping"].reduce.map(qdot_post)

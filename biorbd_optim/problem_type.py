@@ -358,7 +358,6 @@ class ProblemType:
         MX_symbolic_params = MX.sym("p", nlp["np"], 1)
         nlp["p_MX"] = MX_symbolic_params
 
-
         nlp["dynamics_func"] = Function(
             "ForwardDyn",
             [MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params],

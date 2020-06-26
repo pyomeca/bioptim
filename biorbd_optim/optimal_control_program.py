@@ -34,28 +34,28 @@ class OptimalControlProgram:
     """
 
     def __init__(
-            self,
-            biorbd_model,
-            problem_type,
-            number_shooting_points,
-            phase_time,
-            X_init,
-            U_init,
-            X_bounds,
-            U_bounds,
-            objective_functions=(),
-            constraints=(),
-            parameters=(),
-            external_forces=(),
-            ode_solver=OdeSolver.RK,
-            nb_integration_steps=5,
-            all_generalized_mapping=None,
-            q_mapping=None,
-            q_dot_mapping=None,
-            tau_mapping=None,
-            plot_mappings=None,
-            state_transitions=(),
-            nb_threads=1,
+        self,
+        biorbd_model,
+        problem_type,
+        number_shooting_points,
+        phase_time,
+        X_init,
+        U_init,
+        X_bounds,
+        U_bounds,
+        objective_functions=(),
+        constraints=(),
+        parameters=(),
+        external_forces=(),
+        ode_solver=OdeSolver.RK,
+        nb_integration_steps=5,
+        all_generalized_mapping=None,
+        q_mapping=None,
+        q_dot_mapping=None,
+        tau_mapping=None,
+        plot_mappings=None,
+        state_transitions=(),
+        nb_threads=1,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -341,23 +341,23 @@ class OptimalControlProgram:
 
         offset = 0
         for k in range(nlp["ns"] + 1):
-            X_ = SX.sym("X_" + str(idx_phase) + '_' + str(k), nlp["nx"])
-            X_MX_ = MX.sym("X_" + str(idx_phase) + '_' + str(k), nlp["nx"])
+            X_ = SX.sym("X_" + str(idx_phase) + "_" + str(k), nlp["nx"])
+            X_MX_ = MX.sym("X_" + str(idx_phase) + "_" + str(k), nlp["nx"])
             X.append(X_)
             X_MX.append(X_MX_)
-            V_bounds.min[offset: offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
-            V_bounds.max[offset: offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
-            V_init.init[offset: offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
+            V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
+            V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
+            V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
             offset += nlp["nx"]
             V = vertcat(V, X_)
             if k != nlp["ns"]:
-                U_ = SX.sym("U_" + str(idx_phase) + '_' + str(k), nlp["nu"])
-                U_MX_ = MX.sym("U_" + str(idx_phase) + '_' + str(k), nlp["nu"])
+                U_ = SX.sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
+                U_MX_ = MX.sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
                 U.append(U_)
                 U_MX.append(U_MX_)
-                V_bounds.min[offset: offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
-                V_bounds.max[offset: offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
-                V_init.init[offset: offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
+                V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
+                V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
+                V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
                 offset += nlp["nu"]
                 V = vertcat(V, U_)
         V_bounds.check_and_adjust_dimensions(nV, 1)
@@ -396,7 +396,7 @@ class OptimalControlProgram:
         return phase_time, initial_time_guess, time_min, time_max
 
     def __define_parameters_phase_time(
-            self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=None
+        self, penalty_functions, initial_time_guess, phase_time, time_min, time_max, has_penalty=None
     ):
         if has_penalty is None:
             has_penalty = [False] * self.nb_phases
@@ -404,9 +404,9 @@ class OptimalControlProgram:
         for i, penalty_functions_phase in enumerate(penalty_functions):
             for pen_fun in penalty_functions_phase:
                 if (
-                        pen_fun["type"] == Objective.Mayer.MINIMIZE_TIME
-                        or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
-                        or pen_fun["type"] == Constraint.TIME_CONSTRAINT
+                    pen_fun["type"] == Objective.Mayer.MINIMIZE_TIME
+                    or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
+                    or pen_fun["type"] == Constraint.TIME_CONSTRAINT
                 ):
                     if has_penalty[i]:
                         raise RuntimeError("Time constraint/objective cannot declare more than once")
@@ -548,7 +548,9 @@ class OptimalControlProgram:
 
         nlp["plot"][plot_name] = custom_plot
 
-    def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, solver_options={}, ):
+    def solve(
+        self, solver="ipopt", show_online_optim=False, return_iterations=False, solver_options={},
+    ):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
@@ -563,14 +565,16 @@ class OptimalControlProgram:
 
         if solver == "ipopt":
             from .ipopt_interface import IpoptInterface
+
             solver_ocp = IpoptInterface(self)
             solver_ocp.prepare_ipopt(self)
 
         elif solver == "acados":
             from .acados_interface import AcadosInterface
+
             if "acados_dir" in solver_options:
-                os.environ["ACADOS_SOURCE_DIR"] = solver_options['acados_dir']
-                del solver_options['acados_dir']
+                os.environ["ACADOS_SOURCE_DIR"] = solver_options["acados_dir"]
+                del solver_options["acados_dir"]
 
             solver_ocp = AcadosInterface(self)
             solver_ocp.prepare_acados(self)
@@ -687,7 +691,6 @@ class OptimalControlProgram:
             else:
                 print(f"   [{label}] = {elem}")
 
-
     def dispatch_obj_func(self):
         all_J = SX()
         for j_nodes in self.J:
@@ -696,7 +699,7 @@ class OptimalControlProgram:
         for nlp in self.nlp:
             for obj_nodes in nlp["J"]:
                 for obj in obj_nodes:
-                        all_J = vertcat(all_J, obj)
+                    all_J = vertcat(all_J, obj)
 
         return all_J
 
@@ -721,6 +724,7 @@ class OptimalControlProgram:
             "ubx": self.V_bounds.max,
             "lbg": all_g_bounds.min,
             "ubg": all_g_bounds.max,
-            "x0": self.V_init.init,}
+            "x0": self.V_init.init,
+        }
 
         return nlp, arg
