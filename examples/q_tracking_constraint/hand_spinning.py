@@ -59,8 +59,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
         },
     )
 
-    state_transitions = ({"type": StateTransition.CUSTOM, "function": state_transition_function,
-            "phase_pre_idx": 0,},)
+    state_transitions = ({"type": StateTransition.CUSTOM, "function": state_transition_function, "phase_pre_idx": 0,},)
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
@@ -90,7 +89,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
         U_bounds,
         objective_functions,
         constraints,
-        state_transitions=state_transitions
+        state_transitions=state_transitions,
     )
 
 
