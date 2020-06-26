@@ -16,16 +16,21 @@ from biorbd_optim import (
     InitialConditions,
     ShowResult,
     OdeSolver,
+    PenaltyFunctionAbstract,
 )
 
 
 def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
     nq = nlp["nbQ"]
     val = []
+
+    PenaltyFunctionAbstract._add_to_sx_func(nlp, "markers", nlp["model"].markers, nlp["q_MX"])
+
     for v in x:
         q = v[:nq]
-        first_marker = nlp["model"].marker(q, first_marker_idx).to_mx()
-        second_marker = nlp["model"].marker(q, second_marker_idx).to_mx()
+        markers = nlp["SX_func"]["markers"](q)
+        first_marker = markers[:, first_marker_idx]
+        second_marker = markers[:, second_marker_idx]
         val = vertcat(val, first_marker - second_marker)
     return val
 

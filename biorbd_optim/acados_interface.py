@@ -21,13 +21,13 @@ class AcadosInterface(SolverInterface):
 
     def acados_export_model(self, ocp):
         # Declare model variables
-        x = ocp.nlp[0]['X'][0]
-        u = ocp.nlp[0]['U'][0]
-        p = ocp.nlp[0]['p_SX']
-        mod = ocp.nlp[0]['model']
+        x = ocp.nlp[0]["X"][0]
+        u = ocp.nlp[0]["U"][0]
+        p = ocp.nlp[0]["p_SX"]
+        mod = ocp.nlp[0]["model"]
         x_dot = SX.sym("x_dot", mod.nbQdot() * 2, 1)
 
-        f_expl = ocp.nlp[0]['dynamics_func'](x, u, p)
+        f_expl = ocp.nlp[0]["dynamics_func"](x, u, p)
         f_impl = x_dot - f_expl
         # expl_ode_fun = Function('myFunName', [x, u, p], [f_expl]).expand()
 
@@ -64,7 +64,8 @@ class AcadosInterface(SolverInterface):
 
         if self.acados_ocp.cost.cost_type != self.acados_ocp.cost.cost_type_e:
             raise NotImplementedError(
-                "Different cost types for Lagrange and Mayer terms in Acados not implemented yet.")
+                "Different cost types for Lagrange and Mayer terms in Acados not implemented yet."
+            )
 
         # set weight for states and controls (default: 1.00)
         Q = 1.00 * np.eye(self.acados_ocp.dims.nx)
@@ -74,20 +75,22 @@ class AcadosInterface(SolverInterface):
 
         self.acados_ocp.cost.W_e = Q
 
-        if self.acados_ocp.cost.cost_type == 'LINEAR_LS':
+        if self.acados_ocp.cost.cost_type == "LINEAR_LS":
 
             # set Lagrange terms
             self.acados_ocp.cost.Vx = np.zeros((self.acados_ocp.dims.ny, self.acados_ocp.dims.nx))
-            self.acados_ocp.cost.Vx[:self.acados_ocp.dims.nx, :] = np.eye(self.acados_ocp.dims.nx)
+            self.acados_ocp.cost.Vx[: self.acados_ocp.dims.nx, :] = np.eye(self.acados_ocp.dims.nx)
 
             Vu = np.zeros((self.acados_ocp.dims.ny, self.acados_ocp.dims.nu))
-            Vu[self.acados_ocp.dims.nx:, :] = np.eye(self.acados_ocp.dims.nu)
+            Vu[self.acados_ocp.dims.nx :, :] = np.eye(self.acados_ocp.dims.nu)
             self.acados_ocp.cost.Vu = Vu
 
             # set Mayer term
             self.acados_ocp.cost.Vx_e = np.zeros((self.acados_ocp.dims.nx, self.acados_ocp.dims.nx))
 
-        elif self.acados_ocp.cost.cost_type == 'NONLINEAR_LS' : #TODO: change cost_expr_ext_cost and cost_expr_ext_cost_e
+        elif (
+            self.acados_ocp.cost.cost_type == "NONLINEAR_LS"
+        ):  # TODO: change cost_expr_ext_cost and cost_expr_ext_cost_e
             raise NotImplementedError("NONLINEAR_LS cost type not implemented yet in acados.")
 
             self.acados_ocp.model.cost_expr_ext_cost = SX(0, 0)
@@ -95,48 +98,56 @@ class AcadosInterface(SolverInterface):
 
             k = 0
             for i in range(ocp.nb_phases):
-                for j in range(len(ocp.nlp[i]['J'])):
-                    if ocp.original_values['objective_functions'][i][j][
-                        'type']._get_type() == ObjectiveFunction.LagrangeFunction:
+                for j in range(len(ocp.nlp[i]["J"])):
+                    if (
+                        ocp.original_values["objective_functions"][i][j]["type"]._get_type()
+                        == ObjectiveFunction.LagrangeFunction
+                    ):
                         # set Lagrange term
                         if self.acados_ocp.model.cost_expr_ext_cost.shape == (0, 0):
-                            self.acados_ocp.model.cost_expr_ext_cost = ocp.nlp[i]['J'][j][0]
+                            self.acados_ocp.model.cost_expr_ext_cost = ocp.nlp[i]["J"][j][0]
                         else:
-                            self.acados_ocp.model.cost_expr_ext_cost += ocp.nlp[i]['J'][j][0]
-                    elif ocp.original_values['objective_functions'][i][j][
-                        'type']._get_type() == ObjectiveFunction.MayerFunction:
+                            self.acados_ocp.model.cost_expr_ext_cost += ocp.nlp[i]["J"][j][0]
+                    elif (
+                        ocp.original_values["objective_functions"][i][j]["type"]._get_type()
+                        == ObjectiveFunction.MayerFunction
+                    ):
                         # set Mayer term
                         if self.acados_ocp.model.cost_expr_ext_cost_e.shape == (0, 0):
-                            self.acados_ocp.model.cost_expr_ext_cost_e = ocp.nlp[i]['J_acados_mayer'][k][0]
+                            self.acados_ocp.model.cost_expr_ext_cost_e = ocp.nlp[i]["J_acados_mayer"][k][0]
                             k += 1
                         else:
-                            self.acados_ocp.model.cost_expr_ext_cost_e += ocp.nlp[i]['J_acados_mayer'][k][0]
+                            self.acados_ocp.model.cost_expr_ext_cost_e += ocp.nlp[i]["J_acados_mayer"][k][0]
                             k += 1
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
-        elif self.acados_ocp.cost.cost_type == 'EXTERNAL':
+        elif self.acados_ocp.cost.cost_type == "EXTERNAL":
             self.acados_ocp.model.cost_expr_ext_cost = SX(0, 0)
             self.acados_ocp.model.cost_expr_ext_cost_e = SX(0, 0)
 
             k = 0
             for i in range(ocp.nb_phases):
-                for j in range(len(ocp.nlp[i]['J'])):
-                    if ocp.original_values['objective_functions'][i][j][
-                        'type']._get_type() == ObjectiveFunction.LagrangeFunction:
+                for j in range(len(ocp.nlp[i]["J"])):
+                    if (
+                        ocp.original_values["objective_functions"][i][j]["type"]._get_type()
+                        == ObjectiveFunction.LagrangeFunction
+                    ):
                         # set Lagrange term
                         if self.acados_ocp.model.cost_expr_ext_cost.shape == (0, 0):
-                            self.acados_ocp.model.cost_expr_ext_cost = ocp.nlp[i]['J'][j][0]
+                            self.acados_ocp.model.cost_expr_ext_cost = ocp.nlp[i]["J"][j][0]
                         else:
-                            self.acados_ocp.model.cost_expr_ext_cost += ocp.nlp[i]['J'][j][0]
-                    elif ocp.original_values['objective_functions'][i][j][
-                        'type']._get_type() == ObjectiveFunction.MayerFunction:
+                            self.acados_ocp.model.cost_expr_ext_cost += ocp.nlp[i]["J"][j][0]
+                    elif (
+                        ocp.original_values["objective_functions"][i][j]["type"]._get_type()
+                        == ObjectiveFunction.MayerFunction
+                    ):
                         # set Mayer term
                         if self.acados_ocp.model.cost_expr_ext_cost_e.shape == (0, 0):
-                            self.acados_ocp.model.cost_expr_ext_cost_e = ocp.nlp[i]['J_acados_mayer'][k][0]
+                            self.acados_ocp.model.cost_expr_ext_cost_e = ocp.nlp[i]["J_acados_mayer"][k][0]
                             k += 1
                         else:
-                            self.acados_ocp.model.cost_expr_ext_cost_e += ocp.nlp[i]['J_acados_mayer'][k][0]
+                            self.acados_ocp.model.cost_expr_ext_cost_e += ocp.nlp[i]["J_acados_mayer"][k][0]
                             k += 1
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
@@ -151,13 +162,13 @@ class AcadosInterface(SolverInterface):
         for i in range(ocp.nb_phases):
             # set constraints
             for j in range(-1, 0):
-                for k in range(ocp.nlp[i]['nx']):
+                for k in range(ocp.nlp[i]["nx"]):
                     if ocp.nlp[i]["X_bounds"].min[k, j] != ocp.nlp[i]["X_bounds"].max[k, j]:
                         raise RuntimeError("The initial values must be set and fixed.")
 
             self.acados_ocp.constraints.x0 = np.array(ocp.nlp[i]["X_bounds"].min[:, 0])
             self.acados_ocp.dims.nbx_0 = self.acados_ocp.dims.nx
-            self.acados_ocp.constraints.constr_type = 'BGH'
+            self.acados_ocp.constraints.constr_type = "BGH"
             self.acados_ocp.constraints.lbu = np.array(ocp.nlp[i]["U_bounds"].min[:, 0])
             self.acados_ocp.constraints.ubu = np.array(ocp.nlp[i]["U_bounds"].max[:, 0])
             self.acados_ocp.constraints.idxbu = np.array(range(self.acados_ocp.dims.nu))
@@ -174,10 +185,10 @@ class AcadosInterface(SolverInterface):
 
     def configure(self, options):
 
-        self.acados_ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM'  # FULL_CONDENSING_QPOASES
-        self.acados_ocp.solver_options.hessian_approx = 'GAUSS_NEWTON'
-        self.acados_ocp.solver_options.integrator_type = 'ERK'
-        self.acados_ocp.solver_options.nlp_solver_type = 'SQP'
+        self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
+        self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
+        self.acados_ocp.solver_options.integrator_type = "ERK"
+        self.acados_ocp.solver_options.nlp_solver_type = "SQP"
 
         self.acados_ocp.solver_options.nlp_solver_tol_comp = 1e-02
         self.acados_ocp.solver_options.nlp_solver_tol_eq = 1e-02
@@ -195,23 +206,29 @@ class AcadosInterface(SolverInterface):
         pass
 
     def get_optimized_value(self, ocp):
-        acados_x = np.array([self.ocp_solver.get(i, 'x') for i in range(ocp.nlp[0]['ns'] + 1)]).T
-        acados_q = acados_x[:ocp.nlp[0]['nu'], :]
-        acados_qdot = acados_x[ocp.nlp[0]['nu']:, :]
-        acados_u = np.array([self.ocp_solver.get(i, 'u') for i in range(ocp.nlp[0]['ns'])]).T
+        acados_x = np.array([self.ocp_solver.get(i, "x") for i in range(ocp.nlp[0]["ns"] + 1)]).T
+        acados_q = acados_x[: ocp.nlp[0]["nu"], :]
+        acados_qdot = acados_x[ocp.nlp[0]["nu"] :, :]
+        acados_u = np.array([self.ocp_solver.get(i, "u") for i in range(ocp.nlp[0]["ns"])]).T
 
-        out = {'qqdot': acados_x, 'x': [], 'u': acados_u, 'time_tot': self.ocp_solver.get_stats('time_tot')[0], }
-        for i in range(ocp.nlp[0]['ns']):
-            out['x'] = vertcat(out['x'], acados_q[:, i])
-            out['x'] = vertcat(out['x'], acados_qdot[:, i])
-            out['x'] = vertcat(out['x'], acados_u[:, i])
+        out = {
+            "qqdot": acados_x,
+            "x": [],
+            "u": acados_u,
+            "time_tot": self.ocp_solver.get_stats("time_tot")[0],
+        }
+        for i in range(ocp.nlp[0]["ns"]):
+            out["x"] = vertcat(out["x"], acados_q[:, i])
+            out["x"] = vertcat(out["x"], acados_qdot[:, i])
+            out["x"] = vertcat(out["x"], acados_u[:, i])
 
-        out['x'] = vertcat(out['x'], acados_q[:, ocp.nlp[0]['ns']])
-        out['x'] = vertcat(out['x'], acados_qdot[:, ocp.nlp[0]['ns']])
+        out["x"] = vertcat(out["x"], acados_q[:, ocp.nlp[0]["ns"]])
+        out["x"] = vertcat(out["x"], acados_qdot[:, ocp.nlp[0]["ns"]])
 
         return out
 
     def solve(self):
         from acados_template import AcadosOcpSolver
-        self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file='acados_ocp.json')
+
+        self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
         self.ocp_solver.solve()

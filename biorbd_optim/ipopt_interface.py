@@ -10,7 +10,6 @@ class IpoptInterface(SolverInterface):
         self.ocp_solver = None
         self.options_common = {}
 
-
     def prepare_ipopt(self, ocp):
         # Dispatch the objective function values and create arg
         self.nlp, self.arg = ocp.dispatch_bounds()
@@ -48,11 +47,11 @@ class IpoptInterface(SolverInterface):
         self.opts = {**options, **self.options_common}
 
     def solve(self):
-        solver = casadi.nlpsol('nlpsol', 'ipopt', self.nlp, self.opts)
+        solver = casadi.nlpsol("nlpsol", "ipopt", self.nlp, self.opts)
 
         # Solve the problem
         self.out = solver.call(self.arg)
-        self.out['time_tot'] = solver.stats()['t_wall_total']
+        self.out["time_tot"] = solver.stats()["t_wall_total"]
 
         return self.out
 
