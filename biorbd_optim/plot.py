@@ -362,9 +362,10 @@ class PlotOcp:
             ax.set_xlim(0, self.t[-1][-1])
 
         if self.plots_bounds:
-            for plot_bounds in self.plots_bounds[0]:
-                plot_bounds.set_xdata(self.t[phase_idx])
-                ax = plot_bounds.axes
+            for plot_bounds in self.plots_bounds:
+                # TODO: Verify if there is a means to not have [0][0] here necessary
+                plot_bounds[0][0].set_xdata(self.t[plot_bounds[1]])
+                ax = plot_bounds[0][0].axes
                 ax.set_xlim(0, self.t[-1][-1])
 
         intersections_time = self.find_phases_intersections()
