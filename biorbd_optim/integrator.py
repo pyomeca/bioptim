@@ -33,17 +33,20 @@ def RK4(ode, ode_opt):
             k4 = fun(x[:, i - 1] + h * k3, u, p)[:, idx]
             x[:, i] = x[:, i - 1] + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
+        nb_dof = 0
         quat_idx = []
-        for j in range(model.nbQ()):
-            name = model.nameDof()[j].to_string()
-            if name[-5:-1] == "Quat":
-                quat_idx += [j]
+        quat_number = 0
+        for j in range(model.nbSegment()):
+            if model.segment(j).isRotationAQuaternion():
+                quat_idx += [nb_dof, nb_dof+1, nb_dof+2, model.nbDof()+quat_number]
+                quat_number += 1
+            nb_dof += model.segment(j).nbDof()
 
         for j in range(model.nbQuat()):
-            quaternion = vertcat(x[quat_idx[j + 3], i], x[quat_idx[j], i], x[quat_idx[j + 1], i], x[quat_idx[j + 2], i])
+            quaternion = vertcat(x[quat_idx[j*4 + 3], i], x[quat_idx[j*4], i], x[quat_idx[j*4 + 1], i], x[quat_idx[j*4 + 2], i])
             quaternion /= norm_fro(quaternion)
-            x[quat_idx[j] : quat_idx[j + 3], i] = quaternion[1:4]
-            x[quat_idx[j + 3], i] = quaternion[0]
+            x[quat_idx[j*4] : quat_idx[j*4 + 2]+1, i] = quaternion[1:4]
+            x[quat_idx[j*4 + 3], i] = quaternion[0]
         return x[:, -1], x
 
     return Function(
