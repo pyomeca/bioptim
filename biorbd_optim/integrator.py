@@ -33,7 +33,7 @@ def RK4(Model, ode, ode_opt):
             x[:, i] = x[:, i - 1] + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
         Quat_idx = []
-        for j in range(Model.nbDof() + 1):
+        for j in range(Model.nbQ()):
             Name = Model.nameDof()[j].to_string()
             if Name[-5:-1] == "Quat":
                 Quat_idx += [j]
