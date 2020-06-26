@@ -42,7 +42,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
 
     # Add objective functions
     objective_functions = (
-        {"type": Objective.Mayer.MINIMIZE_MARKERS, "markers_idx" : 1, "weight" : -1},
+        {"type": Objective.Mayer.MINIMIZE_MARKERS, "markers_idx": 1, "weight": -1},
         {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
     )
 
@@ -62,10 +62,10 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
     x = np.vstack((np.zeros((biorbd_model.nbQ(), 2)), np.ones((biorbd_model.nbQdot(), 2))))
     Arm_init_D = np.zeros((3, 2))
     Arm_init_D[1, 0] = 0
-    Arm_init_D[1, 1] = -np.pi+0.01
+    Arm_init_D[1, 1] = -np.pi + 0.01
     Arm_init_G = np.zeros((3, 2))
     Arm_init_G[1, 0] = 0
-    Arm_init_G[1, 1] = np.pi-0.01
+    Arm_init_G[1, 1] = np.pi - 0.01
     for i in range(2):
         Arm_Quat_D = eul2quat(Arm_init_D[:, i])
         Arm_Quat_G = eul2quat(Arm_init_G[:, i])
