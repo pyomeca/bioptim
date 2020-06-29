@@ -50,6 +50,22 @@ class Simulate:
         return {"x": v}
 
     @staticmethod
+    def from_controls_and_initial_states(ocp, states, controls):
+        states = states.squeeze()
+        v = states
+
+        if not isinstance(controls, (list, tuple)):
+            controls = controls,
+
+        for idx_phase, nlp in enumerate(ocp.nlp):
+            controls[idx_phase].check_and_adjust_dimensions(nlp["nu"], nlp["ns"] - 1)
+            for idx_nodes in range(nlp["ns"]):
+                v = np.append(v, controls[idx_phase].init.evaluate_at(shooting_point=idx_nodes))
+                v = np.append(v, np.ndarray(nlp["nx"]))
+
+        return Simulate.from_sol(ocp, {"x": v})
+
+    @staticmethod
     def _concat_variables(variables, offset_phases, idx_nodes):
         var = np.ndarray(0)
         for key in variables.keys():
