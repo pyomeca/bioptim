@@ -46,7 +46,7 @@ class CustomPlot:
 
 
 class PlotOcp:
-    def __init__(self, ocp, automatically_organize=True, use_bounds_as_ylimit=True, show_bounds=True):
+    def __init__(self, ocp, automatically_organize=True, use_bounds_as_ylimit=True):
         """Prepares the figure"""
         for i in range(1, ocp.nb_phases):
             if ocp.nlp[0]["nbQ"] != ocp.nlp[i]["nbQ"]:
@@ -81,7 +81,6 @@ class PlotOcp:
         self.plot_func = {}
         self.variable_sizes = []
         self.use_bounds_as_ylimit = use_bounds_as_ylimit
-        self.show_bounds = show_bounds
         self.__create_plots()
 
         horz = 0
@@ -174,17 +173,10 @@ class PlotOcp:
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
                     elif self.use_bounds_as_ylimit and nlp["plot"][variable].bounds is not None:
-                        ymin = 1.25 * nlp["plot"][variable].bounds.min[ctr].min()
-                        ymax = 1.25 * nlp["plot"][variable].bounds.max[ctr].max()
-                        # TODO: Problem when max is negative, 1.25*max is below instead of being above
-                        # TODO: Idem when min is positive
-                        # Below, temporary patch :
-                        if variable == 'q' and ctr == 5:
-                            ymax = 0.2
-
-                        # print(f"ylim for {variable} is filled with {ymin} and {ymax}")
-                        ax.set_ylim(ymin=ymin, ymax=ymax)
-                        # TODO: Verify if calling set_yticks (like in the update) is well unnecessary?
+                        y_min = nlp["plot"][variable].bounds.min[ctr].min()
+                        y_max = nlp["plot"][variable].bounds.max[ctr].max()
+                        y_range, _ = self.__compute_ylim(y_min, y_max, 1.25)
+                        ax.set_ylim(y_range)
                     zero = np.zeros((t.shape[0], 1))
                     plot_type = self.plot_func[variable][i].type
                     if plot_type == PlotType.PLOT:
@@ -219,17 +211,12 @@ class PlotOcp:
                     intersections_time = self.find_phases_intersections()
                     for time in intersections_time:
                         self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
-                    if self.show_bounds and self.use_bounds_as_ylimit and self.axes[variable][0].bounds is not None:
-                        # TODO: Manage the cas k = ns + 1 below (incorrect but it's to match with dim of self.t[i])
-                        # bounds_min = np.array([self.axes[variable][0].bounds.min.evaluate_at(k)[j] for k in range(nlp["ns"]+1)])
-                        # bounds_max = np.array([self.axes[variable][0].bounds.max.evaluate_at(k)[j] for k in range(nlp["ns"]+1)])
+                    if self.axes[variable][0].bounds is not None:
+                        # TODO: Problem -> When it is bounds for control nb_shooting must be ns -1... how to deal with that without knowing the nature of the bounds to plot?
+                        self.axes[variable][0].bounds.check_and_adjust_dimensions(nb_elements=len(mapping), nb_shooting=nlp["ns"])
+                        # TODO: Is it a problem actually when we call evaluate_at for k = ns+1?
                         bounds_min = np.array([nlp["plot"][variable].bounds.min.evaluate_at(k)[j] for k in range(nlp["ns"] + 1)])
                         bounds_max = np.array([nlp["plot"][variable].bounds.max.evaluate_at(k)[j] for k in range(nlp["ns"] + 1)])
-
-                        # if variable == 'q' and j == 0:
-                        #     print("Chips")
-
-                        # print(f"\n We fill plot_bounds for variable {variable}")
                         self.plots_bounds.append([ax.step(self.t[i], bounds_min, where="post", color='k', linestyle="--"), i])
                         self.plots_bounds.append([ax.step(self.t[i], bounds_max, where="post", color='k', linestyle="--"), i])
 
@@ -363,7 +350,6 @@ class PlotOcp:
 
         if self.plots_bounds:
             for plot_bounds in self.plots_bounds:
-                # TODO: Verify if there is a means to not have [0][0] here necessary
                 plot_bounds[0][0].set_xdata(self.t[plot_bounds[1]])
                 ax = plot_bounds[0][0].axes
                 ax.set_xlim(0, self.t[-1][-1])
@@ -391,10 +377,6 @@ class PlotOcp:
             else:
                 plot[2].set_ydata(y)
 
-        for i, plot_bounds in enumerate(self.plots_bounds[0]):
-            y = self.ydata[i]
-            plot_bounds.set_ydata(y)
-
         for p in self.plots_vertical_lines:
             p.set_ydata((np.nan, np.nan))
 
@@ -408,21 +390,26 @@ class PlotOcp:
                             if isinstance(p, lines.Line2D):
                                 y_min = min(y_min, np.min(p.get_ydata()))
                                 y_max = max(y_max, np.max(p.get_ydata()))
-                            if np.isnan(y_min) or np.isinf(y_min):
-                                y_min = 0
-                            if np.isnan(y_max) or np.isinf(y_max):
-                                y_max = 1
-                            data_mean = np.mean((y_min, y_max))
-                            data_range = y_max - y_min
-                            if np.abs(data_range) < 0.8:
-                                data_range = 0.8
-                            y_range = (1.25 * data_range) / 2
-                            y_range = data_mean - y_range, data_mean + y_range
+                            y_range, data_range = self.__compute_ylim(y_min, y_max, 1.25)
                             ax.set_ylim(y_range)
                             ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
+
+    @staticmethod
+    def __compute_ylim(min_val, max_val, threshold):
+        if np.isnan(min_val) or np.isinf(min_val):
+            min_val = 0
+        if np.isnan(max_val) or np.isinf(max_val):
+            max_val = 1
+        data_mean = np.mean((min_val, max_val))
+        data_range = max_val - min_val
+        if np.abs(data_range) < 0.8:
+            data_range = 0.8
+        y_range = (threshold * data_range) / 2
+        y_range = data_mean - y_range, data_mean + y_range
+        return y_range, data_range
 
     @staticmethod
     def _generate_windows_size(nb):
