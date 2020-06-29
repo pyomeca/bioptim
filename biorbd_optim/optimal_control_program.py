@@ -184,20 +184,14 @@ class OptimalControlProgram:
         # Declare the time to optimize
         self.__define_variable_time(initial_time_guess, time_min, time_max)
 
-        # Prepare the dynamics of the program V1 TODO: Adapt title
+        # Prepare the dynamics and path constraints of the program V1
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
-
-        # Prepare path constraints V1 TODO: Adapt title
         self.__add_to_nlp("X_bounds", X_bounds, False)
         self.__add_to_nlp("U_bounds", U_bounds, False)
-
-        # Prepare the dynamics of the program V2 TODO: Adapt title
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
             Problem.initialize(self, self.nlp[i])
-
-        # Prepare path constraints V2 TODO: Adapt title
         for i in range(self.nb_phases):
             self.nlp[i]["X_bounds"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
             self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
