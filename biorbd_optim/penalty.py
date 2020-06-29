@@ -70,7 +70,9 @@ class PenaltyFunctionAbstract:
                 q = nlp["q_mapping"].expand.map(v[:nq])
                 data_marker = data_to_track[:, markers_idx, t[i]]
                 if ocp.with_SX:
-                    val = nlp["SX_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
+                    val = (
+                        nlp["SX_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
+                    )
                 else:
                     val = nlp["model"].markers(q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)

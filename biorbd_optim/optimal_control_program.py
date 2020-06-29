@@ -56,7 +56,7 @@ class OptimalControlProgram:
         plot_mappings=None,
         state_transitions=(),
         nb_threads=1,
-        with_SX = False,
+        with_SX=False,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -162,7 +162,6 @@ class OptimalControlProgram:
         )
         self.nb_threads = nb_threads
 
-
         if ode_solver == OdeSolver.COLLOCATION and self.with_SX:
             raise RuntimeError("SX graph cannot be solved with COLLOCATION integrator")
 
@@ -245,7 +244,6 @@ class OptimalControlProgram:
             for i, objective_functions_phase in enumerate(objective_functions):
                 for objective_function in objective_functions_phase:
                     self.add_objective_function(objective_function, i)
-
 
     def __initialize_nlp(self, nlp):
         """Start with an empty non linear problem"""
@@ -355,7 +353,7 @@ class OptimalControlProgram:
         for k in range(nlp["ns"] + 1):
             if self.with_SX:
                 X_ = SX.sym("X_" + str(idx_phase) + "_" + str(k), nlp["nx"])
-            else :
+            else:
                 X_ = MX.sym("X_" + str(idx_phase) + "_" + str(k), nlp["nx"])
             X.append(X_)
             V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
@@ -366,7 +364,7 @@ class OptimalControlProgram:
             if k != nlp["ns"]:
                 if self.with_SX:
                     U_ = SX.sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
-                else :
+                else:
                     U_ = MX.sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
                 U.append(U_)
                 V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)

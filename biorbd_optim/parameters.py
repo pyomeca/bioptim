@@ -49,7 +49,12 @@ class Parameters:
                 sym_var = MX.sym(param_name, nb_elements, 1)
 
         ocp.V = vertcat(ocp.V, sym_var)
-        param_to_store = {"sym_var": sym_var, "func": pre_dynamic_function, "size": nb_elements, "extra_params": extra_params}
+        param_to_store = {
+            "sym_var": sym_var,
+            "func": pre_dynamic_function,
+            "size": nb_elements,
+            "extra_params": extra_params,
+        }
         if param_name in ocp.param_to_optimize:
             p = ocp.param_to_optimize[param_name]
             p["sym_var"] = vertcat(p["sym_var"], param_to_store["sym_var"])

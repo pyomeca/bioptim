@@ -125,14 +125,14 @@ class ProblemType:
             x = SX()
             u = SX()
             for i in range(nlp["nbMuscle"]):
-             u = vertcat(u, SX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-             x = vertcat(x, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+                u = vertcat(u, SX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+                x = vertcat(x, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
         else:
             x = MX()
             u = MX()
             for i in range(nlp["nbMuscle"]):
-                 u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-                 x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+                u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+                x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
 
         nlp["u"] = vertcat(nlp["u"], u)
         nlp["x"] = vertcat(nlp["x"], x)
@@ -403,7 +403,6 @@ class ProblemType:
 
         nlp["p"] = symbolic_params
 
-
         nlp["dynamics_func"] = Function(
             "ForwardDyn",
             [MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params],
@@ -411,4 +410,3 @@ class ProblemType:
             ["x", "u", "p"],
             ["xdot"],
         ).expand()
-
