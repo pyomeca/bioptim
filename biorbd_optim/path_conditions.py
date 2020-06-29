@@ -114,7 +114,7 @@ class PathCondition(np.ndarray):
         elif self.type == InterpolationType.EACH_FRAME:
             if self.shape[1] != self.nb_shooting:
                 raise RuntimeError(
-                    f"Invalid number of {condition_type} for InterpolationType.LINEAR (ncols = {self.shape[1]}), "
+                    f"Invalid number of {condition_type} for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
                     f"the expected number of column is {self.nb_shooting}"
                 )
         else:
