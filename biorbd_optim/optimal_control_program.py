@@ -287,11 +287,11 @@ class OptimalControlProgram:
         if nlp["ode_solver"] == OdeSolver.COLLOCATION or nlp["ode_solver"] == OdeSolver.RK:
             ode_opt["number_of_finite_elements"] = nlp["nb_integration_steps"]
 
-        ode_opt["model"] = nlp["model"]
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"], nlp["p"])}
         nlp["dynamics"] = []
         nlp["par_dynamics"] = {}
         if nlp["ode_solver"] == OdeSolver.RK:
+            ode_opt["model"] = nlp["model"]
             ode_opt["param"] = nlp["p"]
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
