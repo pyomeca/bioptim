@@ -3,16 +3,8 @@ import numpy as np
 
 class Simulate:
     @staticmethod
-    def _concat_variables(variables, offset_phases, idx_nodes):
-        var = np.ndarray(0)
-        for key in variables.keys():
-            var = np.append(var, variables[key][:, offset_phases + idx_nodes])
-        return var
-
-    @staticmethod
     def from_sol(ocp, sol):
         v = np.array(sol["x"]).squeeze()
-
         offset = 0
         for nlp in ocp.nlp:
             # TODO adds StateTransitionFunctions between phases
@@ -33,7 +25,7 @@ class Simulate:
         v = np.ndarray(0)
 
         offset_phases = 0
-        for idx_phases, nlp in enumerate(ocp.nlp):
+        for nlp in ocp.nlp:
             offset = 0
             v_phase = np.ndarray((nlp["ns"] + 1) * nlp["nx"] + nlp["ns"] * nlp["nu"])
             v_phase[offset : offset + nlp["nx"]] = Simulate._concat_variables(states, offset_phases, 0)
@@ -64,6 +56,7 @@ class Simulate:
                 v = np.append(v, np.ndarray(nlp["nx"]))
 
         return Simulate.from_sol(ocp, {"x": v})
+
 
     @staticmethod
     def _concat_variables(variables, offset_phases, idx_nodes):
