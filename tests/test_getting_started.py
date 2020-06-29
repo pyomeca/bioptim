@@ -63,8 +63,7 @@ def test_pendulum(nb_threads):
     TestUtils.save_and_load(sol, ocp, True)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_custom_constraint_align_markers(ode_solver):
+def test_custom_constraint_align_markers():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "custom_constraint", str(PROJECT_FOLDER) + "/examples/getting_started/custom_constraint.py"
@@ -73,7 +72,7 @@ def test_custom_constraint_align_markers(ode_solver):
     spec.loader.exec_module(custom_constraint)
 
     ocp = custom_constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod", ode_solver=OdeSolver.RK
     )
     sol = ocp.solve()
 
