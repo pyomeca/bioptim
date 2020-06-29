@@ -126,14 +126,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             penalty_idx = ConstraintFunction._reset_penalty(ocp, None, -1)
             # Loop over shooting nodes or use parallelization
             if ocp.nb_threads > 1:
-                end_nodes = nlp["par_dynamics"](horzcat(*nlp["X"][:-1]), horzcat(*nlp["U"]), nlp["p_SX"])[0]
+                end_nodes = nlp["par_dynamics"](horzcat(*nlp["X"][:-1]), horzcat(*nlp["U"]), nlp["p"])[0]
                 vals = horzcat(*nlp["X"][1:]) - end_nodes
                 ConstraintFunction._add_to_penalty(ocp, None, vals.reshape((nlp["nx"] * nlp["ns"], 1)), penalty_idx)
             else:
                 for k in range(nlp["ns"]):
                     # Create an evaluation node
                     if nlp["ode_solver"] == OdeSolver.RK:
-                        end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k], params=nlp["p_SX"])["xf"]
+                        end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k], params=nlp["p"])["xf"]
                     else:
                         end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k])["xf"]
 

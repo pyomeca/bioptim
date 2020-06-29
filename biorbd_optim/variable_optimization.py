@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import interpolate
-from casadi import SX
+from casadi import SX, MX
 
 
 class Data:
@@ -172,7 +172,7 @@ class Data:
                 if key == "time":
                     cmp = 0
                     for i in range(len(phase_time)):
-                        if isinstance(phase_time[i], SX):
+                        if isinstance(phase_time[i], (MX, SX)):
                             phase_time[i] = data_parameters["time"][cmp, 0]
                             cmp += 1
 

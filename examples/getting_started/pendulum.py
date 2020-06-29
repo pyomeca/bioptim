@@ -13,7 +13,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_threads):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_threads, with_SX=False):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -61,6 +61,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
         objective_functions,
         constraints,
         nb_threads=nb_threads,
+        with_SX=with_SX,
     )
 
 

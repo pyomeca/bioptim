@@ -11,8 +11,7 @@ from biorbd_optim import Data, OdeSolver
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_align_and_minimize_marker_displacement_global(ode_solver):
+def test_align_and_minimize_marker_displacement_global():
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -64,8 +63,7 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_align_and_minimize_marker_displacement_RT(ode_solver):
+def test_align_and_minimize_marker_displacement_RT():
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -117,8 +115,7 @@ def test_align_and_minimize_marker_displacement_RT(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_align_and_minimize_marker_velocity(ode_solver):
+def test_align_and_minimize_marker_velocity():
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(

@@ -40,16 +40,24 @@ class Parameters:
 
     @staticmethod
     def add_to_V(
-        ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, mx_sym=None, **extra_params
+        ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, sym_var=None, **extra_params
     ):
-        if mx_sym is None:
-            mx_sym = SX.sym(param_name, nb_elements, 1)
+        if sym_var is None:
+            if ocp.with_SX:
+                sym_var = SX.sym(param_name, nb_elements, 1)
+            else:
+                sym_var = MX.sym(param_name, nb_elements, 1)
 
-        ocp.V = vertcat(ocp.V, mx_sym)
-        param_to_store = {"mx": mx_sym, "func": pre_dynamic_function, "size": nb_elements, "extra_params": extra_params}
+        ocp.V = vertcat(ocp.V, sym_var)
+        param_to_store = {
+            "sym_var": sym_var,
+            "func": pre_dynamic_function,
+            "size": nb_elements,
+            "extra_params": extra_params,
+        }
         if param_name in ocp.param_to_optimize:
             p = ocp.param_to_optimize[param_name]
-            p["mx"] = vertcat(p["mx"], param_to_store["mx"])
+            p["sym_var"] = vertcat(p["sym_var"], param_to_store["sym_var"])
             if p["func"] != param_to_store["func"]:
                 raise RuntimeError("Pre dynamic function of same parameters must be the same")
             p["size"] += param_to_store["size"]
@@ -64,4 +72,4 @@ class Parameters:
         initial_guess.check_and_adjust_dimensions(nb_elements, 1)
         ocp.V_init.concatenate(initial_guess)
 
-        return mx_sym
+        return sym_var
