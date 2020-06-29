@@ -23,13 +23,12 @@ class AcadosInterface(SolverInterface):
         # Declare model variables
         x = ocp.nlp[0]["X"][0]
         u = ocp.nlp[0]["U"][0]
-        p = ocp.nlp[0]["p_SX"]
+        p = ocp.nlp[0]["p"]
         mod = ocp.nlp[0]["model"]
         x_dot = SX.sym("x_dot", mod.nbQdot() * 2, 1)
 
         f_expl = ocp.nlp[0]["dynamics_func"](x, u, p)
         f_impl = x_dot - f_expl
-        # expl_ode_fun = Function('myFunName', [x, u, p], [f_expl]).expand()
 
         self.acados_model.f_impl_expr = f_impl
         self.acados_model.f_expl_expr = f_expl

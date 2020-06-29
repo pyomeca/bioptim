@@ -63,13 +63,16 @@ class PenaltyFunctionAbstract:
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
                 data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
             )
-
-            PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q_MX"])
+            if ocp.with_SX:
+                PenaltyFunctionAbstract._add_to_sx_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q_MX"])
             nq = nlp["q_mapping"].reduce.len
             for i, v in enumerate(x):
                 q = nlp["q_mapping"].expand.map(v[:nq])
                 data_marker = data_to_track[:, markers_idx, t[i]]
-                val = nlp["SX_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
+                if ocp.with_SX:
+                    val = nlp["SX_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
+                else:
+                    val = nlp["model"].markers(q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
@@ -88,7 +91,8 @@ class PenaltyFunctionAbstract:
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
             )
 
-            PenaltyFunctionAbstract._add_to_sx_func(nlp, "markers", nlp["model"].markers, nlp["q_MX"])
+            if ocp.with_SX:
+                PenaltyFunctionAbstract._add_to_sx_func(nlp, "markers", nlp["model"].markers, nlp["q_MX"])
 
             def biorbd_meta_func(
                 q, coordinates_system_idx,
@@ -97,37 +101,53 @@ class PenaltyFunctionAbstract:
 
             for i in range(len(x) - 1):
                 if coordinates_system_idx < 0:
-                    inv_jcs_1 = casadi.SX.eye(4)
-                    inv_jcs_0 = casadi.SX.eye(4)
+                    if ocp.with_SX:
+                        inv_jcs_1 = casadi.SX.eye(4)
+                        inv_jcs_0 = casadi.SX.eye(4)
+                    else:
+                        inv_jcs_1 = casadi.MX.eye(4)
+                        inv_jcs_0 = casadi.MX.eye(4)
                 elif coordinates_system_idx < nb_rts:
                     # TODO: Make sure second param is correct
-                    PenaltyFunctionAbstract._add_to_sx_func(
-                        nlp,
-                        f"globalJCS_{coordinates_system_idx}",
-                        biorbd_meta_func,
-                        nlp["q_MX"],
-                        coordinates_system_idx,
-                    )
-                    jcs_1 = nlp["SX_func"][f"globalJCS_{coordinates_system_idx}"](x[i + 1][:n_q])
-                    inv_jcs_1 = casadi.vertcat(
-                        casadi.horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), casadi.horzcat(0, 0, 0, 1)
-                    )
-                    jcs_0 = nlp["SX_func"][f"globalJCS_{coordinates_system_idx}"](x[i][:n_q])
-                    inv_jcs_0 = casadi.vertcat(
-                        casadi.horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), casadi.horzcat(0, 0, 0, 1)
-                    )
+                    if ocp.with_SX:
+                        PenaltyFunctionAbstract._add_to_sx_func(
+                            nlp,
+                            f"globalJCS_{coordinates_system_idx}",
+                            biorbd_meta_func,
+                            nlp["q_MX"],
+                            coordinates_system_idx,
+                        )
+                        jcs_1 = nlp["SX_func"][f"globalJCS_{coordinates_system_idx}"](x[i + 1][:n_q])
+                        inv_jcs_1 = casadi.vertcat(
+                            casadi.horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), casadi.horzcat(0, 0, 0, 1)
+                        )
+                        jcs_0 = nlp["SX_func"][f"globalJCS_{coordinates_system_idx}"](x[i][:n_q])
+                        inv_jcs_0 = casadi.vertcat(
+                            casadi.horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), casadi.horzcat(0, 0, 0, 1)
+                        )
+                    else:
+                        jcs_1 = nlp["model"].globalJCS(x[i + 1][:n_q], coordinates_system_idx).to_mx()
+                        inv_jcs_1 = casadi.vertcat(
+                            casadi.horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), casadi.horzcat(0, 0, 0, 1)
+                        )
+                        jcs_0 = nlp["model"].globalJCS(x[i][:n_q], coordinates_system_idx).to_mx()
+                        inv_jcs_0 = casadi.vertcat(
+                            casadi.horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), casadi.horzcat(0, 0, 0, 1)
+                        )
+
                 else:
                     raise RuntimeError(
                         f"Wrong choice of coordinates_system_idx. (Negative values refer to global coordinates system, "
                         f"positive values must be between 0 and {nb_rts})"
                     )
-                # TODO: Does not work with Acados(free variables)
-                val = inv_jcs_1 @ casadi.vertcat(
-                    nlp["SX_func"]["markers"](x[i + 1][:n_q])[:, markers_idx], 1
-                ) - inv_jcs_0 @ casadi.vertcat(nlp["SX_func"]["markers"](x[i][:n_q])[:, markers_idx], 1)
-                # val = inv_jcs_1 @ casadi.vertcat(
-                #     nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx], 1
-                # ) - inv_jcs_0 @ casadi.vertcat(nlp["model"].markers(x[i][:n_q])[:, markers_idx], 1)
+                if ocp.with_SX:
+                    val = inv_jcs_1 @ casadi.vertcat(
+                        nlp["SX_func"]["markers"](x[i + 1][:n_q])[:, markers_idx], 1
+                    ) - inv_jcs_0 @ casadi.vertcat(nlp["SX_func"]["markers"](x[i][:n_q])[:, markers_idx], 1)
+                else:
+                    val = inv_jcs_1 @ casadi.vertcat(
+                        nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx], 1
+                    ) - inv_jcs_0 @ casadi.vertcat(nlp["model"].markers(x[i][:n_q])[:, markers_idx], 1)
                 penalty_type._add_to_penalty(ocp, nlp, val[:3], **extra_param)
 
         @staticmethod
@@ -456,7 +476,7 @@ class PenaltyFunctionAbstract:
         penalty_type._parameter_modifier(penalty_function, penalty)
 
         penalty_idx = penalty_type._reset_penalty(ocp, nlp, penalty_idx)
-        penalty_function(penalty_type, ocp, nlp, t, x, u, nlp["p_SX"], penalty_idx=penalty_idx, **penalty)
+        penalty_function(penalty_type, ocp, nlp, t, x, u, nlp["p"], penalty_idx=penalty_idx, **penalty)
 
     @staticmethod
     def _add_to_sx_func(nlp, name, function, *all_param):

@@ -56,6 +56,7 @@ class OptimalControlProgram:
         plot_mappings=None,
         state_transitions=(),
         nb_threads=1,
+        with_SX = False,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -119,6 +120,7 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "state_transitions": state_transitions,
             "nb_threads": nb_threads,
+            "with_SX": with_SX,
         }
 
         # Declare optimization variables
@@ -126,6 +128,7 @@ class OptimalControlProgram:
         self.g = []
         self.g_bounds = []
         self.V = []
+        self.V_MX = []
         self.V_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
         self.V_init = InitialConditions(interpolation_type=InterpolationType.CONSTANT)
         self.param_to_optimize = {}
@@ -139,6 +142,9 @@ class OptimalControlProgram:
         constraints = self.__init_penalty(constraints, "constraints")
         objective_functions = self.__init_penalty(objective_functions, "objective_functions")
         parameters = self.__init_penalty(parameters, "parameters")
+
+        # Type of CasADi graph
+        self.with_SX = with_SX
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
@@ -155,6 +161,10 @@ class OptimalControlProgram:
             "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
         )
         self.nb_threads = nb_threads
+
+
+        if ode_solver == OdeSolver.COLLOCATION and self.with_SX:
+            raise RuntimeError("SX graph cannot be solved with COLLOCATION integrator")
 
         # External forces
         if external_forces != ():
@@ -236,8 +246,8 @@ class OptimalControlProgram:
                 for objective_function in objective_functions_phase:
                     self.add_objective_function(objective_function, i)
 
-    @staticmethod
-    def __initialize_nlp(nlp):
+
+    def __initialize_nlp(self, nlp):
         """Start with an empty non linear problem"""
         nlp["nbQ"] = 0
         nlp["nbQdot"] = 0
@@ -246,9 +256,12 @@ class OptimalControlProgram:
         nlp["plot"] = {}
         nlp["q_MX"] = MX()
         nlp["qdot_MX"] = MX()
-        nlp["u_MX"] = MX()
-        nlp["x_SX"] = SX()
-        nlp["u_SX"] = SX()
+        if self.with_SX:
+            nlp["x"] = SX()
+            nlp["u"] = SX()
+        else:
+            nlp["x"] = MX()
+            nlp["u"] = MX()
         nlp["J"] = []
         nlp["J_acados_mayer"] = []
         nlp["g"] = []
@@ -286,24 +299,24 @@ class OptimalControlProgram:
         :param nlp: The nlp problem
         """
 
-        dynamics = nlp["dynamics_func"]
         ode_opt = {"t0": 0, "tf": nlp["dt"]}
         if nlp["ode_solver"] == OdeSolver.COLLOCATION or nlp["ode_solver"] == OdeSolver.RK:
             ode_opt["number_of_finite_elements"] = nlp["nb_integration_steps"]
 
-        ode = {"x": nlp["x_SX"], "p": nlp["u_SX"], "ode": dynamics(nlp["x_SX"], nlp["u_SX"], nlp["p_SX"])}
+        dynamics = nlp["dynamics_func"]
+        ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"], nlp["p"])}
         nlp["dynamics"] = []
         nlp["par_dynamics"] = {}
         if nlp["ode_solver"] == OdeSolver.RK:
-            ode_opt["param"] = nlp["p_SX"]
+            ode_opt["param"] = nlp["p"]
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
             if "external_forces" in nlp:
                 for idx in range(len(nlp["external_forces"])):
                     ode_opt["idx"] = idx
-                    nlp["dynamics"].append(RK4(ode, ode_opt))
+                    nlp["dynamics"].append(RK4(ode, ode_opt, self.with_SX))
             else:
-                nlp["dynamics"].append(RK4(ode, ode_opt))
+                nlp["dynamics"].append(RK4(ode, ode_opt, self.with_SX))
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
             if len(self.param_to_optimize) != 0:
                 raise RuntimeError("OdeSolver.COLLOCATION cannot be used while optimizing parameters")
@@ -329,11 +342,10 @@ class OptimalControlProgram:
         :param nlp: The non linear problem.
         :param idx_phase: Index of the phase. (integer)
         """
+
         V = []
         X = []
         U = []
-        X_MX = []
-        U_MX = []
 
         nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
         V_bounds = Bounds([0] * nV, [0] * nV, interpolation_type=InterpolationType.CONSTANT)
@@ -341,20 +353,22 @@ class OptimalControlProgram:
 
         offset = 0
         for k in range(nlp["ns"] + 1):
-            X_ = SX.sym("X_" + str(idx_phase) + "_" + str(k), nlp["nx"])
-            X_MX_ = MX.sym("X_" + str(idx_phase) + "_" + str(k), nlp["nx"])
+            if self.with_SX:
+                X_ = SX.sym("X_" + str(idx_phase) + "_" + str(k), nlp["nx"])
+            else :
+                X_ = MX.sym("X_" + str(idx_phase) + "_" + str(k), nlp["nx"])
             X.append(X_)
-            X_MX.append(X_MX_)
             V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
             V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
             V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
             offset += nlp["nx"]
             V = vertcat(V, X_)
             if k != nlp["ns"]:
-                U_ = SX.sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
-                U_MX_ = MX.sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
+                if self.with_SX:
+                    U_ = SX.sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
+                else :
+                    U_ = MX.sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
                 U.append(U_)
-                U_MX.append(U_MX_)
                 V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
                 V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
                 V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
@@ -364,9 +378,9 @@ class OptimalControlProgram:
         V_init.check_and_adjust_dimensions(nV, 1)
 
         nlp["X"] = X
-        nlp["X_MX"] = X_MX
+        # nlp["X_MX"] = X_MX
         nlp["U"] = U
-        nlp["U_MX"] = U_MX
+        # nlp["U_MX"] = U_MX
         self.V = vertcat(self.V, V)
 
         self.V_bounds.concatenate(V_bounds)
@@ -413,7 +427,10 @@ class OptimalControlProgram:
                     has_penalty[i] = True
 
                     initial_time_guess.append(phase_time[i])
-                    phase_time[i] = casadi.SX.sym(f"time_phase_{i}", 1, 1)
+                    if self.with_SX:
+                        phase_time[i] = casadi.SX.sym(f"time_phase_{i}", 1, 1)
+                    else:
+                        phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
                     time_min.append(pen_fun["minimum"] if "minimum" in pen_fun else 0)
                     time_max.append(pen_fun["maximum"] if "maximum" in pen_fun else inf)
         return has_penalty
@@ -427,7 +444,7 @@ class OptimalControlProgram:
         """
         i = 0
         for nlp in self.nlp:
-            if isinstance(nlp["tf"], SX):
+            if isinstance(nlp["tf"], (SX, MX)):
                 time_bounds = Bounds(minimum[i], maximum[i], interpolation_type=InterpolationType.CONSTANT)
                 time_init = InitialConditions(initial_guess[i])
                 Parameters.add_to_V(self, "time", 1, None, time_bounds, time_init, nlp["tf"])
@@ -570,6 +587,8 @@ class OptimalControlProgram:
             solver_ocp.prepare_ipopt(self)
 
         elif solver == "acados":
+            if not self.with_SX:
+                raise RuntimeError("CasADi graph must be SX to be solved with ACADOS")
             from .acados_interface import AcadosInterface
 
             if "acados_dir" in solver_options:
@@ -692,7 +711,10 @@ class OptimalControlProgram:
                 print(f"   [{label}] = {elem}")
 
     def dispatch_obj_func(self):
-        all_J = SX()
+        if self.with_SX:
+            all_J = SX()
+        else:
+            all_J = MX()
         for j_nodes in self.J:
             for j in j_nodes:
                 all_J = vertcat(all_J, j)
@@ -705,7 +727,10 @@ class OptimalControlProgram:
 
     def dispatch_bounds(self):
         all_J = self.dispatch_obj_func()
-        all_g = SX()
+        if self.with_SX:
+            all_g = SX()
+        else:
+            all_g = MX()
         all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
         for i in range(len(self.g)):
             for j in range(len(self.g[i])):
