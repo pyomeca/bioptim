@@ -49,4 +49,12 @@ class Simulate:
             offset_phases += nlp["ns"]
         return {"x": v}
 
+    @staticmethod
+    def _concat_variables(variables, offset_phases, idx_nodes):
+        var = np.ndarray(0)
+        for key in variables.keys():
+            var = np.append(var, variables[key][:, offset_phases + idx_nodes])
+        return var
+
+
 
