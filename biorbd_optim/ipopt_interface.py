@@ -65,7 +65,7 @@ class IpoptInterface(SolverInterface):
 
     @staticmethod
     def __dispatch_bounds(ocp):
-        all_J = ocp.dispatch_obj_func()
+        all_J = IpoptInterface.dispatch_obj_func(ocp)
         all_g = ocp.CX()
         all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
         for i in range(len(ocp.g)):

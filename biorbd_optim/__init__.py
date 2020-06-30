@@ -10,4 +10,3 @@ from .mapping import Mapping, BidirectionalMapping
 from .optimal_control_program import OptimalControlProgram
 from .variable_optimization import Data
 from .continuity import StateTransition
-from .penalty import PenaltyFunctionAbstract
