@@ -1,7 +1,7 @@
-from casadi import MX, SX, Function, vertcat, norm_fro
+from casadi import Function, vertcat, norm_fro
 
 
-def RK4(ode, ode_opt, with_SX):
+def RK4(ode, ode_opt):
     """
     Numerical integration using fourth order Runge-Kutta method.
     :param ode: ode["x"] -> States. ode["p"] -> Controls. ode["ode"] -> Ordinary differential equation function
@@ -13,6 +13,7 @@ def RK4(ode, ode_opt, with_SX):
     t_span = ode_opt["t0"], ode_opt["tf"]
     n_step = ode_opt["number_of_finite_elements"]
     idx = ode_opt["idx"]
+    CX = ode_opt["CX"]
     x_sym = ode["x"]
     u_sym = ode["p"]
     param_sym = ode_opt["param"]
@@ -22,10 +23,7 @@ def RK4(ode, ode_opt, with_SX):
 
     def dxdt(h, states, controls, params):
         u = controls
-        if with_SX:
-            x = SX(states.shape[0], n_step + 1)
-        else:
-            x = MX(states.shape[0], n_step + 1)
+        x = CX(states.shape[0], n_step + 1)
         p = params
         x[:, 0] = states
 

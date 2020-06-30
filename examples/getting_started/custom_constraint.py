@@ -25,7 +25,7 @@ def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_mar
     nq = nlp["nbQ"]
     val = []
 
-    PenaltyFunctionAbstract._add_to_sx_func(nlp, "markers", nlp["model"].markers, nlp["q_MX"])
+    PenaltyFunctionAbstract._add_to_sx_func(nlp, "markers", nlp["model"].markers, nlp["q"])
 
     for v in x:
         q = v[:nq]

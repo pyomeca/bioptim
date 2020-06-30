@@ -1,4 +1,4 @@
-from casadi import MX, SX, vertcat, Function
+from casadi import MX, vertcat, Function
 from enum import Enum
 
 from .dynamics import Dynamics
@@ -27,8 +27,8 @@ class Problem:
         Works with torques but without muscles, must be used with dynamics without contacts.
         :param nlp: An instance of the OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(ocp, nlp, True, False)
-        Problem.configure_tau(ocp, nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
         else:
@@ -41,8 +41,8 @@ class Problem:
         Works with torques, without muscles, must be used with dynamics with contacts.
         :param nlp: An OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(ocp, nlp, True, False)
-        Problem.configure_tau(ocp, nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
         else:
@@ -56,8 +56,8 @@ class Problem:
         Controls u are torques and torques activations.
         :param nlp: An OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(ocp, nlp, True, False)
-        Problem.configure_tau(ocp, nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
         nlp["nbActuators"] = nlp["nbTau"]
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -71,8 +71,8 @@ class Problem:
         Controls u are torques and torques activations.
         :param nlp: An OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(ocp, nlp, True, False)
-        Problem.configure_tau(ocp, nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
         nlp["nbActuators"] = nlp["nbTau"]
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -89,8 +89,8 @@ class Problem:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(ocp, nlp, True, False)
-        Problem.configure_muscles(ocp, nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_muscles(nlp, False, True)
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -104,9 +104,9 @@ class Problem:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(ocp, nlp, True, False)
-        Problem.configure_tau(ocp, nlp, False, True)
-        Problem.configure_muscles(ocp, nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        Problem.configure_muscles(nlp, False, True)
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, nlp["problem_type"]["dynamic"])
@@ -120,8 +120,8 @@ class Problem:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(ocp, nlp, True, False)
-        Problem.configure_muscles(ocp, nlp, True, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_muscles(nlp, True, True)
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -135,9 +135,9 @@ class Problem:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(ocp, nlp, True, False)
-        Problem.configure_tau(ocp, nlp, False, True)
-        Problem.configure_muscles(ocp, nlp, True, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        Problem.configure_muscles(nlp, True, True)
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -151,9 +151,9 @@ class Problem:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(ocp, nlp, True, False)
-        Problem.configure_tau(ocp, nlp, False, True)
-        Problem.configure_muscles(ocp, nlp, False, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        Problem.configure_muscles(nlp, False, True)
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -172,9 +172,9 @@ class Problem:
         Works with torques and muscles.
         :param nlp: An OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(ocp, nlp, True, False)
-        Problem.configure_tau(ocp, nlp, False, True)
-        Problem.configure_muscles(ocp, nlp, True, True)
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        Problem.configure_muscles(nlp, True, True)
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -187,7 +187,7 @@ class Problem:
         )
 
     @staticmethod
-    def configure_q_qdot(ocp, nlp, as_states, as_controls):
+    def configure_q_qdot(nlp, as_states, as_controls):
         """
         Configures common settings for torque driven problems with and without contacts.
         :param nlp: An OptimalControlProgram class.
@@ -203,22 +203,18 @@ class Problem:
 
         dof_names = nlp["model"].nameDof()
         q_mx = MX()
-        q_mx_expand = MX()
         q_dot_mx = MX()
-        q_dot_mx_expand = MX()
-        q_sx = SX()
-        q_dot_sx = SX()
+        q = nlp["CX"]()
+        q_dot = nlp["CX"]()
 
         for i in nlp["q_mapping"].reduce.map_idx:
-            q_mx = vertcat(q_mx, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
-            q_sx = vertcat(q_sx, SX.sym("Q_" + dof_names[i].to_string(), 1, 1))
+            q = vertcat(q, nlp["CX"].sym("Q_" + dof_names[i].to_string(), 1, 1))
         for i in nlp["q_dot_mapping"].reduce.map_idx:
+            q_dot = vertcat(q_dot, nlp["CX"].sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+        for i in nlp["q_mapping"].expand.map_idx:
+            q_mx = vertcat(q_mx, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
+        for i in nlp["q_dot_mapping"].expand.map_idx:
             q_dot_mx = vertcat(q_dot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
-            q_dot_sx = vertcat(q_dot_sx, SX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
-        for i in range(len(nlp["q_mapping"].expand.map_idx)):
-            q_mx_expand = vertcat(q_mx_expand, MX.sym("Q_expand_" + dof_names[i].to_string(), 1, 1))
-        for i in range(len(nlp["q_dot_mapping"].expand.map_idx)):
-            q_dot_mx_expand = vertcat(q_dot_mx_expand, MX.sym("Qdot_expand_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbQ"] = nlp["q_mapping"].reduce.len
         nlp["nbQdot"] = nlp["q_dot_mapping"].reduce.len
@@ -227,14 +223,9 @@ class Problem:
         legend_qdot = ["qdot_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_dot_mapping"].reduce.map_idx]
 
         if as_states:
-            nlp["q_MX"] = q_mx
-            nlp["q_MX_expand"] = q_mx_expand
-            nlp["qdot_MX"] = q_dot_mx
-            nlp["qdot_MX_expand"] = q_dot_mx_expand
-            if ocp.with_SX:
-                nlp["x"] = vertcat(nlp["x"], q_sx, q_dot_sx)
-            else:
-                nlp["x"] = vertcat(nlp["x"], q_mx, q_dot_mx)
+            nlp["q"] = q_mx
+            nlp["qdot"] = q_dot_mx
+            nlp["x"] = vertcat(nlp["x"], q, q_dot)
             nlp["var_states"]["q"] = nlp["nbQ"]
             nlp["var_states"]["q_dot"] = nlp["nbQdot"]
 
@@ -247,10 +238,7 @@ class Problem:
                 legend=legend_qdot,
             )
         if as_controls:
-            if ocp.with_SX:
-                nlp["u"] = vertcat(nlp["u"], q_sx, q_dot_sx)
-            else:
-                nlp["u"] = vertcat(nlp["u"], q_mx, q_dot_mx)
+            nlp["u"] = vertcat(nlp["u"], q, q_dot)
             nlp["var_controls"]["q"] = nlp["nbQ"]
             nlp["var_controls"]["q_dot"] = nlp["nbQdot"]
             # Add plot if it happens
@@ -259,7 +247,7 @@ class Problem:
         nlp["nu"] = nlp["u"].rows()
 
     @staticmethod
-    def configure_tau(ocp, nlp, as_states, as_controls):
+    def configure_tau(nlp, as_states, as_controls):
         """
         Configures common settings for torque driven problems with and without contacts.
         :param nlp: An OptimalControlProgram class.
@@ -274,14 +262,9 @@ class Problem:
             )
 
         dof_names = nlp["model"].nameDof()
-        if ocp.with_SX:
-            tau = SX()
-            for i in nlp["tau_mapping"].reduce.map_idx:
-                tau = vertcat(tau, SX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
-        else:
-            tau = MX()
-            for i in nlp["tau_mapping"].reduce.map_idx:
-                tau = vertcat(tau, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
+        tau = nlp["CX"]()
+        for i in nlp["tau_mapping"].reduce.map_idx:
+            tau = vertcat(tau, nlp["CX"].sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
         legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
@@ -332,20 +315,15 @@ class Problem:
         )
 
     @staticmethod
-    def configure_muscles(ocp, nlp, as_states, as_controls):
+    def configure_muscles(nlp, as_states, as_controls):
         nlp["nbMuscle"] = nlp["model"].nbMuscles()
         nlp["muscleNames"] = [names.to_string() for names in nlp["model"].muscleNames()]
 
         combine = None
         if as_states:
-            if ocp.with_SX:
-                muscles = SX()
-                for i in range(nlp["nbMuscle"]):
-                    muscles = vertcat(muscles, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-            else:
-                muscles = MX()
-                for i in range(nlp["nbMuscle"]):
-                    muscles = vertcat(muscles, SX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            muscles = nlp["CX"]()
+            for i in range(nlp["nbMuscle"]):
+                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{nlp['muscleNames']}_activation"))
             nlp["x"] = vertcat(nlp["x"], muscles)
             nlp["var_states"]["muscles"] = nlp["nbMuscle"]
 
@@ -359,14 +337,10 @@ class Problem:
             combine = "muscles_states"
 
         if as_controls:
-            if ocp.with_SX:
-                muscles = SX()
-                for i in range(nlp["nbMuscle"]):
-                    muscles = vertcat(muscles, SX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            else:
-                muscles = MX()
-                for i in range(nlp["nbMuscle"]):
-                    muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            muscles = nlp["CX"]()
+            for i in range(nlp["nbMuscle"]):
+                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+
             nlp["u"] = vertcat(nlp["u"], muscles)
             nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
@@ -388,10 +362,7 @@ class Problem:
         MX_symbolic_states = MX.sym("x", nlp["nx"], 1)
         MX_symbolic_controls = MX.sym("u", nlp["nu"], 1)
 
-        if ocp.with_SX:
-            symbolic_params = SX()
-        else:
-            symbolic_params = MX()
+        symbolic_params = nlp["CX"]()
         nlp["p"] = symbolic_params
         nlp["parameters_to_optimize"] = ocp.param_to_optimize
         for key in nlp["parameters_to_optimize"]:

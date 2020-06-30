@@ -57,11 +57,10 @@ class StateTransitionFunctions:
                 nlp_pre,
                 f"compute_constraint_impulse_direct",
                 model.ComputeConstraintImpulsesDirect,
-                nlp_pre["q_MX"],
-                nlp_pre["qdot_MX"],
+                nlp_pre["q"],
+                nlp_pre["qdot"],
             )
             qdot_post = nlp_pre["SX_func"]["compute_constraint_impulse_direct"](q, qdot_pre)
-            # qdot_post = nlp_post["model"].ComputeConstraintImpulsesDirect(q, qdot_pre).to_mx()
             qdot_post = nlp_post["q_dot_mapping"].reduce.map(qdot_post)
 
             val = nlp_pre["X"][-1][:nbQ] - nlp_post["X"][0][:nbQ]

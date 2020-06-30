@@ -43,10 +43,7 @@ class Parameters:
         ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, sym_var=None, **extra_params
     ):
         if sym_var is None:
-            if ocp.with_SX:
-                sym_var = SX.sym(param_name, nb_elements, 1)
-            else:
-                sym_var = MX.sym(param_name, nb_elements, 1)
+            sym_var = ocp.CX.sym(param_name, nb_elements, 1)
 
         ocp.V = vertcat(ocp.V, sym_var)
         param_to_store = {
