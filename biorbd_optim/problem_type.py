@@ -222,9 +222,9 @@ class Problem:
         legend_q = ["q_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_mapping"].reduce.map_idx]
         legend_qdot = ["qdot_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_dot_mapping"].reduce.map_idx]
 
+        nlp["q"] = q_mx
+        nlp["qdot"] = q_dot_mx
         if as_states:
-            nlp["q"] = q_mx
-            nlp["qdot"] = q_dot_mx
             nlp["x"] = vertcat(nlp["x"], q, q_dot)
             nlp["var_states"]["q"] = nlp["nbQ"]
             nlp["var_states"]["q_dot"] = nlp["nbQdot"]
@@ -262,13 +262,18 @@ class Problem:
             )
 
         dof_names = nlp["model"].nameDof()
+
+        tau_mx = MX()
         tau = nlp["CX"]()
         for i in nlp["tau_mapping"].reduce.map_idx:
             tau = vertcat(tau, nlp["CX"].sym("Tau_" + dof_names[i].to_string(), 1, 1))
+        for i in nlp["q_mapping"].expand.map_idx:
+            tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
         legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
 
+        nlp["tau"] = tau_mx
         if as_states:
             nlp["x"] = vertcat(nlp["x"], tau)
             nlp["var_states"]["tau"] = nlp["nbTau"]
@@ -319,11 +324,16 @@ class Problem:
         nlp["nbMuscle"] = nlp["model"].nbMuscles()
         nlp["muscleNames"] = [names.to_string() for names in nlp["model"].muscleNames()]
 
+        muscles_mx = MX()
+        for name in nlp["muscleNames"]:
+            muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}"))
+        nlp["muscles"] = muscles_mx
+
         combine = None
         if as_states:
             muscles = nlp["CX"]()
-            for i in range(nlp["nbMuscle"]):
-                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            for name in nlp["muscleNames"]:
+                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation"))
             nlp["x"] = vertcat(nlp["x"], muscles)
             nlp["var_states"]["muscles"] = nlp["nbMuscle"]
 
@@ -338,8 +348,8 @@ class Problem:
 
         if as_controls:
             muscles = nlp["CX"]()
-            for i in range(nlp["nbMuscle"]):
-                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            for name in nlp["muscleNames"]:
+                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_excitation"))
 
             nlp["u"] = vertcat(nlp["u"], muscles)
             nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
