@@ -26,7 +26,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, mu):
     objective_functions = ({"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},)
 
     # Dynamics
-    problem_type = ProblemType.torque_driven_with_contact
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN_WITH_CONTACT}
 
     # Constraints
     constraints = (

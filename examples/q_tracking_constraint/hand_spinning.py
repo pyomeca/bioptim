@@ -11,7 +11,12 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
+    StateTransition,
 )
+
+
+def state_transition_function(state_pre, state_post):
+    return state_pre[1:] - state_post[1:]
 
 
 def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
@@ -26,7 +31,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
 
     # Problem parameters
     number_shooting_points = 30
-    final_time = 1.5
+    final_time = 1.0
 
     # Add objective functions
     objective_functions = (
@@ -36,7 +41,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
     )
 
     # Dynamics
-    problem_type = ProblemType.muscle_activations_and_torque_driven
+    problem_type = {"type": ProblemType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN}
 
     # Constraints
     constraints = (
@@ -53,6 +58,8 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
             "data_to_track": np.linspace(0, 2 * np.pi, number_shooting_points + 1),
         },
     )
+
+    state_transitions = ({"type": StateTransition.CUSTOM, "function": state_transition_function, "phase_pre_idx": 0,},)
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
@@ -82,7 +89,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
         U_bounds,
         objective_functions,
         constraints,
-        is_cyclic_objective=True,
+        state_transitions=state_transitions,
     )
 
 
@@ -90,7 +97,7 @@ if __name__ == "__main__":
     ocp = prepare_ocp()
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True, options_ipopt={"hessian_approximation": "limited-memory"})
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)

@@ -18,6 +18,7 @@ from .constraints import ConstraintFunction, Constraint
 from .continuity import ContinuityFunctions, StateTransitionFunctions
 from .objective_functions import Objective, ObjectiveFunction
 from .parameters import Parameters
+from .problem_type import Problem
 from .plot import OnlineCallback, CustomPlot
 from .variable_optimization import Data
 from .__version__ import __version__
@@ -198,7 +199,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
-            self.nlp[i]["problem_type"](self, self.nlp[i])
+            Problem.initialize(self, self.nlp[i])
 
         # Prepare path constraints
         self.__add_to_nlp("X_bounds", X_bounds, False)
@@ -252,6 +253,8 @@ class OptimalControlProgram:
         nlp["nbTau"] = 0
         nlp["nbMuscles"] = 0
         nlp["plot"] = {}
+        nlp["var_states"] = {}
+        nlp["var_controls"] = {}
         nlp["q_MX"] = MX()
         nlp["qdot_MX"] = MX()
         if self.with_SX:
@@ -306,6 +309,7 @@ class OptimalControlProgram:
         nlp["dynamics"] = []
         nlp["par_dynamics"] = {}
         if nlp["ode_solver"] == OdeSolver.RK:
+            ode_opt["model"] = nlp["model"]
             ode_opt["param"] = nlp["p"]
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
