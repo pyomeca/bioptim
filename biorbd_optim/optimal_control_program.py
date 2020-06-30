@@ -5,11 +5,9 @@ from math import inf
 
 import biorbd
 import casadi
-from casadi import MX, vertcat, sum1, SX
+from casadi import MX, vertcat, SX
 
-from .__version__ import __version__
 from .biorbd_interface import BiorbdInterface
-from .constraints import ConstraintFunction, Constraint
 from .enums import OdeSolver
 from .integrator import RK4
 from .mapping import BidirectionalMapping
@@ -19,7 +17,7 @@ from .continuity import ContinuityFunctions, StateTransitionFunctions
 from .objective_functions import Objective, ObjectiveFunction
 from .parameters import Parameters
 from .problem_type import Problem
-from .plot import OnlineCallback, CustomPlot
+from .plot import CustomPlot
 from .variable_optimization import Data
 from .__version__ import __version__
 from .utils import check_version
@@ -577,21 +575,16 @@ class OptimalControlProgram:
 
         if solver == "ipopt":
             from .ipopt_interface import IpoptInterface
-
             solver_ocp = IpoptInterface(self)
-            solver_ocp.prepare_ipopt(self)
 
         elif solver == "acados":
-            if not isinstance(self.CX(), SX):
-                raise RuntimeError("CasADi graph must be SX to be solved with ACADOS")
+            raise NotImplementedError("ACADOS backend is not implemented yet")
             from .acados_interface import AcadosInterface
 
             if "acados_dir" in solver_options:
                 os.environ["ACADOS_SOURCE_DIR"] = solver_options["acados_dir"]
                 del solver_options["acados_dir"]
-
             solver_ocp = AcadosInterface(self)
-            solver_ocp.prepare_acados(self)
 
             if return_iterations or show_online_optim:
                 raise NotImplementedError("return_iterations and show_online_optim are not implemented yet in acados.")
@@ -704,41 +697,3 @@ class OptimalControlProgram:
                 print(f"   {elem}")
             else:
                 print(f"   [{label}] = {elem}")
-
-    def dispatch_obj_func(self):
-        all_J = self.CX()
-        for j_nodes in self.J:
-            for j in j_nodes:
-                all_J = vertcat(all_J, j)
-        for nlp in self.nlp:
-            for obj_nodes in nlp["J"]:
-                for obj in obj_nodes:
-                    all_J = vertcat(all_J, obj)
-
-        return all_J
-
-    def dispatch_bounds(self):
-        all_J = self.dispatch_obj_func()
-        all_g = self.CX()
-        all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
-        for i in range(len(self.g)):
-            for j in range(len(self.g[i])):
-                all_g = vertcat(all_g, self.g[i][j])
-                all_g_bounds.concatenate(self.g_bounds[i][j])
-        for nlp in self.nlp:
-            for i in range(len(nlp["g"])):
-                for j in range(len(nlp["g"][i])):
-                    all_g = vertcat(all_g, nlp["g"][i][j])
-                    all_g_bounds.concatenate(nlp["g_bounds"][i][j])
-
-        nlp = {"x": self.V, "f": sum1(all_J), "g": all_g}
-
-        arg = {
-            "lbx": self.V_bounds.min,
-            "ubx": self.V_bounds.max,
-            "lbg": all_g_bounds.min,
-            "ubg": all_g_bounds.max,
-            "x0": self.V_init.init,
-        }
-
-        return nlp, arg

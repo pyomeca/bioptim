@@ -1,4 +1,4 @@
-from casadi import vertcat, MX, norm_fro
+from casadi import vertcat, MX
 import biorbd
 
 

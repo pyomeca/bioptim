@@ -11,5 +11,8 @@ class SolverInterface:
     def get_iterations(self):
         raise RuntimeError("SolverInterface is an abstract class")
 
-    def get_optimized_value(self):
+    def get_optimized_value(self, ocp):
+        raise RuntimeError("SolverInterface is an abstract class")
+
+    def online_optim(self, ocp):
         raise RuntimeError("SolverInterface is an abstract class")

@@ -1,4 +1,4 @@
-from casadi import MX, SX, vertcat
+from casadi import vertcat
 
 
 class Parameters:
@@ -32,9 +32,9 @@ class Parameters:
             parameter["size"],
         )
 
-        mx = Parameters.add_to_V(ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, **parameter)
+        cx = Parameters.add_to_V(ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, **parameter)
         if target_function:
-            val = target_function(ocp, mx, **parameter)
+            val = target_function(ocp, cx, **parameter)
             penalty_idx = penalty_type._reset_penalty(ocp, None, penalty_idx)
             penalty_type._add_to_penalty(ocp, None, val, penalty_idx, weight=weight, quadratic=quadratic)
 

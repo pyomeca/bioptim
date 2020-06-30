@@ -1,18 +1,23 @@
+import os
 import pickle
-import casadi
+
+from casadi import vertcat, sum1, nlpsol
+
 from .plot import OnlineCallback
-from .acados_interface import *
+from .solver_interface import SolverInterface
+from .path_conditions import Bounds, InterpolationType
 
 
 class IpoptInterface(SolverInterface):
     def __init__(self, ocp):
         super().__init__()
-        self.ocp_solver = None
-        self.options_common = {}
 
-    def prepare_ipopt(self, ocp):
-        # Dispatch the objective function values and create arg
-        self.nlp, self.arg = ocp.dispatch_bounds()
+        self.options_common = {}
+        self.opts = None
+
+        self.nlp, self.arg = self.__dispatch_bounds(ocp)
+        self.ocp_solver = None
+        self.out = None
 
     def online_optim(self, ocp):
         self.options_common["iteration_callback"] = OnlineCallback(ocp)
@@ -47,7 +52,7 @@ class IpoptInterface(SolverInterface):
         self.opts = {**options, **self.options_common}
 
     def solve(self):
-        solver = casadi.nlpsol("nlpsol", "ipopt", self.nlp, self.opts)
+        solver = nlpsol("nlpsol", "ipopt", self.nlp, self.opts)
 
         # Solve the problem
         self.out = solver.call(self.arg)
@@ -57,3 +62,43 @@ class IpoptInterface(SolverInterface):
 
     def get_optimized_value(self, ocp):
         return self.out
+
+    @staticmethod
+    def __dispatch_bounds(ocp):
+        all_J = ocp.dispatch_obj_func()
+        all_g = ocp.CX()
+        all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
+        for i in range(len(ocp.g)):
+            for j in range(len(ocp.g[i])):
+                all_g = vertcat(all_g, ocp.g[i][j])
+                all_g_bounds.concatenate(ocp.g_bounds[i][j])
+        for nlp in ocp.nlp:
+            for i in range(len(nlp["g"])):
+                for j in range(len(nlp["g"][i])):
+                    all_g = vertcat(all_g, nlp["g"][i][j])
+                    all_g_bounds.concatenate(nlp["g_bounds"][i][j])
+
+        nlp = {"x": ocp.V, "f": sum1(all_J), "g": all_g}
+
+        var = {
+            "lbx": ocp.V_bounds.min,
+            "ubx": ocp.V_bounds.max,
+            "lbg": all_g_bounds.min,
+            "ubg": all_g_bounds.max,
+            "x0": ocp.V_init.init,
+        }
+
+        return nlp, var
+
+    @staticmethod
+    def dispatch_obj_func(ocp):
+        all_J = ocp.CX()
+        for j_nodes in ocp.J:
+            for j in j_nodes:
+                all_J = vertcat(all_J, j)
+        for nlp in ocp.nlp:
+            for obj_nodes in nlp["J"]:
+                for obj in obj_nodes:
+                    all_J = vertcat(all_J, obj)
+
+        return all_J
