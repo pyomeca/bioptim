@@ -262,7 +262,7 @@ class OptimalControlProgram:
         nlp["J_acados_mayer"] = []
         nlp["g"] = []
         nlp["g_bounds"] = []
-        nlp["SX_func"] = {}
+        nlp["casadi_func"] = {}
 
     def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None):
         """Adds coupled parameters to the non linear problem"""
