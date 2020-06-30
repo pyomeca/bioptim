@@ -94,12 +94,6 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_muscles(nlp, False, True)
 
-        u = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
-
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
         else:
@@ -116,13 +110,6 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, False, True)
 
-        u = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["nu"] = nlp["u"].rows()
-        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
-
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, nlp["problem_type"]["dynamic"])
         else:
@@ -137,16 +124,6 @@ class Problem:
         """
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_muscles(nlp, True, True)
-
-        u = MX()
-        x = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["x"] = vertcat(nlp["x"], x)
-        nlp["var_states"]["muscles"] = nlp["nbMuscle"]
-        nlp["var_controls"] = {"muscles": nlp["nbMuscle"]}
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -164,16 +141,6 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, True, True)
 
-        u = MX()
-        x = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["x"] = vertcat(nlp["x"], x)
-        nlp["var_states"]["muscles"] = nlp["nbMuscle"]
-        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
-
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
         else:
@@ -189,12 +156,6 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, False, True)
-
-        u = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -216,16 +177,6 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, True, True)
-
-        u = MX()
-        x = MX()
-        for i in range(nlp["nbMuscle"]):
-            u = vertcat(u, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
-            x = vertcat(x, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
-        nlp["u"] = vertcat(nlp["u"], u)
-        nlp["x"] = vertcat(nlp["x"], x)
-        nlp["var_states"]["muscles"] = nlp["nbMuscle"]
-        nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
         if "dynamic" in nlp["problem_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
@@ -271,8 +222,10 @@ class Problem:
         qdot_bounds = Problem.slicing_bounds(nlp, "q_dot")
 
         if as_states:
-            nlp["x"] = vertcat(q, q_dot)
-            nlp["var_states"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
+            nlp["x"] = vertcat(nlp["x"], q, q_dot)
+            nlp["var_states"]["q"] = nlp["nbQ"]
+            nlp["var_states"]["q_dot"] = nlp["nbQdot"]
+
             nlp["plot"]["q"] = CustomPlot(
                 lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q, bounds=q_bounds,
             )
@@ -283,9 +236,14 @@ class Problem:
                 bounds=qdot_bounds,
             )
         if as_controls:
-            nlp["u"] = vertcat(q, q_dot)
-            nlp["var_controls"] = {"q": nlp["nbQ"], "q_dot": nlp["nbQdot"]}
+            nlp["u"] = vertcat(nlp["u"], q, q_dot)
+            nlp["var_controls"]["q"] = nlp["nbQ"]
+            nlp["var_controls"]["q_dot"] = nlp["nbQdot"]
+
             # Add plot if it happens
+
+        nlp["nx"] = nlp["x"].rows()
+        nlp["nu"] = nlp["u"].rows()
 
     @staticmethod
     def configure_tau(nlp, as_states, as_controls):
@@ -299,24 +257,28 @@ class Problem:
             )
 
         dof_names = nlp["model"].nameDof()
-        u = MX()
+        tau = MX()
         for i in nlp["tau_mapping"].reduce.map_idx:
-            u = vertcat(u, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
+            tau = vertcat(tau, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
         legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
 
         if as_states:
-            nlp["x"] = u
-            nlp["var_states"] = {"tau": nlp["nbTau"]}
+            nlp["x"] = vertcat(nlp["x"], tau)
+            nlp["var_states"]["tau"] = nlp["nbTau"]
+
             # Add plot if it happens, do not forget to retrieve bounds by completing the slicing bounds function
         if as_controls:
             tau_bounds = Problem.slicing_bounds(nlp, "tau")
-            nlp["u"] = u
-            nlp["var_controls"] = {"tau": nlp["nbTau"]}
+            nlp["u"] = vertcat(nlp["u"], tau)
+            nlp["var_controls"]["tau"] = nlp["nbTau"]
             nlp["plot"]["tau"] = CustomPlot(
                 lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau, bounds=tau_bounds,
             )
+
+        nlp["nx"] = nlp["x"].rows()
+        nlp["nu"] = nlp["u"].rows()
 
     @staticmethod
     def configure_contact(ocp, nlp, dyn_func):
@@ -354,6 +316,12 @@ class Problem:
 
         combine = None
         if as_states:
+            muscles = MX()
+            for i in range(nlp["nbMuscle"]):
+                muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            nlp["x"] = vertcat(nlp["x"], muscles)
+            nlp["var_states"]["muscles"] = nlp["nbMuscle"]
+
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
             nlp["plot"]["muscles_states"] = CustomPlot(
                 lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
@@ -362,7 +330,14 @@ class Problem:
                 ylim=[0, 1],
             )
             combine = "muscles_states"
+
         if as_controls:
+            muscles = MX()
+            for i in range(nlp["nbMuscle"]):
+                muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            nlp["u"] = vertcat(nlp["u"], muscles)
+            nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
+
             nlp["plot"]["muscles_control"] = CustomPlot(
                 lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
                 plot_type=PlotType.STEP,
@@ -370,6 +345,9 @@ class Problem:
                 combine_to=combine,
                 ylim=[0, 1],
             )
+
+        nlp["nx"] = nlp["x"].rows()
+        nlp["nu"] = nlp["u"].rows()
 
     @staticmethod
     def configure_forward_dyn_func(ocp, nlp, dyn_func):

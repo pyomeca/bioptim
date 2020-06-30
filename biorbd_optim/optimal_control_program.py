@@ -242,6 +242,8 @@ class OptimalControlProgram:
         nlp["nbTau"] = 0
         nlp["nbMuscles"] = 0
         nlp["plot"] = {}
+        nlp["var_states"] = {}
+        nlp["var_controls"] = {}
         nlp["x"] = MX()
         nlp["u"] = MX()
         nlp["J"] = []
