@@ -246,7 +246,11 @@ class Problem:
         """
         if nlp["tau_mapping"] is None:
             nlp["tau_mapping"] = BidirectionalMapping(
-                Mapping(range(nlp["model"].nbGeneralizedTorque())), Mapping(range(nlp["model"].nbGeneralizedTorque()))
+                # Mapping(range(nlp["model"].nbGeneralizedTorque())), Mapping(range(nlp["model"].nbGeneralizedTorque()))
+                Mapping(range(nlp["model"].nbQdot())),
+                Mapping(
+                    range(nlp["model"].nbQdot())
+                ),  # To change when nlp["model"].nbGeneralizedTorque() will return the proper number
             )
 
         dof_names = nlp["model"].nameDof()
