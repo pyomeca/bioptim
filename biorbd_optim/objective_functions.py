@@ -95,14 +95,17 @@ class ObjectiveFunction:
                 J = casadi.sum1(val) * weight
             ObjectiveFunction._add_to_penalty(ocp, nlp, J, penalty_idx)
 
-            if nlp:
-                if quadratic:
-                    J_acados_mayer = casadi.dot(nlp["X"][0], nlp["X"][0]) * weight
-                else:
-                    J_acados_mayer = casadi.sum1(nlp["X"][0]) * weight
-                ObjectiveFunction._add_to_penalty_acados_mayer(ocp, nlp, J_acados_mayer, penalty_idx)
-            else:
-                print("TODO : implement cyclic objective in ACADOS")
+            # # TODO: This next block is at the wrong place
+            # if nlp:
+            #     if quadratic:
+            #         # TODO : This seems simply wrong
+            #         J_acados_mayer = casadi.dot(nlp["X"][0], nlp["X"][0]) * weight
+            #     else:
+            #         # TODO : So this is
+            #         J_acados_mayer = casadi.sum1(nlp["X"][0]) * weight
+            #     nlp["J_acados_mayer"].append(J_acados_mayer)  # TODO: Find a better name (J_mayer_from_node_0?)
+            # else:
+            #     pass
 
         @staticmethod
         def _reset_penalty(ocp, nlp, penalty_idx):
@@ -163,15 +166,6 @@ class ObjectiveFunction:
         else:
             ocp.J[penalty_idx].append(J)
 
-    @staticmethod
-    def _add_to_penalty_acados_mayer(ocp, nlp, J_acados_mayer, penalty_idx):
-        """
-        Adds objective J to objective array nlp["J"][penalty_idx] or ocp.J[penalty_idx] at index penalty_idx.
-        :param J: Objective. (MX.sym from CasADi)
-        :param penalty_idx: Index of the objective. (integer)
-        """
-        if nlp:
-            nlp["J_acados_mayer"].append(J_acados_mayer)
 
     @staticmethod
     def _reset_penalty(ocp, nlp, penalty_idx):

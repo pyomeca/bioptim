@@ -1,25 +1,27 @@
-import os
-import biorbd
-from acados_template import AcadosModel, AcadosOcp
-from casadi import MX, Function, SX, vertcat
 import numpy as np
-import scipy.linalg
+from scipy import linalg
+from casadi import SX, vertcat
+from acados_template import AcadosModel, AcadosOcp
+
 from .objective_functions import ObjectiveFunction
 from .solver_interface import SolverInterface
 
 
 class AcadosInterface(SolverInterface):
     def __init__(self, ocp):
+        if not isinstance(ocp.CX(), SX):
+            raise RuntimeError("CasADi graph must be SX to be solved with ACADOS")
+
         super().__init__()
 
         self.acados_ocp = AcadosOcp()
-
         self.acados_model = AcadosModel()
-        self.acados_export_model(ocp)
+        self.__acados_export_model(ocp)
+        self.__prepare_acados(ocp)
 
         self.ocp_solver = None
 
-    def acados_export_model(self, ocp):
+    def __acados_export_model(self, ocp):
         # Declare model variables
         x = ocp.nlp[0]["X"][0]
         u = ocp.nlp[0]["U"][0]
@@ -38,10 +40,9 @@ class AcadosInterface(SolverInterface):
         self.acados_model.p = []
         self.acados_model.name = "model_name"
 
-    def prepare_acados(self, ocp):
-
+    def __prepare_acados(self, ocp):
         if ocp.nb_phases > 1:
-            raise NotImplementedError("more than 1 phase is not implemented yet in acados.")
+            raise NotImplementedError("more than 1 phase is not implemented yet with ACADOS backend")
 
         # set model
         self.acados_ocp.model = self.acados_model
@@ -70,7 +71,7 @@ class AcadosInterface(SolverInterface):
         Q = 1.00 * np.eye(self.acados_ocp.dims.nx)
         R = 1.00 * np.eye(self.acados_ocp.dims.nu)
 
-        self.acados_ocp.cost.W = scipy.linalg.block_diag(Q, R)
+        self.acados_ocp.cost.W = linalg.block_diag(Q, R)
 
         self.acados_ocp.cost.W_e = Q
 
@@ -89,7 +90,8 @@ class AcadosInterface(SolverInterface):
 
         elif (
             self.acados_ocp.cost.cost_type == "NONLINEAR_LS"
-        ):  # TODO: change cost_expr_ext_cost and cost_expr_ext_cost_e
+        ):
+            # TODO: change cost_expr_ext_cost and cost_expr_ext_cost_e
             raise NotImplementedError("NONLINEAR_LS cost type not implemented yet in acados.")
 
             self.acados_ocp.model.cost_expr_ext_cost = SX(0, 0)
@@ -183,7 +185,6 @@ class AcadosInterface(SolverInterface):
         return self.acados_ocp
 
     def configure(self, options):
-
         self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
         self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
         self.acados_ocp.solver_options.integrator_type = "ERK"
