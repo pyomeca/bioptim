@@ -578,16 +578,8 @@ class OptimalControlProgram:
             solver_ocp = IpoptInterface(self)
 
         elif solver == "acados":
-            raise NotImplementedError("ACADOS backend is not implemented yet")
             from .acados_interface import AcadosInterface
-
-            if "acados_dir" in solver_options:
-                os.environ["ACADOS_SOURCE_DIR"] = solver_options["acados_dir"]
-                del solver_options["acados_dir"]
-            solver_ocp = AcadosInterface(self)
-
-            if return_iterations or show_online_optim:
-                raise NotImplementedError("return_iterations and show_online_optim are not implemented yet in acados.")
+            solver_ocp = AcadosInterface(self, **solver_options)
 
         else:
             raise RuntimeError("Available solvers are: 'ipopt' and 'acados'")

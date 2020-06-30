@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from scipy import linalg
 from casadi import SX, vertcat
@@ -8,9 +10,15 @@ from .solver_interface import SolverInterface
 
 
 class AcadosInterface(SolverInterface):
-    def __init__(self, ocp):
+    def __init__(self, ocp, **solver_options):
+        raise NotImplementedError("ACADOS backend is not implemented yet")
+
         if not isinstance(ocp.CX(), SX):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS")
+
+        # TODO: Remove this part when it is solved
+        if "acados_dir" in solver_options:
+            os.environ["ACADOS_SOURCE_DIR"] = solver_options["acados_dir"]
 
         super().__init__()
 
@@ -185,6 +193,10 @@ class AcadosInterface(SolverInterface):
         return self.acados_ocp
 
     def configure(self, options):
+        # TODO: Removed this when it is managed properly
+        if "acados_dir" in options:
+            del options["acados_dir"]
+
         self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
         self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
         self.acados_ocp.solver_options.integrator_type = "ERK"
@@ -203,7 +215,10 @@ class AcadosInterface(SolverInterface):
             setattr(self.acados_ocp.solver_options, key, options[key])
 
     def get_iterations(self):
-        pass
+        raise NotImplementedError("return_iterations is not implemented yet with ACADOS backend")
+
+    def online_optim(self, ocp):
+        raise NotImplementedError("online_optim is not implemented yet with ACADOS backend")
 
     def get_optimized_value(self, ocp):
         acados_x = np.array([self.ocp_solver.get(i, "x") for i in range(ocp.nlp[0]["ns"] + 1)]).T
