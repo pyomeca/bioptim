@@ -213,7 +213,7 @@ class PlotOcp:
                         self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
                     if self.axes[variable][0].bounds is not None:
                         # TODO: Problem -> When it is bounds for control nb_shooting must be ns -1... how to deal with that without knowing the nature of the bounds to plot?
-                        self.axes[variable][0].bounds.check_and_adjust_dimensions(nb_elements=len(mapping), nb_shooting=nlp["ns"])
+                        # self.axes[variable][0].bounds.check_and_adjust_dimensions(nb_elements=len(mapping), nb_shooting=nlp["ns"])
                         # TODO: Is it a problem actually when we call evaluate_at for k = ns+1?
                         bounds_min = np.array([nlp["plot"][variable].bounds.min.evaluate_at(k)[j] for k in range(nlp["ns"] + 1)])
                         bounds_max = np.array([nlp["plot"][variable].bounds.max.evaluate_at(k)[j] for k in range(nlp["ns"] + 1)])

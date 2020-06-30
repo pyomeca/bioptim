@@ -396,6 +396,11 @@ class Problem:
             raise NotImplementedError(f"Slicing bounds for {variable_name} not implemented yet.")
 
         bounds = Bounds(min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type)
+        # TODO: Change this temporary patch below by finding a solution in plot to know if nb_shoot = ns (for controls) or ns+1 (for states), cf ocp.py with X_bounds and U_bounds
+        if variable_name in ['q', 'q_dot']:
+            bounds.check_and_adjust_dimensions(nlp["nbQ"], nlp["ns"]+1)
+        elif variable_name == 'tau':
+            bounds.check_and_adjust_dimensions(nlp["nbTau"], nlp["ns"])
         return bounds
 
 class ProblemType(Enum):
