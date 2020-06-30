@@ -138,7 +138,6 @@ class PenaltyFunctionAbstract:
                 data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
             )
 
-            # TODO: make sure third argument is the right one
             PenaltyFunctionAbstract._add_to_casadi_func(
                 nlp, "biorbd_markerVelocity", nlp["model"].markerVelocity, nlp["q"], nlp["qdot"], markers_idx[0]
             )
@@ -218,8 +217,7 @@ class PenaltyFunctionAbstract:
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
                 data_to_track, [nlp["ns"], max(controls_idx) + 1]
             )
-            # val_expl = nlp["u"]
-            # penalty_type._add_to_penalty_expl(ocp, nlp, val_expl)
+
             for i, v in enumerate(u):
                 val = v[controls_idx] - data_to_track[t[i], controls_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)

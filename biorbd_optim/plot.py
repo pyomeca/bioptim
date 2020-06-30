@@ -7,7 +7,7 @@ import os
 from itertools import accumulate
 
 from matplotlib import pyplot as plt, lines
-from casadi import SX, Callback, nlpsol_out, nlpsol_n_out, Sparsity
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
 from .variable_optimization import Data
 from .mapping import Mapping
@@ -63,7 +63,7 @@ class PlotOcp:
             self.tf = list(self.ocp.initial_phase_time)
         self.t_idx_to_optimize = []
         for i, nlp in enumerate(self.ocp.nlp):
-            if isinstance(nlp["tf"], SX):
+            if isinstance(nlp["tf"], self.ocp.CX):
                 self.t_idx_to_optimize.append(i)
         self.__update_time_vector()
 
@@ -72,7 +72,6 @@ class PlotOcp:
         self.plots_vertical_lines = []
         self.all_figures = []
 
-        running_cmp = 0
         self.automatically_organize = automatically_organize
         self._organize_windows(len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]),)
 

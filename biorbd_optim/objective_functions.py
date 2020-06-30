@@ -166,7 +166,6 @@ class ObjectiveFunction:
         else:
             ocp.J[penalty_idx].append(J)
 
-
     @staticmethod
     def _reset_penalty(ocp, nlp, penalty_idx):
         """

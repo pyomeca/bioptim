@@ -127,7 +127,6 @@ class OptimalControlProgram:
         self.g = []
         self.g_bounds = []
         self.V = []
-        self.V_MX = []
         self.V_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
         self.V_init = InitialConditions(interpolation_type=InterpolationType.CONSTANT)
         self.param_to_optimize = {}
@@ -253,8 +252,6 @@ class OptimalControlProgram:
         nlp["plot"] = {}
         nlp["var_states"] = {}
         nlp["var_controls"] = {}
-        nlp["q_MX"] = MX()
-        nlp["qdot_MX"] = MX()
         nlp["CX"] = self.CX
         nlp["x"] = nlp["CX"]()
         nlp["u"] = nlp["CX"]()
@@ -374,9 +371,7 @@ class OptimalControlProgram:
         V_init.check_and_adjust_dimensions(nV, 1)
 
         nlp["X"] = X
-        # nlp["X_MX"] = X_MX
         nlp["U"] = U
-        # nlp["U_MX"] = U_MX
         self.V = vertcat(self.V, V)
 
         self.V_bounds.concatenate(V_bounds)
@@ -437,7 +432,7 @@ class OptimalControlProgram:
         """
         i = 0
         for nlp in self.nlp:
-            if isinstance(nlp["tf"], (SX, MX)):
+            if isinstance(nlp["tf"], self.CX):
                 time_bounds = Bounds(minimum[i], maximum[i], interpolation_type=InterpolationType.CONSTANT)
                 time_init = InitialConditions(initial_guess[i])
                 Parameters.add_to_V(self, "time", 1, None, time_bounds, time_init, nlp["tf"])

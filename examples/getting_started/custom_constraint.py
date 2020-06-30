@@ -9,7 +9,6 @@ from biorbd_optim import (
     Instant,
     OptimalControlProgram,
     ProblemType,
-    Problem,
     Objective,
     Constraint,
     Bounds,
@@ -23,7 +22,6 @@ from biorbd_optim import (
 def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
     nq = nlp["nbQ"]
     val = []
-
     for v in x:
         q = v[:nq]
         markers = nlp["model"].markers(q)
