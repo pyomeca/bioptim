@@ -96,9 +96,7 @@ class AcadosInterface(SolverInterface):
             # set Mayer term
             self.acados_ocp.cost.Vx_e = np.zeros((self.acados_ocp.dims.nx, self.acados_ocp.dims.nx))
 
-        elif (
-            self.acados_ocp.cost.cost_type == "NONLINEAR_LS"
-        ):
+        elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
             # TODO: change cost_expr_ext_cost and cost_expr_ext_cost_e
             raise NotImplementedError("NONLINEAR_LS cost type not implemented yet in acados.")
 

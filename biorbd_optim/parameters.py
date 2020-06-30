@@ -39,9 +39,7 @@ class Parameters:
             penalty_type._add_to_penalty(ocp, None, val, penalty_idx, weight=weight, quadratic=quadratic)
 
     @staticmethod
-    def add_to_V(
-        ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, cx=None, **extra_params
-    ):
+    def add_to_V(ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, cx=None, **extra_params):
         if cx is None:
             cx = ocp.CX.sym(param_name, nb_elements, 1)
 

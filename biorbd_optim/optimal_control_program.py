@@ -570,10 +570,12 @@ class OptimalControlProgram:
 
         if solver == "ipopt":
             from .ipopt_interface import IpoptInterface
+
             solver_ocp = IpoptInterface(self)
 
         elif solver == "acados":
             from .acados_interface import AcadosInterface
+
             solver_ocp = AcadosInterface(self, **solver_options)
 
         else:

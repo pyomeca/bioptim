@@ -68,7 +68,9 @@ class PenaltyFunctionAbstract:
             for i, v in enumerate(x):
                 q = nlp["q_mapping"].expand.map(v[:nq])
                 data_marker = data_to_track[:, markers_idx, t[i]]
-                val = nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
+                val = (
+                    nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
+                )
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
@@ -295,7 +297,9 @@ class PenaltyFunctionAbstract:
             """
             g = -9.81  # get gravity from biorbd
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM", nlp["model"].CoM, nlp["q"])
-            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp["model"].CoMdot, nlp["q"], nlp["qdot"])
+            PenaltyFunctionAbstract._add_to_casadi_func(
+                nlp, "biorbd_CoMdot", nlp["model"].CoMdot, nlp["q"], nlp["qdot"]
+            )
             for i, v in enumerate(x):
                 q = nlp["q_mapping"].expand.map(v[: nlp["nbQ"]])
                 q_dot = nlp["q_dot_mapping"].expand.map(v[nlp["nbQ"] :])
