@@ -26,13 +26,6 @@ def RK4(ode, ode_opt):
         p = params
         x[:, 0] = states
 
-        for i in range(1, n_step + 1):
-            k1 = fun(x[:, i - 1], u, p)[:, idx]
-            k2 = fun(x[:, i - 1] + h / 2 * k1, u, p)[:, idx]
-            k3 = fun(x[:, i - 1] + h / 2 * k2, u, p)[:, idx]
-            k4 = fun(x[:, i - 1] + h * k3, u, p)[:, idx]
-            x[:, i] = x[:, i - 1] + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
-
         nb_dof = 0
         quat_idx = []
         quat_number = 0
@@ -42,13 +35,20 @@ def RK4(ode, ode_opt):
                 quat_number += 1
             nb_dof += model.segment(j).nbDof()
 
-        for j in range(model.nbQuat()):
-            quaternion = vertcat(
-                x[quat_idx[j][3], i], x[quat_idx[j][0], i], x[quat_idx[j][1], i], x[quat_idx[j][2], i]
-            )
-            quaternion /= norm_fro(quaternion)
-            x[quat_idx[j][0] : quat_idx[j][2] + 1, i] = quaternion[1:4]
-            x[quat_idx[j][3], i] = quaternion[0]
+        for i in range(1, n_step + 1):
+            k1 = fun(x[:, i - 1], u, p)[:, idx]
+            k2 = fun(x[:, i - 1] + h / 2 * k1, u, p)[:, idx]
+            k3 = fun(x[:, i - 1] + h / 2 * k2, u, p)[:, idx]
+            k4 = fun(x[:, i - 1] + h * k3, u, p)[:, idx]
+            x[:, i] = x[:, i - 1] + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+
+            for j in range(model.nbQuat()):
+                quaternion = vertcat(
+                    x[quat_idx[j][3], i], x[quat_idx[j][0], i], x[quat_idx[j][1], i], x[quat_idx[j][2], i]
+                )
+                quaternion /= norm_fro(quaternion)
+                x[quat_idx[j][0] : quat_idx[j][2] + 1, i] = quaternion[1:4]
+                x[quat_idx[j][3], i] = quaternion[0]
 
         return x[:, -1], x
 
