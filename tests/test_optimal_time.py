@@ -379,7 +379,6 @@ def test_mayer_neg_monophase_time_constraint():
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=OdeSolver.RK,
         )
 
 
@@ -432,7 +431,6 @@ def test_mayer1_neg_multiphase_time_constraint():
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=OdeSolver.RK,
         )
 
 
@@ -485,7 +483,6 @@ def test_mayer2_neg_multiphase_time_constraint():
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=OdeSolver.RK,
         )
 
 
@@ -537,7 +534,6 @@ def test_mayer_multiphase_time_constraint():
         U_bounds[:nb_phases],
         objective_functions,
         constraints,
-        ode_solver=OdeSolver.RK,
     )
 
 
@@ -577,7 +573,6 @@ def test_lagrange_neg_monophase_time_constraint():
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=OdeSolver.RK,
         )
 
 
@@ -630,7 +625,6 @@ def test_lagrange1_neg_multiphase_time_constraint():
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=OdeSolver.RK,
         )
 
 
@@ -683,7 +677,6 @@ def test_lagrange2_neg_multiphase_time_constraint():
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=OdeSolver.RK,
         )
 
 
@@ -735,7 +728,6 @@ def test_lagrange_multiphase_time_constraint():
         U_bounds[:nb_phases],
         objective_functions,
         constraints,
-        ode_solver=OdeSolver.RK,
     )
 
 
@@ -770,5 +762,4 @@ def test_mayer_neg_two_objectives():
             X_bounds[:nb_phases],
             U_bounds[:nb_phases],
             objective_functions,
-            ode_solver=OdeSolver.RK,
         )

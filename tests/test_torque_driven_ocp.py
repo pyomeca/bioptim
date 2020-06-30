@@ -159,7 +159,6 @@ def test_align_markers_with_actuators():
         number_shooting_points=30,
         final_time=2,
         use_actuators=True,
-        ode_solver=OdeSolver.RK,
     )
     sol = ocp.solve()
 
@@ -259,7 +258,6 @@ def test_external_forces():
 
     ocp = external_forces.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube_with_forces.bioMod",
-        ode_solver=OdeSolver.RK,
     )
     sol = ocp.solve()
 

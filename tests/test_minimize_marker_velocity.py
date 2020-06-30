@@ -25,7 +25,6 @@ def test_align_and_minimize_marker_displacement_global():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
         number_shooting_points=5,
         final_time=1,
-        ode_solver=OdeSolver.RK,
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=False,
     )
@@ -77,7 +76,6 @@ def test_align_and_minimize_marker_displacement_RT():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
         number_shooting_points=5,
         final_time=1,
-        ode_solver=OdeSolver.RK,
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=True,
     )
@@ -129,7 +127,6 @@ def test_align_and_minimize_marker_velocity():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
         number_shooting_points=5,
         final_time=1,
-        ode_solver=OdeSolver.RK,
         marker_velocity_or_displacement="velo",
         marker_in_first_coordinates_system=True,
     )

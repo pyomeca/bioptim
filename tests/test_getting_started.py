@@ -73,9 +73,7 @@ def test_custom_constraint_align_markers():
     custom_constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(custom_constraint)
 
-    ocp = custom_constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod", ode_solver=OdeSolver.RK
-    )
+    ocp = custom_constraint.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod")
     sol = ocp.solve()
 
     # Check objective function value
