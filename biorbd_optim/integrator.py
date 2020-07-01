@@ -1,4 +1,4 @@
-from casadi import MX, Function, vertcat, norm_fro
+from casadi import Function, vertcat, norm_fro
 
 
 def RK4(ode, ode_opt):
@@ -13,6 +13,7 @@ def RK4(ode, ode_opt):
     t_span = ode_opt["t0"], ode_opt["tf"]
     n_step = ode_opt["number_of_finite_elements"]
     idx = ode_opt["idx"]
+    CX = ode_opt["CX"]
     x_sym = ode["x"]
     u_sym = ode["p"]
     param_sym = ode_opt["param"]
@@ -22,7 +23,7 @@ def RK4(ode, ode_opt):
 
     def dxdt(h, states, controls, params):
         u = controls
-        x = MX(states.shape[0], n_step + 1)
+        x = CX(states.shape[0], n_step + 1)
         p = params
         x[:, 0] = states
 
@@ -53,9 +54,5 @@ def RK4(ode, ode_opt):
         return x[:, -1], x
 
     return Function(
-        "integrator",
-        [x_sym, u_sym, param_sym],
-        dxdt(h, x_sym, u_sym, param_sym),
-        ["x0", "p", "params"],
-        ["xf", "xall"],
+        "integrator", [x_sym, u_sym, param_sym], dxdt(h, x_sym, u_sym, param_sym), ["x0", "p", "params"], ["xf", "xall"]
     )

@@ -145,8 +145,7 @@ def test_align_markers_changing_constraints():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_align_markers_with_actuators(ode_solver):
+def test_align_markers_with_actuators():
     # Load align_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -160,7 +159,6 @@ def test_align_markers_with_actuators(ode_solver):
         number_shooting_points=30,
         final_time=2,
         use_actuators=True,
-        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -249,8 +247,7 @@ def test_multiphase_align_markers(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_external_forces(ode_solver):
+def test_external_forces():
     # Load external_forces
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -261,7 +258,6 @@ def test_external_forces(ode_solver):
 
     ocp = external_forces.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube_with_forces.bioMod",
-        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 

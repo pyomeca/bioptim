@@ -149,8 +149,8 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
         U_bounds,
         objective_functions,
         constraints,
-        state_transitions=state_transitions,
         ode_solver=ode_solver,
+        state_transitions=state_transitions,
     )
 
 
