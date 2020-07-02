@@ -50,10 +50,10 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
 
     # Dynamics
     variable_type = (
-        ProblemType.torque_driven,
-        ProblemType.torque_driven,
-        ProblemType.torque_driven,
-        ProblemType.torque_driven,
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
     )
 
     # Constraints
@@ -144,8 +144,8 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
         U_bounds,
         objective_functions,
         constraints,
-        state_transitions=state_transitions,
         ode_solver=ode_solver,
+        state_transitions=state_transitions,
     )
 
 

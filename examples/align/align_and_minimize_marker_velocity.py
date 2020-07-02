@@ -1,12 +1,9 @@
 import biorbd
 
 from biorbd_optim import (
-    Instant,
-    Axe,
     OptimalControlProgram,
     ProblemType,
     Objective,
-    Constraint,
     Bounds,
     QAndQDotBounds,
     InitialConditions,
@@ -19,7 +16,6 @@ def prepare_ocp(
     biorbd_model_path,
     final_time,
     number_shooting_points,
-    ode_solver,
     marker_velocity_or_displacement,
     marker_in_first_coordinates_system,
 ):
@@ -61,7 +57,7 @@ def prepare_ocp(
         )
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
@@ -97,7 +93,6 @@ def prepare_ocp(
         X_bounds,
         U_bounds,
         objective_functions,
-        ode_solver=ode_solver,
         nb_integration_steps=5,
     )
 
@@ -107,7 +102,6 @@ if __name__ == "__main__":
         biorbd_model_path="cube_and_line.bioMod",
         number_shooting_points=30,
         final_time=2,
-        ode_solver=OdeSolver.RK,
         marker_velocity_or_displacement="disp",  # "velo"
         marker_in_first_coordinates_system=True,
     )

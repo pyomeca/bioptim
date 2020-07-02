@@ -26,7 +26,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     )
 
     # Dynamics
-    problem_type = ProblemType.muscles_activations_and_torque_driven_with_contact
+    problem_type = {"type": ProblemType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT}
 
     # Constraints
     constraints = ()

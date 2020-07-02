@@ -30,9 +30,9 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, use_actua
 
     # Dynamics
     if use_actuators:
-        problem_type = ProblemType.torque_activations_driven
+        problem_type = {"type": ProblemType.TORQUE_ACTIVATIONS_DRIVEN}
     else:
-        problem_type = ProblemType.torque_driven
+        problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Constraints
     constraints = (

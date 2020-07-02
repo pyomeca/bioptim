@@ -28,7 +28,7 @@ def prepare_ocp(biorbd_model_path="cubeSym.bioMod", ode_solver=OdeSolver.RK):
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
-    variable_type = ProblemType.torque_driven
+    variable_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Constraints
     constraints = (

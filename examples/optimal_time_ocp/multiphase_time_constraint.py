@@ -37,7 +37,11 @@ def prepare_ocp(
     )
 
     # Dynamics
-    problem_type = (ProblemType.torque_driven, ProblemType.torque_driven, ProblemType.torque_driven)
+    problem_type = (
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+    )
 
     # Constraints
     constraints = (

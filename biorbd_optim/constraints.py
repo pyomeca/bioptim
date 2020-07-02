@@ -8,9 +8,6 @@ from .penalty import PenaltyType, PenaltyFunctionAbstract
 from .path_conditions import Bounds
 
 
-# TODO: Convert the constraint in CasADi function?
-
-
 class ConstraintFunction(PenaltyFunctionAbstract):
     """
     Different conditions between biorbd geometric structures.

@@ -23,8 +23,7 @@ from biorbd_optim import (
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_pendulum_min_time_mayer(ode_solver):
+def test_pendulum_min_time_mayer():
     # Load pendulum_min_time_Mayer
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -74,8 +73,7 @@ def test_pendulum_min_time_mayer(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_pendulum_min_time_lagrange(ode_solver):
+def test_pendulum_min_time_lagrange():
     # Load pendulum_min_time_Lagrange
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -125,8 +123,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_time_constraint(ode_solver):
+def test_time_constraint():
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -178,8 +175,7 @@ def test_time_constraint(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_monophase_time_constraint(ode_solver):
+def test_monophase_time_constraint():
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -231,8 +227,7 @@ def test_monophase_time_constraint(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_multiphase_time_constraint(ode_solver):
+def test_multiphase_time_constraint():
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -292,7 +287,11 @@ def partial_ocp_parameters():
     time_min = [1, 3, 0.1]
     time_max = [2, 4, 0.8]
     torque_min, torque_max, torque_init = -100, 100, 0
-    problem_type = (ProblemType.torque_driven, ProblemType.torque_driven, ProblemType.torque_driven)
+    problem_type = (
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+    )
     X_bounds = [QAndQDotBounds(biorbd_model[0]), QAndQDotBounds(biorbd_model[0]), QAndQDotBounds(biorbd_model[0])]
     for bounds in X_bounds:
         for i in [1, 3, 4, 5]:
@@ -344,8 +343,7 @@ test_mayer_neg_monophase_time_constraint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(test_mayer_neg_monophase_time_constraint)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_mayer_neg_monophase_time_constraint(ode_solver):
+def test_mayer_neg_monophase_time_constraint():
     (
         biorbd_model,
         number_shooting_points,
@@ -381,7 +379,6 @@ def test_mayer_neg_monophase_time_constraint(ode_solver):
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=ode_solver,
         )
 
 
@@ -429,7 +426,6 @@ def test_mayer1_neg_multiphase_time_constraint():
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=OdeSolver.RK,
         )
 
 
@@ -477,7 +473,6 @@ def test_mayer2_neg_multiphase_time_constraint():
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=OdeSolver.RK,
         )
 
 
@@ -524,12 +519,10 @@ def test_mayer_multiphase_time_constraint():
         U_bounds[:nb_phases],
         objective_functions,
         constraints,
-        ode_solver=OdeSolver.RK,
     )
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_lagrange_neg_monophase_time_constraint(ode_solver):
+def test_lagrange_neg_monophase_time_constraint():
     (
         biorbd_model,
         number_shooting_points,
@@ -565,7 +558,6 @@ def test_lagrange_neg_monophase_time_constraint(ode_solver):
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=ode_solver,
         )
 
 
@@ -618,7 +610,6 @@ def test_lagrange1_neg_multiphase_time_constraint():
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=OdeSolver.RK,
         )
 
 
@@ -671,7 +662,6 @@ def test_lagrange2_neg_multiphase_time_constraint():
             U_bounds[:nb_phases],
             objective_functions,
             constraints,
-            ode_solver=OdeSolver.RK,
         )
 
 
@@ -718,12 +708,10 @@ def test_lagrange_multiphase_time_constraint():
         U_bounds[:nb_phases],
         objective_functions,
         constraints,
-        ode_solver=OdeSolver.RK,
     )
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_mayer_neg_two_objectives(ode_solver):
+def test_mayer_neg_two_objectives():
     (
         biorbd_model,
         number_shooting_points,
@@ -754,5 +742,4 @@ def test_mayer_neg_two_objectives(ode_solver):
             X_bounds[:nb_phases],
             U_bounds[:nb_phases],
             objective_functions,
-            ode_solver=ode_solver,
         )

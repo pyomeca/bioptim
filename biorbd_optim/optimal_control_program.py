@@ -1,24 +1,28 @@
-from math import inf
-from copy import deepcopy
-import pickle
 import os
+import pickle
+from copy import deepcopy
+from math import inf
 
 import biorbd
 import casadi
-from casadi import MX, vertcat, sum1
+from casadi import MX, vertcat, SX
 
+from .biorbd_interface import BiorbdInterface
 from .enums import OdeSolver
+from .integrator import RK4
 from .mapping import BidirectionalMapping
 from .path_conditions import Bounds, InitialConditions, InterpolationType
 from .constraints import ConstraintFunction, Constraint
 from .continuity import ContinuityFunctions, StateTransitionFunctions
 from .objective_functions import Objective, ObjectiveFunction
 from .parameters import Parameters
-from .plot import OnlineCallback, CustomPlot
-from .integrator import RK4
-from .biorbd_interface import BiorbdInterface
+from .problem_type import Problem
+from .plot import CustomPlot
 from .variable_optimization import Data
 from .__version__ import __version__
+from .utils import check_version
+
+check_version(biorbd, "1.3.5", "1.4.0")
 
 
 class OptimalControlProgram:
@@ -51,6 +55,7 @@ class OptimalControlProgram:
         plot_mappings=None,
         state_transitions=(),
         nb_threads=1,
+        use_SX=False,
     ):
         """
         Prepare CasADi to solve a problem, defines some parameters, dynamic problem and ode solver.
@@ -114,6 +119,7 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "state_transitions": state_transitions,
             "nb_threads": nb_threads,
+            "use_SX": use_SX,
         }
 
         # Declare optimization variables
@@ -134,6 +140,12 @@ class OptimalControlProgram:
         constraints = self.__init_penalty(constraints, "constraints")
         objective_functions = self.__init_penalty(objective_functions, "objective_functions")
         parameters = self.__init_penalty(parameters, "parameters")
+
+        # Type of CasADi graph
+        if use_SX:
+            self.CX = SX
+        else:
+            self.CX = MX
 
         # Define some aliases
         self.__add_to_nlp("ns", number_shooting_points, False)
@@ -182,7 +194,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("problem_type", problem_type, False)
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
-            self.nlp[i]["problem_type"](self, self.nlp[i])
+            Problem.initialize(self, self.nlp[i])
 
         # Prepare path constraints
         self.__add_to_nlp("X_bounds", X_bounds, False)
@@ -229,19 +241,23 @@ class OptimalControlProgram:
                 for objective_function in objective_functions_phase:
                     self.add_objective_function(objective_function, i)
 
-    @staticmethod
-    def __initialize_nlp(nlp):
+    def __initialize_nlp(self, nlp):
         """Start with an empty non linear problem"""
         nlp["nbQ"] = 0
         nlp["nbQdot"] = 0
         nlp["nbTau"] = 0
         nlp["nbMuscles"] = 0
         nlp["plot"] = {}
-        nlp["x"] = MX()
-        nlp["u"] = MX()
+        nlp["var_states"] = {}
+        nlp["var_controls"] = {}
+        nlp["CX"] = self.CX
+        nlp["x"] = nlp["CX"]()
+        nlp["u"] = nlp["CX"]()
         nlp["J"] = []
+        nlp["J_acados_mayer"] = []
         nlp["g"] = []
         nlp["g_bounds"] = []
+        nlp["casadi_func"] = {}
 
     def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None):
         """Adds coupled parameters to the non linear problem"""
@@ -274,16 +290,18 @@ class OptimalControlProgram:
         :param nlp: The nlp problem
         """
 
-        dynamics = nlp["dynamics_func"]
         ode_opt = {"t0": 0, "tf": nlp["dt"]}
         if nlp["ode_solver"] == OdeSolver.COLLOCATION or nlp["ode_solver"] == OdeSolver.RK:
             ode_opt["number_of_finite_elements"] = nlp["nb_integration_steps"]
 
+        dynamics = nlp["dynamics_func"]
         ode = {"x": nlp["x"], "p": nlp["u"], "ode": dynamics(nlp["x"], nlp["u"], nlp["p"])}
         nlp["dynamics"] = []
         nlp["par_dynamics"] = {}
         if nlp["ode_solver"] == OdeSolver.RK:
+            ode_opt["model"] = nlp["model"]
             ode_opt["param"] = nlp["p"]
+            ode_opt["CX"] = nlp["CX"]
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
             if "external_forces" in nlp:
@@ -293,14 +311,18 @@ class OptimalControlProgram:
             else:
                 nlp["dynamics"].append(RK4(ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
+            if not isinstance(self.CX(), MX):
+                raise RuntimeError("COLLOCATION integrator can only be used with MX graphs")
             if len(self.param_to_optimize) != 0:
-                raise RuntimeError("OdeSolver.COLLOCATION cannot be used while optimizing parameters")
+                raise RuntimeError("COLLOCATION cannot be used while optimizing parameters")
             if "external_forces" in nlp:
                 raise RuntimeError("COLLOCATION cannot be used with external_forces")
             nlp["dynamics"].append(casadi.integrator("integrator", "collocation", ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.CVODES:
+            if not isinstance(self.CX(), MX):
+                raise RuntimeError("CVODES integrator can only be used with MX graphs")
             if len(self.param_to_optimize) != 0:
-                raise RuntimeError("OdeSolver.CVODES cannot be used while optimizing parameters")
+                raise RuntimeError("CVODES cannot be used while optimizing parameters")
             if "external_forces" in nlp:
                 raise RuntimeError("CVODES cannot be used with external_forces")
             nlp["dynamics"].append(casadi.integrator("integrator", "cvodes", ode, ode_opt))
@@ -317,29 +339,32 @@ class OptimalControlProgram:
         :param nlp: The non linear problem.
         :param idx_phase: Index of the phase. (integer)
         """
+
+        V = []
         X = []
         U = []
 
         nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
-        V = MX.sym("V_" + str(idx_phase), nV)
         V_bounds = Bounds([0] * nV, [0] * nV, interpolation_type=InterpolationType.CONSTANT)
         V_init = InitialConditions([0] * nV, interpolation_type=InterpolationType.CONSTANT)
 
         offset = 0
         for k in range(nlp["ns"] + 1):
-            X.append(V.nz[offset : offset + nlp["nx"]])
+            X_ = nlp["CX"].sym("X_" + str(idx_phase) + "_" + str(k), nlp["nx"])
+            X.append(X_)
             V_bounds.min[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].min.evaluate_at(shooting_point=k)
             V_bounds.max[offset : offset + nlp["nx"], 0] = nlp["X_bounds"].max.evaluate_at(shooting_point=k)
             V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
             offset += nlp["nx"]
-
+            V = vertcat(V, X_)
             if k != nlp["ns"]:
-                U.append(V.nz[offset : offset + nlp["nu"]])
+                U_ = nlp["CX"].sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
+                U.append(U_)
                 V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
                 V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
                 V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
                 offset += nlp["nu"]
-
+                V = vertcat(V, U_)
         V_bounds.check_and_adjust_dimensions(nV, 1)
         V_init.check_and_adjust_dimensions(nV, 1)
 
@@ -391,7 +416,7 @@ class OptimalControlProgram:
                     has_penalty[i] = True
 
                     initial_time_guess.append(phase_time[i])
-                    phase_time[i] = casadi.MX.sym(f"time_phase_{i}", 1, 1)
+                    phase_time[i] = self.CX.sym(f"time_phase_{i}", 1, 1)
                     time_min.append(pen_fun["minimum"] if "minimum" in pen_fun else 0)
                     time_max.append(pen_fun["maximum"] if "maximum" in pen_fun else inf)
         return has_penalty
@@ -405,7 +430,7 @@ class OptimalControlProgram:
         """
         i = 0
         for nlp in self.nlp:
-            if isinstance(nlp["tf"], MX):
+            if isinstance(nlp["tf"], self.CX):
                 time_bounds = Bounds(minimum[i], maximum[i], interpolation_type=InterpolationType.CONSTANT)
                 time_init = InitialConditions(initial_guess[i])
                 Parameters.add_to_V(self, "time", 1, None, time_bounds, time_init, nlp["tf"])
@@ -526,7 +551,9 @@ class OptimalControlProgram:
 
         nlp["plot"][plot_name] = custom_plot
 
-    def solve(self, solver="ipopt", show_online_optim=False, return_iterations=False, options_ipopt={}):
+    def solve(
+        self, solver="ipopt", show_online_optim=False, return_iterations=False, solver_options={},
+    ):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
         Gives others parameters to control how solver works.
@@ -535,79 +562,31 @@ class OptimalControlProgram:
         :param options_ipopt: See Ippot documentation for options. (dictionary)
         :return: Solution of the problem. (dictionary)
         """
+
         if return_iterations and not show_online_optim:
             raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
 
-        all_J = MX()
-        for j_nodes in self.J:
-            for j in j_nodes:
-                all_J = vertcat(all_J, j)
-        for nlp in self.nlp:
-            for obj_nodes in nlp["J"]:
-                for obj in obj_nodes:
-                    all_J = vertcat(all_J, obj)
-
-        all_g = MX()
-        all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
-        for i in range(len(self.g)):
-            for j in range(len(self.g[i])):
-                all_g = vertcat(all_g, self.g[i][j])
-                all_g_bounds.concatenate(self.g_bounds[i][j])
-        for nlp in self.nlp:
-            for i in range(len(nlp["g"])):
-                for j in range(len(nlp["g"][i])):
-                    all_g = vertcat(all_g, nlp["g"][i][j])
-                    all_g_bounds.concatenate(nlp["g_bounds"][i][j])
-        nlp = {"x": self.V, "f": sum1(all_J), "g": all_g}
-
-        options_common = {}
-        if show_online_optim:
-            options_common["iteration_callback"] = OnlineCallback(self)
-            if return_iterations:
-                directory = ".__tmp_biorbd_optim"
-                file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
-                os.mkdir(directory)
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-                with open(file_path, "wb") as file:
-                    pickle.dump([], file)
-
         if solver == "ipopt":
-            options = {
-                "ipopt.tol": 1e-6,
-                "ipopt.max_iter": 1000,
-                "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
-                "ipopt.limited_memory_max_history": 50,
-                "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
-            }
-            for key in options_ipopt:
-                ipopt_key = key
-                if key[:6] != "ipopt.":
-                    ipopt_key = "ipopt." + key
-                options[ipopt_key] = options_ipopt[key]
-            opts = {**options, **options_common}
+            from .ipopt_interface import IpoptInterface
+
+            solver_ocp = IpoptInterface(self)
+
+        elif solver == "acados":
+            from .acados_interface import AcadosInterface
+
+            solver_ocp = AcadosInterface(self, **solver_options)
+
         else:
-            raise RuntimeError("Available solvers are: 'ipopt'")
-        solver = casadi.nlpsol("nlpsol", solver, nlp, opts)
+            raise RuntimeError("Available solvers are: 'ipopt' and 'acados'")
 
-        # Bounds and initial guess
-        arg = {
-            "lbx": self.V_bounds.min,
-            "ubx": self.V_bounds.max,
-            "lbg": all_g_bounds.min,
-            "ubg": all_g_bounds.max,
-            "x0": self.V_init.init,
-        }
+        if show_online_optim:
+            solver_ocp.online_optim(self)
+            if return_iterations:
+                solver_ocp.get_iterations()
 
-        # Solve the problem
-        out = solver.call(arg)
-
-        if return_iterations:
-            with open(file_path, "rb") as file:
-                out = out, pickle.load(file)
-                os.remove(file_path)
-                os.rmdir(directory)
-        return out
+        solver_ocp.configure(solver_options)
+        solver_ocp.solve()
+        return solver_ocp.get_optimized_value(self)
 
     def save(self, sol, file_path, sol_iterations=None):
         """

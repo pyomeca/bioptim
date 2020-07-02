@@ -7,11 +7,12 @@ import os
 from itertools import accumulate
 
 from matplotlib import pyplot as plt, lines
-from casadi import MX, Callback, nlpsol_out, nlpsol_n_out, Sparsity
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
 from .variable_optimization import Data
 from .mapping import Mapping
 from .enums import PlotType
+from .utils import check_version
 
 
 class CustomPlot:
@@ -62,7 +63,7 @@ class PlotOcp:
             self.tf = list(self.ocp.initial_phase_time)
         self.t_idx_to_optimize = []
         for i, nlp in enumerate(self.ocp.nlp):
-            if isinstance(nlp["tf"], MX):
+            if isinstance(nlp["tf"], self.ocp.CX):
                 self.t_idx_to_optimize.append(i)
         self.__update_time_vector()
 
@@ -71,7 +72,6 @@ class PlotOcp:
         self.plots_vertical_lines = []
         self.all_figures = []
 
-        running_cmp = 0
         self.automatically_organize = automatically_organize
         self._organize_windows(len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]))
 
@@ -163,7 +163,7 @@ class PlotOcp:
                 for k in mapping:
                     ax = axes[k]
                     if k < len(self.plot_func[variable][i].legend):
-                        axes[k].set_title(self.plot_func[variable][i].legend[mapping[k]])
+                        axes[k].set_title(self.plot_func[variable][i].legend[k])
                     ax.grid(color="k", linestyle="--", linewidth=0.5)
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp["plot"][variable].ylim:
@@ -345,6 +345,7 @@ class PlotOcp:
 
     def __update_axes(self):
         """Updates axes ranges"""
+        assert len(self.plots) == len(self.ydata)
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
 
@@ -409,9 +410,10 @@ class ShowResult:
         :param nb_frames: Number of frames in the animation. (integer)
         """
         try:
-            from BiorbdViz import BiorbdViz
+            import BiorbdViz
         except ModuleNotFoundError:
             raise RuntimeError("BiorbdViz must be install to animate the model")
+        check_version(BiorbdViz, "1.3.3", "1.4.0")
         data_interpolate, data_control = Data.get_data(
             self.ocp, self.sol["x"], integrate=False, interpolate_nb_frames=nb_frames
         )
@@ -420,18 +422,14 @@ class ShowResult:
 
         all_bioviz = []
         for idx_phase, data in enumerate(data_interpolate["q"]):
-            all_bioviz.append(BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs))
+            all_bioviz.append(BiorbdViz.BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase]["q_mapping"].expand.map(data))
 
         b_is_visible = [True] * len(all_bioviz)
         while sum(b_is_visible):
             for i, b in enumerate(all_bioviz):
                 if b.vtk_window.is_active:
-                    if b.show_analyses_panel and b.is_animating:
-                        b.movement_slider[0].setValue(
-                            (b.movement_slider[0].value() + 1) % b.movement_slider[0].maximum()
-                        )
-                    b.refresh_window()
+                    b.update()
                 else:
                     b_is_visible[i] = False
 

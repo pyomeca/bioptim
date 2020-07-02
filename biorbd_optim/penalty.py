@@ -3,7 +3,7 @@ from math import inf
 
 import numpy as np
 import biorbd
-import casadi
+from casadi import vertcat, horzcat
 
 from .enums import Instant, Axe, PlotType
 from .mapping import Mapping
@@ -63,12 +63,14 @@ class PenaltyFunctionAbstract:
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
                 data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
             )
-
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q"])
             nq = nlp["q_mapping"].reduce.len
             for i, v in enumerate(x):
                 q = nlp["q_mapping"].expand.map(v[:nq])
                 data_marker = data_to_track[:, markers_idx, t[i]]
-                val = nlp["model"].markers(q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
+                val = (
+                    nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
+                )
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
@@ -86,27 +88,36 @@ class PenaltyFunctionAbstract:
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
             )
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "markers", nlp["model"].markers, nlp["q"])
+
+            def biorbd_meta_func(q, coordinates_system_idx):
+                return nlp["model"].globalJCS(q, coordinates_system_idx)
+
             for i in range(len(x) - 1):
                 if coordinates_system_idx < 0:
-                    inv_jcs_1 = casadi.MX.eye(4)
-                    inv_jcs_0 = casadi.MX.eye(4)
+                    jcs_0_T = nlp["CX"].eye(4)
+                    jcs_1_T = nlp["CX"].eye(4)
+
                 elif coordinates_system_idx < nb_rts:
-                    jcs_1 = nlp["model"].globalJCS(x[i + 1][:n_q], coordinates_system_idx).to_mx()
-                    inv_jcs_1 = casadi.vertcat(
-                        casadi.horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), casadi.horzcat(0, 0, 0, 1)
+                    idx = coordinates_system_idx
+                    PenaltyFunctionAbstract._add_to_casadi_func(
+                        nlp, f"globalJCS_{idx}", biorbd_meta_func, nlp["q"], idx,
                     )
-                    jcs_0 = nlp["model"].globalJCS(x[i][:n_q], coordinates_system_idx).to_mx()
-                    inv_jcs_0 = casadi.vertcat(
-                        casadi.horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), casadi.horzcat(0, 0, 0, 1)
-                    )
+                    jcs_0 = nlp["casadi_func"][f"globalJCS_{idx}"](x[i][:n_q])
+                    jcs_0_T = vertcat(horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), horzcat(0, 0, 0, 1))
+
+                    jcs_1 = nlp["casadi_func"][f"globalJCS_{idx}"](x[i + 1][:n_q])
+                    jcs_1_T = vertcat(horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), horzcat(0, 0, 0, 1))
+
                 else:
                     raise RuntimeError(
                         f"Wrong choice of coordinates_system_idx. (Negative values refer to global coordinates system, "
                         f"positive values must be between 0 and {nb_rts})"
                     )
-                val = inv_jcs_1 @ casadi.vertcat(
-                    nlp["model"].markers(x[i + 1][:n_q])[:, markers_idx], 1
-                ) - inv_jcs_0 @ casadi.vertcat(nlp["model"].markers(x[i][:n_q])[:, markers_idx], 1)
+
+                val = jcs_1_T @ vertcat(
+                    nlp["casadi_func"]["markers"](x[i + 1][:n_q])[:, markers_idx], 1
+                ) - jcs_0_T @ vertcat(nlp["casadi_func"]["markers"](x[i][:n_q])[:, markers_idx], 1)
                 penalty_type._add_to_penalty(ocp, nlp, val[:3], **extra_param)
 
         @staticmethod
@@ -129,10 +140,14 @@ class PenaltyFunctionAbstract:
                 data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
             )
 
+            PenaltyFunctionAbstract._add_to_casadi_func(
+                nlp, "biorbd_markerVelocity", nlp["model"].markerVelocity, nlp["q"], nlp["qdot"], markers_idx[0]
+            )
+
             for m in markers_idx:
                 for i, v in enumerate(x):
                     val = (
-                        nlp["model"].markerVelocity(v[:n_q], v[n_q : n_q + n_qdot], m).to_mx()
+                        nlp["casadi_func"]["biorbd_markerVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
                         - data_to_track[:, markers_idx, t[i]]
                     )
                     penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
@@ -149,12 +164,12 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract._check_idx(
                 "marker", [first_marker_idx, second_marker_idx], nlp["model"].nbMarkers()
             )
-
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "markers", nlp["model"].markers, nlp["q"])
             nq = nlp["q_mapping"].reduce.len
             for v in x:
                 q = nlp["q_mapping"].expand.map(v[:nq])
-                first_marker = nlp["model"].marker(q, first_marker_idx).to_mx()
-                second_marker = nlp["model"].marker(q, second_marker_idx).to_mx()
+                first_marker = nlp["casadi_func"]["markers"](q)[:, first_marker_idx]
+                second_marker = nlp["casadi_func"]["markers"](q)[:, second_marker_idx]
 
                 val = first_marker - second_marker
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
@@ -281,12 +296,15 @@ class PenaltyFunctionAbstract:
             The height is assumed to be the third axis.
             """
             g = -9.81  # get gravity from biorbd
-
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM", nlp["model"].CoM, nlp["q"])
+            PenaltyFunctionAbstract._add_to_casadi_func(
+                nlp, "biorbd_CoMdot", nlp["model"].CoMdot, nlp["q"], nlp["qdot"]
+            )
             for i, v in enumerate(x):
                 q = nlp["q_mapping"].expand.map(v[: nlp["nbQ"]])
                 q_dot = nlp["q_dot_mapping"].expand.map(v[nlp["nbQ"] :])
-                CoM = nlp["model"].CoM(q).to_mx()
-                CoM_dot = nlp["model"].CoMdot(q, q_dot).to_mx()
+                CoM = nlp["casadi_func"]["biorbd_CoM"](q)
+                CoM_dot = nlp["casadi_func"]["biorbd_CoMdot"](q, q_dot)
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
                 penalty_type._add_to_penalty(ocp, nlp, CoM_height, **extra_param)
 
@@ -329,12 +347,19 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract._check_idx("segment", segment_idx, nlp["model"].nbSegment())
             PenaltyFunctionAbstract._check_idx("rt", rt_idx, nlp["model"].nbRTs())
 
+            def biorbd_meta_func(q, segment_idx, rt_idx):
+                r_seg = nlp["model"].globalJCS(q, segment_idx).rot()
+                r_rt = nlp["model"].RT(q, rt_idx).rot()
+                return biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
+
+            PenaltyFunctionAbstract._add_to_casadi_func(
+                nlp, f"align_segment_with_custom_rt_{segment_idx}", biorbd_meta_func, nlp["q"], segment_idx, rt_idx
+            )
+
             nq = nlp["q_mapping"].reduce.len
             for v in x:
                 q = nlp["q_mapping"].expand.map(v[:nq])
-                r_seg = nlp["model"].globalJCS(q, segment_idx).rot()
-                r_rt = nlp["model"].RT(q, rt_idx).rot()
-                val = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
+                val = nlp["casadi_func"][f"align_segment_with_custom_rt_{segment_idx}"](q)
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
@@ -351,15 +376,24 @@ class PenaltyFunctionAbstract:
             if not isinstance(axis, Axe):
                 raise RuntimeError("axis must be a biorbd_optim.Axe")
 
-            nq = nlp["q_mapping"].reduce.len
-            for v in x:
-                q = nlp["q_mapping"].expand.map(v[:nq])
-
+            def biorbd_meta_func(q, segment_idx, marker_idx):
                 r_rt = nlp["model"].globalJCS(q, segment_idx)
                 marker = nlp["model"].marker(q, marker_idx)
                 marker.applyRT(r_rt.transpose())
-                marker = marker.to_mx()
+                return marker.to_mx()
 
+            PenaltyFunctionAbstract._add_to_casadi_func(
+                nlp,
+                f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}",
+                biorbd_meta_func,
+                nlp["q"],
+                segment_idx,
+                marker_idx,
+            )
+            nq = nlp["q_mapping"].reduce.len
+            for v in x:
+                q = nlp["q_mapping"].expand.map(v[:nq])
+                marker = nlp["casadi_func"][f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
                 for axe in Axe:
                     if axe != axis:
                         # To align an axis, the other must be equal to 0
@@ -411,6 +445,13 @@ class PenaltyFunctionAbstract:
 
         penalty_idx = penalty_type._reset_penalty(ocp, nlp, penalty_idx)
         penalty_function(penalty_type, ocp, nlp, t, x, u, nlp["p"], penalty_idx=penalty_idx, **penalty)
+
+    @staticmethod
+    def _add_to_casadi_func(nlp, name, function, *all_param):
+        if name in nlp["casadi_func"]:
+            return
+        else:
+            nlp["casadi_func"][name] = biorbd.to_casadi_func(name, function, *all_param)
 
     @staticmethod
     def _parameter_modifier(penalty_function, parameters):

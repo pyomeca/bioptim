@@ -103,7 +103,7 @@ def test_add_new_plot():
         number_shooting_points=20,
         final_time=0.5,
     )
-    sol = ocp.solve(options_ipopt={"max_iter": 1})
+    sol = ocp.solve(solver_options={"max_iter": 1})
 
     # Saving/loading files reset the plot settings to normal
     save_name = "test_plot.bo"

@@ -1,14 +1,15 @@
 """
-File that shows an example of a custom constraint.
-As an example, this custom constraint reproduces exactly the behavior of the ALIGN_MARKERS constraint.
+File that shows an example of a custom dynamic.
+As an example, this custom constraint reproduces exactly the behavior of the TORQUE_DRIVEN problem_type and dynamic.
 """
 import biorbd
-from casadi import vertcat
 
 from biorbd_optim import (
     Instant,
     OptimalControlProgram,
     ProblemType,
+    Problem,
+    Dynamics,
     Objective,
     Constraint,
     Bounds,
@@ -19,19 +20,22 @@ from biorbd_optim import (
 )
 
 
-def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
-    nq = nlp["nbQ"]
-    val = []
-    for v in x:
-        q = v[:nq]
-        markers = nlp["model"].markers(q)
-        first_marker = markers[:, first_marker_idx]
-        second_marker = markers[:, second_marker_idx]
-        val = vertcat(val, first_marker - second_marker)
-    return val
+def custom_dynamic(states, controls, parameters, nlp):
+    Dynamics.apply_parameters(parameters, nlp)
+    q, qdot, tau = Dynamics.dispatch_q_qdot_tau_data(states, controls, nlp)
+
+    qddot = nlp["model"].ForwardDynamics(q, qdot, tau).to_mx()
+
+    return (qdot, qddot)
 
 
-def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
+def custom_configure(ocp, nlp):
+    Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
+    Problem.configure_tau(nlp, as_states=False, as_controls=True)
+    Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+
+
+def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -45,24 +49,15 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
-    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
+    if problem_type_custom:
+        problem_type = {"type": ProblemType.CUSTOM, "configure": custom_configure, "dynamic": custom_dynamic}
+    else:
+        problem_type = {"type": ProblemType.TORQUE_DRIVEN, "dynamic": custom_dynamic}
 
     # Constraints
     constraints = (
-        {
-            "type": Constraint.CUSTOM,
-            "function": custom_func_align_markers,
-            "instant": Instant.START,
-            "first_marker_idx": 0,
-            "second_marker_idx": 1,
-        },
-        {
-            "type": Constraint.CUSTOM,
-            "function": custom_func_align_markers,
-            "instant": Instant.END,
-            "first_marker_idx": 0,
-            "second_marker_idx": 2,
-        },
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
     )
 
     # Path constraint
@@ -77,7 +72,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque()
+        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque(),
     )
     U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
 
