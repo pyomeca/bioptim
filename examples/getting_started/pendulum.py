@@ -1,6 +1,7 @@
 import biorbd
 import pickle
 from time import time
+import numpy as np
 
 from biorbd_optim import (
     OptimalControlProgram,
@@ -9,6 +10,8 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
+    Data,
+    Simulate,
     Objective,
 )
 
@@ -67,11 +70,25 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
 if __name__ == "__main__":
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100, nb_threads=4)
 
+    # --- Single shooting --- #
+    X = InitialConditions([0, 0, 0, 0])
+    U = InitialConditions([-1, 1])
+    sol_simulate = Simulate.from_controls_and_initial_states(ocp, X, U)
+    result = ShowResult(ocp, sol_simulate)
+    result.graphs()
+
     # --- Solve the program --- #
     tic = time()
     sol, sol_iterations = ocp.solve(show_online_optim=True, return_iterations=True)
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
+
+
+    # --- Simualtion --- #
+
+    Simulate.from_solve(ocp, sol)
+    Simulate.from_data(ocp, Data.get_data(ocp, sol))
+
 
     # --- Access to all iterations  --- #
     nb_iter = len(sol_iterations)
