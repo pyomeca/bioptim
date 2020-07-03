@@ -4,7 +4,7 @@
 cd ${0%/*}
 
 # Download ACADOS if needed
-if [ ! -d acados ]; then
+if [ ! -f acados/CMakeLists.txt ]; then
   echo "Git submodules not initialized. Initializing"
   git submodule update --recursive --init
 fi
