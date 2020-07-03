@@ -3,7 +3,7 @@ import numpy as np
 
 class Simulate:
     @staticmethod
-    def from_sol(ocp, sol):
+    def from_solve(ocp, sol):
         v = np.array(sol["x"]).squeeze()
         offset = 0
         for nlp in ocp.nlp:
@@ -43,8 +43,8 @@ class Simulate:
 
     @staticmethod
     def from_controls_and_initial_states(ocp, states, controls):
-        states = states.squeeze()
-        v = states
+        states.check_and_adjust_dimensions(ocp.nlp[0]["nx"], ocp.nlp[0]["ns"])
+        v = states.init.evaluate_at(0)
 
         if not isinstance(controls, (list, tuple)):
             controls = controls,
@@ -55,7 +55,7 @@ class Simulate:
                 v = np.append(v, controls[idx_phase].init.evaluate_at(shooting_point=idx_nodes))
                 v = np.append(v, np.ndarray(nlp["nx"]))
 
-        return Simulate.from_sol(ocp, {"x": v})
+        return Simulate.from_solve(ocp, {"x": v})
 
 
     @staticmethod
