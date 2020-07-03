@@ -47,7 +47,7 @@ class Simulate:
         v = states.init.evaluate_at(0)
 
         if not isinstance(controls, (list, tuple)):
-            controls = controls,
+            controls = (controls,)
 
         for idx_phase, nlp in enumerate(ocp.nlp):
             controls[idx_phase].check_and_adjust_dimensions(nlp["nu"], nlp["ns"] - 1)
@@ -57,13 +57,9 @@ class Simulate:
 
         return Simulate.from_solve(ocp, {"x": v})
 
-
     @staticmethod
     def _concat_variables(variables, offset_phases, idx_nodes):
         var = np.ndarray(0)
         for key in variables.keys():
             var = np.append(var, variables[key][:, offset_phases + idx_nodes])
         return var
-
-
-

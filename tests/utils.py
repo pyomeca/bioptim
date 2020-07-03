@@ -76,4 +76,4 @@ class TestUtils:
         sol_simulation_from_data = Simulate.from_data(ocp, Data.get_data(ocp, sol))["x"]
         np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_solve)
         np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_data)
-        np.testing.assert_almost_equal(sol_simulation_from_solve , sol_simulation_from_data)
+        np.testing.assert_almost_equal(sol_simulation_from_solve, sol_simulation_from_data)

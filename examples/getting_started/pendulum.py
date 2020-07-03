@@ -83,12 +83,10 @@ if __name__ == "__main__":
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
-
     # --- Simualtion --- #
 
     Simulate.from_solve(ocp, sol)
     Simulate.from_data(ocp, Data.get_data(ocp, sol))
-
 
     # --- Access to all iterations  --- #
     nb_iter = len(sol_iterations)
