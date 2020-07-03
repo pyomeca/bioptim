@@ -60,8 +60,11 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
         tau[:, -1], np.array([4.42976253e-02, 1.40077846e00, -7.28864793e-13, 9.24667396e01]), decimal=2
     )
 
-    # # save and load
+    # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
@@ -116,6 +119,9 @@ def test_align_and_minimize_marker_displacement_RT(ode_solver):
     # # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
+    # simulate
+    TestUtils.simulate(sol, ocp)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_align_and_minimize_marker_velocity(ode_solver):
@@ -164,3 +170,6 @@ def test_align_and_minimize_marker_velocity(ode_solver):
 
     # # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)

@@ -60,6 +60,9 @@ def test_maximize_predicted_height_CoM(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
+    # simulate
+    # TestUtils.simulate(sol, ocp)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
@@ -107,6 +110,9 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    # TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
@@ -181,6 +187,9 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
@@ -257,6 +266,9 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
@@ -349,3 +361,6 @@ def test_non_slipping_constraint(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)

@@ -6,9 +6,11 @@ from pathlib import Path
 
 import pytest
 import numpy as np
+from copy import copy
 
 from biorbd_optim import (
     Data,
+    Simulate,
     OdeSolver,
     InterpolationType,
 )
@@ -61,6 +63,9 @@ def test_pendulum(nb_threads):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
@@ -197,6 +202,9 @@ def test_cyclic_objective():
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+    # simulate
+    TestUtils.simulate(sol, ocp)
+
 
 def test_cyclic_constraint():
     #  Load initial_guess
@@ -242,6 +250,9 @@ def test_cyclic_constraint():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_state_transitions():
@@ -292,6 +303,9 @@ def test_state_transitions():
     # For some reason, the custom function can't be found from here...
     # The save and load test is therefore skipped
     # TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    # TestUtils.simulate(sol, ocp)
 
 
 def test_parameter_optimization():
@@ -348,6 +362,9 @@ def test_parameter_optimization():
     # For some reason, the custom function can't be found from here...
     # The save and load test is therefore skipped
     # TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    # TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])

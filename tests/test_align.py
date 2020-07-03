@@ -56,6 +56,9 @@ def test_align_segment_on_rt(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
+    # simulate
+    TestUtils.simulate(sol, ocp)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_align_marker_on_segment(ode_solver):
@@ -102,3 +105,6 @@ def test_align_marker_on_segment(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
