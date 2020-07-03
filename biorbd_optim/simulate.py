@@ -43,6 +43,7 @@ class Simulate:
 
     @staticmethod
     def from_controls_and_initial_states(ocp, states, controls):
+        #todo flag single/multiple here and in from_solve (copy states)
         states.check_and_adjust_dimensions(ocp.nlp[0]["nx"], ocp.nlp[0]["ns"])
         v = states.init.evaluate_at(0)
 
