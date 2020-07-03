@@ -237,8 +237,9 @@ class OptimalControlProgram:
                     self.add_objective_function(objective_function, i)
 
         nV = self.nlp[0]["nx"] * (self.nlp[0]["ns"] + 1) + self.nlp[0]["nu"] * self.nlp[0]["ns"]
-        self.plot_array = mp.Array('d', nV)
-        self.send_flag = mp.Value('i', 0)
+        self.plot_array = mp.Array("d", nV)
+        self.send_flag = mp.Value("i", 0)
+
     @staticmethod
     def __initialize_nlp(nlp):
         """Start with an empty non linear problem"""

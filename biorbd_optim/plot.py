@@ -480,8 +480,8 @@ class OnlineCallback(Callback):
         else:
             return Sparsity(0, 0)
 
-    def eval(self, arg):
-        self.ocp.plot_array[:] = np.reshape(arg[0],(np.shape(self.ocp.plot_array[:])))
+    def eval(self, arg):  # ocp,
+        self.ocp.plot_array[:] = np.reshape(arg[0], (np.shape(self.ocp.plot_array[:])))
         self.ocp.send_flag.value = 1
         return [0]
 
@@ -504,6 +504,7 @@ class OnlineCallback(Callback):
                 self.ocp.send_flag.value = 0
                 self.plot.update_data(V)
                 Iterations.save(V)
+
                 for i, fig in enumerate(self.plot.all_figures):
                     fig.canvas.draw()
             return True
