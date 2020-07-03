@@ -2,6 +2,7 @@ from math import inf
 from copy import deepcopy
 import pickle
 import os
+import multiprocessing as mp
 
 import biorbd
 import casadi
@@ -235,6 +236,9 @@ class OptimalControlProgram:
                 for objective_function in objective_functions_phase:
                     self.add_objective_function(objective_function, i)
 
+        nV = self.nlp[0]["nx"] * (self.nlp[0]["ns"] + 1) + self.nlp[0]["nu"] * self.nlp[0]["ns"]
+        self.plot_array = mp.Array('d', nV)
+        self.send_flag = mp.Value('i', 0)
     @staticmethod
     def __initialize_nlp(nlp):
         """Start with an empty non linear problem"""

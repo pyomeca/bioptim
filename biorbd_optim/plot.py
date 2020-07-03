@@ -443,7 +443,7 @@ class ShowResult:
 class OnlineCallback(Callback):
     def __init__(self, ocp, opts={}):
         Callback.__init__(self)
-        self.nlp = ocp
+        self.ocp = ocp
         self.nx = ocp.V.rows()
         self.ng = 0
         self.construct("AnimateCallback", opts)
@@ -481,8 +481,8 @@ class OnlineCallback(Callback):
             return Sparsity(0, 0)
 
     def eval(self, arg):
-        send = self.plot_pipe.send
-        send(arg[0])
+        self.ocp.plot_array[:] = np.reshape(arg[0],(np.shape(self.ocp.plot_array[:])))
+        self.ocp.send_flag.value = 1
         return [0]
 
     class ProcessPlotter(object):
@@ -499,12 +499,13 @@ class OnlineCallback(Callback):
             plt.show()
 
         def callback(self):
-            while self.pipe.poll():
-                V = self.pipe.recv()
+            if self.ocp.send_flag.value == 1:
+                V = self.ocp.plot_array[:]
+                self.ocp.send_flag.value = 0
                 self.plot.update_data(V)
                 Iterations.save(V)
-            for i, fig in enumerate(self.plot.all_figures):
-                fig.canvas.draw()
+                for i, fig in enumerate(self.plot.all_figures):
+                    fig.canvas.draw()
             return True
 
 
