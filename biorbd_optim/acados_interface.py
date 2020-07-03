@@ -2,8 +2,8 @@ import os
 
 import numpy as np
 from scipy import linalg
-from casadi import SX, vertcat
-from acados_template import AcadosModel, AcadosOcp
+from casadi import SX, vertcat, sum1
+from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from .objective_functions import ObjectiveFunction
 from .solver_interface import SolverInterface
@@ -11,23 +11,30 @@ from .solver_interface import SolverInterface
 
 class AcadosInterface(SolverInterface):
     def __init__(self, ocp, **solver_options):
-        raise NotImplementedError("ACADOS backend is not implemented yet")
+        # raise NotImplementedError("ACADOS backend is not implemented yet")
 
         if not isinstance(ocp.CX(), SX):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS")
+        super().__init__()
 
         # TODO: Remove this part when it is solved
         if "acados_dir" in solver_options:
             os.environ["ACADOS_SOURCE_DIR"] = solver_options["acados_dir"]
 
-        super().__init__()
-
         self.acados_ocp = AcadosOcp()
         self.acados_model = AcadosModel()
+
+        if "cost_type" in solver_options:
+            self.__set_cost_type(solver_options["cost_type"])
+        else:
+            self.__set_cost_type()
+
+        self.lagrange_costs = SX()
+        self.mayer_costs = SX()
         self.__acados_export_model(ocp)
         self.__prepare_acados(ocp)
-
         self.ocp_solver = None
+
 
     def __acados_export_model(self, ocp):
         # Declare model variables
@@ -66,21 +73,39 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.ny_e = ocp.nlp[i]["nx"]
             self.acados_ocp.dims.N = ocp.nlp[i]["ns"]
 
-        # set cost module
-        self.acados_ocp.cost.cost_type = "EXTERNAL"
-        self.acados_ocp.cost.cost_type_e = "EXTERNAL"
+        for i in range(ocp.nb_phases):
+            # set constraints
+            for j in range(-1, 0):
+                for k in range(ocp.nlp[i]["nx"]):
+                    if ocp.nlp[i]["X_bounds"].min[k, j] != ocp.nlp[i]["X_bounds"].max[k, j]:
+                        raise RuntimeError("The initial values must be set and fixed.")
 
-        if self.acados_ocp.cost.cost_type != self.acados_ocp.cost.cost_type_e:
-            raise NotImplementedError(
-                "Different cost types for Lagrange and Mayer terms in Acados not implemented yet."
-            )
+            self.acados_ocp.constraints.x0 = np.array(ocp.nlp[i]["X_bounds"].min[:, 0])
+            self.acados_ocp.dims.nbx_0 = self.acados_ocp.dims.nx
+            self.acados_ocp.constraints.constr_type = "BGH"
+            self.acados_ocp.constraints.lbu = np.array(ocp.nlp[i]["U_bounds"].min[:, 0])
+            self.acados_ocp.constraints.ubu = np.array(ocp.nlp[i]["U_bounds"].max[:, 0])
+            self.acados_ocp.constraints.idxbu = np.array(range(self.acados_ocp.dims.nu))
+            self.acados_ocp.dims.nbu = self.acados_ocp.dims.nu
 
+            # set control constraints
+            self.acados_ocp.constraints.Jbx_e = np.eye(self.acados_ocp.dims.nx)
+            self.acados_ocp.constraints.ubx_e = np.array(ocp.nlp[i]["X_bounds"].max[:, -1])
+            self.acados_ocp.constraints.lbx_e = np.array(ocp.nlp[i]["X_bounds"].min[:, -1])
+            self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
+            self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
+
+        return self.acados_ocp
+
+    def __set_cost_type(self, cost_type='EXTERNAL'):
+        self.acados_ocp.cost.cost_type = cost_type
+        self.acados_ocp.cost.cost_type_e = cost_type
+
+    def __set_costs(self, ocp):
         # set weight for states and controls (default: 1.00)
         Q = 1.00 * np.eye(self.acados_ocp.dims.nx)
         R = 1.00 * np.eye(self.acados_ocp.dims.nu)
-
         self.acados_ocp.cost.W = linalg.block_diag(Q, R)
-
         self.acados_ocp.cost.W_e = Q
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
@@ -130,9 +155,6 @@ class AcadosInterface(SolverInterface):
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
-            self.acados_ocp.model.cost_expr_ext_cost = SX(0, 0)
-            self.acados_ocp.model.cost_expr_ext_cost_e = SX(0, 0)
-
             k = 0
             for i in range(ocp.nb_phases):
                 for j in range(len(ocp.nlp[i]["J"])):
@@ -140,60 +162,31 @@ class AcadosInterface(SolverInterface):
                         ocp.original_values["objective_functions"][i][j]["type"]._get_type()
                         == ObjectiveFunction.LagrangeFunction
                     ):
-                        # set Lagrange term
-                        if self.acados_ocp.model.cost_expr_ext_cost.shape == (0, 0):
-                            self.acados_ocp.model.cost_expr_ext_cost = ocp.nlp[i]["J"][j][0]
-                        else:
-                            self.acados_ocp.model.cost_expr_ext_cost += ocp.nlp[i]["J"][j][0]
+                        self.lagrange_costs = vertcat(self.lagrange_costs, ocp.nlp[i]["J"][j][0])
                     elif (
                         ocp.original_values["objective_functions"][i][j]["type"]._get_type()
                         == ObjectiveFunction.MayerFunction
                     ):
-                        # set Mayer term
-                        if self.acados_ocp.model.cost_expr_ext_cost_e.shape == (0, 0):
-                            self.acados_ocp.model.cost_expr_ext_cost_e = ocp.nlp[i]["J_acados_mayer"][k][0]
-                            k += 1
-                        else:
-                            self.acados_ocp.model.cost_expr_ext_cost_e += ocp.nlp[i]["J_acados_mayer"][k][0]
-                            k += 1
+                        self.mayer_costs = vertcat(self.mayer_costs, ocp.nlp[i]["J_acados_mayer"][k][0])
+                        k += 1
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
+            self.acados_ocp.model.cost_expr_ext_cost = sum1(self.lagrange_costs)
+            self.acados_ocp.model.cost_expr_ext_cost_e = sum1(self.mayer_costs)
 
         else:
-            raise RuntimeError("Available acados cost type: 'LINEAR_LS' and 'EXTERNAL'.")
+            raise RuntimeError("Available acados cost type: 'LINEAR_LS', 'NONLINEAR_LS' and 'EXTERNAL'.")
 
         # set y values
         self.acados_ocp.cost.yref = np.zeros((self.acados_ocp.dims.ny,))
         self.acados_ocp.cost.yref_e = np.ones((self.acados_ocp.dims.ny_e,))
 
-        for i in range(ocp.nb_phases):
-            # set constraints
-            for j in range(-1, 0):
-                for k in range(ocp.nlp[i]["nx"]):
-                    if ocp.nlp[i]["X_bounds"].min[k, j] != ocp.nlp[i]["X_bounds"].max[k, j]:
-                        raise RuntimeError("The initial values must be set and fixed.")
-
-            self.acados_ocp.constraints.x0 = np.array(ocp.nlp[i]["X_bounds"].min[:, 0])
-            self.acados_ocp.dims.nbx_0 = self.acados_ocp.dims.nx
-            self.acados_ocp.constraints.constr_type = "BGH"
-            self.acados_ocp.constraints.lbu = np.array(ocp.nlp[i]["U_bounds"].min[:, 0])
-            self.acados_ocp.constraints.ubu = np.array(ocp.nlp[i]["U_bounds"].max[:, 0])
-            self.acados_ocp.constraints.idxbu = np.array(range(self.acados_ocp.dims.nu))
-            self.acados_ocp.dims.nbu = self.acados_ocp.dims.nu
-
-            # set control constraints
-            self.acados_ocp.constraints.Jbx_e = np.eye(self.acados_ocp.dims.nx)
-            self.acados_ocp.constraints.ubx_e = np.array(ocp.nlp[i]["X_bounds"].max[:, -1])
-            self.acados_ocp.constraints.lbx_e = np.array(ocp.nlp[i]["X_bounds"].min[:, -1])
-            self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
-            self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
-
-        return self.acados_ocp
-
     def configure(self, options):
         # TODO: Removed this when it is managed properly
         if "acados_dir" in options:
             del options["acados_dir"]
+        if "cost_type" in options:
+            del options["cost_type"]
 
         self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
         self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
@@ -240,8 +233,8 @@ class AcadosInterface(SolverInterface):
 
         return out
 
-    def solve(self):
-        from acados_template import AcadosOcpSolver
-
+    def solve(self, ocp):
+        # populate costs vectors
+        self.__set_costs(ocp)
         self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
         self.ocp_solver.solve()

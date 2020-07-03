@@ -585,7 +585,7 @@ class OptimalControlProgram:
                 solver_ocp.get_iterations()
 
         solver_ocp.configure(solver_options)
-        solver_ocp.solve()
+        solver_ocp.solve(self)
         return solver_ocp.get_optimized_value(self)
 
     def save(self, sol, file_path, sol_iterations=None):

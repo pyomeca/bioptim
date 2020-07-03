@@ -1,3 +1,4 @@
+
 import biorbd
 
 from biorbd_optim import (
@@ -63,7 +64,6 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
         U_bounds,
         objective_functions,
         constraints,
-        ode_solver=ode_solver,
     )
 
 
