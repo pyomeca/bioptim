@@ -9,7 +9,6 @@ from biorbd_optim import (
     Instant,
     OptimalControlProgram,
     ProblemType,
-    Problem,
     Objective,
     Constraint,
     Bounds,
@@ -25,8 +24,9 @@ def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_mar
     val = []
     for v in x:
         q = v[:nq]
-        first_marker = nlp["model"].marker(q, first_marker_idx).to_mx()
-        second_marker = nlp["model"].marker(q, second_marker_idx).to_mx()
+        markers = nlp["model"].markers(q)
+        first_marker = markers[:, first_marker_idx]
+        second_marker = markers[:, second_marker_idx]
         val = vertcat(val, first_marker - second_marker)
     return val
 

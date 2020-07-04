@@ -202,12 +202,19 @@ class Problem:
             )
 
         dof_names = nlp["model"].nameDof()
-        q = MX()
-        q_dot = MX()
+        q_mx = MX()
+        q_dot_mx = MX()
+        q = nlp["CX"]()
+        q_dot = nlp["CX"]()
+
         for i in nlp["q_mapping"].reduce.map_idx:
-            q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
+            q = vertcat(q, nlp["CX"].sym("Q_" + dof_names[i].to_string(), 1, 1))
         for i in nlp["q_dot_mapping"].reduce.map_idx:
-            q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+            q_dot = vertcat(q_dot, nlp["CX"].sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+        for i in nlp["q_mapping"].expand.map_idx:
+            q_mx = vertcat(q_mx, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
+        for i in nlp["q_dot_mapping"].expand.map_idx:
+            q_dot_mx = vertcat(q_dot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbQ"] = nlp["q_mapping"].reduce.len
         nlp["nbQdot"] = nlp["q_dot_mapping"].reduce.len
@@ -215,6 +222,8 @@ class Problem:
         legend_q = ["q_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_mapping"].reduce.map_idx]
         legend_qdot = ["qdot_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_dot_mapping"].reduce.map_idx]
 
+        nlp["q"] = q_mx
+        nlp["qdot"] = q_dot_mx
         if as_states:
             nlp["x"] = vertcat(nlp["x"], q, q_dot)
             nlp["var_states"]["q"] = nlp["nbQ"]
@@ -232,7 +241,6 @@ class Problem:
             nlp["u"] = vertcat(nlp["u"], q, q_dot)
             nlp["var_controls"]["q"] = nlp["nbQ"]
             nlp["var_controls"]["q_dot"] = nlp["nbQdot"]
-
             # Add plot if it happens
 
         nlp["nx"] = nlp["x"].rows()
@@ -246,17 +254,26 @@ class Problem:
         """
         if nlp["tau_mapping"] is None:
             nlp["tau_mapping"] = BidirectionalMapping(
-                Mapping(range(nlp["model"].nbGeneralizedTorque())), Mapping(range(nlp["model"].nbGeneralizedTorque()))
+                # Mapping(range(nlp["model"].nbGeneralizedTorque())), Mapping(range(nlp["model"].nbGeneralizedTorque()))
+                Mapping(range(nlp["model"].nbQdot())),
+                Mapping(
+                    range(nlp["model"].nbQdot())
+                ),  # To change when nlp["model"].nbGeneralizedTorque() will return the proper number
             )
 
         dof_names = nlp["model"].nameDof()
-        tau = MX()
+
+        tau_mx = MX()
+        tau = nlp["CX"]()
         for i in nlp["tau_mapping"].reduce.map_idx:
-            tau = vertcat(tau, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
+            tau = vertcat(tau, nlp["CX"].sym("Tau_" + dof_names[i].to_string(), 1, 1))
+        for i in nlp["q_mapping"].expand.map_idx:
+            tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
         legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
 
+        nlp["tau"] = tau_mx
         if as_states:
             nlp["x"] = vertcat(nlp["x"], tau)
             nlp["var_states"]["tau"] = nlp["nbTau"]
@@ -307,11 +324,16 @@ class Problem:
         nlp["nbMuscle"] = nlp["model"].nbMuscles()
         nlp["muscleNames"] = [names.to_string() for names in nlp["model"].muscleNames()]
 
+        muscles_mx = MX()
+        for name in nlp["muscleNames"]:
+            muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}"))
+        nlp["muscles"] = muscles_mx
+
         combine = None
         if as_states:
-            muscles = MX()
-            for i in range(nlp["nbMuscle"]):
-                muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            muscles = nlp["CX"]()
+            for name in nlp["muscleNames"]:
+                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation"))
             nlp["x"] = vertcat(nlp["x"], muscles)
             nlp["var_states"]["muscles"] = nlp["nbMuscle"]
 
@@ -325,9 +347,10 @@ class Problem:
             combine = "muscles_states"
 
         if as_controls:
-            muscles = MX()
-            for i in range(nlp["nbMuscle"]):
-                muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            muscles = nlp["CX"]()
+            for name in nlp["muscleNames"]:
+                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_excitation"))
+
             nlp["u"] = vertcat(nlp["u"], muscles)
             nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
@@ -344,21 +367,23 @@ class Problem:
 
     @staticmethod
     def configure_forward_dyn_func(ocp, nlp, dyn_func):
-        nlp["nu"] = nlp["u"].rows()
         nlp["nx"] = nlp["x"].rows()
+        nlp["nu"] = nlp["u"].rows()
+        MX_symbolic_states = MX.sym("x", nlp["nx"], 1)
+        MX_symbolic_controls = MX.sym("u", nlp["nu"], 1)
 
-        symbolic_states = MX.sym("x", nlp["nx"], 1)
-        symbolic_controls = MX.sym("u", nlp["nu"], 1)
-        symbolic_params = MX()
+        symbolic_params = nlp["CX"]()
         nlp["parameters_to_optimize"] = ocp.param_to_optimize
         for key in nlp["parameters_to_optimize"]:
-            symbolic_params = vertcat(symbolic_params, nlp["parameters_to_optimize"][key]["mx"])
+            symbolic_params = vertcat(symbolic_params, nlp["parameters_to_optimize"][key]["cx"])
         nlp["p"] = symbolic_params
         nlp["np"] = symbolic_params.rows()
+        MX_symbolic_params = MX.sym("p", nlp["np"], 1)
+
         nlp["dynamics_func"] = Function(
             "ForwardDyn",
-            [symbolic_states, symbolic_controls, symbolic_params],
-            [dyn_func(symbolic_states, symbolic_controls, symbolic_params, nlp)],
+            [MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params],
+            [dyn_func(MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params, nlp)],
             ["x", "u", "p"],
             ["xdot"],
         ).expand()

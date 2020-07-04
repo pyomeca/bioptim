@@ -95,6 +95,18 @@ class ObjectiveFunction:
                 J = casadi.sum1(val) * weight
             ObjectiveFunction._add_to_penalty(ocp, nlp, J, penalty_idx)
 
+            # # TODO: This next block is at the wrong place
+            # if nlp:
+            #     if quadratic:
+            #         # TODO : This seems simply wrong
+            #         J_acados_mayer = casadi.dot(nlp["X"][0], nlp["X"][0]) * weight
+            #     else:
+            #         # TODO : So this is
+            #         J_acados_mayer = casadi.sum1(nlp["X"][0]) * weight
+            #     nlp["J_acados_mayer"].append(J_acados_mayer)  # TODO: Find a better name (J_mayer_from_node_0?)
+            # else:
+            #     pass
+
         @staticmethod
         def _reset_penalty(ocp, nlp, penalty_idx):
             """

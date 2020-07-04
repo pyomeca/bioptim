@@ -49,12 +49,14 @@ class StateTransitionFunctions:
 
             if nlp_post["model"].nbContacts() == 0:
                 warn("The chosen model does not have any contact")
-            # A new model is loaded here so we can use pre Qdot with post model, this is a hack and  should be dealt
+            # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
             # a better way (e.g. create a supplementary variable in V that link the pre and post phase with a
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
             model = biorbd.Model(nlp_post["model"].path().absolutePath().to_string())
-            qdot_post = model.ComputeConstraintImpulsesDirect(q, qdot_pre).to_mx()
-            # qdot_post = nlp_post["model"].ComputeConstraintImpulsesDirect(q, qdot_pre).to_mx()
+            func = biorbd.to_casadi_func(
+                "impulse_direct", model.ComputeConstraintImpulsesDirect, nlp_pre["q"], nlp_pre["qdot"]
+            )
+            qdot_post = func(q, qdot_pre)
             qdot_post = nlp_post["q_dot_mapping"].reduce.map(qdot_post)
 
             val = nlp_pre["X"][-1][:nbQ] - nlp_post["X"][0][:nbQ]
