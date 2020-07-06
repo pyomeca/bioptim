@@ -305,7 +305,8 @@ def test_state_transitions():
     # TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    # TestUtils.simulate(sol, ocp)
+    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
+        TestUtils.simulate(sol, ocp)
 
 
 def test_parameter_optimization():
@@ -364,7 +365,8 @@ def test_parameter_optimization():
     # TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    # TestUtils.simulate(sol, ocp)
+    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
+        TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])

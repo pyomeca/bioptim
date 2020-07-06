@@ -262,7 +262,8 @@ def test_multiphase_align_markers(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    # TestUtils.simulate(sol, ocp)
+    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
+        TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
