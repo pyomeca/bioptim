@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 from scipy import linalg
-from casadi import SX, vertcat, sum1
+from casadi import SX, vertcat, sum1, Function
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from .objective_functions import ObjectiveFunction
@@ -75,10 +75,9 @@ class AcadosInterface(SolverInterface):
 
         for i in range(ocp.nb_phases):
             # set constraints
-            for j in range(-1, 0):
-                for k in range(ocp.nlp[i]["nx"]):
-                    if ocp.nlp[i]["X_bounds"].min[k, j] != ocp.nlp[i]["X_bounds"].max[k, j]:
-                        raise RuntimeError("The initial values must be set and fixed.")
+            for j in range(ocp.nlp[i]["nx"]):
+                if ocp.nlp[i]["X_bounds"].min[j, 0] != ocp.nlp[i]["X_bounds"].max[j, 0]:
+                    raise RuntimeError("Initial constraint on state must be hard")
 
             self.acados_ocp.constraints.x0 = np.array(ocp.nlp[i]["X_bounds"].min[:, 0])
             self.acados_ocp.dims.nbx_0 = self.acados_ocp.dims.nx
@@ -167,7 +166,8 @@ class AcadosInterface(SolverInterface):
                         ocp.original_values["objective_functions"][i][j]["type"]._get_type()
                         == ObjectiveFunction.MayerFunction
                     ):
-                        self.mayer_costs = vertcat(self.mayer_costs, ocp.nlp[i]["J_acados_mayer"][k][0])
+                        tmp_mayer_func = Function('tmp_mayer_func', [ocp.nlp[i]["X"][-1]], [ocp.nlp[i]["J"][j][0]])
+                        self.mayer_costs = vertcat(self.mayer_costs, tmp_mayer_func(ocp.nlp[i]['X'][0]))
                         k += 1
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
