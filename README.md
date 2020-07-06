@@ -34,6 +34,9 @@ conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* [biorbd-viz=*=*casadi* ma
 # How to use
 TODO
 
+## Objective function
+TODO + Lagrange objective functions are integrated using rectangle method.
+
 ## Online plotting
 TODO + It is expected to slow down the optimization by about 15%
 
