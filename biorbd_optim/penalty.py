@@ -35,7 +35,7 @@ class PenaltyFunctionAbstract:
             if len(t) == 1 and t[0] == nlp["ns"]:
                 # This is a tweak so the step plot won't start after the graph
                 t[0] = nlp["ns"] - 1
-            data_to_track[np.setxor1d(range(nlp["ns"]+1), t)] = np.nan
+            data_to_track[np.setxor1d(range(nlp["ns"] + 1), t)] = np.nan
 
             running_idx = 0
             for s in nlp["var_states"]:
