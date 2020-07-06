@@ -112,8 +112,12 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    # TestUtils.simulate(sol, ocp)
-
+    try:
+        TestUtils.simulate(sol, ocp)
+    except:
+        raise Warning("Simulate not implemented yet for this case")
+    else:
+        raise RuntimeError("Great ! You can remove 'try' ")
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
 def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
