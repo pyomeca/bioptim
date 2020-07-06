@@ -3,7 +3,6 @@ Test for file IO
 """
 import importlib.util
 from pathlib import Path
-from copy import copy
 
 import pytest
 import numpy as np
@@ -465,3 +464,9 @@ def test_track_marker_2D_pendulum():
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((26.5083775, 0)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-34.3716550, 0)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
