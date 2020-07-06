@@ -17,7 +17,7 @@ def test_pendulum(nb_threads, use_SX):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum_acados.py"
+        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
     )
     pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum)
