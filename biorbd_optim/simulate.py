@@ -1,4 +1,5 @@
 import numpy as np
+from copy import copy
 
 
 class Simulate:
@@ -10,11 +11,11 @@ class Simulate:
         for nlp in ocp.nlp:
             # TODO adds StateTransitionFunctions between phases
             for idx_nodes in range(nlp["ns"]):
-                x0 = v_input[offset: offset + nlp["nx"]] if single_shoot else v_output[offset: offset + nlp["nx"]]
-                v_ouput[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
-                    nlp["dynamics"][idx_nodes](
-                        x0=x0, p=v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]]
-                    )["xf"]
+                x0 = v_input[offset : offset + nlp["nx"]] if single_shoot else v_output[offset : offset + nlp["nx"]]
+                v_output[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
+                    nlp["dynamics"][idx_nodes](x0=x0, p=v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]])[
+                        "xf"
+                    ]
                 ).squeeze()
                 offset += nlp["nx"] + nlp["nu"]
         sol["x"] = v_output
@@ -32,11 +33,14 @@ class Simulate:
             v_phase = np.ndarray((nlp["ns"] + 1) * nlp["nx"] + nlp["ns"] * nlp["nu"])
             v_phase[offset : offset + nlp["nx"]] = Simulate._concat_variables(states, offset_phases, 0)
             for idx_nodes in range(nlp["ns"]):
-                x0 = Simulate._concat_variables(states, offset_phases, idx_nodes) if single_shoot else v_phase[offset: offset + nlp["nx"]]
+                x0 = (
+                    Simulate._concat_variables(states, offset_phases, idx_nodes)
+                    if single_shoot
+                    else v_phase[offset : offset + nlp["nx"]]
+                )
                 v_phase[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
                     nlp["dynamics"][idx_nodes](
-                        x0=x0,
-                        p=Simulate._concat_variables(controls, offset_phases, idx_nodes),
+                        x0=x0, p=Simulate._concat_variables(controls, offset_phases, idx_nodes),
                     )["xf"]
                 ).squeeze()
                 offset += nlp["nx"] + nlp["nu"]
@@ -46,7 +50,7 @@ class Simulate:
 
     @staticmethod
     def from_controls_and_initial_states(ocp, states, controls, single_shoot=False):
-        #todo flag single/multiple here and in from_solve (copy states)
+        # todo flag single/multiple here and in from_solve (copy states)
         states.check_and_adjust_dimensions(ocp.nlp[0]["nx"], ocp.nlp[0]["ns"])
         v = states.init.evaluate_at(0)
 
