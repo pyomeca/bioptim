@@ -55,7 +55,7 @@ def prepare_ocp(
             ({"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 0, "data_to_track": 0, "states_idx": 0},)
             )
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN,}
 
     # Constraints
     constraints = ()
@@ -103,12 +103,12 @@ if __name__ == "__main__":
     biorbd_model_path = "./cart_pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
 
-    Tf = 3  # duration of the simulation
+    Tf = 10  # duration of the simulation
     X0 = np.array([0, np.pi / 2, 0, 0])
     N = Tf * 50  # number of shooting nodes per sec
     noise_std = 0.05  # STD of noise added to measurements
     T_max = 2  # Max torque applied to the model
-    N_mhe = 15  # size of MHE window
+    N_mhe = 25  # size of MHE window
     Tf_mhe = Tf / N * N_mhe  # duration of MHE window
 
     X_, Y_, Y_N_, U_ = run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False)
@@ -138,7 +138,7 @@ if __name__ == "__main__":
         "bound_frac": 1e-10,
         "bound_push": 1e-10,
     }
-    sol = ocp.solve(options_ipopt=options_ipopt)
+    sol = ocp.solve(solver_options=options_ipopt)
     data_sol = Data.get_data(ocp, sol)
     X0, U0, X_out = warm_start_mhe(data_sol)
     X_est[:, 0] = X_out
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         ocp.modify_objective_function(
             {"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 1000, "data_to_track": X0.T}, 1
         )
-        sol = ocp.solve(options_ipopt=options_ipopt)
+        sol = ocp.solve(solver_options=options_ipopt)
         data_sol = Data.get_data(ocp, sol)
         X0, U0, X_out = warm_start_mhe(data_sol)
         X_est[:, i] = X_out

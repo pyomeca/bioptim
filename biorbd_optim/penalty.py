@@ -31,9 +31,9 @@ class PenaltyFunctionAbstract:
                 val = v[states_idx] - data_to_track[t[i], states_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
-            PenaltyFunctionAbstract._add_track_data_to_plot(
-                ocp, nlp, data_to_track.T, combine_to="q", axes_idx=Mapping(states_idx)
-            )
+            # PenaltyFunctionAbstract._add_track_data_to_plot(
+            #     ocp, nlp, data_to_track.T, combine_to="q", axes_idx=Mapping(states_idx)
+            # )
 
         @staticmethod
         def minimize_markers(

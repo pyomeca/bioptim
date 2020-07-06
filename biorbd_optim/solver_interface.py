@@ -5,7 +5,7 @@ class SolverInterface:
     def configure(self, **options):
         raise RuntimeError("SolverInterface is an abstract class")
 
-    def solve(self):
+    def solve(self, ocp=None):
         raise RuntimeError("SolverInterface is an abstract class")
 
     def get_iterations(self):

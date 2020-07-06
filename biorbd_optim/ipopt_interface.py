@@ -51,7 +51,7 @@ class IpoptInterface(SolverInterface):
             options[ipopt_key] = solver_options[key]
         self.opts = {**options, **self.options_common}
 
-    def solve(self):
+    def solve(self, ocp):
         solver = nlpsol("nlpsol", "ipopt", self.nlp, self.opts)
 
         # Solve the problem
