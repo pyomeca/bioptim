@@ -116,7 +116,7 @@ def test_align_and_minimize_marker_displacement_RT(ode_solver):
         tau[:, -1], np.array([-2.62720590e01, 4.40828815e00, 5.68179790e-08, 2.61513677e-08])
     )
 
-    # # save and load
+    # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
