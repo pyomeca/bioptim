@@ -153,6 +153,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking():
     # simulate
     TestUtils.simulate(sol, ocp)
 
+
 def test_muscle_excitation_with_residual_torque_and_markers_tracking():
     # Load muscle_excitations_tracker
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -317,6 +318,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking():
 
     # simulate
     TestUtils.simulate(sol, ocp)
+
 
 def test_muscle_activation_and_contacts_tracking():
     # Load muscle_activations_contact_tracker
