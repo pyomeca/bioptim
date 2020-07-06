@@ -180,7 +180,6 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.cost.yref_e = np.ones((self.acados_ocp.dims.ny_e,))
 
     def configure(self, options):
-        # TODO: Removed this when it is managed properly
         if "acados_dir" in options:
             del options["acados_dir"]
         if "cost_type" in options:
