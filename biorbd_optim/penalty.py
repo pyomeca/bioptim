@@ -31,9 +31,20 @@ class PenaltyFunctionAbstract:
                 val = v[states_idx] - data_to_track[t[i], states_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
-            PenaltyFunctionAbstract._add_track_data_to_plot(
-                ocp, nlp, data_to_track.T, combine_to="q", axes_idx=Mapping(states_idx)
-            )
+            # Prepare the plot
+            if len(t) == 1 and t[0] == nlp["ns"]:
+                # This is a tweak so the step plot won't start after the graph
+                t[0] = nlp["ns"] - 1
+            data_to_track[np.setxor1d(range(nlp["ns"]+1), t)] = np.nan
+
+            running_idx = 0
+            for s in nlp["var_states"]:
+                idx = [idx for idx in states_idx if idx >= running_idx and idx < running_idx + nlp["var_states"][s]]
+                mapping = Mapping([idx for idx in states_idx if idx < nlp["var_states"][s]])
+                PenaltyFunctionAbstract._add_track_data_to_plot(
+                    ocp, nlp, data_to_track[:, idx].T, combine_to=s, axes_idx=mapping
+                )
+                running_idx += nlp["var_states"][s]
 
         @staticmethod
         def minimize_markers(
