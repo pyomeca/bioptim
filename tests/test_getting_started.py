@@ -7,11 +7,9 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-from copy import copy
 
 from biorbd_optim import (
     Data,
-    Simulate,
     OdeSolver,
     InterpolationType,
 )
