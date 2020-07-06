@@ -14,7 +14,7 @@ from biorbd_optim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     # --- Options --- #nq
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -27,7 +27,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Constraints
     constraints = (
@@ -68,9 +68,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(
-        biorbd_model_path="cube_and_line.bioMod", number_shooting_points=30, final_time=1, ode_solver=OdeSolver.RK,
-    )
+    ocp = prepare_ocp(biorbd_model_path="cube_and_line.bioMod", number_shooting_points=30, final_time=1,)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

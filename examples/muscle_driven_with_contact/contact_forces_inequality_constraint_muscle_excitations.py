@@ -30,7 +30,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     objective_functions = ({"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},)
 
     # Dynamics
-    problem_type = ProblemType.muscle_excitations_and_torque_driven_with_contact
+    problem_type = {"type": ProblemType.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT}
 
     # Constraints
     constraints = (
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     t = 0.3
     ns = 10
     ocp = prepare_ocp(
-        model_path=model_path, phase_time=t, number_shooting_points=ns, direction="GREATER_THAN", boundary=50,
+        model_path=model_path, phase_time=t, number_shooting_points=ns, direction="GREATER_THAN", boundary=50
     )
 
     # --- Solve the program --- #

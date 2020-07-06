@@ -35,21 +35,20 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK, long_o
     )
 
     # Dynamics
-    variable_type = (ProblemType.torque_driven, ProblemType.torque_driven, ProblemType.torque_driven)
+    variable_type = (
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+    )
 
     # Constraints
     constraints = (
         (
-            {
-                "type": Constraint.ALIGN_MARKERS,
-                "instant": Instant.START,
-                "first_marker_idx": 0,
-                "second_marker_idx": 1,
-            },
-            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
+            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1},
+            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2},
         ),
-        ({"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 1,},),
-        ({"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},),
+        ({"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 1},),
+        ({"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2},),
     )
 
     # Path constraint
@@ -70,13 +69,13 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK, long_o
     # Define control path constraint
     U_bounds = [
         Bounds(
-            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque(),
+            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque()
         ),
         Bounds(
-            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque(),
+            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque()
         ),
         Bounds(
-            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque(),
+            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque()
         ),
     ]
     U_init = InitialConditions([torque_init] * biorbd_model[0].nbGeneralizedTorque())

@@ -15,8 +15,7 @@ from biorbd_optim import Data, OdeSolver
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_maximize_predicted_height_CoM(ode_solver):
+def test_maximize_predicted_height_CoM():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "maximize_predicted_height_CoM",
@@ -61,8 +60,7 @@ def test_maximize_predicted_height_CoM(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
+def test_maximize_predicted_height_CoM_with_actuators():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "maximize_predicted_height_CoM",
@@ -109,8 +107,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
+def test_contact_forces_inequality_GREATER_THAN_constraint():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "contact_forces_inequality_constraint",
@@ -183,8 +180,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
+def test_contact_forces_inequality_LESSER_THAN_constraint():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "contact_forces_inequality_constraint",
@@ -259,8 +255,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_non_slipping_constraint(ode_solver):
+def test_non_slipping_constraint():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "non_slipping_constraint",

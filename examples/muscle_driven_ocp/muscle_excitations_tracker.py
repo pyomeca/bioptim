@@ -15,7 +15,6 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditions,
     ProblemType,
-    ShowResult,
 )
 
 
@@ -31,6 +30,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     # Casadi related stuff
     symbolic_states = MX.sym("x", nb_q + nb_qdot + nb_mus, 1)
     symbolic_controls = MX.sym("u", nb_tau + nb_mus, 1)
+    symbolic_parameters = MX.sym("u", 0, 0)
     nlp = {
         "model": biorbd_model,
         "nbQ": nb_q,
@@ -40,6 +40,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
         "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
         "tau_mapping": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
+        "parameters_to_optimize": {},
     }
     markers_func = []
     for i in range(nb_markers):
@@ -54,15 +55,19 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         )
     dynamics_func = Function(
         "ForwardDyn",
-        [symbolic_states, symbolic_controls],
-        [Dynamics.forward_dynamics_muscle_excitations_and_torque_driven(symbolic_states, symbolic_controls, nlp)],
-        ["x", "u"],
+        [symbolic_states, symbolic_controls, symbolic_parameters],
+        [
+            Dynamics.forward_dynamics_muscle_excitations_and_torque_driven(
+                symbolic_states, symbolic_controls, symbolic_parameters, nlp
+            )
+        ],
+        ["x", "u", "p"],
         ["xdot"],
     ).expand()
 
     def dyn_interface(t, x, u):
         u = np.concatenate([np.zeros(nb_tau), u])
-        return np.array(dynamics_func(x, u)).squeeze()
+        return np.array(dynamics_func(x, u, np.empty((0, 0)))).squeeze()
 
     # Generate some muscle excitations
     U = np.random.rand(nb_shooting, nb_mus)
@@ -104,13 +109,13 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = [
-        {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": excitations_ref},
+        {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": excitations_ref}
     ]
     if use_residual_torque:
         objective_functions.append({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1})
     if kin_data_to_track == "markers":
         objective_functions.append(
-            {"type": Objective.Lagrange.TRACK_MARKERS, "weight": 100, "data_to_track": markers_ref},
+            {"type": Objective.Lagrange.TRACK_MARKERS, "weight": 100, "data_to_track": markers_ref}
         )
     elif kin_data_to_track == "q":
         objective_functions.append(
@@ -119,16 +124,16 @@ def prepare_ocp(
                 "weight": 100,
                 "data_to_track": q_ref,
                 "states_idx": range(biorbd_model.nbQ()),
-            },
+            }
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
     if use_residual_torque:
-        variable_type = ProblemType.muscle_excitations_and_torque_driven
+        variable_type = {"type": ProblemType.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN}
     else:
-        variable_type = ProblemType.muscle_excitations_driven
+        variable_type = {"type": ProblemType.MUSCLE_EXCITATIONS_DRIVEN}
 
     # Constraints
     constraints = ()
@@ -157,7 +162,7 @@ def prepare_ocp(
             [torque_init] * biorbd_model.nbGeneralizedTorque() + [excitation_init] * biorbd_model.nbMuscles()
         )
     else:
-        U_bounds = Bounds([excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles(),)
+        U_bounds = Bounds([excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles())
         U_init = InitialConditions([excitation_init] * biorbd_model.nbMuscles())
     # ------------- #
 
@@ -221,7 +226,7 @@ if __name__ == "__main__":
     markers = np.ndarray((3, n_mark, q.shape[1]))
     symbolic_states = MX.sym("x", n_q, 1)
     markers_func = Function(
-        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"],
+        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"]
     ).expand()
     for i in range(n_frames):
         markers[:, :, i] = markers_func(q[:, i])

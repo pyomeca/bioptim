@@ -23,7 +23,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     objective_functions = ()
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Constraints
     constraints = ()
@@ -67,14 +67,16 @@ def plot_callback(x, q_to_plot):
 
 if __name__ == "__main__":
     # Prepare the Optimal Control Program
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50,)
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50)
 
     # Add my lovely new plot
-    ocp.add_plot("My New Extra Plot", lambda x, u: plot_callback(x, [0, 1, 3]), PlotType.PLOT)
-    ocp.add_plot("My New Extra Plot", lambda x, u: plot_callback(x, [1, 3]), plot_type=PlotType.STEP, axes_idx=[1, 2])
+    ocp.add_plot("My New Extra Plot", lambda x, u, p: plot_callback(x, [0, 1, 3]), PlotType.PLOT)
+    ocp.add_plot(
+        "My New Extra Plot", lambda x, u, p: plot_callback(x, [1, 3]), plot_type=PlotType.STEP, axes_idx=[1, 2]
+    )
     ocp.add_plot(
         "My Second New Extra Plot",
-        lambda x, u: plot_callback(x, [1, 3]),
+        lambda x, u, p: plot_callback(x, [1, 3]),
         plot_type=PlotType.INTEGRATED,
         axes_idx=[1, 2],
     )

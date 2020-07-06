@@ -24,7 +24,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     objective_functions = {"type": Objective.Mayer.MINIMIZE_TIME}
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Constraints
     constraints = ()
@@ -63,7 +63,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50,)
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

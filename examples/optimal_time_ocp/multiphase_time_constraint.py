@@ -37,27 +37,26 @@ def prepare_ocp(
     )
 
     # Dynamics
-    problem_type = (ProblemType.torque_driven, ProblemType.torque_driven, ProblemType.torque_driven)
+    problem_type = (
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+        {"type": ProblemType.TORQUE_DRIVEN},
+    )
 
     # Constraints
     constraints = (
         (
-            {
-                "type": Constraint.ALIGN_MARKERS,
-                "instant": Instant.START,
-                "first_marker_idx": 0,
-                "second_marker_idx": 1,
-            },
-            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
-            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[0], "maximum": time_max[0],},
+            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1},
+            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2},
+            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[0], "maximum": time_max[0]},
         ),
         (
-            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 1,},
-            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1],},
+            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 1},
+            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[1], "maximum": time_max[1]},
         ),
         (
-            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
-            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[2], "maximum": time_max[2],},
+            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2},
+            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[2], "maximum": time_max[2]},
         ),
     )
 
@@ -80,13 +79,13 @@ def prepare_ocp(
     # Define control path constraint
     U_bounds = [
         Bounds(
-            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque(),
+            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque()
         ),
         Bounds(
-            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque(),
+            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque()
         ),
         Bounds(
-            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque(),
+            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque()
         ),
     ]
     U_init = InitialConditions([torque_init] * biorbd_model[0].nbGeneralizedTorque())

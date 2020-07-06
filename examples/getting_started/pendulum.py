@@ -9,10 +9,11 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
+    Objective,
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_threads):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_threads, use_SX=False):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -21,10 +22,10 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = ()
+    objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE}
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Constraints
     constraints = ()
@@ -60,6 +61,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
         objective_functions,
         constraints,
         nb_threads=nb_threads,
+        use_SX=use_SX,
     )
 
 
@@ -91,5 +93,4 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     result = ShowResult(ocp_load, sol_load)
-    result.graphs()
     result.animate()

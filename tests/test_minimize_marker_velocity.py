@@ -11,8 +11,7 @@ from biorbd_optim import Data, OdeSolver
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_align_and_minimize_marker_displacement_global(ode_solver):
+def test_align_and_minimize_marker_displacement_global():
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -26,7 +25,6 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
         number_shooting_points=5,
         final_time=1,
-        ode_solver=OdeSolver.RK,
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=False,
     )
@@ -64,8 +62,7 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_align_and_minimize_marker_displacement_RT(ode_solver):
+def test_align_and_minimize_marker_displacement_RT():
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -79,7 +76,6 @@ def test_align_and_minimize_marker_displacement_RT(ode_solver):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
         number_shooting_points=5,
         final_time=1,
-        ode_solver=OdeSolver.RK,
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=True,
     )
@@ -117,8 +113,7 @@ def test_align_and_minimize_marker_displacement_RT(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK])
-def test_align_and_minimize_marker_velocity(ode_solver):
+def test_align_and_minimize_marker_velocity():
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -132,7 +127,6 @@ def test_align_and_minimize_marker_velocity(ode_solver):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
         number_shooting_points=5,
         final_time=1,
-        ode_solver=OdeSolver.RK,
         marker_velocity_or_displacement="velo",
         marker_in_first_coordinates_system=True,
     )

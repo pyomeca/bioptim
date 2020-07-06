@@ -19,13 +19,14 @@ from biorbd_optim import (
 )
 
 
-def custom_func_align_markers(ocp, nlp, t, x, u, first_marker_idx, second_marker_idx):
+def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
     nq = nlp["nbQ"]
     val = []
     for v in x:
         q = v[:nq]
-        first_marker = nlp["model"].marker(q, first_marker_idx).to_mx()
-        second_marker = nlp["model"].marker(q, second_marker_idx).to_mx()
+        markers = nlp["model"].markers(q)
+        first_marker = markers[:, first_marker_idx]
+        second_marker = markers[:, second_marker_idx]
         val = vertcat(val, first_marker - second_marker)
     return val
 
@@ -44,7 +45,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Constraints
     constraints = (
@@ -76,7 +77,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque(),
+        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque()
     )
     U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
 

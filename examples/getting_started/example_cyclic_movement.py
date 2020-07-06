@@ -11,6 +11,7 @@ from biorbd_optim import (
     InitialConditions,
     ShowResult,
     OdeSolver,
+    StateTransition,
 )
 
 
@@ -26,13 +27,13 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, loop_from
     objective_functions = [{"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}]
 
     # Dynamics
-    problem_type = ProblemType.torque_driven
+    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
 
     # Constraints
     constraints = (
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 2,},
-        {"type": Constraint.TRACK_STATE, "instant": Instant.MID, "states_idx": 2,},
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 1,},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 2},
+        {"type": Constraint.TRACK_STATE, "instant": Instant.MID, "states_idx": 2},
+        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 1},
     )
 
     # Path constraint
@@ -45,11 +46,18 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, loop_from
 
     # Define control path constraint
     U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque(),
+        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque()
     )
     U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
+    # A state transition loop constraint is treated as
+    # hard penalty (constraint) if weight is <= 0 [or if no weight is provided], or
+    # as a soft penalty (objective) otherwise
+    if loop_from_constraint:
+        state_transitions = ({"type": StateTransition.CYCLIC, "weight": 0},)
+    else:
+        state_transitions = ({"type": StateTransition.CYCLIC, "weight": 10000},)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -63,8 +71,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, loop_from
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        is_cyclic_objective=not loop_from_constraint,
-        is_cyclic_constraint=loop_from_constraint,
+        state_transitions=state_transitions,
     )
 
 

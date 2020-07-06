@@ -35,6 +35,7 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
     # Casadi related stuff
     symbolic_states = MX.sym("x", nb_q + nb_qdot, 1)
     symbolic_controls = MX.sym("u", nu, 1)
+    symbolic_parameters = MX.sym("params", 0, 0)
 
     markers_func = []
     for i in range(nb_markers):
@@ -53,6 +54,7 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
         "nbMuscle": nb_mus,
         "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
         "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
+        "parameters_to_optimize": {},
     }
     if use_residual_torque:
         nlp["nbTau"] = nb_tau
@@ -63,16 +65,16 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
 
     dynamics_func = Function(
         "ForwardDyn",
-        [symbolic_states, symbolic_controls],
-        [dyn_func(symbolic_states, symbolic_controls, nlp)],
-        ["x", "u"],
+        [symbolic_states, symbolic_controls, symbolic_parameters],
+        [dyn_func(symbolic_states, symbolic_controls, symbolic_parameters, nlp)],
+        ["x", "u", "p"],
         ["xdot"],
     ).expand()
 
     def dyn_interface(t, x, u):
         if use_residual_torque:
             u = np.concatenate([np.zeros(nb_tau), u])
-        return np.array(dynamics_func(x, u)).squeeze()
+        return np.array(dynamics_func(x, u, np.empty((0, 0)))).squeeze()
 
     # Generate some muscle activation
     U = np.random.rand(nb_shooting, nb_mus)
@@ -115,7 +117,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = [
-        {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": activations_ref},
+        {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": activations_ref}
     ]
 
     if use_residual_torque:
@@ -123,7 +125,7 @@ def prepare_ocp(
 
     if kin_data_to_track == "markers":
         objective_functions.append(
-            {"type": Objective.Lagrange.TRACK_MARKERS, "weight": 100, "data_to_track": markers_ref},
+            {"type": Objective.Lagrange.TRACK_MARKERS, "weight": 100, "data_to_track": markers_ref}
         )
     elif kin_data_to_track == "q":
         objective_functions.append(
@@ -132,16 +134,16 @@ def prepare_ocp(
                 "weight": 100,
                 "data_to_track": q_ref,
                 "states_idx": range(biorbd_model.nbQ()),
-            },
+            }
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
     if use_residual_torque:
-        variable_type = ProblemType.muscle_activations_and_torque_driven
+        variable_type = {"type": ProblemType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN}
     else:
-        variable_type = ProblemType.muscle_activations_driven
+        variable_type = {"type": ProblemType.MUSCLE_ACTIVATIONS_DRIVEN}
 
     # Constraints
     constraints = ()
@@ -166,7 +168,7 @@ def prepare_ocp(
         )
     else:
         U_bounds = Bounds(
-            [activation_min] * biorbd_model.nbMuscleTotal(), [activation_max] * biorbd_model.nbMuscleTotal(),
+            [activation_min] * biorbd_model.nbMuscleTotal(), [activation_max] * biorbd_model.nbMuscleTotal()
         )
         U_init = InitialConditions([activation_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
@@ -231,7 +233,7 @@ if __name__ == "__main__":
     markers = np.ndarray((3, n_mark, q.shape[1]))
     symbolic_states = MX.sym("x", n_q, 1)
     markers_func = Function(
-        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"],
+        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"]
     ).expand()
     for i in range(n_frames):
         markers[:, :, i] = markers_func(q[:, i])
