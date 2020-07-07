@@ -58,6 +58,9 @@ def test_muscle_driven_ocp():
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
+    # simulate
+    TestUtils.simulate(sol, ocp)
+
 
 def test_muscle_activations_with_contact_driven_ocp():
     # Load static_arm_with_contact
@@ -108,6 +111,9 @@ def test_muscle_activations_with_contact_driven_ocp():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_muscle_excitation_with_contact_driven_ocp():
@@ -206,3 +212,6 @@ def test_muscle_excitation_with_contact_driven_ocp():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)

@@ -18,3 +18,4 @@ from .misc.options_lists import (
     ObjectiveList,
     StateTransitionList,
 )
+from .misc.simulate import Simulate

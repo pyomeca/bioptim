@@ -8,7 +8,7 @@ import pytest
 import numpy as np
 import biorbd
 
-from biorbd_optim import Data, OdeSolver, Constraint, Instant
+from biorbd_optim import Data, OdeSolver, Constraint, Instant, Simulate
 from .utils import TestUtils
 
 
@@ -57,6 +57,9 @@ def test_align_markers(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_align_markers_changing_constraints():
@@ -108,6 +111,9 @@ def test_align_markers_changing_constraints():
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+    # simulate
+    TestUtils.simulate(sol, ocp)
+
     # Replace constraints and reoptimize
     ocp.modify_constraint(
         {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 2,}, 0
@@ -143,6 +149,9 @@ def test_align_markers_changing_constraints():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_align_markers_with_actuators():
@@ -188,6 +197,9 @@ def test_align_markers_with_actuators():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
@@ -246,6 +258,10 @@ def test_multiphase_align_markers(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
+    # simulate
+    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
+        TestUtils.simulate(sol, ocp)
+
 
 def test_external_forces():
     # Load external_forces
@@ -291,6 +307,9 @@ def test_external_forces():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_track_marker_2D_pendulum():
@@ -441,6 +460,12 @@ def test_track_marker_2D_pendulum():
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((26.5083775, 0)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-34.3716550, 0)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_trampo_quaternions():

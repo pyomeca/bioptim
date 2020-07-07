@@ -59,6 +59,10 @@ def test_maximize_predicted_height_CoM():
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
+    # simulate
+    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
+        TestUtils.simulate(sol, ocp)
+
 
 def test_maximize_predicted_height_CoM_with_actuators():
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -105,6 +109,10 @@ def test_maximize_predicted_height_CoM_with_actuators():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
+        TestUtils.simulate(sol, ocp)
 
 
 def test_contact_forces_inequality_GREATER_THAN_constraint():
@@ -178,6 +186,9 @@ def test_contact_forces_inequality_GREATER_THAN_constraint():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_contact_forces_inequality_LESSER_THAN_constraint():
@@ -253,6 +264,9 @@ def test_contact_forces_inequality_LESSER_THAN_constraint():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_non_slipping_constraint():
@@ -344,3 +358,6 @@ def test_non_slipping_constraint():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)

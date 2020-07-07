@@ -10,6 +10,8 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditionsList,
     ShowResult,
+    Data,
+    Simulate,
     Objective,
     ObjectiveList,
 )
@@ -77,6 +79,11 @@ if __name__ == "__main__":
     sol, sol_iterations = ocp.solve(show_online_optim=True, return_iterations=True)
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
+
+    # --- Simulation --- #
+    # It is not an optimal control, it only apply a Runge Kutta at each nodes
+    Simulate.from_solve(ocp, sol, single_shoot=True)
+    Simulate.from_data(ocp, Data.get_data(ocp, sol), single_shoot=False)
 
     # --- Access to all iterations  --- #
     nb_iter = len(sol_iterations)

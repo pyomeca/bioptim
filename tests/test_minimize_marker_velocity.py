@@ -58,8 +58,11 @@ def test_align_and_minimize_marker_displacement_global():
         tau[:, -1], np.array([4.42976253e-02, 1.40077846e00, -7.28864793e-13, 9.24667396e01]), decimal=2
     )
 
-    # # save and load
+    # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_align_and_minimize_marker_displacement_RT():
@@ -109,8 +112,11 @@ def test_align_and_minimize_marker_displacement_RT():
         tau[:, -1], np.array([-2.62720590e01, 4.40828815e00, 5.68179790e-08, 2.61513677e-08])
     )
 
-    # # save and load
+    # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_align_and_minimize_marker_velocity():
@@ -158,3 +164,6 @@ def test_align_and_minimize_marker_velocity():
 
     # # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
