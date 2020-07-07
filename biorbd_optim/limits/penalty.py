@@ -419,13 +419,13 @@ class PenaltyFunctionAbstract:
             parameters["penalty_idx"] -> Index of the penalty (integer), parameters["weight"] -> Weight of the penalty
             (float)
             """
-            func = parameters["function"]
+            func = parameters["custom_function"]
             weight = None
             penalty_idx = parameters["penalty_idx"]
             if "weight" in parameters.keys():
                 weight = parameters["weight"]
                 del parameters["weight"]
-            del parameters["function"]
+            del parameters["custom_function"]
             del parameters["penalty_idx"]
             val = func(ocp, nlp, t, x, u, p, **parameters)
             if weight is not None:

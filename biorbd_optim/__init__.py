@@ -13,7 +13,7 @@ from .misc.optimal_control_program import OptimalControlProgram
 from .misc.options_lists import (
     BoundsList,
     ConstraintList,
-    DynamicsList,
+    DynamicsTypeList,
     InitialConditionsList,
     ObjectiveList,
     StateTransitionList,

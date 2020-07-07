@@ -5,7 +5,7 @@ from time import time
 from biorbd_optim import (
     OptimalControlProgram,
     DynamicsType,
-    DynamicsList,
+    DynamicsTypeList,
     BoundsList,
     QAndQDotBounds,
     InitialConditionsList,
@@ -28,7 +28,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE)
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsTypeList()
     dynamics.add(DynamicsType.TORQUE_DRIVEN)
 
     # Path constraint
