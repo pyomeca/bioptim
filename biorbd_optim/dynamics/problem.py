@@ -1,10 +1,9 @@
 from casadi import MX, vertcat, Function
-from enum import Enum
 
-from .dynamics import Dynamics
-from .mapping import BidirectionalMapping, Mapping
-from .plot import CustomPlot
-from .enums import PlotType
+from .dynamics_functions import DynamicsFunctions
+from ..misc.enums import PlotType
+from ..misc.mapping import BidirectionalMapping, Mapping
+from ..gui.plot import CustomPlot
 
 
 class Problem:
@@ -14,11 +13,11 @@ class Problem:
 
     @staticmethod
     def initialize(ocp, nlp):
-        nlp["problem_type"]["type"](ocp, nlp)
+        nlp["dynamics_type"]["type"].value[0](ocp, nlp)
 
     @staticmethod
     def custom(ocp, nlp):
-        nlp["problem_type"]["configure"](ocp, nlp)
+        nlp["dynamics_type"]["configure"](ocp, nlp)
 
     @staticmethod
     def torque_driven(ocp, nlp):
@@ -29,10 +28,10 @@ class Problem:
         """
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if "dynamic" in nlp["dynamics_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven)
 
     @staticmethod
     def torque_driven_with_contact(ocp, nlp):
@@ -43,11 +42,11 @@ class Problem:
         """
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if "dynamic" in nlp["dynamics_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven_with_contact)
-        Problem.configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven_with_contact)
+        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact)
 
     @staticmethod
     def torque_activations_driven(ocp, nlp):
@@ -59,10 +58,10 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         nlp["nbActuators"] = nlp["nbTau"]
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if "dynamic" in nlp["dynamics_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_activations_driven)
 
     @staticmethod
     def torque_activations_driven_with_contact(ocp, nlp):
@@ -74,13 +73,13 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         nlp["nbActuators"] = nlp["nbTau"]
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if "dynamic" in nlp["dynamics_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
             Problem.configure_forward_dyn_func(
-                ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven_with_contact
+                ocp, nlp, DynamicsFunctions.forward_dynamics_torque_activations_driven_with_contact
             )
-        Problem.configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
+        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact)
 
     @staticmethod
     def muscle_activations_driven(ocp, nlp):
@@ -92,10 +91,10 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_muscles(nlp, False, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if "dynamic" in nlp["dynamics_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_activations_driven)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_activations_driven)
 
     @staticmethod
     def muscle_activations_and_torque_driven(ocp, nlp):
@@ -108,10 +107,10 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, False, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, nlp["problem_type"]["dynamic"])
+        if "dynamic" in nlp["dynamics_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, nlp["dynamics_type"]["dynamic"])
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_muscle_driven)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_muscle_driven)
 
     @staticmethod
     def muscle_excitations_driven(ocp, nlp):
@@ -123,10 +122,10 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_muscles(nlp, True, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if "dynamic" in nlp["dynamics_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_driven)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_driven)
 
     @staticmethod
     def muscle_excitations_and_torque_driven(ocp, nlp):
@@ -139,10 +138,10 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, True, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if "dynamic" in nlp["dynamics_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven)
 
     @staticmethod
     def muscle_activations_and_torque_driven_with_contact(ocp, nlp):
@@ -155,14 +154,14 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, False, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if "dynamic" in nlp["dynamics_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
             Problem.configure_forward_dyn_func(
-                ocp, nlp, Dynamics.forward_dynamics_muscle_activations_and_torque_driven_with_contact
+                ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_activations_and_torque_driven_with_contact
             )
         Problem.configure_contact(
-            ocp, nlp, Dynamics.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact
+            ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact
         )
 
     @staticmethod
@@ -176,14 +175,14 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, True, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if "dynamic" in nlp["dynamics_type"]:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
             Problem.configure_forward_dyn_func(
-                ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven_with_contact
+                ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven_with_contact
             )
         Problem.configure_contact(
-            ocp, nlp, Dynamics.forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact
+            ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact
         )
 
     @staticmethod
@@ -387,19 +386,3 @@ class Problem:
             ["x", "u", "p"],
             ["xdot"],
         ).expand()
-
-
-class ProblemType(Enum):
-    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = Problem.muscle_excitations_and_torque_driven
-    MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN = Problem.muscle_activations_and_torque_driven
-    MUSCLE_ACTIVATIONS_DRIVEN = Problem.muscle_activations_driven
-    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = Problem.muscle_excitations_and_torque_driven_with_contact
-    MUSCLE_EXCITATIONS_DRIVEN = Problem.muscle_excitations_driven
-    MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = Problem.muscle_activations_and_torque_driven_with_contact
-
-    TORQUE_DRIVEN = Problem.torque_driven
-    TORQUE_ACTIVATIONS_DRIVEN = Problem.torque_activations_driven
-    TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT = Problem.torque_activations_driven_with_contact
-    TORQUE_DRIVEN_WITH_CONTACT = Problem.torque_driven_with_contact
-
-    CUSTOM = Problem.custom

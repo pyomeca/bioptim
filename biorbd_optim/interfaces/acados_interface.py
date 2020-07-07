@@ -5,8 +5,8 @@ from scipy import linalg
 from casadi import SX, vertcat
 from acados_template import AcadosModel, AcadosOcp
 
-from .objective_functions import ObjectiveFunction
 from .solver_interface import SolverInterface
+from ..limits.objective_functions import ObjectiveFunction
 
 
 class AcadosInterface(SolverInterface):

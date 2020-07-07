@@ -8,7 +8,7 @@ from biorbd_optim import (
     OptimalControlProgram,
     BidirectionalMapping,
     Mapping,
-    Dynamics,
+    DynamicsType,
     Data,
     Objective,
     Bounds,
@@ -57,7 +57,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         "ForwardDyn",
         [symbolic_states, symbolic_controls, symbolic_parameters],
         [
-            Dynamics.forward_dynamics_muscle_excitations_and_torque_driven(
+            DynamicsType.forward_dynamics_muscle_excitations_and_torque_driven(
                 symbolic_states, symbolic_controls, symbolic_parameters, nlp
             )
         ],

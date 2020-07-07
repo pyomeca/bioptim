@@ -7,20 +7,21 @@ import biorbd
 import casadi
 from casadi import MX, vertcat, SX
 
-from .biorbd_interface import BiorbdInterface
-from .enums import OdeSolver
-from .integrator import RK4
-from .mapping import BidirectionalMapping
-from .path_conditions import Bounds, InitialConditions, InterpolationType
-from .constraints import ConstraintFunction, Constraint
-from .continuity import ContinuityFunctions, StateTransitionFunctions
-from .objective_functions import Objective, ObjectiveFunction
-from .parameters import Parameters
-from .problem_type import Problem
-from .plot import CustomPlot
-from .variable_optimization import Data
 from .__version__ import __version__
+from .data import Data
+from .enums import OdeSolver
+from .mapping import BidirectionalMapping
+from .options_lists import OptionList
+from .parameters import Parameters
 from .utils import check_version
+from ..dynamics.problem import Problem
+from ..gui.plot import CustomPlot
+from ..interfaces.biorbd_interface import BiorbdInterface
+from ..interfaces.integrator import RK4
+from ..limits.constraints import ConstraintFunction, Constraint
+from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions
+from ..limits.objective_functions import Objective, ObjectiveFunction
+from ..limits.path_conditions import Bounds, InitialConditions, InterpolationType
 
 check_version(biorbd, "1.3.5", "1.4.0")
 
@@ -35,7 +36,7 @@ class OptimalControlProgram:
     def __init__(
         self,
         biorbd_model,
-        problem_type,
+        dynamics_type,
         number_shooting_points,
         phase_time,
         X_init,
@@ -63,7 +64,7 @@ class OptimalControlProgram:
         Defines the sum of all objective functions weight.
 
         :param biorbd_model: Biorbd model loaded from the biorbd.Model() function.
-        :param problem_type: A selected method handler of the class problem_type.ProblemType.
+        :param dynamics_type: A selected method handler of the class dynamics.Dynamics.
         :param number_shooting_points: Subdivision number. (integer)
         :param phase_time: Simulation time in seconds. (float)
         :param X_init: States initial guess. (MX.sym from CasADi)
@@ -99,7 +100,7 @@ class OptimalControlProgram:
         biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
         self.original_values = {
             "biorbd_model": biorbd_model_path,
-            "problem_type": problem_type,
+            "dynamics_type": dynamics_type,
             "number_shooting_points": number_shooting_points,
             "phase_time": phase_time,
             "X_init": X_init,
@@ -127,19 +128,14 @@ class OptimalControlProgram:
         self.g = []
         self.g_bounds = []
         self.V = []
-        self.V_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
-        self.V_init = InitialConditions(interpolation_type=InterpolationType.CONSTANT)
+        self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        self.V_init = InitialConditions(interpolation=InterpolationType.CONSTANT)
         self.param_to_optimize = {}
 
         # nlp is the core of a phase
         self.nlp = [{} for _ in range(self.nb_phases)]
         self.__add_to_nlp("model", biorbd_model, False)
         self.__add_to_nlp("phase_idx", [i for i in range(self.nb_phases)], False)
-
-        # Prepare some variables
-        constraints = self.__init_penalty(constraints, "constraints")
-        objective_functions = self.__init_penalty(objective_functions, "objective_functions")
-        parameters = self.__init_penalty(parameters, "parameters")
 
         # Type of CasADi graph
         if use_SX:
@@ -193,7 +189,7 @@ class OptimalControlProgram:
         self.__define_variable_time(initial_time_guess, time_min, time_max)
 
         # Prepare the dynamics of the program
-        self.__add_to_nlp("problem_type", problem_type, False)
+        self.__add_to_nlp("dynamics_type", dynamics_type, False)
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
             Problem.initialize(self, self.nlp[i])
@@ -271,6 +267,19 @@ class OptimalControlProgram:
             else:
                 for i in range(self.nb_phases):
                     self.nlp[i][param_name] = param[i]
+        elif isinstance(param, OptionList):
+            if len(param) == self.nb_phases:
+                for i in range(self.nb_phases):
+                    self.nlp[i][param_name] = param[i]
+            else:
+                if len(param) == 1 and duplicate_if_size_is_one:
+                    for i in range(self.nb_phases):
+                        self.nlp[i][param_name] = param[0]
+                else:
+                    raise RuntimeError(
+                        f"{param_name} size({len(param)}) does not correspond "
+                        f"to the number of phases({self.nb_phases})."
+                    )
         else:
             if self.nb_phases == 1:
                 self.nlp[0][param_name] = param
@@ -347,8 +356,8 @@ class OptimalControlProgram:
         U = []
 
         nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
-        V_bounds = Bounds([0] * nV, [0] * nV, interpolation_type=InterpolationType.CONSTANT)
-        V_init = InitialConditions([0] * nV, interpolation_type=InterpolationType.CONSTANT)
+        V_bounds = Bounds([0] * nV, [0] * nV, interpolation=InterpolationType.CONSTANT)
+        V_init = InitialConditions([0] * nV, interpolation=InterpolationType.CONSTANT)
 
         offset = 0
         for k in range(nlp["ns"] + 1):
@@ -437,25 +446,6 @@ class OptimalControlProgram:
                 time_init = InitialConditions(initial_guess[i])
                 Parameters.add_to_V(self, "time", 1, None, time_bounds, time_init, nlp["tf"])
                 i += 1
-
-    def __init_penalty(self, penalties, penalty_type):
-        """
-        Initializes penalties (objective or constraint).
-        :param penalties: Penalties. (dictionary or list of tuples)
-        :param penalty_type: Penalty type (Instance of class PenaltyType)
-        :return: New penalties. (dictionary)
-        """
-        if len(penalties) > 0:
-            if self.nb_phases == 1:
-                if isinstance(penalties, dict):
-                    penalties = (penalties,)
-                if isinstance(penalties[0], dict):
-                    penalties = (penalties,)
-            elif isinstance(penalties, (list, tuple)):
-                for constraint in penalties:
-                    if isinstance(constraint, dict):
-                        raise RuntimeError(f"Each phase must declares its {penalty_type} (even if it is empty)")
-        return penalties
 
     def add_objective_function(self, new_objective_function, phase_number=-1):
         self.modify_objective_function(new_objective_function, index_in_phase=-1, phase_number=phase_number)
@@ -569,12 +559,12 @@ class OptimalControlProgram:
             raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
 
         if solver == "ipopt":
-            from .ipopt_interface import IpoptInterface
+            from ..interfaces.ipopt_interface import IpoptInterface
 
             solver_ocp = IpoptInterface(self)
 
         elif solver == "acados":
-            from .acados_interface import AcadosInterface
+            from ..interfaces.acados_interface import AcadosInterface
 
             solver_ocp = AcadosInterface(self, **solver_options)
 

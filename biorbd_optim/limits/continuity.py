@@ -65,8 +65,8 @@ class StateTransitionFunctions:
 
         @staticmethod
         def custom(ocp, phase_pre_idx, **parameters):
-            func = parameters["function"]
-            del parameters["function"]
+            func = parameters["custom_function"]
+            del parameters["custom_function"]
             del parameters["type"]
             del parameters["base"]
             nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
@@ -122,7 +122,7 @@ class StateTransition(Enum):
     Different types of state transitions.
     """
 
-    CONTINUOUS = StateTransitionFunctions.Functions.continuous
-    IMPACT = StateTransitionFunctions.Functions.impact
-    CYCLIC = StateTransitionFunctions.Functions.cyclic
-    CUSTOM = StateTransitionFunctions.Functions.custom
+    CONTINUOUS = (StateTransitionFunctions.Functions.continuous, )
+    IMPACT = (StateTransitionFunctions.Functions.impact, )
+    CYCLIC = (StateTransitionFunctions.Functions.cyclic, )
+    CUSTOM = (StateTransitionFunctions.Functions.custom, )

@@ -5,8 +5,8 @@ import numpy as np
 import biorbd
 from casadi import vertcat, horzcat
 
-from .enums import Instant, Axe, PlotType
-from .mapping import Mapping
+from ..misc.enums import Instant, Axe, PlotType
+from ..misc.mapping import Mapping
 
 
 class PenaltyFunctionAbstract:
@@ -573,7 +573,7 @@ class PenaltyFunctionAbstract:
         # Dynamics must be continuous between phases
         for pt in ocp.state_transitions:
             penalty_idx = pt["base"]._reset_penalty(ocp, None, -1)
-            state_transition_function = pt["type"]
+            state_transition_function = pt["type"].value[0]
             val = state_transition_function(ocp, **pt)
             pt["base"]._add_to_penalty(ocp, None, val, penalty_idx, **pt)
 

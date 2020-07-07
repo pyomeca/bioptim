@@ -3,7 +3,7 @@ from enum import Enum
 import casadi
 
 from .penalty import PenaltyType, PenaltyFunctionAbstract
-from .enums import Instant
+from ..misc.enums import Instant
 
 
 class ObjectiveFunction:
@@ -135,11 +135,13 @@ class ObjectiveFunction:
         """
         if objective["type"]._get_type() == ObjectiveFunction.LagrangeFunction:
             if "instant" in objective.keys() and objective["instant"] != Instant.ALL:
-                raise RuntimeError("Lagrange objective are for Instant.ALL, did you mean Mayer?")
+                if objective["instant"] != Instant.DEFAULT:
+                    raise RuntimeError("Lagrange objective are for Instant.ALL, did you mean Mayer?")
             objective["instant"] = Instant.ALL
         elif objective["type"]._get_type() == ObjectiveFunction.MayerFunction:
-            if "instant" not in objective.keys():
+            if "instant" not in objective.keys() or objective["instant"] == Instant.DEFAULT:
                 objective["instant"] = Instant.END
+
         else:
             raise RuntimeError("Objective function Type must be either a Lagrange or Mayer type")
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective, penalty_idx)

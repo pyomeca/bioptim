@@ -34,6 +34,7 @@ class Instant(Enum):
     INTERMEDIATES = "intermediates"
     END = "end"
     ALL = "all"
+    DEFAULT = "default"
 
 
 class InterpolationType(Enum):

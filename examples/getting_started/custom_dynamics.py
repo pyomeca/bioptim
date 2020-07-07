@@ -9,7 +9,7 @@ from biorbd_optim import (
     OptimalControlProgram,
     ProblemType,
     Problem,
-    Dynamics,
+    DynamicsType,
     Objective,
     Constraint,
     Bounds,
@@ -21,8 +21,8 @@ from biorbd_optim import (
 
 
 def custom_dynamic(states, controls, parameters, nlp):
-    Dynamics.apply_parameters(parameters, nlp)
-    q, qdot, tau = Dynamics.dispatch_q_qdot_tau_data(states, controls, nlp)
+    DynamicsType.apply_parameters(parameters, nlp)
+    q, qdot, tau = DynamicsType.dispatch_q_qdot_tau_data(states, controls, nlp)
 
     qddot = nlp["model"].ForwardDynamics(q, qdot, tau).to_mx()
 
@@ -32,7 +32,7 @@ def custom_dynamic(states, controls, parameters, nlp):
 def custom_configure(ocp, nlp):
     Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
     Problem.configure_tau(nlp, as_states=False, as_controls=True)
-    Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+    Problem.configure_forward_dyn_func(ocp, nlp, DynamicsType.custom)
 
 
 def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolver.RK):

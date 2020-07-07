@@ -8,7 +8,7 @@ from biorbd_optim import (
     OptimalControlProgram,
     BidirectionalMapping,
     Mapping,
-    Dynamics,
+    DynamicsType,
     Data,
     ProblemType,
     Objective,
@@ -59,9 +59,9 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
     if use_residual_torque:
         nlp["nbTau"] = nb_tau
         nlp["tau_mapping"] = BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau)))
-        dyn_func = Dynamics.forward_dynamics_torque_muscle_driven
+        dyn_func = DynamicsType.forward_dynamics_torque_muscle_driven
     else:
-        dyn_func = Dynamics.forward_dynamics_muscle_activations_driven
+        dyn_func = DynamicsType.forward_dynamics_muscle_activations_driven
 
     dynamics_func = Function(
         "ForwardDyn",
