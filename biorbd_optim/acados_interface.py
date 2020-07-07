@@ -76,11 +76,14 @@ class AcadosInterface(SolverInterface):
         for i in range(ocp.nb_phases):
             # set constraints
             for j in range(ocp.nlp[i]["nx"]):
-                if ocp.nlp[i]["X_bounds"].min[j, 0] != ocp.nlp[i]["X_bounds"].max[j, 0]:
-                    raise RuntimeError("Initial constraint on state must be hard")
-
-            self.acados_ocp.constraints.x0 = np.array(ocp.nlp[i]["X_bounds"].min[:, 0])
-            self.acados_ocp.dims.nbx_0 = self.acados_ocp.dims.nx
+                if ocp.nlp[i]["X_bounds"].min[j, 0] == -np.inf and ocp.nlp[i]["X_bounds"].max[j, 0] == np.inf:
+                    pass
+                elif ocp.nlp[i]["X_bounds"].min[j, 0] != ocp.nlp[i]["X_bounds"].max[j, 0]:
+                        raise RuntimeError("Initial constraint on state must be hard. "
+                                           "Hint: you can pass it as an objective")
+                else:
+                    self.acados_ocp.constraints.x0 = np.array(ocp.nlp[i]["X_bounds"].min[:, 0])
+                    self.acados_ocp.dims.nbx_0 = self.acados_ocp.dims.nx
             self.acados_ocp.constraints.constr_type = "BGH"
             self.acados_ocp.constraints.lbu = np.array(ocp.nlp[i]["U_bounds"].min[:, 0])
             self.acados_ocp.constraints.ubu = np.array(ocp.nlp[i]["U_bounds"].max[:, 0])
@@ -154,7 +157,6 @@ class AcadosInterface(SolverInterface):
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
-            k = 0
             for i in range(ocp.nb_phases):
                 for j in range(len(ocp.nlp[i]["J"])):
                     if (
@@ -166,9 +168,8 @@ class AcadosInterface(SolverInterface):
                         ocp.original_values["objective_functions"][i][j]["type"]._get_type()
                         == ObjectiveFunction.MayerFunction
                     ):
-                        tmp_mayer_func = Function('tmp_mayer_func', [ocp.nlp[i]["X"][-1]], [ocp.nlp[i]["J"][j][0]])
+                        tmp_mayer_func = Function(f'cas_mayer_func_{j}', [ocp.nlp[i]["X"][-1]], [ocp.nlp[i]["J"][j][0]])
                         self.mayer_costs = vertcat(self.mayer_costs, tmp_mayer_func(ocp.nlp[i]['X'][0]))
-                        k += 1
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
             self.acados_ocp.model.cost_expr_ext_cost = sum1(self.lagrange_costs)

@@ -62,6 +62,8 @@ def prepare_ocp(
 
     # Path constraint
     X_bounds = QAndQDotBounds(biorbd_model)
+    X_bounds.min[:, 0] = -np.inf
+    X_bounds.max[:, 0] = np.inf
     # X_bounds.min[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
     # X_bounds.max[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
 
@@ -87,6 +89,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         nb_threads=1,
+        use_SX=True
     )
 
 
@@ -138,7 +141,12 @@ if __name__ == "__main__":
         "bound_frac": 1e-10,
         "bound_push": 1e-10,
     }
-    sol = ocp.solve(solver_options=options_ipopt)
+    options_acados = {
+        "acados_dir": "/home/fb/devel/acados",
+        "nlp_solver_max_iter": 1000,
+    }
+    # sol = ocp.solve(solver_options=options_ipopt)
+    sol = ocp.solve(solver='acados', solver_options=options_acados)
     data_sol = Data.get_data(ocp, sol)
     X0, U0, X_out = warm_start_mhe(data_sol)
     X_est[:, 0] = X_out
@@ -154,9 +162,10 @@ if __name__ == "__main__":
             {"type": Objective.Lagrange.MINIMIZE_MARKERS, "weight": 1000, "data_to_track": Y_i}, 0
         )
         ocp.modify_objective_function(
-            {"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 1000, "data_to_track": X0.T}, 1
+            {"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 0, "data_to_track": X0.T}, 1
         )
-        sol = ocp.solve(solver_options=options_ipopt)
+        # sol = ocp.solve(solver_options=options_ipopt)
+        sol = ocp.solve(solver='acados', solver_options=options_acados)
         data_sol = Data.get_data(ocp, sol)
         X0, U0, X_out = warm_start_mhe(data_sol)
         X_est[:, i] = X_out
