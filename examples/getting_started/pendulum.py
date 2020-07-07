@@ -11,7 +11,7 @@ from biorbd_optim import (
     InitialConditionsList,
     ShowResult,
     Objective,
-    ObjectiveList
+    ObjectiveList,
 )
 
 

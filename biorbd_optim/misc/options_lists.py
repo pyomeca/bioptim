@@ -8,7 +8,9 @@ from ..limits.path_conditions import InitialConditions, Bounds
 
 class OptionList:
     def __init__(self):
-        self.options = [[], ]
+        self.options = [
+            [],
+        ]
 
     def __len__(self):
         if self.options == [[]]:
@@ -71,7 +73,8 @@ class ObjectiveList(OptionList):
             if custom_type is None:
                 raise RuntimeError(
                     "Custom objective function detected, but custom_function is missing. "
-                    "It should either be Objective.Mayer or Objective.Lagrange")
+                    "It should either be Objective.Mayer or Objective.Lagrange"
+                )
             type = custom_type(custom_type.CUSTOM)
             if isinstance(type, Objective.Lagrange):
                 pass
@@ -80,7 +83,8 @@ class ObjectiveList(OptionList):
             else:
                 raise RuntimeError(
                     "Custom objective function detected, but custom_function is invalid. "
-                    "It should either be Objective.Mayer or Objective.Lagrange")
+                    "It should either be Objective.Mayer or Objective.Lagrange"
+                )
 
         super(ObjectiveList, self)._add(type=type, instant=instant, weight=weight, phase=phase, **extra_arguments)
 
@@ -96,7 +100,9 @@ class DynamicsList(UniquePerPhaseOptionList):
 
 
 class BoundsList(UniquePerPhaseOptionList):
-    def add(self, bound, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, phase=-1, **extra_arguments):
+    def add(
+        self, bound, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, phase=-1, **extra_arguments
+    ):
         if not isinstance(bound, Bounds):
             bound = Bounds(min_bound=bound[0], max_bound=bound[1], interpolation=interpolation, **extra_arguments)
 

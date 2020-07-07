@@ -141,7 +141,9 @@ class Problem:
         if "dynamic" in nlp["dynamics_type"]:
             Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven)
+            Problem.configure_forward_dyn_func(
+                ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven
+            )
 
     @staticmethod
     def muscle_activations_and_torque_driven_with_contact(ocp, nlp):

@@ -122,7 +122,7 @@ class StateTransition(Enum):
     Different types of state transitions.
     """
 
-    CONTINUOUS = (StateTransitionFunctions.Functions.continuous, )
-    IMPACT = (StateTransitionFunctions.Functions.impact, )
-    CYCLIC = (StateTransitionFunctions.Functions.cyclic, )
-    CUSTOM = (StateTransitionFunctions.Functions.custom, )
+    CONTINUOUS = (StateTransitionFunctions.Functions.continuous,)
+    IMPACT = (StateTransitionFunctions.Functions.impact,)
+    CYCLIC = (StateTransitionFunctions.Functions.cyclic,)
+    CUSTOM = (StateTransitionFunctions.Functions.custom,)
