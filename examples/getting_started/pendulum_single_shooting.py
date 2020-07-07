@@ -2,12 +2,7 @@ from pendulum import prepare_ocp
 
 from biorbd_optim import InitialConditions, Simulate, ShowResult
 
-ocp = prepare_ocp(
-    biorbd_model_path="pendulum.bioMod",
-    final_time=2,
-    number_shooting_points=10,
-    nb_threads=2,
-)
+ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=10, nb_threads=2,)
 
 X = InitialConditions([0, 0, 0, 0])
 U = InitialConditions([-1, 1])
