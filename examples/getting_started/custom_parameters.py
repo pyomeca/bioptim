@@ -50,9 +50,6 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
     dynamics = DynamicsTypeList()
     dynamics.add(DynamicsType.TORQUE_DRIVEN)
 
-    # Constraints
-    constraints = ()
-
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
@@ -102,7 +99,6 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
         x_bounds,
         u_bounds,
         objective_functions,
-        constraints,
         parameters=parameters,
     )
 

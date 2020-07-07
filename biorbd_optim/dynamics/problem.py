@@ -381,10 +381,13 @@ class Problem:
         nlp["np"] = symbolic_params.rows()
         MX_symbolic_params = MX.sym("p", nlp["np"], 1)
 
+        dynamics = dyn_func(MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params, nlp)
+        if isinstance(dynamics, (list, tuple)):
+            dynamics = vertcat(*dynamics)
         nlp["dynamics_func"] = Function(
             "ForwardDyn",
             [MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params],
-            [dyn_func(MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params, nlp)],
+            [dynamics],
             ["x", "u", "p"],
             ["xdot"],
         ).expand()

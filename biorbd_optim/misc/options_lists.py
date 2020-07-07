@@ -92,13 +92,13 @@ class ObjectiveList(OptionList):
 
 
 class DynamicsTypeList(UniquePerPhaseOptionList):
-    def add(self, type, phase=-1):
+    def add(self, type, dynamic_function=None, phase=-1):
         extra_arguments = {}
         if not isinstance(type, DynamicsType):
             extra_arguments["configure"] = type
             type = DynamicsType.CUSTOM
 
-        super(DynamicsTypeList, self)._add(type=type, phase=phase, **extra_arguments)
+        super(DynamicsTypeList, self)._add(type=type, phase=phase, dynamic_function=dynamic_function, **extra_arguments)
 
 
 class BoundsList(UniquePerPhaseOptionList):
