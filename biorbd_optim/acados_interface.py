@@ -11,17 +11,15 @@ from .solver_interface import SolverInterface
 
 class AcadosInterface(SolverInterface):
     def __init__(self, ocp, **solver_options):
-        # raise NotImplementedError("ACADOS backend is not implemented yet")
-
         if not isinstance(ocp.CX(), SX):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS")
         super().__init__()
 
-        # TODO: Remove this part when it is solved
+        # If Acados is installed using the acados_install.sh file, you probably can leave this to unset
+        acados_path = ""
         if "acados_dir" in solver_options:
-            os.environ["ACADOS_SOURCE_DIR"] = solver_options["acados_dir"]
-
-        self.acados_ocp = AcadosOcp()
+            acados_path = solver_options["acados_dir"]
+        self.acados_ocp = AcadosOcp(acados_path=acados_path)
         self.acados_model = AcadosModel()
 
         if "cost_type" in solver_options:
@@ -182,7 +180,6 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.cost.yref_e = np.ones((self.acados_ocp.dims.ny_e,))
 
     def configure(self, options):
-        # TODO: Removed this when it is managed properly
         if "acados_dir" in options:
             del options["acados_dir"]
         if "cost_type" in options:

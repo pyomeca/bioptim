@@ -137,9 +137,6 @@ class PathCondition(np.ndarray):
                     f"Invalid number of column for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
                     f"the expected number of column is {self.nb_shooting}"
                 )
-        # Intended ???
-        # else:
-        #     raise RuntimeError(f"InterpolationType is not implemented yet")
 
     def evaluate_at(self, shooting_point):
         """
