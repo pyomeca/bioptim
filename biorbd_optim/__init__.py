@@ -1,6 +1,7 @@
 from .misc.__version__ import __version__
 from .dynamics.problem import Problem
 from .dynamics.dynamics_type import DynamicsType
+from .dynamics.dynamics_functions import DynamicsFunctions
 from .gui.plot import CustomPlot, ShowResult
 from .limits.constraints import Constraint
 from .limits.continuity import StateTransition

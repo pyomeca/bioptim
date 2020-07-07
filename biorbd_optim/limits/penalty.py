@@ -427,6 +427,7 @@ class PenaltyFunctionAbstract:
                 del parameters["weight"]
             del parameters["custom_function"]
             del parameters["penalty_idx"]
+            del parameters["quadratic"]
             val = func(ocp, nlp, t, x, u, p, **parameters)
             if weight is not None:
                 parameters["weight"] = weight

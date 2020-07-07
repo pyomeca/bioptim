@@ -11,7 +11,7 @@ from .__version__ import __version__
 from .data import Data
 from .enums import OdeSolver
 from .mapping import BidirectionalMapping
-from .options_lists import OptionList
+from .options_lists import OptionList, DynamicsTypeList, ObjectiveList, ConstraintList, InitialConditionsList, BoundsList, ParametersList, StateTransitionList
 from .parameters import Parameters
 from .utils import check_version
 from ..dynamics.problem import Problem
@@ -43,9 +43,9 @@ class OptimalControlProgram:
         U_init,
         X_bounds,
         U_bounds,
-        objective_functions=(),
-        constraints=(),
-        parameters=(),
+        objective_functions=ObjectiveList(),
+        constraints=ConstraintList(),
+        parameters=ParametersList(),
         external_forces=(),
         ode_solver=OdeSolver.RK,
         nb_integration_steps=5,
@@ -54,7 +54,7 @@ class OptimalControlProgram:
         q_dot_mapping=None,
         tau_mapping=None,
         plot_mappings=None,
-        state_transitions=(),
+        state_transitions=StateTransitionList(),
         nb_threads=1,
         use_SX=False,
     ):
@@ -122,6 +122,50 @@ class OptimalControlProgram:
             "nb_threads": nb_threads,
             "use_SX": use_SX,
         }
+
+        # Check integrity of arguments
+        if not isinstance(nb_threads, int) or isinstance(nb_threads, bool) or nb_threads < 1:
+            raise RuntimeError("nb_threads should be a positive integer greater or equal than 1")
+        if not isinstance(dynamics_type, DynamicsTypeList):
+            raise RuntimeError("dynamics_type should be a DynamicsTypeList")
+        ns = number_shooting_points
+        if not isinstance(ns, int) or ns < 2:
+            if isinstance(ns, (tuple, list)):
+                if sum([True for i in ns if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
+                    raise RuntimeError("number_shooting_points should be a positive integer (or a list of) "
+                                       "greater or equal than 2")
+            else:
+                raise RuntimeError("number_shooting_points should be a positive integer (or a list of) "
+                                   "greater or equal than 2")
+        nstep = nb_integration_steps
+        if not isinstance(nstep, int) or isinstance(nstep, bool) or nstep < 1:
+            raise RuntimeError("nb_integration_steps should be a positive integer greater or equal than 1")
+        if not isinstance(phase_time, (int, float)):
+            if isinstance(phase_time, (tuple, list)):
+                if sum([True for i in phase_time if not isinstance(i, (int, float))]) != 0:
+                    raise RuntimeError("phase_time should be a number or a list of number")
+            else:
+                raise RuntimeError("phase_time should be a number or a list of number")
+        if not isinstance(X_init, InitialConditionsList):
+            raise RuntimeError("X_init should be built from an InitialConditionsList")
+        if not isinstance(U_init, InitialConditionsList):
+            raise RuntimeError("U_init should be built from an InitialConditionsList")
+        if not isinstance(X_bounds, BoundsList):
+            raise RuntimeError("X_bounds should be built from an BoundsList")
+        if not isinstance(U_bounds, BoundsList):
+            raise RuntimeError("U_bounds should be built from an BoundsList")
+        if not isinstance(objective_functions, ObjectiveList):
+            raise RuntimeError("objective_functions should be built from an ObjectiveList")
+        if not isinstance(constraints, ConstraintList):
+            raise RuntimeError("constraints should be built from an ConstraintList")
+        if not isinstance(parameters, ParametersList):
+            raise RuntimeError("parameters should be built from an ParametersList")
+        if not isinstance(state_transitions, StateTransitionList):
+            raise RuntimeError("state_transitions should be built from an StateTransitionList")
+        if not isinstance(ode_solver, OdeSolver):
+            raise RuntimeError("ode_solver should be built an instance of OdeSolver")
+        if not isinstance(use_SX, bool):
+            raise RuntimeError("use_SX should be a bool")
 
         # Declare optimization variables
         self.J = []
@@ -632,6 +676,25 @@ class OptimalControlProgram:
         """
         with open(file_path, "rb") as file:
             data = pickle.load(file)
+            objective_functions = ObjectiveList()
+            for p, obj_phase in enumerate(data["ocp_initilializer"]["objective_functions"]):
+                for obj in obj_phase:
+                    objective_functions.add(**obj)
+            data["ocp_initilializer"]["objective_functions"] = objective_functions
+
+            constraints = ConstraintList()
+            for p, constraints_phase in enumerate(data["ocp_initilializer"]["constraints"]):
+                for constraint in constraints_phase:
+                    del constraint["quadratic"]
+                    constraints.add(**constraint)
+            data["ocp_initilializer"]["constraints"] = constraints
+
+            parameters = ParametersList()
+            for p, parameters_phase in enumerate(data["ocp_initilializer"]["parameters"]):
+                for parameter in parameters_phase:
+                    parameters.add(**parameter)
+            data["ocp_initilializer"]["parameters"] = parameters
+
             ocp = OptimalControlProgram(**data["ocp_initilializer"])
             for key in data["versions"].keys():
                 if data["versions"][key] != ocp.version[key]:
