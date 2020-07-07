@@ -473,24 +473,26 @@ class PenaltyFunctionAbstract:
         (bool)
         """
         # Everything that should change the entry parameters depending on the penalty can be added here
-        if (
-            penalty_function == PenaltyType.MINIMIZE_STATE
-            or penalty_function == PenaltyType.MINIMIZE_MARKERS
-            or penalty_function == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
-            or penalty_function == PenaltyType.MINIMIZE_MARKERS_VELOCITY
-            or penalty_function == PenaltyType.ALIGN_MARKERS
-            or penalty_function == PenaltyType.PROPORTIONAL_STATE
-            or penalty_function == PenaltyType.PROPORTIONAL_CONTROL
-            or penalty_function == PenaltyType.MINIMIZE_TORQUE
-            or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
-            or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
-            or penalty_function == PenaltyType.MINIMIZE_CONTACT_FORCES
-            or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
-            or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
-            or penalty_function == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
-        ):
-            if "quadratic" not in parameters.keys():
+        if parameters["quadratic"] is None:
+            if (
+                penalty_function == PenaltyType.MINIMIZE_STATE
+                or penalty_function == PenaltyType.MINIMIZE_MARKERS
+                or penalty_function == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
+                or penalty_function == PenaltyType.MINIMIZE_MARKERS_VELOCITY
+                or penalty_function == PenaltyType.ALIGN_MARKERS
+                or penalty_function == PenaltyType.PROPORTIONAL_STATE
+                or penalty_function == PenaltyType.PROPORTIONAL_CONTROL
+                or penalty_function == PenaltyType.MINIMIZE_TORQUE
+                or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
+                or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
+                or penalty_function == PenaltyType.MINIMIZE_CONTACT_FORCES
+                or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
+                or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
+                or penalty_function == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
+            ):
                 parameters["quadratic"] = True
+            else:
+                parameters["quadratic"] = False
 
         if penalty_function == PenaltyType.PROPORTIONAL_STATE:
             parameters["which_var"] = "states"

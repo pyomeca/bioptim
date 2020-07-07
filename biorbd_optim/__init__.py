@@ -17,5 +17,6 @@ from .misc.options_lists import (
     InitialConditionsList,
     ObjectiveList,
     StateTransitionList,
+    ParametersList,
 )
 from .misc.simulate import Simulate

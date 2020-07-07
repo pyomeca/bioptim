@@ -126,6 +126,51 @@ class ObjectiveFunction:
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
             PenaltyFunctionAbstract._span_checker(penalty_function, instant, nlp)
 
+    class ParameterFunction(PenaltyFunctionAbstract):
+        """
+        Mayer type objectives. (value of the objective at one time point, usually the end)
+        """
+
+        class Functions:
+            """
+            Biomechanical objectives
+            """
+            pass
+
+        @staticmethod
+        def _add_to_penalty(ocp, _, val, penalty_idx, weight=1, quadratic=False, **parameters):
+            """
+            Adds an objective.
+            :param val: Value to be optimized. (MX.sym from CasADi)
+            :param penalty_idx: Index of the objective. (integer)
+            :param weight: Weight of the objective. (float)
+            :param quadratic: If True, value is squared (bool)
+            """
+            if quadratic:
+                J = casadi.dot(val, val) * weight
+            else:
+                J = casadi.sum1(val) * weight
+            ObjectiveFunction._add_to_penalty(ocp, None, J, penalty_idx)
+
+        @staticmethod
+        def _reset_penalty(ocp, _, penalty_idx):
+            """
+            Resets specified penalty.
+            """
+            return ObjectiveFunction._reset_penalty(ocp, None, penalty_idx)
+
+        @staticmethod
+        def _parameter_modifier(penalty_function, parameters):
+            """Modification of parameters"""
+            # Everything that should change the entry parameters depending on the penalty can be added here
+            PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
+
+        @staticmethod
+        def _span_checker(penalty_function, instant, nlp):
+            """Raises errors on the span of penalty functions"""
+            # Everything that is suspicious in terms of the span of the penalty function ca be checked here
+            PenaltyFunctionAbstract._span_checker(penalty_function, instant, nlp)
+
     @staticmethod
     def add_or_replace(ocp, nlp, objective, penalty_idx):
         """
@@ -257,3 +302,6 @@ class Objective:
         def _get_type():
             """Returns the type of the objective function"""
             return ObjectiveFunction.MayerFunction
+
+    class Parameter(Enum):
+        CUSTOM = (PenaltyType.CUSTOM,)

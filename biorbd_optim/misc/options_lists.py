@@ -62,11 +62,11 @@ class ConstraintList(OptionList):
         if not isinstance(type, Constraint):
             extra_arguments["custom_function"] = type
             type = Constraint.CUSTOM
-        super(ConstraintList, self)._add(type=type, instant=instant, phase=phase, **extra_arguments)
+        super(ConstraintList, self)._add(type=type, instant=instant, phase=phase, quadratic=None, **extra_arguments)
 
 
 class ObjectiveList(OptionList):
-    def add(self, type, instant=Instant.DEFAULT, weight=1, phase=0, custom_type=None, **extra_arguments):
+    def add(self, type, instant=Instant.DEFAULT, weight=1, phase=0, custom_type=None, quadratic=None, **extra_arguments):
         if not isinstance(type, Objective.Lagrange) and not isinstance(type, Objective.Mayer):
             extra_arguments = {**extra_arguments, "custom_function": type}
 
@@ -80,13 +80,15 @@ class ObjectiveList(OptionList):
                 pass
             elif isinstance(type, Objective.Mayer):
                 pass
+            elif isinstance(type, Objective.Parameter):
+                pass
             else:
                 raise RuntimeError(
                     "Custom objective function detected, but custom_function is invalid. "
                     "It should either be Objective.Mayer or Objective.Lagrange"
                 )
 
-        super(ObjectiveList, self)._add(type=type, instant=instant, weight=weight, phase=phase, **extra_arguments)
+        super(ObjectiveList, self)._add(type=type, instant=instant, weight=weight, phase=phase, quadratic=quadratic, **extra_arguments)
 
 
 class DynamicsTypeList(UniquePerPhaseOptionList):
@@ -129,3 +131,8 @@ class StateTransitionList(UniquePerPhaseOptionList):
             extra_arguments["custom_function"] = transition
             transition = StateTransition.CUSTOM
         super(StateTransitionList, self)._add(type=transition, phase=phase, **extra_arguments)
+
+
+class ParametersList(OptionList):
+    def add(self, parameter_name, function, initial_guess, bounds, size, phase=0, penalty_set=None, **extra_arguments):
+        super(ParametersList, self)._add(function=function, phase=phase, name=parameter_name, initial_guess=initial_guess, bounds=bounds, size=size, penalty_set=penalty_set, **extra_arguments)

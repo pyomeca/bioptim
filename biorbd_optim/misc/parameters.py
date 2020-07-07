@@ -1,29 +1,17 @@
 from casadi import vertcat
 
+from .enums import Instant
+from ..limits.objective_functions import Objective, ObjectiveFunction
+
 
 class Parameters:
     @staticmethod
     def add_or_replace(ocp, parameter, penalty_idx):
         param_name = parameter["name"]
         pre_dynamic_function = parameter["function"]
-        target_function = None
-        if "target_function" in parameter:
-            target_function = parameter["target_function"]
-            del parameter["target_function"]
-        if "type" in parameter:
-            penalty_type = parameter["type"]._get_type()
-            del parameter["type"]
-        weight = 1
-        bounds = parameter["bounds"]
         initial_guess = parameter["initial_guess"]
+        bounds = parameter["bounds"]
         nb_elements = parameter["size"]
-        if "weight" in parameter:
-            weight = parameter["weight"]
-            del parameter["weight"]
-        quadratic = False
-        if "quadratic" in parameter:
-            quadratic = parameter["quadratic"]
-            del parameter["quadratic"]
         del (
             parameter["name"],
             parameter["function"],
@@ -32,14 +20,42 @@ class Parameters:
             parameter["size"],
         )
 
-        cx = Parameters.add_to_V(ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, **parameter)
-        if target_function:
-            val = target_function(ocp, cx, **parameter)
-            penalty_idx = penalty_type._reset_penalty(ocp, None, penalty_idx)
-            penalty_type._add_to_penalty(ocp, None, val, penalty_idx, weight=weight, quadratic=quadratic)
+        penalty_set = None
+        if "penalty_set" in parameter:
+            penalty_set = parameter["penalty_set"]
+            del parameter["penalty_set"]
+
+        cx = Parameters._add_to_v(ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, **parameter)
+        if penalty_set:
+            if len(penalty_set) > 1 or len(penalty_set[0]) > 1:
+                raise NotImplementedError("Parameters with more that one penalty is not implemented yet")
+            penalty = penalty_set[0][0]
+
+            func = penalty["custom_function"]
+            del penalty["custom_function"]
+
+            if not isinstance(penalty["type"], Objective.Parameter):
+                raise RuntimeError("Parameters should be declared custom_type=Objective.Parameters")
+            del penalty["type"]
+
+            if penalty["instant"] != Instant.DEFAULT:
+                raise RuntimeError("Parameters are timeless optimization, instant=Instant.DEFAULT should be declared")
+            del penalty["instant"]
+
+            weight = penalty["weight"]
+            del penalty["weight"]
+
+            quadratic = False
+            if penalty["quadratic"] is not None:
+                quadratic = penalty["quadratic"]
+            del penalty["quadratic"]
+
+            val = func(ocp, cx, **penalty)
+            penalty_idx = ObjectiveFunction.ParameterFunction._reset_penalty(ocp, None, penalty_idx)
+            ObjectiveFunction.ParameterFunction._add_to_penalty(ocp, None, val, penalty_idx, weight=weight, quadratic=quadratic)
 
     @staticmethod
-    def add_to_V(ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, cx=None, **extra_params):
+    def _add_to_v(ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, cx=None, **extra_params):
         if cx is None:
             cx = ocp.CX.sym(param_name, nb_elements, 1)
 
