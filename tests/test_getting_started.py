@@ -2,6 +2,7 @@
 Test for file IO
 """
 import importlib.util
+from pickle import PicklingError
 from pathlib import Path
 
 import pytest
@@ -63,6 +64,9 @@ def test_pendulum(nb_threads, use_SX):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_custom_constraint_align_markers():
@@ -145,10 +149,11 @@ def test_initial_guesses(interpolation_type):
     np.testing.assert_almost_equal(tau[:, -1], np.array([-5.0, 9.81, -7.85]))
 
     # save and load
-    # TODO: Have a look a this
-    # For some reason, the custom function can't be found from here...
-    # The save and load test is therefore skipped
-    # TestUtils.save_and_load(sol, ocp, True)
+    if interpolation_type in [InterpolationType.SPLINE, InterpolationType.CUSTOM]:
+        with pytest.raises(AttributeError):
+            TestUtils.save_and_load(sol, ocp, True)
+    else:
+        TestUtils.save_and_load(sol, ocp, True)
 
 
 def test_cyclic_objective():
@@ -196,6 +201,9 @@ def test_cyclic_objective():
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+    # simulate
+    TestUtils.simulate(sol, ocp)
+
 
 def test_cyclic_constraint():
     #  Load initial_guess
@@ -241,6 +249,9 @@ def test_cyclic_constraint():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_state_transitions():
@@ -288,9 +299,12 @@ def test_state_transitions():
     np.testing.assert_almost_equal(q[0][:, -1], q[1][:, 0])
 
     # save and load
-    # For some reason, the custom function can't be found from here...
-    # The save and load test is therefore skipped
-    # TestUtils.save_and_load(sol, ocp, False)
+    with pytest.raises(PicklingError, match="import of module 'state_transitions' failed"):
+        TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
+        TestUtils.simulate(sol, ocp)
 
 
 def test_parameter_optimization():
@@ -343,10 +357,12 @@ def test_parameter_optimization():
     np.testing.assert_almost_equal(gravity, np.array([[-9.09889371]]))
 
     # save and load
-    # TODO: Have a look a this
-    # For some reason, the custom function can't be found from here...
-    # The save and load test is therefore skipped
-    # TestUtils.save_and_load(sol, ocp, True)
+    with pytest.raises(PicklingError, match="import of module 'parameter_optimization' failed"):
+        TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
+        TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])

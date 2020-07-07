@@ -54,6 +54,9 @@ def test_align_segment_on_rt():
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
+    # simulate
+    TestUtils.simulate(sol, ocp)
+
 
 def test_align_marker_on_segment():
     # Load align_marker_on_segment
@@ -98,3 +101,6 @@ def test_align_marker_on_segment():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
