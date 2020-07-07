@@ -11,7 +11,7 @@ class Simulate:
         for nlp in ocp.nlp:
             # TODO adds StateTransitionFunctions between phases
             for idx_nodes in range(nlp["ns"]):
-                x0 = v_input[offset : offset + nlp["nx"]] if single_shoot else v_output[offset : offset + nlp["nx"]]
+                x0 = v_output[offset : offset + nlp["nx"]] if single_shoot else v_input[offset : offset + nlp["nx"]]
                 v_output[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
                     nlp["dynamics"][idx_nodes](x0=x0, p=v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]])[
                         "xf"
@@ -34,9 +34,9 @@ class Simulate:
             v_phase[offset : offset + nlp["nx"]] = Simulate._concat_variables(states, offset_phases, 0)
             for idx_nodes in range(nlp["ns"]):
                 x0 = (
-                    Simulate._concat_variables(states, offset_phases, idx_nodes)
+                    v_phase[offset : offset + nlp["nx"]]
                     if single_shoot
-                    else v_phase[offset : offset + nlp["nx"]]
+                    else Simulate._concat_variables(states, offset_phases, idx_nodes)
                 )
                 v_phase[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
                     nlp["dynamics"][idx_nodes](
