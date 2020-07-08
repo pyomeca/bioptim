@@ -53,6 +53,7 @@ class IpoptInterface(SolverInterface):
         self.opts = {**options, **self.options_common}
 
     def solve(self, ocp):
+        self.nlp, self.arg = self.__dispatch_bounds(ocp)
         solver = nlpsol("nlpsol", "ipopt", self.nlp, self.opts)
 
         # Solve the problem

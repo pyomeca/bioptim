@@ -52,7 +52,7 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, data_to_track=data_to_track)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0, data_to_track=0, states_idx=0)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, data_to_track=X0)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -110,10 +110,10 @@ if __name__ == "__main__":
 
     Tf = 5  # duration of the simulation
     X0 = np.array([0, np.pi / 2, 0, 0])
-    N = Tf * 50 # number of shooting nodes per sec
+    N = Tf * 100 # number of shooting nodes per sec
     noise_std = 0.05  # STD of noise added to measurements
     T_max = 2  # Max torque applied to the model
-    N_mhe = 25 # size of MHE window
+    N_mhe = 10 # size of MHE window
     Tf_mhe = Tf / N * N_mhe  # duration of MHE window
 
     X_, Y_, Y_N_, U_ = run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False)
@@ -157,18 +157,16 @@ if __name__ == "__main__":
     t0 = time.time()
 
     # Reduce ipopt tol for moving estimation
-    options_ipopt["max_iter"] = 4
+    options_ipopt["max_iter"] = 5
     options_ipopt["tol"] = 1e-1
 
     for i in range(1, N - N_mhe):
-        Y_i = Y_N_[:, :, i : i + N_mhe + 1]
+        Y_i = Y_N_[:, :, i:i + N_mhe + 1]
         new_objectives = ObjectiveList()
-        new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, data_to_track=Y_i)
-        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, data_to_track=X0.T)
+        new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=0, data_to_track=Y_i)
+        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=0, data_to_track=X0)
         ocp.modify_objective_function(new_objectives[0][0], 0)
-        ocp.modify_objective_function(
-            new_objectives[0][1], 1
-        )  # This doesn't work, but that doesn't seem to related to the merge
+        ocp.modify_objective_function(new_objectives[0][1], 1)
 
         # sol = ocp.solve(solver_options=options_ipopt)
         sol = ocp.solve(solver="acados", solver_options=options_acados)

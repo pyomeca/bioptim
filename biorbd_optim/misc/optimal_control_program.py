@@ -211,6 +211,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         self.__add_to_nlp("dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False)
         self.nb_threads = nb_threads
+        self.solver = None
 
         # External forces
         if external_forces != ():
@@ -300,6 +301,7 @@ class OptimalControlProgram:
         nlp["x"] = nlp["CX"]()
         nlp["u"] = nlp["CX"]()
         nlp["J"] = []
+        nlp["J_wt_dtt"] = []
         nlp["J_acados_mayer"] = []
         nlp["g"] = []
         nlp["g_bounds"] = []
@@ -616,25 +618,25 @@ class OptimalControlProgram:
 
         if solver == "ipopt":
             from ..interfaces.ipopt_interface import IpoptInterface
-
-            solver_ocp = IpoptInterface(self)
+            if self.solver is None:
+                self.solver = IpoptInterface(self)
 
         elif solver == "acados":
             from ..interfaces.acados_interface import AcadosInterface
-
-            solver_ocp = AcadosInterface(self, **solver_options)
+            if self.solver is None:
+                self.solver = AcadosInterface(self, **solver_options)
 
         else:
             raise RuntimeError("Available solvers are: 'ipopt' and 'acados'")
 
         if show_online_optim:
-            solver_ocp.online_optim(self)
+            self.solver.online_optim(self)
             if return_iterations:
-                solver_ocp.get_iterations()
+                self.solver.get_iterations()
 
-        solver_ocp.configure(solver_options)
-        solver_ocp.solve(self)
-        return solver_ocp.get_optimized_value(self)
+        self.solver.configure(solver_options)
+        self.solver.solve(self)
+        return self.solver.get_optimized_value(self)
 
     def save(self, sol, file_path, sol_iterations=None):
         """

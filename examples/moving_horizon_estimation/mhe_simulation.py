@@ -43,6 +43,7 @@ def run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False):
     Y_[:, :, -1] = markers_kyn(X0[: biorbd_model.nbQ()])
 
     ### Simulated noise
+    np.random.seed(42)
     N_ = (np.random.randn(3, biorbd_model.nbMarkers(), N) - 0.5) * noise_std
     Y_N_ = Y_ + N_
 

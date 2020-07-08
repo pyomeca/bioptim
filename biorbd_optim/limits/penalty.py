@@ -22,14 +22,16 @@ class PenaltyFunctionAbstract:
             """
             states_idx = PenaltyFunctionAbstract._check_and_fill_index(states_idx, nlp["nx"], "state_idx")
             data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [nlp["ns"] + 1, max(states_idx) + 1]
+                data_to_track, [max(states_idx) + 1, nlp["ns"] + 1]
             )
 
             for i, v in enumerate(x):
                 # print(i)
                 # print(v)
-                val = v[states_idx] - data_to_track[t[i], states_idx]
+                val = v[states_idx] - data_to_track[states_idx, t[i]]
+                val_wt_dtt = v[states_idx]
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                penalty_type._add_to_penalty(ocp, nlp, val_wt_dtt, wt_dtt=True, **extra_param)
 
             # Prepare the plot
             if len(t) == 1 and t[0] == nlp["ns"]:
@@ -82,7 +84,10 @@ class PenaltyFunctionAbstract:
                 val = (
                     nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
                 )
+                val_wt_dtt = (nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx])
+
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                penalty_type._add_to_penalty(ocp, nlp, val_wt_dtt, wt_dtt=True, **extra_param)
 
         @staticmethod
         def minimize_markers_displacement(
