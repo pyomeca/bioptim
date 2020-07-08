@@ -25,7 +25,9 @@ class Parameters:
             penalty_set = parameter["penalty_set"]
             del parameter["penalty_set"]
 
-        cx = Parameters._add_to_v(ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, **parameter)
+        cx = Parameters._add_to_v(
+            ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, **parameter
+        )
         if penalty_set:
             if len(penalty_set) > 1 or len(penalty_set[0]) > 1:
                 raise NotImplementedError("Parameters with more that one penalty is not implemented yet")
@@ -52,7 +54,9 @@ class Parameters:
 
             val = func(ocp, cx, **penalty)
             penalty_idx = ObjectiveFunction.ParameterFunction._reset_penalty(ocp, None, penalty_idx)
-            ObjectiveFunction.ParameterFunction._add_to_penalty(ocp, None, val, penalty_idx, weight=weight, quadratic=quadratic)
+            ObjectiveFunction.ParameterFunction._add_to_penalty(
+                ocp, None, val, penalty_idx, weight=weight, quadratic=quadratic
+            )
 
     @staticmethod
     def _add_to_v(ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, cx=None, **extra_params):

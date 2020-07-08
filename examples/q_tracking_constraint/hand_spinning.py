@@ -48,8 +48,15 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, first_marker_idx=hand_marker_idx, second_marker_idx=end_crank_idx, instant=Instant.ALL)
-    constraints.add(Constraint.TRACK_STATE, instant=Instant.ALL, states_idx=0, data_to_track=np.linspace(0, 2 * np.pi, number_shooting_points + 1))
+    constraints.add(
+        Constraint.ALIGN_MARKERS, first_marker_idx=hand_marker_idx, second_marker_idx=end_crank_idx, instant=Instant.ALL
+    )
+    constraints.add(
+        Constraint.TRACK_STATE,
+        instant=Instant.ALL,
+        states_idx=0,
+        data_to_track=np.linspace(0, 2 * np.pi, number_shooting_points + 1),
+    )
 
     state_transitions = StateTransitionList()
     state_transitions.add(state_transition_function, phase_pre_idx=0)
@@ -67,7 +74,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
     u_bounds.add(
         [
             [tau_min] * biorbd_model.nbGeneralizedTorque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
-            [tau_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal()
+            [tau_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
         ]
     )
 

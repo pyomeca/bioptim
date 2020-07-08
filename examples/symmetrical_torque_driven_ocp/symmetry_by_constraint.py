@@ -53,11 +53,7 @@ def prepare_ocp(biorbd_model_path="cubeSym.bioMod", ode_solver=OdeSolver.RK):
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add(
-        [
-            [tau_min] * biorbd_model.nbQ(), [tau_max] * biorbd_model.nbQ()
-        ]
-    )
+    u_bounds.add([[tau_min] * biorbd_model.nbQ(), [tau_max] * biorbd_model.nbQ()])
 
     u_init = InitialConditionsList()
     u_init.add([tau_init] * biorbd_model.nbQ())

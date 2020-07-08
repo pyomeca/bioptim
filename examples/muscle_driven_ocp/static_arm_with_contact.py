@@ -51,9 +51,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     )
 
     u_init = InitialConditionsList()
-    u_init.add(
-        [tau_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal()
-    )
+    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
 
     return OptimalControlProgram(

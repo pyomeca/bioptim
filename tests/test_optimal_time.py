@@ -320,21 +320,13 @@ def partial_ocp_parameters(nb_phases):
         x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
 
     u_bounds = BoundsList()
-    u_bounds.add(
-        [
-            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
-        ]
-    )
+    u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
     if nb_phases > 1:
         u_bounds.add(
-            [
-                [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
-            ]
+            [[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()]
         )
         u_bounds.add(
-            [
-                [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
-            ]
+            [[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()]
         )
 
     u_init = InitialConditionsList()
@@ -590,8 +582,12 @@ def test_lagrange1_neg_multiphase_time_constraint():
         objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, phase=0)
 
         constraints = ConstraintList()
-        constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=0)
-        constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=0)
+        constraints.add(
+            Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=0
+        )
+        constraints.add(
+            Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=0
+        )
 
         OptimalControlProgram(
             biorbd_model,
@@ -630,8 +626,12 @@ def test_lagrange2_neg_multiphase_time_constraint():
         objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, phase=2)
 
         constraints = ConstraintList()
-        constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=2)
-        constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=2)
+        constraints.add(
+            Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=2
+        )
+        constraints.add(
+            Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=2
+        )
 
         OptimalControlProgram(
             biorbd_model,

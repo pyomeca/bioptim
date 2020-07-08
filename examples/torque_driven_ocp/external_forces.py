@@ -61,11 +61,7 @@ def prepare_ocp(biorbd_model_path="cube_with_forces.bioMod", ode_solver=OdeSolve
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add(
-        [
-            [tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()
-        ]
-    )
+    u_bounds.add([[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()])
 
     u_init = InitialConditionsList()
     u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())

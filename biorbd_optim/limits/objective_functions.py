@@ -135,6 +135,7 @@ class ObjectiveFunction:
             """
             Biomechanical objectives
             """
+
             pass
 
         @staticmethod

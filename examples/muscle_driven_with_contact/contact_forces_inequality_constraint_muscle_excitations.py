@@ -40,8 +40,20 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(Constraint.CONTACT_FORCE_INEQUALITY, direction=direction, instant=Instant.ALL, contact_force_idx=1, boundary=boundary)
-    constraints.add(Constraint.CONTACT_FORCE_INEQUALITY, direction=direction, instant=Instant.ALL, contact_force_idx=2, boundary=boundary)
+    constraints.add(
+        Constraint.CONTACT_FORCE_INEQUALITY,
+        direction=direction,
+        instant=Instant.ALL,
+        contact_force_idx=1,
+        boundary=boundary,
+    )
+    constraints.add(
+        Constraint.CONTACT_FORCE_INEQUALITY,
+        direction=direction,
+        instant=Instant.ALL,
+        contact_force_idx=2,
+        boundary=boundary,
+    )
 
     # Path constraint
     nb_q = biorbd_model.nbQ()

@@ -44,7 +44,9 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_MARKERS, axis_tot_track=[Axe.Y, Axe.Z], weight=100, data_to_track=markers_ref)
+    objective_functions.add(
+        Objective.Lagrange.TRACK_MARKERS, axis_tot_track=[Axe.Y, Axe.Z], weight=100, data_to_track=markers_ref
+    )
     objective_functions.add(Objective.Lagrange.TRACK_TORQUE, data_to_track=tau_ref.T)
 
     # Dynamics

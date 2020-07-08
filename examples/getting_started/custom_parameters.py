@@ -78,7 +78,9 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
     initial_gravity = InitialConditions((min_g + max_g) / 2)
     parameters = ParametersList()
     parameter_objective_functions = ObjectiveList()
-    parameter_objective_functions.add(my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=target_g)
+    parameter_objective_functions.add(
+        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=target_g
+    )
     parameters.add(
         "gravity_z",  # The name of the parameter
         my_parameter_function,  # The function that modifies the biorbd model

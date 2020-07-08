@@ -35,9 +35,27 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, mu):
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(Constraint.CONTACT_FORCE_INEQUALITY, direction="GREATER_THAN", instant=Instant.ALL, contact_force_idx=1, boundary=0)
-    constraints.add(Constraint.CONTACT_FORCE_INEQUALITY, direction="GREATER_THAN", instant=Instant.ALL, contact_force_idx=2, boundary=0)
-    constraints.add(Constraint.NON_SLIPPING, instant=Instant.ALL, normal_component_idx=(1, 2), tangential_component_idx=0, static_friction_coefficient=mu)
+    constraints.add(
+        Constraint.CONTACT_FORCE_INEQUALITY,
+        direction="GREATER_THAN",
+        instant=Instant.ALL,
+        contact_force_idx=1,
+        boundary=0,
+    )
+    constraints.add(
+        Constraint.CONTACT_FORCE_INEQUALITY,
+        direction="GREATER_THAN",
+        instant=Instant.ALL,
+        contact_force_idx=2,
+        boundary=0,
+    )
+    constraints.add(
+        Constraint.NON_SLIPPING,
+        instant=Instant.ALL,
+        normal_component_idx=(1, 2),
+        tangential_component_idx=0,
+        static_friction_coefficient=mu,
+    )
 
     # Path constraint
     nb_q = biorbd_model.nbQ()
@@ -56,11 +74,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, mu):
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add(
-        [
-            [tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len
-        ]
-    )
+    u_bounds.add([[tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len])
 
     u_init = InitialConditionsList()
     u_init.add([tau_init] * tau_mapping.reduce.len)

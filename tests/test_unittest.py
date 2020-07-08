@@ -111,10 +111,7 @@ def test_initial_condition_custom():
     init_val = np.random.random((nb_elements, 2))
 
     init = InitialConditions(
-        custom_bound_func,
-        interpolation=InterpolationType.CUSTOM,
-        val=init_val,
-        total_shooting=nb_shoot,
+        custom_bound_func, interpolation=InterpolationType.CUSTOM, val=init_val, total_shooting=nb_shoot,
     )
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     for i in range(nb_shoot + 1):

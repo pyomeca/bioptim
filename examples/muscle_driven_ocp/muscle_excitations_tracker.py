@@ -118,7 +118,9 @@ def prepare_ocp(
     if kin_data_to_track == "markers":
         objective_functions.add(Objective.Lagrange.TRACK_MARKERS, weight=100, data_to_track=markers_ref)
     elif kin_data_to_track == "q":
-        objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=100, data_to_track=q_ref, states_idx=range(biorbd_model.nbQ()))
+        objective_functions.add(
+            Objective.Lagrange.TRACK_STATE, weight=100, data_to_track=q_ref, states_idx=range(biorbd_model.nbQ())
+        )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
@@ -157,25 +159,12 @@ def prepare_ocp(
         )
         u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [excitation_init] * biorbd_model.nbMuscles())
     else:
-        u_bounds.add(
-            [
-                [excitation_min] * biorbd_model.nbMuscles(),
-                [excitation_max] * biorbd_model.nbMuscles()
-            ]
-        )
+        u_bounds.add([[excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles()])
         u_init.add([excitation_init] * biorbd_model.nbMuscles())
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
-        dynamics,
-        nb_shooting,
-        final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        biorbd_model, dynamics, nb_shooting, final_time, x_init, u_init, x_bounds, u_bounds, objective_functions,
     )
 
 

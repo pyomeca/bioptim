@@ -36,7 +36,12 @@ def prepare_ocp(
 
     objective_functions = ObjectiveList()
     if marker_velocity_or_displacement == "disp":
-        objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, coordinates_system_idx=coordinates_system_idx, markers_idx=6, weight=1000)
+        objective_functions.add(
+            Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT,
+            coordinates_system_idx=coordinates_system_idx,
+            markers_idx=6,
+            weight=1000,
+        )
     elif marker_velocity_or_displacement == "velo":
         objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_VELOCITY, markers_idx=6, weight=1000)
     else:
@@ -61,7 +66,7 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialConditionsList()
-    x_init.add([1.5, 1.5, 0., 0., 0.7, 0.7, 0.6, 0.6])
+    x_init.add([1.5, 1.5, 0.0, 0.0, 0.7, 0.7, 0.6, 0.6])
 
     # Define control path constraint
     u_bounds = BoundsList()

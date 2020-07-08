@@ -53,9 +53,13 @@ def prepare_ocp(
     constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=0)
     if nb_phases == 3:
         constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=0, second_marker_idx=1, phase=1)
-        constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[1], maximum=time_max[1], phase=1)
+        constraints.add(
+            Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[1], maximum=time_max[1], phase=1
+        )
         constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=0, second_marker_idx=2, phase=2)
-        constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[2], maximum=time_max[2], phase=2)
+        constraints.add(
+            Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[2], maximum=time_max[2], phase=2
+        )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -85,8 +89,12 @@ def prepare_ocp(
     u_bounds = BoundsList()
     u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
     if nb_phases == 3:
-        u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
-        u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
+        u_bounds.add(
+            [[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()]
+        )
+        u_bounds.add(
+            [[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()]
+        )
 
     u_init = InitialConditionsList()
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())

@@ -11,7 +11,16 @@ from .__version__ import __version__
 from .data import Data
 from .enums import OdeSolver
 from .mapping import BidirectionalMapping
-from .options_lists import OptionList, DynamicsTypeList, ObjectiveList, ConstraintList, InitialConditionsList, BoundsList, ParametersList, StateTransitionList
+from .options_lists import (
+    OptionList,
+    DynamicsTypeList,
+    ObjectiveList,
+    ConstraintList,
+    InitialConditionsList,
+    BoundsList,
+    ParametersList,
+    StateTransitionList,
+)
 from .parameters import Parameters
 from .utils import check_version
 from ..dynamics.problem import Problem
@@ -132,11 +141,13 @@ class OptimalControlProgram:
         if not isinstance(ns, int) or ns < 2:
             if isinstance(ns, (tuple, list)):
                 if sum([True for i in ns if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
-                    raise RuntimeError("number_shooting_points should be a positive integer (or a list of) "
-                                       "greater or equal than 2")
+                    raise RuntimeError(
+                        "number_shooting_points should be a positive integer (or a list of) greater or equal than 2"
+                    )
             else:
-                raise RuntimeError("number_shooting_points should be a positive integer (or a list of) "
-                                   "greater or equal than 2")
+                raise RuntimeError(
+                    "number_shooting_points should be a positive integer (or a list of) greater or equal than 2"
+                )
         nstep = nb_integration_steps
         if not isinstance(nstep, int) or isinstance(nstep, bool) or nstep < 1:
             raise RuntimeError("nb_integration_steps should be a positive integer greater or equal than 1")
@@ -562,7 +573,7 @@ class OptimalControlProgram:
         """
         if "combine_to" in parameters:
             raise RuntimeError(
-                "'combine_to' cannot be specified in add_plot, " "please use same 'fig_name' to combine plots"
+                "'combine_to' cannot be specified in add_plot, please use same 'fig_name' to combine plots"
             )
 
         # --- Solve the program --- #
