@@ -273,15 +273,10 @@ class OptimalControlProgram:
         ContinuityFunctions.continuity(self)
 
         # Prepare constraints
-        if len(constraints) > 0:
-            for i, constraint_phase in enumerate(constraints):
-                for constraint in constraint_phase:
-                    self.add_constraint(constraint, i)
+        self.add_constraint_set(constraints)
+
         # Prepare objectives
-        if len(objective_functions) > 0:
-            for i, objective_functions_phase in enumerate(objective_functions):
-                for objective_function in objective_functions_phase:
-                    self.add_objective_function(objective_function, i)
+        self.add_objective_function_set(objective_functions)
 
     def __initialize_nlp(self, nlp):
         """Start with an empty non linear problem"""
@@ -491,14 +486,22 @@ class OptimalControlProgram:
                 Parameters._add_to_v(self, "time", 1, None, time_bounds, time_init, nlp["tf"])
                 i += 1
 
-    def add_objective_function(self, new_objective_function, phase_number=-1):
-        self.modify_objective_function(new_objective_function, index_in_phase=-1, phase_number=phase_number)
+    def add_objective_function_set(self, new_objective_function_set):
+        if not isinstance(new_objective_function_set, ObjectiveList):
+            raise RuntimeError("new_objective_function_set must be a ObjectiveList")
+        for p, objective_in_phase in enumerate(new_objective_function_set):
+            for objective in objective_in_phase:
+                self.modify_objective_function(objective, index_in_phase=-1, phase_number=p)
 
     def modify_objective_function(self, new_objective_function, index_in_phase, phase_number=-1):
         self._modify_penalty(new_objective_function, index_in_phase, phase_number, "objective_functions", True)
 
-    def add_constraint(self, new_constraint, phase_number=-1):
-        self.modify_constraint(new_constraint, index_in_phase=-1, phase_number=phase_number)
+    def add_constraint_set(self, new_constraint_set):
+        if not isinstance(new_constraint_set, ConstraintList):
+            raise RuntimeError("new_contraint_set must be a ConstraintList")
+        for p, constraints_in_phase in enumerate(new_constraint_set):
+            for constraint in constraints_in_phase:
+                self.modify_constraint(constraint, index_in_phase=-1, phase_number=p)
 
     def modify_constraint(self, new_constraint, index_in_phase, phase_number=-1):
         self._modify_penalty(new_constraint, index_in_phase, phase_number, "constraints", True)

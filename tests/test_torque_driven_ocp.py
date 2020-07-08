@@ -8,7 +8,7 @@ import pytest
 import numpy as np
 import biorbd
 
-from biorbd_optim import Data, OdeSolver, Constraint, Instant, Simulate
+from biorbd_optim import Data, OdeSolver, ConstraintList, Constraint, Instant
 from .utils import TestUtils
 
 
@@ -79,9 +79,9 @@ def test_align_markers_changing_constraints():
     sol = ocp.solve()
 
     # Add a new constraint and reoptimize
-    ocp.add_constraint(
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 2,}
-    )
+    new_constraints = ConstraintList()
+    new_constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.MID, first_marker_idx=0, second_marker_idx=2)
+    ocp.add_constraint_set(new_constraints)
     sol = ocp.solve()
 
     # Check objective function value
@@ -115,12 +115,11 @@ def test_align_markers_changing_constraints():
     TestUtils.simulate(sol, ocp)
 
     # Replace constraints and reoptimize
-    ocp.modify_constraint(
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 2,}, 0
-    )
-    ocp.modify_constraint(
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.MID, "first_marker_idx": 0, "second_marker_idx": 3,}, 2
-    )
+    new_constraints = ConstraintList()
+    new_constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=2)
+    new_constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.MID, first_marker_idx=0, second_marker_idx=3)
+    ocp.modify_constraint(new_constraints[0][0], 0)
+    ocp.modify_constraint(new_constraints[0][1], 2)
     sol = ocp.solve()
 
     # Check objective function value

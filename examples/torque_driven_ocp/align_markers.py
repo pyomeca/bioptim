@@ -42,7 +42,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, use_actua
     # Constraints
     constraints = ConstraintList()
     constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx= 0, second_marker_idx=2)
+    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint
     x_bounds = BoundsList()
