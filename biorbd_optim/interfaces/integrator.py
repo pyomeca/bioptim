@@ -25,7 +25,7 @@ def RK4(ode, ode_opt):
     def control_disctretisation(u, i, rkstep, control_type):
         if control_type == ControlType.CONSTANT:
             return u[:,0]
-        elif control_type == ControlType.LINEAL:
+        elif control_type == ControlType.LINEAR:
             if rkstep == 0:
                 return i * (u[:, 1] - u[:, 0])/n_step
             elif rkstep == 1:

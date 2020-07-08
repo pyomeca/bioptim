@@ -1,6 +1,6 @@
 from casadi import vertcat, horzcat, MX
 import biorbd
-
+from ..misc.enums import ControlType
 
 class DynamicsFunctions:
     """
@@ -364,7 +364,10 @@ class DynamicsFunctions:
     @staticmethod
     def call_dynamics(ocp, nlp, k, multiThread=False):
         if k == nlp["ns"] - 1:
-            end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=horzcat(nlp["U"][k], nlp["CX"].zeros(nlp["nu"])), params=nlp["p"])
+            if nlp["control_type"] == ControlType.CONSTANT:
+                end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=horzcat(nlp["U"][k], nlp["CX"].zeros(nlp["nu"])), params=nlp["p"])
+            elif nlp["control_type"] == ControlType.LINEAR:
+                end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=horzcat(nlp["U"][k], nlp["U"][k+1]), params=nlp["p"])
         else:
             end_node = nlp["dynamics"][k](x0=nlp["X"][k],p=horzcat(nlp["U"][k], nlp["U"][k+1]), params=nlp["p"])
         return end_node

@@ -251,20 +251,29 @@ class OptimalControlProgram:
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
             Problem.initialize(self, self.nlp[i])
+        self.__add_to_nlp(
+            "control_type", control_type, True
+        )
 
         # Prepare path constraints
         self.__add_to_nlp("X_bounds", X_bounds, False)
         self.__add_to_nlp("U_bounds", U_bounds, False)
         for i in range(self.nb_phases):
             self.nlp[i]["X_bounds"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
-            self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
+            if self.nlp[i]["control_type"] == ControlType.LINEAR:
+                self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"])
+            else:
+                self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
 
         # Prepare initial guesses
         self.__add_to_nlp("X_init", X_init, False)
         self.__add_to_nlp("U_init", U_init, False)
         for i in range(self.nb_phases):
             self.nlp[i]["X_init"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
-            self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
+            if self.nlp[i]["control_type"] == ControlType.LINEAR:
+                self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"])
+            else:
+                self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
 
         # Variables and constraint for the optimization program
         for i in range(self.nb_phases):
@@ -274,9 +283,6 @@ class OptimalControlProgram:
         self.__add_to_nlp(
             "nb_integration_steps", nb_integration_steps, True
         )  # Number of steps of integration (for now only RK4 steps are implemented)
-        self.__add_to_nlp(
-            "control_type", control_type, True
-        )
         self.__add_to_nlp("ode_solver", ode_solver, True)
         for i in range(self.nb_phases):
             if self.nlp[0]["nx"] != self.nlp[i]["nx"] or self.nlp[0]["nu"] != self.nlp[i]["nu"]:
@@ -412,9 +418,12 @@ class OptimalControlProgram:
         X = []
         U = []
 
-        nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
-        V_bounds = Bounds([0] * nV, [0] * nV, interpolation=InterpolationType.CONSTANT)
-        V_init = InitialConditions([0] * nV, interpolation=InterpolationType.CONSTANT)
+        if nlp["control_type"] == ControlType.CONSTANT:
+            nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
+        elif nlp["control_type"] == ControlType.LINEAR:
+            nV = (nlp["nx"] + nlp["nu"]) * (nlp["ns"] + 1)
+            V_bounds = Bounds([0] * nV, [0] * nV, interpolation=InterpolationType.CONSTANT)
+            V_init = InitialConditions([0] * nV, interpolation=InterpolationType.CONSTANT)
 
         offset = 0
         for k in range(nlp["ns"] + 1):
@@ -433,6 +442,15 @@ class OptimalControlProgram:
                 V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
                 offset += nlp["nu"]
                 V = vertcat(V, U_)
+            else:
+                if nlp["control_type"] == ControlType.LINEAR:
+                    U_ = nlp["CX"].sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
+                    U.append(U_)
+                    V_bounds.min[offset: offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
+                    V_bounds.max[offset: offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
+                    V_init.init[offset: offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
+                    offset += nlp["nu"]
+                    V = vertcat(V, U_)
         V_bounds.check_and_adjust_dimensions(nV, 1)
         V_init.check_and_adjust_dimensions(nV, 1)
 
