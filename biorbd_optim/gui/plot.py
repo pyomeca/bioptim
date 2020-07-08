@@ -9,10 +9,10 @@ from itertools import accumulate
 from matplotlib import pyplot as plt, lines
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
-from .variable_optimization import Data
-from .mapping import Mapping
-from .enums import PlotType
-from .utils import check_version
+from ..misc.data import Data
+from ..misc.enums import PlotType
+from ..misc.mapping import Mapping
+from ..misc.utils import check_version
 
 
 class CustomPlot:

@@ -1,11 +1,11 @@
 from math import inf
 from enum import Enum
 
-from casadi import vertcat, sum1, horzcat
+from casadi import sum1, horzcat
 
-from .enums import Instant, InterpolationType, OdeSolver
-from .penalty import PenaltyType, PenaltyFunctionAbstract
 from .path_conditions import Bounds
+from .penalty import PenaltyType, PenaltyFunctionAbstract
+from ..misc.enums import Instant, InterpolationType, OdeSolver
 
 
 class ConstraintFunction(PenaltyFunctionAbstract):
@@ -147,9 +147,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         :param min_bound: Minimal bound of the parameter g. (list)
         :param max_bound: Maximal bound of the parameter g. (list)
         """
-        g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
+        g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for _ in range(g.rows()):
-            g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation_type=InterpolationType.CONSTANT))
+            g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
 
         if nlp:
             nlp["g"][penalty_idx].append(g)
