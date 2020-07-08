@@ -391,6 +391,8 @@ class OptimalControlProgram:
                 raise RuntimeError("COLLOCATION cannot be used while optimizing parameters")
             if "external_forces" in nlp:
                 raise RuntimeError("COLLOCATION cannot be used with external_forces")
+            if nlp["control_type"] == ControlType.LINEAR:
+                raise RuntimeError("COLLOCATION cannot be used with piece-wise linear controls (only RK4)")
             nlp["dynamics"].append(casadi.integrator("integrator", "collocation", ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.CVODES:
             if not isinstance(self.CX(), MX):
@@ -399,6 +401,8 @@ class OptimalControlProgram:
                 raise RuntimeError("CVODES cannot be used while optimizing parameters")
             if "external_forces" in nlp:
                 raise RuntimeError("CVODES cannot be used with external_forces")
+            if nlp["control_type"] == ControlType.LINEAR:
+                raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
             nlp["dynamics"].append(casadi.integrator("integrator", "cvodes", ode, ode_opt))
 
         if len(nlp["dynamics"]) == 1:
@@ -422,8 +426,8 @@ class OptimalControlProgram:
             nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
         elif nlp["control_type"] == ControlType.LINEAR:
             nV = (nlp["nx"] + nlp["nu"]) * (nlp["ns"] + 1)
-            V_bounds = Bounds([0] * nV, [0] * nV, interpolation=InterpolationType.CONSTANT)
-            V_init = InitialConditions([0] * nV, interpolation=InterpolationType.CONSTANT)
+        V_bounds = Bounds([0] * nV, [0] * nV, interpolation=InterpolationType.CONSTANT)
+        V_init = InitialConditions([0] * nV, interpolation=InterpolationType.CONSTANT)
 
         offset = 0
         for k in range(nlp["ns"] + 1):
