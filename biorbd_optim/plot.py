@@ -13,11 +13,20 @@ from .variable_optimization import Data
 from .mapping import Mapping
 from .enums import PlotType
 from .utils import check_version
+from .path_conditions import InterpolationType
 
 
 class CustomPlot:
     def __init__(
-        self, update_function, plot_type=PlotType.PLOT, axes_idx=None, legend=(), combine_to=None, color=None, ylim=None, bounds=None
+        self,
+        update_function,
+        plot_type=PlotType.PLOT,
+        axes_idx=None,
+        legend=(),
+        combine_to=None,
+        color=None,
+        ylim=None,
+        bounds=None,
     ):
         """
         Initializes the plot.
@@ -213,12 +222,55 @@ class PlotOcp:
                         self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
                     if self.axes[variable][0].bounds is not None:
                         # TODO: Problem -> When it is bounds for control nb_shooting must be ns -1... how to deal with that without knowing the nature of the bounds to plot?
-                        # self.axes[variable][0].bounds.check_and_adjust_dimensions(nb_elements=len(mapping), nb_shooting=nlp["ns"])
-                        # TODO: Is it a problem actually when we call evaluate_at for k = ns+1?
-                        bounds_min = np.array([nlp["plot"][variable].bounds.min.evaluate_at(k)[j] for k in range(nlp["ns"] + 1)])
-                        bounds_max = np.array([nlp["plot"][variable].bounds.max.evaluate_at(k)[j] for k in range(nlp["ns"] + 1)])
-                        self.plots_bounds.append([ax.step(self.t[i], bounds_min, where="post", color='k', linestyle="--"), i])
-                        self.plots_bounds.append([ax.step(self.t[i], bounds_max, where="post", color='k', linestyle="--"), i])
+                        try:
+                            self.axes[variable][0].bounds.check_and_adjust_dimensions(
+                                nb_elements=len(mapping), nb_shooting=nlp["ns"]
+                            )
+                        except:
+                            self.axes[variable][0].bounds.check_and_adjust_dimensions(
+                                nb_elements=len(mapping), nb_shooting=nlp["ns"] - 1
+                            )
+                        ns = nlp["plot"][variable].bounds.min.nb_shooting
+                        if nlp["plot"][variable].bounds.min.type == InterpolationType.EACH_FRAME:
+                            ns -= 1
+                        bounds_min = np.array(
+                            [nlp["plot"][variable].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)]
+                        )
+                        bounds_max = np.array(
+                            [nlp["plot"][variable].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)]
+                        )
+                        try:
+                            self.plots_bounds.append(
+                                [ax.step(self.t[i], bounds_min, where="post", color="k", linestyle="--"), i]
+                            )
+                            self.plots_bounds.append(
+                                [ax.step(self.t[i], bounds_max, where="post", color="k", linestyle="--"), i]
+                            )
+                        except:
+                            self.plots_bounds.append(
+                                [
+                                    ax.step(
+                                        self.t[i],
+                                        np.concatenate((bounds_min, np.array([0]))),
+                                        where="post",
+                                        color="k",
+                                        linestyle="--",
+                                    ),
+                                    i,
+                                ]
+                            )
+                            self.plots_bounds.append(
+                                [
+                                    ax.step(
+                                        self.t[i],
+                                        np.concatenate((bounds_max, np.array([0]))),
+                                        where="post",
+                                        color="k",
+                                        linestyle="--",
+                                    ),
+                                    i,
+                                ]
+                            )
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
         """
