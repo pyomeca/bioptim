@@ -49,11 +49,11 @@ def prepare_ocp(
     torque_min, torque_max, torque_init = -max_torque, max_torque, 0
 
     # Add objective functions
-
     objective_functions = (
             ({"type": Objective.Lagrange.MINIMIZE_MARKERS, "weight": 1000, "data_to_track": data_to_track},),
-            ({"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 0, "data_to_track": 0, "states_idx": 0},)
+            ({"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 1000, "data_to_track": X0.T},)
             )
+
     # Dynamics
     problem_type = {"type": ProblemType.TORQUE_DRIVEN,}
 
@@ -88,7 +88,7 @@ def prepare_ocp(
         U_bounds,
         objective_functions,
         constraints,
-        nb_threads=1,
+        nb_threads=4,
         use_SX=True
     )
 
@@ -106,25 +106,26 @@ if __name__ == "__main__":
     biorbd_model_path = "./cart_pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
 
-    Tf = 10  # duration of the simulation
+    Tf = 5  # duration of the simulation
     X0 = np.array([0, np.pi / 2, 0, 0])
-    N = Tf * 50  # number of shooting nodes per sec
+    N = Tf * 10 # number of shooting nodes per sec
     noise_std = 0.05  # STD of noise added to measurements
     T_max = 2  # Max torque applied to the model
-    N_mhe = 25  # size of MHE window
+    N_mhe = 10 # size of MHE window
     Tf_mhe = Tf / N * N_mhe  # duration of MHE window
 
     X_, Y_, Y_N_, U_ = run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False)
 
-    X0 = np.zeros((biorbd_model.nbQ() * 2, N_mhe))
-    U0 = np.zeros((biorbd_model.nbQ(), N_mhe - 1))
+    X0 = np.zeros((biorbd_model.nbQ() * 2, N_mhe+1))
+    X0[:, 0] = np.array([0, np.pi / 2, 0, 0])
+    U0 = np.zeros((biorbd_model.nbQ(), N_mhe ))
     X_est = np.zeros((biorbd_model.nbQ() * 2, N - N_mhe))
     T_max = 5  # Give a bit of slack on the max torque
 
-    Y_i = Y_N_[:, :, :N_mhe]
+    Y_i = Y_N_[:, :, :N_mhe + 1]
     ocp = prepare_ocp(
         biorbd_model_path,
-        number_shooting_points=N_mhe - 1,
+        number_shooting_points=N_mhe,
         final_time=Tf_mhe,
         max_torque=T_max,
         X0=X0,
@@ -157,12 +158,12 @@ if __name__ == "__main__":
     options_ipopt["tol"] = 1e-1
 
     for i in range(1, N - N_mhe):
-        Y_i = Y_N_[:, :, i : i + N_mhe]
+        Y_i = Y_N_[:, :, i : i + N_mhe + 1]
         ocp.modify_objective_function(
             {"type": Objective.Lagrange.MINIMIZE_MARKERS, "weight": 1000, "data_to_track": Y_i}, 0
         )
         ocp.modify_objective_function(
-            {"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 0, "data_to_track": X0.T}, 1
+            {"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 1000, "data_to_track": X0.T}, 1
         )
         # sol = ocp.solve(solver_options=options_ipopt)
         sol = ocp.solve(solver='acados', solver_options=options_acados)

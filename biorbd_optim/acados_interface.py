@@ -89,11 +89,11 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.nbu = self.acados_ocp.dims.nu
 
             # set control constraints
-            self.acados_ocp.constraints.Jbx_e = np.eye(self.acados_ocp.dims.nx)
-            self.acados_ocp.constraints.ubx_e = np.array(ocp.nlp[i]["X_bounds"].max[:, -1])
-            self.acados_ocp.constraints.lbx_e = np.array(ocp.nlp[i]["X_bounds"].min[:, -1])
-            self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
-            self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
+            # self.acados_ocp.constraints.Jbx_e = np.eye(self.acados_ocp.dims.nx)
+            # self.acados_ocp.constraints.ubx_e = np.array(ocp.nlp[i]["X_bounds"].max[:, -1])
+            # self.acados_ocp.constraints.lbx_e = np.array(ocp.nlp[i]["X_bounds"].min[:, -1])
+            # self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
+            # self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
 
         return self.acados_ocp
 
@@ -122,37 +122,30 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.Vx_e = np.zeros((self.acados_ocp.dims.nx, self.acados_ocp.dims.nx))
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
-            # TODO: change cost_expr_ext_cost and cost_expr_ext_cost_e
-            raise NotImplementedError("NONLINEAR_LS cost type not implemented yet in acados.")
 
             self.acados_ocp.model.cost_expr_ext_cost = SX(0, 0)
             self.acados_ocp.model.cost_expr_ext_cost_e = SX(0, 0)
-
-            k = 0
             for i in range(ocp.nb_phases):
                 for j in range(len(ocp.nlp[i]["J"])):
                     if (
                         ocp.original_values["objective_functions"][i][j]["type"]._get_type()
                         == ObjectiveFunction.LagrangeFunction
                     ):
-                        # set Lagrange term
-                        if self.acados_ocp.model.cost_expr_ext_cost.shape == (0, 0):
-                            self.acados_ocp.model.cost_expr_ext_cost = ocp.nlp[i]["J"][j][0]
-                        else:
-                            self.acados_ocp.model.cost_expr_ext_cost += ocp.nlp[i]["J"][j][0]
+                        if ("data_to_track" in  ocp.original_values["objective_functions"][i][j]):
+                            dtt = ocp.original_values["objective_functions"][i][j]["data_to_track"]
+                        self.lagrange_costs = vertcat(self.lagrange_costs, ocp.nlp[i]["J"][j][0])
                     elif (
                         ocp.original_values["objective_functions"][i][j]["type"]._get_type()
                         == ObjectiveFunction.MayerFunction
                     ):
-                        # set Mayer term
-                        if self.acados_ocp.model.cost_expr_ext_cost_e.shape == (0, 0):
-                            self.acados_ocp.model.cost_expr_ext_cost_e = ocp.nlp[i]["J_acados_mayer"][k][0]
-                            k += 1
-                        else:
-                            self.acados_ocp.model.cost_expr_ext_cost_e += ocp.nlp[i]["J_acados_mayer"][k][0]
-                            k += 1
+                        if ("data_to_track" in  ocp.original_values["objective_functions"][i][j]):
+                            dtt_e = ocp.original_values["objective_functions"][i][j]["data_to_track"]
+                        tmp_mayer_func = Function(f'cas_mayer_func_{j}', [ocp.nlp[i]["X"][-1]], [ocp.nlp[i]["J"][j][0]])
+                        self.mayer_costs = vertcat(self.mayer_costs, tmp_mayer_func(ocp.nlp[i]['X'][0]))
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
+            self.acados_ocp.model.cost_expr_ext_cost = sum1(self.lagrange_costs)
+            self.acados_ocp.model.cost_expr_ext_cost_e = sum1(self.mayer_costs)
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
             for i in range(ocp.nb_phases):
@@ -186,7 +179,7 @@ class AcadosInterface(SolverInterface):
         if "cost_type" in options:
             del options["cost_type"]
 
-        self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
+        self.acados_ocp.solver_options.qp_solver = "FULL_CONDENSING_QPOASES"  # FULL_CONDENSING_QPOASES
         self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
         self.acados_ocp.solver_options.integrator_type = "ERK"
         self.acados_ocp.solver_options.nlp_solver_type = "SQP"
