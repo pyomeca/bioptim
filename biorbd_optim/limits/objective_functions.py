@@ -77,7 +77,7 @@ class ObjectiveFunction:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, penalty_idx, target=None, weight=1, quadratic=False, **extra_param):
+        def _add_to_penalty(ocp, nlp, val, penalty_idx, **extra_param):
             """
             Adds an objective.
             :param val: Value to be optimized. (MX.sym from CasADi)
@@ -131,7 +131,7 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def _add_to_penalty(ocp, _, val, penalty_idx, weight=1, quadratic=False, **extra_param):
+        def _add_to_penalty(ocp, _, val, penalty_idx, **extra_param):
             """
             Adds an objective.
             :param val: Value to be optimized. (MX.sym from CasADi)
@@ -139,6 +139,7 @@ class ObjectiveFunction:
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared (bool)
             """
+
             ObjectiveFunction._add_to_penalty(ocp, None, val, penalty_idx, dt=1, **extra_param)
 
         @staticmethod
@@ -191,7 +192,7 @@ class ObjectiveFunction:
         )
 
     @staticmethod
-    def _add_to_penalty(ocp, nlp, val, penalty_idx, dt=0, target=None, weight=1, quadratic=False):
+    def _add_to_penalty(ocp, nlp, val, penalty_idx, dt=0, target=None, weight=1, quadratic=False, **extra_param):
         """
         Adds objective J to objective array nlp["J"][penalty_idx] or ocp.J[penalty_idx] at index penalty_idx.
         :param J: Objective. (dict of [val, target, weight, is_quadratic])

@@ -1,7 +1,7 @@
 import os
 import pickle
 
-from casadi import vertcat, sum1, nlpsol
+from casadi import vertcat, sum1, nlpsol, dot
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
@@ -91,13 +91,26 @@ class IpoptInterface(SolverInterface):
         }
 
     def __dispatch_obj_func(self):
+        def get_objective_value(j_dict):
+            val = j_dict["val"]
+            if j_dict["target"] is not None:
+                val -= j_dict["target"]
+
+            if j_dict["quadratic"]:
+                val = dot(val, val)
+            else:
+                val = sum1(val)
+
+            val *= j_dict["weight"] * j_dict["dt"]
+            return val
+
         all_J = self.ocp.CX()
         for j_nodes in self.ocp.J:
-            for j in j_nodes:
-                all_J = vertcat(all_J, j)
+            for obj in j_nodes:
+                all_J = vertcat(all_J, get_objective_value(obj))
         for nlp in self.ocp.nlp:
             for obj_nodes in nlp["J"]:
                 for obj in obj_nodes:
-                    all_J = vertcat(all_J, obj)
+                    all_J = vertcat(all_J, get_objective_value(obj))
 
         return all_J

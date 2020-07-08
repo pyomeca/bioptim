@@ -144,7 +144,7 @@ class StateTransitionList(UniquePerPhaseOptionList):
 
 
 class ParametersList(OptionList):
-    def add(self, parameter_name, function, initial_guess, bounds, size, phase=0, penalty_set=None, **extra_arguments):
+    def add(self, parameter_name, function, initial_guess, bounds, size, phase=0, penalty_list=None, **extra_arguments):
         super(ParametersList, self)._add(
             function=function,
             phase=phase,
@@ -152,6 +152,6 @@ class ParametersList(OptionList):
             initial_guess=initial_guess,
             bounds=bounds,
             size=size,
-            penalty_set=penalty_set,
+            penalty_list=penalty_list,
             **extra_arguments
         )

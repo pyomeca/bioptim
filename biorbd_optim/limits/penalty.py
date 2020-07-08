@@ -34,14 +34,14 @@ class PenaltyFunctionAbstract:
             if len(t) == 1 and t[0] == nlp["ns"]:
                 # This is a tweak so the step plot won't start after the graph
                 t[0] = nlp["ns"] - 1
-            data_to_track[np.setxor1d(range(nlp["ns"] + 1), t)] = np.nan
+            data_to_track[:, np.setxor1d(range(nlp["ns"] + 1), t)] = np.nan
 
             running_idx = 0
             for s in nlp["var_states"]:
                 idx = [idx for idx in states_idx if idx >= running_idx and idx < running_idx + nlp["var_states"][s]]
                 mapping = Mapping([idx for idx in states_idx if idx < nlp["var_states"][s]])
                 PenaltyFunctionAbstract._add_track_data_to_plot(
-                    ocp, nlp, data_to_track[idx, :].T, combine_to=s, axes_idx=mapping
+                    ocp, nlp, data_to_track[idx, :], combine_to=s, axes_idx=mapping
                 )
                 running_idx += nlp["var_states"][s]
 
@@ -216,7 +216,7 @@ class PenaltyFunctionAbstract:
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
 
         @staticmethod
-        def minimize_torque(penalty_type, ocp, nlp, t, x, u, p, controls_idx=(), data_to_track=(), **extra_param):
+        def minimize_torque(penalty_type, ocp, nlp, t, x, u, p, controls_idx=(), data_to_track=None, **extra_param):
             """
             Adds the objective that the specific torques should be minimized.
             It is possible to track torques, in this case the objective is to minimize
@@ -226,17 +226,23 @@ class PenaltyFunctionAbstract:
             """
             n_tau = nlp["nbTau"]
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_tau, "controls_idx")
-            data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [nlp["ns"], max(controls_idx) + 1]
-            )
+            if data_to_track:
+                data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    data_to_track, [nlp["ns"], max(controls_idx) + 1]
+                )
 
             for i, v in enumerate(u):
-                val = v[controls_idx] - data_to_track[t[i], controls_idx]
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                val = v[controls_idx]
+                if data_to_track:
+                    target = data_to_track[t[i], controls_idx]
+                else:
+                    target = None
+                penalty_type._add_to_penalty(ocp, nlp, val, target=target, **extra_param)
 
-            PenaltyFunctionAbstract._add_track_data_to_plot(
-                ocp, nlp, data_to_track.T, combine_to="tau", axes_idx=Mapping(controls_idx)
-            )
+            if data_to_track:
+                PenaltyFunctionAbstract._add_track_data_to_plot(
+                    ocp, nlp, data_to_track.T, combine_to="tau", axes_idx=Mapping(controls_idx)
+                )
 
         @staticmethod
         def minimize_torque_derivative(penalty_type, ocp, nlp, t, x, u, p, controls_idx=(), **extra_param):

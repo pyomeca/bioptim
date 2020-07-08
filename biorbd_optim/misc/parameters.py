@@ -20,18 +20,18 @@ class Parameters:
             parameter["size"],
         )
 
-        penalty_set = None
-        if "penalty_set" in parameter:
-            penalty_set = parameter["penalty_set"]
-            del parameter["penalty_set"]
+        penalty_list = None
+        if "penalty_list" in parameter:
+            penalty_list = parameter["penalty_list"]
+            del parameter["penalty_list"]
 
         cx = Parameters._add_to_v(
             ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, **parameter
         )
-        if penalty_set:
-            if len(penalty_set) > 1 or len(penalty_set[0]) > 1:
+        if penalty_list:
+            if len(penalty_list) > 1 or len(penalty_list[0]) > 1:
                 raise NotImplementedError("Parameters with more that one penalty is not implemented yet")
-            penalty = penalty_set[0][0]
+            penalty = penalty_list[0][0]
 
             func = penalty["custom_function"]
             del penalty["custom_function"]
