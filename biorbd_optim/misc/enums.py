@@ -7,6 +7,15 @@ class Axe(IntEnum):
     Z = 2
 
 
+class Solver(Enum):
+    """
+    Solver to use
+    """
+    IPOPT = "Ipopt"
+    ACADOS = "ACADOS"
+    NONE = None
+
+
 class OdeSolver(Enum):
     """
     Integration methods.

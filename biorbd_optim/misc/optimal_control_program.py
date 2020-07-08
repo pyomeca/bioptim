@@ -9,7 +9,7 @@ from casadi import MX, vertcat, SX
 
 from .__version__ import __version__
 from .data import Data
-from .enums import OdeSolver
+from .enums import OdeSolver, Solver
 from .mapping import BidirectionalMapping
 from .options_lists import (
     OptionList,
@@ -211,7 +211,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         self.__add_to_nlp("dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False)
         self.nb_threads = nb_threads
-        self.solver = None
+        self.solver = Solver.NONE
 
         # External forces
         if external_forces != ():
@@ -602,7 +602,7 @@ class OptimalControlProgram:
         nlp["plot"][plot_name] = custom_plot
 
     def solve(
-        self, solver="ipopt", show_online_optim=False, return_iterations=False, solver_options={},
+        self, solver=Solver.IPOPT, show_online_optim=False, return_iterations=False, solver_options={},
     ):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
@@ -616,20 +616,13 @@ class OptimalControlProgram:
         if return_iterations and not show_online_optim:
             raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
 
-        if solver == "ipopt":
+        if solver == Solver.IPOPT and self.solver != Solver.IPOPT:
             from ..interfaces.ipopt_interface import IpoptInterface
+            self.solver = IpoptInterface(self)
 
-            if self.solver is None:
-                self.solver = IpoptInterface(self)
-
-        elif solver == "acados":
+        elif solver == Solver.ACADOS and solver != Solver.ACADOS:
             from ..interfaces.acados_interface import AcadosInterface
-
-            if self.solver is None:
-                self.solver = AcadosInterface(self, **solver_options)
-
-        else:
-            raise RuntimeError("Available solvers are: 'ipopt' and 'acados'")
+            self.solver = AcadosInterface(self, **solver_options)
 
         if show_online_optim:
             self.solver.online_optim(self)
