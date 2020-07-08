@@ -113,6 +113,9 @@ class BoundsList(UniquePerPhaseOptionList):
     def __getitem__(self, item):
         return super(BoundsList, self).__getitem__(item)["bound"]
 
+    def __next__(self):
+        return super(BoundsList, self).__next__()["bound"]
+
 
 class InitialConditionsList(UniquePerPhaseOptionList):
     def add(self, initial_condition, interpolation=InterpolationType.CONSTANT, phase=-1, **extra_arguments):
@@ -123,6 +126,9 @@ class InitialConditionsList(UniquePerPhaseOptionList):
 
     def __getitem__(self, item):
         return super(InitialConditionsList, self).__getitem__(item)["initial_condition"]
+
+    def __next__(self):
+        return super(InitialConditionsList, self).__next__()["initial_condition"]
 
 
 class StateTransitionList(UniquePerPhaseOptionList):

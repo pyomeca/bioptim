@@ -486,9 +486,9 @@ class OptimalControlProgram:
         i = 0
         for nlp in self.nlp:
             if isinstance(nlp["tf"], self.CX):
-                time_bounds = Bounds(minimum[i], maximum[i], interpolation_type=InterpolationType.CONSTANT)
+                time_bounds = Bounds(minimum[i], maximum[i], interpolation=InterpolationType.CONSTANT)
                 time_init = InitialConditions(initial_guess[i])
-                Parameters.add_to_V(self, "time", 1, None, time_bounds, time_init, nlp["tf"])
+                Parameters._add_to_v(self, "time", 1, None, time_bounds, time_init, nlp["tf"])
                 i += 1
 
     def add_objective_function(self, new_objective_function, phase_number=-1):
@@ -679,20 +679,20 @@ class OptimalControlProgram:
             objective_functions = ObjectiveList()
             for p, obj_phase in enumerate(data["ocp_initilializer"]["objective_functions"]):
                 for obj in obj_phase:
-                    objective_functions.add(**obj)
+                    objective_functions.add(**obj, phase=p)
             data["ocp_initilializer"]["objective_functions"] = objective_functions
 
             constraints = ConstraintList()
             for p, constraints_phase in enumerate(data["ocp_initilializer"]["constraints"]):
                 for constraint in constraints_phase:
                     del constraint["quadratic"]
-                    constraints.add(**constraint)
+                    constraints.add(**constraint, phase=p)
             data["ocp_initilializer"]["constraints"] = constraints
 
             parameters = ParametersList()
             for p, parameters_phase in enumerate(data["ocp_initilializer"]["parameters"]):
                 for parameter in parameters_phase:
-                    parameters.add(**parameter)
+                    parameters.add(**parameter, phase=p)
             data["ocp_initilializer"]["parameters"] = parameters
 
             ocp = OptimalControlProgram(**data["ocp_initilializer"])
