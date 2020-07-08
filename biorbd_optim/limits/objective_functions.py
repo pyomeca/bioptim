@@ -197,9 +197,9 @@ class ObjectiveFunction:
         :param J: Objective. (dict of [val, target, weight, is_quadratic])
         :param penalty_idx: Index of the objective. (integer)
         """
-        val = val.reshape((-1, 1))
+        val = val
         if target is not None:
-            target = target.reshape((-1, 1))
+            target = target
         J = {"type": type, "val": val, "target": target, "weight": weight, "dt": dt, "quadratic": quadratic}
 
         if nlp:

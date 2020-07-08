@@ -552,7 +552,7 @@ class PenaltyFunctionAbstract:
         :param target_size: Size of the variable array. (integer)
         :return: data_to_track -> Data used for tracking. (numpy array of size target_size)
         """
-        if (isinstance(data_to_track, np.ndarray) and data_to_track.any()) or data_to_track:
+        if data_to_track is not None:
             if len(data_to_track.shape) != len(target_size):
                 if target_size[1] == 1 and len(data_to_track.shape) == 1:
                     # If we have a vector it is still okay

@@ -131,9 +131,9 @@ class AcadosInterface(SolverInterface):
             for i in range(ocp.nb_phases):
                 for j, J in enumerate(ocp.nlp[i]["J"]):
                     if J[0]["type"] == ObjectiveFunction.LagrangeFunction:
-                        self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"])
+                        self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"].reshape((-1, 1)))
                         if J[0]["target"] is not None:
-                            self.y_ref.append([J_tp["target"] for J_tp in J])
+                            self.y_ref.append([J_tp["target"].T.reshape((-1, 1)) for J_tp in J])
                         else:
                             raise RuntimeError("Should we put y_ref = zeros?")
 

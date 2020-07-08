@@ -181,7 +181,7 @@ if __name__ == "__main__":
 
         # sol = ocp.solve(solver_options=options_ipopt)
         sol = ocp.solve(solver=Solver.ACADOS, solver_options=options_acados)
-        data_sol = Data.get_data(ocp, sol)
+        data_sol = Data.get_data(ocp, sol, concatenate=False)
         X0, U0, X_out = warm_start_mhe(data_sol)
         X_est[:, i] = X_out
     t1 = time.time()
