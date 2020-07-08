@@ -3,9 +3,10 @@ import pickle
 
 from casadi import vertcat, sum1, nlpsol
 
-from .plot import OnlineCallback
 from .solver_interface import SolverInterface
-from .path_conditions import Bounds, InterpolationType
+from ..gui.plot import OnlineCallback
+from ..limits.path_conditions import Bounds
+from ..misc.enums import InterpolationType
 
 
 class IpoptInterface(SolverInterface):
@@ -67,7 +68,7 @@ class IpoptInterface(SolverInterface):
     def __dispatch_bounds(ocp):
         all_J = IpoptInterface.dispatch_obj_func(ocp)
         all_g = ocp.CX()
-        all_g_bounds = Bounds(interpolation_type=InterpolationType.CONSTANT)
+        all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(len(ocp.g)):
             for j in range(len(ocp.g[i])):
                 all_g = vertcat(all_g, ocp.g[i][j])

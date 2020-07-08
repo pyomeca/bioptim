@@ -5,8 +5,8 @@ import numpy as np
 import biorbd
 from casadi import vertcat, horzcat
 
-from .enums import Instant, Axe, PlotType
-from .mapping import Mapping
+from ..misc.enums import Instant, Axe, PlotType
+from ..misc.mapping import Mapping
 
 
 class PenaltyFunctionAbstract:
@@ -419,14 +419,15 @@ class PenaltyFunctionAbstract:
             parameters["penalty_idx"] -> Index of the penalty (integer), parameters["weight"] -> Weight of the penalty
             (float)
             """
-            func = parameters["function"]
+            func = parameters["custom_function"]
             weight = None
             penalty_idx = parameters["penalty_idx"]
             if "weight" in parameters.keys():
                 weight = parameters["weight"]
                 del parameters["weight"]
-            del parameters["function"]
+            del parameters["custom_function"]
             del parameters["penalty_idx"]
+            del parameters["quadratic"]
             val = func(ocp, nlp, t, x, u, p, **parameters)
             if weight is not None:
                 parameters["weight"] = weight
@@ -473,24 +474,26 @@ class PenaltyFunctionAbstract:
         (bool)
         """
         # Everything that should change the entry parameters depending on the penalty can be added here
-        if (
-            penalty_function == PenaltyType.MINIMIZE_STATE
-            or penalty_function == PenaltyType.MINIMIZE_MARKERS
-            or penalty_function == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
-            or penalty_function == PenaltyType.MINIMIZE_MARKERS_VELOCITY
-            or penalty_function == PenaltyType.ALIGN_MARKERS
-            or penalty_function == PenaltyType.PROPORTIONAL_STATE
-            or penalty_function == PenaltyType.PROPORTIONAL_CONTROL
-            or penalty_function == PenaltyType.MINIMIZE_TORQUE
-            or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
-            or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
-            or penalty_function == PenaltyType.MINIMIZE_CONTACT_FORCES
-            or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
-            or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
-            or penalty_function == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
-        ):
-            if "quadratic" not in parameters.keys():
+        if parameters["quadratic"] is None:
+            if (
+                penalty_function == PenaltyType.MINIMIZE_STATE
+                or penalty_function == PenaltyType.MINIMIZE_MARKERS
+                or penalty_function == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
+                or penalty_function == PenaltyType.MINIMIZE_MARKERS_VELOCITY
+                or penalty_function == PenaltyType.ALIGN_MARKERS
+                or penalty_function == PenaltyType.PROPORTIONAL_STATE
+                or penalty_function == PenaltyType.PROPORTIONAL_CONTROL
+                or penalty_function == PenaltyType.MINIMIZE_TORQUE
+                or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
+                or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
+                or penalty_function == PenaltyType.MINIMIZE_CONTACT_FORCES
+                or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
+                or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
+                or penalty_function == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
+            ):
                 parameters["quadratic"] = True
+            else:
+                parameters["quadratic"] = False
 
         if penalty_function == PenaltyType.PROPORTIONAL_STATE:
             parameters["which_var"] = "states"
@@ -584,7 +587,7 @@ class PenaltyFunctionAbstract:
         # Dynamics must be continuous between phases
         for pt in ocp.state_transitions:
             penalty_idx = pt["base"]._reset_penalty(ocp, None, -1)
-            state_transition_function = pt["type"]
+            state_transition_function = pt["type"].value[0]
             val = state_transition_function(ocp, **pt)
             pt["base"]._add_to_penalty(ocp, None, val, penalty_idx, **pt)
 

@@ -5,12 +5,15 @@ import biorbd
 from biorbd_optim import (
     Instant,
     OptimalControlProgram,
-    ProblemType,
+    DynamicsTypeList,
+    DynamicsType,
+    ObjectiveList,
     Objective,
+    ConstraintList,
     Constraint,
-    Bounds,
+    BoundsList,
     QAndQDotBounds,
-    InitialConditions,
+    InitialConditionsList,
     ShowResult,
     OdeSolver,
 )
@@ -24,19 +27,20 @@ def prepare_ocp(biorbd_model_path="cube_with_forces.bioMod", ode_solver=OdeSolve
     # Problem parameters
     number_shooting_points = 30
     final_time = 2
-    torque_min, torque_max, torque_init = -100, 100, 0
+    tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics
-    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
+    dynamics = DynamicsTypeList()
+    dynamics.add(DynamicsType.TORQUE_DRIVEN)
 
     # Constraints
-    constraints = (
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
-    )
+    constraints = ConstraintList()
+    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
 
     # External forces
     external_forces = [
@@ -46,30 +50,33 @@ def prepare_ocp(biorbd_model_path="cube_with_forces.bioMod", ode_solver=OdeSolve
     ]
 
     # Path constraint
-    X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.min[3:6, [0, -1]] = 0
-    X_bounds.max[3:6, [0, -1]] = 0
+    x_bounds = BoundsList()
+    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds[0].min[3:6, [0, -1]] = 0
+    x_bounds[0].max[3:6, [0, -1]] = 0
 
     # Initial guess
-    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialConditionsList()
+    x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque(),
-    )
-    U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
+    u_bounds = BoundsList()
+    u_bounds.add([[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()])
+
+    u_init = InitialConditionsList()
+    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
-        problem_type,
+        dynamics,
         number_shooting_points,
         final_time,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
         external_forces=external_forces,

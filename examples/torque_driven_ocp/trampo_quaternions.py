@@ -3,11 +3,13 @@ import biorbd
 
 from biorbd_optim import (
     OptimalControlProgram,
-    ProblemType,
+    DynamicsTypeList,
+    DynamicsType,
+    ObjectiveList,
     Objective,
-    Bounds,
+    BoundsList,
     QAndQDotBounds,
-    InitialConditions,
+    InitialConditionsList,
     ShowResult,
     InterpolationType,
 )
@@ -38,25 +40,24 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
     nq = biorbd_model.nbQ()
     nqdot = biorbd_model.nbQdot()
     ntau = nqdot  # biorbd_model.nbGeneralizedTorque()
-    torque_min, torque_max, torque_init = -100, 100, 0
+    tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = (
-        {"type": Objective.Mayer.MINIMIZE_MARKERS, "markers_idx": 1, "weight": -1},
-        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},
-    )
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Mayer.MINIMIZE_MARKERS, markers_idx=1, weight=-1)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics
-    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
-
-    # Constraints
-    constraints = ()
+    dynamics = DynamicsTypeList()
+    dynamics.add(DynamicsType.TORQUE_DRIVEN)
 
     # Path constraint
-    X_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds = BoundsList()
+    x_bounds.add(QAndQDotBounds(biorbd_model))
 
     # Define control path constraint
-    U_bounds = Bounds([torque_min] * ntau, [torque_max] * ntau)
+    u_bounds = BoundsList()
+    u_bounds.add([[tau_min] * ntau, [tau_max] * ntau])
 
     # Initial guesses
     x = np.vstack((np.zeros((biorbd_model.nbQ(), 2)), np.ones((biorbd_model.nbQdot(), 2))))
@@ -73,23 +74,24 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
         x[12, i] = Arm_Quat_D[0]
         x[9:12, i] = Arm_Quat_G[1:]
         x[13, i] = Arm_Quat_G[0]
-    X_init = InitialConditions(x, interpolation_type=InterpolationType.LINEAR)
+    x_init = InitialConditionsList()
+    x_init.add(x, interpolation=InterpolationType.LINEAR)
 
-    U_init = InitialConditions([torque_init] * ntau)
+    u_init = InitialConditionsList()
+    u_init.add([tau_init] * ntau)
 
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
-        problem_type,
+        dynamics,
         number_shooting_points,
         final_time,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
         objective_functions,
-        constraints,
     )
 
 
