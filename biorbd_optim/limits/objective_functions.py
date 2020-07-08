@@ -220,6 +220,7 @@ class ObjectiveFunction:
         else:
             if nlp:
                 nlp["J_wt_dtt"][penalty_idx].append(J)
+
     @staticmethod
     def _reset_penalty(ocp, nlp, penalty_idx):
         """

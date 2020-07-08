@@ -84,7 +84,7 @@ class PenaltyFunctionAbstract:
                 val = (
                     nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
                 )
-                val_wt_dtt = (nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx])
+                val_wt_dtt = nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx]
 
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
                 penalty_type._add_to_penalty(ocp, nlp, val_wt_dtt, wt_dtt=True, **extra_param)

@@ -618,11 +618,13 @@ class OptimalControlProgram:
 
         if solver == "ipopt":
             from ..interfaces.ipopt_interface import IpoptInterface
+
             if self.solver is None:
                 self.solver = IpoptInterface(self)
 
         elif solver == "acados":
             from ..interfaces.acados_interface import AcadosInterface
+
             if self.solver is None:
                 self.solver = AcadosInterface(self, **solver_options)
 
