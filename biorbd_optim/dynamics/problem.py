@@ -1,7 +1,7 @@
 from casadi import MX, vertcat, horzcat, Function
 
 from .dynamics_functions import DynamicsFunctions
-from ..misc.enums import PlotType
+from ..misc.enums import PlotType, OdeSolver
 from ..misc.mapping import BidirectionalMapping, Mapping
 from ..gui.plot import CustomPlot
 
@@ -264,33 +264,58 @@ class Problem:
 
         dof_names = nlp["model"].nameDof()
 
-        tau_begin_mx = MX()
-        tau_begin = nlp["CX"]()
-        tau_end_mx = MX()
-        tau_end = nlp["CX"]()
-        for i in nlp["tau_mapping"].reduce.map_idx:
-            tau_begin = vertcat(tau_begin, nlp["CX"].sym("Tau_" + dof_names[i].to_string() + "_begin", 1, 1))
-            tau_end = vertcat(tau_end, nlp["CX"].sym("Tau_" + dof_names[i].to_string() + "_end", 1, 1))
-        for i in nlp["q_mapping"].expand.map_idx:
-            tau_begin_mx = vertcat(tau_begin_mx, MX.sym("Tau_" + dof_names[i].to_string() + "_begin", 1, 1))
-            # tau_end_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string() + "_end", 1, 1))
+        if nlp["ode_solver"] == OdeSolver.COLLOCATION:
+            tau_mx = MX()
+            tau = nlp["CX"]()
+            for i in nlp["tau_mapping"].reduce.map_idx:
+                tau = vertcat(tau, nlp["CX"].sym("Tau_" + dof_names[i].to_string(), 1, 1))
+            for i in nlp["q_mapping"].expand.map_idx:
+                tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
-        nlp["nbTau"] = nlp["tau_mapping"].reduce.len
-        legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
+            nlp["nbTau"] = nlp["tau_mapping"].reduce.len
+            legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
 
-        nlp["tau"] = tau_begin_mx
-        if as_states:
-            nlp["x"] = vertcat(nlp["x"], tau_begin)
-            nlp["var_states"]["tau"] = nlp["nbTau"]
+            nlp["tau"] = tau_mx
+            if as_states:
+                nlp["x"] = vertcat(nlp["x"], tau)
+                nlp["var_states"]["tau"] = nlp["nbTau"]
 
-            # Add plot if it happens
-        if as_controls:
-            nlp["u"] = vertcat(nlp["u"], horzcat(tau_begin, tau_end))
-            nlp["var_controls"]["tau"] = nlp["nbTau"]
+                # Add plot if it happens
+            if as_controls:
+                nlp["u"] = vertcat(nlp["u"], tau)
+                nlp["var_controls"]["tau"] = nlp["nbTau"]
 
-            nlp["plot"]["tau"] = CustomPlot(
-                lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
-            )
+                nlp["plot"]["tau"] = CustomPlot(
+                    lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
+                )
+        elif nlp["ode_solver"] == OdeSolver.RK:
+            tau_begin_mx = MX()
+            tau_begin = nlp["CX"]()
+            tau_end_mx = MX()
+            tau_end = nlp["CX"]()
+            for i in nlp["tau_mapping"].reduce.map_idx:
+                tau_begin = vertcat(tau_begin, nlp["CX"].sym("Tau_" + dof_names[i].to_string() + "_begin", 1, 1))
+                tau_end = vertcat(tau_end, nlp["CX"].sym("Tau_" + dof_names[i].to_string() + "_end", 1, 1))
+            for i in nlp["q_mapping"].expand.map_idx:
+                tau_begin_mx = vertcat(tau_begin_mx, MX.sym("Tau_" + dof_names[i].to_string() + "_begin", 1, 1))
+                # tau_end_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string() + "_end", 1, 1))
+
+            nlp["nbTau"] = nlp["tau_mapping"].reduce.len
+            legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
+
+            nlp["tau"] = tau_begin_mx
+            if as_states:
+                nlp["x"] = vertcat(nlp["x"], tau_begin)
+                nlp["var_states"]["tau"] = nlp["nbTau"]
+
+                # Add plot if it happens
+            if as_controls:
+                nlp["u"] = vertcat(nlp["u"], horzcat(tau_begin, tau_end))
+                nlp["var_controls"]["tau"] = nlp["nbTau"]
+
+                nlp["plot"]["tau"] = CustomPlot(
+                    lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
+                )
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()

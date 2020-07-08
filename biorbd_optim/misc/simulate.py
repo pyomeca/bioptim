@@ -1,5 +1,6 @@
 import numpy as np
 from copy import copy
+from .enums import OdeSolver
 
 
 class Simulate:
@@ -38,11 +39,29 @@ class Simulate:
                     if single_shoot
                     else Simulate._concat_variables(states, offset_phases, idx_nodes)
                 )
-                v_phase[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
-                    nlp["dynamics"][idx_nodes](
-                        x0=x0, p=Simulate._concat_variables(controls, offset_phases, idx_nodes),
-                    )["xf"]
-                ).squeeze()
+                if nlp["ode_solver"] == OdeSolver.COLLOCATION:
+                    if idx_nodes == nlp["ns"] - 1:
+                        v_phase[offset + nlp["nx"] + nlp["nu"]: offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
+                            nlp["dynamics"][idx_nodes](
+                                x0=x0, p=(Simulate._concat_variables(controls, offset_phases, idx_nodes)),
+                            )["xf"]).squeeze()
+                    else:
+                        v_phase[offset + nlp["nx"] + nlp["nu"]: offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
+                            nlp["dynamics"][idx_nodes](
+                                x0=x0, p=(Simulate._concat_variables(controls, offset_phases, idx_nodes)),
+                            )["xf"]).squeeze()
+                elif nlp["ode_solver"] == OdeSolver.RK:
+                    if idx_nodes == nlp["ns"] - 1:
+                        v_phase[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
+                            nlp["dynamics"][idx_nodes](
+                                x0=x0, p=np.vstack((Simulate._concat_variables(controls, offset_phases, idx_nodes), np.zeros(nlp["nu"]))).T,
+                            )["xf"]).squeeze()
+                    else:
+                        v_phase[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
+                            nlp["dynamics"][idx_nodes](
+                                x0=x0, p=np.vstack((Simulate._concat_variables(controls, offset_phases, idx_nodes),
+                                                 Simulate._concat_variables(controls, offset_phases, idx_nodes + 1))).T,
+                            )["xf"]).squeeze()
                 offset += nlp["nx"] + nlp["nu"]
             v = np.append(v, v_phase)
             offset_phases += nlp["ns"]

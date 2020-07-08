@@ -248,6 +248,7 @@ class OptimalControlProgram:
 
         # Prepare the dynamics of the program
         self.__add_to_nlp("dynamics_type", dynamics_type, False)
+        self.__add_to_nlp("ode_solver", ode_solver, True)
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
             Problem.initialize(self, self.nlp[i])
@@ -283,7 +284,6 @@ class OptimalControlProgram:
         self.__add_to_nlp(
             "nb_integration_steps", nb_integration_steps, True
         )  # Number of steps of integration (for now only RK4 steps are implemented)
-        self.__add_to_nlp("ode_solver", ode_solver, True)
         for i in range(self.nb_phases):
             if self.nlp[0]["nx"] != self.nlp[i]["nx"] or self.nlp[0]["nu"] != self.nlp[i]["nu"]:
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
