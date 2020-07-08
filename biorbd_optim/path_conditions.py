@@ -151,7 +151,7 @@ class PathCondition(np.ndarray):
         elif self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             if shooting_point == 0:
                 return self[:, 0]
-            elif shooting_point == self.nb_shooting:
+            elif shooting_point >= self.nb_shooting:
                 return self[:, 2]
             else:
                 return self[:, 1]
@@ -213,6 +213,18 @@ class Bounds:
         """
         self.min = PathCondition(np.concatenate((self.min, other.min)), interpolation_type=self.min.type)
         self.max = PathCondition(np.concatenate((self.max, other.max)), interpolation_type=self.max.type)
+
+    def __getitem__(self, slice_list):
+        if isinstance(slice_list, slice):
+            min_bound = np.array(self.min[slice_list.start : slice_list.stop : slice_list.step])
+            max_bound = np.array(self.max[slice_list.start : slice_list.stop : slice_list.step])
+            interpolation_type = self.min.type
+            bounds_sliced = Bounds(min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type)
+            return bounds_sliced
+        else:
+            raise RuntimeError(
+                "Invalid input for slicing bounds. It should be like [a:b] or [a:b:c] with a the start index, b the stop index and c the step for slicing."
+            )
 
 
 class QAndQDotBounds(Bounds):
