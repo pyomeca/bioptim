@@ -9,7 +9,7 @@ from casadi import MX, vertcat, SX
 
 from .__version__ import __version__
 from .data import Data
-from .enums import OdeSolver
+from .enums import OdeSolver, ControlType
 from .mapping import BidirectionalMapping
 from .options_lists import (
     OptionList,
@@ -24,6 +24,7 @@ from .options_lists import (
 from .parameters import Parameters
 from .utils import check_version
 from ..dynamics.problem import Problem
+from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.integrator import RK4
@@ -58,6 +59,7 @@ class OptimalControlProgram:
         external_forces=(),
         ode_solver=OdeSolver.RK,
         nb_integration_steps=5,
+        control_type=ControlType.CONSTANT,
         all_generalized_mapping=None,
         q_mapping=None,
         q_dot_mapping=None,
@@ -122,6 +124,7 @@ class OptimalControlProgram:
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "nb_integration_steps": nb_integration_steps,
+            "control_type" : control_type,
             "all_generalized_mapping": all_generalized_mapping,
             "q_mapping": q_mapping,
             "q_dot_mapping": q_dot_mapping,
@@ -271,6 +274,9 @@ class OptimalControlProgram:
         self.__add_to_nlp(
             "nb_integration_steps", nb_integration_steps, True
         )  # Number of steps of integration (for now only RK4 steps are implemented)
+        self.__add_to_nlp(
+            "control_type", control_type, True
+        )
         self.__add_to_nlp("ode_solver", ode_solver, True)
         for i in range(self.nb_phases):
             if self.nlp[0]["nx"] != self.nlp[i]["nx"] or self.nlp[0]["nu"] != self.nlp[i]["nu"]:
@@ -365,6 +371,7 @@ class OptimalControlProgram:
             ode_opt["CX"] = nlp["CX"]
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
+            ode_opt["control_type"] = nlp["control_type"]
             if "external_forces" in nlp:
                 for idx in range(len(nlp["external_forces"])):
                     ode_opt["idx"] = idx

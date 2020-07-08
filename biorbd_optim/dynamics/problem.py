@@ -1,4 +1,4 @@
-from casadi import MX, vertcat, Function
+from casadi import MX, vertcat, horzcat, Function
 
 from .dynamics_functions import DynamicsFunctions
 from ..misc.enums import PlotType
@@ -264,24 +264,28 @@ class Problem:
 
         dof_names = nlp["model"].nameDof()
 
-        tau_mx = MX()
-        tau = nlp["CX"]()
+        tau_begin_mx = MX()
+        tau_begin = nlp["CX"]()
+        tau_end_mx = MX()
+        tau_end = nlp["CX"]()
         for i in nlp["tau_mapping"].reduce.map_idx:
-            tau = vertcat(tau, nlp["CX"].sym("Tau_" + dof_names[i].to_string(), 1, 1))
+            tau_begin = vertcat(tau_begin, nlp["CX"].sym("Tau_" + dof_names[i].to_string() + "_begin", 1, 1))
+            tau_end = vertcat(tau_end, nlp["CX"].sym("Tau_" + dof_names[i].to_string() + "_end", 1, 1))
         for i in nlp["q_mapping"].expand.map_idx:
-            tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
+            tau_begin_mx = vertcat(tau_begin_mx, MX.sym("Tau_" + dof_names[i].to_string() + "_begin", 1, 1))
+            # tau_end_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string() + "_end", 1, 1))
 
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
         legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
 
-        nlp["tau"] = tau_mx
+        nlp["tau"] = tau_begin_mx
         if as_states:
-            nlp["x"] = vertcat(nlp["x"], tau)
+            nlp["x"] = vertcat(nlp["x"], tau_begin)
             nlp["var_states"]["tau"] = nlp["nbTau"]
 
             # Add plot if it happens
         if as_controls:
-            nlp["u"] = vertcat(nlp["u"], tau)
+            nlp["u"] = vertcat(nlp["u"], horzcat(tau_begin, tau_end))
             nlp["var_controls"]["tau"] = nlp["nbTau"]
 
             nlp["plot"]["tau"] = CustomPlot(

@@ -1,5 +1,5 @@
 from casadi import Function, vertcat, norm_fro
-
+from ..misc.enums import ControlType
 
 def RK4(ode, ode_opt):
     """
@@ -20,6 +20,20 @@ def RK4(ode, ode_opt):
     fun = ode["ode"]
     model = ode_opt["model"]
     h = (t_span[1] - t_span[0]) / n_step  # Length of steps
+    control_type = ode_opt["control_type"]
+
+    def control_disctretisation(u, i, rkstep, control_type):
+        if control_type == ControlType.CONSTANT:
+            return u[:,0]
+        elif control_type == ControlType.LINEAL:
+            if rkstep == 0:
+                return i * (u[:, 1] - u[:, 0])/n_step
+            elif rkstep == 1:
+                return (i * (u[:, 1] - u[:, 0]) / n_step + (i+1) * (u[:, 1] - u[:, 0])/n_step) / 2
+            elif rkstep == 2:
+                return (i + 1) * (u[:, 1] - u[:, 0]) / n_step
+        else:
+            raise RuntimeError(f"{control_type} ControlType not implemented yet")
 
     def dxdt(h, states, controls, params):
         u = controls
@@ -37,10 +51,10 @@ def RK4(ode, ode_opt):
             nb_dof += model.segment(j).nbDof()
 
         for i in range(1, n_step + 1):
-            k1 = fun(x[:, i - 1], u, p)[:, idx]
-            k2 = fun(x[:, i - 1] + h / 2 * k1, u, p)[:, idx]
-            k3 = fun(x[:, i - 1] + h / 2 * k2, u, p)[:, idx]
-            k4 = fun(x[:, i - 1] + h * k3, u, p)[:, idx]
+            k1 = fun(x[:, i - 1], control_disctretisation(u, i, 0, control_type), p)[:, idx]
+            k2 = fun(x[:, i - 1] + h / 2 * k1, control_disctretisation(u, i, 1, control_type), p)[:, idx]
+            k3 = fun(x[:, i - 1] + h / 2 * k2, control_disctretisation(u, i, 1, control_type), p)[:, idx]
+            k4 = fun(x[:, i - 1] + h * k3, control_disctretisation(u, i, 2, control_type), p)[:, idx]
             x[:, i] = x[:, i - 1] + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
             for j in range(model.nbQuat()):
