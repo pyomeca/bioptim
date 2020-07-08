@@ -11,12 +11,13 @@ from ..misc.enums import InterpolationType
 
 class IpoptInterface(SolverInterface):
     def __init__(self, ocp):
-        super().__init__()
+        super().__init__(ocp)
 
         self.options_common = {}
         self.opts = None
 
-        self.nlp, self.arg = self.__dispatch_bounds(ocp)
+        self.ipopt_nlp = None
+        self.ipopt_limits = None
         self.ocp_solver = None
         self.out = None
 
@@ -52,12 +53,12 @@ class IpoptInterface(SolverInterface):
             options[ipopt_key] = solver_options[key]
         self.opts = {**options, **self.options_common}
 
-    def solve(self, ocp):
-        self.nlp, self.arg = self.__dispatch_bounds(ocp)
-        solver = nlpsol("nlpsol", "ipopt", self.nlp, self.opts)
+    def solve(self):
+        self.__dispatch_bounds()
+        solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts)
 
         # Solve the problem
-        self.out = solver.call(self.arg)
+        self.out = solver.call(self.ipopt_limits)
         self.out["time_tot"] = solver.stats()["t_wall_total"]
 
         return self.out
@@ -65,40 +66,36 @@ class IpoptInterface(SolverInterface):
     def get_optimized_value(self, ocp):
         return self.out
 
-    @staticmethod
-    def __dispatch_bounds(ocp):
-        all_J = IpoptInterface.dispatch_obj_func(ocp)
-        all_g = ocp.CX()
+    def __dispatch_bounds(self):
+        all_J = self.__dispatch_obj_func()
+        all_g = self.ocp.CX()
         all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        for i in range(len(ocp.g)):
-            for j in range(len(ocp.g[i])):
-                all_g = vertcat(all_g, ocp.g[i][j])
-                all_g_bounds.concatenate(ocp.g_bounds[i][j])
-        for nlp in ocp.nlp:
+        for i in range(len(self.ocp.g)):
+            for j in range(len(self.ocp.g[i])):
+                all_g = vertcat(all_g, self.ocp.g[i][j])
+                all_g_bounds.concatenate(self.ocp.g_bounds[i][j])
+        for nlp in self.ocp.nlp:
             for i in range(len(nlp["g"])):
                 for j in range(len(nlp["g"][i])):
                     all_g = vertcat(all_g, nlp["g"][i][j])
                     all_g_bounds.concatenate(nlp["g_bounds"][i][j])
 
-        nlp = {"x": ocp.V, "f": sum1(all_J), "g": all_g}
+        self.ipopt_nlp = {"x": self.ocp.V, "f": sum1(all_J), "g": all_g}
 
-        var = {
-            "lbx": ocp.V_bounds.min,
-            "ubx": ocp.V_bounds.max,
+        self.ipopt_limits = {
+            "lbx": self.ocp.V_bounds.min,
+            "ubx": self.ocp.V_bounds.max,
             "lbg": all_g_bounds.min,
             "ubg": all_g_bounds.max,
-            "x0": ocp.V_init.init,
+            "x0": self.ocp.V_init.init,
         }
 
-        return nlp, var
-
-    @staticmethod
-    def dispatch_obj_func(ocp):
-        all_J = ocp.CX()
-        for j_nodes in ocp.J:
+    def __dispatch_obj_func(self):
+        all_J = self.ocp.CX()
+        for j_nodes in self.ocp.J:
             for j in j_nodes:
                 all_J = vertcat(all_J, j)
-        for nlp in ocp.nlp:
+        for nlp in self.ocp.nlp:
             for obj_nodes in nlp["J"]:
                 for obj in obj_nodes:
                     all_J = vertcat(all_J, obj)

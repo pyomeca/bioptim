@@ -1,11 +1,12 @@
 class SolverInterface:
-    def __init__(self):
+    def __init__(self, ocp):
+        self.ocp = ocp
         self.solver = None
 
     def configure(self, **options):
         raise RuntimeError("SolverInterface is an abstract class")
 
-    def solve(self, ocp=None):
+    def solve(self):
         raise RuntimeError("SolverInterface is an abstract class")
 
     def get_iterations(self):

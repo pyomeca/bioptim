@@ -13,7 +13,7 @@ class AcadosInterface(SolverInterface):
     def __init__(self, ocp, **solver_options):
         if not isinstance(ocp.CX(), SX):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS")
-        super().__init__()
+        super().__init__(ocp)
 
         # If Acados is installed using the acados_install.sh file, you probably can leave this to unset
         acados_path = ""
@@ -261,9 +261,9 @@ class AcadosInterface(SolverInterface):
 
         return out
 
-    def solve(self, ocp):
+    def solve(self):
         # populate costs vectors
-        self.__set_costs(ocp)
+        self.__set_costs(self.ocp)
         if self.ocp_solver is None:
             self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
         for n in range(self.acados_ocp.dims.N):
