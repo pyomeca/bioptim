@@ -29,8 +29,8 @@ class AcadosInterface(SolverInterface):
 
         self.lagrange_costs = SX()
         self.mayer_costs = SX()
-        self.dtts = []
-        self.dtts_e = []
+        self.y_ref = []
+        self.y_ref_end = []
         self.__acados_export_model(ocp)
         self.__prepare_acados(ocp)
         self.ocp_solver = None
@@ -109,8 +109,8 @@ class AcadosInterface(SolverInterface):
         # R = 1.00 * np.eye(self.acados_ocp.dims.nu)
         # self.acados_ocp.cost.W = linalg.block_diag(Q, R)
         # self.acados_ocp.cost.W_e = Q
-        self.dtts = []
-        self.dtts_e = []
+        self.y_ref = []
+        self.y_ref_end = []
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             # set Lagrange terms
             self.acados_ocp.cost.Vx = np.zeros((self.acados_ocp.dims.ny, self.acados_ocp.dims.nx))
@@ -124,33 +124,28 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.Vx_e = np.zeros((self.acados_ocp.dims.nx, self.acados_ocp.dims.nx))
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
+            if ocp.nb_phases != 1:
+                # TODO: Please confirm this
+                raise NotImplementedError("ACADOS with more than one phase is not implemented yet")
+
             for i in range(ocp.nb_phases):
-                for j in range(len(ocp.nlp[i]["J"])):
-                    if (
-                        ocp.original_values["objective_functions"][i][j]["type"]._get_type()
-                        == ObjectiveFunction.LagrangeFunction
-                    ):
-                        if "data_to_track" in ocp.original_values["objective_functions"][i][j]:
-                            dtt = ocp.original_values["objective_functions"][i][j]["data_to_track"]
-                            cost_numel = ocp.nlp[i]["J_wt_dtt"][j][0].numel()
-                            self.lagrange_costs = vertcat(
-                                self.lagrange_costs, ocp.nlp[i]["J_wt_dtt"][j][0].reshape((cost_numel, 1))
-                            )
-                            self.dtts.append(dtt.reshape(np.prod(dtt.shape[:-1]), dtt.shape[-1], order="F"))
-                    elif (
-                        ocp.original_values["objective_functions"][i][j]["type"]._get_type()
-                        == ObjectiveFunction.MayerFunction
-                    ):
-                        if "data_to_track" in ocp.original_values["objective_functions"][i][j]:
-                            dtt = ocp.original_values["objective_functions"][i][j]["data_to_track"]
-                            cost_numel = ocp.nlp[i]["J_wt_dtt"][j][0].numel()
-                            tmp_mayer_func = Function(
-                                f"cas_mayer_func_{j}",
-                                [ocp.nlp[i]["X"][-1]],
-                                [ocp.nlp[i]["J_wt_dtt"][j][0].reshape((cost_numel, 1))],
-                            )
-                            self.mayer_costs = vertcat(self.mayer_costs, tmp_mayer_func(ocp.nlp[i]["X"][0]))
-                            dtts_e = np.vstack([dtts_e, dtt.reshape(cost_numel, 1)])
+                for j, J in enumerate(ocp.nlp[i]["J"]):
+                    if J[0]["type"] == ObjectiveFunction.LagrangeFunction:
+                        self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"])
+                        if J[0]["target"] is not None:
+                            self.y_ref.append([J_tp["target"] for J_tp in J])
+                        else:
+                            raise RuntimeError("Should we put y_ref = zeros?")
+
+                    elif J[0]["type"] == ObjectiveFunction.MayerFunction:
+                        raise RuntimeError("TODO: I may have broken this (is this the right J?)")
+                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i]["X"][-1]], [J[0]["val"]])
+                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i]["X"][0]))
+                        if J[0]["target"] is not None:
+                            self.y_ref_end.append([J[0]["target"]])
+                        else:
+                            raise RuntimeError("TODO: Should we put y_ref_end = zeros?")
+
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
@@ -167,7 +162,7 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.yref = np.zeros((max(self.acados_ocp.dims.ny, 1),))
             self.acados_ocp.cost.yref_e = np.zeros((max(self.acados_ocp.dims.ny_e, 1),))
 
-            # TODO changed hard coded values below
+            # TODO changed hard coded values below (you can use J["weight"])
             Q_ocp = np.zeros((15, 15))
             np.fill_diagonal(Q_ocp, 1000)
             R_ocp = np.zeros((4, 4))
@@ -175,29 +170,29 @@ class AcadosInterface(SolverInterface):
 
             self.acados_ocp.cost.W = linalg.block_diag(Q_ocp, R_ocp)
             self.acados_ocp.cost.W_e = np.zeros((1, 1))
-            if len(self.dtts):
-                self.dtts = np.vstack(self.dtts)
-            else:
-                self.dtts = np.zeros((1, 1))
-            if len(self.dtts_e):
-                self.dtts_e = np.vstack(self.dtts_e)
-            else:
-                self.dtts_e = np.zeros((1, 1))
+
+            # TODO: Is the following useful?
+            # if len(self.y_ref):
+            #     self.y_ref = np.vstack(self.y_ref)
+            # else:
+            #     self.y_ref = [np.zeros((1, 1))] * self.ocp
+            # if len(self.y_ref_end):
+            #     self.y_ref_end = np.vstack(self.y_ref_end)
+            # else:
+            #     self.y_ref_end = np.zeros((1, 1))
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
             for i in range(ocp.nb_phases):
                 for j in range(len(ocp.nlp[i]["J"])):
-                    if (
-                        ocp.original_values["objective_functions"][i][j]["type"]._get_type()
-                        == ObjectiveFunction.LagrangeFunction
-                    ):
-                        self.lagrange_costs = vertcat(self.lagrange_costs, ocp.nlp[i]["J"][j][0])
-                    elif (
-                        ocp.original_values["objective_functions"][i][j]["type"]._get_type()
-                        == ObjectiveFunction.MayerFunction
-                    ):
-                        tmp_mayer_func = Function(f"cas_mayer_func_{j}", [ocp.nlp[i]["X"][-1]], [ocp.nlp[i]["J"][j][0]])
-                        self.mayer_costs = vertcat(self.mayer_costs, tmp_mayer_func(ocp.nlp[i]["X"][0]))
+                    J = ocp.nlp[i]["J"][j][0]
+
+                    raise RuntimeError("TODO: The target is not right currently")
+                    if J["type"] == ObjectiveFunction.LagrangeFunction:
+                        self.lagrange_costs = vertcat(self.lagrange_costs, J["val"][0] - J["target"][0])
+                    elif J["type"] == ObjectiveFunction.MayerFunction:
+                        raise RuntimeError("TODO: I may have broken this (is this the right J?)")
+                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i]["X"][-1]], [J["val"]])
+                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i]["X"][0]))
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
             self.acados_ocp.model.cost_expr_ext_cost = sum1(self.lagrange_costs)
@@ -267,6 +262,6 @@ class AcadosInterface(SolverInterface):
         if self.ocp_solver is None:
             self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
         for n in range(self.acados_ocp.dims.N):
-            self.ocp_solver.cost_set(n, "y_ref", self.dtts[:, n].squeeze())
+            self.ocp_solver.cost_set(n, "y_ref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
         self.ocp_solver.solve()
         return self

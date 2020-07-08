@@ -1,7 +1,17 @@
-from mhe_simulation import run_simulation, check_results
+import importlib
+from pathlib import Path
+
 import biorbd
 import numpy as np
 import time
+
+# Load pendulum
+FILE_FOLDER = Path(__file__).parent
+spec = importlib.util.spec_from_file_location(
+    "mhe_simulation", str(FILE_FOLDER) + "/mhe_simulation.py"
+)
+mhe_simulation = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mhe_simulation)
 
 from biorbd_optim import (
     Instant,
@@ -17,6 +27,7 @@ from biorbd_optim import (
     InterpolationType,
     PlotType,
     Data,
+    Solver,
 )
 
 
@@ -51,8 +62,8 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, data_to_track=data_to_track)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, data_to_track=X0)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, target=data_to_track)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, target=X0)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -116,7 +127,7 @@ if __name__ == "__main__":
     N_mhe = 10 # size of MHE window
     Tf_mhe = Tf / N * N_mhe  # duration of MHE window
 
-    X_, Y_, Y_N_, U_ = run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False)
+    X_, Y_, Y_N_, U_ = mhe_simulation.run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False)
 
     X0 = np.zeros((biorbd_model.nbQ() * 2, N_mhe+1))
     X0[:, 0] = np.array([0, np.pi / 2, 0, 0])
@@ -150,7 +161,7 @@ if __name__ == "__main__":
         "nlp_solver_max_iter": 1000,
     }
     # sol = ocp.solve(solver_options=options_ipopt)
-    sol = ocp.solve(solver='acados', solver_options=options_acados)
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options=options_acados)
     data_sol = Data.get_data(ocp, sol)
     X0, U0, X_out = warm_start_mhe(data_sol)
     X_est[:, 0] = X_out
@@ -163,13 +174,13 @@ if __name__ == "__main__":
     for i in range(1, N - N_mhe):
         Y_i = Y_N_[:, :, i:i + N_mhe + 1]
         new_objectives = ObjectiveList()
-        new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, data_to_track=Y_i)
-        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, data_to_track=X0, phase=0, idx=1)
+        new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, target=Y_i)
+        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, target=X0, phase=0, idx=1)
         ocp.modify_objective_function(new_objectives[0][0], 0)
         ocp.modify_objective_function(new_objectives[0][1], 1)
 
         # sol = ocp.solve(solver_options=options_ipopt)
-        sol = ocp.solve(solver="acados", solver_options=options_acados)
+        sol = ocp.solve(solver=Solver.ACADOS, solver_options=options_acados)
         data_sol = Data.get_data(ocp, sol)
         X0, U0, X_out = warm_start_mhe(data_sol)
         X_est[:, i] = X_out
@@ -179,7 +190,7 @@ if __name__ == "__main__":
     print(f"Average time per iteration of MHE : {(t1-t0)/(N-N_mhe-2)} s.")
     print(f"Norm of the error on state = {np.linalg.norm(X_[:,:-N_mhe] - X_est)}")
 
-    Y_est = check_results(biorbd_model, N - N_mhe, X_est)
+    Y_est = mhe_simulation.check_results(biorbd_model, N - N_mhe, X_est)
     # Print estimation vs truth
     import matplotlib.pyplot as plt
 

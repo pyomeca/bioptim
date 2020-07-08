@@ -211,7 +211,8 @@ class OptimalControlProgram:
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         self.__add_to_nlp("dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False)
         self.nb_threads = nb_threads
-        self.solver = Solver.NONE
+        self.solver_type = Solver.NONE
+        self.solver = None
 
         # External forces
         if external_forces != ():
@@ -301,8 +302,6 @@ class OptimalControlProgram:
         nlp["x"] = nlp["CX"]()
         nlp["u"] = nlp["CX"]()
         nlp["J"] = []
-        nlp["J_wt_dtt"] = []
-        nlp["J_acados_mayer"] = []
         nlp["g"] = []
         nlp["g_bounds"] = []
         nlp["casadi_func"] = {}
@@ -616,13 +615,17 @@ class OptimalControlProgram:
         if return_iterations and not show_online_optim:
             raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
 
-        if solver == Solver.IPOPT and self.solver != Solver.IPOPT:
+        if solver == Solver.IPOPT and self.solver_type != Solver.IPOPT:
             from ..interfaces.ipopt_interface import IpoptInterface
             self.solver = IpoptInterface(self)
 
-        elif solver == Solver.ACADOS and solver != Solver.ACADOS:
+        elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
             from ..interfaces.acados_interface import AcadosInterface
             self.solver = AcadosInterface(self, **solver_options)
+
+        elif self.solver_type == Solver.NONE:
+            raise RuntimeError("Solver not specified")
+        self.solver_type = solver
 
         if show_online_optim:
             self.solver.online_optim(self)

@@ -36,7 +36,7 @@ class ObjectiveFunction:
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared. (bool)
             """
-            ObjectiveFunction._add_to_penalty(ocp, nlp, val, penalty_idx, dt=nlp["dt"], **extra_param)
+            ObjectiveFunction._add_to_penalty(ocp, nlp, val, penalty_idx, type=ObjectiveFunction.LagrangeFunction, dt=nlp["dt"], **extra_param)
 
         @staticmethod
         def _reset_penalty(ocp, nlp, penalty_idx):
@@ -85,7 +85,7 @@ class ObjectiveFunction:
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared (bool)
             """
-            ObjectiveFunction._add_to_penalty(ocp, nlp, val, penalty_idx, dt=1, **extra_param)
+            ObjectiveFunction._add_to_penalty(ocp, nlp, val, penalty_idx, dt=1, type=ObjectiveFunction.MayerFunction, **extra_param)
 
             # # TODO: This next block is at the wrong place
             # if nlp:
@@ -139,8 +139,7 @@ class ObjectiveFunction:
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared (bool)
             """
-
-            ObjectiveFunction._add_to_penalty(ocp, None, val, penalty_idx, dt=1, **extra_param)
+            ObjectiveFunction._add_to_penalty(ocp, None, val, penalty_idx, dt=1, type=ObjectiveFunction.ParameterFunction, **extra_param)
 
         @staticmethod
         def _reset_penalty(ocp, _, penalty_idx):
@@ -192,13 +191,16 @@ class ObjectiveFunction:
         )
 
     @staticmethod
-    def _add_to_penalty(ocp, nlp, val, penalty_idx, dt=0, target=None, weight=1, quadratic=False, **extra_param):
+    def _add_to_penalty(ocp, nlp, val, penalty_idx, dt=0, type=None, target=None, weight=1, quadratic=False, **extra_param):
         """
         Adds objective J to objective array nlp["J"][penalty_idx] or ocp.J[penalty_idx] at index penalty_idx.
         :param J: Objective. (dict of [val, target, weight, is_quadratic])
         :param penalty_idx: Index of the objective. (integer)
         """
-        J = {"val": val, "target": target, "weight": weight, "dt": dt, "quadratic": quadratic}
+        val = val.reshape((-1, 1))
+        if target is not None:
+            target = target.reshape((-1, 1))
+        J = {"type": type, "val": val, "target": target, "weight": weight, "dt": dt, "quadratic": quadratic}
 
         if nlp:
             nlp["J"][penalty_idx].append(J)
