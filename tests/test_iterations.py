@@ -2,7 +2,7 @@ import os
 import pickle
 import numpy as np
 
-from biorbd_optim.plot import Iterations
+from biorbd_optim.gui.plot import Iterations
 
 
 def test_iterations():

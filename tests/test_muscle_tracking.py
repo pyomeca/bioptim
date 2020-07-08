@@ -4,10 +4,12 @@ Test for file IO
 import importlib.util
 from pathlib import Path
 
+import pytest
 import numpy as np
 import biorbd
 
 from biorbd_optim import Data
+from .utils import TestUtils
 
 
 def test_muscle_activations_and_states_tracking():
@@ -75,6 +77,12 @@ def test_muscle_activations_and_states_tracking():
         mus[:, -1], np.array([0.5468632, 0.184813, 0.969489, 0.7751258, 0.9394897, 0.8948353])
     )
 
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
+
 
 def test_muscle_activation_no_residual_torque_and_markers_tracking():
     # Load muscle_activations_tracker
@@ -138,6 +146,12 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking():
     np.testing.assert_almost_equal(
         mus[:, -1], np.array([0.54686681, 0.18481157, 0.969487, 0.7751264, 0.9394903, 0.89483438])
     )
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_muscle_excitation_with_residual_torque_and_markers_tracking():
@@ -217,6 +231,13 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking():
         mus_controls[:, -1], np.array([0.5467358, 0.1848544, 0.9695426, 0.7751313, 0.939481, 0.8948065])
     )
 
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # Simulate (for some reason the next step passes in Run but not in Debug and not in all run...)
+    # with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
+    #     TestUtils.simulate(sol, ocp)
+
 
 def test_muscle_excitation_no_residual_torque_and_markers_tracking():
     # Load muscle_excitations_tracker
@@ -286,6 +307,12 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking():
     np.testing.assert_almost_equal(
         mus_controls[:, -1], np.array([0.5467358, 0.1848544, 0.9695426, 0.7751313, 0.939481, 0.8948065])
     )
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_muscle_activation_and_contacts_tracking():
@@ -394,3 +421,9 @@ def test_muscle_activation_and_contacts_tracking():
     np.testing.assert_almost_equal(tau[:, -1], np.array([12.0122738, 19.7590172, 3.1561865, -21.3647429]), decimal=2)
     np.testing.assert_almost_equal(mus_controls[:, 0], np.array([0.4972386]))
     np.testing.assert_almost_equal(mus_controls[:, -1], np.array([0.4702531]))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)

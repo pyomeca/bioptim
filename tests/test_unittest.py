@@ -26,7 +26,7 @@ def test_initial_condition_constant_with_first_and_last_different():
 
     init_val = np.random.random((nb_elements, 3))
 
-    init = InitialConditions(init_val, interpolation_type=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
+    init = InitialConditions(init_val, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     for i in range(nb_shoot + 1):
         if i == 0:
@@ -44,7 +44,7 @@ def test_initial_condition_linear():
 
     init_val = np.random.random((nb_elements, 2))
 
-    init = InitialConditions(init_val, interpolation_type=InterpolationType.LINEAR)
+    init = InitialConditions(init_val, interpolation=InterpolationType.LINEAR)
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     for i in range(nb_shoot + 1):
         expected_val = init_val[:, 0] + (init_val[:, 1] - init_val[:, 0]) * i / nb_shoot
@@ -57,7 +57,7 @@ def test_initial_condition_each_frame():
 
     init_val = np.random.random((nb_elements, nb_shoot + 1))
 
-    init = InitialConditions(init_val, interpolation_type=InterpolationType.EACH_FRAME)
+    init = InitialConditions(init_val, interpolation=InterpolationType.EACH_FRAME)
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     for i in range(nb_shoot + 1):
         expected_val = init_val[:, i]
@@ -81,9 +81,9 @@ def test_initial_condition_spline():
 
     # Raise if time is not sent
     with pytest.raises(RuntimeError):
-        InitialConditions(init_val, interpolation_type=InterpolationType.SPLINE)
+        InitialConditions(init_val, interpolation=InterpolationType.SPLINE)
 
-    init = InitialConditions(init_val, t=spline_time, interpolation_type=InterpolationType.SPLINE)
+    init = InitialConditions(init_val, t=spline_time, interpolation=InterpolationType.SPLINE)
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
 
     time_to_test = [0, nb_shoot // 3, nb_shoot // 2, nb_shoot]
@@ -111,9 +111,7 @@ def test_initial_condition_custom():
     init_val = np.random.random((nb_elements, 2))
 
     init = InitialConditions(
-        custom_bound_func,
-        interpolation_type=InterpolationType.CUSTOM,
-        extra_params={"val": init_val, "total_shooting": nb_shoot},
+        custom_bound_func, interpolation=InterpolationType.CUSTOM, val=init_val, total_shooting=nb_shoot,
     )
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     for i in range(nb_shoot + 1):

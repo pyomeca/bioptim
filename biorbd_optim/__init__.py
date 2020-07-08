@@ -1,12 +1,23 @@
-from .__version__ import __version__
-from .enums import Axe, OdeSolver, Instant, InterpolationType, PlotType
-from .constraints import Constraint
-from .objective_functions import Objective
-from .problem_type import ProblemType, Problem
-from .plot import ShowResult, CustomPlot
-from .path_conditions import Bounds, QAndQDotBounds, InitialConditions
-from .dynamics import Dynamics
-from .mapping import Mapping, BidirectionalMapping
-from .optimal_control_program import OptimalControlProgram
-from .variable_optimization import Data
-from .continuity import StateTransition
+from .misc.__version__ import __version__
+from .dynamics.problem import Problem
+from .dynamics.dynamics_type import DynamicsType
+from .dynamics.dynamics_functions import DynamicsFunctions
+from .gui.plot import CustomPlot, ShowResult
+from .limits.constraints import Constraint
+from .limits.continuity import StateTransition
+from .limits.objective_functions import Objective
+from .limits.path_conditions import Bounds, InitialConditions, QAndQDotBounds
+from .misc.data import Data
+from .misc.enums import Axe, Instant, InterpolationType, OdeSolver, PlotType
+from .misc.mapping import BidirectionalMapping, Mapping
+from .misc.optimal_control_program import OptimalControlProgram
+from .misc.options_lists import (
+    BoundsList,
+    ConstraintList,
+    DynamicsTypeList,
+    InitialConditionsList,
+    ObjectiveList,
+    StateTransitionList,
+    ParametersList,
+)
+from .misc.simulate import Simulate

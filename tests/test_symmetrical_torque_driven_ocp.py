@@ -54,6 +54,9 @@ def test_symmetry_by_construction(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
+    # simulate
+    TestUtils.simulate(sol, ocp)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
 def test_symmetry_by_constraint(ode_solver):
@@ -97,3 +100,6 @@ def test_symmetry_by_constraint(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)

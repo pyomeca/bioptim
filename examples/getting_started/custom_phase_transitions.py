@@ -3,13 +3,17 @@ import biorbd
 from biorbd_optim import (
     Instant,
     OptimalControlProgram,
-    ProblemType,
+    DynamicsType,
+    DynamicsTypeList,
     Objective,
+    ObjectiveList,
     Constraint,
-    Bounds,
+    ConstraintList,
+    BoundsList,
     QAndQDotBounds,
-    InitialConditions,
+    InitialConditionsList,
     StateTransition,
+    StateTransitionList,
     ShowResult,
     OdeSolver,
 )
@@ -38,72 +42,66 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
     # Problem parameters
     number_shooting_points = (20, 20, 20, 20)
     final_time = (2, 5, 4, 2)
-    torque_min, torque_max, torque_init = -100, 100, 0
+    tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = (
-        ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},),
-        ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},),
-        ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},),
-        ({"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100},),
-    )
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=1)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=3)
 
     # Dynamics
-    variable_type = (
-        {"type": ProblemType.TORQUE_DRIVEN},
-        {"type": ProblemType.TORQUE_DRIVEN},
-        {"type": ProblemType.TORQUE_DRIVEN},
-        {"type": ProblemType.TORQUE_DRIVEN},
-    )
+    dynamics = DynamicsTypeList()
+    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics.add(DynamicsType.TORQUE_DRIVEN)
 
     # Constraints
-    constraints = (
-        (
-            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1},
-            {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2},
-        ),
-        ({"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 1},),
-        ({"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2},),
-        ({"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 1},),
-    )
+    constraints = ConstraintList()
+    constraints.add(Constraint.ALIGN_MARKERS, Instant.START, first_marker_idx=0, second_marker_idx=1, phase=0)
+    constraints.add(Constraint.ALIGN_MARKERS, Instant.END, first_marker_idx=0, second_marker_idx=2, phase=0)
+    constraints.add(Constraint.ALIGN_MARKERS, Instant.END, first_marker_idx=0, second_marker_idx=1, phase=1)
+    constraints.add(Constraint.ALIGN_MARKERS, Instant.END, first_marker_idx=0, second_marker_idx=2, phase=2)
+    constraints.add(Constraint.ALIGN_MARKERS, Instant.END, first_marker_idx=0, second_marker_idx=1, phase=3)
 
     # Path constraint
-    X_bounds = [
-        QAndQDotBounds(biorbd_model[0]),
-        QAndQDotBounds(biorbd_model[0]),
-        QAndQDotBounds(biorbd_model[0]),
-        QAndQDotBounds(biorbd_model[0]),
-    ]
+    x_bounds = BoundsList()
+    x_bounds.add(QAndQDotBounds(biorbd_model[0]))
+    x_bounds.add(QAndQDotBounds(biorbd_model[0]))
+    x_bounds.add(QAndQDotBounds(biorbd_model[0]))
+    x_bounds.add(QAndQDotBounds(biorbd_model[0]))
 
-    X_bounds[0].min[[1, 3, 4, 5], 0] = 0
-    X_bounds[0].max[[1, 3, 4, 5], 0] = 0
-    X_bounds[-1].min[[1, 3, 4, 5], -1] = 0
-    X_bounds[-1].max[[1, 3, 4, 5], -1] = 0
+    x_bounds[0].min[[1, 3, 4, 5], 0] = 0
+    x_bounds[0].max[[1, 3, 4, 5], 0] = 0
+    x_bounds[-1].min[[1, 3, 4, 5], -1] = 0
+    x_bounds[-1].max[[1, 3, 4, 5], -1] = 0
 
-    X_bounds[0].min[2, 0] = 0.0
-    X_bounds[0].max[2, 0] = 0.0
-    X_bounds[2].min[2, [0, -1]] = [0.0, 1.57]
-    X_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
+    x_bounds[0].min[2, 0] = 0.0
+    x_bounds[0].max[2, 0] = 0.0
+    x_bounds[2].min[2, [0, -1]] = [0.0, 1.57]
+    x_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
 
     # Initial guess
-    X_init = InitialConditions([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    x_init = InitialConditionsList()
+    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
+    x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
 
     # Define control path constraint
-    U_bounds = [
-        Bounds(
-            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque()
-        ),
-        Bounds(
-            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque()
-        ),
-        Bounds(
-            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque()
-        ),
-        Bounds(
-            [torque_min] * biorbd_model[0].nbGeneralizedTorque(), [torque_max] * biorbd_model[0].nbGeneralizedTorque()
-        ),
-    ]
-    U_init = InitialConditions([torque_init] * biorbd_model[0].nbGeneralizedTorque())
+    u_bounds = BoundsList()
+    u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
+    u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
+    u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
+    u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
+
+    u_init = InitialConditionsList()
+    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
+    u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
 
     """
     By default, all state transitions (here phase 0 to phase 1, phase 1 to phase 2 and phase 2 to phase 3)
@@ -118,30 +116,22 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
     If for some reason, you don't want the state transition to be hard constraint, you can specify a weight higher than
     zero. It will thereafter be treated as a Mayer objective function with the specified weight. 
     """
-
-    state_transitions = (
-        {"type": StateTransition.IMPACT, "phase_pre_idx": 1},
-        {
-            "type": StateTransition.CUSTOM,
-            "phase_pre_idx": 2,
-            "function": custom_state_transition,
-            "idx_1": 1,
-            "idx_2": 3,
-        },
-        {"type": StateTransition.CYCLIC},
-    )
+    state_transitions = StateTransitionList()
+    state_transitions.add(StateTransition.IMPACT, phase_pre_idx=1)
+    state_transitions.add(custom_state_transition, phase_pre_idx=2, idx_1=1, idx_2=3)
+    state_transitions.add(StateTransition.CYCLIC)
 
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
-        variable_type,
+        dynamics,
         number_shooting_points,
         final_time,
-        (X_init, X_init, X_init, X_init),
-        (U_init, U_init, U_init, U_init),
-        X_bounds,
-        U_bounds,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
         objective_functions,
         constraints,
         ode_solver=ode_solver,

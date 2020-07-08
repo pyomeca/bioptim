@@ -6,13 +6,14 @@ import time
 from biorbd_optim import (
     Instant,
     OptimalControlProgram,
-    ProblemType,
+    DynamicsTypeList,
+    DynamicsType,
+    ObjectiveList,
     Objective,
-    Constraint,
-    Bounds,
+    ConstraintList,
+    BoundsList,
     QAndQDotBounds,
-    InitialConditions,
-    ShowResult,
+    InitialConditionsList,
     InterpolationType,
     PlotType,
     Data,
@@ -46,48 +47,49 @@ def prepare_ocp(
     nq = biorbd_model.nbQ()
     nqdot = biorbd_model.nbQdot()
     ntau = biorbd_model.nbGeneralizedTorque()
-    torque_min, torque_max, torque_init = -max_torque, max_torque, 0
+    tau_min, tau_max, tau_init = -max_torque, max_torque, 0
 
     # Add objective functions
-    objective_functions = (
-            ({"type": Objective.Lagrange.MINIMIZE_MARKERS, "weight": 1000, "data_to_track": data_to_track},),
-            ({"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 1000, "data_to_track": X0.T},)
-            )
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, data_to_track=data_to_track)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0, data_to_track=0, states_idx=0)
 
     # Dynamics
-    problem_type = {"type": ProblemType.TORQUE_DRIVEN,}
-
-    # Constraints
-    constraints = ()
+    dynamics = DynamicsTypeList()
+    dynamics.add(DynamicsType.TORQUE_DRIVEN)
 
     # Path constraint
-    X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.min[:, 0] = -np.inf
-    X_bounds.max[:, 0] = np.inf
-    # X_bounds.min[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
-    # X_bounds.max[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
+    x_bounds = BoundsList()
+    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds[0].min[:, 0] = -np.inf
+    x_bounds[0].max[:, 0] = np.inf
+    # X_bounds[0].min[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
+    # X_bounds[0].max[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
 
     # Define control path constraint
-    U_bounds = Bounds([torque_min, 0.0], [torque_max, 0.0])
+    u_bounds = BoundsList()
+    u_bounds.add([[tau_min, 0.0], [tau_max, 0.0]])
 
     # Initial guesses
     x = X0
     u = U0
-    X_init = InitialConditions(x, interpolation_type=interpolation_type)
-    U_init = InitialConditions(u, interpolation_type=interpolation_type)
+    x_init = InitialConditionsList()
+    x_init.add(x, interpolation=interpolation_type)
+
+    u_init = InitialConditionsList()
+    u_init.add(u, interpolation=interpolation_type)
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
-        problem_type,
+        dynamics,
         number_shooting_points,
         final_time,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
         objective_functions,
-        constraints,
         nb_threads=4,
         use_SX=True
     )
@@ -108,10 +110,10 @@ if __name__ == "__main__":
 
     Tf = 5  # duration of the simulation
     X0 = np.array([0, np.pi / 2, 0, 0])
-    N = Tf * 10 # number of shooting nodes per sec
+    N = Tf * 50 # number of shooting nodes per sec
     noise_std = 0.05  # STD of noise added to measurements
     T_max = 2  # Max torque applied to the model
-    N_mhe = 10 # size of MHE window
+    N_mhe = 25 # size of MHE window
     Tf_mhe = Tf / N * N_mhe  # duration of MHE window
 
     X_, Y_, Y_N_, U_ = run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False)
@@ -123,6 +125,7 @@ if __name__ == "__main__":
     T_max = 5  # Give a bit of slack on the max torque
 
     Y_i = Y_N_[:, :, :N_mhe + 1]
+
     ocp = prepare_ocp(
         biorbd_model_path,
         number_shooting_points=N_mhe,
@@ -143,7 +146,7 @@ if __name__ == "__main__":
         "bound_push": 1e-10,
     }
     options_acados = {
-        "acados_dir": "/home/fb/devel/acados",
+        # "acados_dir": "/home/fb/devel/acados",
         "nlp_solver_max_iter": 1000,
     }
     # sol = ocp.solve(solver_options=options_ipopt)
@@ -159,14 +162,16 @@ if __name__ == "__main__":
 
     for i in range(1, N - N_mhe):
         Y_i = Y_N_[:, :, i : i + N_mhe + 1]
+        new_objectives = ObjectiveList()
+        new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, data_to_track=Y_i)
+        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, data_to_track=X0.T)
+        ocp.modify_objective_function(new_objectives[0][0], 0)
         ocp.modify_objective_function(
-            {"type": Objective.Lagrange.MINIMIZE_MARKERS, "weight": 1000, "data_to_track": Y_i}, 0
-        )
-        ocp.modify_objective_function(
-            {"type": Objective.Lagrange.MINIMIZE_STATE, "weight": 1000, "data_to_track": X0.T}, 1
-        )
+            new_objectives[0][1], 1
+        )  # This doesn't work, but that doesn't seem to related to the merge
+
         # sol = ocp.solve(solver_options=options_ipopt)
-        sol = ocp.solve(solver='acados', solver_options=options_acados)
+        sol = ocp.solve(solver="acados", solver_options=options_acados)
         data_sol = Data.get_data(ocp, sol)
         X0, U0, X_out = warm_start_mhe(data_sol)
         X_est[:, i] = X_out
