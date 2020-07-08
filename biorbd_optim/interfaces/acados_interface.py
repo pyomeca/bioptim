@@ -166,10 +166,13 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.ny_e = self.acados_ocp.model.cost_y_expr_e.shape[0]
             self.acados_ocp.cost.yref = np.zeros((max(self.acados_ocp.dims.ny, 1),))
             self.acados_ocp.cost.yref_e = np.zeros((max(self.acados_ocp.dims.ny_e, 1),))
+
+            # TODO changed hard coded values below
             Q_ocp = np.zeros((15, 15))
             np.fill_diagonal(Q_ocp, 1000)
             R_ocp = np.zeros((4, 4))
-            np.fill_diagonal(R_ocp, 100)
+            np.fill_diagonal(R_ocp, 1000)
+
             self.acados_ocp.cost.W = linalg.block_diag(Q_ocp, R_ocp)
             self.acados_ocp.cost.W_e = np.zeros((1, 1))
             if len(self.dtts):
@@ -218,10 +221,10 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.solver_options.integrator_type = "ERK"
         self.acados_ocp.solver_options.nlp_solver_type = "SQP"
 
-        self.acados_ocp.solver_options.nlp_solver_tol_comp = 1e-02
-        self.acados_ocp.solver_options.nlp_solver_tol_eq = 1e-02
-        self.acados_ocp.solver_options.nlp_solver_tol_ineq = 1e-02
-        self.acados_ocp.solver_options.nlp_solver_tol_stat = 1e-02
+        self.acados_ocp.solver_options.nlp_solver_tol_comp = 1e-06
+        self.acados_ocp.solver_options.nlp_solver_tol_eq = 1e-06
+        self.acados_ocp.solver_options.nlp_solver_tol_ineq = 1e-06
+        self.acados_ocp.solver_options.nlp_solver_tol_stat = 1e-06
         self.acados_ocp.solver_options.sim_method_newton_iter = 5
         self.acados_ocp.solver_options.sim_method_num_stages = 4
         self.acados_ocp.solver_options.sim_method_num_steps = 1

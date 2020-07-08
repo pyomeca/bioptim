@@ -163,8 +163,8 @@ if __name__ == "__main__":
     for i in range(1, N - N_mhe):
         Y_i = Y_N_[:, :, i:i + N_mhe + 1]
         new_objectives = ObjectiveList()
-        new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=0, data_to_track=Y_i)
-        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=0, data_to_track=X0)
+        new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, data_to_track=Y_i)
+        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, data_to_track=X0, phase=0, idx=1)
         ocp.modify_objective_function(new_objectives[0][0], 0)
         ocp.modify_objective_function(new_objectives[0][1], 1)
 
