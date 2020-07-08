@@ -233,6 +233,7 @@ class ObjectiveFunction:
             J_wt_dtt_to_add_to = nlp["J_wt_dtt"]
         else:
             J_to_add_to = ocp.J
+            J_wt_dtt_to_add_to = []
 
         if penalty_idx < 0:
             J_to_add_to.append([])

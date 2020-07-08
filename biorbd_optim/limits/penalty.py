@@ -44,7 +44,7 @@ class PenaltyFunctionAbstract:
                 idx = [idx for idx in states_idx if idx >= running_idx and idx < running_idx + nlp["var_states"][s]]
                 mapping = Mapping([idx for idx in states_idx if idx < nlp["var_states"][s]])
                 PenaltyFunctionAbstract._add_track_data_to_plot(
-                    ocp, nlp, data_to_track[:, idx].T, combine_to=s, axes_idx=mapping
+                    ocp, nlp, data_to_track[idx, :].T, combine_to=s, axes_idx=mapping
                 )
                 running_idx += nlp["var_states"][s]
 

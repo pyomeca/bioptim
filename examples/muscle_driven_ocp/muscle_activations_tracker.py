@@ -128,7 +128,7 @@ def prepare_ocp(
         objective_functions.add(Objective.Lagrange.TRACK_MARKERS, weight=100, data_to_track=markers_ref)
     elif kin_data_to_track == "q":
         objective_functions.add(
-            Objective.Lagrange.TRACK_STATE, weight=100, data_to_track=q_ref, states_idx=range(biorbd_model.nbQ())
+            Objective.Lagrange.TRACK_STATE, weight=100, data_to_track=q_ref.T, states_idx=range(biorbd_model.nbQ())
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
