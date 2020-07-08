@@ -163,7 +163,9 @@ if __name__ == "__main__":
         new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, data_to_track=Y_i)
         new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=0, data_to_track=X0.T)
         ocp.modify_objective_function(new_objectives[0][0], 0)
-        ocp.modify_objective_function(new_objectives[0][1], 1)  # This doesn't work, but that doesn't seem to related to the merge
+        ocp.modify_objective_function(
+            new_objectives[0][1], 1
+        )  # This doesn't work, but that doesn't seem to related to the merge
 
         # sol = ocp.solve(solver_options=options_ipopt)
         sol = ocp.solve(solver="acados", solver_options=options_acados)
