@@ -218,8 +218,8 @@ class Problem:
         legend_qdot = ["qdot_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_dot_mapping"].reduce.map_idx]
 
         # Retrieving bounds
-        q_bounds = Problem.slicing_bounds(nlp, "q")
-        qdot_bounds = Problem.slicing_bounds(nlp, "q_dot")
+        q_bounds = nlp["X_bounds"][: nlp["nbQ"]]
+        qdot_bounds = nlp["X_bounds"][nlp["nbQ"] :]
 
         if as_states:
             nlp["x"] = vertcat(nlp["x"], q, q_dot)
@@ -270,7 +270,8 @@ class Problem:
 
             # Add plot if it happens, do not forget to retrieve bounds by completing the slicing bounds function
         if as_controls:
-            tau_bounds = Problem.slicing_bounds(nlp, "tau")
+            tau_bounds = nlp["U_bounds"][: nlp["nbTau"]]
+            # TODO: Here I assume that tau is always in the beginning of u -> problem ?
             nlp["u"] = vertcat(nlp["u"], tau)
             nlp["var_controls"]["tau"] = nlp["nbTau"]
             nlp["plot"]["tau"] = CustomPlot(
@@ -323,11 +324,14 @@ class Problem:
             nlp["var_states"]["muscles"] = nlp["nbMuscle"]
 
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
+            muscles_bounds = nlp["X_bounds"][nlp["nbQ"] + nlp["nbQdot"] : nlp["nbQ"] + nlp["nbQdot"] + nlp["nbMuscle"]]
+
             nlp["plot"]["muscles_states"] = CustomPlot(
                 lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=nlp["muscleNames"],
-                ylim=[0, 1],
+                ylim=[0, 1],  # TODO: Verify if it is useless since with have the values of muscles bounds
+                bounds=muscles_bounds,
             )
             combine = "muscles_states"
 
@@ -337,6 +341,8 @@ class Problem:
                 muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
             nlp["u"] = vertcat(nlp["u"], muscles)
             nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
+            muscles_bounds = nlp["U_bounds"][nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]]
+            # TODO: (Verify) Here I assume that muscles as controls are always after tau in U_bounds
 
             nlp["plot"]["muscles_control"] = CustomPlot(
                 lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
@@ -344,6 +350,7 @@ class Problem:
                 legend=nlp["muscleNames"],
                 combine_to=combine,
                 ylim=[0, 1],
+                bounds=muscles_bounds,
             )
 
         nlp["nx"] = nlp["x"].rows()
@@ -370,38 +377,24 @@ class Problem:
             ["xdot"],
         ).expand()
 
-    @staticmethod
-    def slicing_bounds(nlp, variable_name):
-        if variable_name == 'q':
-            min_bound = np.array(nlp["X_bounds"].min[:nlp["nbQ"]])
-            max_bound = np.array(nlp["X_bounds"].max[:nlp["nbQ"]])
-            interpolation_type = nlp["X_bounds"].min.type
-        elif variable_name == 'q_dot':
-            min_bound = np.array(nlp["X_bounds"].min[nlp["nbQ"]:nlp["nbQ"]+nlp["nbQdot"]])
-            max_bound = np.array(nlp["X_bounds"].max[nlp["nbQ"]:nlp["nbQ"]+nlp["nbQdot"]])
-            interpolation_type = nlp["X_bounds"].min.type
-        elif variable_name == "muscles_states":      # TODO: Here I assume that tau is always after q and qdot in x
-            min_bound = np.array(nlp["X_bounds"].min[nlp["nbQ"]+nlp["nbQdot"]:nlp["nbQ"]+nlp["nbQdot"]+nlp["nbMuscle"]])
-            max_bound = np.array(nlp["X_bounds"].max[nlp["nbQ"]+nlp["nbQdot"]:nlp["nbQ"]+nlp["nbQdot"]+nlp["nbMuscle"]])
-            interpolation_type = nlp["X_bounds"].min.type
-        elif variable_name == "tau":  # TODO: Here I assume that tau is always in the beginning of u
-            min_bound = np.array(nlp["U_bounds"].min[:nlp["nbTau"]])
-            max_bound = np.array(nlp["U_bounds"].max[:nlp["nbTau"]])
-            interpolation_type = nlp["U_bounds"].min.type
-        elif variable_name == "muscles_control":
-            min_bound = np.array(nlp["U_bounds"].min[:nlp["nbTau"]+nlp["nbMuscle"]])
-            max_bound = np.array(nlp["U_bounds"].max[:nlp["nbTau"]+nlp["nbMuscle"]])
-            interpolation_type = nlp["U_bounds"].min.type
-        else:
-            raise NotImplementedError(f"Slicing bounds for {variable_name} not implemented yet.")
+    # @staticmethod
+    # def slicing_bounds(nlp, variable_name):
+    # min_bound = nlp["X_bounds"].min[:nlp["nbQ"], :]
+    # max_bound = nlp["X_bounds"].max[:nlp["nbQ"], :]
+    # return Bounds(min_bound, max_bound)
+    # b = nlp["X_bounds"][:nlp["nbQ"]]
+    # Then maybe : nlp["X_bounds"][:nlp["nbQ"], :]
+    # Then maybe : nlp["X_bounds"][:nlp["nbQ"], 0], see impact on InterpolationType
 
-        bounds = Bounds(min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type)
-        # TODO: Change this temporary patch below by finding a solution in plot to know if nb_shoot = ns (for controls) or ns+1 (for states), cf ocp.py with X_bounds and U_bounds
-        if variable_name in ['q', 'q_dot']:
-            bounds.check_and_adjust_dimensions(nlp["nbQ"], nlp["ns"]+1)
-        elif variable_name == 'tau':
-            bounds.check_and_adjust_dimensions(nlp["nbTau"], nlp["ns"])
-        return bounds
+    # b = Bounds
+    # b.min.nb_shoot = nlp["X_bounds"].min.nb_shoot
+
+    # def get(tata, range):
+    #     min_bound = np.array(nlp["X_bounds"].min[:nlp["nbQ"]])
+    #     max_bound = np.array(nlp["X_bounds"].max[:nlp["nbQ"]])
+    #     interpolation_type = nlp["X_bounds"].min.type
+    #     return
+
 
 class ProblemType(Enum):
     MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = Problem.muscle_excitations_and_torque_driven
