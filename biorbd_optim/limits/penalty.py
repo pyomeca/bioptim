@@ -26,12 +26,9 @@ class PenaltyFunctionAbstract:
             )
 
             for i, v in enumerate(x):
-                # print(i)
-                # print(v)
-                val = v[states_idx] - data_to_track[states_idx, t[i]]
-                val_wt_dtt = v[states_idx]
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
-                penalty_type._add_to_penalty(ocp, nlp, val_wt_dtt, wt_dtt=True, **extra_param)
+                val = v[states_idx]
+                target_values = data_to_track[states_idx, t[i]]
+                penalty_type._add_to_penalty(ocp, nlp, val, target=target_values, **extra_param)
 
             # Prepare the plot
             if len(t) == 1 and t[0] == nlp["ns"]:
@@ -84,10 +81,7 @@ class PenaltyFunctionAbstract:
                 val = (
                     nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
                 )
-                val_wt_dtt = nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx]
-
                 penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
-                penalty_type._add_to_penalty(ocp, nlp, val_wt_dtt, wt_dtt=True, **extra_param)
 
         @staticmethod
         def minimize_markers_displacement(
@@ -597,7 +591,7 @@ class PenaltyFunctionAbstract:
             pt["base"]._add_to_penalty(ocp, None, val, penalty_idx, **pt)
 
     @staticmethod
-    def _add_to_penalty(ocp, nlp, val, penalty_idx, **extra_param):
+    def _add_to_penalty(ocp, nlp, val, penalty_idx, target=None, **extra_param):
         raise RuntimeError("_add_to_penalty cannot be called from an abstract class")
 
     @staticmethod
