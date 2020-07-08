@@ -1,4 +1,3 @@
-
 import biorbd
 
 from biorbd_optim import (
