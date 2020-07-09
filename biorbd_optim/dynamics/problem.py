@@ -264,7 +264,7 @@ class Problem:
 
         dof_names = nlp["model"].nameDof()
 
-        if nlp["ode_solver"] == OdeSolver.COLLOCATION:
+        if nlp["ode_solver"] == OdeSolver.COLLOCATION or nlp["nb_threads"] > 1:
             tau_mx = MX()
             tau = nlp["CX"]()
             for i in nlp["tau_mapping"].reduce.map_idx:

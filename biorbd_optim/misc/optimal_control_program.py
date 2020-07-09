@@ -216,6 +216,9 @@ class OptimalControlProgram:
             "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
         )
         self.nb_threads = nb_threads
+        self.__add_to_nlp(
+            "nb_threads", nb_threads, True
+        )
 
         # External forces
         if external_forces != ():

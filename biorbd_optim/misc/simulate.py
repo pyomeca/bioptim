@@ -39,7 +39,7 @@ class Simulate:
                     if single_shoot
                     else Simulate._concat_variables(states, offset_phases, idx_nodes)
                 )
-                if nlp["ode_solver"] == OdeSolver.COLLOCATION:
+                if nlp["ode_solver"] == OdeSolver.COLLOCATION or nlp["nb_threads"] > 1:
                     if idx_nodes == nlp["ns"] - 1:
                         v_phase[offset + nlp["nx"] + nlp["nu"]: offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
                             nlp["dynamics"][idx_nodes](
