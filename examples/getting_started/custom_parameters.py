@@ -73,10 +73,10 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
 
     # Define the parameter to optimize
     # Give the parameter some min and max bounds
+    parameters = ParametersList()
     bound_gravity = Bounds(min_bound=min_g, max_bound=max_g, interpolation=InterpolationType.CONSTANT)
     # and an initial condition
     initial_gravity = InitialConditions((min_g + max_g) / 2)
-    parameters = ParametersList()
     parameter_objective_functions = ObjectiveList()
     parameter_objective_functions.add(
         my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=target_g
