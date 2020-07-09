@@ -157,7 +157,6 @@ if __name__ == "__main__":
         "bound_push": 1e-10,
     }
     options_acados = {
-        # "acados_dir": "/home/fb/devel/acados",
         "nlp_solver_max_iter": 1000,
     }
     # sol = ocp.solve(solver_options=options_ipopt)
