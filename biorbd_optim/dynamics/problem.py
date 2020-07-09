@@ -1,4 +1,4 @@
-from casadi import MX, vertcat, horzcat, Function
+from casadi import MX, vertcat, horzcat, horzsplit, Function
 
 from .dynamics_functions import DynamicsFunctions
 from ..misc.enums import PlotType, OdeSolver
@@ -354,43 +354,87 @@ class Problem:
         nlp["nbMuscle"] = nlp["model"].nbMuscles()
         nlp["muscleNames"] = [names.to_string() for names in nlp["model"].muscleNames()]
 
-        muscles_mx = MX()
-        for name in nlp["muscleNames"]:
-            muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}"))
-        nlp["muscles"] = muscles_mx
-
-        combine = None
-        if as_states:
-            muscles = nlp["CX"]()
+        if nlp["ode_solver"] == OdeSolver.COLLOCATION:
+            muscles_mx = MX()
             for name in nlp["muscleNames"]:
-                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation"))
-            nlp["x"] = vertcat(nlp["x"], muscles)
-            nlp["var_states"]["muscles"] = nlp["nbMuscle"]
+                muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}"))
+            nlp["muscles"] = muscles_mx
 
-            nx_q = nlp["nbQ"] + nlp["nbQdot"]
-            nlp["plot"]["muscles_states"] = CustomPlot(
-                lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
-                plot_type=PlotType.INTEGRATED,
-                legend=nlp["muscleNames"],
-                ylim=[0, 1],
-            )
-            combine = "muscles_states"
+            combine = None
+            if as_states:
+                muscles = nlp["CX"]()
+                for name in nlp["muscleNames"]:
+                    muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation"))
+                nlp["x"] = vertcat(nlp["x"], muscles)
+                nlp["var_states"]["muscles"] = nlp["nbMuscle"]
 
-        if as_controls:
-            muscles = nlp["CX"]()
+                nx_q = nlp["nbQ"] + nlp["nbQdot"]
+                nlp["plot"]["muscles_states"] = CustomPlot(
+                    lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
+                    plot_type=PlotType.INTEGRATED,
+                    legend=nlp["muscleNames"],
+                    ylim=[0, 1],
+                )
+                combine = "muscles_states"
+
+            if as_controls:
+                muscles = nlp["CX"]()
+                for name in nlp["muscleNames"]:
+                    muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_excitation"))
+
+                nlp["u"] = vertcat(nlp["u"], muscles)
+                nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
+
+                nlp["plot"]["muscles_control"] = CustomPlot(
+                    lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
+                    plot_type=PlotType.STEP,
+                    legend=nlp["muscleNames"],
+                    combine_to=combine,
+                    ylim=[0, 1],
+                )
+        elif nlp["ode_solver"] == OdeSolver.RK:
+            muscles_begin_mx = MX()
+            muscles_begin = nlp["CX"]()
+            # muscles_end_mx = MX()
+            muscles_end = nlp["CX"]()
             for name in nlp["muscleNames"]:
-                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_excitation"))
+                muscles_begin = vertcat(muscles_begin, nlp["CX"].sym(f"Muscle_{name}_begin", 1, 1))
+                muscles_end = vertcat(muscles_end, nlp["CX"].sym(f"Muscle_{name}_end", 1, 1))
+                muscles_begin_mx = vertcat(muscles_begin_mx, MX.sym(f"Muscle_{name}_begin", 1, 1))
+            nlp["muscles"] = muscles_begin_mx
 
-            nlp["u"] = vertcat(nlp["u"], muscles)
-            nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
+            combine = None
+            if as_states:
+                muscles = nlp["CX"]()
+                for name in nlp["muscleNames"]:
+                    muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation"))
+                nlp["x"] = vertcat(nlp["x"], muscles)
+                nlp["var_states"]["muscles"] = nlp["nbMuscle"]
 
-            nlp["plot"]["muscles_control"] = CustomPlot(
-                lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
-                plot_type=PlotType.STEP,
-                legend=nlp["muscleNames"],
-                combine_to=combine,
-                ylim=[0, 1],
-            )
+                nx_q = nlp["nbQ"] + nlp["nbQdot"]
+                nlp["plot"]["muscles_states"] = CustomPlot(
+                    lambda x, u, p: x[nx_q: nx_q + nlp["nbMuscle"]],
+                    plot_type=PlotType.INTEGRATED,
+                    legend=nlp["muscleNames"],
+                    ylim=[0, 1],
+                )
+                combine = "muscles_states"
+
+            if as_controls:
+                if  nlp["nbTau"] > 0:
+                    nlp["u"] = horzcat(vertcat(horzsplit(nlp["u"])[0], muscles_begin), vertcat(horzsplit(nlp["u"])[1], muscles_end))
+                else:
+                    nlp["u"] = horzcat(muscles_begin, muscles_end)
+
+                nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
+
+                nlp["plot"]["muscles_control"] = CustomPlot(
+                    lambda x, u, p: u[nlp["nbTau"]: nlp["nbTau"] + nlp["nbMuscle"]],
+                    plot_type=PlotType.STEP,
+                    legend=nlp["muscleNames"],
+                    combine_to=combine,
+                    ylim=[0, 1],
+                )
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()

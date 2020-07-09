@@ -27,7 +27,7 @@ from ..dynamics.problem import Problem
 from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.integrator import RK4
+from ..interfaces.integrator import RK4,RK4_multiThread
 from ..limits.constraints import ConstraintFunction, Constraint
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions
 from ..limits.objective_functions import Objective, ObjectiveFunction
@@ -383,7 +383,10 @@ class OptimalControlProgram:
                     ode_opt["idx"] = idx
                     nlp["dynamics"].append(RK4(ode, ode_opt))
             else:
-                nlp["dynamics"].append(RK4(ode, ode_opt))
+                if self.nb_threads > 1:
+                    nlp["dynamics"].append(RK4_multiThread(ode, ode_opt))
+                else:
+                    nlp["dynamics"].append(RK4(ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
             if not isinstance(self.CX(), MX):
                 raise RuntimeError("COLLOCATION integrator can only be used with MX graphs")
