@@ -33,9 +33,11 @@ class IpoptInterface(SolverInterface):
         with open(self.file_path, "wb") as file:
             pickle.dump([], file)
 
+    def finish_get_iterations(self):
+        with open(self.file_path, "rb") as file:
             self.out = self.out, pickle.load(file)
-            os.remove(file_path)
-            os.rmdir(directory)
+            os.remove(self.file_path)
+            os.rmdir(self.directory)
 
     def configure(self, solver_options):
         options = {
