@@ -23,16 +23,16 @@ class IpoptInterface(SolverInterface):
     def online_optim(self, ocp):
         self.options_common["iteration_callback"] = OnlineCallback(ocp)
 
-    def get_iterations(self):
-        directory = ".__tmp_biorbd_optim"
-        file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
-        os.mkdir(directory)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
+    def start_get_iterations(self):
+        self.directory = ".__tmp_biorbd_optim"
+        self.file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
+        os.mkdir(self.directory)
+        if os.path.isfile(self.file_path):
+            os.remove(self.file_path)
 
-        with open(file_path, "wb") as file:
+        with open(self.file_path, "wb") as file:
             pickle.dump([], file)
-        with open(file_path, "rb") as file:
+
             self.out = self.out, pickle.load(file)
             os.remove(file_path)
             os.rmdir(directory)
