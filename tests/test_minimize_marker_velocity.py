@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from biorbd_optim import Data, OdeSolver
+from biorbd_optim import Data, OdeSolver, ControlType
 from .utils import TestUtils
 
 
@@ -81,6 +81,7 @@ def test_align_and_minimize_marker_displacement_RT():
         final_time=1,
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=True,
+        control_type=ControlType.CONSTANT,
     )
     sol = ocp.solve()
 
@@ -135,6 +136,7 @@ def test_align_and_minimize_marker_velocity():
         final_time=1,
         marker_velocity_or_displacement="velo",
         marker_in_first_coordinates_system=True,
+        control_type=ControlType.CONSTANT,
     )
     sol = ocp.solve()
 
@@ -161,6 +163,57 @@ def test_align_and_minimize_marker_velocity():
     # # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-4.52216174e-02, 9.25170010e-01, 0, 0]))
     np.testing.assert_almost_equal(tau[:, -1], np.array([4.4260355e-02, 1.4004583, 0, 0]))
+
+    # # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
+
+
+def test_align_and_minimize_marker_velocity_linear_controls():
+    # Load align_and_minimize_marker_velocity
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "align_and_minimize_marker_velocity",
+        str(PROJECT_FOLDER) + "/examples/align/align_and_minimize_marker_velocity.py",
+    )
+    align_and_minimize_marker_velocity = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(align_and_minimize_marker_velocity)
+
+    ocp = align_and_minimize_marker_velocity.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+        number_shooting_points=5,
+        final_time=1,
+        marker_velocity_or_displacement="velo",
+        marker_in_first_coordinates_system=True,
+        control_type=ControlType.LINEAR,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], -120.00000185455174)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (40, 1))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([ 8.00052450e-01, -3.75679643e-02, -2.91185269e+00,  0]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([ 7.97855500e-01, -6.71430291e-02,  3.08814735e+00,  0]))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([-5.79138829e-04,  9.17644892e-01,  1.00000000e+01,  0]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.28786906e-03, -1.07635997e+00,  1.00000000e+01, 0]))
+    # # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([ 1.08891009e-02, -2.92844929e+01,  4.50244940e+01, 0]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.61551775e-02,  2.17911599e+01,  4.50244940e+01, 0]))
 
     # # save and load
     TestUtils.save_and_load(sol, ocp, False)
