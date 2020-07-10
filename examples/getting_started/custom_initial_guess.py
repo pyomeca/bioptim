@@ -4,15 +4,15 @@ import biorbd
 from biorbd_optim import (
     Instant,
     OptimalControlProgram,
-    DynamicsTypeList,
+    DynamicsTypeOption,
     DynamicsType,
-    ObjectiveList,
+    ObjectiveOption,
     Objective,
     ConstraintList,
     Constraint,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialConditionsOption,
     ShowResult,
     InterpolationType,
 )
@@ -39,12 +39,10 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
 
     # Constraints
     constraints = ConstraintList()
@@ -115,11 +113,9 @@ def prepare_ocp(
         extra_params_u = {"my_values": np.random.random((ntau, 2)), "nb_shooting": number_shooting_points}
     else:
         raise RuntimeError("Initial guess not implemented yet")
-    x_init = InitialConditionsList()
-    x_init.add(x, t=t, interpolation=initial_guess, **extra_params_x)
+    x_init = InitialConditionsOption(x, t=t, interpolation=initial_guess, **extra_params_x)
 
-    u_init = InitialConditionsList()
-    u_init.add(u, t=t, interpolation=initial_guess, **extra_params_u)
+    u_init = InitialConditionsOption(u, t=t, interpolation=initial_guess, **extra_params_u)
     # ------------- #
 
     return OptimalControlProgram(

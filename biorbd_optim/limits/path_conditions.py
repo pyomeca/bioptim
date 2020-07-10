@@ -170,23 +170,26 @@ class PathCondition(np.ndarray):
 
 
 class BoundsOption(OptionGeneric):
-    def __init__(self, bounds=None, **params):
+    def __init__(self, bounds, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, **params):
+        if not isinstance(bounds, Bounds):
+            bounds = Bounds(min_bound=bounds[0], max_bound=bounds[1], interpolation=interpolation, **params)
+
         super(BoundsOption, self).__init__(**params)
         self.bounds = bounds
+        self.min = self.bounds.min
+        self.max = self.bounds.max
 
 
 class BoundsList(UniquePerPhaseOptionList):
     def add(
         self,
         bounds,
-        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        phase=-1,
         **extra_arguments,
     ):
-        if not isinstance(bounds, Bounds):
-            bounds = Bounds(min_bound=bounds[0], max_bound=bounds[1], interpolation=interpolation, **extra_arguments)
-
-        super(BoundsList, self)._add(option_type=BoundsOption, bounds=bounds, phase=phase)
+        if isinstance(bounds, BoundsOption):
+            self.copy(bounds)
+        else:
+            super(BoundsList, self)._add(bounds=bounds, option_type=BoundsOption, **extra_arguments)
 
     def __getitem__(self, item):
         return super(BoundsList, self).__getitem__(item).bounds
@@ -287,19 +290,22 @@ class QAndQDotBounds(Bounds):
 
 
 class InitialConditionsOption(OptionGeneric):
-    def __init__(self, initial_condition=None, **params):
+    def __init__(self, initial_condition, interpolation=InterpolationType.CONSTANT, **params):
+        if not isinstance(initial_condition, InitialConditions):
+            initial_condition = InitialConditions(initial_condition, interpolation=interpolation, **params)
+
         super(InitialConditionsOption, self).__init__(**params)
         self.initial_condition = initial_condition
 
 
 class InitialConditionsList(UniquePerPhaseOptionList):
-    def add(self, initial_condition, interpolation=InterpolationType.CONSTANT, phase=-1, **extra_arguments):
-        if not isinstance(initial_condition, InitialConditions):
-            initial_condition = InitialConditions(initial_condition, interpolation=interpolation, **extra_arguments)
-
-        super(InitialConditionsList, self)._add(
-            option_type=InitialConditionsOption, initial_condition=initial_condition, phase=phase
-        )
+    def add(self, initial_condition, **extra_arguments):
+        if isinstance(initial_condition, InitialConditionsOption):
+            self.copy(initial_condition)
+        else:
+            super(InitialConditionsList, self)._add(
+                initial_condition=initial_condition, option_type=InitialConditionsOption, **extra_arguments
+            )
 
     def __getitem__(self, item):
         return super(InitialConditionsList, self).__getitem__(item).initial_condition

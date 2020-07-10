@@ -8,8 +8,30 @@ from ..misc.options_lists import OptionList, OptionGeneric
 
 
 class ObjectiveOption(OptionGeneric):
-    def __init__(self, instant=None, quadratic=None, weight=1, custom_function=None, **params):
-        super(ObjectiveOption, self).__init__(**params)
+    def __init__(self, objective, instant=Instant.DEFAULT, quadratic=None, weight=1, custom_type=None, phase=0, **params):
+        custom_function = None
+        if not isinstance(objective, Objective.Lagrange) and not isinstance(objective, Objective.Mayer):
+            custom_function = objective
+
+            if custom_type is None:
+                raise RuntimeError(
+                    "Custom objective function detected, but custom_function is missing. "
+                    "It should either be Objective.Mayer or Objective.Lagrange"
+                )
+            objective = custom_type(custom_type.CUSTOM)
+            if isinstance(objective, Objective.Lagrange):
+                pass
+            elif isinstance(objective, Objective.Mayer):
+                pass
+            elif isinstance(objective, Objective.Parameter):
+                pass
+            else:
+                raise RuntimeError(
+                    "Custom objective function detected, but custom_function is invalid. "
+                    "It should either be Objective.Mayer or Objective.Lagrange"
+                )
+
+        super(ObjectiveOption, self).__init__(type=objective, phase=phase, **params)
         self.instant = instant
         self.quadratic = quadratic
         self.weight = weight
@@ -18,42 +40,12 @@ class ObjectiveOption(OptionGeneric):
 
 class ObjectiveList(OptionList):
     def add(
-        self, objective, instant=Instant.DEFAULT, weight=1, phase=0, custom_type=None, quadratic=None, **extra_arguments
+        self, objective, **extra_arguments
     ):
         if isinstance(objective, ObjectiveOption):
             self.copy(objective)
-
         else:
-            if not isinstance(objective, Objective.Lagrange) and not isinstance(objective, Objective.Mayer):
-                extra_arguments = {**extra_arguments, "custom_function": objective}
-
-                if custom_type is None:
-                    raise RuntimeError(
-                        "Custom objective function detected, but custom_function is missing. "
-                        "It should either be Objective.Mayer or Objective.Lagrange"
-                    )
-                objective = custom_type(custom_type.CUSTOM)
-                if isinstance(objective, Objective.Lagrange):
-                    pass
-                elif isinstance(objective, Objective.Mayer):
-                    pass
-                elif isinstance(objective, Objective.Parameter):
-                    pass
-                else:
-                    raise RuntimeError(
-                        "Custom objective function detected, but custom_function is invalid. "
-                        "It should either be Objective.Mayer or Objective.Lagrange"
-                    )
-
-            super(ObjectiveList, self)._add(
-                option_type=ObjectiveOption,
-                type=objective,
-                instant=instant,
-                weight=weight,
-                phase=phase,
-                quadratic=quadratic,
-                **extra_arguments
-            )
+            super(ObjectiveList, self)._add(objective=objective, option_type=ObjectiveOption, **extra_arguments)
 
 
 class ObjectiveFunction:
@@ -129,7 +121,7 @@ class ObjectiveFunction:
         @staticmethod
         def inter_phase_continuity(ocp, pt):
             # Dynamics must be respected between phases
-            penalty = ObjectiveOption()
+            penalty = OptionGeneric()
             penalty.idx = -1
             penalty.quadratic = pt.quadratic
             penalty.weight = pt.weight
