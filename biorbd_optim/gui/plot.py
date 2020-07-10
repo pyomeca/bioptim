@@ -328,12 +328,12 @@ class PlotOcp:
                 elif self.plot_func[key][i].type == PlotType.LINEAR:
                     all_y = []
                     for idx, t in enumerate(self.t_integrated[i]):
-                        t = np.hstack((t[0],t[-1]))
+                        t = np.hstack((t[0], t[-1]))
                         y_tp = np.empty((self.variable_sizes[i][key], 2))
                         y_tp.fill(np.nan)
                         y_tp[:, :] = self.plot_func[key][i].function(
                             state[:, np.array([step_size * idx, step_size * (idx + 1) - 1])],
-                            control[:, idx: idx + 2],
+                            control[:, idx : idx + 2],
                             data_param_in_dyn,
                         )
                         all_y.append(y_tp)

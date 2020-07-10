@@ -1,6 +1,7 @@
 from casadi import Function, vertcat, norm_fro
 from ..misc.enums import ControlType
 
+
 def RK4(ode, ode_opt):
     """
     Numerical integration using fourth order Runge-Kutta method.
@@ -24,12 +25,12 @@ def RK4(ode, ode_opt):
 
     def control_disctretisation(u, i, rkstep, control_type):
         if control_type == ControlType.CONSTANT:
-            return u[:,0]
+            return u[:, 0]
         elif control_type == ControlType.LINEAR:
             if rkstep == 0:
-                return i * (u[:, 1] - u[:, 0])/n_step
+                return i * (u[:, 1] - u[:, 0]) / n_step
             elif rkstep == 1:
-                return (i * (u[:, 1] - u[:, 0]) / n_step + (i+1) * (u[:, 1] - u[:, 0])/n_step) / 2
+                return (i * (u[:, 1] - u[:, 0]) / n_step + (i + 1) * (u[:, 1] - u[:, 0]) / n_step) / 2
             elif rkstep == 2:
                 return (i + 1) * (u[:, 1] - u[:, 0]) / n_step
         else:
@@ -70,6 +71,7 @@ def RK4(ode, ode_opt):
     return Function(
         "integrator", [x_sym, u_sym, param_sym], dxdt(h, x_sym, u_sym, param_sym), ["x0", "p", "params"], ["xf", "xall"]
     )
+
 
 def RK4_multiThread(ode, ode_opt):
     """

@@ -418,7 +418,7 @@ class Problem:
 
                 nx_q = nlp["nbQ"] + nlp["nbQdot"]
                 nlp["plot"]["muscles_states"] = CustomPlot(
-                    lambda x, u, p: x[nx_q: nx_q + nlp["nbMuscle"]],
+                    lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
                     plot_type=PlotType.INTEGRATED,
                     legend=nlp["muscleNames"],
                     ylim=[0, 1],
@@ -426,15 +426,17 @@ class Problem:
                 combine = "muscles_states"
 
             if as_controls:
-                if  nlp["nbTau"] > 0:
-                    nlp["u"] = horzcat(vertcat(horzsplit(nlp["u"])[0], muscles_begin), vertcat(horzsplit(nlp["u"])[1], muscles_end))
+                if nlp["nbTau"] > 0:
+                    nlp["u"] = horzcat(
+                        vertcat(horzsplit(nlp["u"])[0], muscles_begin), vertcat(horzsplit(nlp["u"])[1], muscles_end)
+                    )
                 else:
                     nlp["u"] = horzcat(muscles_begin, muscles_end)
 
                 nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
                 nlp["plot"]["muscles_control"] = CustomPlot(
-                    lambda x, u, p: u[nlp["nbTau"]: nlp["nbTau"] + nlp["nbMuscle"]],
+                    lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
                     plot_type=PlotType.STEP,
                     legend=nlp["muscleNames"],
                     combine_to=combine,

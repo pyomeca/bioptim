@@ -6,7 +6,7 @@ from casadi import sum1, horzcat
 from .path_conditions import Bounds
 from .penalty import PenaltyType, PenaltyFunctionAbstract
 from ..misc.enums import Instant, InterpolationType, OdeSolver
-from .. dynamics.dynamics_functions import DynamicsFunctions
+from ..dynamics.dynamics_functions import DynamicsFunctions
 
 
 class ConstraintFunction(PenaltyFunctionAbstract):

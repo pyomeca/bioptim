@@ -27,7 +27,7 @@ from ..dynamics.problem import Problem
 from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.integrator import RK4,RK4_multiThread
+from ..interfaces.integrator import RK4, RK4_multiThread
 from ..limits.constraints import ConstraintFunction, Constraint
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions
 from ..limits.objective_functions import Objective, ObjectiveFunction
@@ -124,7 +124,7 @@ class OptimalControlProgram:
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "nb_integration_steps": nb_integration_steps,
-            "control_type" : control_type,
+            "control_type": control_type,
             "all_generalized_mapping": all_generalized_mapping,
             "q_mapping": q_mapping,
             "q_dot_mapping": q_dot_mapping,
@@ -216,9 +216,7 @@ class OptimalControlProgram:
             "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
         )
         self.nb_threads = nb_threads
-        self.__add_to_nlp(
-            "nb_threads", nb_threads, True
-        )
+        self.__add_to_nlp("nb_threads", nb_threads, True)
 
         # External forces
         if external_forces != ():
@@ -454,9 +452,9 @@ class OptimalControlProgram:
                 if nlp["control_type"] == ControlType.LINEAR:
                     U_ = nlp["CX"].sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
                     U.append(U_)
-                    V_bounds.min[offset: offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
-                    V_bounds.max[offset: offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
-                    V_init.init[offset: offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
+                    V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
+                    V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
+                    V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
                     offset += nlp["nu"]
                     V = vertcat(V, U_)
         V_bounds.check_and_adjust_dimensions(nV, 1)
