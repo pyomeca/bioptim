@@ -7,11 +7,13 @@ import biorbd
 from biorbd_optim import (
     OptimalControlProgram,
     Data,
-    ProblemType,
+    DynamicsTypeList,
+    DynamicsType,
+    ObjectiveList,
     Objective,
-    Bounds,
+    BoundsList,
     QAndQDotBounds,
-    InitialConditions,
+    InitialConditionsList,
     ShowResult,
 )
 
@@ -23,25 +25,20 @@ data_to_track = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data_to_track)
 
 
-def prepare_ocp(
-    model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref,
-):
+def prepare_ocp(model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref):
     # Model path
     biorbd_model = biorbd.Model(model_path)
-    torque_min, torque_max, torque_init = -500, 500, 0
+    tau_min, tau_max, tau_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
 
     # Add objective functions
-    objective_functions = (
-        {"type": Objective.Lagrange.TRACK_MUSCLES_CONTROL, "weight": 1, "data_to_track": muscle_activations_ref},
-        {"type": Objective.Lagrange.TRACK_CONTACT_FORCES, "weight": 1, "data_to_track": contact_forces_ref},
-    )
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Lagrange.TRACK_MUSCLES_CONTROL, target=muscle_activations_ref)
+    objective_functions.add(Objective.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
 
     # Dynamics
-    problem_type = {"type": ProblemType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT}
-
-    # Constraints
-    constraints = ()
+    dynamics = DynamicsTypeList()
+    dynamics.add(DynamicsType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT)
 
     # Path constraint
     nb_q = biorbd_model.nbQ()
@@ -49,41 +46,39 @@ def prepare_ocp(
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize X_bounds
-    X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.min[:, 0] = pose_at_first_node + [0] * nb_qdot
-    X_bounds.max[:, 0] = pose_at_first_node + [0] * nb_qdot
+    x_bounds = BoundsList()
+    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds[0].min[:, 0] = pose_at_first_node + [0] * nb_qdot
+    x_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
-    X_init = [InitialConditions(pose_at_first_node + [0] * nb_qdot)]
+    x_init = InitialConditionsList()
+    x_init.add(pose_at_first_node + [0] * nb_qdot)
 
     # Define control path constraint
-    U_bounds = [
-        Bounds(
-            min_bound=[torque_min] * biorbd_model.nbGeneralizedTorque()
-            + [activation_min] * biorbd_model.nbMuscleTotal(),
-            max_bound=[torque_max] * biorbd_model.nbGeneralizedTorque()
-            + [activation_max] * biorbd_model.nbMuscleTotal(),
-        )
-    ]
-    U_init = [
-        InitialConditions(
-            [torque_init] * biorbd_model.nbGeneralizedTorque() + [activation_init] * biorbd_model.nbMuscleTotal()
-        )
-    ]
+    u_bounds = BoundsList()
+    u_bounds.add(
+        [
+            [tau_min] * biorbd_model.nbGeneralizedTorque() + [activation_min] * biorbd_model.nbMuscleTotal(),
+            [tau_max] * biorbd_model.nbGeneralizedTorque() + [activation_max] * biorbd_model.nbMuscleTotal(),
+        ]
+    )
+
+    u_init = InitialConditionsList()
+    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [activation_init] * biorbd_model.nbMuscleTotal())
 
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
-        problem_type,
+        dynamics,
         number_shooting_points,
         phase_time,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
         objective_functions=objective_functions,
-        constraints=constraints,
     )
 
 
@@ -95,14 +90,14 @@ if __name__ == "__main__":
 
     # Generate data using another optimization that will be feedback in as tracking data
     ocp_to_track = data_to_track.prepare_ocp(
-        model_path=model_path, phase_time=final_time, number_shooting_points=ns, direction="GREATER_THAN", boundary=50,
+        model_path=model_path, phase_time=final_time, number_shooting_points=ns, direction="GREATER_THAN", boundary=50
     )
     sol_to_track = ocp_to_track.solve()
     states, controls = Data.get_data(ocp_to_track, sol_to_track)
     q, q_dot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
     x = np.concatenate((q, q_dot))
     u = np.concatenate((tau, mus))
-    contact_forces_ref = np.array(ocp_to_track.nlp[0]["contact_forces_func"](x[:, :-1], u[:, :-1]))
+    contact_forces_ref = np.array(ocp_to_track.nlp[0]["contact_forces_func"](x[:, :-1], u[:, :-1], []))
     muscle_activations_ref = mus
 
     # Track these data
@@ -110,8 +105,8 @@ if __name__ == "__main__":
         model_path=model_path,
         phase_time=final_time,
         number_shooting_points=ns,
-        muscle_activations_ref=muscle_activations_ref[:, :-1].T,
-        contact_forces_ref=contact_forces_ref.T,
+        muscle_activations_ref=muscle_activations_ref[:, :-1],
+        contact_forces_ref=contact_forces_ref,
     )
 
     # --- Solve the program --- #

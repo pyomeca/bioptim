@@ -18,7 +18,7 @@ install:
   - conda list
 
 script:
-  - black --check . --line-length 120
+  - black . -l120 --exclude "external/*"
   - python setup.py install
   - pytest -v --color=yes --cov-report term-missing --cov=biorbd_optim tests
 

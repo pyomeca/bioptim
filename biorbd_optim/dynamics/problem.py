@@ -1,12 +1,9 @@
-import numpy as np
 from casadi import MX, vertcat, Function
-from enum import Enum
 
-from .dynamics import Dynamics
-from .mapping import BidirectionalMapping, Mapping
-from .plot import CustomPlot
-from .enums import PlotType
-from .path_conditions import Bounds
+from .dynamics_functions import DynamicsFunctions
+from ..misc.enums import PlotType
+from ..misc.mapping import BidirectionalMapping, Mapping
+from ..gui.plot import CustomPlot
 
 
 class Problem:
@@ -16,11 +13,11 @@ class Problem:
 
     @staticmethod
     def initialize(ocp, nlp):
-        nlp["problem_type"]["type"](ocp, nlp)
+        nlp["dynamics_type"].type.value[0](ocp, nlp)
 
     @staticmethod
     def custom(ocp, nlp):
-        nlp["problem_type"]["configure"](ocp, nlp)
+        nlp["dynamics_type"].configure(ocp, nlp)
 
     @staticmethod
     def torque_driven(ocp, nlp):
@@ -31,10 +28,10 @@ class Problem:
         """
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if nlp["dynamics_type"].dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven)
 
     @staticmethod
     def torque_driven_with_contact(ocp, nlp):
@@ -45,11 +42,11 @@ class Problem:
         """
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if nlp["dynamics_type"].dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_driven_with_contact)
-        Problem.configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven_with_contact)
+        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact)
 
     @staticmethod
     def torque_activations_driven(ocp, nlp):
@@ -61,10 +58,10 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         nlp["nbActuators"] = nlp["nbTau"]
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if nlp["dynamics_type"].dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_activations_driven)
 
     @staticmethod
     def torque_activations_driven_with_contact(ocp, nlp):
@@ -76,13 +73,13 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         nlp["nbActuators"] = nlp["nbTau"]
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if nlp["dynamics_type"].dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
             Problem.configure_forward_dyn_func(
-                ocp, nlp, Dynamics.forward_dynamics_torque_activations_driven_with_contact
+                ocp, nlp, DynamicsFunctions.forward_dynamics_torque_activations_driven_with_contact
             )
-        Problem.configure_contact(ocp, nlp, Dynamics.forces_from_forward_dynamics_with_contact)
+        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact)
 
     @staticmethod
     def muscle_activations_driven(ocp, nlp):
@@ -94,10 +91,10 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_muscles(nlp, False, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if nlp["dynamics_type"].dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_activations_driven)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_activations_driven)
 
     @staticmethod
     def muscle_activations_and_torque_driven(ocp, nlp):
@@ -110,10 +107,10 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, False, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, nlp["problem_type"]["dynamic"])
+        if nlp["dynamics_type"].dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, nlp["dynamics_type"].dynamics)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_torque_muscle_driven)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_muscle_driven)
 
     @staticmethod
     def muscle_excitations_driven(ocp, nlp):
@@ -125,10 +122,10 @@ class Problem:
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_muscles(nlp, True, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if nlp["dynamics_type"].dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_driven)
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_driven)
 
     @staticmethod
     def muscle_excitations_and_torque_driven(ocp, nlp):
@@ -141,10 +138,12 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, True, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if nlp["dynamics_type"].dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven)
+            Problem.configure_forward_dyn_func(
+                ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven
+            )
 
     @staticmethod
     def muscle_activations_and_torque_driven_with_contact(ocp, nlp):
@@ -157,14 +156,14 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, False, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if nlp["dynamics_type"].dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
             Problem.configure_forward_dyn_func(
-                ocp, nlp, Dynamics.forward_dynamics_muscle_activations_and_torque_driven_with_contact
+                ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_activations_and_torque_driven_with_contact
             )
         Problem.configure_contact(
-            ocp, nlp, Dynamics.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact
+            ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact
         )
 
     @staticmethod
@@ -178,14 +177,14 @@ class Problem:
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, True, True)
 
-        if "dynamic" in nlp["problem_type"]:
-            Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+        if nlp["dynamics_type"].dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
             Problem.configure_forward_dyn_func(
-                ocp, nlp, Dynamics.forward_dynamics_muscle_excitations_and_torque_driven_with_contact
+                ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven_with_contact
             )
         Problem.configure_contact(
-            ocp, nlp, Dynamics.forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact
+            ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact
         )
 
     @staticmethod
@@ -204,12 +203,19 @@ class Problem:
             )
 
         dof_names = nlp["model"].nameDof()
-        q = MX()
-        q_dot = MX()
+        q_mx = MX()
+        q_dot_mx = MX()
+        q = nlp["CX"]()
+        q_dot = nlp["CX"]()
+
         for i in nlp["q_mapping"].reduce.map_idx:
-            q = vertcat(q, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
+            q = vertcat(q, nlp["CX"].sym("Q_" + dof_names[i].to_string(), 1, 1))
         for i in nlp["q_dot_mapping"].reduce.map_idx:
-            q_dot = vertcat(q_dot, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+            q_dot = vertcat(q_dot, nlp["CX"].sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+        for i in nlp["q_mapping"].expand.map_idx:
+            q_mx = vertcat(q_mx, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
+        for i in nlp["q_dot_mapping"].expand.map_idx:
+            q_dot_mx = vertcat(q_dot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbQ"] = nlp["q_mapping"].reduce.len
         nlp["nbQdot"] = nlp["q_dot_mapping"].reduce.len
@@ -217,29 +223,25 @@ class Problem:
         legend_q = ["q_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_mapping"].reduce.map_idx]
         legend_qdot = ["qdot_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["q_dot_mapping"].reduce.map_idx]
 
-        # Retrieving bounds
-        q_bounds = nlp["X_bounds"][: nlp["nbQ"]]
-        qdot_bounds = nlp["X_bounds"][nlp["nbQ"] :]
-
+        nlp["q"] = q_mx
+        nlp["qdot"] = q_dot_mx
         if as_states:
             nlp["x"] = vertcat(nlp["x"], q, q_dot)
             nlp["var_states"]["q"] = nlp["nbQ"]
             nlp["var_states"]["q_dot"] = nlp["nbQdot"]
 
             nlp["plot"]["q"] = CustomPlot(
-                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q, bounds=q_bounds,
+                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q
             )
             nlp["plot"]["q_dot"] = CustomPlot(
                 lambda x, u, p: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
-                bounds=qdot_bounds,
             )
         if as_controls:
             nlp["u"] = vertcat(nlp["u"], q, q_dot)
             nlp["var_controls"]["q"] = nlp["nbQ"]
             nlp["var_controls"]["q_dot"] = nlp["nbQdot"]
-
             # Add plot if it happens
 
         nlp["nx"] = nlp["x"].rows()
@@ -253,29 +255,37 @@ class Problem:
         """
         if nlp["tau_mapping"] is None:
             nlp["tau_mapping"] = BidirectionalMapping(
-                Mapping(range(nlp["model"].nbGeneralizedTorque())), Mapping(range(nlp["model"].nbGeneralizedTorque()))
+                # Mapping(range(nlp["model"].nbGeneralizedTorque())), Mapping(range(nlp["model"].nbGeneralizedTorque()))
+                Mapping(range(nlp["model"].nbQdot())),
+                Mapping(
+                    range(nlp["model"].nbQdot())
+                ),  # To change when nlp["model"].nbGeneralizedTorque() will return the proper number
             )
 
         dof_names = nlp["model"].nameDof()
-        tau = MX()
+
+        tau_mx = MX()
+        tau = nlp["CX"]()
         for i in nlp["tau_mapping"].reduce.map_idx:
-            tau = vertcat(tau, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
+            tau = vertcat(tau, nlp["CX"].sym("Tau_" + dof_names[i].to_string(), 1, 1))
+        for i in nlp["q_mapping"].expand.map_idx:
+            tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
         legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
 
+        nlp["tau"] = tau_mx
         if as_states:
             nlp["x"] = vertcat(nlp["x"], tau)
             nlp["var_states"]["tau"] = nlp["nbTau"]
 
-            # Add plot if it happens, do not forget to retrieve bounds by completing the slicing bounds function
+            # Add plot if it happens
         if as_controls:
-            tau_bounds = nlp["U_bounds"][: nlp["nbTau"]]
-            # TODO: Here I assume that tau is always in the beginning of u -> problem ?
             nlp["u"] = vertcat(nlp["u"], tau)
             nlp["var_controls"]["tau"] = nlp["nbTau"]
+
             nlp["plot"]["tau"] = CustomPlot(
-                lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau, bounds=tau_bounds,
+                lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
             )
 
         nlp["nx"] = nlp["x"].rows()
@@ -315,34 +325,35 @@ class Problem:
         nlp["nbMuscle"] = nlp["model"].nbMuscles()
         nlp["muscleNames"] = [names.to_string() for names in nlp["model"].muscleNames()]
 
+        muscles_mx = MX()
+        for name in nlp["muscleNames"]:
+            muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}"))
+        nlp["muscles"] = muscles_mx
+
         combine = None
         if as_states:
-            muscles = MX()
-            for i in range(nlp["nbMuscle"]):
-                muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_activation"))
+            muscles = nlp["CX"]()
+            for name in nlp["muscleNames"]:
+                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation"))
             nlp["x"] = vertcat(nlp["x"], muscles)
             nlp["var_states"]["muscles"] = nlp["nbMuscle"]
 
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
-            muscles_bounds = nlp["X_bounds"][nlp["nbQ"] + nlp["nbQdot"] : nlp["nbQ"] + nlp["nbQdot"] + nlp["nbMuscle"]]
-
             nlp["plot"]["muscles_states"] = CustomPlot(
                 lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=nlp["muscleNames"],
-                ylim=[0, 1],  # TODO: Verify if it is useless since with have the values of muscles bounds
-                bounds=muscles_bounds,
+                ylim=[0, 1],
             )
             combine = "muscles_states"
 
         if as_controls:
-            muscles = MX()
-            for i in range(nlp["nbMuscle"]):
-                muscles = vertcat(muscles, MX.sym(f"Muscle_{nlp['muscleNames']}_excitation"))
+            muscles = nlp["CX"]()
+            for name in nlp["muscleNames"]:
+                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_excitation"))
+
             nlp["u"] = vertcat(nlp["u"], muscles)
             nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
-            muscles_bounds = nlp["U_bounds"][nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]]
-            # TODO: (Verify) Here I assume that muscles as controls are always after tau in U_bounds
 
             nlp["plot"]["muscles_control"] = CustomPlot(
                 lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
@@ -350,7 +361,6 @@ class Problem:
                 legend=nlp["muscleNames"],
                 combine_to=combine,
                 ylim=[0, 1],
-                bounds=muscles_bounds,
             )
 
         nlp["nx"] = nlp["x"].rows()
@@ -358,55 +368,26 @@ class Problem:
 
     @staticmethod
     def configure_forward_dyn_func(ocp, nlp, dyn_func):
-        nlp["nu"] = nlp["u"].rows()
         nlp["nx"] = nlp["x"].rows()
+        nlp["nu"] = nlp["u"].rows()
+        MX_symbolic_states = MX.sym("x", nlp["nx"], 1)
+        MX_symbolic_controls = MX.sym("u", nlp["nu"], 1)
 
-        symbolic_states = MX.sym("x", nlp["nx"], 1)
-        symbolic_controls = MX.sym("u", nlp["nu"], 1)
-        symbolic_params = MX()
+        symbolic_params = nlp["CX"]()
         nlp["parameters_to_optimize"] = ocp.param_to_optimize
         for key in nlp["parameters_to_optimize"]:
-            symbolic_params = vertcat(symbolic_params, nlp["parameters_to_optimize"][key]["mx"])
+            symbolic_params = vertcat(symbolic_params, nlp["parameters_to_optimize"][key]["cx"])
         nlp["p"] = symbolic_params
         nlp["np"] = symbolic_params.rows()
+        MX_symbolic_params = MX.sym("p", nlp["np"], 1)
+
+        dynamics = dyn_func(MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params, nlp)
+        if isinstance(dynamics, (list, tuple)):
+            dynamics = vertcat(*dynamics)
         nlp["dynamics_func"] = Function(
             "ForwardDyn",
-            [symbolic_states, symbolic_controls, symbolic_params],
-            [dyn_func(symbolic_states, symbolic_controls, symbolic_params, nlp)],
+            [MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params],
+            [dynamics],
             ["x", "u", "p"],
             ["xdot"],
         ).expand()
-
-    # @staticmethod
-    # def slicing_bounds(nlp, variable_name):
-    # min_bound = nlp["X_bounds"].min[:nlp["nbQ"], :]
-    # max_bound = nlp["X_bounds"].max[:nlp["nbQ"], :]
-    # return Bounds(min_bound, max_bound)
-    # b = nlp["X_bounds"][:nlp["nbQ"]]
-    # Then maybe : nlp["X_bounds"][:nlp["nbQ"], :]
-    # Then maybe : nlp["X_bounds"][:nlp["nbQ"], 0], see impact on InterpolationType
-
-    # b = Bounds
-    # b.min.nb_shoot = nlp["X_bounds"].min.nb_shoot
-
-    # def get(tata, range):
-    #     min_bound = np.array(nlp["X_bounds"].min[:nlp["nbQ"]])
-    #     max_bound = np.array(nlp["X_bounds"].max[:nlp["nbQ"]])
-    #     interpolation_type = nlp["X_bounds"].min.type
-    #     return
-
-
-class ProblemType(Enum):
-    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = Problem.muscle_excitations_and_torque_driven
-    MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN = Problem.muscle_activations_and_torque_driven
-    MUSCLE_ACTIVATIONS_DRIVEN = Problem.muscle_activations_driven
-    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = Problem.muscle_excitations_and_torque_driven_with_contact
-    MUSCLE_EXCITATIONS_DRIVEN = Problem.muscle_excitations_driven
-    MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = Problem.muscle_activations_and_torque_driven_with_contact
-
-    TORQUE_DRIVEN = Problem.torque_driven
-    TORQUE_ACTIVATIONS_DRIVEN = Problem.torque_activations_driven
-    TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT = Problem.torque_activations_driven_with_contact
-    TORQUE_DRIVEN_WITH_CONTACT = Problem.torque_driven_with_contact
-
-    CUSTOM = Problem.custom

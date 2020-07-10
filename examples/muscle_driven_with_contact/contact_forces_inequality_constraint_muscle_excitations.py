@@ -5,14 +5,18 @@ import biorbd
 from biorbd_optim import (
     Instant,
     OptimalControlProgram,
+    ConstraintList,
     Constraint,
+    ObjectiveList,
     Objective,
-    ProblemType,
+    DynamicsTypeList,
+    DynamicsType,
     BidirectionalMapping,
     Mapping,
+    BoundsList,
     Bounds,
     QAndQDotBounds,
-    InitialConditions,
+    InitialConditionsList,
     ShowResult,
     Data,
 )
@@ -27,27 +31,28 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
 
     # Add objective functions
-    objective_functions = ({"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},)
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
-    problem_type = {"type": ProblemType.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT}
+    dynamics = DynamicsTypeList()
+    dynamics.add(DynamicsType.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT)
 
     # Constraints
-    constraints = (
-        {
-            "type": Constraint.CONTACT_FORCE_INEQUALITY,
-            "direction": direction,
-            "instant": Instant.ALL,
-            "contact_force_idx": 1,
-            "boundary": boundary,
-        },
-        {
-            "type": Constraint.CONTACT_FORCE_INEQUALITY,
-            "direction": direction,
-            "instant": Instant.ALL,
-            "contact_force_idx": 2,
-            "boundary": boundary,
-        },
+    constraints = ConstraintList()
+    constraints.add(
+        Constraint.CONTACT_FORCE_INEQUALITY,
+        direction=direction,
+        instant=Instant.ALL,
+        contact_force_idx=1,
+        boundary=boundary,
+    )
+    constraints.add(
+        Constraint.CONTACT_FORCE_INEQUALITY,
+        direction=direction,
+        instant=Instant.ALL,
+        contact_force_idx=2,
+        boundary=boundary,
     )
 
     # Path constraint
@@ -57,36 +62,38 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize X_bounds
-    X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.concatenate(Bounds([activation_min] * nb_mus, [activation_max] * nb_mus))
-    X_bounds.min[:, 0] = pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus
-    X_bounds.max[:, 0] = pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus
+    x_bounds = BoundsList()
+    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds[0].concatenate(Bounds([activation_min] * nb_mus, [activation_max] * nb_mus))
+    x_bounds[0].min[:, 0] = pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus
+    x_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus
 
     # Initial guess
-    X_init = [InitialConditions(pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus)]
+    x_init = InitialConditionsList()
+    x_init.add(pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus)
 
     # Define control path constraint
-    U_bounds = [
-        Bounds(
-            min_bound=[torque_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(),
-            max_bound=[torque_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal(),
-        )
-    ]
+    u_bounds = BoundsList()
+    u_bounds.add(
+        [
+            [torque_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(),
+            [torque_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal(),
+        ]
+    )
 
-    U_init = [
-        InitialConditions([torque_init] * tau_mapping.reduce.len + [activation_init] * biorbd_model.nbMuscleTotal())
-    ]
+    u_init = InitialConditionsList()
+    u_init.add([torque_init] * tau_mapping.reduce.len + [activation_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
-        problem_type,
+        dynamics,
         number_shooting_points,
         phase_time,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
         tau_mapping=tau_mapping,
@@ -98,7 +105,7 @@ if __name__ == "__main__":
     t = 0.3
     ns = 10
     ocp = prepare_ocp(
-        model_path=model_path, phase_time=t, number_shooting_points=ns, direction="GREATER_THAN", boundary=50,
+        model_path=model_path, phase_time=t, number_shooting_points=ns, direction="GREATER_THAN", boundary=50
     )
 
     # --- Solve the program --- #

@@ -14,7 +14,7 @@ def test_muscle_driven_ocp():
     # Load static_arm
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "static_arm", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/static_arm.py",
+        "static_arm", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/static_arm.py"
     )
     static_arm = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(static_arm)
@@ -48,22 +48,24 @@ def test_muscle_driven_ocp():
     np.testing.assert_almost_equal(tau[:, 0], np.array([0.0014793, 0.0052082]))
     np.testing.assert_almost_equal(tau[:, -1], np.array([-0.0002795, 0.0006926]))
     np.testing.assert_almost_equal(
-        mus[:, 0], np.array([2.2869218e-06, 1.6503522e-01, 1.0002514e-01, 4.0190181e-06, 4.1294041e-06, 1.0396051e-01]),
+        mus[:, 0], np.array([2.2869218e-06, 1.6503522e-01, 1.0002514e-01, 4.0190181e-06, 4.1294041e-06, 1.0396051e-01])
     )
     np.testing.assert_almost_equal(
-        mus[:, -1],
-        np.array([4.2599283e-03, 3.2188697e-05, 3.1307377e-05, 2.0121186e-03, 2.0048373e-03, 1.8235679e-03]),
+        mus[:, -1], np.array([4.2599283e-03, 3.2188697e-05, 3.1307377e-05, 2.0121186e-03, 2.0048373e-03, 1.8235679e-03])
     )
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_muscle_activations_with_contact_driven_ocp():
     # Load static_arm_with_contact
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "static_arm_with_contact", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/static_arm_with_contact.py",
+        "static_arm_with_contact", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/static_arm_with_contact.py"
     )
     static_arm_with_contact = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(static_arm_with_contact)
@@ -99,15 +101,17 @@ def test_muscle_activations_with_contact_driven_ocp():
     np.testing.assert_almost_equal(tau[:, 0], np.array([-3.9652660e-07, 1.4785825e-03, 5.2079505e-03]))
     np.testing.assert_almost_equal(tau[:, -1], np.array([-2.7248808e-06, -2.7952503e-04, 6.9262306e-04]))
     np.testing.assert_almost_equal(
-        mus[:, 0], np.array([2.2873915e-06, 1.6502014e-01, 1.0001872e-01, 4.0192359e-06, 4.1296273e-06, 1.0395487e-01]),
+        mus[:, 0], np.array([2.2873915e-06, 1.6502014e-01, 1.0001872e-01, 4.0192359e-06, 4.1296273e-06, 1.0395487e-01])
     )
     np.testing.assert_almost_equal(
-        mus[:, -1],
-        np.array([4.2599697e-03, 3.2187363e-05, 3.1307175e-05, 2.0116712e-03, 2.0043861e-03, 1.8230214e-03]),
+        mus[:, -1], np.array([4.2599697e-03, 3.2187363e-05, 3.1307175e-05, 2.0116712e-03, 2.0043861e-03, 1.8230214e-03])
     )
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
 
 
 def test_muscle_excitation_with_contact_driven_ocp():
@@ -188,21 +192,16 @@ def test_muscle_excitation_with_contact_driven_ocp():
         qdot[:, -1], np.array([-2.01607708e00, 4.40761528e-04, 4.03215433e00, -4.03215433e00])
     )
     # initial and final muscle state
-    np.testing.assert_almost_equal(
-        mus_states[:, 0], np.array([0.5]),
-    )
-    np.testing.assert_almost_equal(
-        mus_states[:, -1], np.array([0.54388439]),
-    )
+    np.testing.assert_almost_equal(mus_states[:, 0], np.array([0.5]))
+    np.testing.assert_almost_equal(mus_states[:, -1], np.array([0.54388439]))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-54.04429218]))
     np.testing.assert_almost_equal(tau[:, -1], np.array([-26.70770378]))
-    np.testing.assert_almost_equal(
-        mus_controls[:, 0], np.array([0.47810392]),
-    )
-    np.testing.assert_almost_equal(
-        mus_controls[:, -1], np.array([0.42519766]),
-    )
+    np.testing.assert_almost_equal(mus_controls[:, 0], np.array([0.47810392]))
+    np.testing.assert_almost_equal(mus_controls[:, -1], np.array([0.42519766]))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)

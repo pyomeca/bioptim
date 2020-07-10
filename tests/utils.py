@@ -12,6 +12,7 @@ from biorbd_optim import (
     InitialConditions,
     BidirectionalMapping,
     Mapping,
+    Simulate,
     OdeSolver,
 )
 
@@ -66,3 +67,12 @@ class TestUtils:
                     np.testing.assert_almost_equal(elem_original, elem_loaded)
                 except (ValueError, Exception):
                     pass
+
+    @staticmethod
+    def simulate(sol, ocp):
+        sol_from_solver = np.array(sol["x"]).squeeze()
+        sol_simulation_from_solve = Simulate.from_solve(ocp, sol)["x"]
+        sol_simulation_from_data = Simulate.from_data(ocp, Data.get_data(ocp, sol))["x"]
+        np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_solve)
+        np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_data)
+        np.testing.assert_almost_equal(sol_simulation_from_solve, sol_simulation_from_data)

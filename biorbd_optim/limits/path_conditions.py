@@ -1,24 +1,25 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
-from .mapping import BidirectionalMapping, Mapping
-from .enums import InterpolationType
+from ..misc.enums import InterpolationType
+from ..misc.mapping import BidirectionalMapping, Mapping
+from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
 
 
 class PathCondition(np.ndarray):
     """Sets path constraints"""
 
-    def __new__(cls, input_array, t=None, interpolation_type=InterpolationType.CONSTANT, extra_params={}):
+    def __new__(cls, input_array, t=None, interpolation=InterpolationType.CONSTANT, **extra_params):
         """
         Interpolates path conditions with the chosen interpolation type.
         :param input_array: Array of path conditions (initial guess). (list)
-        :param interpolation_type: Type of interpolation. (Instance of InterpolationType)
+        :param interpolation: Type of interpolation. (Instance of InterpolationType)
         (InterpolationType.CONSTANT, InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, InterpolationType.LINEAR
         or InterpolationType.EACH_FRAME)
         :return: obj -> Objective. (?)
         """
         # Check and reinterpret input
-        if interpolation_type == InterpolationType.CUSTOM:
+        if interpolation == InterpolationType.CUSTOM:
             if not callable(input_array):
                 raise TypeError("The input when using InterpolationType.CUSTOM should be a callable function")
             custom_function = input_array
@@ -29,7 +30,7 @@ class PathCondition(np.ndarray):
         if len(input_array.shape) == 0:
             input_array = input_array[np.newaxis, np.newaxis]
 
-        if interpolation_type == InterpolationType.CONSTANT:
+        if interpolation == InterpolationType.CONSTANT:
             if len(input_array.shape) == 1:
                 input_array = input_array[:, np.newaxis]
             if input_array.shape[1] != 1:
@@ -38,7 +39,7 @@ class PathCondition(np.ndarray):
                     f"(ncols = {input_array.shape[1]}), the expected number of column is 1"
                 )
 
-        elif interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+        elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             if len(input_array.shape) == 1:
                 input_array = input_array[:, np.newaxis]
             if input_array.shape[1] != 1 and input_array.shape[1] != 3:
@@ -48,16 +49,16 @@ class PathCondition(np.ndarray):
                 )
             if input_array.shape[1] == 1:
                 input_array = np.repeat(input_array, 3, axis=1)
-        elif interpolation_type == InterpolationType.LINEAR:
+        elif interpolation == InterpolationType.LINEAR:
             if input_array.shape[1] != 2:
                 raise RuntimeError(
                     f"Invalid number of column for InterpolationType.LINEAR (ncols = {input_array.shape[1]}), "
                     f"the expected number of column is 2"
                 )
-        elif interpolation_type == InterpolationType.EACH_FRAME:
+        elif interpolation == InterpolationType.EACH_FRAME:
             # This will be verified when the expected number of columns is set
             pass
-        elif interpolation_type == InterpolationType.SPLINE:
+        elif interpolation == InterpolationType.SPLINE:
             if input_array.shape[1] < 2:
                 raise RuntimeError("Value for InterpolationType.SPLINE must have at least 2 columns")
             if t is None:
@@ -66,7 +67,7 @@ class PathCondition(np.ndarray):
             if input_array.shape[1] != t.shape[0]:
                 raise RuntimeError("Spline necessitate a time vector which as the same length as column of data")
 
-        elif interpolation_type == InterpolationType.CUSTOM:
+        elif interpolation == InterpolationType.CUSTOM:
             # We have to assume dimensions are those the user wants
             pass
         else:
@@ -75,10 +76,10 @@ class PathCondition(np.ndarray):
 
         # Additional information
         obj.nb_shooting = None
-        obj.type = interpolation_type
+        obj.type = interpolation
         obj.t = t
         obj.extra_params = extra_params
-        if interpolation_type == InterpolationType.CUSTOM:
+        if interpolation == InterpolationType.CUSTOM:
             obj.custom_function = custom_function
 
         return obj
@@ -168,6 +169,32 @@ class PathCondition(np.ndarray):
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
 
+class BoundsOption(OptionGeneric):
+    def __init__(self, bounds=None, **params):
+        super(BoundsOption, self).__init__(**params)
+        self.bounds = bounds
+
+
+class BoundsList(UniquePerPhaseOptionList):
+    def add(
+        self,
+        bounds,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+        phase=-1,
+        **extra_arguments,
+    ):
+        if not isinstance(bounds, Bounds):
+            bounds = Bounds(min_bound=bounds[0], max_bound=bounds[1], interpolation=interpolation, **extra_arguments)
+
+        super(BoundsList, self)._add(option_type=BoundsOption, bounds=bounds, phase=phase)
+
+    def __getitem__(self, item):
+        return super(BoundsList, self).__getitem__(item).bounds
+
+    def __next__(self):
+        return super(BoundsList, self).__next__().bounds
+
+
 class Bounds:
     """
     Organizes bounds of states("X"), controls("U") and "V".
@@ -177,24 +204,24 @@ class Bounds:
         self,
         min_bound=(),
         max_bound=(),
-        interpolation_type=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         **parameters,
     ):
         """
         Initializes bound conditions.
         :param min_bound: Minimal bounds. (list of size number of nodes x number of states or controls ?)
         :param max_bound: Maximal bounds. (list of size number of nodes x number of states or controls ?)
-        :param  interpolation_type: Interpolation type. (Instance of InterpolationType class)
+        :param  interpolation: Interpolation type. (Instance of InterpolationType class)
         """
         if isinstance(min_bound, PathCondition):
             self.min = min_bound
         else:
-            self.min = PathCondition(min_bound, interpolation_type=interpolation_type, **parameters)
+            self.min = PathCondition(min_bound, interpolation=interpolation, **parameters)
 
         if isinstance(max_bound, PathCondition):
             self.max = max_bound
         else:
-            self.max = PathCondition(max_bound, interpolation_type=interpolation_type, **parameters)
+            self.max = PathCondition(max_bound, interpolation=interpolation, **parameters)
 
         self.type = interpolation_type
         self.t = None
@@ -218,8 +245,8 @@ class Bounds:
         Concatenates minimal and maximal bounds.
         :param other: Bounds to concatenate. (Instance of Bounds class)
         """
-        self.min = PathCondition(np.concatenate((self.min, other.min)), interpolation_type=self.min.type)
-        self.max = PathCondition(np.concatenate((self.max, other.max)), interpolation_type=self.max.type)
+        self.min = PathCondition(np.concatenate((self.min, other.min)), interpolation=self.min.type)
+        self.max = PathCondition(np.concatenate((self.max, other.max)), interpolation=self.max.type)
 
         self.type = self.min.type
         self.t = self.min.t
@@ -288,17 +315,39 @@ class QAndQDotBounds(Bounds):
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
 
+class InitialConditionsOption(OptionGeneric):
+    def __init__(self, initial_condition=None, **params):
+        super(InitialConditionsOption, self).__init__(**params)
+        self.initial_condition = initial_condition
+
+
+class InitialConditionsList(UniquePerPhaseOptionList):
+    def add(self, initial_condition, interpolation=InterpolationType.CONSTANT, phase=-1, **extra_arguments):
+        if not isinstance(initial_condition, InitialConditions):
+            initial_condition = InitialConditions(initial_condition, interpolation=interpolation, **extra_arguments)
+
+        super(InitialConditionsList, self)._add(
+            option_type=InitialConditionsOption, initial_condition=initial_condition, phase=phase
+        )
+
+    def __getitem__(self, item):
+        return super(InitialConditionsList, self).__getitem__(item).initial_condition
+
+    def __next__(self):
+        return super(InitialConditionsList, self).__next__().initial_condition
+
+
 class InitialConditions:
-    def __init__(self, initial_guess=(), interpolation_type=InterpolationType.CONSTANT, **parameters):
+    def __init__(self, initial_guess=(), interpolation=InterpolationType.CONSTANT, **parameters):
         """
         Sets initial guesses.
         :param initial_guess: Initial guesses. (list)
-        :param interpolation_type: Interpolation type. (Instance of InterpolationType class)
+        :param interpolation: Interpolation type. (Instance of InterpolationType class)
         """
         if isinstance(initial_guess, PathCondition):
             self.init = initial_guess
         else:
-            self.init = PathCondition(initial_guess, interpolation_type=interpolation_type, **parameters)
+            self.init = PathCondition(initial_guess, interpolation=interpolation, **parameters)
 
     def check_and_adjust_dimensions(self, nb_elements, nb_shooting):
         """
@@ -315,4 +364,4 @@ class InitialConditions:
         Concatenates initial guesses.
         :param other: Initial guesses to concatenate. (?)
         """
-        self.init = PathCondition(np.concatenate((self.init, other.init)), interpolation_type=self.init.type,)
+        self.init = PathCondition(np.concatenate((self.init, other.init)), interpolation=self.init.type,)

@@ -7,26 +7,17 @@ import os
 from itertools import accumulate
 
 from matplotlib import pyplot as plt, lines
-from casadi import MX, Callback, nlpsol_out, nlpsol_n_out, Sparsity
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
-from .variable_optimization import Data
-from .mapping import Mapping
-from .enums import PlotType
-from .utils import check_version
-from .path_conditions import InterpolationType
+from ..misc.data import Data
+from ..misc.enums import PlotType
+from ..misc.mapping import Mapping
+from ..misc.utils import check_version
 
 
 class CustomPlot:
     def __init__(
-        self,
-        update_function,
-        plot_type=PlotType.PLOT,
-        axes_idx=None,
-        legend=(),
-        combine_to=None,
-        color=None,
-        ylim=None,
-        bounds=None,
+        self, update_function, plot_type=PlotType.PLOT, axes_idx=None, legend=(), combine_to=None, color=None, ylim=None
     ):
         """
         Initializes the plot.
@@ -51,21 +42,16 @@ class CustomPlot:
         self.combine_to = combine_to
         self.color = color
         self.ylim = ylim
-        self.bounds = bounds
 
 
 class PlotOcp:
-    def __init__(self, ocp, automatically_organize=True, use_bounds_as_ylimit=True):
+    def __init__(self, ocp, automatically_organize=True):
         """Prepares the figure"""
         for i in range(1, ocp.nb_phases):
             if ocp.nlp[0]["nbQ"] != ocp.nlp[i]["nbQ"]:
                 raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
 
         self.ocp = ocp
-        self.plot_options = {
-            "bounds": {"color": "k", "linewidth": 0.4, "linestyle": "-"},
-        }
-
         self.ydata = []
         self.ns = 0
 
@@ -77,23 +63,20 @@ class PlotOcp:
             self.tf = list(self.ocp.initial_phase_time)
         self.t_idx_to_optimize = []
         for i, nlp in enumerate(self.ocp.nlp):
-            if isinstance(nlp["tf"], MX):
+            if isinstance(nlp["tf"], self.ocp.CX):
                 self.t_idx_to_optimize.append(i)
         self.__update_time_vector()
 
         self.axes = {}
         self.plots = []
         self.plots_vertical_lines = []
-        self.plots_bounds = []
         self.all_figures = []
 
-        running_cmp = 0
         self.automatically_organize = automatically_organize
-        self._organize_windows(len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]),)
+        self._organize_windows(len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]))
 
         self.plot_func = {}
         self.variable_sizes = []
-        self.use_bounds_as_ylimit = use_bounds_as_ylimit
         self.__create_plots()
 
         horz = 0
@@ -177,19 +160,15 @@ class PlotOcp:
                 self.plot_func[variable][i] = nlp["plot"][variable]
 
                 mapping = self.plot_func[variable][i].phase_mappings.map_idx
-                for ctr, k in enumerate(mapping):
+                for k in mapping:
                     ax = axes[k]
                     if k < len(self.plot_func[variable][i].legend):
                         axes[k].set_title(self.plot_func[variable][i].legend[k])
-                    ax.grid(color="k", linestyle="-", linewidth=0.15)
+                    ax.grid(color="k", linestyle="--", linewidth=0.5)
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
-                    elif self.use_bounds_as_ylimit and nlp["plot"][variable].bounds is not None:
-                        y_min = nlp["plot"][variable].bounds.min[ctr].min()
-                        y_max = nlp["plot"][variable].bounds.max[ctr].max()
-                        y_range, _ = self.__compute_ylim(y_min, y_max, 1.25)
-                        ax.set_ylim(y_range)
+
                     zero = np.zeros((t.shape[0], 1))
                     plot_type = self.plot_func[variable][i].type
                     if plot_type == PlotType.PLOT:
@@ -209,7 +188,7 @@ class PlotOcp:
                                     "-",
                                     color=color,
                                     markersize=3,
-                                    linewidth=1.1,
+                                    linewidth=0.8,
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
@@ -220,34 +199,10 @@ class PlotOcp:
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
-                for j, ax in enumerate(axes):
+                for ax in axes:
                     intersections_time = self.find_phases_intersections()
                     for time in intersections_time:
                         self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
-                    if self.axes[variable][0].bounds is not None:
-                        if self.axes[variable][0].bounds.type == InterpolationType.EACH_FRAME:
-                            ns = self.axes[variable][0].bounds.min.shape[1] - 1
-                        else:
-                            ns = nlp["ns"]
-                        self.axes[variable][0].bounds.check_and_adjust_dimensions(
-                            nb_elements=len(mapping), nb_shooting=ns
-                        )
-                        bounds_min = np.array(
-                            [nlp["plot"][variable].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)]
-                        )
-                        bounds_max = np.array(
-                            [nlp["plot"][variable].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)]
-                        )
-                        if bounds_min.shape[0] == nlp["ns"]:
-                            bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
-                            bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
-
-                        self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
-                        )
-                        self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
-                        )
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
         """
@@ -377,12 +332,6 @@ class PlotOcp:
                 ax = plot[2].axes
             ax.set_xlim(0, self.t[-1][-1])
 
-        if self.plots_bounds:
-            for plot_bounds in self.plots_bounds:
-                plot_bounds[0][0].set_xdata(self.t[plot_bounds[1]])
-                ax = plot_bounds[0][0].axes
-                ax.set_xlim(0, self.t[-1][-1])
-
         intersections_time = self.find_phases_intersections()
         n = len(intersections_time)
         if n > 0:
@@ -410,35 +359,29 @@ class PlotOcp:
             p.set_ydata((np.nan, np.nan))
 
         for key in self.axes:
-            if not self.use_bounds_as_ylimit:
-                for i, ax in enumerate(self.axes[key][1]):
-                    if not self.axes[key][0].ylim:
-                        y_max = -np.inf
-                        y_min = np.inf
-                        for p in ax.get_children():
-                            if isinstance(p, lines.Line2D):
-                                y_min = min(y_min, np.min(p.get_ydata()))
-                                y_max = max(y_max, np.max(p.get_ydata()))
-                            y_range, data_range = self.__compute_ylim(y_min, y_max, 1.25)
-                            ax.set_ylim(y_range)
-                            ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
+            for i, ax in enumerate(self.axes[key][1]):
+                if not self.axes[key][0].ylim:
+                    y_max = -np.inf
+                    y_min = np.inf
+                    for p in ax.get_children():
+                        if isinstance(p, lines.Line2D):
+                            y_min = min(y_min, np.min(p.get_ydata()))
+                            y_max = max(y_max, np.max(p.get_ydata()))
+                    if np.isnan(y_min) or np.isinf(y_min):
+                        y_min = 0
+                    if np.isnan(y_max) or np.isinf(y_max):
+                        y_max = 1
+                    data_mean = np.mean((y_min, y_max))
+                    data_range = y_max - y_min
+                    if np.abs(data_range) < 0.8:
+                        data_range = 0.8
+                    y_range = (1.25 * data_range) / 2
+                    y_range = data_mean - y_range, data_mean + y_range
+                    ax.set_ylim(y_range)
+                    ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4))
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
-
-    @staticmethod
-    def __compute_ylim(min_val, max_val, threshold):
-        if np.isnan(min_val) or np.isinf(min_val):
-            min_val = 0
-        if np.isnan(max_val) or np.isinf(max_val):
-            max_val = 1
-        data_mean = np.mean((min_val, max_val))
-        data_range = max_val - min_val
-        if np.abs(data_range) < 0.8:
-            data_range = 0.8
-        y_range = (threshold * data_range) / 2
-        y_range = data_mean - y_range, data_mean + y_range
-        return y_range, data_range
 
     @staticmethod
     def _generate_windows_size(nb):

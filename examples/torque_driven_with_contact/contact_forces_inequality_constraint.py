@@ -3,14 +3,17 @@ import biorbd
 from biorbd_optim import (
     Instant,
     OptimalControlProgram,
+    ConstraintList,
     Constraint,
+    ObjectiveList,
     Objective,
-    ProblemType,
+    DynamicsTypeList,
+    DynamicsType,
     BidirectionalMapping,
     Mapping,
-    Bounds,
+    BoundsList,
     QAndQDotBounds,
-    InitialConditions,
+    InitialConditionsList,
     ShowResult,
 )
 
@@ -19,31 +22,32 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
-    torque_min, torque_max, torque_init = -500, 500, 0
+    tau_min, tau_max, tau_ini = -500, 500, 0
     tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
 
     # Add objective functions
-    objective_functions = ({"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},)
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
-    problem_type = {"type": ProblemType.TORQUE_DRIVEN_WITH_CONTACT}
+    dynamics = DynamicsTypeList()
+    dynamics.add(DynamicsType.TORQUE_DRIVEN_WITH_CONTACT)
 
     # Constraints
-    constraints = (
-        {
-            "type": Constraint.CONTACT_FORCE_INEQUALITY,
-            "direction": direction,
-            "instant": Instant.ALL,
-            "contact_force_idx": 1,
-            "boundary": boundary,
-        },
-        {
-            "type": Constraint.CONTACT_FORCE_INEQUALITY,
-            "direction": direction,
-            "instant": Instant.ALL,
-            "contact_force_idx": 2,
-            "boundary": boundary,
-        },
+    constraints = ConstraintList()
+    constraints.add(
+        Constraint.CONTACT_FORCE_INEQUALITY,
+        direction=direction,
+        instant=Instant.ALL,
+        contact_force_idx=1,
+        boundary=boundary,
+    )
+    constraints.add(
+        Constraint.CONTACT_FORCE_INEQUALITY,
+        direction=direction,
+        instant=Instant.ALL,
+        contact_force_idx=2,
+        boundary=boundary,
     )
 
     # Path constraint
@@ -52,28 +56,32 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize X_bounds
-    X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.min[:, 0] = pose_at_first_node + [0] * nb_qdot
-    X_bounds.max[:, 0] = pose_at_first_node + [0] * nb_qdot
+    x_bounds = BoundsList()
+    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds[0].min[:, 0] = pose_at_first_node + [0] * nb_qdot
+    x_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
-    X_init = InitialConditions(pose_at_first_node + [0] * nb_qdot)
+    x_init = InitialConditionsList()
+    x_init.add(pose_at_first_node + [0] * nb_qdot)
 
     # Define control path constraint
-    U_bounds = Bounds(min_bound=[torque_min] * tau_mapping.reduce.len, max_bound=[torque_max] * tau_mapping.reduce.len)
+    u_bounds = BoundsList()
+    u_bounds.add([[tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len])
 
-    U_init = InitialConditions([torque_init] * tau_mapping.reduce.len)
+    u_init = InitialConditionsList()
+    u_init.add([tau_ini] * tau_mapping.reduce.len)
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
-        problem_type,
+        dynamics,
         number_shooting_points,
         phase_time,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
         objective_functions,
         constraints,
         tau_mapping=tau_mapping,
@@ -85,7 +93,7 @@ if __name__ == "__main__":
     t = 0.3
     ns = 10
     ocp = prepare_ocp(
-        model_path=model_path, phase_time=t, number_shooting_points=ns, direction="GREATER_THAN", boundary=50,
+        model_path=model_path, phase_time=t, number_shooting_points=ns, direction="GREATER_THAN", boundary=50
     )
 
     # --- Solve the program --- #
