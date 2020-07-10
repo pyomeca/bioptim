@@ -1,7 +1,7 @@
 from casadi import MX, vertcat, horzcat, horzsplit, Function
 
 from .dynamics_functions import DynamicsFunctions
-from ..misc.enums import PlotType, OdeSolver
+from ..misc.enums import PlotType, OdeSolver, ControlType
 from ..misc.mapping import BidirectionalMapping, Mapping
 from ..gui.plot import CustomPlot
 
@@ -313,9 +313,14 @@ class Problem:
                 nlp["u"] = vertcat(nlp["u"], horzcat(tau_begin, tau_end))
                 nlp["var_controls"]["tau"] = nlp["nbTau"]
 
-                nlp["plot"]["tau"] = CustomPlot(
-                    lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
-                )
+                if nlp["control_type"] == ControlType.CONSTANT:
+                    nlp["plot"]["tau"] = CustomPlot(
+                        lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
+                    )
+                elif nlp["control_type"] == ControlType.LINEAR:
+                    nlp["plot"]["tau"] = CustomPlot(
+                        lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.LINEAR, legend=legend_tau
+                    )
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()

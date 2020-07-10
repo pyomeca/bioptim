@@ -252,12 +252,10 @@ class OptimalControlProgram:
         # Prepare the dynamics of the program
         self.__add_to_nlp("dynamics_type", dynamics_type, False)
         self.__add_to_nlp("ode_solver", ode_solver, True)
+        self.__add_to_nlp("control_type", control_type, True)
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
             Problem.initialize(self, self.nlp[i])
-        self.__add_to_nlp(
-            "control_type", control_type, True
-        )
 
         # Prepare path constraints
         self.__add_to_nlp("X_bounds", X_bounds, False)

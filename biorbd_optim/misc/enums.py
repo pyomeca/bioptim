@@ -65,6 +65,7 @@ class PlotType(Enum):
     PLOT = 0
     INTEGRATED = 1
     STEP = 2
+    LINEAR = 3
 
 
 class ControlType(Enum):

@@ -196,6 +196,20 @@ class PlotOcp:
                     elif plot_type == PlotType.STEP:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:orange"
                         self.plots.append([plot_type, i, ax.step(t, zero, where="post", color=color, zorder=0)[0]])
+                    elif plot_type == PlotType.LINEAR:
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:blue"
+                        plots_linear = []
+                        for cmp in range(nlp["ns"]):
+                            plots_linear.append(
+                                ax.plot(
+                                    np.hstack((self.t_integrated[i][cmp][0], self.t_integrated[i][cmp][-1])),
+                                    np.zeros(2),
+                                    "-",
+                                    color=color,
+                                    markersize=3,
+                                )[0]
+                            )
+                        self.plots.append([plot_type, i, plots_linear])
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
@@ -311,6 +325,24 @@ class PlotOcp:
                         for y in all_y:
                             y_tp.append(y[idx, :])
                         self.__append_to_ydata([y_tp])
+                elif self.plot_func[key][i].type == PlotType.LINEAR:
+                    all_y = []
+                    for idx, t in enumerate(self.t_integrated[i]):
+                        t = np.hstack((t[0],t[-1]))
+                        y_tp = np.empty((self.variable_sizes[i][key], 2))
+                        y_tp.fill(np.nan)
+                        y_tp[:, :] = self.plot_func[key][i].function(
+                            state[:, np.array([step_size * idx, step_size * (idx + 1) - 1])],
+                            control[:, idx: idx + 2],
+                            data_param_in_dyn,
+                        )
+                        all_y.append(y_tp)
+
+                    for idx in range(len(self.plot_func[key][i].phase_mappings.map_idx)):
+                        y_tp = []
+                        for y in all_y:
+                            y_tp.append(y[idx, :])
+                        self.__append_to_ydata([y_tp])
                 else:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
@@ -324,6 +356,10 @@ class PlotOcp:
         for plot in self.plots:
             phase_idx = plot[1]
             if plot[0] == PlotType.INTEGRATED:
+                for cmp, p in enumerate(plot[2]):
+                    p.set_xdata(self.t_integrated[phase_idx][cmp])
+                ax = plot[2][-1].axes
+            elif plot[0] == PlotType.LINEAR:
                 for cmp, p in enumerate(plot[2]):
                     p.set_xdata(self.t_integrated[phase_idx][cmp])
                 ax = plot[2][-1].axes
@@ -350,6 +386,9 @@ class PlotOcp:
             y = self.ydata[i]
 
             if plot[0] == PlotType.INTEGRATED:
+                for cmp, p in enumerate(plot[2]):
+                    p.set_ydata(y[cmp])
+            elif plot[0] == PlotType.LINEAR:
                 for cmp, p in enumerate(plot[2]):
                     p.set_ydata(y[cmp])
             else:
