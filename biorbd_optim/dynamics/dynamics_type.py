@@ -1,6 +1,24 @@
 from enum import Enum
 
 from .problem import Problem
+from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
+
+
+class DynamicsOption(OptionGeneric):
+    def __init__(self, dynamics=None, configure=None, **params):
+        super(DynamicsOption, self).__init__(**params)
+        self.dynamics = dynamics
+        self.configure = configure
+
+
+class DynamicsTypeList(UniquePerPhaseOptionList):
+    def add(self, type, dynamic_function=None, phase=-1):
+        extra_arguments = {}
+        if not isinstance(type, DynamicsType):
+            extra_arguments["configure"] = type
+            type = DynamicsType.CUSTOM
+
+        super(DynamicsTypeList, self)._add(option_type=DynamicsOption, type=type, phase=phase, dynamic_function=dynamic_function, **extra_arguments)
 
 
 class DynamicsType(Enum):
