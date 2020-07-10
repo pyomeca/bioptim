@@ -12,16 +12,16 @@ from .data import Data
 from .enums import OdeSolver, Solver
 from .mapping import BidirectionalMapping
 from .options_lists import OptionList
-from .parameters import Parameters, ParametersList
+from .parameters import Parameters, ParameterList, ParameterOption
 from .utils import check_version
 from ..dynamics.problem import Problem
 from ..dynamics.dynamics_type import DynamicsTypeList
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.integrator import RK4
-from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList
+from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList, ConstraintOption
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
-from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList
+from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList, ObjectiveOption
 from ..limits.path_conditions import Bounds, BoundsList, InitialConditions, InitialConditionsList, InterpolationType
 
 check_version(biorbd, "1.3.5", "1.4.0")
@@ -46,7 +46,7 @@ class OptimalControlProgram:
         U_bounds,
         objective_functions=ObjectiveList(),
         constraints=ConstraintList(),
-        parameters=ParametersList(),
+        parameters=ParameterList(),
         external_forces=(),
         ode_solver=OdeSolver.RK,
         nb_integration_steps=5,
@@ -108,9 +108,9 @@ class OptimalControlProgram:
             "U_init": U_init,
             "X_bounds": X_bounds,
             "U_bounds": U_bounds,
-            "objective_functions": [],
-            "constraints": [],
-            "parameters": [],
+            "objective_functions": ObjectiveList(),
+            "constraints": ConstraintList(),
+            "parameters": ParameterList(),
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "nb_integration_steps": nb_integration_steps,
@@ -161,8 +161,8 @@ class OptimalControlProgram:
             raise RuntimeError("objective_functions should be built from an ObjectiveList")
         if not isinstance(constraints, ConstraintList):
             raise RuntimeError("constraints should be built from an ConstraintList")
-        if not isinstance(parameters, ParametersList):
-            raise RuntimeError("parameters should be built from an ParametersList")
+        if not isinstance(parameters, ParameterList):
+            raise RuntimeError("parameters should be built from an ParameterList")
         if not isinstance(state_transitions, StateTransitionList):
             raise RuntimeError("state_transitions should be built from an StateTransitionList")
         if not isinstance(ode_solver, OdeSolver):
@@ -229,8 +229,7 @@ class OptimalControlProgram:
 
         # Prepare the parameters to optimize
         if len(parameters) > 0:
-            for parameter in parameters[0]:  # 0 since parameters are not associated with phases
-                self.add_parameter_to_optimize(parameter)
+            self.update_parameters(parameters)
 
         # Declare the time to optimize
         self.__define_variable_time(initial_time_guess, time_min, time_max)
@@ -494,32 +493,41 @@ class OptimalControlProgram:
                 Parameters._add_to_v(self, "time", 1, None, time_bounds, time_init, nlp["tf"])
                 i += 1
 
-    def update_objectives(self, new_objective_function_set):
-        if not isinstance(new_objective_function_set, ObjectiveList):
-            raise RuntimeError("new_objective_function_set must be a ObjectiveList")
+    def update_objectives(self, new_objective_function):
+        if isinstance(new_objective_function, ObjectiveOption):
+            self._modify_penalty(new_objective_function, "objective_functions")
 
-        for objective_in_phase in new_objective_function_set:
-            for objective in objective_in_phase:
-                self._modify_penalty(objective, "objective_functions")
+        elif isinstance(new_objective_function, ObjectiveList):
+            for objective_in_phase in new_objective_function:
+                for objective in objective_in_phase:
+                    self._modify_penalty(objective, "objective_functions")
 
-    def modify_objective_function(self, new_objective_function, index_in_phase, phase_number=-1):
-        self._modify_penalty(new_objective_function, index_in_phase, phase_number, "objective_functions", True)
+        else:
+            raise RuntimeError("new_objective_function must be a ObjectiveOption or an ObjectiveList")
 
-    def update_constraints(self, new_constraint_set):
-        if not isinstance(new_constraint_set, ConstraintList):
-            raise RuntimeError("new_contraint_set must be a ConstraintList")
-        for p, constraints_in_phase in enumerate(new_constraint_set):
-            for constraint in constraints_in_phase:
-                self.modify_constraint(constraint, index_in_phase=-1, phase_number=p)
+    def update_constraints(self, new_constraint):
+        if isinstance(new_constraint, ConstraintOption):
+            self._modify_penalty(new_constraint, "constraints")
 
-    def modify_constraint(self, new_constraint, index_in_phase, phase_number=-1):
-        self._modify_penalty(new_constraint, "constraints")
+        elif isinstance(new_constraint, ConstraintList):
+            for constraints_in_phase in new_constraint:
+                for constraint in constraints_in_phase:
+                    self._modify_penalty(constraint, "constraints")
 
-    def add_parameter_to_optimize(self, new_parameter):
-        self.modify_parameter_to_optimize(new_parameter)
+        else:
+            raise RuntimeError("new_constraint must be a ConstraintOption or a ConstraintList")
 
-    def modify_parameter_to_optimize(self, new_parameter, penalty_idx=-1):
-        self._modify_penalty(new_parameter, "parameters")
+    def update_parameters(self, new_parameters):
+        if isinstance(new_parameters, ParameterOption):
+            self._modify_penalty(new_parameters, "parameters")
+
+        elif isinstance(new_parameters, ParameterList):
+            for parameters_in_phase in new_parameters:
+                for parameter in parameters_in_phase:
+                    self._modify_penalty(parameter, "parameters")
+
+        else:
+            raise RuntimeError("new_parameter must be a ParameterOption or a ParameterList")
 
     def _modify_penalty(self, new_penalty, penalty_name):
         """
@@ -534,15 +542,7 @@ class OptimalControlProgram:
         phase_idx = new_penalty.phase
 
         # Copy to self.original_values so it can be save/load
-        if penalty_name != "parameters":
-            while phase_idx >= len(self.original_values[penalty_name]):
-                self.original_values[penalty_name].append([])
-            to_save_to = self.original_values[penalty_name][phase_idx]
-        else:
-            to_save_to = self.original_values[penalty_name]
-        while new_penalty.idx >= len(to_save_to):
-            to_save_to.append([])
-        to_save_to[new_penalty.idx] = deepcopy(new_penalty)
+        self.original_values[penalty_name].add(new_penalty)
 
         if penalty_name == "objective_functions":
             ObjectiveFunction.add_or_replace(self, self.nlp[phase_idx], new_penalty)
@@ -682,24 +682,6 @@ class OptimalControlProgram:
         """
         with open(file_path, "rb") as file:
             data = pickle.load(file)
-            objective_functions = ObjectiveList()
-            for obj_phase in data["ocp_initilializer"]["objective_functions"]:
-                for obj in obj_phase:
-                    objective_functions.add(**obj)
-            data["ocp_initilializer"]["objective_functions"] = objective_functions
-
-            constraints = ConstraintList()
-            for constraints_phase in data["ocp_initilializer"]["constraints"]:
-                for constraint in constraints_phase:
-                    constraints.add(**constraint)
-            data["ocp_initilializer"]["constraints"] = constraints
-
-            parameters = ParametersList()
-            for parameters_phase in data["ocp_initilializer"]["parameters"]:
-                for parameter in parameters_phase:
-                    parameters.add(**parameter)
-            data["ocp_initilializer"]["parameters"] = parameters
-
             ocp = OptimalControlProgram(**data["ocp_initilializer"])
             for key in data["versions"].keys():
                 if data["versions"][key] != ocp.version[key]:

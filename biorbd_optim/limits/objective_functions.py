@@ -18,35 +18,36 @@ class ObjectiveOption(OptionGeneric):
 
 class ObjectiveList(OptionList):
     def add(
-        self, type, instant=Instant.DEFAULT, weight=1, phase=0, custom_type=None, quadratic=None, **extra_arguments
+        self, objective, instant=Instant.DEFAULT, weight=1, phase=0, custom_type=None, quadratic=None, **extra_arguments
     ):
-        if isinstance(type, ObjectiveOption):
-            raise RuntimeError("TODO")
+        if isinstance(objective, ObjectiveOption):
+            self.copy(objective)
 
-        elif not isinstance(type, Objective.Lagrange) and not isinstance(type, Objective.Mayer):
-            extra_arguments = {**extra_arguments, "custom_function": type}
+        else:
+            if not isinstance(objective, Objective.Lagrange) and not isinstance(objective, Objective.Mayer):
+                extra_arguments = {**extra_arguments, "custom_function": objective}
 
-            if custom_type is None:
-                raise RuntimeError(
-                    "Custom objective function detected, but custom_function is missing. "
-                    "It should either be Objective.Mayer or Objective.Lagrange"
-                )
-            type = custom_type(custom_type.CUSTOM)
-            if isinstance(type, Objective.Lagrange):
-                pass
-            elif isinstance(type, Objective.Mayer):
-                pass
-            elif isinstance(type, Objective.Parameter):
-                pass
-            else:
-                raise RuntimeError(
-                    "Custom objective function detected, but custom_function is invalid. "
-                    "It should either be Objective.Mayer or Objective.Lagrange"
-                )
+                if custom_type is None:
+                    raise RuntimeError(
+                        "Custom objective function detected, but custom_function is missing. "
+                        "It should either be Objective.Mayer or Objective.Lagrange"
+                    )
+                objective = custom_type(custom_type.CUSTOM)
+                if isinstance(objective, Objective.Lagrange):
+                    pass
+                elif isinstance(objective, Objective.Mayer):
+                    pass
+                elif isinstance(objective, Objective.Parameter):
+                    pass
+                else:
+                    raise RuntimeError(
+                        "Custom objective function detected, but custom_function is invalid. "
+                        "It should either be Objective.Mayer or Objective.Lagrange"
+                    )
 
-        super(ObjectiveList, self)._add(
-            option_type=ObjectiveOption, type=type, instant=instant, weight=weight, phase=phase, quadratic=quadratic, **extra_arguments
-        )
+            super(ObjectiveList, self)._add(
+                option_type=ObjectiveOption, type=objective, instant=instant, weight=weight, phase=phase, quadratic=quadratic, **extra_arguments
+            )
 
 
 class ObjectiveFunction:

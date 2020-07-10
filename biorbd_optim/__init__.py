@@ -11,5 +11,5 @@ from .misc.data import Data
 from .misc.enums import Axe, Instant, InterpolationType, OdeSolver, PlotType, Solver
 from .misc.mapping import BidirectionalMapping, Mapping
 from .misc.optimal_control_program import OptimalControlProgram
-from .misc.parameters import ParametersList
+from .misc.parameters import ParameterList
 from .misc.simulate import Simulate

@@ -20,11 +20,15 @@ class ConstraintOption(OptionGeneric):
 
 
 class ConstraintList(OptionList):
-    def add(self, type, instant, phase=0, **extra_arguments):
-        if not isinstance(type, Constraint):
-            extra_arguments["custom_function"] = type
-            type = Constraint.CUSTOM
-        super(ConstraintList, self)._add(option_type=ConstraintOption, type=type, instant=instant, phase=phase, **extra_arguments)
+    def add(self, constraint, instant=Instant.NONE, phase=0, **extra_arguments):
+        if isinstance(constraint, ConstraintOption):
+            self.copy(constraint)
+
+        else:
+            if not isinstance(constraint, Constraint):
+                extra_arguments["custom_function"] = constraint
+                constraint = Constraint.CUSTOM
+            super(ConstraintList, self)._add(option_type=ConstraintOption, type=constraint, instant=instant, phase=phase, **extra_arguments)
 
 
 class ConstraintFunction(PenaltyFunctionAbstract):

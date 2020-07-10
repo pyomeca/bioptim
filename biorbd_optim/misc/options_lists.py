@@ -36,6 +36,14 @@ class OptionList:
         return self.options[item]
 
     def _add(self, option_type=OptionGeneric, phase=0, idx=-1, **extra_arguments):
+        idx = self.__prepare_option_list(phase, idx)
+        self.options[phase][idx] = option_type(phase=phase, idx=idx, **extra_arguments)
+
+    def copy(self, option):
+        self.__prepare_option_list(option.phase, option.idx)
+        self.options[option.phase][option.idx] = option
+
+    def __prepare_option_list(self, phase, idx):
         for i in range(len(self.options), phase + 1):
             self.options.append([])
         if idx == -1:
@@ -47,8 +55,7 @@ class OptionList:
                 idx = len(self.options[phase])
         for i in range(len(self.options[phase]), idx + 1):
             self.options[phase].append(None)
-
-        self.options[phase][idx] = option_type(phase=phase, idx=idx, **extra_arguments)
+        return idx
 
     def print(self):
         # TODO: Print all elements in the console
