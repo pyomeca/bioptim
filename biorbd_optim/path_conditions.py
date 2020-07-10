@@ -219,7 +219,14 @@ class Bounds:
             min_bound = np.array(self.min[slice_list.start : slice_list.stop : slice_list.step])
             max_bound = np.array(self.max[slice_list.start : slice_list.stop : slice_list.step])
             interpolation_type = self.min.type
-            bounds_sliced = Bounds(min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type)
+            if interpolation_type != InterpolationType.SPLINE:
+                bounds_sliced = Bounds(min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type)
+            else:
+                t = self.min.t
+                bounds_sliced = Bounds(
+                    min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type, t=t
+                )
+
             return bounds_sliced
         else:
             raise RuntimeError(

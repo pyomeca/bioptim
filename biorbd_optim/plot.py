@@ -221,7 +221,6 @@ class PlotOcp:
                     for time in intersections_time:
                         self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
                     if self.axes[variable][0].bounds is not None:
-                        # TODO: Problem -> When it is bounds for control nb_shooting must be ns -1... how to deal with that without knowing the nature of the bounds to plot?
                         try:
                             self.axes[variable][0].bounds.check_and_adjust_dimensions(
                                 nb_elements=len(mapping), nb_shooting=nlp["ns"]
@@ -433,7 +432,7 @@ class PlotOcp:
             p.set_ydata((np.nan, np.nan))
 
         for key in self.axes:
-            if not (self.use_bounds_as_ylimit and self.axes[key][0].bounds is not None):
+            if not self.use_bounds_as_ylimit:
                 for i, ax in enumerate(self.axes[key][1]):
                     if not self.axes[key][0].ylim:
                         y_max = -np.inf
