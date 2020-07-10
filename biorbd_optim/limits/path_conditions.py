@@ -3,6 +3,7 @@ from scipy.interpolate import interp1d
 
 from ..misc.enums import InterpolationType
 from ..misc.mapping import BidirectionalMapping, Mapping
+from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
 
 
 class PathCondition(np.ndarray):
@@ -168,6 +169,32 @@ class PathCondition(np.ndarray):
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
 
+class BoundsOption(OptionGeneric):
+    def __init__(self, bounds=None, **params):
+        super(BoundsOption, self).__init__(**params)
+        self.bounds = bounds
+
+
+class BoundsList(UniquePerPhaseOptionList):
+    def add(
+        self,
+        bounds,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+        phase=-1,
+        **extra_arguments,
+    ):
+        if not isinstance(bounds, Bounds):
+            bounds = Bounds(min_bound=bounds[0], max_bound=bounds[1], interpolation=interpolation, **extra_arguments)
+
+        super(BoundsList, self)._add(option_type=BoundsOption, bounds=bounds, phase=phase)
+
+    def __getitem__(self, item):
+        return super(BoundsList, self).__getitem__(item).bounds
+
+    def __next__(self):
+        return super(BoundsList, self).__next__().bounds
+
+
 class Bounds:
     """
     Organizes bounds of states("X"), controls("U") and "V".
@@ -257,6 +284,28 @@ class QAndQDotBounds(Bounds):
         ]
 
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
+
+
+class InitialConditionsOption(OptionGeneric):
+    def __init__(self, initial_condition=None, **params):
+        super(InitialConditionsOption, self).__init__(**params)
+        self.initial_condition = initial_condition
+
+
+class InitialConditionsList(UniquePerPhaseOptionList):
+    def add(self, initial_condition, interpolation=InterpolationType.CONSTANT, phase=-1, **extra_arguments):
+        if not isinstance(initial_condition, InitialConditions):
+            initial_condition = InitialConditions(initial_condition, interpolation=interpolation, **extra_arguments)
+
+        super(InitialConditionsList, self)._add(
+            option_type=InitialConditionsOption, initial_condition=initial_condition, phase=phase
+        )
+
+    def __getitem__(self, item):
+        return super(InitialConditionsList, self).__getitem__(item).initial_condition
+
+    def __next__(self):
+        return super(InitialConditionsList, self).__next__().initial_condition
 
 
 class InitialConditions:
