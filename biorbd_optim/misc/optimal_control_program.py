@@ -383,7 +383,10 @@ class OptimalControlProgram:
                     nlp["dynamics"].append(RK4(ode, ode_opt))
             else:
                 if self.nb_threads > 1:
-                    nlp["dynamics"].append(RK4_multiThread(ode, ode_opt))
+                    if nlp["control_type"] == ControlType.LINEAR:
+                        raise RuntimeError("Piece-wise linear controls cannot be used with multiple threads")
+                    else:
+                        nlp["dynamics"].append(RK4_multiThread(ode, ode_opt))
                 else:
                     nlp["dynamics"].append(RK4(ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:

@@ -10,6 +10,7 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditionsList,
     ShowResult,
+    ControlType,
 )
 
 
@@ -88,6 +89,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         nb_integration_steps=5,
+        control_type=ControlType.LINEAR
     )
 
 
