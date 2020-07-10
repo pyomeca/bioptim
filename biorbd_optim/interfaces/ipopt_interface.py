@@ -27,9 +27,11 @@ class IpoptInterface(SolverInterface):
     def start_get_iterations(self):
         self.directory = ".__tmp_biorbd_optim"
         self.file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
-        os.mkdir(self.directory)
+
         if os.path.isfile(self.file_path):
             os.remove(self.file_path)
+            os.rmdir(self.directory)
+        os.mkdir(self.directory)
 
         with open(self.file_path, "wb") as file:
             pickle.dump([], file)
