@@ -55,7 +55,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
         Constraint.TRACK_STATE,
         instant=Instant.ALL,
         states_idx=0,
-        data_to_track=np.linspace(0, 2 * np.pi, number_shooting_points + 1),
+        target=np.linspace(0, 2 * np.pi, number_shooting_points + 1),
     )
 
     state_transitions = StateTransitionList()

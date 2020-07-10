@@ -29,7 +29,7 @@ def test_pendulum_min_time_mayer():
     # Load pendulum_min_time_Mayer
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py",
+        "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py"
     )
     pendulum_min_time_Mayer = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum_min_time_Mayer)
@@ -79,7 +79,7 @@ def test_pendulum_min_time_lagrange():
     # Load pendulum_min_time_Lagrange
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "pendulum_min_time_Lagrange", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py",
+        "pendulum_min_time_Lagrange", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py"
     )
     pendulum_min_time_Lagrange = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum_min_time_Lagrange)
@@ -129,7 +129,7 @@ def test_time_constraint():
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/time_constraint.py",
+        "time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/time_constraint.py"
     )
     time_constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(time_constraint)
@@ -181,7 +181,7 @@ def test_monophase_time_constraint():
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "monophase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+        "monophase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py"
     )
     monophase_time_constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(monophase_time_constraint)
@@ -233,7 +233,7 @@ def test_multiphase_time_constraint():
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
+        "multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py"
     )
     multiphase_time_constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(multiphase_time_constraint)

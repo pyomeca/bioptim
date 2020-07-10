@@ -7,48 +7,51 @@ from casadi import vertcat, horzcat
 
 from ..misc.enums import Instant, Axe, PlotType
 from ..misc.mapping import Mapping
+from ..misc.options_lists import OptionGeneric
 
 
 class PenaltyFunctionAbstract:
     class Functions:
         @staticmethod
-        def minimize_states(penalty_type, ocp, nlp, t, x, u, p, data_to_track=(), states_idx=(), **extra_param):
+        def minimize_states(penalty, ocp, nlp, t, x, u, p, target=None, states_idx=(), **extra_param):
             """
             Adds the objective that the specific states should be minimized.
             It is possible to track states, in this case the objective is to minimize
-            the mismatch between the optimized states and the reference states (data_to_track).
-            :param data_to_track: Reference states for tracking. (list of lists of float)
+            the mismatch between the optimized states and the reference states (target).
+            :param target: Reference states for tracking. (list of lists of float)
             :param states_idx: Index of the states to minimize. (list of integers)
             """
             states_idx = PenaltyFunctionAbstract._check_and_fill_index(states_idx, nlp["nx"], "state_idx")
-            data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [nlp["ns"] + 1, max(states_idx) + 1]
-            )
-
-            for i, v in enumerate(x):
-                # print(i)
-                # print(v)
-                val = v[states_idx] - data_to_track[t[i], states_idx]
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
-
-            # Prepare the plot
-            if len(t) == 1 and t[0] == nlp["ns"]:
-                # This is a tweak so the step plot won't start after the graph
-                t[0] = nlp["ns"] - 1
-            data_to_track[np.setxor1d(range(nlp["ns"] + 1), t)] = np.nan
-
-            running_idx = 0
-            for s in nlp["var_states"]:
-                idx = [idx for idx in states_idx if idx >= running_idx and idx < running_idx + nlp["var_states"][s]]
-                mapping = Mapping([idx for idx in states_idx if idx < nlp["var_states"][s]])
-                PenaltyFunctionAbstract._add_track_data_to_plot(
-                    ocp, nlp, data_to_track[:, idx].T, combine_to=s, axes_idx=mapping
+            if target is not None:
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    target, [max(states_idx) + 1, nlp["ns"] + 1]
                 )
-                running_idx += nlp["var_states"][s]
+
+                # Prepare the plot
+                if len(t) == 1 and t[0] == nlp["ns"]:
+                    # This is a tweak so the step plot won't start after the graph
+                    t[0] = nlp["ns"] - 1
+                target[:, np.setxor1d(range(nlp["ns"] + 1), t)] = np.nan
+
+                running_idx = 0
+                for s in nlp["var_states"]:
+                    idx = [idx for idx in states_idx if idx >= running_idx and idx < running_idx + nlp["var_states"][s]]
+                    mapping = Mapping([idx for idx in states_idx if idx < nlp["var_states"][s]])
+                    PenaltyFunctionAbstract._add_track_data_to_plot(
+                        ocp, nlp, target[idx, :], combine_to=s, axes_idx=mapping
+                    )
+                    running_idx += nlp["var_states"][s]
+
+            target_tp = None
+            for i, v in enumerate(x):
+                val = v[states_idx]
+                if target is not None:
+                    target_tp = target[states_idx, t[i]]
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
         def minimize_markers(
-            penalty_type,
+            penalty,
             ocp,
             nlp,
             t,
@@ -57,36 +60,38 @@ class PenaltyFunctionAbstract:
             p,
             axis_to_track=(Axe.X, Axe.Y, Axe.Z),
             markers_idx=(),
-            data_to_track=(),
+            target=None,
             **extra_param,
         ):
             """
             Adds the objective that the specific markers should be minimized.
             It is possible to track markers, in this case the objective is to minimize
-            the mismatch between the optimized markers positions and the reference markers positions (data_to_track).
+            the mismatch between the optimized markers positions and the reference markers positions (target).
             :param markers_idx: Index of the markers to minimize. (list of integers)
-            :param data_to_track: Reference markers positions for tracking. (list of lists of float)
+            :param target: Reference markers positions for tracking. (list of lists of float)
             :axis_to_track: Index of axis to keep while tracking (default track 3d trajectories)
             """
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
             )
-            data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
-            )
+            if target is not None:
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    target, [3, max(markers_idx) + 1, nlp["ns"] + 1]
+                )
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q"])
             nq = nlp["q_mapping"].reduce.len
+            target_tp = None
             for i, v in enumerate(x):
                 q = nlp["q_mapping"].expand.map(v[:nq])
-                data_marker = data_to_track[:, markers_idx, t[i]]
-                val = (
-                    nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx] - data_marker[axis_to_track, :]
-                )
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                val = nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx]
+                if target is not None:
+                    target_tp = target[:, markers_idx, t[i]]
+                    target_tp = target_tp[axis_to_track, :]
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
         def minimize_markers_displacement(
-            penalty_type, ocp, nlp, t, x, u, p, coordinates_system_idx=-1, markers_idx=(), **extra_param
+            penalty, ocp, nlp, t, x, u, p, coordinates_system_idx=-1, markers_idx=(), **extra_param
         ):
             """
             Adds the objective that the specific markers displacement (difference between the position of the
@@ -129,12 +134,10 @@ class PenaltyFunctionAbstract:
                 val = jcs_1_T @ vertcat(
                     nlp["casadi_func"]["markers"](x[i + 1][:n_q])[:, markers_idx], 1
                 ) - jcs_0_T @ vertcat(nlp["casadi_func"]["markers"](x[i][:n_q])[:, markers_idx], 1)
-                penalty_type._add_to_penalty(ocp, nlp, val[:3], **extra_param)
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val[:3], penalty, **extra_param)
 
         @staticmethod
-        def minimize_markers_velocity(
-            penalty_type, ocp, nlp, t, x, u, p, markers_idx=(), data_to_track=(), **extra_param
-        ):
+        def minimize_markers_velocity(penalty, ocp, nlp, t, x, u, p, markers_idx=(), target=None, **extra_param):
             """
             Adds the objective that the specific markers velocity should be minimized.
             It is possible to track markers velocity, in this case the objective is to minimize
@@ -147,24 +150,26 @@ class PenaltyFunctionAbstract:
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
             )
-            data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [3, max(markers_idx) + 1, nlp["ns"] + 1]
-            )
+
+            if target is not None:
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    target, [3, max(markers_idx) + 1, nlp["ns"] + 1]
+                )
 
             PenaltyFunctionAbstract._add_to_casadi_func(
                 nlp, "biorbd_markerVelocity", nlp["model"].markerVelocity, nlp["q"], nlp["qdot"], markers_idx[0]
             )
 
+            target_tp = None
             for m in markers_idx:
                 for i, v in enumerate(x):
-                    val = (
-                        nlp["casadi_func"]["biorbd_markerVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
-                        - data_to_track[:, markers_idx, t[i]]
-                    )
-                    penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                    val = nlp["casadi_func"]["biorbd_markerVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
+                    if target is not None:
+                        target_tp = target[:, markers_idx, t[i]]
+                    penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
-        def align_markers(penalty_type, ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx, **extra_param):
+        def align_markers(penalty, ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx, **extra_param):
             """
             Adds the constraint that the two markers must be coincided at the desired instant(s).
             :param nlp: An OptimalControlProgram class.
@@ -183,12 +188,10 @@ class PenaltyFunctionAbstract:
                 second_marker = nlp["casadi_func"]["markers"](q)[:, second_marker_idx]
 
                 val = first_marker - second_marker
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
-        def proportional_variable(
-            penalty_type, ocp, nlp, t, x, u, p, which_var, first_dof, second_dof, coef, **extra_param
-        ):
+        def proportional_variable(penalty, ocp, nlp, t, x, u, p, which_var, first_dof, second_dof, coef, **extra_param):
             """
             Adds proportionality constraint between the elements (states or controls) chosen.
             :param nlp: An instance of the OptimalControlProgram class.
@@ -214,33 +217,37 @@ class PenaltyFunctionAbstract:
             for v in ux:
                 v = nlp["q_mapping"].expand.map(v)
                 val = v[first_dof] - coef * v[second_dof]
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
-        def minimize_torque(penalty_type, ocp, nlp, t, x, u, p, controls_idx=(), data_to_track=(), **extra_param):
+        def minimize_torque(penalty, ocp, nlp, t, x, u, p, controls_idx=(), target=None, **extra_param):
             """
             Adds the objective that the specific torques should be minimized.
             It is possible to track torques, in this case the objective is to minimize
-            the mismatch between the optimized torques and the reference torques (data_to_track).
+            the mismatch between the optimized torques and the reference torques (target).
             :param controls_idx: Index of the controls to minimize. (list of integers)
-            :param data_to_track: Reference torques for tracking. (list of lists of float)
+            :param target: Reference torques for tracking. (list of lists of float)
             """
             n_tau = nlp["nbTau"]
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_tau, "controls_idx")
-            data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [nlp["ns"], max(controls_idx) + 1]
-            )
 
+            if target is not None:
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    target, [max(controls_idx) + 1, nlp["ns"]]
+                )
+                PenaltyFunctionAbstract._add_track_data_to_plot(
+                    ocp, nlp, target, combine_to="tau", axes_idx=Mapping(controls_idx)
+                )
+
+            target_tp = None
             for i, v in enumerate(u):
-                val = v[controls_idx] - data_to_track[t[i], controls_idx]
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
-
-            PenaltyFunctionAbstract._add_track_data_to_plot(
-                ocp, nlp, data_to_track.T, combine_to="tau", axes_idx=Mapping(controls_idx)
-            )
+                val = v[controls_idx]
+                if target is not None:
+                    target_tp = target[controls_idx, t[i]]
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
-        def minimize_torque_derivative(penalty_type, ocp, nlp, t, x, u, p, controls_idx=(), **extra_param):
+        def minimize_torque_derivative(penalty, ocp, nlp, t, x, u, p, controls_idx=(), **extra_param):
             """
             Adds the objective that the specific torques should be minimized.
             It is possible to track torques, in this case the objective is to minimize
@@ -253,12 +260,10 @@ class PenaltyFunctionAbstract:
 
             for i in range(len(u) - 1):
                 val = u[i + 1][controls_idx] - u[i][controls_idx]
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
-        def minimize_muscles_control(
-            penalty_type, ocp, nlp, t, x, u, p, muscles_idx=(), data_to_track=(), **extra_param
-        ):
+        def minimize_muscles_control(penalty, ocp, nlp, t, x, u, p, muscles_idx=(), target=None, **extra_param):
             """
             Adds the objective that the specific muscle controls should be minimized.
             It is possible to track muscle activation, in this case the objective is to minimize
@@ -267,22 +272,27 @@ class PenaltyFunctionAbstract:
             :param data_to_track: Reference muscle activation for tracking. (list of lists of float)
             """
             muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(muscles_idx, nlp["nbMuscle"], "muscles_idx")
-            data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [nlp["ns"], max(muscles_idx) + 1]
-            )
+
+            if target is not None:
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    target, [max(muscles_idx) + 1, nlp["ns"]]
+                )
+
+                PenaltyFunctionAbstract._add_track_data_to_plot(
+                    ocp, nlp, target, combine_to="muscles_control", axes_idx=Mapping(muscles_idx)
+                )
 
             # Add the nbTau offset to the muscle index
             muscles_idx_plus_tau = [idx + nlp["nbTau"] for idx in muscles_idx]
+            target_tp = None
             for i, v in enumerate(u):
-                val = v[muscles_idx_plus_tau] - data_to_track[t[i], muscles_idx]
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
-
-            PenaltyFunctionAbstract._add_track_data_to_plot(
-                ocp, nlp, data_to_track.T, combine_to="muscles_control", axes_idx=Mapping(muscles_idx)
-            )
+                val = v[muscles_idx_plus_tau]
+                if target is not None:
+                    target_tp = target[muscles_idx, t[i]]
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
-        def minimize_all_controls(penalty_type, ocp, nlp, t, x, u, p, controls_idx=(), data_to_track=(), **extra_param):
+        def minimize_all_controls(penalty, ocp, nlp, t, x, u, p, controls_idx=(), target=None, **extra_param):
             """
             Adds the objective that all the controls should be minimized.
             It is possible to track controls, in this case the objective is to minimize
@@ -292,16 +302,21 @@ class PenaltyFunctionAbstract:
             """
             n_u = nlp["nu"]
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_u, "muscles_idx")
-            data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [nlp["ns"], max(controls_idx) + 1]
-            )
 
+            if target is not None:
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    target, [max(controls_idx) + 1, nlp["ns"]]
+                )
+
+            target_tp = None
             for i, v in enumerate(u):
-                val = v[controls_idx] - data_to_track[t[i], controls_idx]
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                val = v[controls_idx]
+                if target is not None:
+                    target_tp = target[t[i], controls_idx]
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
-        def minimize_predicted_com_height(penalty_type, ocp, nlp, t, x, u, p, **extra_param):
+        def minimize_predicted_com_height(penalty, ocp, nlp, t, x, u, p, **extra_param):
             """
             Adds the objective that the minimal height of the center of mass of the model should be minimized.
             The height is assumed to be the third axis.
@@ -317,12 +332,10 @@ class PenaltyFunctionAbstract:
                 CoM = nlp["casadi_func"]["biorbd_CoM"](q)
                 CoM_dot = nlp["casadi_func"]["biorbd_CoMdot"](q, q_dot)
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
-                penalty_type._add_to_penalty(ocp, nlp, CoM_height, **extra_param)
+                penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_height, penalty, **extra_param)
 
         @staticmethod
-        def minimize_contact_forces(
-            penalty_type, ocp, nlp, t, x, u, p, contacts_idx=(), data_to_track=(), **extra_param
-        ):
+        def minimize_contact_forces(penalty, ocp, nlp, t, x, u, p, contacts_idx=(), target=None, **extra_param):
             """
             Adds the objective that the contact force should be minimized.
             It is possible to track contact forces, in this case the objective is to minimize
@@ -332,21 +345,26 @@ class PenaltyFunctionAbstract:
             """
             n_contact = nlp["model"].nbContacts()
             contacts_idx = PenaltyFunctionAbstract._check_and_fill_index(contacts_idx, n_contact, "contacts_idx")
-            data_to_track = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                data_to_track, [nlp["ns"], max(contacts_idx) + 1]
-            )
 
+            if target is not None:
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    target, [max(contacts_idx) + 1, nlp["ns"]]
+                )
+
+                PenaltyFunctionAbstract._add_track_data_to_plot(
+                    ocp, nlp, target, combine_to="contact_forces", axes_idx=Mapping(contacts_idx)
+                )
+
+            target_tp = None
             for i, v in enumerate(u):
                 force = nlp["contact_forces_func"](x[i], u[i], p)
-                val = force[contacts_idx] - data_to_track[t[i], contacts_idx]
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
-
-            PenaltyFunctionAbstract._add_track_data_to_plot(
-                ocp, nlp, data_to_track.T, combine_to="contact_forces", axes_idx=Mapping(contacts_idx)
-            )
+                val = force[contacts_idx]
+                if target is not None:
+                    target_tp = target[contacts_idx, t[i]]
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
-        def align_segment_with_custom_rt(penalty_type, ocp, nlp, t, x, u, p, segment_idx, rt_idx, **extra_param):
+        def align_segment_with_custom_rt(penalty, ocp, nlp, t, x, u, p, segment_idx, rt_idx, **extra_param):
             """
             Adds the constraint that the local reference frame and the segment must be aligned at the desired
             instant(s).
@@ -371,12 +389,10 @@ class PenaltyFunctionAbstract:
             for v in x:
                 q = nlp["q_mapping"].expand.map(v[:nq])
                 val = nlp["casadi_func"][f"align_segment_with_custom_rt_{segment_idx}"](q)
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
-        def align_marker_with_segment_axis(
-            penalty_type, ocp, nlp, t, x, u, p, marker_idx, segment_idx, axis, **extra_param
-        ):
+        def align_marker_with_segment_axis(penalty, ocp, nlp, t, x, u, p, marker_idx, segment_idx, axis, **extra_param):
             """
             Adds the constraint that the marker and the segment must be aligned at the desired
             instant(s).
@@ -409,54 +425,40 @@ class PenaltyFunctionAbstract:
                     if axe != axis:
                         # To align an axis, the other must be equal to 0
                         val = marker[axe, 0]
-                        penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                        penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
-        def custom(penalty_type, ocp, nlp, t, x, u, p, **parameters):
+        def custom(penalty, ocp, nlp, t, x, u, p, **parameters):
             """
             Adds a custom penalty function (objective or constraint).
             :param parameters: parameters["function"] -> Penalty function (CasADi function),
-            parameters["penalty_idx"] -> Index of the penalty (integer), parameters["weight"] -> Weight of the penalty
+            parameters["penalty"] -> Index of the penalty (integer), parameters.weight -> Weight of the penalty
             (float)
             """
-            func = parameters["custom_function"]
-            weight = None
-            penalty_idx = parameters["penalty_idx"]
-            if "weight" in parameters.keys():
-                weight = parameters["weight"]
-                del parameters["weight"]
-            del parameters["custom_function"]
-            del parameters["penalty_idx"]
-            del parameters["quadratic"]
-            val = func(ocp, nlp, t, x, u, p, **parameters)
-            if weight is not None:
-                parameters["weight"] = weight
-            parameters["penalty_idx"] = penalty_idx
-            penalty_type._add_to_penalty(ocp, nlp, val, **parameters)
+            val = penalty.custom_function(ocp, nlp, t, x, u, p, **parameters)
+            penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
     @staticmethod
     def add(ocp, nlp):
         raise RuntimeError("add cannot be called from an abstract class")
 
     @staticmethod
-    def add_or_replace(ocp, nlp, penalty, penalty_idx):
+    def add_or_replace(ocp, nlp, penalty):
         """
         Adds a penalty at the index penalty_index. If a penalty already exists at this index, it replaces it by the
         new penalty.
         :param penalty: Penalty to be added. (instance of PenaltyFunctionAbstract class)
-        :param penalty_idx: Index to add the penalty. (integer)
         """
         t, x, u = PenaltyFunctionAbstract._get_instant(nlp, penalty)
-        penalty_function = penalty["type"].value[0]
-        penalty_type = penalty["type"]._get_type()
-        instant = penalty["instant"]
-        del penalty["instant"], penalty["type"]
+        penalty_function = penalty.type.value[0]
+        penalty_type = penalty.type.get_type()
+        instant = penalty.instant
 
         penalty_type._span_checker(penalty_function, instant, nlp)
         penalty_type._parameter_modifier(penalty_function, penalty)
 
-        penalty_idx = penalty_type._reset_penalty(ocp, nlp, penalty_idx)
-        penalty_function(penalty_type, ocp, nlp, t, x, u, nlp["p"], penalty_idx=penalty_idx, **penalty)
+        penalty_type.clear_penalty(ocp, nlp, penalty)
+        penalty_function(penalty, ocp, nlp, t, x, u, nlp["p"], **penalty.params)
 
     @staticmethod
     def _add_to_casadi_func(nlp, name, function, *all_param):
@@ -470,11 +472,11 @@ class PenaltyFunctionAbstract:
         """
         Modifies parameters entries if needed.
         :param penalty_function: Penalty function to be checked (instance of PenaltyType class)
-        :param parameters: Parameters to be checked. If parameters["quadratic"] is not defined, it sets it to True.
+        :param parameters: Parameters to be checked. If parameters.quadratic is not defined, it sets it to True.
         (bool)
         """
         # Everything that should change the entry parameters depending on the penalty can be added here
-        if parameters["quadratic"] is None:
+        if parameters.quadratic is None:
             if (
                 penalty_function == PenaltyType.MINIMIZE_STATE
                 or penalty_function == PenaltyType.MINIMIZE_MARKERS
@@ -491,14 +493,14 @@ class PenaltyFunctionAbstract:
                 or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
                 or penalty_function == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
             ):
-                parameters["quadratic"] = True
+                parameters.quadratic = True
             else:
-                parameters["quadratic"] = False
+                parameters.quadratic = False
 
         if penalty_function == PenaltyType.PROPORTIONAL_STATE:
-            parameters["which_var"] = "states"
+            parameters.params["which_var"] = "states"
         if penalty_function == PenaltyType.PROPORTIONAL_CONTROL:
-            parameters["which_var"] = "controls"
+            parameters.params["which_var"] = "controls"
 
     @staticmethod
     def _span_checker(penalty_function, instant, nlp):
@@ -545,7 +547,7 @@ class PenaltyFunctionAbstract:
         :param target_size: Size of the variable array. (integer)
         :return: data_to_track -> Data used for tracking. (numpy array of size target_size)
         """
-        if (isinstance(data_to_track, np.ndarray) and data_to_track.any()) or data_to_track:
+        if data_to_track is not None:
             if len(data_to_track.shape) != len(target_size):
                 if target_size[1] == 1 and len(data_to_track.shape) == 1:
                     # If we have a vector it is still okay
@@ -584,41 +586,36 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def continuity(ocp):
-        # Dynamics must be continuous between phases
-        for pt in ocp.state_transitions:
-            penalty_idx = pt["base"]._reset_penalty(ocp, None, -1)
-            state_transition_function = pt["type"].value[0]
-            val = state_transition_function(ocp, **pt)
-            pt["base"]._add_to_penalty(ocp, None, val, penalty_idx, **pt)
+        raise RuntimeError("continuity cannot be called from an abstract class")
 
     @staticmethod
-    def _add_to_penalty(ocp, nlp, val, penalty_idx, **extra_param):
+    def add_to_penalty(ocp, nlp, val, penalty, **extra_arguments):
         raise RuntimeError("_add_to_penalty cannot be called from an abstract class")
 
     @staticmethod
-    def _reset_penalty(ocp, nlp, penalty_idx):
+    def clear_penalty(ocp, nlp, penalty):
         raise RuntimeError("_reset_penalty cannot be called from an abstract class")
 
     @staticmethod
-    def _get_type():
+    def get_type():
         raise RuntimeError("_get_type cannot be called from an abstract class")
 
     @staticmethod
     def _get_instant(nlp, constraint):
         """
         Initializes x (states), u (controls) and t (time) with user provided initial guesses.
-        :param constraint: constraint["instant"] -> time nodes precision. (integer or instance of Instant class)
+        :param constraint: constraint.instant -> time nodes precision. (integer or instance of Instant class)
         (integer, Instant.START, Instant.MID, Instant.INTERMEDIATES, Instant.END or Instant.ALL)
         :return t: Time nodes. (list)
         :return x: States. (list of lists)
         :return u: Controls. (list of lists)
         """
-        if not isinstance(constraint["instant"], (list, tuple)):
-            constraint["instant"] = (constraint["instant"],)
+        if not isinstance(constraint.instant, (list, tuple)):
+            constraint.instant = (constraint.instant,)
         t = []
         x = []
         u = []
-        for node in constraint["instant"]:
+        for node in constraint.instant:
             if isinstance(node, int):
                 if node < 0 or node > nlp["ns"]:
                     raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp['ns']}")

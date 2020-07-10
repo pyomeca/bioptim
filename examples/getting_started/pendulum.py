@@ -20,7 +20,7 @@ from biorbd_optim import (
 def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_threads, use_SX=False):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
-    torque_min, torque_max, torque_init = -100, 100, 0
+    tau_min, tau_max, tau_init = -100, 100, 0
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
     n_tau = biorbd_model.nbGeneralizedTorque()
@@ -47,12 +47,12 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[torque_min] * n_tau, [torque_max] * n_tau])
+    u_bounds.add([[tau_min] * n_tau, [tau_max] * n_tau])
     u_bounds[0].min[n_tau - 1, :] = 0
     u_bounds[0].max[n_tau - 1, :] = 0
 
     u_init = InitialConditionsList()
-    u_init.add([torque_init] * n_tau)
+    u_init.add([tau_init] * n_tau)
 
     # ------------- #
 

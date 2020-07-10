@@ -8,11 +8,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from biorbd_optim import (
-    Data,
-    OdeSolver,
-    InterpolationType,
-)
+from biorbd_optim import Data, OdeSolver, InterpolationType
 from .utils import TestUtils
 
 
@@ -263,9 +259,7 @@ def test_state_transitions():
     state_transitions = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(state_transitions)
 
-    ocp = state_transitions.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
-    )
+    ocp = state_transitions.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod")
     sol = ocp.solve()
 
     # Check objective function value

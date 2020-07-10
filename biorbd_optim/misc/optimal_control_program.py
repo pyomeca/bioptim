@@ -9,29 +9,20 @@ from casadi import MX, vertcat, SX
 
 from .__version__ import __version__
 from .data import Data
-from .enums import OdeSolver, ControlType
+from .enums import ControlType, OdeSolver, Solver
 from .mapping import BidirectionalMapping
-from .options_lists import (
-    OptionList,
-    DynamicsTypeList,
-    ObjectiveList,
-    ConstraintList,
-    InitialConditionsList,
-    BoundsList,
-    ParametersList,
-    StateTransitionList,
-)
-from .parameters import Parameters
+from .options_lists import OptionList
+from .parameters import Parameters, ParameterList, ParameterOption
 from .utils import check_version
 from ..dynamics.problem import Problem
-from ..dynamics.dynamics_functions import DynamicsFunctions
+from ..dynamics.dynamics_type import DynamicsTypeList
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.integrator import RK4, RK4_multiThread
-from ..limits.constraints import ConstraintFunction, Constraint
-from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions
-from ..limits.objective_functions import Objective, ObjectiveFunction
-from ..limits.path_conditions import Bounds, InitialConditions, InterpolationType
+from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList, ConstraintOption
+from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
+from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList, ObjectiveOption
+from ..limits.path_conditions import Bounds, BoundsList, InitialConditions, InitialConditionsList, InterpolationType
 
 check_version(biorbd, "1.3.5", "1.4.0")
 
@@ -55,7 +46,7 @@ class OptimalControlProgram:
         U_bounds,
         objective_functions=ObjectiveList(),
         constraints=ConstraintList(),
-        parameters=ParametersList(),
+        parameters=ParameterList(),
         external_forces=(),
         ode_solver=OdeSolver.RK,
         nb_integration_steps=5,
@@ -118,9 +109,9 @@ class OptimalControlProgram:
             "U_init": U_init,
             "X_bounds": X_bounds,
             "U_bounds": U_bounds,
-            "objective_functions": [],
-            "constraints": [],
-            "parameters": [],
+            "objective_functions": ObjectiveList(),
+            "constraints": ConstraintList(),
+            "parameters": ParameterList(),
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "nb_integration_steps": nb_integration_steps,
@@ -172,8 +163,8 @@ class OptimalControlProgram:
             raise RuntimeError("objective_functions should be built from an ObjectiveList")
         if not isinstance(constraints, ConstraintList):
             raise RuntimeError("constraints should be built from an ConstraintList")
-        if not isinstance(parameters, ParametersList):
-            raise RuntimeError("parameters should be built from an ParametersList")
+        if not isinstance(parameters, ParameterList):
+            raise RuntimeError("parameters should be built from an ParameterList")
         if not isinstance(state_transitions, StateTransitionList):
             raise RuntimeError("state_transitions should be built from an StateTransitionList")
         if not isinstance(ode_solver, OdeSolver):
@@ -212,11 +203,11 @@ class OptimalControlProgram:
         )
         self.__add_to_nlp("tf", phase_time, False)
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
-        self.__add_to_nlp(
-            "dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False,
-        )
+        self.__add_to_nlp("dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False)
         self.nb_threads = nb_threads
         self.__add_to_nlp("nb_threads", nb_threads, True)
+        self.solver_type = Solver.NONE
+        self.solver = None
 
         # External forces
         if external_forces != ():
@@ -240,9 +231,9 @@ class OptimalControlProgram:
         self.__add_to_nlp("plot_mappings", reshaped_plot_mappings, False)
 
         # Prepare the parameters to optimize
+        self.state_transitions = []
         if len(parameters) > 0:
-            for parameter in parameters[0]:  # 0 since parameters are not associated with phases
-                self.add_parameter_to_optimize(parameter)
+            self.update_parameters(parameters)
 
         # Declare the time to optimize
         self.__define_variable_time(initial_time_guess, time_min, time_max)
@@ -288,17 +279,18 @@ class OptimalControlProgram:
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
             self.__prepare_dynamics(self.nlp[i])
 
-        # Prepare phase transitions
+        # Prepare phase transitions (Reminder, it is important that parameters are declared
+        # before, otherwise they will erase the state_transitions)
         self.state_transitions = StateTransitionFunctions.prepare_state_transitions(self, state_transitions)
 
         # Inner- and inter-phase continuity
         ContinuityFunctions.continuity(self)
 
         # Prepare constraints
-        self.add_constraint_set(constraints)
+        self.update_constraints(constraints)
 
         # Prepare objectives
-        self.add_objective_function_set(objective_functions)
+        self.update_objectives(objective_functions)
 
     def __initialize_nlp(self, nlp):
         """Start with an empty non linear problem"""
@@ -313,7 +305,6 @@ class OptimalControlProgram:
         nlp["x"] = nlp["CX"]()
         nlp["u"] = nlp["CX"]()
         nlp["J"] = []
-        nlp["J_acados_mayer"] = []
         nlp["g"] = []
         nlp["g_bounds"] = []
         nlp["casadi_func"] = {}
@@ -498,10 +489,12 @@ class OptimalControlProgram:
 
         for i, penalty_functions_phase in enumerate(penalty_functions):
             for pen_fun in penalty_functions_phase:
+                if not pen_fun:
+                    continue
                 if (
-                    pen_fun["type"] == Objective.Mayer.MINIMIZE_TIME
-                    or pen_fun["type"] == Objective.Lagrange.MINIMIZE_TIME
-                    or pen_fun["type"] == Constraint.TIME_CONSTRAINT
+                    pen_fun.type == Objective.Mayer.MINIMIZE_TIME
+                    or pen_fun.type == Objective.Lagrange.MINIMIZE_TIME
+                    or pen_fun.type == Constraint.TIME_CONSTRAINT
                 ):
                     if has_penalty[i]:
                         raise RuntimeError("Time constraint/objective cannot declare more than once")
@@ -509,8 +502,12 @@ class OptimalControlProgram:
 
                     initial_time_guess.append(phase_time[i])
                     phase_time[i] = self.CX.sym(f"time_phase_{i}", 1, 1)
-                    time_min.append(pen_fun["minimum"] if "minimum" in pen_fun else 0)
-                    time_max.append(pen_fun["maximum"] if "maximum" in pen_fun else inf)
+                    if pen_fun.type.get_type() == ConstraintFunction:
+                        time_min.append(pen_fun.minimum if pen_fun.minimum else 0)
+                        time_max.append(pen_fun.maximum if pen_fun.maximum else inf)
+                    else:
+                        time_min.append(pen_fun.params["minimum"] if "minimum" in pen_fun.params else 0)
+                        time_max.append(pen_fun.params["maximum"] if "maximum" in pen_fun.params else inf)
         return has_penalty
 
     def __define_variable_time(self, initial_guess, minimum, maximum):
@@ -528,70 +525,63 @@ class OptimalControlProgram:
                 Parameters._add_to_v(self, "time", 1, None, time_bounds, time_init, nlp["tf"])
                 i += 1
 
-    def add_objective_function_set(self, new_objective_function_set):
-        if not isinstance(new_objective_function_set, ObjectiveList):
-            raise RuntimeError("new_objective_function_set must be a ObjectiveList")
-        for p, objective_in_phase in enumerate(new_objective_function_set):
-            for objective in objective_in_phase:
-                self.modify_objective_function(objective, index_in_phase=-1, phase_number=p)
+    def update_objectives(self, new_objective_function):
+        if isinstance(new_objective_function, ObjectiveOption):
+            self._modify_penalty(new_objective_function, "objective_functions")
 
-    def modify_objective_function(self, new_objective_function, index_in_phase, phase_number=-1):
-        self._modify_penalty(new_objective_function, index_in_phase, phase_number, "objective_functions", True)
+        elif isinstance(new_objective_function, ObjectiveList):
+            for objective_in_phase in new_objective_function:
+                for objective in objective_in_phase:
+                    self._modify_penalty(objective, "objective_functions")
 
-    def add_constraint_set(self, new_constraint_set):
-        if not isinstance(new_constraint_set, ConstraintList):
-            raise RuntimeError("new_contraint_set must be a ConstraintList")
-        for p, constraints_in_phase in enumerate(new_constraint_set):
-            for constraint in constraints_in_phase:
-                self.modify_constraint(constraint, index_in_phase=-1, phase_number=p)
+        else:
+            raise RuntimeError("new_objective_function must be a ObjectiveOption or an ObjectiveList")
 
-    def modify_constraint(self, new_constraint, index_in_phase, phase_number=-1):
-        self._modify_penalty(new_constraint, index_in_phase, phase_number, "constraints", True)
+    def update_constraints(self, new_constraint):
+        if isinstance(new_constraint, ConstraintOption):
+            self._modify_penalty(new_constraint, "constraints")
 
-    def add_parameter_to_optimize(self, new_parameter):
-        self.modify_parameter_to_optimize(new_parameter)
+        elif isinstance(new_constraint, ConstraintList):
+            for constraints_in_phase in new_constraint:
+                for constraint in constraints_in_phase:
+                    self._modify_penalty(constraint, "constraints")
 
-    def modify_parameter_to_optimize(self, new_parameter, penalty_idx=-1):
-        self._modify_penalty(new_parameter, penalty_idx, -1, "parameters", False)
+        else:
+            raise RuntimeError("new_constraint must be a ConstraintOption or a ConstraintList")
 
-    def _modify_penalty(self, new_penalty, penalty_idx, phase_number, penalty_name, penalty_in_a_phase):
+    def update_parameters(self, new_parameters):
+        if isinstance(new_parameters, ParameterOption):
+            self._modify_penalty(new_parameters, "parameters")
+
+        elif isinstance(new_parameters, ParameterList):
+            for parameters_in_phase in new_parameters:
+                for parameter in parameters_in_phase:
+                    self._modify_penalty(parameter, "parameters")
+
+        else:
+            raise RuntimeError("new_parameter must be a ParameterOption or a ParameterList")
+
+    def _modify_penalty(self, new_penalty, penalty_name):
         """
         Modification of a penalty (constraint or objective)
         :param new_penalty: Penalty to keep after the modification.
-        :param penalty_idx: Index of the penalty to be modified. (integer)
-        :param phase_number: Index of the phase in which the penalty will be modified. (integer)
+        :param penalty: Index of the penalty to be modified. (integer)
+        :param phase_idx: Index of the phase in which the penalty will be modified. (integer)
         :param penalty_name: Name of the penalty to modify. (string)
         """
-        if len(self.nlp) == 1:
-            phase_number = 0
-        else:
-            if phase_number < 0 and penalty_in_a_phase:
-                raise RuntimeError("phase_number must be specified for multiphase OCP")
+        if not new_penalty:
+            return
+        phase_idx = new_penalty.phase
 
-        while phase_number >= len(self.original_values[penalty_name]) and penalty_in_a_phase:
-            self.original_values[penalty_name].append([])
-
-        if penalty_in_a_phase:
-            if penalty_idx < 0:
-                self.original_values[penalty_name][phase_number].append(deepcopy(new_penalty))
-            else:
-                if penalty_idx >= len(self.original_values[penalty_name][phase_number]):
-                    raise RuntimeError("It is not possible to modify a penalty when the penalty is not defined")
-                self.original_values[penalty_name][phase_number][penalty_idx] = deepcopy(new_penalty)
-        else:
-            if penalty_idx < 0:
-                self.original_values[penalty_name].append(deepcopy(new_penalty))
-            else:
-                if penalty_idx >= len(self.original_values[penalty_name]):
-                    raise RuntimeError("It is not possible to modify a penalty when the penalty is not defined")
-                self.original_values[penalty_name][penalty_idx] = deepcopy(new_penalty)
+        # Copy to self.original_values so it can be save/load
+        self.original_values[penalty_name].add(deepcopy(new_penalty))
 
         if penalty_name == "objective_functions":
-            ObjectiveFunction.add_or_replace(self, self.nlp[phase_number], new_penalty, penalty_idx)
+            ObjectiveFunction.add_or_replace(self, self.nlp[phase_idx], new_penalty)
         elif penalty_name == "constraints":
-            ConstraintFunction.add_or_replace(self, self.nlp[phase_number], new_penalty, penalty_idx)
+            ConstraintFunction.add_or_replace(self, self.nlp[phase_idx], new_penalty)
         elif penalty_name == "parameters":
-            Parameters.add_or_replace(self, new_penalty, penalty_idx)
+            Parameters.add_or_replace(self, new_penalty)
         else:
             raise RuntimeError("Unrecognized penalty")
 
@@ -612,7 +602,7 @@ class OptimalControlProgram:
             phase_number = 0
         else:
             if phase_number < 0:
-                raise RuntimeError("phase_number must be specified for multiphase OCP")
+                raise RuntimeError("phase_idx must be specified for multiphase OCP")
         nlp = self.nlp[phase_number]
         custom_plot = CustomPlot(update_function, **parameters)
 
@@ -633,7 +623,7 @@ class OptimalControlProgram:
         nlp["plot"][plot_name] = custom_plot
 
     def solve(
-        self, solver="ipopt", show_online_optim=False, return_iterations=False, solver_options={},
+        self, solver=Solver.IPOPT, show_online_optim=False, return_iterations=False, solver_options={},
     ):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
@@ -647,27 +637,32 @@ class OptimalControlProgram:
         if return_iterations and not show_online_optim:
             raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
 
-        if solver == "ipopt":
+        if solver == Solver.IPOPT and self.solver_type != Solver.IPOPT:
             from ..interfaces.ipopt_interface import IpoptInterface
 
-            solver_ocp = IpoptInterface(self)
+            self.solver = IpoptInterface(self)
 
-        elif solver == "acados":
+        elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
             from ..interfaces.acados_interface import AcadosInterface
 
-            solver_ocp = AcadosInterface(self, **solver_options)
+            self.solver = AcadosInterface(self, **solver_options)
 
-        else:
-            raise RuntimeError("Available solvers are: 'ipopt' and 'acados'")
+        elif self.solver_type == Solver.NONE:
+            raise RuntimeError("Solver not specified")
+        self.solver_type = solver
 
         if show_online_optim:
-            solver_ocp.online_optim(self)
+            self.solver.online_optim(self)
             if return_iterations:
-                solver_ocp.get_iterations()
+                self.solver.start_get_iterations()
 
-        solver_ocp.configure(solver_options)
-        solver_ocp.solve()
-        return solver_ocp.get_optimized_value(self)
+        self.solver.configure(solver_options)
+        self.solver.solve()
+
+        if return_iterations:
+            self.solver.finish_get_iterations()
+
+        return self.solver.get_optimized_value(self)
 
     def save(self, sol, file_path, sol_iterations=None):
         """
@@ -721,25 +716,6 @@ class OptimalControlProgram:
         """
         with open(file_path, "rb") as file:
             data = pickle.load(file)
-            objective_functions = ObjectiveList()
-            for p, obj_phase in enumerate(data["ocp_initilializer"]["objective_functions"]):
-                for obj in obj_phase:
-                    objective_functions.add(**obj, phase=p)
-            data["ocp_initilializer"]["objective_functions"] = objective_functions
-
-            constraints = ConstraintList()
-            for p, constraints_phase in enumerate(data["ocp_initilializer"]["constraints"]):
-                for constraint in constraints_phase:
-                    del constraint["quadratic"]
-                    constraints.add(**constraint, phase=p)
-            data["ocp_initilializer"]["constraints"] = constraints
-
-            parameters = ParametersList()
-            for p, parameters_phase in enumerate(data["ocp_initilializer"]["parameters"]):
-                for parameter in parameters_phase:
-                    parameters.add(**parameter, phase=p)
-            data["ocp_initilializer"]["parameters"] = parameters
-
             ocp = OptimalControlProgram(**data["ocp_initilializer"])
             for key in data["versions"].keys():
                 if data["versions"][key] != ocp.version[key]:
@@ -759,12 +735,7 @@ class OptimalControlProgram:
             original_values = data["ocp_initilializer"]
             print("****************************** Informations ******************************")
             for key in original_values.keys():
-                if key not in [
-                    "X_init",
-                    "U_init",
-                    "X_bounds",
-                    "U_bounds",
-                ]:
+                if key not in ["X_init", "U_init", "X_bounds", "U_bounds"]:
                     print(f"{key} : ")
                     OptimalControlProgram._deep_print(original_values[key])
                     print("")

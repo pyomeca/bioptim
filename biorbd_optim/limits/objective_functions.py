@@ -4,6 +4,56 @@ import casadi
 
 from .penalty import PenaltyType, PenaltyFunctionAbstract
 from ..misc.enums import Instant
+from ..misc.options_lists import OptionList, OptionGeneric
+
+
+class ObjectiveOption(OptionGeneric):
+    def __init__(self, instant=None, quadratic=None, weight=1, custom_function=None, **params):
+        super(ObjectiveOption, self).__init__(**params)
+        self.instant = instant
+        self.quadratic = quadratic
+        self.weight = weight
+        self.custom_function = custom_function
+
+
+class ObjectiveList(OptionList):
+    def add(
+        self, objective, instant=Instant.DEFAULT, weight=1, phase=0, custom_type=None, quadratic=None, **extra_arguments
+    ):
+        if isinstance(objective, ObjectiveOption):
+            self.copy(objective)
+
+        else:
+            if not isinstance(objective, Objective.Lagrange) and not isinstance(objective, Objective.Mayer):
+                extra_arguments = {**extra_arguments, "custom_function": objective}
+
+                if custom_type is None:
+                    raise RuntimeError(
+                        "Custom objective function detected, but custom_function is missing. "
+                        "It should either be Objective.Mayer or Objective.Lagrange"
+                    )
+                objective = custom_type(custom_type.CUSTOM)
+                if isinstance(objective, Objective.Lagrange):
+                    pass
+                elif isinstance(objective, Objective.Mayer):
+                    pass
+                elif isinstance(objective, Objective.Parameter):
+                    pass
+                else:
+                    raise RuntimeError(
+                        "Custom objective function detected, but custom_function is invalid. "
+                        "It should either be Objective.Mayer or Objective.Lagrange"
+                    )
+
+            super(ObjectiveList, self)._add(
+                option_type=ObjectiveOption,
+                type=objective,
+                instant=instant,
+                weight=weight,
+                phase=phase,
+                quadratic=quadratic,
+                **extra_arguments
+            )
 
 
 class ObjectiveFunction:
@@ -22,41 +72,37 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(penalty_type, ocp, nlp, t, x, u, p, **extra_param):
+            def minimize_time(penalty, ocp, nlp, t, x, u, p, **extra_param):
                 """Minimizes the duration of the movement (Lagrange)."""
                 val = 1
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                ObjectiveFunction.LagrangeFunction.add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, penalty_idx, weight=1, quadratic=False, **extra_param):
+        def add_to_penalty(ocp, nlp, val, penalty, target=None, **extra_arguments):
             """
             Adds an objective.
             :param val: Value to be optimized. (MX.sym from CasADi)
-            :param penalty_idx: Index of the objective. (integer)
+            :param penalty: Index of the objective. (integer)
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared. (bool)
             """
-            if quadratic:
-                J = casadi.dot(val, val) * weight * nlp["dt"]
-            else:
-                J = casadi.sum1(val) * weight * nlp["dt"]
-            ObjectiveFunction._add_to_penalty(ocp, nlp, J, penalty_idx)
+            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=nlp["dt"], target=target)
 
         @staticmethod
-        def _reset_penalty(ocp, nlp, penalty_idx):
+        def clear_penalty(ocp, nlp, penalty):
             """
             Resets specified penalty.
             """
-            return ObjectiveFunction._reset_penalty(ocp, nlp, penalty_idx)
+            return ObjectiveFunction.clear_penalty(ocp, nlp, penalty)
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
             """Modification of parameters"""
             # Everything that should change the entry parameters depending on the penalty can be added here
-            PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
             if penalty_function == Objective.Lagrange.MINIMIZE_TIME.value[0]:
-                if "quadratic" not in parameters.keys():
-                    parameters["quadratic"] = True
+                if not parameters.quadratic:
+                    parameters.quadratic = True
+            PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
 
         @staticmethod
         def _span_checker(penalty_function, instant, nlp):
@@ -75,25 +121,32 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(penalty_type, ocp, nlp, t, x, u, p, **extra_param):
+            def minimize_time(penalty, ocp, nlp, t, x, u, p, **extra_param):
                 """Minimizes the duration of the movement (Mayer)."""
                 val = nlp["tf"]
-                penalty_type._add_to_penalty(ocp, nlp, val, **extra_param)
+                ObjectiveFunction.MayerFunction.add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
-        def _add_to_penalty(ocp, nlp, val, penalty_idx, weight=1, quadratic=False, **parameters):
+        def inter_phase_continuity(ocp, pt):
+            # Dynamics must be respected between phases
+            penalty = ObjectiveOption()
+            penalty.idx = -1
+            penalty.quadratic = pt.quadratic
+            penalty.weight = pt.weight
+            pt.base.clear_penalty(ocp, None, penalty)
+            val = pt.type.value[0](ocp, pt)
+            pt.base.add_to_penalty(ocp, None, val, penalty, **pt.params)
+
+        @staticmethod
+        def add_to_penalty(ocp, nlp, val, penalty, target=None, **extra_param):
             """
             Adds an objective.
             :param val: Value to be optimized. (MX.sym from CasADi)
-            :param penalty_idx: Index of the objective. (integer)
+            :param penalty: Index of the objective. (integer)
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared (bool)
             """
-            if quadratic:
-                J = casadi.dot(val, val) * weight
-            else:
-                J = casadi.sum1(val) * weight
-            ObjectiveFunction._add_to_penalty(ocp, nlp, J, penalty_idx)
+            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=1, target=target, **extra_param)
 
             # # TODO: This next block is at the wrong place
             # if nlp:
@@ -108,11 +161,11 @@ class ObjectiveFunction:
             #     pass
 
         @staticmethod
-        def _reset_penalty(ocp, nlp, penalty_idx):
+        def clear_penalty(ocp, nlp, penalty_idx):
             """
             Resets specified penalty.
             """
-            return ObjectiveFunction._reset_penalty(ocp, nlp, penalty_idx)
+            return ObjectiveFunction.clear_penalty(ocp, nlp, penalty_idx)
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
@@ -139,26 +192,22 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def _add_to_penalty(ocp, _, val, penalty_idx, weight=1, quadratic=False, **parameters):
+        def add_to_penalty(ocp, _, val, penalty, **extra_param):
             """
             Adds an objective.
             :param val: Value to be optimized. (MX.sym from CasADi)
-            :param penalty_idx: Index of the objective. (integer)
+            :param penalty: Index of the objective. (integer)
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared (bool)
             """
-            if quadratic:
-                J = casadi.dot(val, val) * weight
-            else:
-                J = casadi.sum1(val) * weight
-            ObjectiveFunction._add_to_penalty(ocp, None, J, penalty_idx)
+            ObjectiveFunction.add_to_penalty(ocp, None, val, penalty, dt=1)
 
         @staticmethod
-        def _reset_penalty(ocp, _, penalty_idx):
+        def clear_penalty(ocp, _, penalty_idx):
             """
             Resets specified penalty.
             """
-            return ObjectiveFunction._reset_penalty(ocp, None, penalty_idx)
+            return ObjectiveFunction.clear_penalty(ocp, None, penalty_idx)
 
         @staticmethod
         def _parameter_modifier(penalty_function, parameters):
@@ -173,24 +222,22 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._span_checker(penalty_function, instant, nlp)
 
     @staticmethod
-    def add_or_replace(ocp, nlp, objective, penalty_idx):
+    def add_or_replace(ocp, nlp, objective):
         """
         Modifies or raises errors if user provided Instant does not match the objective type.
         :param objective: New objective to replace with. (dictionary)
-        :param penalty_idx: Index of the objective. (integer)
         """
-        if objective["type"]._get_type() == ObjectiveFunction.LagrangeFunction:
-            if "instant" in objective.keys() and objective["instant"] != Instant.ALL:
-                if objective["instant"] != Instant.DEFAULT:
-                    raise RuntimeError("Lagrange objective are for Instant.ALL, did you mean Mayer?")
-            objective["instant"] = Instant.ALL
-        elif objective["type"]._get_type() == ObjectiveFunction.MayerFunction:
-            if "instant" not in objective.keys() or objective["instant"] == Instant.DEFAULT:
-                objective["instant"] = Instant.END
+        if objective.type.get_type() == ObjectiveFunction.LagrangeFunction:
+            if objective.instant != Instant.ALL and objective.instant != Instant.DEFAULT:
+                raise RuntimeError("Lagrange objective are for Instant.ALL, did you mean Mayer?")
+            objective.instant = Instant.ALL
+        elif objective.type.get_type() == ObjectiveFunction.MayerFunction:
+            if objective.instant == Instant.DEFAULT:
+                objective.instant = Instant.END
 
         else:
             raise RuntimeError("Objective function Type must be either a Lagrange or Mayer type")
-        PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective, penalty_idx)
+        PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective)
 
     @staticmethod
     def cyclic(ocp, weight=1):
@@ -203,36 +250,45 @@ class ObjectiveFunction:
         )
 
     @staticmethod
-    def _add_to_penalty(ocp, nlp, J, penalty_idx):
+    def add_to_penalty(ocp, nlp, val, penalty, dt=0, target=None):
         """
-        Adds objective J to objective array nlp["J"][penalty_idx] or ocp.J[penalty_idx] at index penalty_idx.
-        :param J: Objective. (MX.sym from CasADi)
-        :param penalty_idx: Index of the objective. (integer)
+        Adds objective J to objective array nlp["J"][penalty] or ocp.J[penalty] at index penalty.
+        :param J: Objective. (dict of [val, target, weight, is_quadratic])
+        :param penalty: Index of the objective. (integer)
         """
+        val = val
+        target = target if target is not None else None
+        J = {"objective": penalty, "val": val, "target": target, "dt": dt}
+
         if nlp:
-            nlp["J"][penalty_idx].append(J)
+            nlp["J"][penalty.idx].append(J)
         else:
-            ocp.J[penalty_idx].append(J)
+            ocp.J[penalty.idx].append(J)
 
     @staticmethod
-    def _reset_penalty(ocp, nlp, penalty_idx):
+    def clear_penalty(ocp, nlp, penalty):
         """
         Resets specified objective.
         Negative penalty index leads to enlargement of the array by one empty space.
-        :param penalty_idx: Index of the objective to be reset. (integer)
-        :return: penalty_idx -> Index of the objective reset. (integer)
         """
         if nlp:
             J_to_add_to = nlp["J"]
         else:
             J_to_add_to = ocp.J
 
-        if penalty_idx < 0:
-            J_to_add_to.append([])
-            return len(J_to_add_to) - 1
+        if penalty.idx < 0:
+            # Add a new one
+            for i, j in enumerate(J_to_add_to):
+                if not j:
+                    penalty.idx = i
+                    return
+            else:
+                J_to_add_to.append([])
+                penalty.idx = len(J_to_add_to) - 1
         else:
-            J_to_add_to[penalty_idx] = []
-            return penalty_idx
+            while penalty.idx >= len(J_to_add_to):
+                J_to_add_to.append([])
+            J_to_add_to[penalty.idx] = []
 
 
 class Objective:
@@ -266,7 +322,7 @@ class Objective:
         CUSTOM = (PenaltyType.CUSTOM,)
 
         @staticmethod
-        def _get_type():
+        def get_type():
             """Returns the type of the objective function"""
             return ObjectiveFunction.LagrangeFunction
 
@@ -300,7 +356,7 @@ class Objective:
         CUSTOM = (PenaltyType.CUSTOM,)
 
         @staticmethod
-        def _get_type():
+        def get_type():
             """Returns the type of the objective function"""
             return ObjectiveFunction.MayerFunction
 

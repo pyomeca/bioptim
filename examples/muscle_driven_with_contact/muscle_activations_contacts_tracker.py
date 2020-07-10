@@ -25,9 +25,7 @@ data_to_track = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data_to_track)
 
 
-def prepare_ocp(
-    model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref,
-):
+def prepare_ocp(model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref):
     # Model path
     biorbd_model = biorbd.Model(model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
@@ -35,8 +33,8 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_MUSCLES_CONTROL, data_to_track=muscle_activations_ref)
-    objective_functions.add(Objective.Lagrange.TRACK_CONTACT_FORCES, data_to_track=contact_forces_ref)
+    objective_functions.add(Objective.Lagrange.TRACK_MUSCLES_CONTROL, target=muscle_activations_ref)
+    objective_functions.add(Objective.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -92,14 +90,14 @@ if __name__ == "__main__":
 
     # Generate data using another optimization that will be feedback in as tracking data
     ocp_to_track = data_to_track.prepare_ocp(
-        model_path=model_path, phase_time=final_time, number_shooting_points=ns, direction="GREATER_THAN", boundary=50,
+        model_path=model_path, phase_time=final_time, number_shooting_points=ns, direction="GREATER_THAN", boundary=50
     )
     sol_to_track = ocp_to_track.solve()
     states, controls = Data.get_data(ocp_to_track, sol_to_track)
     q, q_dot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
     x = np.concatenate((q, q_dot))
     u = np.concatenate((tau, mus))
-    contact_forces_ref = np.array(ocp_to_track.nlp[0]["contact_forces_func"](x[:, :-1], u[:, :-1]))
+    contact_forces_ref = np.array(ocp_to_track.nlp[0]["contact_forces_func"](x[:, :-1], u[:, :-1], []))
     muscle_activations_ref = mus
 
     # Track these data
@@ -107,8 +105,8 @@ if __name__ == "__main__":
         model_path=model_path,
         phase_time=final_time,
         number_shooting_points=ns,
-        muscle_activations_ref=muscle_activations_ref[:, :-1].T,
-        contact_forces_ref=contact_forces_ref.T,
+        muscle_activations_ref=muscle_activations_ref[:, :-1],
+        contact_forces_ref=contact_forces_ref,
     )
 
     # --- Solve the program --- #

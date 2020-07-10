@@ -73,7 +73,7 @@ class PlotOcp:
         self.all_figures = []
 
         self.automatically_organize = automatically_organize
-        self._organize_windows(len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]),)
+        self._organize_windows(len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]))
 
         self.plot_func = {}
         self.variable_sizes = []
@@ -417,7 +417,7 @@ class PlotOcp:
                     y_range = (1.25 * data_range) / 2
                     y_range = data_mean - y_range, data_mean + y_range
                     ax.set_ylim(y_range)
-                    ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
+                    ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4))
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
