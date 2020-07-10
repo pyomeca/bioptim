@@ -41,7 +41,7 @@ def test_muscle_activations_and_states_tracking():
         nb_shooting,
         markers_ref,
         muscle_activations_ref,
-        x_ref[: biorbd_model.nbQ(), :].T,
+        x_ref[: biorbd_model.nbQ(), :],
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
     )
@@ -113,7 +113,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking():
         nb_shooting,
         markers_ref,
         muscle_activations_ref,
-        x_ref[: biorbd_model.nbQ(), :].T,
+        x_ref[: biorbd_model.nbQ(), :],
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
     )
@@ -392,7 +392,7 @@ def test_muscle_activation_and_contacts_tracking():
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = muscle_activations_contact_tracker.prepare_ocp(
-        model_path, final_time, nb_shooting, muscle_activations_ref[:, :-1].T, contact_forces_ref.T
+        model_path, final_time, nb_shooting, muscle_activations_ref[:, :-1], contact_forces_ref
     )
     sol = ocp.solve()
 
