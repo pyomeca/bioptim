@@ -17,3 +17,9 @@ class SolverInterface:
 
     def online_optim(self, ocp):
         raise RuntimeError("SolverInterface is an abstract class")
+
+    def start_get_iterations(self):
+        raise RuntimeError("Get Iteration not implemented for solver")
+
+    def finish_get_iterations(self):
+        raise RuntimeError("Get Iteration not implemented for solver")
