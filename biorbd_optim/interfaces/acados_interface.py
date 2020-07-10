@@ -57,6 +57,8 @@ class AcadosInterface(SolverInterface):
     def __prepare_acados(self, ocp):
         if ocp.nb_phases > 1:
             raise NotImplementedError("more than 1 phase is not implemented yet with ACADOS backend")
+        if ocp.param_to_optimize:
+            raise NotImplementedError("Parameters optimization is not implemented yet with ACADOS")
 
         # set model
         self.acados_ocp.model = self.acados_model
@@ -129,6 +131,7 @@ class AcadosInterface(SolverInterface):
                 raise NotImplementedError("ACADOS with more than one phase is not implemented yet")
 
             for i in range(ocp.nb_phases):
+                # TODO: I think ocp.J is missing here (the parameters would be stored there)
                 for j, J in enumerate(ocp.nlp[i]["J"]):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
                         self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"].reshape((-1, 1)))

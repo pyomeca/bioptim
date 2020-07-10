@@ -228,6 +228,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("plot_mappings", reshaped_plot_mappings, False)
 
         # Prepare the parameters to optimize
+        self.state_transitions = []
         if len(parameters) > 0:
             self.update_parameters(parameters)
 
@@ -268,7 +269,8 @@ class OptimalControlProgram:
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
             self.__prepare_dynamics(self.nlp[i])
 
-        # Prepare phase transitions
+        # Prepare phase transitions (Reminder, it is important that parameters are declared
+        # before, otherwise they will erase the state_transitions)
         self.state_transitions = StateTransitionFunctions.prepare_state_transitions(self, state_transitions)
 
         # Inner- and inter-phase continuity

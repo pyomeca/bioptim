@@ -52,6 +52,9 @@ class Parameters:
         )
 
         if penalty_list:
+            if ocp.state_transitions:
+                raise NotImplementedError("Updating parameters while having state_transition is not supported yet")
+
             if len(penalty_list) > 1 or len(penalty_list[0]) > 1:
                 raise NotImplementedError("Parameters with more that one penalty is not implemented yet")
             penalty = penalty_list[0][0]
