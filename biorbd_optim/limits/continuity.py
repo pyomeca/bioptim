@@ -7,41 +7,61 @@ from casadi import vertcat
 from .constraints import ConstraintFunction
 from .objective_functions import ObjectiveFunction
 from .penalty import PenaltyFunctionAbstract
+from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
+
+
+class StateTransitionOption(OptionGeneric):
+    def __init__(self, phase_pre_idx=None, weight=0, custom_function=None, **params):
+        super(StateTransitionOption, self).__init__(**params)
+        self.base = ConstraintFunction
+        self.phase_pre_idx = phase_pre_idx
+
+        self.weight = weight
+        self.quadratic = True
+        self.custom_function = custom_function
+
+
+class StateTransitionList(UniquePerPhaseOptionList):
+    def add(self, transition, phase=-1, **extra_arguments):
+        if not isinstance(transition, StateTransition):
+            extra_arguments["custom_function"] = transition
+            transition = StateTransition.CUSTOM
+        super(StateTransitionList, self)._add(option_type=StateTransitionOption, type=transition, phase=phase, **extra_arguments)
 
 
 class StateTransitionFunctions:
     class Functions:
         @staticmethod
-        def continuous(ocp, phase_pre_idx, **unused):
+        def continuous(ocp, transition):
             """
             TODO
             """
-            if ocp.nlp[phase_pre_idx]["nx"] != ocp.nlp[(phase_pre_idx + 1) % ocp.nb_phases]["nx"]:
+            if ocp.nlp[transition.phase_pre_idx]["nx"] != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.nb_phases]["nx"]:
                 raise RuntimeError(
                     "Continuous state transitions without same nx is not possible, please provide a custom state transition"
                 )
-            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
+            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
             return nlp_pre["X"][-1] - nlp_post["X"][0]
 
         @staticmethod
-        def cyclic(ocp, **kwargs):
+        def cyclic(ocp, transition):
             """
             TODO
             """
-            return StateTransitionFunctions.Functions.continuous(ocp, **kwargs)
+            return StateTransitionFunctions.Functions.continuous(ocp, transition)
 
         @staticmethod
-        def impact(ocp, phase_pre_idx, **unused):
+        def impact(ocp, transition):
             """
             TODO
             """
-            if ocp.nlp[phase_pre_idx]["nx"] != ocp.nlp[(phase_pre_idx + 1) % ocp.nb_phases]["nx"]:
+            if ocp.nlp[transition.phase_pre_idx]["nx"] != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.nb_phases]["nx"]:
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom state transition"
                 )
 
             # Aliases
-            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
+            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
             nbQ = nlp_pre["nbQ"]
             nbQdot = nlp_pre["nbQdot"]
             q = nlp_pre["q_mapping"].expand.map(nlp_pre["X"][-1][:nbQ])
@@ -64,13 +84,9 @@ class StateTransitionFunctions:
             return val
 
         @staticmethod
-        def custom(ocp, phase_pre_idx, **parameters):
-            func = parameters["custom_function"]
-            del parameters["custom_function"]
-            del parameters["type"]
-            del parameters["base"]
-            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, phase_pre_idx)
-            return func(nlp_pre["X"][-1], nlp_post["X"][0], **parameters)
+        def custom(ocp, transition):
+            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
+            return transition.custom_function(nlp_pre["X"][-1], nlp_post["X"][0], **transition.params)
 
         @staticmethod
         def __get_nlp_pre_and_post(ocp, phase_pre_idx):
@@ -80,27 +96,23 @@ class StateTransitionFunctions:
     def prepare_state_transitions(ocp, state_transitions):
         # By default it assume Continuous. It can be change later
         full_state_transitions = [
-            {"type": StateTransition.CONTINUOUS, "phase_pre_idx": i, "base": ConstraintFunction}
-            for i in range(ocp.nb_phases - 1)
+            StateTransitionOption(type=StateTransition.CONTINUOUS, phase_pre_idx=i) for i in range(ocp.nb_phases - 1)
         ]
 
         existing_phases = []
         for pt in state_transitions:
-            if "phase_pre_idx" not in pt and pt["type"] == StateTransition.CYCLIC:
-                pt["phase_pre_idx"] = ocp.nb_phases - 1
+            if pt.phase_pre_idx is None and pt.type == StateTransition.CYCLIC:
+                pt.phase_pre_idx = ocp.nb_phases - 1
 
-            idx_phase = pt["phase_pre_idx"]
+            idx_phase = pt.phase_pre_idx
             if idx_phase in existing_phases:
                 raise RuntimeError("It is not possible to define two state transitions for the same phase")
             if idx_phase >= ocp.nb_phases:
                 raise RuntimeError("Phase index of the state transition is higher than the number of phases")
             existing_phases.append(idx_phase)
 
-            pt["base"] = ConstraintFunction
-            if "weight" in pt:
-                if pt["weight"]:
-                    pt["base"] = ObjectiveFunction.MayerFunction
-                    pt["quadratic"] = True
+            if pt.weight:
+                pt.base = ObjectiveFunction.MayerFunction
 
             if idx_phase == ocp.nb_phases - 1:
                 # Add a cyclic constraint or objective
@@ -113,8 +125,11 @@ class StateTransitionFunctions:
 class ContinuityFunctions:
     @staticmethod
     def continuity(ocp):
-        ConstraintFunction.continuity(ocp)  # Inner phase continuity
-        PenaltyFunctionAbstract.continuity(ocp)  # Inter phase continuity
+        ConstraintFunction.inner_phase_continuity(ocp)
+
+        # Dynamics must be respected between phases
+        for pt in ocp.state_transitions:
+            pt.base.inter_phase_continuity(ocp, pt)
 
 
 class StateTransition(Enum):
