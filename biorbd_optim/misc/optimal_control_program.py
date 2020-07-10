@@ -632,10 +632,14 @@ class OptimalControlProgram:
         if show_online_optim:
             solver_ocp.online_optim(self)
             if return_iterations:
-                solver_ocp.get_iterations()
+                solver_ocp.start_get_iterations()
 
         solver_ocp.configure(solver_options)
         solver_ocp.solve()
+
+        if show_online_optim and return_iterations:
+            solver_ocp.finish_get_iterations()
+
         return solver_ocp.get_optimized_value(self)
 
     def save(self, sol, file_path, sol_iterations=None):
