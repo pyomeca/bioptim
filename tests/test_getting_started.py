@@ -8,12 +8,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from biorbd_optim import (
-    Data,
-    InitialConditions,
-    InterpolationType,
-    Simulate,
-)
+from biorbd_optim import Data, InitialConditions, InterpolationType, Simulate
 from .utils import TestUtils
 
 
