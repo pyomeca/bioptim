@@ -109,6 +109,7 @@ def plot_true_U(q_to_plot):
 
 
 def warm_start_mhe(data_sol_prev):
+    # TODO: This should be moved in a MHE module
     q = data_sol_prev[0]["q"]
     dq = data_sol_prev[0]["q_dot"]
     u = data_sol_prev[1]["tau"]
@@ -233,6 +234,7 @@ if __name__ == "__main__":
     options_ipopt["max_iter"] = 5
     options_ipopt["tol"] = 1e-1
 
+    # TODO: The following loop should be move in a MHE module that yields after iteration so the user can change obj
     for i in range(1, N - N_mhe):
         Y_i = Y_N_[:, :, i : i + N_mhe + 1]
         new_objectives = ObjectiveList()
