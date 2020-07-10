@@ -18,7 +18,9 @@ class DynamicsTypeList(UniquePerPhaseOptionList):
             extra_arguments["configure"] = type
             type = DynamicsType.CUSTOM
 
-        super(DynamicsTypeList, self)._add(option_type=DynamicsOption, type=type, phase=phase, dynamic_function=dynamic_function, **extra_arguments)
+        super(DynamicsTypeList, self)._add(
+            option_type=DynamicsOption, type=type, phase=phase, dynamic_function=dynamic_function, **extra_arguments
+        )
 
 
 class DynamicsType(Enum):

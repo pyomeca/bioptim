@@ -26,7 +26,9 @@ class StateTransitionList(UniquePerPhaseOptionList):
         if not isinstance(transition, StateTransition):
             extra_arguments["custom_function"] = transition
             transition = StateTransition.CUSTOM
-        super(StateTransitionList, self)._add(option_type=StateTransitionOption, type=transition, phase=phase, **extra_arguments)
+        super(StateTransitionList, self)._add(
+            option_type=StateTransitionOption, type=transition, phase=phase, **extra_arguments
+        )
 
 
 class StateTransitionFunctions:

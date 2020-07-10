@@ -28,7 +28,9 @@ class ConstraintList(OptionList):
             if not isinstance(constraint, Constraint):
                 extra_arguments["custom_function"] = constraint
                 constraint = Constraint.CUSTOM
-            super(ConstraintList, self)._add(option_type=ConstraintOption, type=constraint, instant=instant, phase=phase, **extra_arguments)
+            super(ConstraintList, self)._add(
+                option_type=ConstraintOption, type=constraint, instant=instant, phase=phase, **extra_arguments
+            )
 
 
 class ConstraintFunction(PenaltyFunctionAbstract):

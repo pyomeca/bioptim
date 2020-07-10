@@ -11,6 +11,7 @@ class Solver(Enum):
     """
     Solver to use
     """
+
     IPOPT = "Ipopt"
     ACADOS = "ACADOS"
     NONE = None

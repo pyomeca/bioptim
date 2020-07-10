@@ -16,13 +16,24 @@ class ParameterOption(OptionGeneric):
 
 
 class ParameterList(OptionList):
-    def add(self, parameter_name, function=None, initial_guess=None, bounds=None, size=None, phase=0, penalty_list=None, **extra_arguments):
+    def add(
+        self,
+        parameter_name,
+        function=None,
+        initial_guess=None,
+        bounds=None,
+        size=None,
+        phase=0,
+        penalty_list=None,
+        **extra_arguments
+    ):
         if isinstance(parameter_name, ParameterOption):
             self.copy(parameter_name)
         else:
             if not function or not initial_guess or not bounds or not size:
-                raise RuntimeError("function, initial_guess, bounds and size are "
-                                   "mandatory elements to declare a parameter")
+                raise RuntimeError(
+                    "function, initial_guess, bounds and size are " "mandatory elements to declare a parameter"
+                )
 
             super(ParameterList, self)._add(
                 option_type=ParameterOption,

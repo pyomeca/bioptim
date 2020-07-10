@@ -51,7 +51,17 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_markers(
-            penalty, ocp, nlp, t, x, u, p, axis_to_track=(Axe.X, Axe.Y, Axe.Z), markers_idx=(), target=None, **extra_param,
+            penalty,
+            ocp,
+            nlp,
+            t,
+            x,
+            u,
+            p,
+            axis_to_track=(Axe.X, Axe.Y, Axe.Z),
+            markers_idx=(),
+            target=None,
+            **extra_param,
         ):
             """
             Adds the objective that the specific markers should be minimized.
@@ -127,9 +137,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val[:3], penalty, **extra_param)
 
         @staticmethod
-        def minimize_markers_velocity(
-            penalty, ocp, nlp, t, x, u, p, markers_idx=(), target=None, **extra_param
-        ):
+        def minimize_markers_velocity(penalty, ocp, nlp, t, x, u, p, markers_idx=(), target=None, **extra_param):
             """
             Adds the objective that the specific markers velocity should be minimized.
             It is possible to track markers velocity, in this case the objective is to minimize
@@ -183,9 +191,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
-        def proportional_variable(
-            penalty, ocp, nlp, t, x, u, p, which_var, first_dof, second_dof, coef, **extra_param
-        ):
+        def proportional_variable(penalty, ocp, nlp, t, x, u, p, which_var, first_dof, second_dof, coef, **extra_param):
             """
             Adds proportionality constraint between the elements (states or controls) chosen.
             :param nlp: An instance of the OptimalControlProgram class.
@@ -257,9 +263,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
-        def minimize_muscles_control(
-            penalty, ocp, nlp, t, x, u, p, muscles_idx=(), target=None, **extra_param
-        ):
+        def minimize_muscles_control(penalty, ocp, nlp, t, x, u, p, muscles_idx=(), target=None, **extra_param):
             """
             Adds the objective that the specific muscle controls should be minimized.
             It is possible to track muscle activation, in this case the objective is to minimize
@@ -331,9 +335,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_height, penalty, **extra_param)
 
         @staticmethod
-        def minimize_contact_forces(
-            penalty, ocp, nlp, t, x, u, p, contacts_idx=(), target=None, **extra_param
-        ):
+        def minimize_contact_forces(penalty, ocp, nlp, t, x, u, p, contacts_idx=(), target=None, **extra_param):
             """
             Adds the objective that the contact force should be minimized.
             It is possible to track contact forces, in this case the objective is to minimize
@@ -390,9 +392,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
-        def align_marker_with_segment_axis(
-            penalty, ocp, nlp, t, x, u, p, marker_idx, segment_idx, axis, **extra_param
-        ):
+        def align_marker_with_segment_axis(penalty, ocp, nlp, t, x, u, p, marker_idx, segment_idx, axis, **extra_param):
             """
             Adds the constraint that the marker and the segment must be aligned at the desired
             instant(s).

@@ -177,7 +177,11 @@ class BoundsOption(OptionGeneric):
 
 class BoundsList(UniquePerPhaseOptionList):
     def add(
-        self, bounds, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, phase=-1, **extra_arguments
+        self,
+        bounds,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+        phase=-1,
+        **extra_arguments,
     ):
         if not isinstance(bounds, Bounds):
             bounds = Bounds(min_bound=bounds[0], max_bound=bounds[1], interpolation=interpolation, **extra_arguments)
@@ -293,7 +297,9 @@ class InitialConditionsList(UniquePerPhaseOptionList):
         if not isinstance(initial_condition, InitialConditions):
             initial_condition = InitialConditions(initial_condition, interpolation=interpolation, **extra_arguments)
 
-        super(InitialConditionsList, self)._add(option_type=InitialConditionsOption, initial_condition=initial_condition, phase=phase)
+        super(InitialConditionsList, self)._add(
+            option_type=InitialConditionsOption, initial_condition=initial_condition, phase=phase
+        )
 
     def __getitem__(self, item):
         return super(InitialConditionsList, self).__getitem__(item).initial_condition

@@ -7,9 +7,7 @@ import time
 
 # Load pendulum
 FILE_FOLDER = Path(__file__).parent
-spec = importlib.util.spec_from_file_location(
-    "mhe_simulation", str(FILE_FOLDER) + "/mhe_simulation.py"
-)
+spec = importlib.util.spec_from_file_location("mhe_simulation", str(FILE_FOLDER) + "/mhe_simulation.py")
 mhe_simulation = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mhe_simulation)
 
@@ -102,7 +100,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         nb_threads=4,
-        use_SX=True
+        use_SX=True,
     )
 
 
@@ -121,30 +119,24 @@ if __name__ == "__main__":
 
     Tf = 5  # duration of the simulation
     X0 = np.array([0, np.pi / 2, 0, 0])
-    N = Tf * 100 # number of shooting nodes per sec
+    N = Tf * 100  # number of shooting nodes per sec
     noise_std = 0.05  # STD of noise added to measurements
     T_max = 2  # Max torque applied to the model
-    N_mhe = 10 # size of MHE window
+    N_mhe = 10  # size of MHE window
     Tf_mhe = Tf / N * N_mhe  # duration of MHE window
 
     X_, Y_, Y_N_, U_ = mhe_simulation.run_simulation(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False)
 
-    X0 = np.zeros((biorbd_model.nbQ() * 2, N_mhe+1))
+    X0 = np.zeros((biorbd_model.nbQ() * 2, N_mhe + 1))
     X0[:, 0] = np.array([0, np.pi / 2, 0, 0])
-    U0 = np.zeros((biorbd_model.nbQ(), N_mhe ))
+    U0 = np.zeros((biorbd_model.nbQ(), N_mhe))
     X_est = np.zeros((biorbd_model.nbQ() * 2, N - N_mhe))
     T_max = 5  # Give a bit of slack on the max torque
 
-    Y_i = Y_N_[:, :, :N_mhe + 1]
+    Y_i = Y_N_[:, :, : N_mhe + 1]
 
     ocp = prepare_ocp(
-        biorbd_model_path,
-        number_shooting_points=N_mhe,
-        final_time=Tf_mhe,
-        max_torque=T_max,
-        X0=X0,
-        U0=U0,
-        target=Y_i,
+        biorbd_model_path, number_shooting_points=N_mhe, final_time=Tf_mhe, max_torque=T_max, X0=X0, U0=U0, target=Y_i,
     )
     options_ipopt = {
         "hessian_approximation": "limited-memory",
@@ -171,7 +163,7 @@ if __name__ == "__main__":
     options_ipopt["tol"] = 1e-1
 
     for i in range(1, N - N_mhe):
-        Y_i = Y_N_[:, :, i:i + N_mhe + 1]
+        Y_i = Y_N_[:, :, i : i + N_mhe + 1]
         new_objectives = ObjectiveList()
         new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, target=Y_i, idx=0)
         new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, target=X0, phase=0, idx=1)

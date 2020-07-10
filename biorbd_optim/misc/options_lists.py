@@ -1,4 +1,3 @@
-
 class OptionGeneric:
     def __init__(self, phase=-1, idx=-1, name=None, type=None, **params):
         self.phase = phase

@@ -46,7 +46,13 @@ class ObjectiveList(OptionList):
                     )
 
             super(ObjectiveList, self)._add(
-                option_type=ObjectiveOption, type=objective, instant=instant, weight=weight, phase=phase, quadratic=quadratic, **extra_arguments
+                option_type=ObjectiveOption,
+                type=objective,
+                instant=instant,
+                weight=weight,
+                phase=phase,
+                quadratic=quadratic,
+                **extra_arguments
             )
 
 
