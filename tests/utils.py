@@ -2,7 +2,6 @@ import numpy as np
 import os
 import pickle
 
-from copy import copy
 from casadi import MX
 import biorbd
 
@@ -72,7 +71,7 @@ class TestUtils:
     @staticmethod
     def simulate(sol, ocp):
         sol_from_solver = np.array(sol["x"]).squeeze()
-        sol_simulation_from_solve = Simulate.from_solve(ocp, copy(sol))["x"]
+        sol_simulation_from_solve = Simulate.from_solve(ocp, sol)["x"]
         sol_simulation_from_data = Simulate.from_data(ocp, Data.get_data(ocp, sol))["x"]
         np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_solve)
         np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_data)
