@@ -542,7 +542,7 @@ class OptimalControlProgram:
         phase_idx = new_penalty.phase
 
         # Copy to self.original_values so it can be save/load
-        self.original_values[penalty_name].add(new_penalty)
+        self.original_values[penalty_name].add(deepcopy(new_penalty))
 
         if penalty_name == "objective_functions":
             ObjectiveFunction.add_or_replace(self, self.nlp[phase_idx], new_penalty)

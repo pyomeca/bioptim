@@ -6,7 +6,7 @@ from .options_lists import OptionList, OptionGeneric
 
 
 class ParameterOption(OptionGeneric):
-    def __init__(self, function=None, initial_guess=None, bounds=None, size=None, penalty_list=None, custom_function=None, **params):
+    def __init__(self, function=None, initial_guess=None, bounds=None, size=None, penalty_list=None, **params):
         super(ParameterOption, self).__init__(**params)
         self.function = function
         self.initial_guess = initial_guess
@@ -16,7 +16,7 @@ class ParameterOption(OptionGeneric):
 
 
 class ParameterList(OptionList):
-    def add(self, parameter_name, function, initial_guess, bounds, size, phase=0, penalty_list=None, **extra_arguments):
+    def add(self, parameter_name, function=None, initial_guess=None, bounds=None, size=None, phase=0, penalty_list=None, **extra_arguments):
         if isinstance(parameter_name, ParameterOption):
             self.copy(parameter_name)
         else:
