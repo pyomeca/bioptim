@@ -49,7 +49,7 @@ def prepare_ocp(
     max_torque,
     X0,
     U0,
-    data_to_track=[],
+    target=None,
     interpolation_type=InterpolationType.EACH_FRAME,
 ):
     # --- Options --- #
@@ -62,7 +62,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, target=data_to_track)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, target=target)
     objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, target=X0)
 
     # Dynamics
@@ -173,10 +173,9 @@ if __name__ == "__main__":
     for i in range(1, N - N_mhe):
         Y_i = Y_N_[:, :, i:i + N_mhe + 1]
         new_objectives = ObjectiveList()
-        new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, target=Y_i)
+        new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, target=Y_i, idx=0)
         new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, target=X0, phase=0, idx=1)
-        ocp.modify_objective_function(new_objectives[0][0], 0)
-        ocp.modify_objective_function(new_objectives[0][1], 1)
+        ocp.update_objectives(new_objectives)
 
         # sol = ocp.solve(solver_options=options_ipopt)
         sol = ocp.solve(solver=Solver.ACADOS, solver_options=options_acados)

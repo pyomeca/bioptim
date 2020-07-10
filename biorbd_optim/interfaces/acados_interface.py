@@ -130,14 +130,14 @@ class AcadosInterface(SolverInterface):
 
             for i in range(ocp.nb_phases):
                 for j, J in enumerate(ocp.nlp[i]["J"]):
-                    if J[0]["type"] == ObjectiveFunction.LagrangeFunction:
+                    if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
                         self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"].reshape((-1, 1)))
                         if J[0]["target"] is not None:
                             self.y_ref.append([J_tp["target"].T.reshape((-1, 1)) for J_tp in J])
                         else:
                             raise RuntimeError("Should we put y_ref = zeros?")
 
-                    elif J[0]["type"] == ObjectiveFunction.MayerFunction:
+                    elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
                         raise RuntimeError("TODO: I may have broken this (is this the right J?)")
                         mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i]["X"][-1]], [J[0]["val"]])
                         self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i]["X"][0]))
