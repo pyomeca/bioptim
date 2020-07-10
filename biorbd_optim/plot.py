@@ -62,6 +62,10 @@ class PlotOcp:
                 raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
 
         self.ocp = ocp
+        self.plot_options = {
+            "bounds": {"color": "k", "linewidth": 0.4, "linestyle": "-"},
+        }
+
         self.ydata = []
         self.ns = 0
 
@@ -177,7 +181,7 @@ class PlotOcp:
                     ax = axes[k]
                     if k < len(self.plot_func[variable][i].legend):
                         axes[k].set_title(self.plot_func[variable][i].legend[k])
-                    ax.grid(color="k", linestyle="--", linewidth=0.5)
+                    ax.grid(color="k", linestyle="-", linewidth=0.15)
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
@@ -205,7 +209,7 @@ class PlotOcp:
                                     "-",
                                     color=color,
                                     markersize=3,
-                                    linewidth=0.8,
+                                    linewidth=1.1,
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
@@ -221,55 +225,29 @@ class PlotOcp:
                     for time in intersections_time:
                         self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
                     if self.axes[variable][0].bounds is not None:
-                        try:
-                            self.axes[variable][0].bounds.check_and_adjust_dimensions(
-                                nb_elements=len(mapping), nb_shooting=nlp["ns"]
-                            )
-                        except:
-                            self.axes[variable][0].bounds.check_and_adjust_dimensions(
-                                nb_elements=len(mapping), nb_shooting=nlp["ns"] - 1
-                            )
-                        ns = nlp["plot"][variable].bounds.min.nb_shooting
-                        if nlp["plot"][variable].bounds.min.type == InterpolationType.EACH_FRAME:
-                            ns -= 1
+                        if self.axes[variable][0].bounds.type == InterpolationType.EACH_FRAME:
+                            ns = self.axes[variable][0].bounds.min.shape[1] - 1
+                        else:
+                            ns = nlp["ns"]
+                        self.axes[variable][0].bounds.check_and_adjust_dimensions(
+                            nb_elements=len(mapping), nb_shooting=ns
+                        )
                         bounds_min = np.array(
                             [nlp["plot"][variable].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)]
                         )
                         bounds_max = np.array(
                             [nlp["plot"][variable].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)]
                         )
-                        try:
-                            self.plots_bounds.append(
-                                [ax.step(self.t[i], bounds_min, where="post", color="k", linestyle="--"), i]
-                            )
-                            self.plots_bounds.append(
-                                [ax.step(self.t[i], bounds_max, where="post", color="k", linestyle="--"), i]
-                            )
-                        except:
-                            self.plots_bounds.append(
-                                [
-                                    ax.step(
-                                        self.t[i],
-                                        np.concatenate((bounds_min, np.array([0]))),
-                                        where="post",
-                                        color="k",
-                                        linestyle="--",
-                                    ),
-                                    i,
-                                ]
-                            )
-                            self.plots_bounds.append(
-                                [
-                                    ax.step(
-                                        self.t[i],
-                                        np.concatenate((bounds_max, np.array([0]))),
-                                        where="post",
-                                        color="k",
-                                        linestyle="--",
-                                    ),
-                                    i,
-                                ]
-                            )
+                        if bounds_min.shape[0] == nlp["ns"]:
+                            bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
+                            bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
+
+                        self.plots_bounds.append(
+                            [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
+                        )
+                        self.plots_bounds.append(
+                            [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
+                        )
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
         """

@@ -196,6 +196,11 @@ class Bounds:
         else:
             self.max = PathCondition(max_bound, interpolation_type=interpolation_type, **parameters)
 
+        self.type = interpolation_type
+        self.t = None
+        self.extra_params = self.min.extra_params
+        self.nb_shooting = self.min.nb_shooting
+
     def check_and_adjust_dimensions(self, nb_elements, nb_shooting):
         """
         Detects if bounds are not correct (wrong size of list: different than degrees of freedom).
@@ -205,6 +210,8 @@ class Bounds:
         """
         self.min.check_and_adjust_dimensions(nb_elements, nb_shooting, "Bound min")
         self.max.check_and_adjust_dimensions(nb_elements, nb_shooting, "Bound max")
+        self.t = self.min.t
+        self.nb_shooting = self.min.nb_shooting
 
     def concatenate(self, other):
         """
@@ -214,18 +221,21 @@ class Bounds:
         self.min = PathCondition(np.concatenate((self.min, other.min)), interpolation_type=self.min.type)
         self.max = PathCondition(np.concatenate((self.max, other.max)), interpolation_type=self.max.type)
 
+        self.type = self.min.type
+        self.t = self.min.t
+        self.extra_params = self.min.extra_params
+        self.nb_shooting = self.min.nb_shooting
+
     def __getitem__(self, slice_list):
         if isinstance(slice_list, slice):
             min_bound = np.array(self.min[slice_list.start : slice_list.stop : slice_list.step])
             max_bound = np.array(self.max[slice_list.start : slice_list.stop : slice_list.step])
-            interpolation_type = self.min.type
-            if interpolation_type != InterpolationType.SPLINE:
-                bounds_sliced = Bounds(min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type)
-            else:
-                t = self.min.t
-                bounds_sliced = Bounds(
-                    min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type, t=t
-                )
+            interpolation_type = self.type
+            t = self.t
+            param = self.extra_params
+            bounds_sliced = Bounds(
+                min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type, t=t, **param
+            )
 
             return bounds_sliced
         else:
