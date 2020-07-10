@@ -45,9 +45,9 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        Objective.Lagrange.TRACK_MARKERS, axis_tot_track=[Axe.Y, Axe.Z], weight=100, data_to_track=markers_ref
+        Objective.Lagrange.TRACK_MARKERS, axis_tot_track=[Axe.Y, Axe.Z], weight=100, target=markers_ref
     )
-    objective_functions.add(Objective.Lagrange.TRACK_TORQUE, data_to_track=tau_ref.T)
+    objective_functions.add(Objective.Lagrange.TRACK_TORQUE, target=tau_ref)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -128,33 +128,33 @@ if __name__ == "__main__":
 
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda x, u: get_markers_pos(x, 0, markers_fun),
+        update_function=lambda x, u, p: get_markers_pos(x, 0, markers_fun),
         plot_type=PlotType.PLOT,
         color="tab:red",
     )
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda x, u: markers_ref[1, :, :],
+        update_function=lambda x, u, p: markers_ref[1, :, :],
         plot_type=PlotType.STEP,
         color="black",
         legend=label_markers,
     )
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda x, u: get_markers_pos(x, 1, markers_fun),
+        update_function=lambda x, u, p: get_markers_pos(x, 1, markers_fun),
         plot_type=PlotType.PLOT,
         color="tab:green",
     )
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda x, u: markers_ref[2, :, :],
+        update_function=lambda x, u, p: markers_ref[2, :, :],
         plot_type=PlotType.STEP,
         color="black",
         legend=label_markers,
     )
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda x, u: get_markers_pos(x, 2, markers_fun),
+        update_function=lambda x, u, p: get_markers_pos(x, 2, markers_fun),
         plot_type=PlotType.PLOT,
         color="tab:blue",
     )

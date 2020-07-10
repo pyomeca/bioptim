@@ -79,7 +79,7 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
         return np.array(dynamics_func(x, u, np.empty((0, 0)))).squeeze()
 
     # Generate some muscle activation
-    U = np.random.rand(nb_shooting, nb_mus)
+    U = np.random.rand(nb_shooting, nb_mus).T
 
     # Integrate and collect the position of the markers accordingly
     X = np.ndarray((nb_q + nb_qdot, nb_shooting + 1))
@@ -92,7 +92,7 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
 
     x_init = np.array([0] * nb_q + [0] * nb_qdot)
     add_to_data(0, x_init)
-    for i, u in enumerate(U):
+    for i, u in enumerate(U.T):
         sol = solve_ivp(dyn_interface, (0, dt), x_init, method="RK45", args=(u,))
 
         x_init = sol["y"][:, -1]
@@ -119,13 +119,13 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_MUSCLES_CONTROL, data_to_track=activations_ref)
+    objective_functions.add(Objective.Lagrange.TRACK_MUSCLES_CONTROL, target=activations_ref)
 
     if use_residual_torque:
         objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
 
     if kin_data_to_track == "markers":
-        objective_functions.add(Objective.Lagrange.TRACK_MARKERS, weight=100, data_to_track=markers_ref)
+        objective_functions.add(Objective.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)
     elif kin_data_to_track == "q":
         objective_functions.add(
             Objective.Lagrange.TRACK_STATE, weight=100, target=q_ref, states_idx=range(biorbd_model.nbQ())

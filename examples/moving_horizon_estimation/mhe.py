@@ -144,7 +144,7 @@ if __name__ == "__main__":
         max_torque=T_max,
         X0=X0,
         U0=U0,
-        data_to_track=Y_i,
+        target=Y_i,
     )
     options_ipopt = {
         "hessian_approximation": "limited-memory",
