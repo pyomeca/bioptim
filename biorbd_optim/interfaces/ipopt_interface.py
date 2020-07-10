@@ -96,12 +96,12 @@ class IpoptInterface(SolverInterface):
             if j_dict["target"] is not None:
                 val -= j_dict["target"]
 
-            if j_dict["quadratic"]:
+            if j_dict["objective"].quadratic:
                 val = dot(val, val)
             else:
                 val = sum1(val)
 
-            val *= j_dict["weight"] * j_dict["dt"]
+            val *= j_dict["objective"].weight * j_dict["dt"]
             return val
 
         all_J = self.ocp.CX()
