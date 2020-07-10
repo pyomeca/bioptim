@@ -152,8 +152,10 @@ class PathCondition(np.ndarray):
         elif self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             if shooting_point == 0:
                 return self[:, 0]
-            elif shooting_point >= self.nb_shooting:
+            elif shooting_point == self.nb_shooting:
                 return self[:, 2]
+            elif shooting_point > self.nb_shooting:
+                raise RuntimeError("shooting point too high")
             else:
                 return self[:, 1]
         elif self.type == InterpolationType.LINEAR:
@@ -223,7 +225,7 @@ class Bounds:
         else:
             self.max = PathCondition(max_bound, interpolation=interpolation, **parameters)
 
-        self.type = interpolation_type
+        self.type = interpolation
         self.t = None
         self.extra_params = self.min.extra_params
         self.nb_shooting = self.min.nb_shooting
