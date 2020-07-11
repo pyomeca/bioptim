@@ -10,26 +10,29 @@ from ..misc.options_lists import OptionList, OptionGeneric
 
 
 class ConstraintOption(OptionGeneric):
-    def __init__(self, instant=None, custom_function=None, minimum=None, maximum=None, **params):
-        super(ConstraintOption, self).__init__(**params)
+    def __init__(self, constraint, instant=Instant.NONE, minimum=None, maximum=None, phase=0, **params):
+        custom_function = None
+        if not isinstance(constraint, Constraint):
+            custom_function = constraint
+            constraint = Constraint.CUSTOM
+
+        super(ConstraintOption, self).__init__(type=constraint, phase=phase, **params)
         self.instant = instant
         self.quadratic = None
         self.custom_function = custom_function
         self.minimum = minimum
         self.maximum = maximum
+        self.custom_function = custom_function
 
 
 class ConstraintList(OptionList):
-    def add(self, constraint, instant=Instant.NONE, phase=0, **extra_arguments):
+    def add(self, constraint, **extra_arguments):
         if isinstance(constraint, ConstraintOption):
             self.copy(constraint)
 
         else:
-            if not isinstance(constraint, Constraint):
-                extra_arguments["custom_function"] = constraint
-                constraint = Constraint.CUSTOM
             super(ConstraintList, self)._add(
-                option_type=ConstraintOption, type=constraint, instant=instant, phase=phase, **extra_arguments
+                constraint=constraint, option_type=ConstraintOption, **extra_arguments
             )
 
 
@@ -147,7 +150,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         :param ocp: An OptimalControlProgram class.
         """
         # Dynamics must be sound within phases
-        penalty = ConstraintOption()
+        penalty = ConstraintOption([])
         for i, nlp in enumerate(ocp.nlp):
             penalty.idx = -1
             ConstraintFunction.clear_penalty(ocp, None, penalty)
@@ -171,7 +174,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     @staticmethod
     def inter_phase_continuity(ocp, pt):
         # Dynamics must be respected between phases
-        penalty = ConstraintOption()
+        penalty = ConstraintOption([])
         penalty.idx = -1
         pt.base.clear_penalty(ocp, None, penalty)
         val = pt.type.value[0](ocp, pt)

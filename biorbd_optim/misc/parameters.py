@@ -1,7 +1,7 @@
 from casadi import vertcat
 
 from .enums import Instant
-from ..limits.objective_functions import Objective, ObjectiveFunction
+from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveOption, ObjectiveList
 from .options_lists import OptionList, OptionGeneric
 
 
@@ -65,6 +65,13 @@ class Parameters:
         if penalty_list:
             if ocp.state_transitions:
                 raise NotImplementedError("Updating parameters while having state_transition is not supported yet")
+
+            if isinstance(penalty_list, ObjectiveOption):
+                penalty_list_tp = ObjectiveList()
+                penalty_list_tp.add(penalty_list)
+                penalty_list = penalty_list_tp
+            elif not isinstance(penalty_list, ObjectiveList):
+                raise RuntimeError("penalty_list should be built from an ObjectiveOption or ObjectiveList")
 
             if len(penalty_list) > 1 or len(penalty_list[0]) > 1:
                 raise NotImplementedError("Parameters with more that one penalty is not implemented yet")
