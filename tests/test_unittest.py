@@ -1,9 +1,10 @@
 import pytest
+import importlib.util
+from pathlib import Path
 
 import numpy as np
 
-from biorbd_optim import InitialConditions, InterpolationType
-
+from biorbd_optim import Data, InitialConditions, InterpolationType, Simulate
 
 # TODO: Add negative test for sizes
 
@@ -117,3 +118,79 @@ def test_initial_condition_custom():
     for i in range(nb_shoot + 1):
         expected_val = init_val[:, 0] + (init_val[:, 1] - init_val[:, 0]) * i / nb_shoot
         np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
+
+
+def test_simulate_from_initial_multiple_shoot():
+    # Load pendulum
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
+    )
+    pendulum = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum)
+
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        final_time=2,
+        number_shooting_points=10,
+        nb_threads=4,
+    )
+
+    X = InitialConditions([-1, -2, 1, 0.5])
+    U = InitialConditions(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
+
+    sol_simulate_multiple_shooting = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=False)
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol_simulate_multiple_shooting["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.76453657, -1.78061188)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((1.0, 0.5)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.22338503, 1.68361549)))
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((1.0, 2.0)))
+
+
+def test_simulate_from_initial_single_shoot():
+    # Load pendulum
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
+    )
+    pendulum = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum)
+
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        final_time=2,
+        number_shooting_points=10,
+        nb_threads=4,
+    )
+
+    X = InitialConditions([-1, -2, 1, 0.5])
+    U = InitialConditions(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
+
+    sol_simulate_single_shooting = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=True)
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol_simulate_single_shooting["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.59371229, 2.09731719)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((1.0, 0.5)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.38153013, -0.60425128)))
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((1.0, 2.0)))

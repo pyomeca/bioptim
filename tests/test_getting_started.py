@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from biorbd_optim import Data, OdeSolver, InitialConditions, InterpolationType, Simulate
+from biorbd_optim import Data, InterpolationType
 from .utils import TestUtils
 
 
@@ -63,64 +63,6 @@ def test_pendulum(nb_threads, use_SX):
 
     # simulate
     TestUtils.simulate(sol, ocp)
-
-
-def test_pendulum():
-    # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
-        number_shooting_points=10,
-        nb_threads=4,
-    )
-
-    X = InitialConditions([-1, -2, 1, 0.5])
-    U = InitialConditions(np.array([[-0.1,0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
-
-    sol_simulate_multiple_shooting = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=False)
-
-    # Check some of the results
-    states, controls = Data.get_data(ocp, sol_simulate_multiple_shooting["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-
-    # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((-1., -2.)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.76453657, -1.78061188)))
-
-    # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((1., 0.5)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.22338503, 1.68361549)))
-
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((1., 2.)))
-
-
-    sol_simulate_single_shooting = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=True)
-
-    # Check some of the results
-    states, controls = Data.get_data(ocp, sol_simulate_single_shooting["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-
-    # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((-1., -2.)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.59371229, 2.09731719)))
-
-    # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((1., 0.5)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.38153013, -0.60425128)))
-
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((1., 2.)))
-
 
 
 def test_custom_constraint_align_markers():
