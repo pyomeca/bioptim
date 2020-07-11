@@ -4,23 +4,27 @@ from .problem import Problem
 from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
 
 
-class DynamicsOption(OptionGeneric):
-    def __init__(self, dynamics=None, configure=None, **params):
-        super(DynamicsOption, self).__init__(**params)
+class DynamicsTypeOption(OptionGeneric):
+    def __init__(self, dynamics_type, dynamics=None, configure=None, dynamic_function=None, **params):
+        params["dynamic_function"] = dynamic_function
+        if not isinstance(dynamics_type, DynamicsType):
+            configure = dynamics_type
+            dynamics_type = DynamicsType.CUSTOM
+
+        super(DynamicsTypeOption, self).__init__(type=dynamics_type, **params)
         self.dynamics = dynamics
         self.configure = configure
 
 
 class DynamicsTypeList(UniquePerPhaseOptionList):
-    def add(self, type, dynamic_function=None, phase=-1):
-        extra_arguments = {}
-        if not isinstance(type, DynamicsType):
-            extra_arguments["configure"] = type
-            type = DynamicsType.CUSTOM
+    def add(self, dynamics_type, **extra_parameters):
+        if isinstance(dynamics_type, DynamicsTypeOption):
+            self.copy(dynamics_type)
 
-        super(DynamicsTypeList, self)._add(
-            option_type=DynamicsOption, type=type, phase=phase, dynamic_function=dynamic_function, **extra_arguments
-        )
+        else:
+            super(DynamicsTypeList, self)._add(
+                dynamics_type=dynamics_type, option_type=DynamicsTypeOption, **extra_parameters
+            )
 
 
 class DynamicsType(Enum):
