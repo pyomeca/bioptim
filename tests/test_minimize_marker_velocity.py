@@ -27,6 +27,7 @@ def test_align_and_minimize_marker_displacement_global():
         final_time=1,
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=False,
+        control_type=ControlType.CONSTANT,
     )
     sol = ocp.solve()
 
@@ -206,17 +207,17 @@ def test_align_and_minimize_marker_velocity_linear_controls():
     q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([ 8.00052450e-01, -3.75679643e-02, -2.91185269e+00,  0]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([ 7.97855500e-01, -6.71430291e-02,  3.08814735e+00,  0]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([8.00052450e-01, -3.75679643e-02, -2.91185269e00, 0]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([7.97855500e-01, -6.71430291e-02, 3.08814735e00, 0]))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([-5.79138829e-04,  9.17644892e-01,  1.00000000e+01,  0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.28786906e-03, -1.07635997e+00,  1.00000000e+01, 0]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([-5.79138829e-04, 9.17644892e-01, 1.00000000e01, 0]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.28786906e-03, -1.07635997e00, 1.00000000e01, 0]))
     # # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([ 1.08891009e-02, -2.92844929e+01,  4.50244940e+01, 0]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.61551775e-02,  2.17911599e+01,  4.50244940e+01, 0]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([1.08891009e-02, -2.92844929e01, 4.50244940e01, 0]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.31611500e-03, 2.65440438e01, 4.50244940e01, 0]))
 
     # # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol, ocp, decimal_value=6)

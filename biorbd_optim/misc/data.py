@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import interpolate
+from .enums import ControlType
 
 
 class Data:
@@ -177,7 +178,10 @@ class Data:
 
         offsets = [offset]
         for i, nlp in enumerate(ocp.nlp):
-            offsets.append(offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"]))
+            if nlp["control_type"] == ControlType.LINEAR:
+                offsets.append(offsets[i] + (nlp["nx"] + nlp["nu"]) * (nlp["ns"] + 1))
+            else:
+                offsets.append(offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"]))
 
         for i in phase_idx:
             nlp = ocp.nlp[i]
@@ -201,10 +205,16 @@ class Data:
                 offset += nlp["var_states"][key]
 
             for key in nlp["var_controls"]:
-                data_controls[key]._append_phase(
-                    (0, phase_time[i]),
-                    Data._get_phase(V_phase, nlp["var_controls"][key], nlp["ns"], offset, nb_var, True),
-                )
+                if nlp["control_type"] == ControlType.LINEAR:
+                    data_controls[key]._append_phase(
+                        (0, phase_time[i]),
+                        Data._get_phase(V_phase, nlp["var_controls"][key], nlp["ns"] + 1, offset, nb_var, True),
+                    )
+                else:
+                    data_controls[key]._append_phase(
+                        (0, phase_time[i]),
+                        Data._get_phase(V_phase, nlp["var_controls"][key], nlp["ns"], offset, nb_var, True),
+                    )
                 offset += nlp["var_controls"][key]
 
         if integrate:
