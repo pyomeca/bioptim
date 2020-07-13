@@ -32,9 +32,7 @@ class ConstraintList(OptionList):
             self.copy(constraint)
 
         else:
-            super(ConstraintList, self)._add(
-                constraint=constraint, option_type=ConstraintOption, **extra_arguments
-            )
+            super(ConstraintList, self)._add(constraint=constraint, option_type=ConstraintOption, **extra_arguments)
 
 
 class ConstraintFunction(PenaltyFunctionAbstract):

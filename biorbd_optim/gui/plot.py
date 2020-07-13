@@ -361,7 +361,9 @@ class PlotOcp:
                 ax = plot[2][-1].axes
             elif plot[0] == PlotType.LINEAR:
                 for cmp, p in enumerate(plot[2]):
-                    p.set_xdata(np.hstack((self.t_integrated[phase_idx][cmp][0], self.t_integrated[phase_idx][cmp][-1])))
+                    p.set_xdata(
+                        np.hstack((self.t_integrated[phase_idx][cmp][0], self.t_integrated[phase_idx][cmp][-1]))
+                    )
                 ax = plot[2][-1].axes
             else:
                 plot[2].set_xdata(self.t[phase_idx])

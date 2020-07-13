@@ -14,22 +14,36 @@ class Simulate:
             # TODO adds StateTransitionFunctions between phases
             for idx_nodes in range(nlp["ns"]):
                 x0 = v_output[offset : offset + nlp["nx"]] if single_shoot else v_input[offset : offset + nlp["nx"]]
-                v_output[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
-                    nlp["dynamics"][idx_nodes](x0=x0, p=v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]])[
-                        "xf"
                 if nlp["ode_solver"] == OdeSolver.COLLOCATION or nlp["nb_threads"] > 1:
-                    v_output[offset + nlp["nx"] + nlp["nu"]: offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
-                        nlp["dynamics"][idx_nodes](x0=x0, p=v_input[offset + nlp["nx"]: offset + nlp["nx"] + nlp["nu"]])["xf"]).squeeze()
+                    v_output[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
+                        nlp["dynamics"][idx_nodes](
+                            x0=x0, p=v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]]
+                        )["xf"]
+                    ).squeeze()
                 elif nlp["ode_solver"] == OdeSolver.RK:
                     if nlp["control_type"] == ControlType.CONSTANT:
-                        v_output[offset + nlp["nx"] + nlp["nu"]: offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
-                            nlp["dynamics"][idx_nodes](x0=x0, p=np.vstack((v_input[offset + nlp["nx"]: offset + nlp["nx"] + nlp["nu"]],np.zeros(nlp["nu"]))).T)["xf"]).squeeze()
+                        v_output[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
+                            nlp["dynamics"][idx_nodes](
+                                x0=x0,
+                                p=np.vstack(
+                                    (v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]], np.zeros(nlp["nu"]))
+                                ).T,
+                            )["xf"]
+                        ).squeeze()
                     elif nlp["control_type"] == ControlType.LINEAR:
-                        v_output[offset + nlp["nx"] + nlp["nu"]: offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
-                            nlp["dynamics"][idx_nodes](x0=x0, p=np.vstack((v_input[
-                                                                           offset + nlp["nx"]: offset + nlp["nx"] + nlp[
-                                                                               "nu"]], v_input[offset + 2 * nlp["nx"] + nlp[
-                                "nu"]: offset + 2 * nlp["nx"] + 2 * nlp["nu"]])).T)["xf"]).squeeze()
+                        v_output[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
+                            nlp["dynamics"][idx_nodes](
+                                x0=x0,
+                                p=np.vstack(
+                                    (
+                                        v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]],
+                                        v_input[
+                                            offset + 2 * nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + 2 * nlp["nu"]
+                                        ],
+                                    )
+                                ).T,
+                            )["xf"]
+                        ).squeeze()
                 offset += nlp["nx"] + nlp["nu"]
         sol["x"] = v_output
         return sol

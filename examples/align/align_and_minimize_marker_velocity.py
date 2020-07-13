@@ -90,7 +90,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         nb_integration_steps=5,
-        control_type=control_type
+        control_type=control_type,
     )
 
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         final_time=2,
         marker_velocity_or_displacement="disp",  # "velo"
         marker_in_first_coordinates_system=True,
-        control_type=ControlType.CONSTANT, # ControlType.LINEAR
+        control_type=ControlType.CONSTANT,  # ControlType.LINEAR
     )
 
     # --- Solve the program --- #
