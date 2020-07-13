@@ -15,14 +15,16 @@ from .options_lists import OptionList
 from .parameters import Parameters, ParameterList, ParameterOption
 from .utils import check_version
 from ..dynamics.problem import Problem
-from ..dynamics.dynamics_type import DynamicsTypeList
+from ..dynamics.dynamics_type import DynamicsTypeList, DynamicsTypeOption
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.integrator import RK4, RK4_multiThread
 from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList, ConstraintOption
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList, ObjectiveOption
-from ..limits.path_conditions import Bounds, BoundsList, InitialConditions, InitialConditionsList, InterpolationType
+from ..limits.path_conditions import Bounds, BoundsList, BoundsOption
+from ..limits.path_conditions import InitialConditions, InitialConditionsList, InitialConditionsOption
+from ..limits.path_conditions import InterpolationType
 
 check_version(biorbd, "1.3.5", "1.4.0")
 
@@ -129,8 +131,14 @@ class OptimalControlProgram:
         # Check integrity of arguments
         if not isinstance(nb_threads, int) or isinstance(nb_threads, bool) or nb_threads < 1:
             raise RuntimeError("nb_threads should be a positive integer greater or equal than 1")
-        if not isinstance(dynamics_type, DynamicsTypeList):
-            raise RuntimeError("dynamics_type should be a DynamicsTypeList")
+
+        if isinstance(dynamics_type, DynamicsTypeOption):
+            dynamics_type_tp = DynamicsTypeList()
+            dynamics_type_tp.add(dynamics_type)
+            dynamics_type = dynamics_type_tp
+        elif not isinstance(dynamics_type, DynamicsTypeList):
+            raise RuntimeError("dynamics_type should be a DynamicsTypeOption or a DynamicsTypeList")
+
         ns = number_shooting_points
         if not isinstance(ns, int) or ns < 2:
             if isinstance(ns, (tuple, list)):
@@ -145,30 +153,65 @@ class OptimalControlProgram:
         nstep = nb_integration_steps
         if not isinstance(nstep, int) or isinstance(nstep, bool) or nstep < 1:
             raise RuntimeError("nb_integration_steps should be a positive integer greater or equal than 1")
+
         if not isinstance(phase_time, (int, float)):
             if isinstance(phase_time, (tuple, list)):
                 if sum([True for i in phase_time if not isinstance(i, (int, float))]) != 0:
                     raise RuntimeError("phase_time should be a number or a list of number")
             else:
                 raise RuntimeError("phase_time should be a number or a list of number")
-        if not isinstance(X_init, InitialConditionsList):
-            raise RuntimeError("X_init should be built from an InitialConditionsList")
-        if not isinstance(U_init, InitialConditionsList):
-            raise RuntimeError("U_init should be built from an InitialConditionsList")
-        if not isinstance(X_bounds, BoundsList):
-            raise RuntimeError("X_bounds should be built from an BoundsList")
-        if not isinstance(U_bounds, BoundsList):
-            raise RuntimeError("U_bounds should be built from an BoundsList")
-        if not isinstance(objective_functions, ObjectiveList):
-            raise RuntimeError("objective_functions should be built from an ObjectiveList")
-        if not isinstance(constraints, ConstraintList):
-            raise RuntimeError("constraints should be built from an ConstraintList")
+
+        if isinstance(X_init, InitialConditionsOption):
+            X_init_tp = InitialConditionsList()
+            X_init_tp.add(X_init)
+            X_init = X_init_tp
+        elif not isinstance(X_init, InitialConditionsList):
+            raise RuntimeError("X_init should be built from a InitialConditionsOption or InitialConditionsList")
+
+        if isinstance(U_init, InitialConditionsOption):
+            U_init_tp = InitialConditionsList()
+            U_init_tp.add(U_init)
+            U_init = U_init_tp
+        elif not isinstance(U_init, InitialConditionsList):
+            raise RuntimeError("U_init should be built from a InitialConditionsOption or InitialConditionsList")
+
+        if isinstance(X_bounds, BoundsOption):
+            X_bounds_tp = BoundsList()
+            X_bounds_tp.add(X_bounds)
+            X_bounds = X_bounds_tp
+        elif not isinstance(X_bounds, BoundsList):
+            raise RuntimeError("X_bounds should be built from a BoundOption or a BoundsList")
+
+        if isinstance(U_bounds, BoundsOption):
+            U_bounds_tp = BoundsList()
+            U_bounds_tp.add(U_bounds)
+            U_bounds = U_bounds_tp
+        elif not isinstance(U_bounds, BoundsList):
+            raise RuntimeError("U_bounds should be built from a BoundOption or a BoundsList")
+
+        if isinstance(objective_functions, ObjectiveOption):
+            objective_functions_tp = ObjectiveList()
+            objective_functions_tp.add(objective_functions)
+            objective_functions = objective_functions_tp
+        elif not isinstance(objective_functions, ObjectiveList):
+            raise RuntimeError("objective_functions should be built from an ObjectiveOption or ObjectiveList")
+
+        if isinstance(constraints, ConstraintOption):
+            constraints_tp = ConstraintList()
+            constraints_tp.add(constraints)
+            constraints = constraints_tp
+        elif not isinstance(constraints, ConstraintList):
+            raise RuntimeError("constraints should be built from an ConstraintOption or ConstraintList")
+
         if not isinstance(parameters, ParameterList):
             raise RuntimeError("parameters should be built from an ParameterList")
+
         if not isinstance(state_transitions, StateTransitionList):
             raise RuntimeError("state_transitions should be built from an StateTransitionList")
+
         if not isinstance(ode_solver, OdeSolver):
             raise RuntimeError("ode_solver should be built an instance of OdeSolver")
+
         if not isinstance(use_SX, bool):
             raise RuntimeError("use_SX should be a bool")
 

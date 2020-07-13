@@ -11,13 +11,13 @@ from biorbd_optim import (
     Problem,
     DynamicsType,
     DynamicsFunctions,
-    ObjectiveList,
+    ObjectiveOption,
     Objective,
     ConstraintList,
     Constraint,
-    BoundsList,
+    BoundsOption,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialConditionsOption,
     ShowResult,
     OdeSolver,
 )
@@ -49,8 +49,7 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -65,23 +64,19 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
     constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint
-    x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[1:6, [0, -1]] = 0
-    x_bounds[0].max[1:6, [0, -1]] = 0
-    x_bounds[0].min[2, -1] = 1.57
-    x_bounds[0].max[2, -1] = 1.57
+    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds.min[1:6, [0, -1]] = 0
+    x_bounds.max[1:6, [0, -1]] = 0
+    x_bounds.min[2, -1] = 1.57
+    x_bounds.max[2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialConditionsList()
-    x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialConditionsOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()])
+    u_bounds = BoundsOption([[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()])
 
-    u_init = InitialConditionsList()
-    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init = InitialConditionsOption([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
 
