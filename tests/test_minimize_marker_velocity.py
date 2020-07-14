@@ -195,7 +195,7 @@ def test_align_and_minimize_marker_velocity_linear_controls():
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], -120.00000185455174)
+    np.testing.assert_almost_equal(f[0, 0], -80.28869898410233)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -207,14 +207,14 @@ def test_align_and_minimize_marker_velocity_linear_controls():
     q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([8.00052450e-01, -3.75679643e-02, -2.91185269e00, 0]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([7.97855500e-01, -6.71430291e-02, 3.08814735e00, 0]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.79999916, -9.3884249e-03, -3.1415926, 0]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.80000210, -9.0612617e-03,  3.1415926, 0]))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([-5.79138829e-04, 9.17644892e-01, 1.00000000e01, 0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.28786906e-03, -1.07635997e00, 1.00000000e01, 0]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([2.3328144e-06, 0.41351063, 10, 0]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([6.2035639e-06, -0.41268161, 10, 0]))
     # # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([1.08891009e-02, -2.92844929e01, 4.50244940e01, 0]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.31611500e-03, 2.65440438e01, 4.50244940e01, 0]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([1.1156360e-05,  4.6934017, -8.4955414, 0]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-2.6442548e-05,  4.6819474,  8.4955414, 0]))
 
     # # save and load
     TestUtils.save_and_load(sol, ocp, False)
