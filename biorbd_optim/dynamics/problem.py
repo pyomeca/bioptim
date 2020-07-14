@@ -229,20 +229,23 @@ class Problem:
             nlp["x"] = vertcat(nlp["x"], q, q_dot)
             nlp["var_states"]["q"] = nlp["nbQ"]
             nlp["var_states"]["q_dot"] = nlp["nbQdot"]
+            q_bounds = nlp["X_bounds"][: nlp["nbQ"]]
+            qdot_bounds = nlp["X_bounds"][nlp["nbQ"] :]
 
             nlp["plot"]["q"] = CustomPlot(
-                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q
+                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q, bounds=q_bounds,
             )
             nlp["plot"]["q_dot"] = CustomPlot(
                 lambda x, u, p: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
+                bounds=qdot_bounds,
             )
         if as_controls:
             nlp["u"] = vertcat(nlp["u"], q, q_dot)
             nlp["var_controls"]["q"] = nlp["nbQ"]
             nlp["var_controls"]["q_dot"] = nlp["nbQdot"]
-            # Add plot if it happens
+            # Add plot (and retrieving of bounds if plots of bounds is wanted) if it happens
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()
@@ -283,9 +286,11 @@ class Problem:
         if as_controls:
             nlp["u"] = vertcat(nlp["u"], tau)
             nlp["var_controls"]["tau"] = nlp["nbTau"]
+            tau_bounds = nlp["U_bounds"][: nlp["nbTau"]]
+            # TODO: Here I assume that tau is always in the beginning of u -> problem ?
 
             nlp["plot"]["tau"] = CustomPlot(
-                lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
+                lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau, bounds=tau_bounds,
             )
 
         nlp["nx"] = nlp["x"].rows()
@@ -339,11 +344,13 @@ class Problem:
             nlp["var_states"]["muscles"] = nlp["nbMuscle"]
 
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
+            muscles_bounds = nlp["X_bounds"][nx_q : nx_q + nlp["nbMuscle"]]
             nlp["plot"]["muscles_states"] = CustomPlot(
                 lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
                 plot_type=PlotType.INTEGRATED,
-                legend=nlp["muscleNames"],
+                legend=nlp["muscleNames"],  # TODO: Verify if it is useful since with have the (at least default) values of muscles bounds
                 ylim=[0, 1],
+                bounds=muscles_bounds,
             )
             combine = "muscles_states"
 
@@ -354,6 +361,8 @@ class Problem:
 
             nlp["u"] = vertcat(nlp["u"], muscles)
             nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
+            muscles_bounds = nlp["U_bounds"][nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]]
+            # TODO: (Verify) Here I assume that muscles as controls are always after tau in U_bounds
 
             nlp["plot"]["muscles_control"] = CustomPlot(
                 lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
@@ -361,6 +370,7 @@ class Problem:
                 legend=nlp["muscleNames"],
                 combine_to=combine,
                 ylim=[0, 1],
+                bounds=muscles_bounds,
             )
 
         nlp["nx"] = nlp["x"].rows()
