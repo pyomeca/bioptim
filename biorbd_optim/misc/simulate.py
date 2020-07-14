@@ -20,8 +20,8 @@ class Simulate:
                 elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
                     p = np.vstack(
                         (
-                            v_input[offset + nlp["nx"]: offset + nlp["nx"] + nlp["nu"]],
-                            v_input[offset + 2 * nlp["nx"] + nlp["nu"]: offset + 2 * nlp["nx"] + 2 * nlp["nu"]],
+                            v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]],
+                            v_input[offset + 2 * nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + 2 * nlp["nu"]],
                         )
                     ).T
                 else:

@@ -291,9 +291,7 @@ class Problem:
                 plot_type = PlotType.PLOT
             else:
                 plot_type = PlotType.STEP
-            nlp["plot"]["tau"] = CustomPlot(
-                lambda x, u, p: u[: nlp["nbTau"]], plot_type=plot_type, legend=legend_tau
-            )
+            nlp["plot"]["tau"] = CustomPlot(lambda x, u, p: u[: nlp["nbTau"]], plot_type=plot_type, legend=legend_tau)
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()
@@ -348,7 +346,7 @@ class Problem:
 
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
             nlp["plot"]["muscles_states"] = CustomPlot(
-                lambda x, u, p: x[nx_q: nx_q + nlp["nbMuscle"]],
+                lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=nlp["muscleNames"],
                 ylim=[0, 1],
@@ -370,7 +368,7 @@ class Problem:
             else:
                 plot_type = PlotType.STEP
             nlp["plot"]["muscles_control"] = CustomPlot(
-                lambda x, u, p: u[nlp["nbTau"]: nlp["nbTau"] + nlp["nbMuscle"]],
+                lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
                 plot_type=plot_type,
                 legend=nlp["muscleNames"],
                 combine_to=combine,

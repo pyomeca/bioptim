@@ -101,7 +101,7 @@ if __name__ == "__main__":
         final_time=2,
         marker_velocity_or_displacement="disp",  # "velo"
         marker_in_first_coordinates_system=True,
-        control_type=ControlType.LINEAR_CONTINUOUS
+        control_type=ControlType.LINEAR_CONTINUOUS,
     )
 
     # --- Solve the program --- #

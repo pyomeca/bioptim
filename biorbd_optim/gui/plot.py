@@ -307,7 +307,9 @@ class PlotOcp:
                         y_tp = np.empty((self.variable_sizes[i][key], len(t)))
                         y_tp.fill(np.nan)
                         y_tp[:, :] = self.plot_func[key][i].function(
-                            state[:, step_size * idx : step_size * (idx + 1)], control[:, idx : idx + u_mod], data_param_in_dyn,
+                            state[:, step_size * idx : step_size * (idx + 1)],
+                            control[:, idx : idx + u_mod],
+                            data_param_in_dyn,
                         )
                         all_y.append(y_tp)
 

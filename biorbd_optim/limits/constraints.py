@@ -72,7 +72,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     constraint,
                     min_bound=min_bound,
                     max_bound=max_bound,
-                    **parameters
+                    **parameters,
                 )
 
         @staticmethod
@@ -87,7 +87,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tangential_component_idx,
             normal_component_idx,
             static_friction_coefficient,
-            **parameters
+            **parameters,
         ):
             """
             Constraint preventing the contact point from slipping tangentially to the contact surface
@@ -118,7 +118,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     constraint,
                     min_bound=0,
                     max_bound=inf,
-                    **parameters
+                    **parameters,
                 )
                 ConstraintFunction.add_to_penalty(
                     ocp,
@@ -127,7 +127,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     constraint,
                     min_bound=0,
                     max_bound=inf,
-                    **parameters
+                    **parameters,
                 )
 
         @staticmethod
@@ -164,7 +164,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                         if nlp["control_type"] == ControlType.CONSTANT:
                             u = nlp["U"][k]
                         elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
-                            u = horzcat(nlp["U"][k], nlp["U"][k+1])
+                            u = horzcat(nlp["U"][k], nlp["U"][k + 1])
                         else:
                             raise NotImplementedError(f"Dynamics with {nlp['control_type']} is not implemented yet")
                         end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=u, params=nlp["p"])["xf"]

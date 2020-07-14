@@ -252,7 +252,9 @@ class Data:
                 if nlp["control_type"] == ControlType.CONSTANT:
                     p = Data._vertcat(data_controls, list(nlp["var_controls"].keys()), idx_phase, idx_node)
                 elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
-                    p = Data._vertcat(data_controls, list(nlp["var_controls"].keys()), idx_phase, [idx_node, idx_node+1])
+                    p = Data._vertcat(
+                        data_controls, list(nlp["var_controls"].keys()), idx_phase, [idx_node, idx_node + 1]
+                    )
                 else:
                     raise NotImplementedError(f"Plotting {nlp['control_type']} is not implemented yet")
                 params = Data._vertcat(data_parameters, [key for key in ocp.param_to_optimize if key != "time"])
