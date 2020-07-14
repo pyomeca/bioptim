@@ -1,6 +1,5 @@
-from casadi import vertcat, horzcat, MX
+from casadi import vertcat, MX
 import biorbd
-from ..misc.enums import ControlType
 
 
 class DynamicsFunctions:
