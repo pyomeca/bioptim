@@ -1,7 +1,7 @@
-from casadi import MX, vertcat, horzcat, horzsplit, Function
+from casadi import MX, vertcat, horzcat, Function
 
 from .dynamics_functions import DynamicsFunctions
-from ..misc.enums import PlotType, OdeSolver, ControlType
+from ..misc.enums import PlotType, ControlType
 from ..misc.mapping import BidirectionalMapping, Mapping
 from ..gui.plot import CustomPlot
 
