@@ -262,13 +262,12 @@ class Bounds:
         if isinstance(slice_list, slice):
             min_bound = np.array(self.min[slice_list.start : slice_list.stop : slice_list.step])
             max_bound = np.array(self.max[slice_list.start : slice_list.stop : slice_list.step])
-            interpolation_type = self.type
+            interpolation= self.type
             t = self.t
             param = self.extra_params
             bounds_sliced = Bounds(
-                min_bound=min_bound, max_bound=max_bound, interpolation_type=interpolation_type, t=t, **param
+                min_bound=min_bound, max_bound=max_bound, interpolation=interpolation, t=t, **param
             )
-
             return bounds_sliced
         else:
             raise RuntimeError(
