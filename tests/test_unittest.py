@@ -14,7 +14,7 @@ def test_initial_condition_constant():
     nb_shoot = 10
 
     init_val = np.random.random(nb_elements,)
-    init = InitialConditions(init_val, interpolation_type=InterpolationType.CONSTANT)
+    init = InitialConditions(init_val, interpolation=InterpolationType.CONSTANT)
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     expected_val = init_val
     for i in range(nb_shoot):

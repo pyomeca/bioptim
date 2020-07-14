@@ -128,7 +128,7 @@ def prepare_ocp(
     X0,
     U0,
     target=None,
-    interpolation_type=InterpolationType.EACH_FRAME,
+    interpolation=InterpolationType.EACH_FRAME,
 ):
     # --- Options --- #
     # Model path
@@ -163,10 +163,10 @@ def prepare_ocp(
     x = X0
     u = U0
     x_init = InitialConditionsList()
-    x_init.add(x, interpolation=interpolation_type)
+    x_init.add(x, interpolation=interpolation)
 
     u_init = InitialConditionsList()
-    u_init.add(u, interpolation=interpolation_type)
+    u_init.add(u, interpolation=interpolation)
     # ------------- #
 
     return OptimalControlProgram(
