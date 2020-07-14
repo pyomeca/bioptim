@@ -178,7 +178,7 @@ class Data:
 
         offsets = [offset]
         for i, nlp in enumerate(ocp.nlp):
-            if nlp["control_type"] == ControlType.LINEAR:
+            if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
                 offsets.append(offsets[i] + (nlp["nx"] + nlp["nu"]) * (nlp["ns"] + 1))
             else:
                 offsets.append(offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"]))
@@ -205,7 +205,7 @@ class Data:
                 offset += nlp["var_states"][key]
 
             for key in nlp["var_controls"]:
-                if nlp["control_type"] == ControlType.LINEAR:
+                if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
                     data_controls[key]._append_phase(
                         (0, phase_time[i]),
                         Data._get_phase(V_phase, nlp["var_controls"][key], nlp["ns"] + 1, offset, nb_var, True),

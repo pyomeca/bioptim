@@ -5,8 +5,7 @@ from casadi import sum1, horzcat
 
 from .path_conditions import Bounds
 from .penalty import PenaltyType, PenaltyFunctionAbstract
-from ..dynamics.dynamics_functions import DynamicsFunctions
-from ..misc.enums import Instant, InterpolationType, OdeSolver
+from ..misc.enums import Instant, InterpolationType, OdeSolver, ControlType
 from ..misc.options_lists import OptionList, OptionGeneric
 
 
@@ -162,8 +161,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 for k in range(nlp["ns"]):
                     # Create an evaluation node
                     if nlp["ode_solver"] == OdeSolver.RK:
-                        nodes = DynamicsFunctions.call_dynamics(ocp, nlp, k, multiThread=False)
-                        end_node = nodes["xf"]
+                        if nlp["control_type"] == ControlType.CONSTANT:
+                            u = nlp["U"][k]
+                        elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                            u = horzcat(nlp["U"][k], nlp["U"][k+1])
+                        else:
+                            raise NotImplementedError(f"Dynamics with {nlp['control_type']} is not implemented yet")
+                        end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=u, params=nlp["p"])["xf"]
                     else:
                         end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k])["xf"]
 

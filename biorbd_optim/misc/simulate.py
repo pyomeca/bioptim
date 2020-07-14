@@ -24,13 +24,10 @@ class Simulate:
                     if nlp["control_type"] == ControlType.CONSTANT:
                         v_output[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
                             nlp["dynamics"][idx_nodes](
-                                x0=x0,
-                                p=np.vstack(
-                                    (v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]], np.zeros(nlp["nu"]))
-                                ).T,
+                                x0=x0, p=v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]]
                             )["xf"]
                         ).squeeze()
-                    elif nlp["control_type"] == ControlType.LINEAR:
+                    elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
                         v_output[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
                             nlp["dynamics"][idx_nodes](
                                 x0=x0,
@@ -57,7 +54,7 @@ class Simulate:
         offset_phases = 0
         for nlp in ocp.nlp:
             offset = 0
-            if nlp["control_type"] == ControlType.LINEAR:
+            if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
                 v_phase = np.ndarray((nlp["ns"] + 1) * (nlp["nx"] + nlp["nu"]))
             else:
                 v_phase = np.ndarray((nlp["ns"] + 1) * nlp["nx"] + nlp["ns"] * nlp["nu"])
@@ -79,15 +76,10 @@ class Simulate:
                         v_phase[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
                             nlp["dynamics"][idx_nodes](
                                 x0=x0,
-                                p=np.vstack(
-                                    (
-                                        Simulate._concat_variables(controls, offset_phases, idx_nodes),
-                                        np.zeros(nlp["nu"]),
-                                    )
-                                ).T,
+                                p=Simulate._concat_variables(controls, offset_phases, idx_nodes),
                             )["xf"]
                         ).squeeze()
-                    elif nlp["control_type"] == ControlType.LINEAR:
+                    elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
                         v_phase[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
                             nlp["dynamics"][idx_nodes](
                                 x0=x0,

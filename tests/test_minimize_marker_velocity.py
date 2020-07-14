@@ -188,7 +188,7 @@ def test_align_and_minimize_marker_velocity_linear_controls():
         final_time=1,
         marker_velocity_or_displacement="velo",
         marker_in_first_coordinates_system=True,
-        control_type=ControlType.LINEAR,
+        control_type=ControlType.LINEAR_CONTINUOUS,
     )
     sol = ocp.solve()
 

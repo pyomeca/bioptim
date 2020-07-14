@@ -264,63 +264,36 @@ class Problem:
 
         dof_names = nlp["model"].nameDof()
 
-        if nlp["ode_solver"] == OdeSolver.COLLOCATION or nlp["nb_threads"] > 1:
-            tau_mx = MX()
-            tau = nlp["CX"]()
-            for i in nlp["tau_mapping"].reduce.map_idx:
-                tau = vertcat(tau, nlp["CX"].sym("Tau_" + dof_names[i].to_string(), 1, 1))
-            for i in nlp["q_mapping"].expand.map_idx:
-                tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
+        n_col = nlp["control_type"].value
+        tau_mx = MX()
+        all_tau = [nlp["CX"]() for _ in range(n_col)]
 
-            nlp["nbTau"] = nlp["tau_mapping"].reduce.len
-            legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
+        for i in nlp["tau_mapping"].reduce.map_idx:
+            for j in range(len(all_tau)):
+                all_tau[j] = vertcat(all_tau[j], nlp["CX"].sym(f"Tau_{dof_names[i].to_string()}_{j}", 1, 1))
+        for i in nlp["q_mapping"].expand.map_idx:
+            tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
-            nlp["tau"] = tau_mx
-            if as_states:
-                nlp["x"] = vertcat(nlp["x"], tau)
-                nlp["var_states"]["tau"] = nlp["nbTau"]
+        nlp["nbTau"] = nlp["tau_mapping"].reduce.len
+        legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
+        nlp["tau"] = tau_mx
 
-                # Add plot if it happens
-            if as_controls:
-                nlp["u"] = vertcat(nlp["u"], tau)
-                nlp["var_controls"]["tau"] = nlp["nbTau"]
+        if as_states:
+            nlp["x"] = vertcat(nlp["x"], all_tau[0])
+            nlp["var_states"]["tau"] = nlp["nbTau"]
+            # Add plot if it happens
 
-                nlp["plot"]["tau"] = CustomPlot(
-                    lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
-                )
-        elif nlp["ode_solver"] == OdeSolver.RK:
-            tau_begin_mx = MX()
-            tau_begin = nlp["CX"]()
-            tau_end_mx = MX()
-            tau_end = nlp["CX"]()
-            for i in nlp["tau_mapping"].reduce.map_idx:
-                tau_begin = vertcat(tau_begin, nlp["CX"].sym("Tau_" + dof_names[i].to_string() + "_begin", 1, 1))
-                tau_end = vertcat(tau_end, nlp["CX"].sym("Tau_" + dof_names[i].to_string() + "_end", 1, 1))
-            for i in nlp["q_mapping"].expand.map_idx:
-                tau_begin_mx = vertcat(tau_begin_mx, MX.sym("Tau_" + dof_names[i].to_string() + "_begin", 1, 1))
-                # tau_end_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string() + "_end", 1, 1))
+        if as_controls:
+            nlp["u"] = vertcat(nlp["u"], horzcat(*all_tau))
+            nlp["var_controls"]["tau"] = nlp["nbTau"]
 
-            nlp["nbTau"] = nlp["tau_mapping"].reduce.len
-            legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
-
-            nlp["tau"] = tau_begin_mx
-            if as_states:
-                nlp["x"] = vertcat(nlp["x"], tau_begin)
-                nlp["var_states"]["tau"] = nlp["nbTau"]
-
-                # Add plot if it happens
-            if as_controls:
-                nlp["u"] = vertcat(nlp["u"], horzcat(tau_begin, tau_end))
-                nlp["var_controls"]["tau"] = nlp["nbTau"]
-
-                if nlp["control_type"] == ControlType.CONSTANT:
-                    nlp["plot"]["tau"] = CustomPlot(
-                        lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
-                    )
-                elif nlp["control_type"] == ControlType.LINEAR:
-                    nlp["plot"]["tau"] = CustomPlot(
-                        lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.LINEAR, legend=legend_tau
-                    )
+            if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                plot_type = PlotType.LINEAR
+            else:
+                plot_type = PlotType.STEP
+            nlp["plot"]["tau"] = CustomPlot(
+                lambda x, u, p: u[: nlp["nbTau"]], plot_type=plot_type, legend=legend_tau
+            )
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()
@@ -359,89 +332,50 @@ class Problem:
         nlp["nbMuscle"] = nlp["model"].nbMuscles()
         nlp["muscleNames"] = [names.to_string() for names in nlp["model"].muscleNames()]
 
-        if nlp["ode_solver"] == OdeSolver.COLLOCATION:
-            muscles_mx = MX()
+        muscles_mx = MX()
+        for name in nlp["muscleNames"]:
+            muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}", 1, 1))
+        nlp["muscles"] = muscles_mx
+
+        combine = None
+        if as_states:
+            muscles = nlp["CX"]()
             for name in nlp["muscleNames"]:
-                muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}"))
-            nlp["muscles"] = muscles_mx
+                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation"))
 
-            combine = None
-            if as_states:
-                muscles = nlp["CX"]()
+            nlp["x"] = vertcat(nlp["x"], muscles)
+            nlp["var_states"]["muscles"] = nlp["nbMuscle"]
+
+            nx_q = nlp["nbQ"] + nlp["nbQdot"]
+            nlp["plot"]["muscles_states"] = CustomPlot(
+                lambda x, u, p: x[nx_q: nx_q + nlp["nbMuscle"]],
+                plot_type=PlotType.INTEGRATED,
+                legend=nlp["muscleNames"],
+                ylim=[0, 1],
+            )
+            combine = "muscles_states"
+
+        if as_controls:
+            n_col = nlp["control_type"].value
+            all_muscles = [nlp["CX"]() for _ in range(n_col)]
+            for j in range(len(all_muscles)):
                 for name in nlp["muscleNames"]:
-                    muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation"))
-                nlp["x"] = vertcat(nlp["x"], muscles)
-                nlp["var_states"]["muscles"] = nlp["nbMuscle"]
+                    all_muscles[j] = vertcat(all_muscles[j], nlp["CX"].sym(f"Muscle_{name}_excitation_{j}", 1, 1))
 
-                nx_q = nlp["nbQ"] + nlp["nbQdot"]
-                nlp["plot"]["muscles_states"] = CustomPlot(
-                    lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
-                    plot_type=PlotType.INTEGRATED,
-                    legend=nlp["muscleNames"],
-                    ylim=[0, 1],
-                )
-                combine = "muscles_states"
+            nlp["u"] = vertcat(nlp["u"], horzcat(*all_muscles))
+            nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
-            if as_controls:
-                muscles = nlp["CX"]()
-                for name in nlp["muscleNames"]:
-                    muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_excitation"))
-
-                nlp["u"] = vertcat(nlp["u"], muscles)
-                nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
-
-                nlp["plot"]["muscles_control"] = CustomPlot(
-                    lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
-                    plot_type=PlotType.STEP,
-                    legend=nlp["muscleNames"],
-                    combine_to=combine,
-                    ylim=[0, 1],
-                )
-        elif nlp["ode_solver"] == OdeSolver.RK:
-            muscles_begin_mx = MX()
-            muscles_begin = nlp["CX"]()
-            # muscles_end_mx = MX()
-            muscles_end = nlp["CX"]()
-            for name in nlp["muscleNames"]:
-                muscles_begin = vertcat(muscles_begin, nlp["CX"].sym(f"Muscle_{name}_begin", 1, 1))
-                muscles_end = vertcat(muscles_end, nlp["CX"].sym(f"Muscle_{name}_end", 1, 1))
-                muscles_begin_mx = vertcat(muscles_begin_mx, MX.sym(f"Muscle_{name}_begin", 1, 1))
-            nlp["muscles"] = muscles_begin_mx
-
-            combine = None
-            if as_states:
-                muscles = nlp["CX"]()
-                for name in nlp["muscleNames"]:
-                    muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation"))
-                nlp["x"] = vertcat(nlp["x"], muscles)
-                nlp["var_states"]["muscles"] = nlp["nbMuscle"]
-
-                nx_q = nlp["nbQ"] + nlp["nbQdot"]
-                nlp["plot"]["muscles_states"] = CustomPlot(
-                    lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
-                    plot_type=PlotType.INTEGRATED,
-                    legend=nlp["muscleNames"],
-                    ylim=[0, 1],
-                )
-                combine = "muscles_states"
-
-            if as_controls:
-                if nlp["nbTau"] > 0:
-                    nlp["u"] = horzcat(
-                        vertcat(horzsplit(nlp["u"])[0], muscles_begin), vertcat(horzsplit(nlp["u"])[1], muscles_end)
-                    )
-                else:
-                    nlp["u"] = horzcat(muscles_begin, muscles_end)
-
-                nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
-
-                nlp["plot"]["muscles_control"] = CustomPlot(
-                    lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
-                    plot_type=PlotType.STEP,
-                    legend=nlp["muscleNames"],
-                    combine_to=combine,
-                    ylim=[0, 1],
-                )
+            if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                plot_type = PlotType.LINEAR
+            else:
+                plot_type = PlotType.STEP
+            nlp["plot"]["muscles_control"] = CustomPlot(
+                lambda x, u, p: u[nlp["nbTau"]: nlp["nbTau"] + nlp["nbMuscle"]],
+                plot_type=plot_type,
+                legend=nlp["muscleNames"],
+                combine_to=combine,
+                ylim=[0, 1],
+            )
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()

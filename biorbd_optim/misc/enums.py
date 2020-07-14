@@ -86,5 +86,5 @@ class ControlType(Enum):
     LINEAL: Linear between two nodes and continuous at the node.
     """
 
-    CONSTANT = 0
-    LINEAR = 1
+    CONSTANT = 1
+    LINEAR_CONTINUOUS = 2
