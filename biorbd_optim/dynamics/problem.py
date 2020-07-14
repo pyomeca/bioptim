@@ -288,7 +288,7 @@ class Problem:
             nlp["var_controls"]["tau"] = nlp["nbTau"]
 
             if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
-                plot_type = PlotType.LINEAR
+                plot_type = PlotType.PLOT
             else:
                 plot_type = PlotType.STEP
             nlp["plot"]["tau"] = CustomPlot(
