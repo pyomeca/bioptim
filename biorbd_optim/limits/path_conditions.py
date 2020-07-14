@@ -263,7 +263,7 @@ class Bounds:
             min_bound = np.array(self.min[slice_list.start : slice_list.stop : slice_list.step])
             max_bound = np.array(self.max[slice_list.start : slice_list.stop : slice_list.step])
             interpolation= self.type
-            t = self.t
+            t = self.min.t
             param = self.extra_params
             bounds_sliced = Bounds(
                 min_bound=min_bound, max_bound=max_bound, interpolation=interpolation, t=t, **param
