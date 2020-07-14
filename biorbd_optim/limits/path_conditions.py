@@ -182,9 +182,7 @@ class BoundsOption(OptionGeneric):
 
 class BoundsList(UniquePerPhaseOptionList):
     def add(
-        self,
-        bounds,
-        **extra_arguments,
+        self, bounds, **extra_arguments,
     ):
         if isinstance(bounds, BoundsOption):
             self.copy(bounds)

@@ -6,7 +6,15 @@ from .gui.plot import CustomPlot, ShowResult
 from .limits.constraints import Constraint, ConstraintList, ConstraintOption
 from .limits.continuity import StateTransition, StateTransitionList
 from .limits.objective_functions import Objective, ObjectiveList, ObjectiveOption
-from .limits.path_conditions import Bounds, BoundsList, BoundsOption, InitialConditions, InitialConditionsList, InitialConditionsOption, QAndQDotBounds
+from .limits.path_conditions import (
+    Bounds,
+    BoundsList,
+    BoundsOption,
+    InitialConditions,
+    InitialConditionsList,
+    InitialConditionsOption,
+    QAndQDotBounds,
+)
 from .misc.data import Data
 from .misc.enums import Axe, Instant, InterpolationType, OdeSolver, PlotType, Solver
 from .misc.mapping import BidirectionalMapping, Mapping
