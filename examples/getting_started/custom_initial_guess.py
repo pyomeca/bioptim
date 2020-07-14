@@ -10,7 +10,7 @@ from biorbd_optim import (
     Objective,
     ConstraintList,
     Constraint,
-    BoundsList,
+    BoundsOption,
     QAndQDotBounds,
     InitialConditionsOption,
     ShowResult,
@@ -51,8 +51,6 @@ def prepare_ocp(
 
     spline_time = None
     # Path constraint and control path constraints
-    x_bounds = BoundsList()
-    u_bounds = BoundsList()
     if boundsInterpolation:
         if initial_guess == InterpolationType.SPLINE:
             spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
@@ -60,29 +58,29 @@ def prepare_ocp(
             x_max = np.random.random((nq + nqdot, 5)) + 100
             u_min = np.random.random((ntau, 5)) - 100
             u_max = np.random.random((ntau, 5)) + 100
-            x_bounds.add([x_min, x_max], interpolation_type=InterpolationType.SPLINE)
-            u_bounds.add([u_min, u_max], interpolation_type=InterpolationType.SPLINE)
+            x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.SPLINE)
+            u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.SPLINE)
         elif initial_guess == InterpolationType.CUSTOM:
             x_min = np.random.random((nq + nqdot, 2)) - 100
             x_max = np.random.random((nq + nqdot, 2)) + 100
             u_min = np.random.random((ntau, 2)) - 100
             u_max = np.random.random((ntau, 2)) + 100
-            x_bounds.add([x_min, x_max], interpolation_type=InterpolationType.CUSTOM)
-            u_bounds.add([u_min, u_max], interpolation_type=InterpolationType.CUSTOM)
+            x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.CUSTOM)
+            u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.CUSTOM)
         else:
-            x_bounds.add(QAndQDotBounds(biorbd_model))
-            x_bounds[0].min[1:6, [0, -1]] = 0
-            x_bounds[0].max[1:6, [0, -1]] = 0
-            x_bounds[0].min[2, -1] = 1.57
-            x_bounds[0].max[2, -1] = 1.57
-            u_bounds.add([[tau_min] * ntau, [tau_max] * ntau])
+            x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+            x_bounds.min[1:6, [0, -1]] = 0
+            x_bounds.max[1:6, [0, -1]] = 0
+            x_bounds.min[2, -1] = 1.57
+            x_bounds.max[2, -1] = 1.57
+            u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
     else:
-        x_bounds.add(QAndQDotBounds(biorbd_model))
-        x_bounds[0].min[1:6, [0, -1]] = 0
-        x_bounds[0].max[1:6, [0, -1]] = 0
-        x_bounds[0].min[2, -1] = 1.57
-        x_bounds[0].max[2, -1] = 1.57
-        u_bounds.add([[tau_min] * ntau, [tau_max] * ntau])
+        x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+        x_bounds.min[1:6, [0, -1]] = 0
+        x_bounds.max[1:6, [0, -1]] = 0
+        x_bounds.min[2, -1] = 1.57
+        x_bounds.max[2, -1] = 1.57
+        u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
 
     # Initial guesses
     t = None

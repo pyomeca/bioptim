@@ -8,7 +8,9 @@ from ..misc.options_lists import OptionList, OptionGeneric
 
 
 class ObjectiveOption(OptionGeneric):
-    def __init__(self, objective, instant=Instant.DEFAULT, quadratic=None, weight=1, custom_type=None, phase=0, **params):
+    def __init__(
+        self, objective, instant=Instant.DEFAULT, quadratic=None, weight=1, custom_type=None, phase=0, **params
+    ):
         custom_function = None
         if not isinstance(objective, Objective.Lagrange) and not isinstance(objective, Objective.Mayer):
             custom_function = objective
@@ -39,9 +41,7 @@ class ObjectiveOption(OptionGeneric):
 
 
 class ObjectiveList(OptionList):
-    def add(
-        self, objective, **extra_arguments
-    ):
+    def add(self, objective, **extra_arguments):
         if isinstance(objective, ObjectiveOption):
             self.copy(objective)
         else:
