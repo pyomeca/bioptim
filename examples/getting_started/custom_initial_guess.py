@@ -58,15 +58,15 @@ def prepare_ocp(
             x_max = np.random.random((nq + nqdot, 5)) + 100
             u_min = np.random.random((ntau, 5)) - 100
             u_max = np.random.random((ntau, 5)) + 100
-            x_bounds = BoundsOption([x_min, x_max], interpolation_type=InterpolationType.SPLINE)
-            u_bounds = BoundsOption([u_min, u_max], interpolation_type=InterpolationType.SPLINE)
+            x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.SPLINE)
+            u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.SPLINE)
         elif initial_guess == InterpolationType.CUSTOM:
             x_min = np.random.random((nq + nqdot, 2)) - 100
             x_max = np.random.random((nq + nqdot, 2)) + 100
             u_min = np.random.random((ntau, 2)) - 100
             u_max = np.random.random((ntau, 2)) + 100
-            x_bounds = BoundsOption([x_min, x_max], interpolation_type=InterpolationType.CUSTOM)
-            u_bounds = BoundsOption([u_min, u_max], interpolation_type=InterpolationType.CUSTOM)
+            x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.CUSTOM)
+            u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.CUSTOM)
         else:
             x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
             x_bounds.min[1:6, [0, -1]] = 0
