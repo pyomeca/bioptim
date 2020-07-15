@@ -137,4 +137,4 @@ if __name__ == "__main__":
 
     # Print the last solution
     result_plot = ShowResult(ocp, sol)
-    result_plot.graphs()
+    result_plot.graphs(adapt_graph_size_to_bounds=True)

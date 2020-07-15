@@ -46,7 +46,7 @@ class CustomPlot:
 
 
 class PlotOcp:
-    def __init__(self, ocp, automatically_organize=True, use_bounds_as_ylimit=True):
+    def __init__(self, ocp, automatically_organize=True, adapt_graph_size_to_bounds=False):
         """Prepares the figure"""
         for i in range(1, ocp.nb_phases):
             if ocp.nlp[0]["nbQ"] != ocp.nlp[i]["nbQ"]:
@@ -88,7 +88,7 @@ class PlotOcp:
 
         self.plot_func = {}
         self.variable_sizes = []
-        self.use_bounds_as_ylimit = use_bounds_as_ylimit
+        self.adapt_graph_size_to_bounds = adapt_graph_size_to_bounds
         self.__create_plots()
 
         horz = 0
@@ -182,7 +182,7 @@ class PlotOcp:
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
-                    elif self.use_bounds_as_ylimit and nlp["plot"][variable].bounds is not None:
+                    elif self.adapt_graph_size_to_bounds and nlp["plot"][variable].bounds is not None:
                         if nlp["plot"][variable].bounds.type != InterpolationType.CUSTOM:
                             y_min = nlp["plot"][variable].bounds.min[ctr].min()
                             y_max = nlp["plot"][variable].bounds.max[ctr].max()
@@ -209,10 +209,8 @@ class PlotOcp:
                                 ax.plot(
                                     self.t_integrated[i][cmp],
                                     np.zeros(nb_int_steps + 1),
-                                    "-",
                                     color=color,
                                     **self.plot_options["integrated_plots"],
-                                    linewidth=1.1,
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
@@ -420,7 +418,7 @@ class PlotOcp:
             p.set_ydata((np.nan, np.nan))
 
         for key in self.axes:
-            if not self.use_bounds_as_ylimit:
+            if not self.adapt_graph_size_to_bounds:
                 for i, ax in enumerate(self.axes[key][1]):
                     if not self.axes[key][0].ylim:
                         y_max = -np.inf
@@ -466,8 +464,8 @@ class ShowResult:
         self.ocp = ocp
         self.sol = sol
 
-    def graphs(self, automatically_organize=True):
-        plot_ocp = PlotOcp(self.ocp, automatically_organize=automatically_organize)
+    def graphs(self, automatically_organize=True, adapt_graph_size_to_bounds=False):
+        plot_ocp = PlotOcp(self.ocp, automatically_organize=automatically_organize, adapt_graph_size_to_bounds=adapt_graph_size_to_bounds)
         plot_ocp.update_data(self.sol["x"])
         plt.show()
 
