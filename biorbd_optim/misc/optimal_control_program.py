@@ -9,7 +9,7 @@ from casadi import MX, vertcat, SX
 
 from .__version__ import __version__
 from .data import Data
-from .enums import OdeSolver, Solver
+from .enums import ControlType, OdeSolver, Solver
 from .mapping import BidirectionalMapping
 from .options_lists import OptionList
 from .parameters import Parameters, ParameterList, ParameterOption
@@ -52,6 +52,7 @@ class OptimalControlProgram:
         external_forces=(),
         ode_solver=OdeSolver.RK,
         nb_integration_steps=5,
+        control_type=ControlType.CONSTANT,
         all_generalized_mapping=None,
         q_mapping=None,
         q_dot_mapping=None,
@@ -116,6 +117,7 @@ class OptimalControlProgram:
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "nb_integration_steps": nb_integration_steps,
+            "control_type": control_type,
             "all_generalized_mapping": all_generalized_mapping,
             "q_mapping": q_mapping,
             "q_dot_mapping": q_dot_mapping,
@@ -246,6 +248,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("t0", [0] + [nlp["tf"] for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         self.__add_to_nlp("dt", [self.nlp[i]["tf"] / max(self.nlp[i]["ns"], 1) for i in range(self.nb_phases)], False)
         self.nb_threads = nb_threads
+        self.__add_to_nlp("nb_threads", nb_threads, True)
         self.solver_type = Solver.NONE
         self.solver = None
 
@@ -282,19 +285,31 @@ class OptimalControlProgram:
         self.__add_to_nlp("X_bounds", X_bounds, False)
         self.__add_to_nlp("U_bounds", U_bounds, False)
         self.__add_to_nlp("dynamics_type", dynamics_type, False)
+        self.__add_to_nlp("ode_solver", ode_solver, True)
+        self.__add_to_nlp("control_type", control_type, True)
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
             Problem.initialize(self, self.nlp[i])
         for i in range(self.nb_phases):
             self.nlp[i]["X_bounds"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
-            self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
+            if self.nlp[i]["control_type"] == ControlType.CONSTANT:
+                self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
+            elif self.nlp[i]["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                self.nlp[i]["U_bounds"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"])
+            else:
+                raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
         # Prepare initial guesses
         self.__add_to_nlp("X_init", X_init, False)
         self.__add_to_nlp("U_init", U_init, False)
         for i in range(self.nb_phases):
             self.nlp[i]["X_init"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
-            self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
+            if self.nlp[i]["control_type"] == ControlType.CONSTANT:
+                self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"] - 1)
+            elif self.nlp[i]["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                self.nlp[i]["U_init"].check_and_adjust_dimensions(self.nlp[i]["nu"], self.nlp[i]["ns"])
+            else:
+                raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
         # Variables and constraint for the optimization program
         for i in range(self.nb_phases):
@@ -304,7 +319,6 @@ class OptimalControlProgram:
         self.__add_to_nlp(
             "nb_integration_steps", nb_integration_steps, True
         )  # Number of steps of integration (for now only RK4 steps are implemented)
-        self.__add_to_nlp("ode_solver", ode_solver, True)
         for i in range(self.nb_phases):
             if self.nlp[0]["nx"] != self.nlp[i]["nx"] or self.nlp[0]["nu"] != self.nlp[i]["nu"]:
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
@@ -398,11 +412,14 @@ class OptimalControlProgram:
             ode_opt["CX"] = nlp["CX"]
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
+            ode_opt["control_type"] = nlp["control_type"]
             if "external_forces" in nlp:
                 for idx in range(len(nlp["external_forces"])):
                     ode_opt["idx"] = idx
                     nlp["dynamics"].append(RK4(ode, ode_opt))
             else:
+                if self.nb_threads > 1 and nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                    raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
                 nlp["dynamics"].append(RK4(ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.COLLOCATION:
             if not isinstance(self.CX(), MX):
@@ -411,6 +428,8 @@ class OptimalControlProgram:
                 raise RuntimeError("COLLOCATION cannot be used while optimizing parameters")
             if "external_forces" in nlp:
                 raise RuntimeError("COLLOCATION cannot be used with external_forces")
+            if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                raise RuntimeError("COLLOCATION cannot be used with piece-wise linear controls (only RK4)")
             nlp["dynamics"].append(casadi.integrator("integrator", "collocation", ode, ode_opt))
         elif nlp["ode_solver"] == OdeSolver.CVODES:
             if not isinstance(self.CX(), MX):
@@ -419,6 +438,8 @@ class OptimalControlProgram:
                 raise RuntimeError("CVODES cannot be used while optimizing parameters")
             if "external_forces" in nlp:
                 raise RuntimeError("CVODES cannot be used with external_forces")
+            if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
             nlp["dynamics"].append(casadi.integrator("integrator", "cvodes", ode, ode_opt))
 
         if len(nlp["dynamics"]) == 1:
@@ -438,7 +459,12 @@ class OptimalControlProgram:
         X = []
         U = []
 
-        nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
+        if nlp["control_type"] == ControlType.CONSTANT:
+            nV = nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * nlp["ns"]
+        elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+            nV = (nlp["nx"] + nlp["nu"]) * (nlp["ns"] + 1)
+        else:
+            raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp['control_type']}")
         V_bounds = Bounds([0] * nV, [0] * nV, interpolation=InterpolationType.CONSTANT)
         V_init = InitialConditions([0] * nV, interpolation=InterpolationType.CONSTANT)
 
@@ -451,14 +477,18 @@ class OptimalControlProgram:
             V_init.init[offset : offset + nlp["nx"], 0] = nlp["X_init"].init.evaluate_at(shooting_point=k)
             offset += nlp["nx"]
             V = vertcat(V, X_)
-            if k != nlp["ns"]:
-                U_ = nlp["CX"].sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"])
+
+            if nlp["control_type"] != ControlType.CONSTANT or (
+                nlp["control_type"] == ControlType.CONSTANT and k != nlp["ns"]
+            ):
+                U_ = nlp["CX"].sym("U_" + str(idx_phase) + "_" + str(k), nlp["nu"], 1)
                 U.append(U_)
                 V_bounds.min[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].min.evaluate_at(shooting_point=k)
                 V_bounds.max[offset : offset + nlp["nu"], 0] = nlp["U_bounds"].max.evaluate_at(shooting_point=k)
                 V_init.init[offset : offset + nlp["nu"], 0] = nlp["U_init"].init.evaluate_at(shooting_point=k)
                 offset += nlp["nu"]
                 V = vertcat(V, U_)
+
         V_bounds.check_and_adjust_dimensions(nV, 1)
         V_init.check_and_adjust_dimensions(nV, 1)
 
