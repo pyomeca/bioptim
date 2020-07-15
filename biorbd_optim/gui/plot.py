@@ -54,7 +54,12 @@ class PlotOcp:
 
         self.ocp = ocp
         self.plot_options = {
-            "bounds": {"color": "k", "linewidth": 0.4, "linestyle": "-"},
+            "non_integrated_plots": {"linestyle": ".-", "markersize": 3},
+            "integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
+            "step_plots": {"where": "post"},
+            "bounds": {"where": "post", "color": "k", "linewidth": 0.4, "linestyle": "-"},
+            "grid": {"color": "k", "linestyle": "-", "linewidth": 0.15},
+            "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
         }
 
         self.ydata = []
@@ -129,6 +134,8 @@ class PlotOcp:
             variable_sizes.append({})
             if "plot" in nlp:
                 for key in nlp["plot"]:
+                    if isinstance(nlp["plot"][key], tuple):
+                        nlp["plot"][key] = nlp["plot"][key][0]
                     if nlp["plot"][key].phase_mappings is None:
                         size = (
                             nlp["plot"][key]
@@ -171,7 +178,7 @@ class PlotOcp:
                     ax = axes[k]
                     if k < len(self.plot_func[variable][i].legend):
                         axes[k].set_title(self.plot_func[variable][i].legend[k])
-                    ax.grid(color="k", linestyle="-", linewidth=0.15)
+                    ax.grid(**self.plot_options["grid"])
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
@@ -191,7 +198,7 @@ class PlotOcp:
                     if plot_type == PlotType.PLOT:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:green"
                         self.plots.append(
-                            [plot_type, i, ax.plot(t, zero, ".-", color=color, markersize=3, zorder=0)[0]]
+                            [plot_type, i, ax.plot(t, zero, color=color, zorder=0, **self.plot_options["non_integrated_plots"])[0]]
                         )
                     elif plot_type == PlotType.INTEGRATED:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
@@ -204,7 +211,7 @@ class PlotOcp:
                                     np.zeros(nb_int_steps + 1),
                                     "-",
                                     color=color,
-                                    markersize=3,
+                                    **self.plot_options["integrated_plots"],
                                     linewidth=1.1,
                                 )[0]
                             )
@@ -212,14 +219,14 @@ class PlotOcp:
 
                     elif plot_type == PlotType.STEP:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:orange"
-                        self.plots.append([plot_type, i, ax.step(t, zero, where="post", color=color, zorder=0)[0]])
+                        self.plots.append([plot_type, i, ax.step(t, zero, color=color, zorder=0, **self.plot_options["step_plots"])[0]])
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
                 for j, ax in enumerate(axes):
                     intersections_time = self.find_phases_intersections()
                     for time in intersections_time:
-                        self.plots_vertical_lines.append(ax.axvline(time, linestyle="--", linewidth=1.2, c="k"))
+                        self.plots_vertical_lines.append(ax.axvline(time, **self.plot_options["vertical_lines"]))
                     if self.axes[variable][0].bounds is not None:
                         if self.axes[variable][0].bounds.type == InterpolationType.EACH_FRAME:
                             ns = self.axes[variable][0].bounds.min.shape[1] - 1
@@ -239,10 +246,10 @@ class PlotOcp:
                             bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
 
                         self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
+                            [ax.step(self.t[i], bounds_min, **self.plot_options["bounds"]), i]
                         )
                         self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
+                            [ax.step(self.t[i], bounds_max, **self.plot_options["bounds"]), i]
                         )
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
