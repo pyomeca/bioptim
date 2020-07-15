@@ -176,8 +176,14 @@ class PlotOcp:
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
                     elif self.use_bounds_as_ylimit and nlp["plot"][variable].bounds is not None:
-                        y_min = nlp["plot"][variable].bounds.min[ctr].min()
-                        y_max = nlp["plot"][variable].bounds.max[ctr].max()
+                        if nlp["plot"][variable].bounds.type != InterpolationType.CUSTOM:
+                            y_min = nlp["plot"][variable].bounds.min[ctr].min()
+                            y_max = nlp["plot"][variable].bounds.max[ctr].max()
+                        else:
+                            nlp["plot"][variable].bounds.check_and_adjust_dimensions(len(mapping), nlp["ns"])
+                            # TODO: Verify if the fact that it is repeted line 228 is a pbm ? In this line 228, an if/else to avoid this repetition is better ?
+                            y_min = min([nlp["plot"][variable].bounds.min.evaluate_at(j)[k] for j in range(nlp["ns"])])
+                            y_max = max([nlp["plot"][variable].bounds.max.evaluate_at(j)[k] for j in range(nlp["ns"])])
                         y_range, _ = self.__compute_ylim(y_min, y_max, 1.25)
                         ax.set_ylim(y_range)
                     zero = np.zeros((t.shape[0], 1))
