@@ -182,7 +182,7 @@ class PlotOcp:
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp["plot"][variable].ylim:
                         ax.set_ylim(nlp["plot"][variable].ylim)
-                    elif self.adapt_graph_size_to_bounds and nlp["plot"][variable].bounds is not None:
+                    elif self.adapt_graph_size_to_bounds and nlp["plot"][variable].bounds:
                         if nlp["plot"][variable].bounds.type != InterpolationType.CUSTOM:
                             y_min = nlp["plot"][variable].bounds.min[ctr].min()
                             y_max = nlp["plot"][variable].bounds.max[ctr].max()
@@ -225,7 +225,7 @@ class PlotOcp:
                     intersections_time = self.find_phases_intersections()
                     for time in intersections_time:
                         self.plots_vertical_lines.append(ax.axvline(time, **self.plot_options["vertical_lines"]))
-                    if self.axes[variable][0].bounds is not None:
+                    if self.axes[variable][0].bounds:
                         if self.axes[variable][0].bounds.type == InterpolationType.EACH_FRAME:
                             ns = self.axes[variable][0].bounds.min.shape[1] - 1
                         else:
