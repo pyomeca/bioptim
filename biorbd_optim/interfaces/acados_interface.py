@@ -137,20 +137,22 @@ class AcadosInterface(SolverInterface):
                 for j, J in enumerate(ocp.nlp[i]["J"]):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
                         self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"].reshape((-1, 1)))
-                        self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight]*J[0]['val'].numel()))
+                        self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * J[0]["val"].numel()))
                         if J[0]["target"] is not None:
                             self.y_ref.append([J_tp["target"].T.reshape((-1, 1)) for J_tp in J])
                         else:
-                            self.y_ref.append([np.zeros((J_tp['val'].numel(), 1)) for J_tp in J])
+                            self.y_ref.append([np.zeros((J_tp["val"].numel(), 1)) for J_tp in J])
 
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
                         mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i]["X"][-1]], [J[0]["val"]])
-                        self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight]*J[0]['val'].numel()))
+                        self.W_e = linalg.block_diag(
+                            self.W_e, np.diag([J[0]["objective"].weight] * J[0]["val"].numel())
+                        )
                         self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i]["X"][0]))
                         if J[0]["target"] is not None:
                             self.y_ref_end.append([J[0]["target"]])
                         else:
-                            self.y_ref_end.append([np.zeros((J[0]['val'].numel(), 1))])
+                            self.y_ref_end.append([np.zeros((J[0]["val"].numel(), 1))])
 
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
