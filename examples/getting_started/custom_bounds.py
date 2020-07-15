@@ -18,23 +18,23 @@ from biorbd_optim import (
 
 
 def custom_x_bounds_min(current_shooting_point, n_elements, nb_shooting):
-    my_values = np.array([[-30, -10]] * n_elements)
+    my_values = np.array([[-10, -5]] * n_elements)
     # Linear interpolation created with custom function
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting
 
 
 def custom_x_bounds_max(current_shooting_point, n_elements, nb_shooting):
-    my_values = np.array([[50, 30]] * n_elements)
+    my_values = np.array([[10, 5]] * n_elements)
     # Linear interpolation created with custom function
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting
 
 def custom_u_bounds_min(current_shooting_point, n_elements, nb_shooting):
-    my_values = np.array([[-50, -20]] * n_elements)
+    my_values = np.array([[-20, -10]] * n_elements)
     # Linear interpolation created with custom function
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting
 
 def custom_u_bounds_max(current_shooting_point, n_elements, nb_shooting):
-    my_values = np.array([[50, 100]] * n_elements)
+    my_values = np.array([[20, 10]] * n_elements)
     # Linear interpolation created with custom function
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting
 
