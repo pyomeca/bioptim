@@ -423,13 +423,13 @@ class PlotOcp:
                     if not self.axes[key][0].ylim:
                         y_max = -np.inf
                         y_min = np.inf
-                        for p in ax.get_children():
-                            if isinstance(p, lines.Line2D):
-                                y_min = min(y_min, np.min(p.get_ydata()))
-                                y_max = max(y_max, np.max(p.get_ydata()))
-                            y_range, data_range = self.__compute_ylim(y_min, y_max, 1.25)
-                            ax.set_ylim(y_range)
-                            ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
+                        children_list = [p for p in ax.get_children() if isinstance(p, lines.Line2D)]
+                        for p in children_list[:-2]:
+                            y_min = min(y_min, np.min(p.get_ydata()))
+                            y_max = max(y_max, np.max(p.get_ydata()))
+                        y_range, data_range = self.__compute_ylim(y_min, y_max, 1.25)
+                        ax.set_ylim(y_range)
+                        ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
