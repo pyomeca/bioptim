@@ -370,7 +370,6 @@ class Problem:
             nlp["u"] = vertcat(nlp["u"], horzcat(*all_muscles))
             nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
             muscles_bounds = nlp["U_bounds"][nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]]
-            # TODO: (Verify) Here I assume that muscles as controls are always after tau in U_bounds
 
             if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.LINEAR
