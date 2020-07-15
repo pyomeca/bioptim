@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt, lines
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
 from ..misc.data import Data
-from ..misc.enums import PlotType
+from ..misc.enums import PlotType, ControlType
 from ..misc.mapping import Mapping
 from ..misc.utils import check_version
 
@@ -293,6 +293,13 @@ class PlotOcp:
                 else:
                     control = np.concatenate((control, data_controls_per_phase[s]))
 
+            if nlp["control_type"] == ControlType.CONSTANT:
+                u_mod = 1
+            elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                u_mod = 2
+            else:
+                raise NotImplementedError(f"Plotting {nlp['control_type']} is not implemented yet")
+
             for key in self.variable_sizes[i]:
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
                     all_y = []
@@ -301,7 +308,7 @@ class PlotOcp:
                         y_tp.fill(np.nan)
                         y_tp[:, :] = self.plot_func[key][i].function(
                             state[:, step_size * idx : step_size * (idx + 1)],
-                            np.repeat(control[:, idx : idx + 1], step_size, axis=1),
+                            control[:, idx : idx + u_mod],
                             data_param_in_dyn,
                         )
                         all_y.append(y_tp)
