@@ -34,6 +34,8 @@ class AcadosInterface(SolverInterface):
         self.__acados_export_model(ocp)
         self.__prepare_acados(ocp)
         self.ocp_solver = None
+        self.W = np.zeros((0, 0))
+        self.W_e = np.zeros((0, 0))
 
     def __acados_export_model(self, ocp):
         # Declare model variables
@@ -106,13 +108,12 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.cost.cost_type_e = cost_type
 
     def __set_costs(self, ocp):
-        # set weight for states and controls (default: 1.00)
-        # Q = 1.00 * np.eye(self.acados_ocp.dims.nx)
-        # R = 1.00 * np.eye(self.acados_ocp.dims.nu)
-        # self.acados_ocp.cost.W = linalg.block_diag(Q, R)
-        # self.acados_ocp.cost.W_e = Q
         self.y_ref = []
         self.y_ref_end = []
+        self.lagrange_costs = SX()
+        self.mayer_costs = SX()
+        self.W = np.zeros((0, 0))
+        self.W_e = np.zeros((0, 0))
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             # set Lagrange terms
             self.acados_ocp.cost.Vx = np.zeros((self.acados_ocp.dims.ny, self.acados_ocp.dims.nx))
@@ -127,27 +128,29 @@ class AcadosInterface(SolverInterface):
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
             if ocp.nb_phases != 1:
-                # TODO: Please confirm this
                 raise NotImplementedError("ACADOS with more than one phase is not implemented yet")
 
             for i in range(ocp.nb_phases):
                 # TODO: I think ocp.J is missing here (the parameters would be stored there)
+                # TODO: Yes the objectives in ocp are not dealt with,
+                #  does that makes sense since we only work with 1 phase ?
                 for j, J in enumerate(ocp.nlp[i]["J"]):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
                         self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"].reshape((-1, 1)))
+                        self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight]*J[0]['val'].numel()))
                         if J[0]["target"] is not None:
                             self.y_ref.append([J_tp["target"].T.reshape((-1, 1)) for J_tp in J])
                         else:
-                            raise RuntimeError("Should we put y_ref = zeros?")
+                            self.y_ref.append([np.zeros((J_tp['val'].numel(), 1)) for J_tp in J])
 
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
-                        raise RuntimeError("TODO: I may have broken this (is this the right J?)")
                         mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i]["X"][-1]], [J[0]["val"]])
+                        self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight]*J[0]['val'].numel()))
                         self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i]["X"][0]))
                         if J[0]["target"] is not None:
                             self.y_ref_end.append([J[0]["target"]])
                         else:
-                            raise RuntimeError("TODO: Should we put y_ref_end = zeros?")
+                            self.y_ref_end.append([np.zeros((J[0]['val'].numel(), 1))])
 
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
@@ -165,24 +168,14 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.yref = np.zeros((max(self.acados_ocp.dims.ny, 1),))
             self.acados_ocp.cost.yref_e = np.zeros((max(self.acados_ocp.dims.ny_e, 1),))
 
-            # TODO changed hard coded values below (you can use J["weight"])
-            Q_ocp = np.zeros((15, 15))
-            np.fill_diagonal(Q_ocp, 1000)
-            R_ocp = np.zeros((4, 4))
-            np.fill_diagonal(R_ocp, 1000)
-
-            self.acados_ocp.cost.W = linalg.block_diag(Q_ocp, R_ocp)
-            self.acados_ocp.cost.W_e = np.zeros((1, 1))
-
-            # TODO: Is the following useful?
-            # if len(self.y_ref):
-            #     self.y_ref = np.vstack(self.y_ref)
-            # else:
-            #     self.y_ref = [np.zeros((1, 1))] * self.ocp
-            # if len(self.y_ref_end):
-            #     self.y_ref_end = np.vstack(self.y_ref_end)
-            # else:
-            #     self.y_ref_end = np.zeros((1, 1))
+            if self.W.shape == (0, 0):
+                self.acados_ocp.cost.W = np.zeros((1, 1))
+            else:
+                self.acados_ocp.cost.W = self.W
+            if self.W_e.shape == (0, 0):
+                self.acados_ocp.cost.W_e = np.zeros((1, 1))
+            else:
+                self.acados_ocp.cost.W_e = self.W_e
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
             for i in range(ocp.nb_phases):
@@ -203,10 +196,6 @@ class AcadosInterface(SolverInterface):
 
         else:
             raise RuntimeError("Available acados cost type: 'LINEAR_LS', 'NONLINEAR_LS' and 'EXTERNAL'.")
-
-        # set y values
-        # self.acados_ocp.cost.yref = np.zeros((self.acados_ocp.dims.ny,))
-        # self.acados_ocp.cost.yref_e = np.ones((self.acados_ocp.dims.ny_e,))
 
     def configure(self, options):
         if "acados_dir" in options:
