@@ -28,7 +28,6 @@ def prepare_ocp(
     number_shooting_points,
     final_time,
     initial_guess=InterpolationType.CONSTANT,
-    boundsInterpolation=False,
 ):
     # --- Options --- #
     # Model path
@@ -49,38 +48,11 @@ def prepare_ocp(
     constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
     constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
 
-    spline_time = None
-    # Path constraint and control path constraints
-    if boundsInterpolation:
-        if initial_guess == InterpolationType.SPLINE:
-            spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
-            x_min = np.random.random((nq + nqdot, 5)) - 100
-            x_max = np.random.random((nq + nqdot, 5)) + 100
-            u_min = np.random.random((ntau, 5)) - 100
-            u_max = np.random.random((ntau, 5)) + 100
-            x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.SPLINE)
-            u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.SPLINE)
-        elif initial_guess == InterpolationType.CUSTOM:
-            x_min = np.random.random((nq + nqdot, 2)) - 100
-            x_max = np.random.random((nq + nqdot, 2)) + 100
-            u_min = np.random.random((ntau, 2)) - 100
-            u_max = np.random.random((ntau, 2)) + 100
-            x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.CUSTOM)
-            u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.CUSTOM)
-        else:
-            x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-            x_bounds.min[1:6, [0, -1]] = 0
-            x_bounds.max[1:6, [0, -1]] = 0
-            x_bounds.min[2, -1] = 1.57
-            x_bounds.max[2, -1] = 1.57
-            u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
-    else:
-        x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-        x_bounds.min[1:6, [0, -1]] = 0
-        x_bounds.max[1:6, [0, -1]] = 0
-        x_bounds.min[2, -1] = 1.57
-        x_bounds.max[2, -1] = 1.57
-        u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
+    # Path constraints
+    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds.min[1:6, [0, -1]] = 0
+    x_bounds.max[1:6, [0, -1]] = 0
+    u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
 
     # Initial guesses
     t = None
@@ -91,7 +63,7 @@ def prepare_ocp(
         u = [tau_init] * ntau
     elif initial_guess == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
         x = np.array([[1.0, 0.0, 0.0, 0, 0, 0], [1.5, 0.0, 0.785, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T
-        u = np.array([[1.45, 9.81, 2.28], [0, 9.81, 0], [-1.45, 9.81, -2.28]]).T
+        u = np.array([[1.45, 9.81, 2.28], [0, 9.81, 0]   , [-1.45, 9.81, -2.28]]).T
     elif initial_guess == InterpolationType.LINEAR:
         x = np.array([[1.0, 0.0, 0.0, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T
         u = np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T

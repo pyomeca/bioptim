@@ -11,7 +11,6 @@ from biorbd_optim import (
     ConstraintList,
     Constraint,
     BoundsOption,
-    QAndQDotBounds,
     InitialConditionsOption,
     ShowResult,
     InterpolationType,
@@ -64,7 +63,6 @@ def prepare_ocp(
     constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
     constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
 
-    spline_time = None
     # Path constraints
     if interpolation_type == InterpolationType.CONSTANT:
         x_min = [-100] * (nq + nqdot)
@@ -94,7 +92,6 @@ def prepare_ocp(
         u_min = np.random.random((ntau, number_shooting_points)) * tau_min + tau_min/2
         u_max = np.random.random((ntau, number_shooting_points)) * tau_max + tau_max/2
         u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.EACH_FRAME)
-
     elif interpolation_type == InterpolationType.SPLINE:
         spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
         x_min = np.random.random((nq + nqdot, 5)) * (-10) - 5
@@ -111,15 +108,6 @@ def prepare_ocp(
         u_bounds = BoundsOption([custom_u_bounds_min, custom_u_bounds_max], interpolation=InterpolationType.CUSTOM, **extra_params_u)
     else:
         raise NotImplementedError("Not implemented yet")
-
-    # else:
-    #     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-    #     x_bounds.min[1:6, [0, -1]] = 0
-    #     x_bounds.max[1:6, [0, -1]] = 0
-    #     x_bounds.min[2, -1] = 1.57
-    #     x_bounds.max[2, -1] = 1.57
-    #     u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
-
 
     # Initial guess
     x_init = InitialConditionsOption([0] * (nq + nqdot))
