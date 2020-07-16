@@ -56,8 +56,7 @@ class PlotOcp:
         self.plot_options = {
             "non_integrated_plots": {"linestyle": ".-", "markersize": 3},
             "integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
-            "step_plots": {"where": "post"},
-            "bounds": {"where": "post", "color": "k", "linewidth": 0.4, "linestyle": "-"},
+            "bounds": {"color": "k", "linewidth": 0.4, "linestyle": "-"},
             "grid": {"color": "k", "linestyle": "-", "linewidth": 0.15},
             "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
         }
@@ -188,7 +187,6 @@ class PlotOcp:
                             y_max = nlp["plot"][variable].bounds.max[ctr].max()
                         else:
                             nlp["plot"][variable].bounds.check_and_adjust_dimensions(len(mapping), nlp["ns"])
-                            # TODO: Verify if the fact that it is repeted line 228 is a pbm ? In this line 228, an if/else to avoid this repetition is better ?
                             y_min = min([nlp["plot"][variable].bounds.min.evaluate_at(j)[k] for j in range(nlp["ns"])])
                             y_max = max([nlp["plot"][variable].bounds.max.evaluate_at(j)[k] for j in range(nlp["ns"])])
                         y_range, _ = self.__compute_ylim(y_min, y_max, 1.25)
@@ -217,7 +215,7 @@ class PlotOcp:
 
                     elif plot_type == PlotType.STEP:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:orange"
-                        self.plots.append([plot_type, i, ax.step(t, zero, color=color, zorder=0, **self.plot_options["step_plots"])[0]])
+                        self.plots.append([plot_type, i, ax.step(t, zero, where="post", color=color, zorder=0)[0]])
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
@@ -244,10 +242,10 @@ class PlotOcp:
                             bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
 
                         self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_min, **self.plot_options["bounds"]), i]
+                            [ax.step(self.t[i], bounds_min, where='post', **self.plot_options["bounds"]), i]
                         )
                         self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_max, **self.plot_options["bounds"]), i]
+                            [ax.step(self.t[i], bounds_max, where='post', **self.plot_options["bounds"]), i]
                         )
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
