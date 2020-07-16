@@ -88,18 +88,27 @@ class AcadosInterface(SolverInterface):
                 else:
                     self.acados_ocp.constraints.x0 = np.array(ocp.nlp[i]["X_bounds"].min[:, 0])
                     self.acados_ocp.dims.nbx_0 = self.acados_ocp.dims.nx
+
+            # control constraints
             self.acados_ocp.constraints.constr_type = "BGH"
             self.acados_ocp.constraints.lbu = np.array(ocp.nlp[i]["U_bounds"].min[:, 0])
             self.acados_ocp.constraints.ubu = np.array(ocp.nlp[i]["U_bounds"].max[:, 0])
             self.acados_ocp.constraints.idxbu = np.array(range(self.acados_ocp.dims.nu))
             self.acados_ocp.dims.nbu = self.acados_ocp.dims.nu
 
-            # set control constraints
-            # self.acados_ocp.constraints.Jbx_e = np.eye(self.acados_ocp.dims.nx)
-            # self.acados_ocp.constraints.ubx_e = np.array(ocp.nlp[i]["X_bounds"].max[:, -1])
-            # self.acados_ocp.constraints.lbx_e = np.array(ocp.nlp[i]["X_bounds"].min[:, -1])
-            # self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
-            # self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
+            # path constraints
+            self.acados_ocp.constraints.Jbx = np.eye(self.acados_ocp.dims.nx)
+            self.acados_ocp.constraints.ubx = np.array(ocp.nlp[i]["X_bounds"].max[:, 1])
+            self.acados_ocp.constraints.lbx = np.array(ocp.nlp[i]["X_bounds"].min[:, 1])
+            self.acados_ocp.constraints.idxbx = np.array(range(self.acados_ocp.dims.nx))
+            self.acados_ocp.dims.nbx = self.acados_ocp.dims.nx
+
+            # terminal constraints
+            self.acados_ocp.constraints.Jbx_e = np.eye(self.acados_ocp.dims.nx)
+            self.acados_ocp.constraints.ubx_e = np.array(ocp.nlp[i]["X_bounds"].max[:, -1])
+            self.acados_ocp.constraints.lbx_e = np.array(ocp.nlp[i]["X_bounds"].min[:, -1])
+            self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
+            self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
 
         return self.acados_ocp
 
@@ -168,7 +177,7 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]
             self.acados_ocp.dims.ny_e = self.acados_ocp.model.cost_y_expr_e.shape[0]
             self.acados_ocp.cost.yref = np.zeros((max(self.acados_ocp.dims.ny, 1),))
-            self.acados_ocp.cost.yref_e = np.zeros((max(self.acados_ocp.dims.ny_e, 1),))
+            self.acados_ocp.cost.yref_e = np.concatenate(self.y_ref_end, -1).T.squeeze()
 
             if self.W.shape == (0, 0):
                 self.acados_ocp.cost.W = np.zeros((1, 1))
@@ -214,6 +223,7 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.solver_options.nlp_solver_tol_eq = 1e-06
         self.acados_ocp.solver_options.nlp_solver_tol_ineq = 1e-06
         self.acados_ocp.solver_options.nlp_solver_tol_stat = 1e-06
+        self.acados_ocp.solver_options.nlp_solver_max_iter = 200
         self.acados_ocp.solver_options.sim_method_newton_iter = 5
         self.acados_ocp.solver_options.sim_method_num_stages = 4
         self.acados_ocp.solver_options.sim_method_num_steps = 1
@@ -256,6 +266,6 @@ class AcadosInterface(SolverInterface):
         if self.ocp_solver is None:
             self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
         for n in range(self.acados_ocp.dims.N):
-            self.ocp_solver.cost_set(n, "y_ref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
+            self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
         self.ocp_solver.solve()
         return self
