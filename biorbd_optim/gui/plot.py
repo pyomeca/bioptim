@@ -235,10 +235,10 @@ class PlotOcp:
                             nb_elements=len(mapping), nb_shooting=ns
                         )
                         bounds_min = np.array(
-                            [nlp["plot"][variable].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)]
+                            [self.axes[variable][0].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)]
                         )
                         bounds_max = np.array(
-                            [nlp["plot"][variable].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)]
+                            [self.axes[variable][0].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)]
                         )
                         if bounds_min.shape[0] == nlp["ns"]:
                             bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
