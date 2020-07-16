@@ -54,7 +54,7 @@ class PlotOcp:
 
         self.ocp = ocp
         self.plot_options = {
-            "general_options": {"use_tight_layout": True},
+            "general_options": {"use_tight_layout": False},
             "non_integrated_plots": {"linestyle": "-.", "markersize": 3},
             "integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
             "bounds": {"color": "k", "linewidth": 0.4, "linestyle": "-"},
