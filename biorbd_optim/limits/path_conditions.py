@@ -14,7 +14,7 @@ class PathCondition(np.ndarray):
         Interpolates path conditions with the chosen interpolation type.
         :param input_array: Array of path conditions (initial guess). (list)
         :param interpolation: Type of interpolation. (Instance of InterpolationType)
-        (InterpolationType.CONSTANT, InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, InterpolationType.LINEAR
+        (InterpolationType.CONSTANT, InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, InterpolationType.LINEAR_CONTINUOUS
         or InterpolationType.EACH_FRAME)
         :return: obj -> Objective. (?)
         """
@@ -52,7 +52,7 @@ class PathCondition(np.ndarray):
         elif interpolation == InterpolationType.LINEAR:
             if input_array.shape[1] != 2:
                 raise RuntimeError(
-                    f"Invalid number of column for InterpolationType.LINEAR (ncols = {input_array.shape[1]}), "
+                    f"Invalid number of column for InterpolationType.LINEAR_CONTINUOUS (ncols = {input_array.shape[1]}), "
                     f"the expected number of column is 2"
                 )
         elif interpolation == InterpolationType.EACH_FRAME:

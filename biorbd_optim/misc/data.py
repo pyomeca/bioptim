@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import interpolate
+from .enums import ControlType
 
 
 class Data:
@@ -177,7 +178,12 @@ class Data:
 
         offsets = [offset]
         for i, nlp in enumerate(ocp.nlp):
-            offsets.append(offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"]))
+            if nlp["control_type"] == ControlType.CONSTANT:
+                offsets.append(offsets[i] + nlp["nx"] * (nlp["ns"] + 1) + nlp["nu"] * (nlp["ns"]))
+            elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                offsets.append(offsets[i] + (nlp["nx"] + nlp["nu"]) * (nlp["ns"] + 1))
+            else:
+                raise NotImplementedError(f"Plotting {nlp['control_type']} is not implemented yet")
 
         for i in phase_idx:
             nlp = ocp.nlp[i]
@@ -201,10 +207,18 @@ class Data:
                 offset += nlp["var_states"][key]
 
             for key in nlp["var_controls"]:
-                data_controls[key]._append_phase(
-                    (0, phase_time[i]),
-                    Data._get_phase(V_phase, nlp["var_controls"][key], nlp["ns"], offset, nb_var, True),
-                )
+                if nlp["control_type"] == ControlType.CONSTANT:
+                    data_controls[key]._append_phase(
+                        (0, phase_time[i]),
+                        Data._get_phase(V_phase, nlp["var_controls"][key], nlp["ns"], offset, nb_var, True),
+                    )
+                elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                    data_controls[key]._append_phase(
+                        (0, phase_time[i]),
+                        Data._get_phase(V_phase, nlp["var_controls"][key], nlp["ns"] + 1, offset, nb_var, False),
+                    )
+                else:
+                    raise NotImplementedError(f"Plotting {nlp['control_type']} is not implemented yet")
                 offset += nlp["var_controls"][key]
 
         if integrate:
@@ -235,7 +249,14 @@ class Data:
             nlp = ocp.nlp[idx_phase]
             for idx_node in reversed(range(ocp.nlp[idx_phase]["ns"])):
                 x0 = Data._vertcat(data_states, list(nlp["var_states"].keys()), idx_phase, idx_node)
-                p = Data._vertcat(data_controls, list(nlp["var_controls"].keys()), idx_phase, idx_node)
+                if nlp["control_type"] == ControlType.CONSTANT:
+                    p = Data._vertcat(data_controls, list(nlp["var_controls"].keys()), idx_phase, idx_node)
+                elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                    p = Data._vertcat(
+                        data_controls, list(nlp["var_controls"].keys()), idx_phase, [idx_node, idx_node + 1]
+                    )
+                else:
+                    raise NotImplementedError(f"Plotting {nlp['control_type']} is not implemented yet")
                 params = Data._vertcat(data_parameters, [key for key in ocp.param_to_optimize if key != "time"])
                 xf_dof = np.array(ocp.nlp[idx_phase]["dynamics"][idx_node](x0=x0, p=p, params=params)["xall"])
 

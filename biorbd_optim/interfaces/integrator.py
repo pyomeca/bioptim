@@ -1,4 +1,5 @@
 from casadi import Function, vertcat, norm_fro
+from ..misc.enums import ControlType
 
 
 def RK4(ode, ode_opt):
@@ -19,7 +20,18 @@ def RK4(ode, ode_opt):
     param_sym = ode_opt["param"]
     fun = ode["ode"]
     model = ode_opt["model"]
-    h = (t_span[1] - t_span[0]) / n_step  # Length of steps
+    step_time = t_span[1] - t_span[0]
+    h_norm = 1 / n_step
+    h = step_time * h_norm  # Length of steps
+    control_type = ode_opt["control_type"]
+
+    def get_u(u, dt_norm):
+        if control_type == ControlType.CONSTANT:
+            return u
+        elif control_type == ControlType.LINEAR_CONTINUOUS:
+            return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
+        else:
+            raise RuntimeError(f"{control_type} ControlType not implemented yet")
 
     def dxdt(h, states, controls, params):
         u = controls
@@ -37,10 +49,11 @@ def RK4(ode, ode_opt):
             nb_dof += model.segment(j).nbDof()
 
         for i in range(1, n_step + 1):
-            k1 = fun(x[:, i - 1], u, p)[:, idx]
-            k2 = fun(x[:, i - 1] + h / 2 * k1, u, p)[:, idx]
-            k3 = fun(x[:, i - 1] + h / 2 * k2, u, p)[:, idx]
-            k4 = fun(x[:, i - 1] + h * k3, u, p)[:, idx]
+            t_norm_init = (i - 1) / n_step  # normalized time
+            k1 = fun(x[:, i - 1], get_u(u, t_norm_init), p)[:, idx]
+            k2 = fun(x[:, i - 1] + h / 2 * k1, get_u(u, t_norm_init + h_norm / 2), p)[:, idx]
+            k3 = fun(x[:, i - 1] + h / 2 * k2, get_u(u, t_norm_init + h_norm / 2), p)[:, idx]
+            k4 = fun(x[:, i - 1] + h * k3, get_u(u, t_norm_init + h_norm), p)[:, idx]
             x[:, i] = x[:, i - 1] + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
             for j in range(model.nbQuat()):
