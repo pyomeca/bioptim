@@ -1,3 +1,5 @@
+import numpy as np
+
 class BidirectionalMapping:
     def __init__(self, expand_mapping, reducing_mapping):
         if not isinstance(expand_mapping, Mapping):
@@ -33,9 +35,17 @@ class Mapping:
         Expected result:
             - mapped_obj == np.array([0.1, 0.2, 0.2, -0.4, 0, 0.1])
         """
-        mapped_obj = obj[self.map_idx, :]
-        mapped_obj[[idx for idx, val in enumerate(self.map_idx) if val < 0], :] = 0
+        if isinstance(obj, list):
+            obj = np.array(obj)
+        if len(obj.shape) == 1:
+            mapped_obj = obj[self.map_idx]
+            mapped_obj[[idx for idx, val in enumerate(self.map_idx) if val < 0]] = 0
+            if self.sign_to_oppose != ():
+                mapped_obj[self.sign_to_oppose] *= -1
+        else:
+            mapped_obj = obj[self.map_idx, :]
+            mapped_obj[[idx for idx, val in enumerate(self.map_idx) if val < 0], :] = 0
+            if self.sign_to_oppose != ():
+                mapped_obj[self.sign_to_oppose, :] *= -1
 
-        if self.sign_to_oppose != ():
-            mapped_obj[self.sign_to_oppose, :] *= -1
         return mapped_obj
