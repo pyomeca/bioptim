@@ -1,4 +1,5 @@
 import biorbd
+from time import time
 
 from biorbd_optim import (
     OptimalControlProgram,
@@ -10,10 +11,11 @@ from biorbd_optim import (
     QAndQDotBounds,
     InitialConditionsList,
     ShowResult,
+    Solver,
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_SX=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -63,15 +65,35 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
         x_bounds,
         u_bounds,
         objective_functions,
+        use_SX=use_SX,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, number_shooting_points=20)
+    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, number_shooting_points=20, use_SX=True)
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    tic = time()
+    sol_ac = ocp.solve(solver=Solver.ACADOS, show_online_optim=False, solver_options={"nlp_solver_tol_comp": 1e-3,
+                                                                                      "nlp_solver_tol_eq": 1e-3,
+                                                                                      "nlp_solver_tol_stat": 1e-3,})
+    toc = time() - tic
+    print(f"Time to solve with ACADOS: {toc}sec")
+
+    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, number_shooting_points=20, use_SX=False)
+    tic = time()
+    sol_ip = ocp.solve(solver=Solver.IPOPT, show_online_optim=False, solver_options={"tol": 1e-3,
+                                                                                      "dual_inf_tol": 1e-3,
+                                                                                      "constr_viol_tol": 1e-3,
+                                                                                      "compl_inf_tol": 1e-3,
+                                                                                      "linear_solver": "ma57"})
+    toc = time() - tic
+    print(f"Time to solve with ACADOS: {toc}sec")
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.animate()
+    result_ac = ShowResult(ocp, sol_ac)
+    result_ip = ShowResult(ocp, sol_ip)
+    result_ac.graphs()
+    result_ip.graphs()
+    result_ac.animate()
+    result_ip.animate()
