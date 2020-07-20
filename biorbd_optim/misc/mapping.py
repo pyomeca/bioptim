@@ -35,8 +35,6 @@ class Mapping:
         Expected result:
             - mapped_obj == np.array([0.1, 0.2, 0.2, -0.4, 0, 0.1])
         """
-        if isinstance(obj, list):
-            obj = np.array(obj)
         if len(obj.shape) == 1:
             mapped_obj = obj[self.map_idx]
             mapped_obj[[idx for idx, val in enumerate(self.map_idx) if val < 0]] = 0
