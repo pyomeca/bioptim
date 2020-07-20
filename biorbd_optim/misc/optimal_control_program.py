@@ -330,7 +330,7 @@ class OptimalControlProgram:
         nlp["nbQ"] = 0
         nlp["nbQdot"] = 0
         nlp["nbTau"] = 0
-        nlp["nbMuscles"] = 0
+        nlp["nbMuscle"] = 0
         nlp["plot"] = {}
         nlp["var_states"] = {}
         nlp["var_controls"] = {}
@@ -690,6 +690,9 @@ class OptimalControlProgram:
         elif ext != ".bo":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
         dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
+
+
+
         if sol_iterations != None:
             dict["sol_iterations"] = sol_iterations
 
