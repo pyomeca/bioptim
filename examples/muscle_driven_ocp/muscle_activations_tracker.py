@@ -17,6 +17,7 @@ from biorbd_optim import (
     BoundsList,
     QAndQDotBounds,
     InitialConditionsList,
+    Solver
 )
 
 
@@ -111,6 +112,7 @@ def prepare_ocp(
     q_ref,
     kin_data_to_track="markers",
     use_residual_torque=True,
+    use_SX=False,
 ):
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -168,7 +170,8 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model, dynamics, nb_shooting, final_time, x_init, u_init, x_bounds, u_bounds, objective_functions,
+        biorbd_model, dynamics, nb_shooting, final_time, x_init, u_init, x_bounds,
+        u_bounds, objective_functions, use_SX= use_SX,
     )
 
 
@@ -195,10 +198,12 @@ if __name__ == "__main__":
         x_ref[: biorbd_model.nbQ(), :],
         kin_data_to_track="q",
         use_residual_torque=use_residual_torque,
+        use_SX=False,
+
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(solver=Solver.IPOPT, show_online_optim=False)
 
     # --- Show the results --- #
     muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
