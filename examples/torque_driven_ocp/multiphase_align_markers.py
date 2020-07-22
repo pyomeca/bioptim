@@ -102,7 +102,7 @@ if __name__ == "__main__":
     ocp = prepare_ocp(long_optim=False)
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(show_online_optim=True, solver_options={"output_file": "output", "file_print_level": 6})
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)

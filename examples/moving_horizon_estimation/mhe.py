@@ -128,7 +128,7 @@ def prepare_ocp(
     X0,
     U0,
     target=None,
-    interpolation_type=InterpolationType.EACH_FRAME,
+    interpolation=InterpolationType.EACH_FRAME,
 ):
     # --- Options --- #
     # Model path
@@ -141,7 +141,7 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, target=target)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, target=X0)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=100, target=X0)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -163,10 +163,10 @@ def prepare_ocp(
     x = X0
     u = U0
     x_init = InitialConditionsList()
-    x_init.add(x, interpolation=interpolation_type)
+    x_init.add(x, interpolation=interpolation)
 
     u_init = InitialConditionsList()
-    u_init.add(u, interpolation=interpolation_type)
+    u_init.add(u, interpolation=interpolation)
     # ------------- #
 
     return OptimalControlProgram(
@@ -239,7 +239,8 @@ if __name__ == "__main__":
         Y_i = Y_N_[:, :, i : i + N_mhe + 1]
         new_objectives = ObjectiveList()
         new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, target=Y_i, idx=0)
-        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=1000, target=X0, phase=0, idx=1)
+        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=100, target=X0, phase=0, idx=1)
+
         ocp.update_objectives(new_objectives)
 
         # sol = ocp.solve(solver_options=options_ipopt)
@@ -248,6 +249,7 @@ if __name__ == "__main__":
         X0, U0, X_out = warm_start_mhe(data_sol)
         X_est[:, i] = X_out
     t1 = time.time()
+    print("ACADOS with BiorbdOptim")
     print(f"Window size of MHE : {Tf_mhe} s.")
     print(f"New measurement every : {Tf/N} s.")
     print(f"Average time per iteration of MHE : {(t1-t0)/(N-N_mhe-2)} s.")

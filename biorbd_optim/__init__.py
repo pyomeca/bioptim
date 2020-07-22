@@ -16,7 +16,7 @@ from .limits.path_conditions import (
     QAndQDotBounds,
 )
 from .misc.data import Data
-from .misc.enums import Axe, Instant, InterpolationType, OdeSolver, PlotType, Solver
+from .misc.enums import Axe, Instant, InterpolationType, OdeSolver, PlotType, Solver, ControlType
 from .misc.mapping import BidirectionalMapping, Mapping
 from .misc.optimal_control_program import OptimalControlProgram
 from .misc.parameters import ParameterList

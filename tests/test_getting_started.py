@@ -101,8 +101,8 @@ def test_custom_constraint_align_markers():
     np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
 
 
-@pytest.mark.parametrize("interpolation_type", InterpolationType)
-def test_initial_guesses(interpolation_type):
+@pytest.mark.parametrize("interpolation", InterpolationType)
+def test_initial_guesses(interpolation):
     #  Load initial_guess
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -116,7 +116,7 @@ def test_initial_guesses(interpolation_type):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
         final_time=1,
         number_shooting_points=5,
-        initial_guess=interpolation_type,
+        initial_guess=interpolation,
     )
     sol = ocp.solve()
 
@@ -145,7 +145,7 @@ def test_initial_guesses(interpolation_type):
     np.testing.assert_almost_equal(tau[:, -1], np.array([-5.0, 9.81, -7.85]))
 
     # save and load
-    if interpolation_type in [InterpolationType.SPLINE, InterpolationType.CUSTOM]:
+    if interpolation in [InterpolationType.SPLINE, InterpolationType.CUSTOM]:
         with pytest.raises(AttributeError):
             TestUtils.save_and_load(sol, ocp, True)
     else:
