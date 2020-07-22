@@ -4,6 +4,7 @@ import casadi
 from ..misc.enums import Instant
 from ..limits.objective_functions import get_objective_value
 
+
 class SolverInterface:
     def __init__(self, ocp):
         self.ocp = ocp
@@ -29,7 +30,6 @@ class SolverInterface:
 
     def finish_get_iterations(self):
         raise RuntimeError("Get Iteration not implemented for solver")
-
 
     def get_objective_values(self):
         def __get_instant(instants, nlp):
@@ -58,20 +58,20 @@ class SolverInterface:
                 elif node == Instant.ALL:
                     for i in range(nlp["ns"]):
                         nodes.append(i)
-            return(nodes)
+            return nodes
 
         sol = self.out["sol"]["x"]
         out = []
         for idx_phase, nlp in enumerate(self.ocp.nlp):
-            nJ = len(nlp['J']) - idx_phase
+            nJ = len(nlp["J"]) - idx_phase
             out.append(np.ndarray((nJ, nlp["ns"])))
             out[-1][:][:] = np.nan
             for idx_obj_func in range(nJ):
-                nodes = __get_instant(nlp['J'][idx_phase + idx_obj_func][0]['objective'].instant, nlp)
-                nodes = nodes[:len(nlp['J'][idx_phase + idx_obj_func])]
+                nodes = __get_instant(nlp["J"][idx_phase + idx_obj_func][0]["objective"].instant, nlp)
+                nodes = nodes[: len(nlp["J"][idx_phase + idx_obj_func])]
                 for node, idx_node in enumerate(nodes):
-                    obj = casadi.Function('obj', [self.ocp.V], [get_objective_value(nlp['J'][idx_phase + idx_obj_func][node])])
+                    obj = casadi.Function(
+                        "obj", [self.ocp.V], [get_objective_value(nlp["J"][idx_phase + idx_obj_func][node])]
+                    )
                     out[-1][idx_obj_func][idx_node] = obj(sol)
         self.out["sol_obj"] = out
-
-

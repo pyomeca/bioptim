@@ -666,7 +666,12 @@ class OptimalControlProgram:
         nlp["plot"][plot_name] = custom_plot
 
     def solve(
-        self, solver=Solver.IPOPT, show_online_optim=False, return_iterations=False, return_objectives=False, solver_options={},
+        self,
+        solver=Solver.IPOPT,
+        show_online_optim=False,
+        return_iterations=False,
+        return_objectives=False,
+        solver_options={},
     ):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
@@ -707,7 +712,6 @@ class OptimalControlProgram:
 
         if return_objectives:
             self.solver.get_objective_values()
-
 
         return self.solver.get_optimized_value(self)
 

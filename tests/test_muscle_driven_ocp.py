@@ -25,16 +25,38 @@ def test_muscle_driven_ocp():
     sol, obj = ocp.solve(return_objectives=True)
 
     # Check return_objectives
-    np.testing.assert_almost_equal(obj[0], np.array([
-        [5.86278160e-06, 4.90908874e-06, 4.11442651e-06, 3.23179182e-06,
-        2.31914537e-06, 1.53018849e-06, 9.50482800e-07, 5.96421781e-07,
-        4.49664434e-07, 1.11563008e-07],
-       [9.60988809e-03, 7.74655413e-03, 5.59633777e-03, 2.97348197e-03,
-        1.03531097e-03, 2.17878176e-04, 2.73789409e-05, 1.21584248e-05,
-        1.78095282e-05, 5.90847984e-06],
-       [        np.nan,         np.nan,         np.nan,         np.nan,
-                np.nan,         np.nan,         np.nan,         np.nan,
-                np.nan, 1.16237866e-01]]))
+    np.testing.assert_almost_equal(
+        obj[0],
+        np.array(
+            [
+                [
+                    5.86278160e-06,
+                    4.90908874e-06,
+                    4.11442651e-06,
+                    3.23179182e-06,
+                    2.31914537e-06,
+                    1.53018849e-06,
+                    9.50482800e-07,
+                    5.96421781e-07,
+                    4.49664434e-07,
+                    1.11563008e-07,
+                ],
+                [
+                    9.60988809e-03,
+                    7.74655413e-03,
+                    5.59633777e-03,
+                    2.97348197e-03,
+                    1.03531097e-03,
+                    2.17878176e-04,
+                    2.73789409e-05,
+                    1.21584248e-05,
+                    1.78095282e-05,
+                    5.90847984e-06,
+                ],
+                [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 1.16237866e-01],
+            ]
+        ),
+    )
 
     # Check objective function value
     f = np.array(sol["f"])
@@ -121,7 +143,6 @@ def test_muscle_activations_with_contact_driven_ocp():
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
-
 
 
 def test_muscle_excitation_with_contact_driven_ocp():
