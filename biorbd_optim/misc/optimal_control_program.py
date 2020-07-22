@@ -691,8 +691,6 @@ class OptimalControlProgram:
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
         dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
 
-
-
         if sol_iterations != None:
             dict["sol_iterations"] = sol_iterations
 

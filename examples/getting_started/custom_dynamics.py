@@ -74,7 +74,9 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
     x_init = InitialConditionsOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    u_bounds = BoundsOption([[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()])
+    u_bounds = BoundsOption(
+        [[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()]
+    )
 
     u_init = InitialConditionsOption([tau_init] * biorbd_model.nbGeneralizedTorque())
 
