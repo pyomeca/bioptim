@@ -713,7 +713,7 @@ class OptimalControlProgram:
         if return_objectives:
             self.solver.get_objective_values()
 
-        return self.solver.get_optimized_value(self)
+        return self.solver.get_optimized_value()
 
     def save(self, sol, file_path, sol_iterations=None):
         """

@@ -68,7 +68,7 @@ class IpoptInterface(SolverInterface):
 
         return self.out
 
-    def get_optimized_value(self, ocp):
+    def get_optimized_value(self):
         out = []
         for key in self.out.keys():
             out.append(self.out[key])
