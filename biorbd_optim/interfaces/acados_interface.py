@@ -12,7 +12,7 @@ from ..limits.objective_functions import ObjectiveFunction
 class AcadosInterface(SolverInterface):
     def __init__(self, ocp, **solver_options):
         if not isinstance(ocp.CX(), SX):
-            raise RuntimeError("CasADi graph must be SX to be solved with ACADOS")
+            raise RuntimeError("CasADi graph must be SX to be solved with ACADOS. Use use_SX ")
         super().__init__(ocp)
 
         # If Acados is installed using the acados_install.sh file, you probably can leave this to unset
@@ -177,7 +177,10 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]
             self.acados_ocp.dims.ny_e = self.acados_ocp.model.cost_y_expr_e.shape[0]
             self.acados_ocp.cost.yref = np.zeros((max(self.acados_ocp.dims.ny, 1),))
-            self.acados_ocp.cost.yref_e = np.concatenate(self.y_ref_end, -1).T.squeeze()
+            if len(self.y_ref_end):
+                self.acados_ocp.cost.yref_e = np.concatenate(self.y_ref_end, -1).T.squeeze()
+            else:
+                self.acados_ocp.cost.yref_e = np.zeros((1,))
 
             if self.W.shape == (0, 0):
                 self.acados_ocp.cost.W = np.zeros((1, 1))
@@ -214,7 +217,7 @@ class AcadosInterface(SolverInterface):
         if "cost_type" in options:
             del options["cost_type"]
 
-        self.acados_ocp.solver_options.qp_solver = "FULL_CONDENSING_QPOASES"  # FULL_CONDENSING_QPOASES
+        self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
         self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
         self.acados_ocp.solver_options.integrator_type = "ERK"
         self.acados_ocp.solver_options.nlp_solver_type = "SQP"
