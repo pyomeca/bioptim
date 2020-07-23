@@ -74,19 +74,27 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     tic = time()
-    sol_ac = ocp.solve(solver=Solver.ACADOS, show_online_optim=False, solver_options={"nlp_solver_tol_comp": 1e-3,
-                                                                                      "nlp_solver_tol_eq": 1e-3,
-                                                                                      "nlp_solver_tol_stat": 1e-3,})
+    sol_ac = ocp.solve(
+        solver=Solver.ACADOS,
+        show_online_optim=False,
+        solver_options={"nlp_solver_tol_comp": 1e-3, "nlp_solver_tol_eq": 1e-3, "nlp_solver_tol_stat": 1e-3,},
+    )
     toc = time() - tic
     print(f"Time to solve with ACADOS: {toc}sec")
 
     ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, number_shooting_points=20, use_SX=False)
     tic = time()
-    sol_ip = ocp.solve(solver=Solver.IPOPT, show_online_optim=False, solver_options={"tol": 1e-3,
-                                                                                      "dual_inf_tol": 1e-3,
-                                                                                      "constr_viol_tol": 1e-3,
-                                                                                      "compl_inf_tol": 1e-3,
-                                                                                      "linear_solver": "ma57"})
+    sol_ip = ocp.solve(
+        solver=Solver.IPOPT,
+        show_online_optim=False,
+        solver_options={
+            "tol": 1e-3,
+            "dual_inf_tol": 1e-3,
+            "constr_viol_tol": 1e-3,
+            "compl_inf_tol": 1e-3,
+            "linear_solver": "ma57",
+        },
+    )
     toc = time() - tic
     print(f"Time to solve with ACADOS: {toc}sec")
 

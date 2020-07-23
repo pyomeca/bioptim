@@ -17,7 +17,7 @@ from biorbd_optim import (
     BoundsList,
     QAndQDotBounds,
     InitialConditionsList,
-    Solver
+    Solver,
 )
 
 
@@ -170,8 +170,16 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model, dynamics, nb_shooting, final_time, x_init, u_init, x_bounds,
-        u_bounds, objective_functions, use_SX= use_SX,
+        biorbd_model,
+        dynamics,
+        nb_shooting,
+        final_time,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
+        objective_functions,
+        use_SX=use_SX,
     )
 
 
@@ -199,7 +207,6 @@ if __name__ == "__main__":
         kin_data_to_track="q",
         use_residual_torque=use_residual_torque,
         use_SX=False,
-
     )
 
     # --- Solve the program --- #
