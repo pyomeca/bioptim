@@ -344,7 +344,7 @@ class OptimalControlProgram:
         nlp["nbQ"] = 0
         nlp["nbQdot"] = 0
         nlp["nbTau"] = 0
-        nlp["nbMuscles"] = 0
+        nlp["nbMuscle"] = 0
         nlp["plot"] = {}
         nlp["var_states"] = {}
         nlp["var_controls"] = {}
@@ -666,7 +666,12 @@ class OptimalControlProgram:
         nlp["plot"][plot_name] = custom_plot
 
     def solve(
-        self, solver=Solver.IPOPT, show_online_optim=False, return_iterations=False, solver_options={},
+        self,
+        solver=Solver.IPOPT,
+        show_online_optim=False,
+        return_iterations=False,
+        return_objectives=False,
+        solver_options={},
     ):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
@@ -705,6 +710,9 @@ class OptimalControlProgram:
         if return_iterations:
             self.solver.finish_get_iterations()
 
+        if return_objectives:
+            self.solver.get_objective_values()
+
         return self.solver.get_optimized_value(self)
 
     def save(self, sol, file_path, sol_iterations=None):
@@ -720,6 +728,7 @@ class OptimalControlProgram:
         elif ext != ".bo":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
         dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
+
         if sol_iterations != None:
             dict["sol_iterations"] = sol_iterations
 

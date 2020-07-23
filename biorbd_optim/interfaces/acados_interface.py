@@ -177,10 +177,12 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]
             self.acados_ocp.dims.ny_e = self.acados_ocp.model.cost_y_expr_e.shape[0]
             self.acados_ocp.cost.yref = np.zeros((max(self.acados_ocp.dims.ny, 1),))
+
             if len(self.y_ref_end):
                 self.acados_ocp.cost.yref_e = np.concatenate(self.y_ref_end, -1).T.squeeze()
             else:
                 self.acados_ocp.cost.yref_e = np.zeros((1,))
+
 
             if self.W.shape == (0, 0):
                 self.acados_ocp.cost.W = np.zeros((1, 1))

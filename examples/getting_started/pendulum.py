@@ -1,5 +1,6 @@
 import biorbd
 import pickle
+import numpy as np
 from time import time
 
 from biorbd_optim import (
@@ -70,7 +71,7 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     tic = time()
-    sol, sol_iterations = ocp.solve(show_online_optim=True, return_iterations=True)
+    sol, sol_iterations, sol_obj = ocp.solve(show_online_optim=True, return_iterations=True, return_objectives=True)
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
@@ -82,6 +83,12 @@ if __name__ == "__main__":
     # --- Access to all iterations  --- #
     nb_iter = len(sol_iterations)
     third_iteration = sol_iterations[2]
+
+    # --- Print objective cost  --- #
+    print(f"Final objective value : {np.nansum(sol_obj)} \n")
+    analyse = Objective.Analyse(ocp, sol_obj)
+    analyse.by_function()
+    analyse.by_nodes()
 
     # --- Save result of get_data --- #
     ocp.save_get_data(sol, "pendulum.bob", sol_iterations)  # you don't have to specify the extension ".bob"
