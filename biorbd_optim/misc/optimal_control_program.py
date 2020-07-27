@@ -711,7 +711,7 @@ class OptimalControlProgram:
             self.solver.finish_get_iterations()
 
         if return_objectives:
-            self.solver.get_objective_values()
+            self.solver.get_objective()
 
         return self.solver.get_optimized_value(self)
 
@@ -740,7 +740,7 @@ class OptimalControlProgram:
             file_path = file_path + ".bob"
         elif ext != ".bob":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
-        dict = {"data": Data.get_data(self, sol["x"], **parameters)}
+        dict = {"data": Data.get_data(self, sol, **parameters)}
         if sol_iterations != None:
             get_data_sol_iterations = []
             for iter in sol_iterations:
