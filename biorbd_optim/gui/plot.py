@@ -226,19 +226,43 @@ class PlotOcp:
                     intersections_time = self.find_phases_intersections()
                     for time in intersections_time:
                         self.plots_vertical_lines.append(ax.axvline(time, **self.plot_options["vertical_lines"]))
-                    if self.axes[variable][0].bounds:
-                        if self.axes[variable][0].bounds.type == InterpolationType.EACH_FRAME:
-                            ns = self.axes[variable][0].bounds.min.shape[1] - 1
+                    # if self.axes[variable][0].bounds:
+                    #     if self.axes[variable][0].bounds.type == InterpolationType.EACH_FRAME:
+                    #         ns = self.axes[variable][0].bounds.min.shape[1] - 1
+                    #     else:
+                    #         ns = nlp["ns"]
+                    #     self.axes[variable][0].bounds.check_and_adjust_dimensions(
+                    #         nb_elements=len(mapping), nb_shooting=ns
+                    #     )
+                    #     bounds_min = np.array(
+                    #         [self.axes[variable][0].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)]
+                    #     )
+                    #     bounds_max = np.array(
+                    #         [self.axes[variable][0].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)]
+                    #     )
+                    #     if bounds_min.shape[0] == nlp["ns"]:
+                    #         bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
+                    #         bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
+                    #
+                    #     self.plots_bounds.append(
+                    #         [ax.step(self.t[i], bounds_min, where='post', **self.plot_options["bounds"]), i]
+                    #     )
+                    #     self.plots_bounds.append(
+                    #         [ax.step(self.t[i], bounds_max, where='post', **self.plot_options["bounds"]), i]
+                    #     )
+                    if nlp["plot"][variable].bounds and self.adapt_graph_size_to_bounds:
+                        if nlp["plot"][variable].bounds.type == InterpolationType.EACH_FRAME:
+                            ns = nlp["plot"][variable].bounds.min.shape[1] - 1
                         else:
                             ns = nlp["ns"]
-                        self.axes[variable][0].bounds.check_and_adjust_dimensions(
+                        nlp["plot"][variable].bounds.check_and_adjust_dimensions(
                             nb_elements=len(mapping), nb_shooting=ns
                         )
                         bounds_min = np.array(
-                            [self.axes[variable][0].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)]
+                            [nlp["plot"][variable].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)]
                         )
                         bounds_max = np.array(
-                            [self.axes[variable][0].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)]
+                            [nlp["plot"][variable].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)]
                         )
                         if bounds_min.shape[0] == nlp["ns"]:
                             bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
@@ -250,6 +274,7 @@ class PlotOcp:
                         self.plots_bounds.append(
                             [ax.step(self.t[i], bounds_max, where='post', **self.plot_options["bounds"]), i]
                         )
+
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
         """
