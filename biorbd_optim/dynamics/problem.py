@@ -46,7 +46,7 @@ class Problem:
             Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
             Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven_with_contact)
-        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact)
+        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact_for_torque_driven_problem)
 
     @staticmethod
     def torque_activations_driven(ocp, nlp):
@@ -79,7 +79,7 @@ class Problem:
             Problem.configure_forward_dyn_func(
                 ocp, nlp, DynamicsFunctions.forward_dynamics_torque_activations_driven_with_contact
             )
-        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact)
+        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem)
 
     @staticmethod
     def muscle_activations_driven(ocp, nlp):
