@@ -79,7 +79,9 @@ class DynamicsFunctions:
         return cs.getForce().to_mx()
 
     @staticmethod
-    def forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem(states, controls, parameters, nlp):
+    def forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem(
+        states, controls, parameters, nlp
+    ):
         """
         Returns contact forces computed from forward dynamics with contact force
         (forward_dynamics_torque_driven_with_contact)
