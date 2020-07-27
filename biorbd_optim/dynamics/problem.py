@@ -1,7 +1,7 @@
-from casadi import MX, vertcat, Function
+from casadi import MX, vertcat, horzcat, Function
 
 from .dynamics_functions import DynamicsFunctions
-from ..misc.enums import PlotType
+from ..misc.enums import PlotType, ControlType
 from ..misc.mapping import BidirectionalMapping, Mapping
 from ..gui.plot import CustomPlot
 
@@ -264,29 +264,34 @@ class Problem:
 
         dof_names = nlp["model"].nameDof()
 
+        n_col = nlp["control_type"].value
         tau_mx = MX()
-        tau = nlp["CX"]()
+        all_tau = [nlp["CX"]() for _ in range(n_col)]
+
         for i in nlp["tau_mapping"].reduce.map_idx:
-            tau = vertcat(tau, nlp["CX"].sym("Tau_" + dof_names[i].to_string(), 1, 1))
+            for j in range(len(all_tau)):
+                all_tau[j] = vertcat(all_tau[j], nlp["CX"].sym(f"Tau_{dof_names[i].to_string()}_{j}", 1, 1))
         for i in nlp["q_mapping"].expand.map_idx:
             tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
         nlp["nbTau"] = nlp["tau_mapping"].reduce.len
         legend_tau = ["tau_" + nlp["model"].nameDof()[idx].to_string() for idx in nlp["tau_mapping"].reduce.map_idx]
-
         nlp["tau"] = tau_mx
-        if as_states:
-            nlp["x"] = vertcat(nlp["x"], tau)
-            nlp["var_states"]["tau"] = nlp["nbTau"]
 
+        if as_states:
+            nlp["x"] = vertcat(nlp["x"], all_tau[0])
+            nlp["var_states"]["tau"] = nlp["nbTau"]
             # Add plot if it happens
+
         if as_controls:
-            nlp["u"] = vertcat(nlp["u"], tau)
+            nlp["u"] = vertcat(nlp["u"], horzcat(*all_tau))
             nlp["var_controls"]["tau"] = nlp["nbTau"]
 
-            nlp["plot"]["tau"] = CustomPlot(
-                lambda x, u, p: u[: nlp["nbTau"]], plot_type=PlotType.STEP, legend=legend_tau
-            )
+            if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                plot_type = PlotType.PLOT
+            else:
+                plot_type = PlotType.STEP
+            nlp["plot"]["tau"] = CustomPlot(lambda x, u, p: u[: nlp["nbTau"]], plot_type=plot_type, legend=legend_tau)
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()
@@ -327,7 +332,7 @@ class Problem:
 
         muscles_mx = MX()
         for name in nlp["muscleNames"]:
-            muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}"))
+            muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}", 1, 1))
         nlp["muscles"] = muscles_mx
 
         combine = None
@@ -335,6 +340,7 @@ class Problem:
             muscles = nlp["CX"]()
             for name in nlp["muscleNames"]:
                 muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation"))
+
             nlp["x"] = vertcat(nlp["x"], muscles)
             nlp["var_states"]["muscles"] = nlp["nbMuscle"]
 
@@ -348,16 +354,22 @@ class Problem:
             combine = "muscles_states"
 
         if as_controls:
-            muscles = nlp["CX"]()
-            for name in nlp["muscleNames"]:
-                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_excitation"))
+            n_col = nlp["control_type"].value
+            all_muscles = [nlp["CX"]() for _ in range(n_col)]
+            for j in range(len(all_muscles)):
+                for name in nlp["muscleNames"]:
+                    all_muscles[j] = vertcat(all_muscles[j], nlp["CX"].sym(f"Muscle_{name}_excitation_{j}", 1, 1))
 
-            nlp["u"] = vertcat(nlp["u"], muscles)
+            nlp["u"] = vertcat(nlp["u"], horzcat(*all_muscles))
             nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
 
+            if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                plot_type = PlotType.LINEAR
+            else:
+                plot_type = PlotType.STEP
             nlp["plot"]["muscles_control"] = CustomPlot(
                 lambda x, u, p: u[nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]],
-                plot_type=PlotType.STEP,
+                plot_type=plot_type,
                 legend=nlp["muscleNames"],
                 combine_to=combine,
                 ylim=[0, 1],

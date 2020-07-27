@@ -76,3 +76,14 @@ class PlotType(Enum):
     PLOT = 0
     INTEGRATED = 1
     STEP = 2
+
+
+class ControlType(Enum):
+    """
+    Type of controls.
+    CONSTANT: Constant value (step function).
+    LINEAL: Linear between two nodes and continuous at the node.
+    """
+
+    CONSTANT = 1
+    LINEAR_CONTINUOUS = 2
