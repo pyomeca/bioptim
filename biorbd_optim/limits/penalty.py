@@ -428,7 +428,7 @@ class PenaltyFunctionAbstract:
                         penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
-        def custom(penalty, ocp, nlp, t, x, u, p, **parameters):
+        def custom(penalty, ocp, nlp, t, x, u, p, min_bound=0, max_bound=0, **parameters):
             """
             Adds a custom penalty function (objective or constraint).
             :param parameters: parameters["function"] -> Penalty function (CasADi function),
@@ -436,7 +436,7 @@ class PenaltyFunctionAbstract:
             (float)
             """
             val = penalty.custom_function(ocp, nlp, t, x, u, p, **parameters)
-            penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
+            penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, min_bound, max_bound)
 
     @staticmethod
     def add(ocp, nlp):
