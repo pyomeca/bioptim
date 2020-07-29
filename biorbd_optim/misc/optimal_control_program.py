@@ -342,7 +342,7 @@ class OptimalControlProgram:
         nlp["nbQ"] = 0
         nlp["nbQdot"] = 0
         nlp["nbTau"] = 0
-        nlp["nbMuscles"] = 0
+        nlp["nbMuscle"] = 0
         nlp["plot"] = {}
         nlp["var_states"] = {}
         nlp["var_controls"] = {}
@@ -664,7 +664,12 @@ class OptimalControlProgram:
         nlp["plot"][plot_name] = custom_plot
 
     def solve(
-        self, solver=Solver.IPOPT, show_online_optim=False, return_iterations=False, solver_options={},
+        self,
+        solver=Solver.IPOPT,
+        show_online_optim=False,
+        return_iterations=False,
+        return_objectives=False,
+        solver_options={},
     ):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
@@ -703,7 +708,10 @@ class OptimalControlProgram:
         if return_iterations:
             self.solver.finish_get_iterations()
 
-        return self.solver.get_optimized_value(self)
+        if return_objectives:
+            self.solver.get_objective_values()
+
+        return self.solver.get_optimized_value()
 
     def save(self, sol, file_path, sol_iterations=None):
         """
@@ -717,7 +725,8 @@ class OptimalControlProgram:
             file_path = file_path + ".bo"
         elif ext != ".bo":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
-        dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
+        dict = {"ocp_initializer": self.original_values, "sol": sol, "versions": self.version}
+
         if sol_iterations != None:
             dict["sol_iterations"] = sol_iterations
 
@@ -757,7 +766,7 @@ class OptimalControlProgram:
         """
         with open(file_path, "rb") as file:
             data = pickle.load(file)
-            ocp = OptimalControlProgram(**data["ocp_initilializer"])
+            ocp = OptimalControlProgram(**data["ocp_initializer"])
             for key in data["versions"].keys():
                 if data["versions"][key] != ocp.version[key]:
                     raise RuntimeError(
@@ -773,7 +782,7 @@ class OptimalControlProgram:
     def read_information(file_path):
         with open(file_path, "rb") as file:
             data = pickle.load(file)
-            original_values = data["ocp_initilializer"]
+            original_values = data["ocp_initializer"]
             print("****************************** Informations ******************************")
             for key in original_values.keys():
                 if key not in ["X_init", "U_init", "X_bounds", "U_bounds"]:

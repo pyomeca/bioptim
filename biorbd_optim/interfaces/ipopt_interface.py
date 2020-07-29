@@ -1,11 +1,12 @@
 import os
 import pickle
 
-from casadi import vertcat, sum1, nlpsol, dot
+from casadi import vertcat, sum1, nlpsol
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
+from ..limits.objective_functions import get_objective_value
 from ..misc.enums import InterpolationType
 
 
@@ -38,7 +39,7 @@ class IpoptInterface(SolverInterface):
 
     def finish_get_iterations(self):
         with open(self.file_path, "rb") as file:
-            self.out = self.out, pickle.load(file)
+            self.out["sol_iterations"] = pickle.load(file)
             os.remove(self.file_path)
             os.rmdir(self.directory)
 
@@ -62,13 +63,16 @@ class IpoptInterface(SolverInterface):
         solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts)
 
         # Solve the problem
-        self.out = solver.call(self.ipopt_limits)
-        self.out["time_tot"] = solver.stats()["t_wall_total"]
+        self.out = {"sol": solver.call(self.ipopt_limits)}
+        self.out["sol"]["time_tot"] = solver.stats()["t_wall_total"]
 
         return self.out
 
-    def get_optimized_value(self, ocp):
-        return self.out
+    def get_optimized_value(self):
+        out = []
+        for key in self.out.keys():
+            out.append(self.out[key])
+        return out[0] if len(out) == 1 else out
 
     def __dispatch_bounds(self):
         all_J = self.__dispatch_obj_func()
@@ -95,19 +99,6 @@ class IpoptInterface(SolverInterface):
         }
 
     def __dispatch_obj_func(self):
-        def get_objective_value(j_dict):
-            val = j_dict["val"]
-            if j_dict["target"] is not None:
-                val -= j_dict["target"]
-
-            if j_dict["objective"].quadratic:
-                val = dot(val, val)
-            else:
-                val = sum1(val)
-
-            val *= j_dict["objective"].weight * j_dict["dt"]
-            return val
-
         all_J = self.ocp.CX()
         for j_nodes in self.ocp.J:
             for obj in j_nodes:

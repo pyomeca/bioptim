@@ -12,7 +12,7 @@ from ..limits.objective_functions import ObjectiveFunction
 class AcadosInterface(SolverInterface):
     def __init__(self, ocp, **solver_options):
         if not isinstance(ocp.CX(), SX):
-            raise RuntimeError("CasADi graph must be SX to be solved with ACADOS")
+            raise RuntimeError("CasADi graph must be SX to be solved with ACADOS. Use use_SX ")
         super().__init__(ocp)
 
         # If Acados is installed using the acados_install.sh file, you probably can leave this to unset
@@ -36,6 +36,7 @@ class AcadosInterface(SolverInterface):
         self.ocp_solver = None
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
+        self.out = {}
 
     def __acados_export_model(self, ocp):
         # Declare model variables
@@ -177,7 +178,12 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]
             self.acados_ocp.dims.ny_e = self.acados_ocp.model.cost_y_expr_e.shape[0]
             self.acados_ocp.cost.yref = np.zeros((max(self.acados_ocp.dims.ny, 1),))
-            self.acados_ocp.cost.yref_e = np.concatenate(self.y_ref_end, -1).T.squeeze()
+
+            if len(self.y_ref_end):
+                self.acados_ocp.cost.yref_e = np.concatenate(self.y_ref_end, -1).T.squeeze()
+            else:
+                self.acados_ocp.cost.yref_e = np.zeros((1,))
+
 
             if self.W.shape == (0, 0):
                 self.acados_ocp.cost.W = np.zeros((1, 1))
@@ -214,7 +220,7 @@ class AcadosInterface(SolverInterface):
         if "cost_type" in options:
             del options["cost_type"]
 
-        self.acados_ocp.solver_options.qp_solver = "FULL_CONDENSING_QPOASES"  # FULL_CONDENSING_QPOASES
+        self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
         self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
         self.acados_ocp.solver_options.integrator_type = "ERK"
         self.acados_ocp.solver_options.nlp_solver_type = "SQP"
@@ -238,11 +244,13 @@ class AcadosInterface(SolverInterface):
     def online_optim(self, ocp):
         raise NotImplementedError("online_optim is not implemented yet with ACADOS backend")
 
-    def get_optimized_value(self, ocp):
-        acados_x = np.array([self.ocp_solver.get(i, "x") for i in range(ocp.nlp[0]["ns"] + 1)]).T
-        acados_q = acados_x[: ocp.nlp[0]["nu"], :]
-        acados_qdot = acados_x[ocp.nlp[0]["nu"] :, :]
-        acados_u = np.array([self.ocp_solver.get(i, "u") for i in range(ocp.nlp[0]["ns"])]).T
+    def get_optimized_value(self):
+        ns = self.acados_ocp.dims.N
+        nu = self.acados_ocp.dims.nu
+        acados_x = np.array([self.ocp_solver.get(i, "x") for i in range(ns + 1)]).T
+        acados_q = acados_x[:nu, :]
+        acados_qdot = acados_x[nu:, :]
+        acados_u = np.array([self.ocp_solver.get(i, "u") for i in range(ns)]).T
 
         out = {
             "qqdot": acados_x,
@@ -250,14 +258,18 @@ class AcadosInterface(SolverInterface):
             "u": acados_u,
             "time_tot": self.ocp_solver.get_stats("time_tot")[0],
         }
-        for i in range(ocp.nlp[0]["ns"]):
+        for i in range(ns):
             out["x"] = vertcat(out["x"], acados_q[:, i])
             out["x"] = vertcat(out["x"], acados_qdot[:, i])
             out["x"] = vertcat(out["x"], acados_u[:, i])
 
-        out["x"] = vertcat(out["x"], acados_q[:, ocp.nlp[0]["ns"]])
-        out["x"] = vertcat(out["x"], acados_qdot[:, ocp.nlp[0]["ns"]])
-
+        out["x"] = vertcat(out["x"], acados_q[:, ns])
+        out["x"] = vertcat(out["x"], acados_qdot[:, ns])
+        self.out["sol"] = out
+        out = []
+        for key in self.out.keys():
+            out.append(self.out[key])
+        return out[0] if len(out) == 1 else out
         return out
 
     def solve(self):
@@ -268,4 +280,5 @@ class AcadosInterface(SolverInterface):
         for n in range(self.acados_ocp.dims.N):
             self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
         self.ocp_solver.solve()
+        self.get_optimized_value()
         return self
