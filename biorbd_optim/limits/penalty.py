@@ -47,6 +47,10 @@ class PenaltyFunctionAbstract:
                 val = v[states_idx]
                 if target is not None:
                     target_tp = target[states_idx, t[i]]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp))
+                    target_tp[index_of_nan] = 0
+                    val[index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -87,6 +91,10 @@ class PenaltyFunctionAbstract:
                 if target is not None:
                     target_tp = target[:, markers_idx, t[i]]
                     target_tp = target_tp[axis_to_track, :]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp[0, :]))
+                    target_tp[:, index_of_nan] = 0
+                    val[:, index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -169,6 +177,10 @@ class PenaltyFunctionAbstract:
                     val = nlp["casadi_func"]["biorbd_markerVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
                     if target is not None:
                         target_tp = target[:, markers_idx, t[i]]
+
+                        index_of_nan, *_ = np.where(np.isnan(target_tp[0, :]))
+                        target_tp[:, index_of_nan] = 0
+                        val[:, index_of_nan] = 0
                     penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -247,6 +259,10 @@ class PenaltyFunctionAbstract:
                 val = v[controls_idx]
                 if target is not None:
                     target_tp = target[controls_idx, t[i]]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp))
+                    target_tp[index_of_nan] = 0
+                    val[index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -292,6 +308,10 @@ class PenaltyFunctionAbstract:
                 val = v[muscles_idx_plus_tau]
                 if target is not None:
                     target_tp = target[muscles_idx, t[i]]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp))
+                    target_tp[index_of_nan] = 0
+                    val[index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -316,6 +336,10 @@ class PenaltyFunctionAbstract:
                 val = v[controls_idx]
                 if target is not None:
                     target_tp = target[t[i], controls_idx]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp))
+                    target_tp[index_of_nan] = 0
+                    val[index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -364,6 +388,10 @@ class PenaltyFunctionAbstract:
                 val = force[contacts_idx]
                 if target is not None:
                     target_tp = target[contacts_idx, t[i]]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp))
+                    target_tp[index_of_nan] = 0
+                    val[index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
