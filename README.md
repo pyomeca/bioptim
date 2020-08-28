@@ -16,6 +16,7 @@ You simply have to download the source, navigate to the root folder and (assumin
 ```bash 
 python setup.py install
 ```
+WARNING: Since the last refactor, this method won't work anymore, you will have to run BiorbdOptim from the folder or to install it manually.
 Please note that this method will not install the dependencies for you, therefore you will have to install them manually. Moreover, the setuptools dependencies must be installed prior to the installation in order for it to work.
 
 ## Dependencies
