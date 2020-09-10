@@ -344,7 +344,7 @@ class OptimalControlProgram:
         nlp["nbQ"] = 0
         nlp["nbQdot"] = 0
         nlp["nbTau"] = 0
-        nlp["nbMuscles"] = 0
+        nlp["nbMuscle"] = 0
         nlp["plot"] = {}
         nlp["var_states"] = {}
         nlp["var_controls"] = {}
