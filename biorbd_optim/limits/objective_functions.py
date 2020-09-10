@@ -1,6 +1,7 @@
 from enum import Enum
 
 import casadi
+from casadi import dot, sum1
 
 from .penalty import PenaltyType, PenaltyFunctionAbstract
 from ..misc.enums import Instant
@@ -354,3 +355,17 @@ class Objective:
 
     class Parameter(Enum):
         CUSTOM = (PenaltyType.CUSTOM,)
+
+
+def get_objective_value(j_dict):
+    val = j_dict["val"]
+    if j_dict["target"] is not None:
+        val -= j_dict["target"]
+
+    if j_dict["objective"].quadratic:
+        val = dot(val, val)
+    else:
+        val = sum1(val)
+
+    val *= j_dict["objective"].weight * j_dict["dt"]
+    return val

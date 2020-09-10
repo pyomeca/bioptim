@@ -1,10 +1,11 @@
 import os
 import pickle
 
-from casadi import vertcat, sum1, nlpsol, dot
+from casadi import vertcat, sum1, nlpsol
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
+from ..limits.objective_functions import get_objective_value
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType
 
@@ -19,28 +20,27 @@ class IpoptInterface(SolverInterface):
         self.ipopt_nlp = None
         self.ipopt_limits = None
         self.ocp_solver = None
-        self.out = None
+
+        self.bobo_directory = ".__tmp_biorbd_optim"
+        self.bobo_file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
 
     def online_optim(self, ocp):
         self.options_common["iteration_callback"] = OnlineCallback(ocp)
 
     def start_get_iterations(self):
-        self.directory = ".__tmp_biorbd_optim"
-        self.file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
+        if os.path.isfile(self.bobo_file_path):
+            os.remove(self.bobo_file_path)
+            os.rmdir(self.bobo_directory)
+        os.mkdir(self.bobo_directory)
 
-        if os.path.isfile(self.file_path):
-            os.remove(self.file_path)
-            os.rmdir(self.directory)
-        os.mkdir(self.directory)
-
-        with open(self.file_path, "wb") as file:
+        with open(self.bobo_file_path, "wb") as file:
             pickle.dump([], file)
 
     def finish_get_iterations(self):
-        with open(self.file_path, "rb") as file:
-            self.out = self.out, pickle.load(file)
-            os.remove(self.file_path)
-            os.rmdir(self.directory)
+        with open(self.bobo_file_path, "rb") as file:
+            self.out["sol_iterations"] = pickle.load(file)
+            os.remove(self.bobo_file_path)
+            os.rmdir(self.bobo_directory)
 
     def configure(self, solver_options):
         options = {
@@ -62,12 +62,9 @@ class IpoptInterface(SolverInterface):
         solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts)
 
         # Solve the problem
-        self.out = solver.call(self.ipopt_limits)
-        self.out["time_tot"] = solver.stats()["t_wall_total"]
+        self.out = {"sol": solver.call(self.ipopt_limits)}
+        self.out["sol"]["time_tot"] = solver.stats()["t_wall_total"]
 
-        return self.out
-
-    def get_optimized_value(self, ocp):
         return self.out
 
     def __dispatch_bounds(self):
@@ -95,19 +92,6 @@ class IpoptInterface(SolverInterface):
         }
 
     def __dispatch_obj_func(self):
-        def get_objective_value(j_dict):
-            val = j_dict["val"]
-            if j_dict["target"] is not None:
-                val -= j_dict["target"]
-
-            if j_dict["objective"].quadratic:
-                val = dot(val, val)
-            else:
-                val = sum1(val)
-
-            val *= j_dict["objective"].weight * j_dict["dt"]
-            return val
-
         all_J = self.ocp.CX()
         for j_nodes in self.ocp.J:
             for obj in j_nodes:
