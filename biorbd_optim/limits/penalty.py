@@ -436,7 +436,7 @@ class PenaltyFunctionAbstract:
             (float)
             """
             val = penalty.custom_function(ocp, nlp, t, x, u, p, **parameters)
-            penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
+            penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **parameters)
 
     @staticmethod
     def add(ocp, nlp):
