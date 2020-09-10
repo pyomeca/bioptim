@@ -1,5 +1,6 @@
 from enum import Enum
 
+import numpy as np
 import casadi
 from casadi import dot, sum1
 
@@ -355,6 +356,25 @@ class Objective:
 
     class Parameter(Enum):
         CUSTOM = (PenaltyType.CUSTOM,)
+
+    class Printer:
+        def __init__(self, ocp, sol_obj):
+            self.ocp = ocp
+            self.sol_obj = sol_obj
+
+        def by_function(self):
+            for idx_phase, phase in enumerate(self.sol_obj):
+                print(f"********** Phase {idx_phase} **********")
+                for idx_obj in range(phase.shape[0]):
+                    print(
+                        f"{self.ocp.original_values['objective_functions'][idx_phase][idx_phase + idx_obj].type.name} : {np.nansum(phase[idx_obj])}"
+                    )
+
+        def by_nodes(self):
+            for idx_phase, phase in enumerate(self.sol_obj):
+                print(f"********** Phase {idx_phase} **********")
+                for idx_node in range(phase.shape[1]):
+                    print(f"Node {idx_node} : {np.nansum(phase[:, idx_node])}")
 
 
 def get_objective_value(j_dict):
