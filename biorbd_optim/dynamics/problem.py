@@ -46,7 +46,7 @@ class Problem:
             Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
             Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven_with_contact)
-        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact)
+        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact_for_torque_driven_problem)
 
     @staticmethod
     def torque_activations_driven(ocp, nlp):
@@ -79,7 +79,7 @@ class Problem:
             Problem.configure_forward_dyn_func(
                 ocp, nlp, DynamicsFunctions.forward_dynamics_torque_activations_driven_with_contact
             )
-        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact)
+        Problem.configure_contact(ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem)
 
     @staticmethod
     def muscle_activations_driven(ocp, nlp):
@@ -229,20 +229,23 @@ class Problem:
             nlp["x"] = vertcat(nlp["x"], q, q_dot)
             nlp["var_states"]["q"] = nlp["nbQ"]
             nlp["var_states"]["q_dot"] = nlp["nbQdot"]
+            q_bounds = nlp["X_bounds"][: nlp["nbQ"]]
+            qdot_bounds = nlp["X_bounds"][nlp["nbQ"] :]
 
             nlp["plot"]["q"] = CustomPlot(
-                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q
+                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q, bounds=q_bounds,
             )
             nlp["plot"]["q_dot"] = CustomPlot(
                 lambda x, u, p: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
+                bounds=qdot_bounds,
             )
         if as_controls:
             nlp["u"] = vertcat(nlp["u"], q, q_dot)
             nlp["var_controls"]["q"] = nlp["nbQ"]
             nlp["var_controls"]["q_dot"] = nlp["nbQdot"]
-            # Add plot if it happens
+            # Add plot (and retrieving bounds if plots of bounds) if this problem is ever added
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()
@@ -286,12 +289,13 @@ class Problem:
         if as_controls:
             nlp["u"] = vertcat(nlp["u"], horzcat(*all_tau))
             nlp["var_controls"]["tau"] = nlp["nbTau"]
+            tau_bounds = nlp["U_bounds"][: nlp["nbTau"]]
 
             if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.PLOT
             else:
                 plot_type = PlotType.STEP
-            nlp["plot"]["tau"] = CustomPlot(lambda x, u, p: u[: nlp["nbTau"]], plot_type=plot_type, legend=legend_tau)
+            nlp["plot"]["tau"] = CustomPlot(lambda x, u, p: u[: nlp["nbTau"]], plot_type=plot_type, legend=legend_tau, bounds=tau_bounds),
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()
@@ -345,11 +349,13 @@ class Problem:
             nlp["var_states"]["muscles"] = nlp["nbMuscle"]
 
             nx_q = nlp["nbQ"] + nlp["nbQdot"]
+            muscles_bounds = nlp["X_bounds"][nx_q : nx_q + nlp["nbMuscle"]]
             nlp["plot"]["muscles_states"] = CustomPlot(
                 lambda x, u, p: x[nx_q : nx_q + nlp["nbMuscle"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=nlp["muscleNames"],
                 ylim=[0, 1],
+                bounds=muscles_bounds,
             )
             combine = "muscles_states"
 
@@ -362,6 +368,7 @@ class Problem:
 
             nlp["u"] = vertcat(nlp["u"], horzcat(*all_muscles))
             nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
+            muscles_bounds = nlp["U_bounds"][nlp["nbTau"] : nlp["nbTau"] + nlp["nbMuscle"]]
 
             if nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.LINEAR
@@ -373,6 +380,7 @@ class Problem:
                 legend=nlp["muscleNames"],
                 combine_to=combine,
                 ylim=[0, 1],
+                bounds=muscles_bounds,
             )
 
         nlp["nx"] = nlp["x"].rows()

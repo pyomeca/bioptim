@@ -281,17 +281,15 @@ class OptimalControlProgram:
         # Declare the time to optimize
         self.__define_variable_time(initial_time_guess, time_min, time_max)
 
-        # Prepare the dynamics of the program
+        # Prepare path constraints and dynamics of the program
+        self.__add_to_nlp("X_bounds", X_bounds, False)
+        self.__add_to_nlp("U_bounds", U_bounds, False)
         self.__add_to_nlp("dynamics_type", dynamics_type, False)
         self.__add_to_nlp("ode_solver", ode_solver, True)
         self.__add_to_nlp("control_type", control_type, True)
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
             Problem.initialize(self, self.nlp[i])
-
-        # Prepare path constraints
-        self.__add_to_nlp("X_bounds", X_bounds, False)
-        self.__add_to_nlp("U_bounds", U_bounds, False)
         for i in range(self.nb_phases):
             self.nlp[i]["X_bounds"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
             if self.nlp[i]["control_type"] == ControlType.CONSTANT:
@@ -767,7 +765,7 @@ class OptimalControlProgram:
         """
         with open(file_path, "rb") as file:
             data = pickle.load(file)
-            ocp = OptimalControlProgram(**data["ocp_initilializer"])
+            ocp = OptimalControlProgram(**data["ocp_initializer"])
             for key in data["versions"].keys():
                 if data["versions"][key] != ocp.version[key]:
                     raise RuntimeError(
@@ -783,7 +781,7 @@ class OptimalControlProgram:
     def read_information(file_path):
         with open(file_path, "rb") as file:
             data = pickle.load(file)
-            original_values = data["ocp_initilializer"]
+            original_values = data["ocp_initializer"]
             print("****************************** Informations ******************************")
             for key in original_values.keys():
                 if key not in ["X_init", "U_init", "X_bounds", "U_bounds"]:

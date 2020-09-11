@@ -9,7 +9,7 @@ from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
 class PathCondition(np.ndarray):
     """Sets path constraints"""
 
-    def __new__(cls, input_array, t=None, interpolation=InterpolationType.CONSTANT, **extra_params):
+    def __new__(cls, input_array, t=None, interpolation=InterpolationType.CONSTANT, slice_list=None, **extra_params):
         """
         Interpolates path conditions with the chosen interpolation type.
         :param input_array: Array of path conditions (initial guess). (list)
@@ -79,6 +79,7 @@ class PathCondition(np.ndarray):
         obj.type = interpolation
         obj.t = t
         obj.extra_params = extra_params
+        obj.slice_list = slice_list
         if interpolation == InterpolationType.CUSTOM:
             obj.custom_function = custom_function
 
@@ -126,7 +127,11 @@ class PathCondition(np.ndarray):
                 )
 
         if self.type == InterpolationType.CUSTOM:
-            val_size = self.custom_function(0, **self.extra_params).shape[0]
+            slice_list = self.slice_list
+            if slice_list is not None:
+                val_size = self.custom_function(0, **self.extra_params)[slice_list.start: slice_list.stop: slice_list.step].shape[0]
+            else:
+                val_size = self.custom_function(0, **self.extra_params).shape[0]
         else:
             val_size = self.shape[0]
         if val_size != nb_elements:
@@ -154,6 +159,8 @@ class PathCondition(np.ndarray):
                 return self[:, 0]
             elif shooting_point == self.nb_shooting:
                 return self[:, 2]
+            elif shooting_point > self.nb_shooting:
+                raise RuntimeError("shooting point too high")
             else:
                 return self[:, 1]
         elif self.type == InterpolationType.LINEAR:
@@ -164,7 +171,11 @@ class PathCondition(np.ndarray):
             spline = interp1d(self.t, self)
             return spline(shooting_point / self.nb_shooting * (self.t[-1] - self.t[0]))
         elif self.type == InterpolationType.CUSTOM:
-            return self.custom_function(shooting_point, **self.extra_params)
+            if self.slice_list is not None:
+                slice_list = self.slice_list
+                return self.custom_function(shooting_point, **self.extra_params)[slice_list.start: slice_list.stop: slice_list.step]
+            else:
+                return self.custom_function(shooting_point, **self.extra_params)
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
@@ -206,6 +217,7 @@ class Bounds:
         min_bound=(),
         max_bound=(),
         interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+        slice_list=None,
         **parameters,
     ):
         """
@@ -217,12 +229,17 @@ class Bounds:
         if isinstance(min_bound, PathCondition):
             self.min = min_bound
         else:
-            self.min = PathCondition(min_bound, interpolation=interpolation, **parameters)
+            self.min = PathCondition(min_bound, interpolation=interpolation, slice_list=slice_list, **parameters)
 
         if isinstance(max_bound, PathCondition):
             self.max = max_bound
         else:
-            self.max = PathCondition(max_bound, interpolation=interpolation, **parameters)
+            self.max = PathCondition(max_bound, interpolation=interpolation, slice_list=slice_list, **parameters)
+
+        self.type = interpolation
+        self.t = None
+        self.extra_params = self.min.extra_params
+        self.nb_shooting = self.min.nb_shooting
 
     def check_and_adjust_dimensions(self, nb_elements, nb_shooting):
         """
@@ -233,6 +250,8 @@ class Bounds:
         """
         self.min.check_and_adjust_dimensions(nb_elements, nb_shooting, "Bound min")
         self.max.check_and_adjust_dimensions(nb_elements, nb_shooting, "Bound max")
+        self.t = self.min.t
+        self.nb_shooting = self.min.nb_shooting
 
     def concatenate(self, other):
         """
@@ -241,6 +260,32 @@ class Bounds:
         """
         self.min = PathCondition(np.concatenate((self.min, other.min)), interpolation=self.min.type)
         self.max = PathCondition(np.concatenate((self.max, other.max)), interpolation=self.max.type)
+
+        self.type = self.min.type
+        self.t = self.min.t
+        self.extra_params = self.min.extra_params
+        self.nb_shooting = self.min.nb_shooting
+
+    def __getitem__(self, slice_list):
+        if isinstance(slice_list, slice):
+            t = self.min.t
+            param = self.extra_params
+            interpolation = self.type
+            if interpolation == InterpolationType.CUSTOM:
+                min_bound = self.min.custom_function
+                max_bound = self.max.custom_function
+            else:
+                min_bound = np.array(self.min[slice_list.start : slice_list.stop : slice_list.step])
+                max_bound = np.array(self.max[slice_list.start : slice_list.stop : slice_list.step])
+            bounds_sliced = Bounds(
+                min_bound=min_bound, max_bound=max_bound, interpolation=interpolation, slice_list=slice_list, t=t, **param
+            )
+            # TODO: Verify if it is ok that slice_list arg sent is used only if it is a custom type (otherwise, slice_list is used before calling Bounds constructor
+            return bounds_sliced
+        else:
+            raise RuntimeError(
+                "Invalid input for slicing bounds. It should be like [a:b] or [a:b:c] with a the start index, b the stop index and c the step for slicing."
+            )
 
 
 class QAndQDotBounds(Bounds):
