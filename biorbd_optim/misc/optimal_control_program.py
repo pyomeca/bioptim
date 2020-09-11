@@ -709,7 +709,7 @@ class OptimalControlProgram:
             self.solver.finish_get_iterations()
 
         if return_objectives:
-            self.solver.get_objective_values()
+            self.solver.get_objective()
 
         return self.solver.get_optimized_value()
 
@@ -725,7 +725,7 @@ class OptimalControlProgram:
             file_path = file_path + ".bo"
         elif ext != ".bo":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
-        dico = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
+        dico = {"ocp_initializer": self.original_values, "sol": sol, "versions": self.version}
         if sol_iterations is not None:
             dico["sol_iterations"] = sol_iterations
 
@@ -737,6 +737,7 @@ class OptimalControlProgram:
             file_path = file_path + ".bob"
         elif ext != ".bob":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
+
         dico = {"data": Data.get_data(self, sol["x"], **parameters)}
         if sol_iterations is not None:
             get_data_sol_iterations = []

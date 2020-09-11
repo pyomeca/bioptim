@@ -14,6 +14,7 @@ from .limits.path_conditions import (
     InitialConditionsList,
     InitialConditionsOption,
     QAndQDotBounds,
+    PathCondition,
 )
 from .misc.data import Data
 from .misc.enums import Axe, Instant, InterpolationType, OdeSolver, PlotType, Solver, ControlType

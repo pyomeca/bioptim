@@ -340,14 +340,14 @@ class Problem:
 
         muscles_mx = MX()
         for name in nlp["muscleNames"]:
-            muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}", 1, 1))
+            muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}_{nlp['phase_idx']}", 1, 1))
         nlp["muscles"] = muscles_mx
 
         combine = None
         if as_states:
             muscles = nlp["CX"]()
             for name in nlp["muscleNames"]:
-                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation"))
+                muscles = vertcat(muscles, nlp["CX"].sym(f"Muscle_{name}_activation_{nlp['phase_idx']}"))
 
             nlp["x"] = vertcat(nlp["x"], muscles)
             nlp["var_states"]["muscles"] = nlp["nbMuscle"]
@@ -368,7 +368,7 @@ class Problem:
             all_muscles = [nlp["CX"]() for _ in range(n_col)]
             for j in range(len(all_muscles)):
                 for name in nlp["muscleNames"]:
-                    all_muscles[j] = vertcat(all_muscles[j], nlp["CX"].sym(f"Muscle_{name}_excitation_{j}", 1, 1))
+                    all_muscles[j] = vertcat(all_muscles[j], nlp["CX"].sym(f"Muscle_{name}_excitation_{j}_{nlp['phase_idx']}", 1, 1))
 
             nlp["u"] = vertcat(nlp["u"], horzcat(*all_muscles))
             nlp["var_controls"]["muscles"] = nlp["nbMuscle"]
