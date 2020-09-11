@@ -406,12 +406,13 @@ class ShowResult:
         self.ocp = ocp
         self.sol = sol
 
-    def graphs(self, automatically_organize=True):
+    def graphs(self, automatically_organize=True, show_now=True):
         plot_ocp = PlotOcp(self.ocp, automatically_organize=automatically_organize)
         plot_ocp.update_data(self.sol["x"])
-        plt.show()
+        if show_now:
+            plt.show()
 
-    def animate(self, nb_frames=80, **kwargs):
+    def animate(self, nb_frames=80, show_now=True, **kwargs):
         """
         Animate solution with BiorbdViz
         :param nb_frames: Number of frames in the animation. (integer)
@@ -432,13 +433,16 @@ class ShowResult:
             all_bioviz.append(BiorbdViz.BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase]["q_mapping"].expand.map(data))
 
-        b_is_visible = [True] * len(all_bioviz)
-        while sum(b_is_visible):
-            for i, b in enumerate(all_bioviz):
-                if b.vtk_window.is_active:
-                    b.update()
-                else:
-                    b_is_visible[i] = False
+        if show_now:
+            b_is_visible = [True] * len(all_bioviz)
+            while sum(b_is_visible):
+                for i, b in enumerate(all_bioviz):
+                    if b.vtk_window.is_active:
+                        b.update()
+                    else:
+                        b_is_visible[i] = False
+        else:
+            return all_bioviz
 
     @staticmethod
     def keep_matplotlib():
