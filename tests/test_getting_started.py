@@ -145,7 +145,7 @@ def test_initial_guesses(interpolation):
     np.testing.assert_almost_equal(tau[:, -1], np.array([-5.0, 9.81, -7.85]))
 
     # save and load
-    if interpolation in [InterpolationType.SPLINE, InterpolationType.CUSTOM]:
+    if interpolation in [InterpolationType.CUSTOM]:
         with pytest.raises(AttributeError):
             TestUtils.save_and_load(sol, ocp, True)
     else:

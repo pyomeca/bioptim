@@ -48,10 +48,12 @@ def prepare_ocp(
     constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
     constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
 
-    # Path constraints
+    # Path constraint and control path constraints
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
     x_bounds.min[1:6, [0, -1]] = 0
     x_bounds.max[1:6, [0, -1]] = 0
+    x_bounds.min[2, -1] = 1.57
+    x_bounds.max[2, -1] = 1.57
     u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
 
     # Initial guesses
