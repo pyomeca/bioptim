@@ -9,7 +9,7 @@ An optimization framework that links CasADi, ipopt and biorbd for Optimal Contro
 |  Code coverage | [![codecov](https://codecov.io/gh/pyomeca/BiorbdOptim/branch/master/graph/badge.svg)](https://codecov.io/gh/pyomeca/BiorbdOptim) |
 
 # How to install 
-The way to install BiorbdOptim on your computer is to installing from the sources. 
+The way to install BiorbdOptim on your computer is to install from the sources. 
 
 ## Installing from the sources 
 You simply have to download the source, navigate to the root folder and (assuming your conda environment is loaded if needed) type the following command :
