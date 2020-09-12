@@ -74,7 +74,7 @@ class PathCondition(np.ndarray):
             raise RuntimeError(f"InterpolationType is not implemented yet")
         obj = np.asarray(input_array).view(cls)
 
-        # Additional information
+        # Additional information (do not forget to update __reduce__ and __setstate__)
         obj.nb_shooting = None
         obj.type = interpolation
         obj.t = t
@@ -94,14 +94,17 @@ class PathCondition(np.ndarray):
 
     def __reduce__(self):
         pickled_state = super(PathCondition, self).__reduce__()
-        new_state = pickled_state[2] + (self.nb_shooting, self.type)
+        new_state = pickled_state[2] + (self.nb_shooting, self.type, self.t, self.extra_params, self.slice_list)
         return (pickled_state[0], pickled_state[1], new_state)
 
     def __setstate__(self, state):
-        self.nb_shooting = state[-2]
-        self.type = state[-1]
+        self.nb_shooting = state[-5]
+        self.type = state[-4]
+        self.t = state[-3]
+        self.extra_params = state[-2]
+        self.slice_list = state[-1]
         # Call the parent's __setstate__ with the other tuple elements.
-        super(PathCondition, self).__setstate__(state[0:-2])
+        super(PathCondition, self).__setstate__(state[0:-5])
 
     def check_and_adjust_dimensions(self, nb_elements, nb_shooting, element_type):
         """
