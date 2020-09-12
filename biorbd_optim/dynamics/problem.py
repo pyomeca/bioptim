@@ -237,7 +237,10 @@ class Problem:
             qdot_bounds = nlp["X_bounds"][nlp["nbQ"] :]
 
             nlp["plot"]["q"] = CustomPlot(
-                lambda x, u, p: x[: nlp["nbQ"]], plot_type=PlotType.INTEGRATED, legend=legend_q, bounds=q_bounds,
+                lambda x, u, p: x[: nlp["nbQ"]],
+                plot_type=PlotType.INTEGRATED,
+                legend=legend_q,
+                bounds=q_bounds,
             )
             nlp["plot"]["q_dot"] = CustomPlot(
                 lambda x, u, p: x[nlp["nbQ"] : nlp["nbQ"] + nlp["nbQdot"]],
@@ -299,7 +302,11 @@ class Problem:
                 plot_type = PlotType.PLOT
             else:
                 plot_type = PlotType.STEP
-            nlp["plot"]["tau"] = CustomPlot(lambda x, u, p: u[: nlp["nbTau"]], plot_type=plot_type, legend=legend_tau, bounds=tau_bounds),
+            nlp["plot"]["tau"] = (
+                CustomPlot(
+                    lambda x, u, p: u[: nlp["nbTau"]], plot_type=plot_type, legend=legend_tau, bounds=tau_bounds
+                ),
+            )
 
         nlp["nx"] = nlp["x"].rows()
         nlp["nu"] = nlp["u"].rows()
@@ -368,7 +375,9 @@ class Problem:
             all_muscles = [nlp["CX"]() for _ in range(n_col)]
             for j in range(len(all_muscles)):
                 for name in nlp["muscleNames"]:
-                    all_muscles[j] = vertcat(all_muscles[j], nlp["CX"].sym(f"Muscle_{name}_excitation_{j}_{nlp['phase_idx']}", 1, 1))
+                    all_muscles[j] = vertcat(
+                        all_muscles[j], nlp["CX"].sym(f"Muscle_{name}_excitation_{j}_{nlp['phase_idx']}", 1, 1)
+                    )
 
             nlp["u"] = vertcat(nlp["u"], horzcat(*all_muscles))
             nlp["var_controls"]["muscles"] = nlp["nbMuscle"]

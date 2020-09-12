@@ -380,7 +380,7 @@ class Objective:
             m = 0
             for idx_phase, phase in enumerate(self.sol_obj):
                 m += np.nansum(phase)
-            return m/len(self.sol_obj)
+            return m / len(self.sol_obj)
 
 
 def get_objective_values(ocp, sol):
@@ -422,9 +422,7 @@ def get_objective_values(ocp, sol):
             nodes = __get_instant(nlp["J"][idx_phase + idx_obj_func][0]["objective"].instant, nlp)
             nodes = nodes[: len(nlp["J"][idx_phase + idx_obj_func])]
             for node, idx_node in enumerate(nodes):
-                obj = casadi.Function(
-                    "obj", [ocp.V], [get_objective_value(nlp["J"][idx_phase + idx_obj_func][node])]
-                )
+                obj = casadi.Function("obj", [ocp.V], [get_objective_value(nlp["J"][idx_phase + idx_obj_func][node])])
                 out[-1][idx_obj_func][idx_node] = obj(sol)
     return out
 

@@ -78,29 +78,29 @@ def prepare_ocp(
         x_min = np.random.random((6, 3)) * (-10) - 5
         x_max = np.random.random((6, 3)) * 10 + 5
         x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
-        u_min = np.random.random((3, 3)) * tau_min + tau_min/2
-        u_max = np.random.random((3, 3)) * tau_max + tau_max/2
+        u_min = np.random.random((3, 3)) * tau_min + tau_min / 2
+        u_max = np.random.random((3, 3)) * tau_max + tau_max / 2
         u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
     elif interpolation_type == InterpolationType.LINEAR:
         x_min = np.random.random((6, 2)) * (-10) - 5
         x_max = np.random.random((6, 2)) * 10 + 5
         x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.LINEAR)
-        u_min = np.random.random((3, 2)) * tau_min + tau_min/2
-        u_max = np.random.random((3, 2)) * tau_max + tau_max/2
+        u_min = np.random.random((3, 2)) * tau_min + tau_min / 2
+        u_max = np.random.random((3, 2)) * tau_max + tau_max / 2
         u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.LINEAR)
     elif interpolation_type == InterpolationType.EACH_FRAME:
         x_min = np.random.random((nq + nqdot, number_shooting_points + 1)) * (-10) - 5
         x_max = np.random.random((nq + nqdot, number_shooting_points + 1)) * 10 + 5
         x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.EACH_FRAME)
-        u_min = np.random.random((ntau, number_shooting_points)) * tau_min + tau_min/2
-        u_max = np.random.random((ntau, number_shooting_points)) * tau_max + tau_max/2
+        u_min = np.random.random((ntau, number_shooting_points)) * tau_min + tau_min / 2
+        u_max = np.random.random((ntau, number_shooting_points)) * tau_max + tau_max / 2
         u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.EACH_FRAME)
     elif interpolation_type == InterpolationType.SPLINE:
         spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
         x_min = np.random.random((nq + nqdot, 5)) * (-10) - 5
         x_max = np.random.random((nq + nqdot, 5)) * 10 + 5
-        u_min = np.random.random((ntau, 5)) * tau_min + tau_min/2
-        u_max = np.random.random((ntau, 5)) * tau_max + tau_max/2
+        u_min = np.random.random((ntau, 5)) * tau_min + tau_min / 2
+        u_max = np.random.random((ntau, 5)) * tau_max + tau_max / 2
         x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.SPLINE, t=spline_time)
         u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.SPLINE, t=spline_time)
     elif interpolation_type == InterpolationType.CUSTOM:
@@ -108,8 +108,12 @@ def prepare_ocp(
         # For this particular instance, they emulate a Linear interpolation
         extra_params_x = {"n_elements": nq + nqdot, "nb_shooting": number_shooting_points}
         extra_params_u = {"n_elements": ntau, "nb_shooting": number_shooting_points}
-        x_bounds = BoundsOption([custom_x_bounds_min, custom_x_bounds_max], interpolation=InterpolationType.CUSTOM, **extra_params_x)
-        u_bounds = BoundsOption([custom_u_bounds_min, custom_u_bounds_max], interpolation=InterpolationType.CUSTOM, **extra_params_u)
+        x_bounds = BoundsOption(
+            [custom_x_bounds_min, custom_x_bounds_max], interpolation=InterpolationType.CUSTOM, **extra_params_x
+        )
+        u_bounds = BoundsOption(
+            [custom_u_bounds_min, custom_u_bounds_max], interpolation=InterpolationType.CUSTOM, **extra_params_u
+        )
     else:
         raise NotImplementedError("Not implemented yet")
 

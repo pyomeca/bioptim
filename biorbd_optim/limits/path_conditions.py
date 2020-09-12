@@ -132,7 +132,9 @@ class PathCondition(np.ndarray):
         if self.type == InterpolationType.CUSTOM:
             slice_list = self.slice_list
             if slice_list is not None:
-                val_size = self.custom_function(0, **self.extra_params)[slice_list.start: slice_list.stop: slice_list.step].shape[0]
+                val_size = self.custom_function(0, **self.extra_params)[
+                    slice_list.start : slice_list.stop : slice_list.step
+                ].shape[0]
             else:
                 val_size = self.custom_function(0, **self.extra_params).shape[0]
         else:
@@ -176,7 +178,9 @@ class PathCondition(np.ndarray):
         elif self.type == InterpolationType.CUSTOM:
             if self.slice_list is not None:
                 slice_list = self.slice_list
-                return self.custom_function(shooting_point, **self.extra_params)[slice_list.start: slice_list.stop: slice_list.step]
+                return self.custom_function(shooting_point, **self.extra_params)[
+                    slice_list.start : slice_list.stop : slice_list.step
+                ]
             else:
                 return self.custom_function(shooting_point, **self.extra_params)
         else:
@@ -196,7 +200,9 @@ class BoundsOption(OptionGeneric):
 
 class BoundsList(UniquePerPhaseOptionList):
     def add(
-        self, bounds, **extra_arguments,
+        self,
+        bounds,
+        **extra_arguments,
     ):
         if isinstance(bounds, BoundsOption):
             self.copy(bounds)
@@ -281,7 +287,12 @@ class Bounds:
                 min_bound = np.array(self.min[slice_list.start : slice_list.stop : slice_list.step])
                 max_bound = np.array(self.max[slice_list.start : slice_list.stop : slice_list.step])
             bounds_sliced = Bounds(
-                min_bound=min_bound, max_bound=max_bound, interpolation=interpolation, slice_list=slice_list, t=t, **param
+                min_bound=min_bound,
+                max_bound=max_bound,
+                interpolation=interpolation,
+                slice_list=slice_list,
+                t=t,
+                **param,
             )
             # TODO: Verify if it is ok that slice_list arg sent is used only if it is a custom type (otherwise, slice_list is used before calling Bounds constructor
             return bounds_sliced
@@ -387,4 +398,7 @@ class InitialConditions:
         Concatenates initial guesses.
         :param other: Initial guesses to concatenate. (?)
         """
-        self.init = PathCondition(np.concatenate((self.init, other.init)), interpolation=self.init.type,)
+        self.init = PathCondition(
+            np.concatenate((self.init, other.init)),
+            interpolation=self.init.type,
+        )

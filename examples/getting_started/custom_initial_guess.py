@@ -65,7 +65,7 @@ def prepare_ocp(
         u = [tau_init] * ntau
     elif initial_guess == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
         x = np.array([[1.0, 0.0, 0.0, 0, 0, 0], [1.5, 0.0, 0.785, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T
-        u = np.array([[1.45, 9.81, 2.28], [0, 9.81, 0]   , [-1.45, 9.81, -2.28]]).T
+        u = np.array([[1.45, 9.81, 2.28], [0, 9.81, 0], [-1.45, 9.81, -2.28]]).T
     elif initial_guess == InterpolationType.LINEAR:
         x = np.array([[1.0, 0.0, 0.0, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T
         u = np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T

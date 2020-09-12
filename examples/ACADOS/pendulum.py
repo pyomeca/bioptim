@@ -30,7 +30,10 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100.0)
     objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=1.0)
     objective_functions.add(
-        Objective.Mayer.MINIMIZE_STATE, weight=50000.0, target=data_to_track.T, instant=Instant.END,
+        Objective.Mayer.MINIMIZE_STATE,
+        weight=50000.0,
+        target=data_to_track.T,
+        instant=Instant.END,
     )
 
     # Dynamics
@@ -50,7 +53,10 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [[torque_min] * n_tau, [torque_max] * n_tau,]
+        [
+            [torque_min] * n_tau,
+            [torque_max] * n_tau,
+        ]
     )
     u_bounds[0].min[n_tau - 1, :] = 0
     u_bounds[0].max[n_tau - 1, :] = 0

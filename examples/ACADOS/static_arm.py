@@ -72,7 +72,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
         u_bounds,
         objective_functions,
         use_SX=use_SX,
-        nb_threads=nb_threads
+        nb_threads=nb_threads,
     )
 
 
@@ -87,15 +87,25 @@ if __name__ == "__main__":
     sol_acados, sol_obj_acados = ocp_acados.solve(
         solver=Solver.ACADOS,
         show_online_optim=False,
-        solver_options={"nlp_solver_tol_comp": 1e-3, "nlp_solver_tol_eq": 1e-3, "nlp_solver_tol_stat": 1e-3, },
+        solver_options={
+            "nlp_solver_tol_comp": 1e-3,
+            "nlp_solver_tol_eq": 1e-3,
+            "nlp_solver_tol_stat": 1e-3,
+        },
         return_objectives=True,
     )
     toc_acados = time() - tic
 
     # --- Solve the program using IPOPT --- #
-    x_warm = sol_acados['qqdot'] if warm_start_ipopt_from_acados_solution else None
-    ocp_ipopt = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2,
-                            x_warm=x_warm, number_shooting_points=51, use_SX=False, nb_threads=6)
+    x_warm = sol_acados["qqdot"] if warm_start_ipopt_from_acados_solution else None
+    ocp_ipopt = prepare_ocp(
+        biorbd_model_path="arm26.bioMod",
+        final_time=2,
+        x_warm=x_warm,
+        number_shooting_points=51,
+        use_SX=False,
+        nb_threads=6,
+    )
 
     tic = time()
     sol_ipopt, sol_obj_ipopt = ocp_ipopt.solve(
@@ -123,7 +133,9 @@ if __name__ == "__main__":
     print(f"Time to solve: {sol_acados['time_tot']}sec")
     print(f"")
 
-    print(f"Results using Ipopt{'' if warm_start_ipopt_from_acados_solution else ' not'} warm started from ACADOS solution")
+    print(
+        f"Results using Ipopt{'' if warm_start_ipopt_from_acados_solution else ' not'} warm started from ACADOS solution"
+    )
     print(f"Final objective : {np.nansum(sol_obj_ipopt)}")
     analyse_ipopt = Objective.Printer(ocp_ipopt, sol_obj_ipopt)
     analyse_ipopt.by_function()

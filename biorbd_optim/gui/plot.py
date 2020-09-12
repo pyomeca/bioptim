@@ -17,7 +17,15 @@ from ..misc.utils import check_version
 
 class CustomPlot:
     def __init__(
-        self, update_function, plot_type=PlotType.PLOT, axes_idx=None, legend=(), combine_to=None, color=None, ylim=None, bounds=None,
+        self,
+        update_function,
+        plot_type=PlotType.PLOT,
+        axes_idx=None,
+        legend=(),
+        combine_to=None,
+        color=None,
+        ylim=None,
+        bounds=None,
     ):
         """
         Initializes the plot.
@@ -199,7 +207,11 @@ class PlotOcp:
                     if plot_type == PlotType.PLOT:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:green"
                         self.plots.append(
-                            [plot_type, i, ax.plot(t, zero, color=color, zorder=0, **self.plot_options["non_integrated_plots"])[0]]
+                            [
+                                plot_type,
+                                i,
+                                ax.plot(t, zero, color=color, zorder=0, **self.plot_options["non_integrated_plots"])[0],
+                            ]
                         )
                     elif plot_type == PlotType.INTEGRATED:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
@@ -246,10 +258,10 @@ class PlotOcp:
                             bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
 
                         self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_min, where='post', **self.plot_options["bounds"]), i]
+                            [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
                         )
                         self.plots_bounds.append(
-                            [ax.step(self.t[i], bounds_max, where='post', **self.plot_options["bounds"]), i]
+                            [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
                         )
 
     def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
@@ -431,7 +443,13 @@ class PlotOcp:
                                 y_max = max(y_max, np.max(p.get_ydata()))
                         y_range, data_range = self.__compute_ylim(y_min, y_max, 1.25)
                         ax.set_ylim(y_range)
-                        ax.set_yticks(np.arange(y_range[0], y_range[1], step=data_range / 4,))
+                        ax.set_yticks(
+                            np.arange(
+                                y_range[0],
+                                y_range[1],
+                                step=data_range / 4,
+                            )
+                        )
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
@@ -467,7 +485,11 @@ class ShowResult:
         self.sol = sol
 
     def graphs(self, automatically_organize=True, adapt_graph_size_to_bounds=False, show_now=True):
-        plot_ocp = PlotOcp(self.ocp, automatically_organize=automatically_organize, adapt_graph_size_to_bounds=adapt_graph_size_to_bounds)
+        plot_ocp = PlotOcp(
+            self.ocp,
+            automatically_organize=automatically_organize,
+            adapt_graph_size_to_bounds=adapt_graph_size_to_bounds,
+        )
         plot_ocp.update_data(self.sol["x"])
         if show_now:
             plt.show()
