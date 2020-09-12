@@ -232,6 +232,7 @@ class Data:
             if integrate:
                 raise RuntimeError("interpolate values are not compatible yet with integrated values")
             data_states = Data._get_data_interpolated_from_V(data_states, interpolate_nb_frames)
+            data_controls = Data._get_data_interpolated_from_V(data_controls, interpolate_nb_frames)
 
         return data_states, data_controls, data_parameters
 

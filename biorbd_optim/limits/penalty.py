@@ -47,6 +47,10 @@ class PenaltyFunctionAbstract:
                 val = v[states_idx]
                 if target is not None:
                     target_tp = target[states_idx, t[i]]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp))
+                    target_tp[index_of_nan] = 0
+                    val[index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -87,6 +91,10 @@ class PenaltyFunctionAbstract:
                 if target is not None:
                     target_tp = target[:, markers_idx, t[i]]
                     target_tp = target_tp[axis_to_track, :]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp[0, :]))
+                    target_tp[:, index_of_nan] = 0
+                    val[:, index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -99,30 +107,33 @@ class PenaltyFunctionAbstract:
             :coordinates_system_idx: Index of the segment in which to project to displacement
             :param markers_idx: Index of the markers to minimize. (list of integers)
             """
-            n_q = nlp["nbQ"]
+
+            nq = nlp["q_mapping"].reduce.len
             nb_rts = nlp["model"].nbSegment()
+
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 markers_idx, nlp["model"].nbMarkers(), "markers_idx"
             )
-            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "markers", nlp["model"].markers, nlp["q"])
 
-            def biorbd_meta_func(q, coordinates_system_idx):
-                return nlp["model"].globalJCS(q, coordinates_system_idx)
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q"])
+            if coordinates_system_idx >= 0 and coordinates_system_idx < nb_rts:
+                PenaltyFunctionAbstract._add_to_casadi_func(
+                    nlp, f"globalJCS_{coordinates_system_idx}", nlp["model"].globalJCS, nlp["q"], coordinates_system_idx
+                )
 
             for i in range(len(x) - 1):
+                q_0 = nlp["q_mapping"].expand.map(x[i][:nq])
+                q_1 = nlp["q_mapping"].expand.map(x[i + 1][:nq])
+
                 if coordinates_system_idx < 0:
                     jcs_0_T = nlp["CX"].eye(4)
                     jcs_1_T = nlp["CX"].eye(4)
 
                 elif coordinates_system_idx < nb_rts:
-                    idx = coordinates_system_idx
-                    PenaltyFunctionAbstract._add_to_casadi_func(
-                        nlp, f"globalJCS_{idx}", biorbd_meta_func, nlp["q"], idx,
-                    )
-                    jcs_0 = nlp["casadi_func"][f"globalJCS_{idx}"](x[i][:n_q])
+                    jcs_0 = nlp["casadi_func"][f"globalJCS_{coordinates_system_idx}"](q_0)
                     jcs_0_T = vertcat(horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), horzcat(0, 0, 0, 1))
 
-                    jcs_1 = nlp["casadi_func"][f"globalJCS_{idx}"](x[i + 1][:n_q])
+                    jcs_1 = nlp["casadi_func"][f"globalJCS_{coordinates_system_idx}"](q_1)
                     jcs_1_T = vertcat(horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), horzcat(0, 0, 0, 1))
 
                 else:
@@ -132,8 +143,8 @@ class PenaltyFunctionAbstract:
                     )
 
                 val = jcs_1_T @ vertcat(
-                    nlp["casadi_func"]["markers"](x[i + 1][:n_q])[:, markers_idx], 1
-                ) - jcs_0_T @ vertcat(nlp["casadi_func"]["markers"](x[i][:n_q])[:, markers_idx], 1)
+                    nlp["casadi_func"]["biorbd_markers"](q_1)[:, markers_idx], 1
+                ) - jcs_0_T @ vertcat(nlp["casadi_func"]["biorbd_markers"](q_0)[:, markers_idx], 1)
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val[:3], penalty, **extra_param)
 
         @staticmethod
@@ -166,6 +177,10 @@ class PenaltyFunctionAbstract:
                     val = nlp["casadi_func"]["biorbd_markerVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
                     if target is not None:
                         target_tp = target[:, markers_idx, t[i]]
+
+                        index_of_nan, *_ = np.where(np.isnan(target_tp[0, :]))
+                        target_tp[:, index_of_nan] = 0
+                        val[:, index_of_nan] = 0
                     penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -244,6 +259,10 @@ class PenaltyFunctionAbstract:
                 val = v[controls_idx]
                 if target is not None:
                     target_tp = target[controls_idx, t[i]]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp))
+                    target_tp[index_of_nan] = 0
+                    val[index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -289,6 +308,10 @@ class PenaltyFunctionAbstract:
                 val = v[muscles_idx_plus_tau]
                 if target is not None:
                     target_tp = target[muscles_idx, t[i]]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp))
+                    target_tp[index_of_nan] = 0
+                    val[index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -313,6 +336,10 @@ class PenaltyFunctionAbstract:
                 val = v[controls_idx]
                 if target is not None:
                     target_tp = target[t[i], controls_idx]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp))
+                    target_tp[index_of_nan] = 0
+                    val[index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -361,6 +388,10 @@ class PenaltyFunctionAbstract:
                 val = force[contacts_idx]
                 if target is not None:
                     target_tp = target[contacts_idx, t[i]]
+
+                    index_of_nan, *_ = np.where(np.isnan(target_tp))
+                    target_tp[index_of_nan] = 0
+                    val[index_of_nan] = 0
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -436,7 +467,7 @@ class PenaltyFunctionAbstract:
             (float)
             """
             val = penalty.custom_function(ocp, nlp, t, x, u, p, **parameters)
-            penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
+            penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **parameters)
 
     @staticmethod
     def add(ocp, nlp):

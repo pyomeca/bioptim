@@ -35,7 +35,7 @@ class Mapping:
         """
         mapped_obj = obj[self.map_idx, :]
         mapped_obj[[idx for idx, val in enumerate(self.map_idx) if val < 0], :] = 0
-
         if self.sign_to_oppose != ():
             mapped_obj[self.sign_to_oppose, :] *= -1
+
         return mapped_obj

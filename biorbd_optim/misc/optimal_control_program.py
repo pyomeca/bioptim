@@ -281,17 +281,15 @@ class OptimalControlProgram:
         # Declare the time to optimize
         self.__define_variable_time(initial_time_guess, time_min, time_max)
 
-        # Prepare the dynamics of the program
+        # Prepare path constraints and dynamics of the program
+        self.__add_to_nlp("X_bounds", X_bounds, False)
+        self.__add_to_nlp("U_bounds", U_bounds, False)
         self.__add_to_nlp("dynamics_type", dynamics_type, False)
         self.__add_to_nlp("ode_solver", ode_solver, True)
         self.__add_to_nlp("control_type", control_type, True)
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
             Problem.initialize(self, self.nlp[i])
-
-        # Prepare path constraints
-        self.__add_to_nlp("X_bounds", X_bounds, False)
-        self.__add_to_nlp("U_bounds", U_bounds, False)
         for i in range(self.nb_phases):
             self.nlp[i]["X_bounds"].check_and_adjust_dimensions(self.nlp[i]["nx"], self.nlp[i]["ns"])
             if self.nlp[i]["control_type"] == ControlType.CONSTANT:
@@ -344,7 +342,7 @@ class OptimalControlProgram:
         nlp["nbQ"] = 0
         nlp["nbQdot"] = 0
         nlp["nbTau"] = 0
-        nlp["nbMuscles"] = 0
+        nlp["nbMuscle"] = 0
         nlp["plot"] = {}
         nlp["var_states"] = {}
         nlp["var_controls"] = {}
@@ -666,7 +664,12 @@ class OptimalControlProgram:
         nlp["plot"][plot_name] = custom_plot
 
     def solve(
-        self, solver=Solver.IPOPT, show_online_optim=False, return_iterations=False, solver_options={},
+        self,
+        solver=Solver.IPOPT,
+        show_online_optim=False,
+        return_iterations=False,
+        return_objectives=False,
+        solver_options={},
     ):
         """
         Gives to CasADi states, controls, constraints, sum of all objective functions and theirs bounds.
@@ -705,7 +708,10 @@ class OptimalControlProgram:
         if return_iterations:
             self.solver.finish_get_iterations()
 
-        return self.solver.get_optimized_value(self)
+        if return_objectives:
+            self.solver.get_objective()
+
+        return self.solver.get_optimized_value()
 
     def save(self, sol, file_path, sol_iterations=None):
         """
@@ -719,11 +725,11 @@ class OptimalControlProgram:
             file_path = file_path + ".bo"
         elif ext != ".bo":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
-        dict = {"ocp_initilializer": self.original_values, "sol": sol, "versions": self.version}
-        if sol_iterations != None:
-            dict["sol_iterations"] = sol_iterations
+        dico = {"ocp_initializer": self.original_values, "sol": sol, "versions": self.version}
+        if sol_iterations is not None:
+            dico["sol_iterations"] = sol_iterations
 
-        OptimalControlProgram._save_with_pickle(dict, file_path)
+        OptimalControlProgram._save_with_pickle(dico, file_path)
 
     def save_get_data(self, sol, file_path, sol_iterations=None, **parameters):
         _, ext = os.path.splitext(file_path)
@@ -731,23 +737,24 @@ class OptimalControlProgram:
             file_path = file_path + ".bob"
         elif ext != ".bob":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
-        dict = {"data": Data.get_data(self, sol["x"], **parameters)}
-        if sol_iterations != None:
-            get_data_sol_iterations = []
-            for iter in sol_iterations:
-                get_data_sol_iterations.append(Data.get_data(self, iter, **parameters))
-            dict["sol_iterations"] = get_data_sol_iterations
 
-        OptimalControlProgram._save_with_pickle(dict, file_path)
+        dico = {"data": Data.get_data(self, sol["x"], **parameters)}
+        if sol_iterations is not None:
+            get_data_sol_iterations = []
+            for sol_iter in sol_iterations:
+                get_data_sol_iterations.append(Data.get_data(self, sol_iter, **parameters))
+            dico["sol_iterations"] = get_data_sol_iterations
+
+        OptimalControlProgram._save_with_pickle(dico, file_path)
 
     @staticmethod
-    def _save_with_pickle(dict, file_path):
-        dir, _ = os.path.split(file_path)
-        if dir != "" and not os.path.isdir(dir):
-            os.makedirs(dir)
+    def _save_with_pickle(dico, file_path):
+        directory, _ = os.path.split(file_path)
+        if directory != "" and not os.path.isdir(directory):
+            os.makedirs(directory)
 
         with open(file_path, "wb") as file:
-            pickle.dump(dict, file)
+            pickle.dump(dico, file)
 
     @staticmethod
     def load(file_path):
@@ -759,7 +766,7 @@ class OptimalControlProgram:
         """
         with open(file_path, "rb") as file:
             data = pickle.load(file)
-            ocp = OptimalControlProgram(**data["ocp_initilializer"])
+            ocp = OptimalControlProgram(**data["ocp_initializer"])
             for key in data["versions"].keys():
                 if data["versions"][key] != ocp.version[key]:
                     raise RuntimeError(
@@ -775,7 +782,7 @@ class OptimalControlProgram:
     def read_information(file_path):
         with open(file_path, "rb") as file:
             data = pickle.load(file)
-            original_values = data["ocp_initilializer"]
+            original_values = data["ocp_initializer"]
             print("****************************** Informations ******************************")
             for key in original_values.keys():
                 if key not in ["X_init", "U_init", "X_bounds", "U_bounds"]:

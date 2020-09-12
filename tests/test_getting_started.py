@@ -145,7 +145,7 @@ def test_initial_guesses(interpolation):
     np.testing.assert_almost_equal(tau[:, -1], np.array([-5.0, 9.81, -7.85]))
 
     # save and load
-    if interpolation in [InterpolationType.SPLINE, InterpolationType.CUSTOM]:
+    if interpolation in [InterpolationType.CUSTOM]:
         with pytest.raises(AttributeError):
             TestUtils.save_and_load(sol, ocp, True)
     else:
@@ -364,7 +364,8 @@ def test_custom_problem_type_and_dynamics(problem_type_custom):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "custom_problem_type_and_dynamics", str(PROJECT_FOLDER) + "/examples/getting_started/custom_dynamics.py",
+        "custom_problem_type_and_dynamics",
+        str(PROJECT_FOLDER) + "/examples/getting_started/custom_dynamics.py",
     )
     pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum)

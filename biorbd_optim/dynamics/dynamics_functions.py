@@ -61,7 +61,7 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forces_from_forward_dynamics_with_contact(states, controls, parameters, nlp):
+    def forces_from_forward_dynamics_with_contact_for_torque_driven_problem(states, controls, parameters, nlp):
         """
         Returns contact forces computed from forward dynamics with contact force
         (forward_dynamics_torque_driven_with_contact)
@@ -72,6 +72,28 @@ class DynamicsFunctions:
         """
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
+
+        cs = nlp["model"].getConstraints()
+        biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau, cs)
+
+        return cs.getForce().to_mx()
+
+    @staticmethod
+    def forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem(
+        states, controls, parameters, nlp
+    ):
+        """
+        Returns contact forces computed from forward dynamics with contact force
+        (forward_dynamics_torque_driven_with_contact)
+        :param states: States. (MX.sym from CasADi)
+        :param controls: Controls. (MX.sym from CasADi)
+        :param nlp: An OptimalControlProgram class.
+        :return: Contact forces. (MX.sym from CasADi)
+        """
+        DynamicsFunctions.apply_parameters(parameters, nlp)
+        q, qdot, torque_act = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
+
+        tau = nlp["model"].torque(torque_act, q, qdot).to_mx()
 
         cs = nlp["model"].getConstraints()
         biorbd.Model.ForwardDynamicsConstraintsDirect(nlp["model"], q, qdot, tau, cs)

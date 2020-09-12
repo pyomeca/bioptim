@@ -1,6 +1,8 @@
 from enum import Enum
 
+import numpy as np
 import casadi
+from casadi import dot, sum1
 
 from .penalty import PenaltyType, PenaltyFunctionAbstract
 from ..misc.enums import Instant
@@ -354,3 +356,86 @@ class Objective:
 
     class Parameter(Enum):
         CUSTOM = (PenaltyType.CUSTOM,)
+
+    class Printer:
+        def __init__(self, ocp, sol_obj):
+            self.ocp = ocp
+            self.sol_obj = sol_obj
+
+        def by_function(self):
+            for idx_phase, phase in enumerate(self.sol_obj):
+                print(f"********** Phase {idx_phase} **********")
+                for idx_obj in range(phase.shape[0]):
+                    print(
+                        f"{self.ocp.original_values['objective_functions'][idx_phase][idx_phase + idx_obj].type.name} : {np.nansum(phase[idx_obj])}"
+                    )
+
+        def by_nodes(self):
+            for idx_phase, phase in enumerate(self.sol_obj):
+                print(f"********** Phase {idx_phase} **********")
+                for idx_node in range(phase.shape[1]):
+                    print(f"Node {idx_node} : {np.nansum(phase[:, idx_node])}")
+
+        def mean(self):
+            m = 0
+            for idx_phase, phase in enumerate(self.sol_obj):
+                m += np.nansum(phase)
+            return m / len(self.sol_obj)
+
+
+def get_objective_values(ocp, sol):
+    def __get_instant(instants, nlp):
+        nodes = []
+        for node in instants:
+            if isinstance(node, int):
+                if node < 0 or node > nlp["ns"]:
+                    raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp['ns']}")
+                nodes.append(node)
+
+            elif node == Instant.START:
+                nodes.append(0)
+
+            elif node == Instant.MID:
+                if nlp["ns"] % 2 == 1:
+                    raise (ValueError("Number of shooting points must be even to use MID"))
+                nodes.append(nlp["ns"] // 2)
+
+            elif node == Instant.INTERMEDIATES:
+                for i in range(1, nlp["ns"] - 1):
+                    nodes.append(i)
+
+            elif node == Instant.END:
+                nodes.append(nlp["ns"] - 1)
+
+            elif node == Instant.ALL:
+                for i in range(nlp["ns"]):
+                    nodes.append(i)
+        return nodes
+
+    sol = sol["x"]
+    out = []
+    for idx_phase, nlp in enumerate(ocp.nlp):
+        nJ = len(nlp["J"]) - idx_phase
+        out.append(np.ndarray((nJ, nlp["ns"])))
+        out[-1][:][:] = np.nan
+        for idx_obj_func in range(nJ):
+            nodes = __get_instant(nlp["J"][idx_phase + idx_obj_func][0]["objective"].instant, nlp)
+            nodes = nodes[: len(nlp["J"][idx_phase + idx_obj_func])]
+            for node, idx_node in enumerate(nodes):
+                obj = casadi.Function("obj", [ocp.V], [get_objective_value(nlp["J"][idx_phase + idx_obj_func][node])])
+                out[-1][idx_obj_func][idx_node] = obj(sol)
+    return out
+
+
+def get_objective_value(j_dict):
+    val = j_dict["val"]
+    if j_dict["target"] is not None:
+        val -= j_dict["target"]
+
+    if j_dict["objective"].quadratic:
+        val = dot(val, val)
+    else:
+        val = sum1(val)
+
+    val *= j_dict["objective"].weight * j_dict["dt"]
+    return val
