@@ -82,8 +82,9 @@ if __name__ == "__main__":
     Simulate.from_data(ocp, Data.get_data(ocp, sol), single_shoot=False)
 
     # --- Access to all iterations  --- #
-    nb_iter = len(sol_iterations)
-    third_iteration = sol_iterations[2]
+    if sol_iterations:  # If the processor is too fast, this will be empty since it is attached to the update function
+        nb_iter = len(sol_iterations)
+        third_iteration = sol_iterations[2]
 
     # --- Print objective cost  --- #
     print(f"Final objective value : {np.nansum(sol_obj)} \n")
