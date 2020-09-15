@@ -196,6 +196,14 @@ class BoundsOption(OptionGeneric):
         self.bounds = bounds
         self.min = self.bounds.min
         self.max = self.bounds.max
+        self.min_and_max = np.append(self.min, self.max, axis=1)
+
+    def __getitem__(self, key):
+        return self.min_and_max[key]
+
+    def __setitem__(self, key, value):
+        self.min_and_max[key] = value
+
 
 
 class BoundsList(UniquePerPhaseOptionList):
