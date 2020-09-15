@@ -198,7 +198,7 @@ class BoundsOption(OptionGeneric):
         self.max = self.bounds.max
 
     def __getitem__(self, slice):
-        return (self.min[slice], self.max[slice])
+        return self.min[slice], self.max[slice]
 
     def __setitem__(self, slice, value):
         self.min[slice] = value

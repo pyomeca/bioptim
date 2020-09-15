@@ -37,5 +37,10 @@ def test_accessors_on_bounds_option_multidimensional():
     np.testing.assert_almost_equal(x_bounds[:], (x_bounds.min[:], x_bounds.max[:]))
 
     # Check min and max have the right value
-    np.testing.assert_almost_equal(x_bounds.min[:], np.array([[0, 0, 0], [0, -10, -10], [0, -10, -10], [-100, -10, -10], [-100, -10, -10], [-100, -100, -100]]))
-    np.testing.assert_almost_equal(x_bounds.max[:], np.array([[0, 0, 0], [0, 10, 10], [0, 10, 10], [100, 10, 10], [100, 10, 10], [100, 100, 100]]))
+    np.testing.assert_almost_equal(
+        x_bounds.min[:],
+        np.array([[0, 0, 0], [0, -10, -10], [0, -10, -10], [-100, -10, -10], [-100, -10, -10], [-100, -100, -100]]),
+    )
+    np.testing.assert_almost_equal(
+        x_bounds.max[:], np.array([[0, 0, 0], [0, 10, 10], [0, 10, 10], [100, 10, 10], [100, 10, 10], [100, 100, 100]])
+    )
