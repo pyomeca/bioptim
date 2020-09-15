@@ -541,9 +541,9 @@ class OnlineCallback(Callback):
         self.ng = 0
         self.construct("AnimateCallback", opts)
 
-        self.plot_pipe, plotter_pipe = mp.Pipe()
+        self.queue = mp.Queue()
         self.plotter = self.ProcessPlotter(ocp)
-        self.plot_process = mp.Process(target=self.plotter, args=(plotter_pipe,), daemon=True)
+        self.plot_process = mp.Process(target=self.plotter, args=(self.queue,), daemon=True)
         self.plot_process.start()
 
     @staticmethod
@@ -574,7 +574,7 @@ class OnlineCallback(Callback):
             return Sparsity(0, 0)
 
     def eval(self, arg):
-        send = self.plot_pipe.send
+        send = self.queue.put
         send(arg[0])
         return [0]
 
@@ -592,8 +592,8 @@ class OnlineCallback(Callback):
             plt.show()
 
         def callback(self):
-            while self.pipe.poll():
-                V = self.pipe.recv()
+            while not self.pipe.empty():
+                V = self.pipe.get()
                 self.plot.update_data(V)
                 Iterations.save(V)
             for i, fig in enumerate(self.plot.all_figures):
