@@ -197,13 +197,12 @@ class BoundsOption(OptionGeneric):
         self.min = self.bounds.min
         self.max = self.bounds.max
 
-    def __getitem__(self, key):
-        return (self.min[key], self.max[key])
+    def __getitem__(self, slice):
+        return (self.min[slice], self.max[slice])
 
-    def __setitem__(self, key, value):
-        self.min[key] = value
-        self.max[key] = value
-
+    def __setitem__(self, slice, value):
+        self.min[slice] = value
+        self.max[slice] = value
 
 
 class BoundsList(UniquePerPhaseOptionList):
