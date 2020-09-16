@@ -124,7 +124,7 @@ if __name__ == "__main__":
     label_markers = []
     title_markers = ["x", "y", "z"]
     for mark in range(biorbd_model.nbMarkers()):
-        label_markers.append(ocp.nlp[0]["model"].markerNames()[mark].to_string())
+        label_markers.append(ocp.nlp[0].model.markerNames()[mark].to_string())
 
     ocp.add_plot(
         "Markers plot coordinates",

@@ -214,9 +214,9 @@ if __name__ == "__main__":
         tau = controls_sol["tau"]
     excitations = controls_sol["muscles"]
 
-    n_q = ocp.nlp[0]["model"].nbQ()
-    n_qdot = ocp.nlp[0]["model"].nbQdot()
-    n_mark = ocp.nlp[0]["model"].nbMarkers()
+    n_q = ocp.nlp[0].model.nbQ()
+    n_qdot = ocp.nlp[0].model.nbQdot()
+    n_mark = ocp.nlp[0].model.nbMarkers()
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))

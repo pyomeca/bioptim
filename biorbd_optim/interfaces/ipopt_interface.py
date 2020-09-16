@@ -76,10 +76,10 @@ class IpoptInterface(SolverInterface):
                 all_g = vertcat(all_g, self.ocp.g[i][j])
                 all_g_bounds.concatenate(self.ocp.g_bounds[i][j])
         for nlp in self.ocp.nlp:
-            for i in range(len(nlp["g"])):
-                for j in range(len(nlp["g"][i])):
-                    all_g = vertcat(all_g, nlp["g"][i][j])
-                    all_g_bounds.concatenate(nlp["g_bounds"][i][j])
+            for i in range(len(nlp.g)):
+                for j in range(len(nlp.g[i])):
+                    all_g = vertcat(all_g, nlp.g[i][j])
+                    all_g_bounds.concatenate(nlp.g_bounds[i][j])
 
         self.ipopt_nlp = {"x": self.ocp.V, "f": sum1(all_J), "g": all_g}
 
@@ -97,7 +97,7 @@ class IpoptInterface(SolverInterface):
             for obj in j_nodes:
                 all_J = vertcat(all_J, get_objective_value(obj))
         for nlp in self.ocp.nlp:
-            for obj_nodes in nlp["J"]:
+            for obj_nodes in nlp.J:
                 for obj in obj_nodes:
                     all_J = vertcat(all_J, get_objective_value(obj))
 

@@ -59,8 +59,8 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
         "parameters_to_optimize": {},
     }
     if use_residual_torque:
-        nlp["nbTau"] = nb_tau
-        nlp["tau_mapping"] = BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau)))
+        nlp.nbTau = nb_tau
+        nlp.tau_mapping = BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau)))
         dyn_func = DynamicsFunctions.forward_dynamics_torque_muscle_driven
     else:
         dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_driven
@@ -219,8 +219,8 @@ if __name__ == "__main__":
     if use_residual_torque:
         tau = controls["tau"]
 
-    n_q = ocp.nlp[0]["model"].nbQ()
-    n_mark = ocp.nlp[0]["model"].nbMarkers()
+    n_q = ocp.nlp[0].model.nbQ()
+    n_mark = ocp.nlp[0].model.nbMarkers()
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))

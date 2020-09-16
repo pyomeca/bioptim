@@ -38,12 +38,12 @@ class StateTransitionFunctions:
             """
             TODO
             """
-            if ocp.nlp[transition.phase_pre_idx]["nx"] != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.nb_phases]["nx"]:
+            if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.nb_phases].nx:
                 raise RuntimeError(
                     "Continuous state transitions without same nx is not possible, please provide a custom state transition"
                 )
             nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
-            return nlp_pre["X"][-1] - nlp_post["X"][0]
+            return nlp_pre.X[-1] - nlp_post.X[0]
 
         @staticmethod
         def cyclic(ocp, transition):
@@ -57,38 +57,38 @@ class StateTransitionFunctions:
             """
             TODO
             """
-            if ocp.nlp[transition.phase_pre_idx]["nx"] != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.nb_phases]["nx"]:
+            if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.nb_phases].nx:
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom state transition"
                 )
 
             # Aliases
             nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
-            nbQ = nlp_pre["nbQ"]
-            nbQdot = nlp_pre["nbQdot"]
-            q = nlp_pre["q_mapping"].expand.map(nlp_pre["X"][-1][:nbQ])
-            qdot_pre = nlp_pre["q_dot_mapping"].expand.map(nlp_pre["X"][-1][nbQ : nbQ + nbQdot])
+            nbQ = nlp_pre.nbQ
+            nbQdot = nlp_pre.nbQdot
+            q = nlp_pre.q_mapping.expand.map(nlp_pre.X[-1][:nbQ])
+            qdot_pre = nlp_pre.q_dot_mapping.expand.map(nlp_pre.X[-1][nbQ : nbQ + nbQdot])
 
-            if nlp_post["model"].nbContacts() == 0:
+            if nlp_post.model.nbContacts() == 0:
                 warn("The chosen model does not have any contact")
             # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
             # a better way (e.g. create a supplementary variable in V that link the pre and post phase with a
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
-            model = biorbd.Model(nlp_post["model"].path().absolutePath().to_string())
+            model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
             func = biorbd.to_casadi_func(
-                "impulse_direct", model.ComputeConstraintImpulsesDirect, nlp_pre["q"], nlp_pre["qdot"]
+                "impulse_direct", model.ComputeConstraintImpulsesDirect, nlp_pre.q, nlp_pre.qdot
             )
             qdot_post = func(q, qdot_pre)
-            qdot_post = nlp_post["q_dot_mapping"].reduce.map(qdot_post)
+            qdot_post = nlp_post.q_dot_mapping.reduce.map(qdot_post)
 
-            val = nlp_pre["X"][-1][:nbQ] - nlp_post["X"][0][:nbQ]
-            val = vertcat(val, qdot_post - nlp_post["X"][0][nbQ : nbQ + nbQdot])
+            val = nlp_pre.X[-1][:nbQ] - nlp_post.X[0][:nbQ]
+            val = vertcat(val, qdot_post - nlp_post.X[0][nbQ : nbQ + nbQdot])
             return val
 
         @staticmethod
         def custom(ocp, transition):
             nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
-            return transition.custom_function(nlp_pre["X"][-1], nlp_post["X"][0], **transition.params)
+            return transition.custom_function(nlp_pre.X[-1], nlp_post.X[0], **transition.params)
 
         @staticmethod
         def __get_nlp_pre_and_post(ocp, phase_pre_idx):

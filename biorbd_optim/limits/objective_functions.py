@@ -80,7 +80,7 @@ class ObjectiveFunction:
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared. (bool)
             """
-            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=nlp["dt"], target=target)
+            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=nlp.dt, target=target)
 
         @staticmethod
         def clear_penalty(ocp, nlp, penalty):
@@ -117,7 +117,7 @@ class ObjectiveFunction:
             @staticmethod
             def minimize_time(penalty, ocp, nlp, t, x, u, p, **extra_param):
                 """Minimizes the duration of the movement (Mayer)."""
-                val = nlp["tf"]
+                val = nlp.tf
                 ObjectiveFunction.MayerFunction.add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
@@ -146,11 +146,11 @@ class ObjectiveFunction:
             # if nlp:
             #     if quadratic:
             #         # TODO : This seems simply wrong
-            #         J_acados_mayer = casadi.dot(nlp["X"][0], nlp["X"][0]) * weight
+            #         J_acados_mayer = casadi.dot(nlp.X[0], nlp.X[0]) * weight
             #     else:
             #         # TODO : So this is
-            #         J_acados_mayer = casadi.sum1(nlp["X"][0]) * weight
-            #     nlp["J_acados_mayer"].append(J_acados_mayer)  # TODO: Find a better name (J_mayer_from_node_0?)
+            #         J_acados_mayer = casadi.sum1(nlp.X[0]) * weight
+            #     nlp.J_acados_mayer.append(J_acados_mayer)  # TODO: Find a better name (J_mayer_from_node_0?)
             # else:
             #     pass
 
@@ -236,17 +236,15 @@ class ObjectiveFunction:
     @staticmethod
     def cyclic(ocp, weight=1):
 
-        if ocp.nlp[0]["nx"] != ocp.nlp[-1]["nx"]:
+        if ocp.nlp[0].nx != ocp.nlp[-1].nx:
             raise RuntimeError("Cyclic constraint without same nx is not supported yet")
 
-        ocp.J += (
-            casadi.dot(ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0], ocp.nlp[-1]["X"][-1] - ocp.nlp[0]["X"][0]) * weight
-        )
+        ocp.J += casadi.dot(ocp.nlp[-1].X[-1] - ocp.nlp[0].X[0], ocp.nlp[-1].X[-1] - ocp.nlp[0].X[0]) * weight
 
     @staticmethod
     def add_to_penalty(ocp, nlp, val, penalty, dt=0, target=None):
         """
-        Adds objective J to objective array nlp["J"][penalty] or ocp.J[penalty] at index penalty.
+        Adds objective J to objective array nlp.J[penalty] or ocp.J[penalty] at index penalty.
         :param J: Objective. (dict of [val, target, weight, is_quadratic])
         :param penalty: Index of the objective. (integer)
         """
@@ -255,7 +253,7 @@ class ObjectiveFunction:
         J = {"objective": penalty, "val": val, "target": target, "dt": dt}
 
         if nlp:
-            nlp["J"][penalty.idx].append(J)
+            nlp.J[penalty.idx].append(J)
         else:
             ocp.J[penalty.idx].append(J)
 
@@ -266,7 +264,7 @@ class ObjectiveFunction:
         Negative penalty index leads to enlargement of the array by one empty space.
         """
         if nlp:
-            J_to_add_to = nlp["J"]
+            J_to_add_to = nlp.J
         else:
             J_to_add_to = ocp.J
 
@@ -388,41 +386,41 @@ def get_objective_values(ocp, sol):
         nodes = []
         for node in instants:
             if isinstance(node, int):
-                if node < 0 or node > nlp["ns"]:
-                    raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp['ns']}")
+                if node < 0 or node > nlp.ns:
+                    raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp.ns}")
                 nodes.append(node)
 
             elif node == Instant.START:
                 nodes.append(0)
 
             elif node == Instant.MID:
-                if nlp["ns"] % 2 == 1:
+                if nlp.ns % 2 == 1:
                     raise (ValueError("Number of shooting points must be even to use MID"))
-                nodes.append(nlp["ns"] // 2)
+                nodes.append(nlp.ns // 2)
 
             elif node == Instant.INTERMEDIATES:
-                for i in range(1, nlp["ns"] - 1):
+                for i in range(1, nlp.ns - 1):
                     nodes.append(i)
 
             elif node == Instant.END:
-                nodes.append(nlp["ns"] - 1)
+                nodes.append(nlp.ns - 1)
 
             elif node == Instant.ALL:
-                for i in range(nlp["ns"]):
+                for i in range(nlp.ns):
                     nodes.append(i)
         return nodes
 
     sol = sol["x"]
     out = []
     for idx_phase, nlp in enumerate(ocp.nlp):
-        nJ = len(nlp["J"]) - idx_phase
-        out.append(np.ndarray((nJ, nlp["ns"])))
+        nJ = len(nlp.J) - idx_phase
+        out.append(np.ndarray((nJ, nlp.ns)))
         out[-1][:][:] = np.nan
         for idx_obj_func in range(nJ):
-            nodes = __get_instant(nlp["J"][idx_phase + idx_obj_func][0]["objective"].instant, nlp)
-            nodes = nodes[: len(nlp["J"][idx_phase + idx_obj_func])]
+            nodes = __get_instant(nlp.J[idx_phase + idx_obj_func][0]["objective"].instant, nlp)
+            nodes = nodes[: len(nlp.J[idx_phase + idx_obj_func])]
             for node, idx_node in enumerate(nodes):
-                obj = casadi.Function("obj", [ocp.V], [get_objective_value(nlp["J"][idx_phase + idx_obj_func][node])])
+                obj = casadi.Function("obj", [ocp.V], [get_objective_value(nlp.J[idx_phase + idx_obj_func][node])])
                 out[-1][idx_obj_func][idx_node] = obj(sol)
     return out
 

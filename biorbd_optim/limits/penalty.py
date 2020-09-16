@@ -21,26 +21,26 @@ class PenaltyFunctionAbstract:
             :param target: Reference states for tracking. (list of lists of float)
             :param states_idx: Index of the states to minimize. (list of integers)
             """
-            states_idx = PenaltyFunctionAbstract._check_and_fill_index(states_idx, nlp["nx"], "state_idx")
+            states_idx = PenaltyFunctionAbstract._check_and_fill_index(states_idx, nlp.nx, "state_idx")
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [max(states_idx) + 1, nlp["ns"] + 1]
+                    target, [max(states_idx) + 1, nlp.ns + 1]
                 )
 
                 # Prepare the plot
-                if len(t) == 1 and t[0] == nlp["ns"]:
+                if len(t) == 1 and t[0] == nlp.ns:
                     # This is a tweak so the step plot won't start after the graph
-                    t[0] = nlp["ns"] - 1
-                target[:, np.setxor1d(range(nlp["ns"] + 1), t)] = np.nan
+                    t[0] = nlp.ns - 1
+                target[:, np.setxor1d(range(nlp.ns + 1), t)] = np.nan
 
                 running_idx = 0
-                for s in nlp["var_states"]:
-                    idx = [idx for idx in states_idx if idx >= running_idx and idx < running_idx + nlp["var_states"][s]]
-                    mapping = Mapping([idx for idx in states_idx if idx < nlp["var_states"][s]])
+                for s in nlp.var_states:
+                    idx = [idx for idx in states_idx if idx >= running_idx and idx < running_idx + nlp.var_states[s]]
+                    mapping = Mapping([idx for idx in states_idx if idx < nlp.var_states[s]])
                     PenaltyFunctionAbstract._add_track_data_to_plot(
                         ocp, nlp, target[idx, :], combine_to=s, axes_idx=mapping
                     )
-                    running_idx += nlp["var_states"][s]
+                    running_idx += nlp.var_states[s]
 
             target_tp = None
             for i, v in enumerate(x):
@@ -76,18 +76,18 @@ class PenaltyFunctionAbstract:
             :axis_to_track: Index of axis to keep while tracking (default track 3d trajectories)
             """
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                markers_idx, nlp["model"].nbMarkers(), "markers_idx"
+                markers_idx, nlp.model.nbMarkers(), "markers_idx"
             )
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [3, max(markers_idx) + 1, nlp["ns"] + 1]
+                    target, [3, max(markers_idx) + 1, nlp.ns + 1]
                 )
-            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q"])
-            nq = nlp["q_mapping"].reduce.len
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_markers", nlp.model.markers, nlp.q)
+            nq = nlp.q_mapping.reduce.len
             target_tp = None
             for i, v in enumerate(x):
-                q = nlp["q_mapping"].expand.map(v[:nq])
-                val = nlp["casadi_func"]["biorbd_markers"](q)[axis_to_track, markers_idx]
+                q = nlp.q_mapping.expand.map(v[:nq])
+                val = nlp.casadi_func["biorbd_markers"](q)[axis_to_track, markers_idx]
                 if target is not None:
                     target_tp = target[:, markers_idx, t[i]]
                     target_tp = target_tp[axis_to_track, :]
@@ -108,32 +108,32 @@ class PenaltyFunctionAbstract:
             :param markers_idx: Index of the markers to minimize. (list of integers)
             """
 
-            nq = nlp["q_mapping"].reduce.len
-            nb_rts = nlp["model"].nbSegment()
+            nq = nlp.q_mapping.reduce.len
+            nb_rts = nlp.model.nbSegment()
 
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                markers_idx, nlp["model"].nbMarkers(), "markers_idx"
+                markers_idx, nlp.model.nbMarkers(), "markers_idx"
             )
 
-            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_markers", nlp["model"].markers, nlp["q"])
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_markers", nlp.model.markers, nlp.q)
             if coordinates_system_idx >= 0 and coordinates_system_idx < nb_rts:
                 PenaltyFunctionAbstract._add_to_casadi_func(
-                    nlp, f"globalJCS_{coordinates_system_idx}", nlp["model"].globalJCS, nlp["q"], coordinates_system_idx
+                    nlp, f"globalJCS_{coordinates_system_idx}", nlp.model.globalJCS, nlp.q, coordinates_system_idx
                 )
 
             for i in range(len(x) - 1):
-                q_0 = nlp["q_mapping"].expand.map(x[i][:nq])
-                q_1 = nlp["q_mapping"].expand.map(x[i + 1][:nq])
+                q_0 = nlp.q_mapping.expand.map(x[i][:nq])
+                q_1 = nlp.q_mapping.expand.map(x[i + 1][:nq])
 
                 if coordinates_system_idx < 0:
-                    jcs_0_T = nlp["CX"].eye(4)
-                    jcs_1_T = nlp["CX"].eye(4)
+                    jcs_0_T = nlp.CX.eye(4)
+                    jcs_1_T = nlp.CX.eye(4)
 
                 elif coordinates_system_idx < nb_rts:
-                    jcs_0 = nlp["casadi_func"][f"globalJCS_{coordinates_system_idx}"](q_0)
+                    jcs_0 = nlp.casadi_func[f"globalJCS_{coordinates_system_idx}"](q_0)
                     jcs_0_T = vertcat(horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), horzcat(0, 0, 0, 1))
 
-                    jcs_1 = nlp["casadi_func"][f"globalJCS_{coordinates_system_idx}"](q_1)
+                    jcs_1 = nlp.casadi_func[f"globalJCS_{coordinates_system_idx}"](q_1)
                     jcs_1_T = vertcat(horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), horzcat(0, 0, 0, 1))
 
                 else:
@@ -142,9 +142,9 @@ class PenaltyFunctionAbstract:
                         f"positive values must be between 0 and {nb_rts})"
                     )
 
-                val = jcs_1_T @ vertcat(
-                    nlp["casadi_func"]["biorbd_markers"](q_1)[:, markers_idx], 1
-                ) - jcs_0_T @ vertcat(nlp["casadi_func"]["biorbd_markers"](q_0)[:, markers_idx], 1)
+                val = jcs_1_T @ vertcat(nlp.casadi_func["biorbd_markers"](q_1)[:, markers_idx], 1) - jcs_0_T @ vertcat(
+                    nlp.casadi_func["biorbd_markers"](q_0)[:, markers_idx], 1
+                )
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val[:3], penalty, **extra_param)
 
         @staticmethod
@@ -156,25 +156,25 @@ class PenaltyFunctionAbstract:
             :param markers_idx: Index of the markers to minimize. (list of integers)
             :param data_to_track: Reference markers velocities for tracking. (list of lists of float)
             """
-            n_q = nlp["nbQ"]
-            n_qdot = nlp["nbQdot"]
+            n_q = nlp.nbQ
+            n_qdot = nlp.nbQdot
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                markers_idx, nlp["model"].nbMarkers(), "markers_idx"
+                markers_idx, nlp.model.nbMarkers(), "markers_idx"
             )
 
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [3, max(markers_idx) + 1, nlp["ns"] + 1]
+                    target, [3, max(markers_idx) + 1, nlp.ns + 1]
                 )
 
             PenaltyFunctionAbstract._add_to_casadi_func(
-                nlp, "biorbd_markerVelocity", nlp["model"].markerVelocity, nlp["q"], nlp["qdot"], markers_idx[0]
+                nlp, "biorbd_markerVelocity", nlp.model.markerVelocity, nlp.q, nlp.qdot, markers_idx[0]
             )
 
             target_tp = None
             for m in markers_idx:
                 for i, v in enumerate(x):
-                    val = nlp["casadi_func"]["biorbd_markerVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
+                    val = nlp.casadi_func["biorbd_markerVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
                     if target is not None:
                         target_tp = target[:, markers_idx, t[i]]
 
@@ -192,15 +192,13 @@ class PenaltyFunctionAbstract:
             :param first_marker_idx: Index of the first marker (integer).
             :param second_marker_idx: Index of the second marker (integer).
             """
-            PenaltyFunctionAbstract._check_idx(
-                "marker", [first_marker_idx, second_marker_idx], nlp["model"].nbMarkers()
-            )
-            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "markers", nlp["model"].markers, nlp["q"])
-            nq = nlp["q_mapping"].reduce.len
+            PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nbMarkers())
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "markers", nlp.model.markers, nlp.q)
+            nq = nlp.q_mapping.reduce.len
             for v in x:
-                q = nlp["q_mapping"].expand.map(v[:nq])
-                first_marker = nlp["casadi_func"]["markers"](q)[:, first_marker_idx]
-                second_marker = nlp["casadi_func"]["markers"](q)[:, second_marker_idx]
+                q = nlp.q_mapping.expand.map(v[:nq])
+                first_marker = nlp.casadi_func["markers"](q)[:, first_marker_idx]
+                second_marker = nlp.casadi_func["markers"](q)[:, second_marker_idx]
 
                 val = first_marker - second_marker
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
@@ -218,10 +216,10 @@ class PenaltyFunctionAbstract:
             """
             if which_var == "states":
                 ux = x
-                nb_val = nlp["nx"]
+                nb_val = nlp.nx
             elif which_var == "controls":
                 ux = u
-                nb_val = nlp["nu"]
+                nb_val = nlp.nu
             else:
                 raise RuntimeError("Wrong choice of which_var")
 
@@ -230,7 +228,7 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("coef must be an int or a float")
 
             for v in ux:
-                v = nlp["q_mapping"].expand.map(v)
+                v = nlp.q_mapping.expand.map(v)
                 val = v[first_dof] - coef * v[second_dof]
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
@@ -243,12 +241,12 @@ class PenaltyFunctionAbstract:
             :param controls_idx: Index of the controls to minimize. (list of integers)
             :param target: Reference torques for tracking. (list of lists of float)
             """
-            n_tau = nlp["nbTau"]
+            n_tau = nlp.nbTau
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_tau, "controls_idx")
 
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [max(controls_idx) + 1, nlp["ns"]]
+                    target, [max(controls_idx) + 1, nlp.ns]
                 )
                 PenaltyFunctionAbstract._add_track_data_to_plot(
                     ocp, nlp, target, combine_to="tau", axes_idx=Mapping(controls_idx)
@@ -274,7 +272,7 @@ class PenaltyFunctionAbstract:
             :param controls_idx: Index of the controls to minimize. (list of integers)
             :param data_to_track: Reference torques for tracking. (list of lists of float)
             """
-            n_tau = nlp["nbTau"]
+            n_tau = nlp.nbTau
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_tau, "controls_idx")
 
             for i in range(len(u) - 1):
@@ -290,11 +288,11 @@ class PenaltyFunctionAbstract:
             :param muscles_idx: Index of the muscles which the activation in minimized. (list of integers)
             :param data_to_track: Reference muscle activation for tracking. (list of lists of float)
             """
-            muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(muscles_idx, nlp["nbMuscle"], "muscles_idx")
+            muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(muscles_idx, nlp.nbMuscle, "muscles_idx")
 
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [max(muscles_idx) + 1, nlp["ns"]]
+                    target, [max(muscles_idx) + 1, nlp.ns]
                 )
 
                 PenaltyFunctionAbstract._add_track_data_to_plot(
@@ -302,7 +300,7 @@ class PenaltyFunctionAbstract:
                 )
 
             # Add the nbTau offset to the muscle index
-            muscles_idx_plus_tau = [idx + nlp["nbTau"] for idx in muscles_idx]
+            muscles_idx_plus_tau = [idx + nlp.nbTau for idx in muscles_idx]
             target_tp = None
             for i, v in enumerate(u):
                 val = v[muscles_idx_plus_tau]
@@ -323,12 +321,12 @@ class PenaltyFunctionAbstract:
             :param controls_idx: Index of the controls to minimize. (list of integers)
             :param data_to_track: Reference controls for tracking. (list of lists of float)
             """
-            n_u = nlp["nu"]
+            n_u = nlp.nu
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_u, "muscles_idx")
 
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [max(controls_idx) + 1, nlp["ns"]]
+                    target, [max(controls_idx) + 1, nlp.ns]
                 )
 
             target_tp = None
@@ -349,15 +347,13 @@ class PenaltyFunctionAbstract:
             The height is assumed to be the third axis.
             """
             g = -9.81  # get gravity from biorbd
-            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM", nlp["model"].CoM, nlp["q"])
-            PenaltyFunctionAbstract._add_to_casadi_func(
-                nlp, "biorbd_CoMdot", nlp["model"].CoMdot, nlp["q"], nlp["qdot"]
-            )
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM", nlp.model.CoM, nlp.q)
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp.model.CoMdot, nlp.q, nlp.qdot)
             for i, v in enumerate(x):
-                q = nlp["q_mapping"].expand.map(v[: nlp["nbQ"]])
-                q_dot = nlp["q_dot_mapping"].expand.map(v[nlp["nbQ"] :])
-                CoM = nlp["casadi_func"]["biorbd_CoM"](q)
-                CoM_dot = nlp["casadi_func"]["biorbd_CoMdot"](q, q_dot)
+                q = nlp.q_mapping.expand.map(v[: nlp.nbQ])
+                q_dot = nlp.q_dot_mapping.expand.map(v[nlp.nbQ :])
+                CoM = nlp.casadi_func["biorbd_CoM"](q)
+                CoM_dot = nlp.casadi_func["biorbd_CoMdot"](q, q_dot)
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
                 penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_height, penalty, **extra_param)
 
@@ -370,12 +366,12 @@ class PenaltyFunctionAbstract:
             :param contacts_idx: Index of the component of the force to be minimized. (integer)
             :param data_to_track: Reference contact forces for tracking. (list of lists of float)
             """
-            n_contact = nlp["model"].nbContacts()
+            n_contact = nlp.model.nbContacts()
             contacts_idx = PenaltyFunctionAbstract._check_and_fill_index(contacts_idx, n_contact, "contacts_idx")
 
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [max(contacts_idx) + 1, nlp["ns"]]
+                    target, [max(contacts_idx) + 1, nlp.ns]
                 )
 
                 PenaltyFunctionAbstract._add_track_data_to_plot(
@@ -384,7 +380,7 @@ class PenaltyFunctionAbstract:
 
             target_tp = None
             for i, v in enumerate(u):
-                force = nlp["contact_forces_func"](x[i], u[i], p)
+                force = nlp.contact_forces_func(x[i], u[i], p)
                 val = force[contacts_idx]
                 if target is not None:
                     target_tp = target[contacts_idx, t[i]]
@@ -404,22 +400,22 @@ class PenaltyFunctionAbstract:
             :param segment_idx: Index of the segment to be aligned. (integer)
             :param rt_idx: Index of the local reference frame to be aligned. (integer)
             """
-            PenaltyFunctionAbstract._check_idx("segment", segment_idx, nlp["model"].nbSegment())
-            PenaltyFunctionAbstract._check_idx("rt", rt_idx, nlp["model"].nbRTs())
+            PenaltyFunctionAbstract._check_idx("segment", segment_idx, nlp.model.nbSegment())
+            PenaltyFunctionAbstract._check_idx("rt", rt_idx, nlp.model.nbRTs())
 
             def biorbd_meta_func(q, segment_idx, rt_idx):
-                r_seg = nlp["model"].globalJCS(q, segment_idx).rot()
-                r_rt = nlp["model"].RT(q, rt_idx).rot()
+                r_seg = nlp.model.globalJCS(q, segment_idx).rot()
+                r_rt = nlp.model.RT(q, rt_idx).rot()
                 return biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
             PenaltyFunctionAbstract._add_to_casadi_func(
-                nlp, f"align_segment_with_custom_rt_{segment_idx}", biorbd_meta_func, nlp["q"], segment_idx, rt_idx
+                nlp, f"align_segment_with_custom_rt_{segment_idx}", biorbd_meta_func, nlp.q, segment_idx, rt_idx
             )
 
-            nq = nlp["q_mapping"].reduce.len
+            nq = nlp.q_mapping.reduce.len
             for v in x:
-                q = nlp["q_mapping"].expand.map(v[:nq])
-                val = nlp["casadi_func"][f"align_segment_with_custom_rt_{segment_idx}"](q)
+                q = nlp.q_mapping.expand.map(v[:nq])
+                val = nlp.casadi_func[f"align_segment_with_custom_rt_{segment_idx}"](q)
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
         @staticmethod
@@ -435,8 +431,8 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("axis must be a biorbd_optim.Axe")
 
             def biorbd_meta_func(q, segment_idx, marker_idx):
-                r_rt = nlp["model"].globalJCS(q, segment_idx)
-                marker = nlp["model"].marker(q, marker_idx)
+                r_rt = nlp.model.globalJCS(q, segment_idx)
+                marker = nlp.model.marker(q, marker_idx)
                 marker.applyRT(r_rt.transpose())
                 return marker.to_mx()
 
@@ -444,14 +440,14 @@ class PenaltyFunctionAbstract:
                 nlp,
                 f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}",
                 biorbd_meta_func,
-                nlp["q"],
+                nlp.q,
                 segment_idx,
                 marker_idx,
             )
-            nq = nlp["q_mapping"].reduce.len
+            nq = nlp.q_mapping.reduce.len
             for v in x:
-                q = nlp["q_mapping"].expand.map(v[:nq])
-                marker = nlp["casadi_func"][f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
+                q = nlp.q_mapping.expand.map(v[:nq])
+                marker = nlp.casadi_func[f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
                 for axe in Axe:
                     if axe != axis:
                         # To align an axis, the other must be equal to 0
@@ -489,14 +485,14 @@ class PenaltyFunctionAbstract:
         penalty_type._parameter_modifier(penalty_function, penalty)
 
         penalty_type.clear_penalty(ocp, nlp, penalty)
-        penalty_function(penalty, ocp, nlp, t, x, u, nlp["p"], **penalty.params)
+        penalty_function(penalty, ocp, nlp, t, x, u, nlp.p, **penalty.params)
 
     @staticmethod
     def _add_to_casadi_func(nlp, name, function, *all_param):
-        if name in nlp["casadi_func"]:
+        if name in nlp.casadi_func:
             return
         else:
-            nlp["casadi_func"][name] = biorbd.to_casadi_func(name, function, *all_param)
+            nlp.casadi_func[name] = biorbd.to_casadi_func(name, function, *all_param)
 
     @staticmethod
     def _parameter_modifier(penalty_function, parameters):
@@ -548,7 +544,7 @@ class PenaltyFunctionAbstract:
             or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
             or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
         ):
-            if instant == Instant.END or instant == nlp["ns"]:
+            if instant == Instant.END or instant == nlp.ns:
                 raise RuntimeError("No control u at last node")
 
     @staticmethod
@@ -648,40 +644,40 @@ class PenaltyFunctionAbstract:
         u = []
         for node in constraint.instant:
             if isinstance(node, int):
-                if node < 0 or node > nlp["ns"]:
-                    raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp['ns']}")
+                if node < 0 or node > nlp.ns:
+                    raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp.ns}")
                 t.append(node)
-                x.append(nlp["X"][node])
-                u.append(nlp["U"][node])
+                x.append(nlp.X[node])
+                u.append(nlp.U[node])
 
             elif node == Instant.START:
                 t.append(0)
-                x.append(nlp["X"][0])
-                u.append(nlp["U"][0])
+                x.append(nlp.X[0])
+                u.append(nlp.U[0])
 
             elif node == Instant.MID:
-                if nlp["ns"] % 2 == 1:
+                if nlp.ns % 2 == 1:
                     raise (ValueError("Number of shooting points must be even to use MID"))
-                t.append(nlp["ns"] // 2)
-                x.append(nlp["X"][nlp["ns"] // 2])
-                u.append(nlp["U"][nlp["ns"] // 2])
+                t.append(nlp.ns // 2)
+                x.append(nlp.X[nlp.ns // 2])
+                u.append(nlp.U[nlp.ns // 2])
 
             elif node == Instant.INTERMEDIATES:
-                for i in range(1, nlp["ns"] - 1):
+                for i in range(1, nlp.ns - 1):
                     t.append(i)
-                    x.append(nlp["X"][i])
-                    u.append(nlp["U"][i])
+                    x.append(nlp.X[i])
+                    u.append(nlp.U[i])
 
             elif node == Instant.END:
-                t.append(nlp["ns"])
-                x.append(nlp["X"][nlp["ns"]])
+                t.append(nlp.ns)
+                x.append(nlp.X[nlp.ns])
 
             elif node == Instant.ALL:
-                t.extend([i for i in range(nlp["ns"] + 1)])
-                for i in range(nlp["ns"]):
-                    x.append(nlp["X"][i])
-                    u.append(nlp["U"][i])
-                x.append(nlp["X"][nlp["ns"]])
+                t.extend([i for i in range(nlp.ns + 1)])
+                for i in range(nlp.ns):
+                    x.append(nlp.X[i])
+                    u.append(nlp.U[i])
+                x.append(nlp.X[nlp.ns])
 
             else:
                 raise RuntimeError(" is not a valid instant")
@@ -698,14 +694,14 @@ class PenaltyFunctionAbstract:
         if (isinstance(data, np.ndarray) and not data.any()) or (not isinstance(data, np.ndarray) and not data):
             return
 
-        if data.shape[1] == nlp["ns"]:
+        if data.shape[1] == nlp.ns:
             data = np.c_[data, data[:, -1]]
         ocp.add_plot(
             combine_to,
             lambda x, u, p: data,
             color="tab:red",
             plot_type=PlotType.STEP,
-            phase_number=nlp["phase_idx"],
+            phase_number=nlp.phase_idx,
             axes_idx=axes_idx,
         )
 

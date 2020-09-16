@@ -109,15 +109,15 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=True)
 
     nlp = ocp.nlp[0]
-    nlp["model"] = biorbd.Model(model_path)
+    nlp.model = biorbd.Model(model_path)
 
     states, controls = Data.get_data(ocp, sol["x"])
     q, q_dot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
     x = np.concatenate((q, q_dot))
     u = np.concatenate((tau, mus))
-    contact_forces = np.array(nlp["contact_forces_func"](x[:, :-1], u[:, :-1], []))
+    contact_forces = np.array(nlp.contact_forces_func(x[:, :-1], u[:, :-1], []))
 
-    names_contact_forces = ocp.nlp[0]["model"].contactNames()
+    names_contact_forces = ocp.nlp[0].model.contactNames()
     for i, elt in enumerate(contact_forces):
         plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, ".-", label=f"{names_contact_forces[i].to_string()}")
     plt.legend()

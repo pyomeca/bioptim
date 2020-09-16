@@ -97,7 +97,7 @@ if __name__ == "__main__":
     q, q_dot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
     x = np.concatenate((q, q_dot))
     u = np.concatenate((tau, mus))
-    contact_forces_ref = np.array(ocp_to_track.nlp[0]["contact_forces_func"](x[:, :-1], u[:, :-1], []))
+    contact_forces_ref = np.array(ocp_to_track.nlp[0].contact_forces_func(x[:, :-1], u[:, :-1], []))
     muscle_activations_ref = mus
 
     # Track these data

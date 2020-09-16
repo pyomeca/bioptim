@@ -57,7 +57,7 @@ class PlotOcp:
     def __init__(self, ocp, automatically_organize=True, adapt_graph_size_to_bounds=False):
         """Prepares the figure"""
         for i in range(1, ocp.nb_phases):
-            if ocp.nlp[0]["nbQ"] != ocp.nlp[i]["nbQ"]:
+            if ocp.nlp[0].nbQ != ocp.nlp[i].nbQ:
                 raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
 
         self.ocp = ocp
@@ -81,7 +81,7 @@ class PlotOcp:
             self.tf = list(self.ocp.initial_phase_time)
         self.t_idx_to_optimize = []
         for i, nlp in enumerate(self.ocp.nlp):
-            if isinstance(nlp["tf"], self.ocp.CX):
+            if isinstance(nlp.tf, self.ocp.CX):
                 self.t_idx_to_optimize.append(i)
         self.__update_time_vector()
 
@@ -92,7 +92,7 @@ class PlotOcp:
         self.all_figures = []
 
         self.automatically_organize = automatically_organize
-        self._organize_windows(len(self.ocp.nlp[0]["var_states"]) + len(self.ocp.nlp[0]["var_controls"]))
+        self._organize_windows(len(self.ocp.nlp[0].var_states) + len(self.ocp.nlp[0].var_controls))
 
         self.plot_func = {}
         self.variable_sizes = []
@@ -123,17 +123,17 @@ class PlotOcp:
         self.t_integrated = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
-            nb_int_steps = nlp["nb_integration_steps"]
-            dt_ns = self.tf[phase_idx] / nlp["ns"]
+            nb_int_steps = nlp.nb_integration_steps
+            dt_ns = self.tf[phase_idx] / nlp.ns
             time_phase_integrated = []
             last_t_int = copy(last_t)
-            for _ in range(nlp["ns"]):
+            for _ in range(nlp.ns):
                 time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, nb_int_steps + 1))
                 last_t_int += dt_ns
             self.t_integrated.append(time_phase_integrated)
 
-            self.ns += nlp["ns"] + 1
-            time_phase = np.linspace(last_t, last_t + self.tf[phase_idx], nlp["ns"] + 1)
+            self.ns += nlp.ns + 1
+            time_phase = np.linspace(last_t, last_t + self.tf[phase_idx], nlp.ns + 1)
             last_t += self.tf[phase_idx]
             self.t.append(time_phase)
 
@@ -142,19 +142,19 @@ class PlotOcp:
         variable_sizes = []
         for i, nlp in enumerate(self.ocp.nlp):
             variable_sizes.append({})
-            if "plot" in nlp:
-                for key in nlp["plot"]:
-                    if isinstance(nlp["plot"][key], tuple):
-                        nlp["plot"][key] = nlp["plot"][key][0]
-                    if nlp["plot"][key].phase_mappings is None:
+            if nlp.plot:
+                for key in nlp.plot:
+                    if isinstance(nlp.plot[key], tuple):
+                        nlp.plot[key] = nlp.plot[key][0]
+                    if nlp.plot[key].phase_mappings is None:
                         size = (
-                            nlp["plot"][key]
-                            .function(np.zeros((nlp["nx"], 1)), np.zeros((nlp["nu"], 1)), np.zeros((nlp["np"], 1)))
+                            nlp.plot[key]
+                            .function(np.zeros((nlp.nx, 1)), np.zeros((nlp.nu, 1)), np.zeros((nlp.np, 1)))
                             .shape[0]
                         )
-                        nlp["plot"][key].phase_mappings = Mapping(range(size))
+                        nlp.plot[key].phase_mappings = Mapping(range(size))
                     else:
-                        size = len(nlp["plot"][key].phase_mappings.map_idx)
+                        size = len(nlp.plot[key].phase_mappings.map_idx)
                     if key not in variable_sizes[i]:
                         variable_sizes[i][key] = size
                     else:
@@ -167,21 +167,21 @@ class PlotOcp:
         self.plot_func = {}
         for i, nlp in enumerate(self.ocp.nlp):
             for variable in self.variable_sizes[i]:
-                nb = max(nlp["plot"][variable].phase_mappings.map_idx) + 1
+                nb = max(nlp.plot[variable].phase_mappings.map_idx) + 1
                 nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
-                if nlp["plot"][variable].combine_to:
-                    self.axes[variable] = self.axes[nlp["plot"][variable].combine_to]
+                if nlp.plot[variable].combine_to:
+                    self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
                     axes = self.axes[variable][1]
                 elif i > 0 and variable in self.axes:
                     axes = self.axes[variable][1]
                 else:
                     axes = self.__add_new_axis(variable, nb, nb_rows, nb_cols)
-                    self.axes[variable] = [nlp["plot"][variable], axes]
+                    self.axes[variable] = [nlp.plot[variable], axes]
 
                 t = self.t[i]
                 if variable not in self.plot_func:
                     self.plot_func[variable] = [None] * self.ocp.nb_phases
-                self.plot_func[variable][i] = nlp["plot"][variable]
+                self.plot_func[variable][i] = nlp.plot[variable]
 
                 mapping = self.plot_func[variable][i].phase_mappings.map_idx
                 for ctr, k in enumerate(mapping):
@@ -190,16 +190,16 @@ class PlotOcp:
                         axes[k].set_title(self.plot_func[variable][i].legend[k])
                     ax.grid(**self.plot_options["grid"])
                     ax.set_xlim(0, self.t[-1][-1])
-                    if nlp["plot"][variable].ylim:
-                        ax.set_ylim(nlp["plot"][variable].ylim)
-                    elif self.adapt_graph_size_to_bounds and nlp["plot"][variable].bounds:
-                        if nlp["plot"][variable].bounds.type != InterpolationType.CUSTOM:
-                            y_min = nlp["plot"][variable].bounds.min[ctr].min()
-                            y_max = nlp["plot"][variable].bounds.max[ctr].max()
+                    if nlp.plot[variable].ylim:
+                        ax.set_ylim(nlp.plot[variable].ylim)
+                    elif self.adapt_graph_size_to_bounds and nlp.plot[variable].bounds:
+                        if nlp.plot[variable].bounds.type != InterpolationType.CUSTOM:
+                            y_min = nlp.plot[variable].bounds.min[ctr].min()
+                            y_max = nlp.plot[variable].bounds.max[ctr].max()
                         else:
-                            nlp["plot"][variable].bounds.check_and_adjust_dimensions(len(mapping), nlp["ns"])
-                            y_min = min([nlp["plot"][variable].bounds.min.evaluate_at(j)[k] for j in range(nlp["ns"])])
-                            y_max = max([nlp["plot"][variable].bounds.max.evaluate_at(j)[k] for j in range(nlp["ns"])])
+                            nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping), nlp.ns)
+                            y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[k] for j in range(nlp.ns)])
+                            y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[k] for j in range(nlp.ns)])
                         y_range, _ = self.__compute_ylim(y_min, y_max, 1.25)
                         ax.set_ylim(y_range)
                     zero = np.zeros((t.shape[0], 1))
@@ -216,8 +216,8 @@ class PlotOcp:
                     elif plot_type == PlotType.INTEGRATED:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         plots_integrated = []
-                        nb_int_steps = nlp["nb_integration_steps"]
-                        for cmp in range(nlp["ns"]):
+                        nb_int_steps = nlp.nb_integration_steps
+                        for cmp in range(nlp.ns):
                             plots_integrated.append(
                                 ax.plot(
                                     self.t_integrated[i][cmp],
@@ -239,21 +239,15 @@ class PlotOcp:
                     for time in intersections_time:
                         self.plots_vertical_lines.append(ax.axvline(time, **self.plot_options["vertical_lines"]))
 
-                    if nlp["plot"][variable].bounds and self.adapt_graph_size_to_bounds:
-                        if nlp["plot"][variable].bounds.type == InterpolationType.EACH_FRAME:
-                            ns = nlp["plot"][variable].bounds.min.shape[1] - 1
+                    if nlp.plot[variable].bounds and self.adapt_graph_size_to_bounds:
+                        if nlp.plot[variable].bounds.type == InterpolationType.EACH_FRAME:
+                            ns = nlp.plot[variable].bounds.min.shape[1] - 1
                         else:
-                            ns = nlp["ns"]
-                        nlp["plot"][variable].bounds.check_and_adjust_dimensions(
-                            nb_elements=len(mapping), nb_shooting=ns
-                        )
-                        bounds_min = np.array(
-                            [nlp["plot"][variable].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)]
-                        )
-                        bounds_max = np.array(
-                            [nlp["plot"][variable].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)]
-                        )
-                        if bounds_min.shape[0] == nlp["ns"]:
+                            ns = nlp.ns
+                        nlp.plot[variable].bounds.check_and_adjust_dimensions(nb_elements=len(mapping), nb_shooting=ns)
+                        bounds_min = np.array([nlp.plot[variable].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)])
+                        bounds_max = np.array([nlp.plot[variable].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)])
+                        if bounds_min.shape[0] == nlp.ns:
                             bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
                             bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
 
@@ -337,28 +331,28 @@ class PlotOcp:
 
         data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, integrate=True, concatenate=False)
         for i, nlp in enumerate(self.ocp.nlp):
-            step_size = nlp["nb_integration_steps"] + 1
-            nb_elements = nlp["ns"] * step_size + 1
+            step_size = nlp.nb_integration_steps + 1
+            nb_elements = nlp.ns * step_size + 1
 
             state = np.ndarray((0, nb_elements))
-            for s in nlp["var_states"]:
+            for s in nlp.var_states:
                 if isinstance(data_states_per_phase[s], (list, tuple)):
                     state = np.concatenate((state, data_states_per_phase[s][i]))
                 else:
                     state = np.concatenate((state, data_states_per_phase[s]))
-            control = np.ndarray((0, nlp["ns"] + 1))
-            for s in nlp["var_controls"]:
+            control = np.ndarray((0, nlp.ns + 1))
+            for s in nlp.var_controls:
                 if isinstance(data_controls_per_phase[s], (list, tuple)):
                     control = np.concatenate((control, data_controls_per_phase[s][i]))
                 else:
                     control = np.concatenate((control, data_controls_per_phase[s]))
 
-            if nlp["control_type"] == ControlType.CONSTANT:
+            if nlp.control_type == ControlType.CONSTANT:
                 u_mod = 1
-            elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 u_mod = 2
             else:
-                raise NotImplementedError(f"Plotting {nlp['control_type']} is not implemented yet")
+                raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
             for key in self.variable_sizes[i]:
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
@@ -513,8 +507,8 @@ class ShowResult:
 
         all_bioviz = []
         for idx_phase, data in enumerate(data_interpolate["q"]):
-            all_bioviz.append(BiorbdViz.BiorbdViz(loaded_model=self.ocp.nlp[idx_phase]["model"], **kwargs))
-            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase]["q_mapping"].expand.map(data))
+            all_bioviz.append(BiorbdViz.BiorbdViz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
+            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].q_mapping.expand.map(data))
 
         if show_now:
             b_is_visible = [True] * len(all_bioviz)

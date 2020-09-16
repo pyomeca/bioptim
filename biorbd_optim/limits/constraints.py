@@ -68,7 +68,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 ConstraintFunction.add_to_penalty(
                     ocp,
                     nlp,
-                    nlp["contact_forces_func"](x[i], u[i], p)[contact_force_idx, 0],
+                    nlp.contact_forces_func(x[i], u[i], p)[contact_force_idx, 0],
                     constraint,
                     min_bound=min_bound,
                     max_bound=max_bound,
@@ -106,7 +106,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             mu = static_friction_coefficient
             for i in range(len(u)):
-                contact = nlp["contact_forces_func"](x[i], u[i], p)
+                contact = nlp.contact_forces_func(x[i], u[i], p)
                 normal_contact_force = sum1(contact[normal_component_idx, 0])
                 tangential_contact_force = contact[tangential_component_idx, 0]
 
@@ -154,25 +154,25 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ConstraintFunction.clear_penalty(ocp, None, penalty)
             # Loop over shooting nodes or use parallelization
             if ocp.nb_threads > 1:
-                end_nodes = nlp["par_dynamics"](horzcat(*nlp["X"][:-1]), horzcat(*nlp["U"]), nlp["p"])[0]
-                vals = horzcat(*nlp["X"][1:]) - end_nodes
-                ConstraintFunction.add_to_penalty(ocp, None, vals.reshape((nlp["nx"] * nlp["ns"], 1)), penalty)
+                end_nodes = nlp.par_dynamics(horzcat(*nlp.X[:-1]), horzcat(*nlp.U), nlp.p)[0]
+                vals = horzcat(*nlp.X[1:]) - end_nodes
+                ConstraintFunction.add_to_penalty(ocp, None, vals.reshape((nlp.nx * nlp.ns, 1)), penalty)
             else:
-                for k in range(nlp["ns"]):
+                for k in range(nlp.ns):
                     # Create an evaluation node
-                    if nlp["ode_solver"] == OdeSolver.RK:
-                        if nlp["control_type"] == ControlType.CONSTANT:
-                            u = nlp["U"][k]
-                        elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
-                            u = horzcat(nlp["U"][k], nlp["U"][k + 1])
+                    if nlp.ode_solver == OdeSolver.RK:
+                        if nlp.control_type == ControlType.CONSTANT:
+                            u = nlp.U[k]
+                        elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                            u = horzcat(nlp.U[k], nlp.U[k + 1])
                         else:
-                            raise NotImplementedError(f"Dynamics with {nlp['control_type']} is not implemented yet")
-                        end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=u, params=nlp["p"])["xf"]
+                            raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
+                        end_node = nlp.dynamics[k](x0=nlp.X[k], p=u, params=nlp.p)["xf"]
                     else:
-                        end_node = nlp["dynamics"][k](x0=nlp["X"][k], p=nlp["U"][k])["xf"]
+                        end_node = nlp.dynamics[k](x0=nlp.X[k], p=nlp.U[k])["xf"]
 
                     # Save continuity constraints
-                    val = end_node - nlp["X"][k + 1]
+                    val = end_node - nlp.X[k + 1]
                     ConstraintFunction.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
@@ -189,7 +189,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
         Sets minimal and maximal bounds of the parameter g to be constrained.
         :param g: Parameter to be constrained. (?)
-        :param penalty: Index of the parameter g in the penalty array nlp["g"]. (integer)
+        :param penalty: Index of the parameter g in the penalty array nlp.g. (integer)
         :param min_bound: Minimal bound of the parameter g. (list)
         :param max_bound: Maximal bound of the parameter g. (list)
         """
@@ -198,8 +198,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
 
         if nlp:
-            nlp["g"][penalty.idx].append(val)
-            nlp["g_bounds"][penalty.idx].append(g_bounds)
+            nlp.g[penalty.idx].append(val)
+            nlp.g_bounds[penalty.idx].append(g_bounds)
         else:
             ocp.g[penalty.idx].append(val)
             ocp.g_bounds[penalty.idx].append(g_bounds)
@@ -213,8 +213,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         :return: penalty: Index of the penalty reset. (integer)
         """
         if nlp:
-            g_to_add_to = nlp["g"]
-            g_bounds_to_add_to = nlp["g_bounds"]
+            g_to_add_to = nlp.g
+            g_bounds_to_add_to = nlp.g_bounds
         else:
             g_to_add_to = ocp.g
             g_bounds_to_add_to = ocp.g_bounds
@@ -250,7 +250,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint_function == Constraint.CONTACT_FORCE_INEQUALITY.value[0]
             or constraint_function == Constraint.NON_SLIPPING.value[0]
         ):
-            if instant == Instant.END or instant == nlp["ns"]:
+            if instant == Instant.END or instant == nlp.ns:
                 raise RuntimeError("No control u at last node")
 
 

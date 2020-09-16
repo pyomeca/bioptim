@@ -27,7 +27,7 @@ def custom_dynamic(states, controls, parameters, nlp):
     DynamicsFunctions.apply_parameters(parameters, nlp)
     q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-    qddot = nlp["model"].ForwardDynamics(q, qdot, tau).to_mx()
+    qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
     return qdot, qddot
 
