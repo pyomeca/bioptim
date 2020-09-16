@@ -1,76 +1,76 @@
 class NonLinearProgram:
     def __init__(
         self,
-        model,
-        phase_idx,
-        ns,
-        tf,
-        t0,
-        dt,
-        nb_threads,
-        external_forces,
-        X_bounds,
-        U_bounds,
-        dynamics_type,
-        ode_solver,
-        control_type,
-        X_init,
-        U_init,
-        nb_integration_steps,
-        CX,
-        x,
-        u,
-        dynamics,
-        par_dynamics,
-        dynamics_func,
-        nx,
-        nu,
-        X,
-        U,
-        p,
-        plot={},
-        var_states={},
-        var_controls={},
+        CX=None,
         J=[],
+        U=None,
+        U_bounds=None,
+        U_init=None,
+        X=None,
+        X_bounds=None,
+        X_init=None,
+        casadi_func={},
+        control_type=None,
+        dt=None,
+        dynamics=[],
+        dynamics_func=None,
+        dynamics_type=None,
+        external_forces=None,
         g=[],
         g_bounds=[],
-        casadi_func={},
-        size={},
         mapping={},
+        model=None,
+        nb_integration_steps=None,
+        nb_threads=None,
+        ns=None,
+        nu=None,
+        nx=None,
+        ode_solver=None,
+        p=None,
+        par_dynamics={},
+        phase_idx=None,
+        plot={},
+        size={},
+        t0=None,
+        tf=None,
+        u=None,
+        var_controls={},
+        var_states={},
+        x=None,
     ):
-        self.model = model
-        self.phase_idx = phase_idx
-        self.ns = ns
-        self.tf = tf
-        self.t0 = t0
-        self.dt = dt
-        self.nb_threads = nb_threads
-        self.external_forces = external_forces
-        self.X_bounds = X_bounds
-        self.U_bounds = U_bounds
-        self.dynamics_type = dynamics_type
-        self.ode_solver = ode_solver
-        self.control_type = control_type
-        self.X_init = X_init
-        self.U_init = U_init
-        self.nb_integration_steps = nb_integration_steps
         self.CX = CX
-        self.x = CX()
-        self.u = CX()
-        self.dynamics = dynamics
-        self.par_dynamics = par_dynamics
-        self.dynamics_func = dynamics_func
-        self.nx = nx
-        self.nu = nu
-        self.X = X
-        self.U = U
-        self.p = p
-        self.plot = plot
-        self.var_states = var_states
-        self.var_controls = var_controls
         self.J = J
+        self.U = U
+        self.U_bounds = U_bounds
+        self.U_init = U_init
+        self.X = X
+        self.X_bounds = X_bounds
+        self.X_init = X_init
+        self.casadi_func = casadi_func
+        self.control_type = control_type
+        self.dt = dt
+        self.dynamics = dynamics
+        self.dynamics_func = dynamics_func
+        self.dynamics_type = dynamics_type
+        self.external_forces = external_forces
         self.g = g
         self.g_bounds = g_bounds
-        self.casadi_func = casadi_func
-        self.size = (size,)
         self.mapping = (mapping,)
+        self.model = model
+        self.nb_integration_steps = nb_integration_steps
+        self.nb_threads = nb_threads
+        self.ns = ns
+        self.nu = nu
+        self.nx = nx
+        self.ode_solver = ode_solver
+        self.p = p
+        self.par_dynamics = par_dynamics
+        self.phase_idx = phase_idx
+        self.plot = plot
+        self.size = (size,)
+        self.t0 = t0
+        self.tf = tf
+        self.u = u
+        self.var_controls = var_controls
+        self.var_states = var_states
+        self.x = x
