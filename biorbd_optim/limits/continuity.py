@@ -64,10 +64,10 @@ class StateTransitionFunctions:
 
             # Aliases
             nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
-            nbQ = nlp_pre.nbQ
-            nbQdot = nlp_pre.nbQdot
-            q = nlp_pre.q_mapping.expand.map(nlp_pre.X[-1][:nbQ])
-            qdot_pre = nlp_pre.q_dot_mapping.expand.map(nlp_pre.X[-1][nbQ : nbQ + nbQdot])
+            nbQ = nlp_pre.shape["q"]
+            nbQdot = nlp_pre.shape["q_dot"]
+            q = nlp_pre.mapping["q"].expand.map(nlp_pre.X[-1][:nbQ])
+            qdot_pre = nlp_pre.mapping["q_dot"].expand.map(nlp_pre.X[-1][nbQ : nbQ + nbQdot])
 
             if nlp_post.model.nbContacts() == 0:
                 warn("The chosen model does not have any contact")
@@ -79,7 +79,7 @@ class StateTransitionFunctions:
                 "impulse_direct", model.ComputeConstraintImpulsesDirect, nlp_pre.q, nlp_pre.qdot
             )
             qdot_post = func(q, qdot_pre)
-            qdot_post = nlp_post.q_dot_mapping.reduce.map(qdot_post)
+            qdot_post = nlp_post.mapping["q_dot"].reduce.map(qdot_post)
 
             val = nlp_pre.X[-1][:nbQ] - nlp_post.X[0][:nbQ]
             val = vertcat(val, qdot_post - nlp_post.X[0][nbQ : nbQ + nbQdot])

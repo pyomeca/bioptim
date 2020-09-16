@@ -83,10 +83,10 @@ class PenaltyFunctionAbstract:
                     target, [3, max(markers_idx) + 1, nlp.ns + 1]
                 )
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_markers", nlp.model.markers, nlp.q)
-            nq = nlp.q_mapping.reduce.len
+            nq = nlp.mapping["q"].reduce.len
             target_tp = None
             for i, v in enumerate(x):
-                q = nlp.q_mapping.expand.map(v[:nq])
+                q = nlp.mapping["q"].expand.map(v[:nq])
                 val = nlp.casadi_func["biorbd_markers"](q)[axis_to_track, markers_idx]
                 if target is not None:
                     target_tp = target[:, markers_idx, t[i]]
@@ -108,7 +108,7 @@ class PenaltyFunctionAbstract:
             :param markers_idx: Index of the markers to minimize. (list of integers)
             """
 
-            nq = nlp.q_mapping.reduce.len
+            nq = nlp.mapping["q"].reduce.len
             nb_rts = nlp.model.nbSegment()
 
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
@@ -122,8 +122,8 @@ class PenaltyFunctionAbstract:
                 )
 
             for i in range(len(x) - 1):
-                q_0 = nlp.q_mapping.expand.map(x[i][:nq])
-                q_1 = nlp.q_mapping.expand.map(x[i + 1][:nq])
+                q_0 = nlp.mapping["q"].expand.map(x[i][:nq])
+                q_1 = nlp.mapping["q"].expand.map(x[i + 1][:nq])
 
                 if coordinates_system_idx < 0:
                     jcs_0_T = nlp.CX.eye(4)
@@ -156,8 +156,8 @@ class PenaltyFunctionAbstract:
             :param markers_idx: Index of the markers to minimize. (list of integers)
             :param data_to_track: Reference markers velocities for tracking. (list of lists of float)
             """
-            n_q = nlp.nbQ
-            n_qdot = nlp.nbQdot
+            n_q = nlp.shape["q"]
+            n_qdot = nlp.shape["q_dot"]
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 markers_idx, nlp.model.nbMarkers(), "markers_idx"
             )
@@ -194,9 +194,9 @@ class PenaltyFunctionAbstract:
             """
             PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nbMarkers())
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "markers", nlp.model.markers, nlp.q)
-            nq = nlp.q_mapping.reduce.len
+            nq = nlp.mapping["q"].reduce.len
             for v in x:
-                q = nlp.q_mapping.expand.map(v[:nq])
+                q = nlp.mapping["q"].expand.map(v[:nq])
                 first_marker = nlp.casadi_func["markers"](q)[:, first_marker_idx]
                 second_marker = nlp.casadi_func["markers"](q)[:, second_marker_idx]
 
@@ -228,7 +228,7 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("coef must be an int or a float")
 
             for v in ux:
-                v = nlp.q_mapping.expand.map(v)
+                v = nlp.mapping["q"].expand.map(v)
                 val = v[first_dof] - coef * v[second_dof]
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
@@ -241,7 +241,7 @@ class PenaltyFunctionAbstract:
             :param controls_idx: Index of the controls to minimize. (list of integers)
             :param target: Reference torques for tracking. (list of lists of float)
             """
-            n_tau = nlp.nbTau
+            n_tau = nlp.shape["tau"]
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_tau, "controls_idx")
 
             if target is not None:
@@ -272,7 +272,7 @@ class PenaltyFunctionAbstract:
             :param controls_idx: Index of the controls to minimize. (list of integers)
             :param data_to_track: Reference torques for tracking. (list of lists of float)
             """
-            n_tau = nlp.nbTau
+            n_tau = nlp.shape["tau"]
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_tau, "controls_idx")
 
             for i in range(len(u) - 1):
@@ -288,7 +288,7 @@ class PenaltyFunctionAbstract:
             :param muscles_idx: Index of the muscles which the activation in minimized. (list of integers)
             :param data_to_track: Reference muscle activation for tracking. (list of lists of float)
             """
-            muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(muscles_idx, nlp.nbMuscle, "muscles_idx")
+            muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(muscles_idx, nlp.shape["muscle"], "muscles_idx")
 
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
@@ -300,7 +300,7 @@ class PenaltyFunctionAbstract:
                 )
 
             # Add the nbTau offset to the muscle index
-            muscles_idx_plus_tau = [idx + nlp.nbTau for idx in muscles_idx]
+            muscles_idx_plus_tau = [idx + nlp.shape["tau"] for idx in muscles_idx]
             target_tp = None
             for i, v in enumerate(u):
                 val = v[muscles_idx_plus_tau]
@@ -350,8 +350,8 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM", nlp.model.CoM, nlp.q)
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp.model.CoMdot, nlp.q, nlp.qdot)
             for i, v in enumerate(x):
-                q = nlp.q_mapping.expand.map(v[: nlp.nbQ])
-                q_dot = nlp.q_dot_mapping.expand.map(v[nlp.nbQ :])
+                q = nlp.mapping["q"].expand.map(v[: nlp.shape["q"]])
+                q_dot = nlp.mapping["q_dot"].expand.map(v[nlp.shape["q"] :])
                 CoM = nlp.casadi_func["biorbd_CoM"](q)
                 CoM_dot = nlp.casadi_func["biorbd_CoMdot"](q, q_dot)
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
@@ -412,9 +412,9 @@ class PenaltyFunctionAbstract:
                 nlp, f"align_segment_with_custom_rt_{segment_idx}", biorbd_meta_func, nlp.q, segment_idx, rt_idx
             )
 
-            nq = nlp.q_mapping.reduce.len
+            nq = nlp.mapping["q"].reduce.len
             for v in x:
-                q = nlp.q_mapping.expand.map(v[:nq])
+                q = nlp.mapping["q"].expand.map(v[:nq])
                 val = nlp.casadi_func[f"align_segment_with_custom_rt_{segment_idx}"](q)
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **extra_param)
 
@@ -444,9 +444,9 @@ class PenaltyFunctionAbstract:
                 segment_idx,
                 marker_idx,
             )
-            nq = nlp.q_mapping.reduce.len
+            nq = nlp.mapping["q"].reduce.len
             for v in x:
-                q = nlp.q_mapping.expand.map(v[:nq])
+                q = nlp.mapping["q"].expand.map(v[:nq])
                 marker = nlp.casadi_func[f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
                 for axe in Axe:
                     if axe != axis:
