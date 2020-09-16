@@ -585,10 +585,9 @@ class OnlineCallback(Callback):
         def __call__(self, pipe):
             self.pipe = pipe
             self.plot = PlotOcp(self.ocp)
-            timer = self.plot.all_figures[0].canvas.new_timer(interval=100)
+            timer = self.plot.all_figures[0].canvas.new_timer(interval=10)
             timer.add_callback(self.callback)
             timer.start()
-
             plt.show()
 
         def callback(self):
