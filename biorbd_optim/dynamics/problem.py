@@ -59,7 +59,7 @@ class Problem:
         """
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
-        nlp.nbActuators = nlp.nbTau
+        nlp.shape["actuactors"] = nlp.shape["tau"]
         if nlp.dynamics_type.dynamics:
             Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -74,7 +74,7 @@ class Problem:
         """
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
-        nlp.nbActuators = nlp.nbTau
+        nlp.shape["actuactors"] = nlp.shape["tau"]
         if nlp.dynamics_type.dynamics:
             Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -197,10 +197,10 @@ class Problem:
         Configures common settings for torque driven problems with and without contacts.
         :param nlp: An OptimalControlProgram class.
         """
-        if nlp.q_mapping is None:
-            nlp.q_mapping = BidirectionalMapping(Mapping(range(nlp.model.nbQ())), Mapping(range(nlp.model.nbQ())))
-        if nlp.q_dot_mapping is None:
-            nlp.q_dot_mapping = BidirectionalMapping(
+        if nlp.mapping["q"] is None:
+            nlp.mapping["q"] = BidirectionalMapping(Mapping(range(nlp.model.nbQ())), Mapping(range(nlp.model.nbQ())))
+        if nlp.mapping["q_dot"] is None:
+            nlp.mapping["q_dot"] = BidirectionalMapping(
                 Mapping(range(nlp.model.nbQdot())), Mapping(range(nlp.model.nbQdot()))
             )
 
@@ -210,46 +210,46 @@ class Problem:
         q = nlp.CX()
         q_dot = nlp.CX()
 
-        for i in nlp.q_mapping.reduce.map_idx:
+        for i in nlp.mapping["q"].reduce.map_idx:
             q = vertcat(q, nlp.CX.sym("Q_" + dof_names[i].to_string(), 1, 1))
-        for i in nlp.q_dot_mapping.reduce.map_idx:
+        for i in nlp.mapping["q_dot"].reduce.map_idx:
             q_dot = vertcat(q_dot, nlp.CX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
-        for i in nlp.q_mapping.expand.map_idx:
+        for i in nlp.mapping["q"].expand.map_idx:
             q_mx = vertcat(q_mx, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
-        for i in nlp.q_dot_mapping.expand.map_idx:
+        for i in nlp.mapping["q_dot"].expand.map_idx:
             q_dot_mx = vertcat(q_dot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
 
-        nlp.nbQ = nlp.q_mapping.reduce.len
-        nlp.nbQdot = nlp.q_dot_mapping.reduce.len
+        nlp.shape["q"] = nlp.mapping["q"].reduce.len
+        nlp.shape["qdot"] = nlp.mapping["q_dot"].reduce.len
 
-        legend_q = ["q_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.q_mapping.reduce.map_idx]
-        legend_qdot = ["qdot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.q_dot_mapping.reduce.map_idx]
+        legend_q = ["q_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q"].reduce.map_idx]
+        legend_qdot = ["qdot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q_dot"].reduce.map_idx]
 
         nlp.q = q_mx
         nlp.qdot = q_dot_mx
         if as_states:
             nlp.x = vertcat(nlp.x, q, q_dot)
-            nlp.var_states["q"] = nlp.nbQ
-            nlp.var_states["q_dot"] = nlp.nbQdot
-            q_bounds = nlp.X_bounds[: nlp.nbQ]
-            qdot_bounds = nlp.X_bounds[nlp.nbQ :]
+            nlp.var_states["q"] = nlp.shape["q"]
+            nlp.var_states["q_dot"] = nlp.shape["qdot"]
+            q_bounds = nlp.X_bounds[: nlp.shape["q"]]
+            qdot_bounds = nlp.X_bounds[nlp.shape["q"] :]
 
             nlp.plot["q"] = CustomPlot(
-                lambda x, u, p: x[: nlp.nbQ],
+                lambda x, u, p: x[: nlp.shape["q"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_q,
                 bounds=q_bounds,
             )
             nlp.plot["q_dot"] = CustomPlot(
-                lambda x, u, p: x[nlp.nbQ : nlp.nbQ + nlp.nbQdot],
+                lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["qdot"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
                 bounds=qdot_bounds,
             )
         if as_controls:
             nlp.u = vertcat(nlp.u, q, q_dot)
-            nlp.var_controls["q"] = nlp.nbQ
-            nlp.var_controls["q_dot"] = nlp.nbQdot
+            nlp.var_controls["q"] = nlp.shape["q"]
+            nlp.var_controls["q_dot"] = nlp.shape["qdot"]
             # Add plot (and retrieving bounds if plots of bounds) if this problem is ever added
 
         nlp.nx = nlp.x.rows()
@@ -261,8 +261,8 @@ class Problem:
         Configures common settings for torque driven problems with and without contacts.
         :param nlp: An OptimalControlProgram class.
         """
-        if nlp.tau_mapping is None:
-            nlp.tau_mapping = BidirectionalMapping(
+        if nlp.mapping["tau"] is None:
+            nlp.mapping["tau"] = BidirectionalMapping(
                 # Mapping(range(nlp.model.nbGeneralizedTorque())), Mapping(range(nlp.model.nbGeneralizedTorque()))
                 Mapping(range(nlp.model.nbQdot())),
                 Mapping(
@@ -276,32 +276,32 @@ class Problem:
         tau_mx = MX()
         all_tau = [nlp.CX() for _ in range(n_col)]
 
-        for i in nlp.tau_mapping.reduce.map_idx:
+        for i in nlp.mapping["tau"].reduce.map_idx:
             for j in range(len(all_tau)):
                 all_tau[j] = vertcat(all_tau[j], nlp.CX.sym(f"Tau_{dof_names[i].to_string()}_{j}", 1, 1))
-        for i in nlp.q_mapping.expand.map_idx:
+        for i in nlp.mapping["q"].expand.map_idx:
             tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
-        nlp.nbTau = nlp.tau_mapping.reduce.len
-        legend_tau = ["tau_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.tau_mapping.reduce.map_idx]
+        nlp.shape["tau"] = nlp.mapping["tau"].reduce.len
+        legend_tau = ["tau_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["tau"].reduce.map_idx]
         nlp.tau = tau_mx
 
         if as_states:
             nlp.x = vertcat(nlp.x, all_tau[0])
-            nlp.var_states["tau"] = nlp.nbTau
+            nlp.var_states["tau"] = nlp.shape["tau"]
             # Add plot if it happens
 
         if as_controls:
             nlp.u = vertcat(nlp.u, horzcat(*all_tau))
-            nlp.var_controls["tau"] = nlp.nbTau
-            tau_bounds = nlp.U_bounds[: nlp.nbTau]
+            nlp.var_controls["tau"] = nlp.shape["tau"]
+            tau_bounds = nlp.U_bounds[: nlp.shape["tau"]]
 
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.PLOT
             else:
                 plot_type = PlotType.STEP
             nlp.plot["tau"] = (
-                CustomPlot(lambda x, u, p: u[: nlp.nbTau], plot_type=plot_type, legend=legend_tau, bounds=tau_bounds),
+                CustomPlot(lambda x, u, p: u[: nlp.shape["tau"]], plot_type=plot_type, legend=legend_tau, bounds=tau_bounds),
             )
 
         nlp.nx = nlp.x.rows()
@@ -326,8 +326,8 @@ class Problem:
                 [name.to_string() for name in elt.model.contactNames() if name.to_string() not in all_contact_names]
             )
 
-        if "contact_forces" in nlp.plot_mappings:
-            phase_mappings = nlp.plot_mappings["contact_forces"]
+        if "contact_forces" in nlp.mapping["plot"]:
+            phase_mappings = nlp.mapping["plot"]["contact_forces"]
         else:
             contact_names_in_phase = [name.to_string() for name in nlp.model.contactNames()]
             phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
@@ -338,7 +338,7 @@ class Problem:
 
     @staticmethod
     def configure_muscles(nlp, as_states, as_controls):
-        nlp.nbMuscle = nlp.model.nbMuscles()
+        nlp.shape["muscle"] = nlp.model.nbMuscles()
         nlp.muscleNames = [names.to_string() for names in nlp.model.muscleNames()]
 
         muscles_mx = MX()
@@ -353,12 +353,12 @@ class Problem:
                 muscles = vertcat(muscles, nlp.CX.sym(f"Muscle_{name}_activation_{nlp.phase_idx}"))
 
             nlp.x = vertcat(nlp.x, muscles)
-            nlp.var_states["muscles"] = nlp.nbMuscle
+            nlp.var_states["muscles"] = nlp.shape["muscle"]
 
-            nx_q = nlp.nbQ + nlp.nbQdot
-            muscles_bounds = nlp.X_bounds[nx_q : nx_q + nlp.nbMuscle]
+            nx_q = nlp.shape["q"] + nlp.shape["qdot"]
+            muscles_bounds = nlp.X_bounds[nx_q : nx_q + nlp.shape["muscle"]]
             nlp.plot["muscles_states"] = CustomPlot(
-                lambda x, u, p: x[nx_q : nx_q + nlp.nbMuscle],
+                lambda x, u, p: x[nx_q : nx_q + nlp.shape["muscle"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=nlp.muscleNames,
                 ylim=[0, 1],
@@ -376,15 +376,15 @@ class Problem:
                     )
 
             nlp.u = vertcat(nlp.u, horzcat(*all_muscles))
-            nlp.var_controls["muscles"] = nlp.nbMuscle
-            muscles_bounds = nlp.U_bounds[nlp.nbTau : nlp.nbTau + nlp.nbMuscle]
+            nlp.var_controls["muscles"] = nlp.shape["muscle"]
+            muscles_bounds = nlp.U_bounds[nlp.shape["tau"] : nlp.shape["tau"] + nlp.shape["muscle"]]
 
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.LINEAR
             else:
                 plot_type = PlotType.STEP
             nlp.plot["muscles_control"] = CustomPlot(
-                lambda x, u, p: u[nlp.nbTau : nlp.nbTau + nlp.nbMuscle],
+                lambda x, u, p: u[nlp.shape["tau"] : nlp.shape["tau"] + nlp.shape["muscle"]],
                 plot_type=plot_type,
                 legend=nlp.muscleNames,
                 combine_to=combine,
