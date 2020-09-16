@@ -30,7 +30,7 @@ class NonLinearProgram:
         par_dynamics={},
         phase_idx=None,
         plot={},
-        size={},
+        shape={},
         t0=None,
         tf=None,
         u=None,
@@ -67,7 +67,7 @@ class NonLinearProgram:
         self.par_dynamics = par_dynamics
         self.phase_idx = phase_idx
         self.plot = plot
-        self.size = (size,)
+        self.shape = (shape,)
         self.t0 = t0
         self.tf = tf
         self.u = u
