@@ -201,8 +201,7 @@ class BoundsOption(OptionGeneric):
         return self.min[slice], self.max[slice]
 
     def __setitem__(self, slice, value):
-        self.min[slice] = value
-        self.max[slice] = value
+        self.bounds[slice] = value
 
 
 class BoundsList(UniquePerPhaseOptionList):
@@ -307,6 +306,10 @@ class Bounds:
             raise RuntimeError(
                 "Invalid input for slicing bounds. It should be like [a:b] or [a:b:c] with a the start index, b the stop index and c the step for slicing."
             )
+
+    def __setitem__(self, slice, value):
+        self.min[slice] = value
+        self.max[slice] = value
 
 
 class QAndQDotBounds(Bounds):
