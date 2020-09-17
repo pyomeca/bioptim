@@ -57,7 +57,7 @@ class PlotOcp:
     def __init__(self, ocp, automatically_organize=True, adapt_graph_size_to_bounds=False):
         """Prepares the figure"""
         for i in range(1, ocp.nb_phases):
-            if ocp.nlp[0].nbQ != ocp.nlp[i].nbQ:
+            if ocp.nlp[0].shape["q"] != ocp.nlp[i].shape["q"]:
                 raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
 
         self.ocp = ocp

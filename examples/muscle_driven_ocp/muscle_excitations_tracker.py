@@ -35,15 +35,13 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     symbolic_controls = MX.sym("u", nb_tau + nb_mus, 1)
     symbolic_parameters = MX.sym("u", 0, 0)
     nlp = {
-        "model": biorbd_model,
-        "nbQ": nb_q,
-        "nbQdot": nb_qdot,
-        "nbTau": nb_tau,
-        "nbMuscle": nb_mus,
-        "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
-        "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
-        "tau_mapping": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
-        "parameters_to_optimize": {},
+        model=biorbd_model,
+        shape={"q": nb_q, "q_dot": nb_qdot, "tau": nb_tau, "muscle": nb_mus}
+        mapping={
+            "q": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
+            "q_dot": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
+            "tau": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
+            }
     }
     markers_func = []
     for i in range(nb_markers):

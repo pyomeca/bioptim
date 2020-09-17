@@ -263,6 +263,7 @@ class OptimalControlProgram:
             if q_mapping is not None or q_dot_mapping is not None or tau_mapping is not None:
                 raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used alongside")
             q_mapping = q_dot_mapping = tau_mapping = all_generalized_mapping
+        # TODO: find a clean solution for those
         self.__add_to_nlp("q_mapping", q_mapping, q_mapping is None, BidirectionalMapping)
         self.__add_to_nlp("q_dot_mapping", q_dot_mapping, q_dot_mapping is None, BidirectionalMapping)
         self.__add_to_nlp("tau_mapping", tau_mapping, tau_mapping is None, BidirectionalMapping)
@@ -340,10 +341,7 @@ class OptimalControlProgram:
 
     def __initialize_nlp(self, nlp):
         """Start with an empty non linear problem"""
-        nlp.nbQ = 0
-        nlp.nbQdot = 0
-        nlp.nbTau = 0
-        nlp.nbMuscle = 0
+        nlp.shape = {"q": 0, "q_dot": 0, "tau": 0, "muscle": 0}
         nlp.plot = {}
         nlp.var_states = {}
         nlp.var_controls = {}
@@ -479,7 +477,9 @@ class OptimalControlProgram:
             offset += nlp.nx
             V = vertcat(V, X_)
 
-            if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
+            if nlp.control_type != ControlType.CONSTANT or (
+                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
+                    ):
                 U_ = nlp.CX.sym("U_" + str(idx_phase) + "_" + str(k), nlp.nu, 1)
                 U.append(U_)
                 V_bounds.min[offset : offset + nlp.nu, 0] = nlp.U_bounds.min.evaluate_at(shooting_point=k)

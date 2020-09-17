@@ -61,7 +61,7 @@ class NonLinearProgram:
         self.external_forces = external_forces
         self.g = g
         self.g_bounds = g_bounds
-        self.mapping = (mapping,)
+        self.mapping = mapping
         self.model = model
         self.nb_integration_steps = nb_integration_steps
         self.nb_threads = nb_threads
@@ -73,7 +73,7 @@ class NonLinearProgram:
         self.par_dynamics = par_dynamics
         self.phase_idx = phase_idx
         self.plot = plot
-        self.shape = (shape,)
+        self.shape = shape
         self.t0 = t0
         self.tf = tf
         self.u = u

@@ -198,7 +198,8 @@ class Problem:
         :param nlp: An OptimalControlProgram class.
         """
         if nlp.mapping["q"] is None:
-            nlp.mapping["q"] = BidirectionalMapping(Mapping(range(nlp.model.nbQ())), Mapping(range(nlp.model.nbQ())))
+            nlp.mapping["q"] = BidirectionalMapping(
+                    Mapping(range(nlp.model.nbQ())), Mapping(range(nlp.model.nbQ())))
         if nlp.mapping["q_dot"] is None:
             nlp.mapping["q_dot"] = BidirectionalMapping(
                 Mapping(range(nlp.model.nbQdot())), Mapping(range(nlp.model.nbQdot()))
