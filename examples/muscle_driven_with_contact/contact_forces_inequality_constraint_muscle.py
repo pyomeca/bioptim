@@ -62,8 +62,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     # Initialize X_bounds
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:, 0] = pose_at_first_node + [0] * nb_qdot
-    x_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot
+    x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
     x_init = InitialConditionsList()

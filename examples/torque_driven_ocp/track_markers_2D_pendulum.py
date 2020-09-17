@@ -56,8 +56,7 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:, 0] = 0
-    x_bounds[0].max[:, 0] = 0
+    x_bounds[0][:, 0] = 0
 
     # Initial guess
     x_init = InitialConditionsList()

@@ -39,8 +39,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:, 0] = (1.0, 1.0, 0, 0)
-    x_bounds[0].max[:, 0] = (1.0, 1.0, 0, 0)
+    x_bounds[0][:, 0] = (1.0, 1.0, 0, 0)
 
     # Initial guess
     if x_warm is None:

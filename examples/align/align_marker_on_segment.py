@@ -47,10 +47,8 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, initializ
 
     for i in range(1, 8):
         if i != 3:
-            x_bounds[0].min[i, [0, -1]] = 0
-            x_bounds[0].max[i, [0, -1]] = 0
-    x_bounds[0].min[2, -1] = 1.57
-    x_bounds[0].max[2, -1] = 1.57
+            x_bounds[0][i, [0, -1]] = 0
+    x_bounds[0][2, -1] = 1.57
 
     # Initial guess
     x_init = InitialConditionsList()

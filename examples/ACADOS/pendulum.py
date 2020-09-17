@@ -43,8 +43,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:, 0] = 0
-    x_bounds[0].max[:, 0] = 0
+    x_bounds[0][:, 0] = 0
 
     # Initial guess
     x_init = InitialConditionsList()
@@ -58,8 +57,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
             [torque_max] * n_tau,
         ]
     )
-    u_bounds[0].min[n_tau - 1, :] = 0
-    u_bounds[0].max[n_tau - 1, :] = 0
+    u_bounds[0][n_tau - 1, :] = 0
 
     u_init = InitialConditionsList()
     u_init.add([torque_init] * n_tau)

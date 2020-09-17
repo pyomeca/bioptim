@@ -73,15 +73,11 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
     x_bounds.add(QAndQDotBounds(biorbd_model[0]))
     x_bounds.add(QAndQDotBounds(biorbd_model[0]))
 
-    x_bounds[0].min[[1, 3, 4, 5], 0] = 0
-    x_bounds[0].max[[1, 3, 4, 5], 0] = 0
-    x_bounds[-1].min[[1, 3, 4, 5], -1] = 0
-    x_bounds[-1].max[[1, 3, 4, 5], -1] = 0
+    x_bounds[0][[1, 3, 4, 5], 0] = 0
+    x_bounds[-1][[1, 3, 4, 5], -1] = 0
 
-    x_bounds[0].min[2, 0] = 0.0
-    x_bounds[0].max[2, 0] = 0.0
-    x_bounds[2].min[2, [0, -1]] = [0.0, 1.57]
-    x_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
+    x_bounds[0][2, 0] = 0.0
+    x_bounds[2][2, [0, -1]] = [0.0, 1.57]
 
     # Initial guess
     x_init = InitialConditionsList()
@@ -105,16 +101,16 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
 
     """
     By default, all state transitions (here phase 0 to phase 1, phase 1 to phase 2 and phase 2 to phase 3)
-    are continuous. In the event that one (or more) state transition(s) is desired to be discontinuous, 
-    as for example IMPACT or CUSTOM can be used as below. 
+    are continuous. In the event that one (or more) state transition(s) is desired to be discontinuous,
+    as for example IMPACT or CUSTOM can be used as below.
     "phase_pre_idx" corresponds to the index of the phase preceding the transition.
     IMPACT will cause an impact related discontinuity when defining one or more contact points in the model.
     CUSTOM will allow to call the custom function previously presented in order to have its own state transition.
-    Finally, if you want a state transition (continuous or not) between the last and the first phase (cyclicity) 
+    Finally, if you want a state transition (continuous or not) between the last and the first phase (cyclicity)
     you can use the dedicated StateTransition.Cyclic or use a continuous set at the lase phase_pre_idx.
-    
+
     If for some reason, you don't want the state transition to be hard constraint, you can specify a weight higher than
-    zero. It will thereafter be treated as a Mayer objective function with the specified weight. 
+    zero. It will thereafter be treated as a Mayer objective function with the specified weight.
     """
     state_transitions = StateTransitionList()
     state_transitions.add(StateTransition.IMPACT, phase_pre_idx=1)
