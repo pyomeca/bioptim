@@ -221,7 +221,7 @@ class Problem:
             q_dot_mx = vertcat(q_dot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
 
         nlp.shape["q"] = nlp.mapping["q"].reduce.len
-        nlp.shape["qdot"] = nlp.mapping["q_dot"].reduce.len
+        nlp.shape["q_dot"] = nlp.mapping["q_dot"].reduce.len
 
         legend_q = ["q_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q"].reduce.map_idx]
         legend_qdot = ["qdot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q_dot"].reduce.map_idx]
@@ -231,7 +231,7 @@ class Problem:
         if as_states:
             nlp.x = vertcat(nlp.x, q, q_dot)
             nlp.var_states["q"] = nlp.shape["q"]
-            nlp.var_states["q_dot"] = nlp.shape["qdot"]
+            nlp.var_states["q_dot"] = nlp.shape["q_dot"]
             q_bounds = nlp.X_bounds[: nlp.shape["q"]]
             qdot_bounds = nlp.X_bounds[nlp.shape["q"] :]
 
@@ -242,7 +242,7 @@ class Problem:
                 bounds=q_bounds,
             )
             nlp.plot["q_dot"] = CustomPlot(
-                lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["qdot"]],
+                lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["q_dot"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
                 bounds=qdot_bounds,
@@ -250,7 +250,7 @@ class Problem:
         if as_controls:
             nlp.u = vertcat(nlp.u, q, q_dot)
             nlp.var_controls["q"] = nlp.shape["q"]
-            nlp.var_controls["q_dot"] = nlp.shape["qdot"]
+            nlp.var_controls["q_dot"] = nlp.shape["q_dot"]
             # Add plot (and retrieving bounds if plots of bounds) if this problem is ever added
 
         nlp.nx = nlp.x.rows()
@@ -356,7 +356,7 @@ class Problem:
             nlp.x = vertcat(nlp.x, muscles)
             nlp.var_states["muscles"] = nlp.shape["muscle"]
 
-            nx_q = nlp.shape["q"] + nlp.shape["qdot"]
+            nx_q = nlp.shape["q"] + nlp.shape["q_dot"]
             muscles_bounds = nlp.X_bounds[nx_q : nx_q + nlp.shape["muscle"]]
             nlp.plot["muscles_states"] = CustomPlot(
                 lambda x, u, p: x[nx_q : nx_q + nlp.shape["muscle"]],

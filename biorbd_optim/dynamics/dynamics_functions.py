@@ -249,7 +249,7 @@ class DynamicsFunctions:
 
         muscles_states = biorbd.VecBiorbdMuscleState(nlp.shape["muscle"])
         muscles_excitation = controls
-        muscles_activations = states[nlp.shape["q"] + nlp.shape["qdot"] :]
+        muscles_activations = states[nlp.shape["q"] + nlp.shape["q_dot"] :]
 
         for k in range(nlp.shape["muscle"]):
             muscles_states[k].setExcitation(muscles_excitation[k])
@@ -310,7 +310,7 @@ class DynamicsFunctions:
 
         muscles_states = biorbd.VecBiorbdMuscleState(nlp.shape["muscle"])
         muscles_excitation = controls[nlp.shape["tau"] :]
-        muscles_activations = states[nlp.shape["q"] + nlp.shape["qdot"] :]
+        muscles_activations = states[nlp.shape["q"] + nlp.shape["q_dot"] :]
 
         for k in range(nlp.shape["muscle"]):
             muscles_states[k].setExcitation(muscles_excitation[k])
@@ -343,7 +343,7 @@ class DynamicsFunctions:
 
         muscles_states = biorbd.VecBiorbdMuscleState(nlp.shape["muscle"])
         muscles_excitation = controls[nlp.shape["tau"] :]
-        muscles_activations = states[nlp.shape["q"] + nlp.shape["qdot"] :]
+        muscles_activations = states[nlp.shape["q"] + nlp.shape["q_dot"] :]
 
         for k in range(nlp.shape["muscle"]):
             muscles_states[k].setExcitation(muscles_excitation[k])
