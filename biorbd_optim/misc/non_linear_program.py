@@ -62,6 +62,7 @@ class NonLinearProgram:
         self.X_bounds = X_bounds
         self.X_init = X_init
         self.casadi_func = casadi_func
+        self.contact_forces_func = contact_forces_func
         self.control_type = control_type
         self.dt = dt
         self.dynamics = dynamics
@@ -72,8 +73,11 @@ class NonLinearProgram:
         self.g_bounds = g_bounds
         self.mapping = mapping
         self.model = model
+        self.muscleNames = muscleNames
+        self.muscles = muscles
         self.nb_integration_steps = nb_integration_steps
         self.nb_threads = nb_threads
+        self.np = np
         self.ns = ns
         self.nu = nu
         self.nx = nx
@@ -83,7 +87,11 @@ class NonLinearProgram:
         self.parameters_to_optimize = parameters_to_optimize
         self.phase_idx = phase_idx
         self.plot = plot
+        self.problem_type = problem_type
+        self.q = q
+        self.qdot = qdot
         self.shape = shape
+        self.tau = tau
         self.t0 = t0
         self.tf = tf
         self.u = u
