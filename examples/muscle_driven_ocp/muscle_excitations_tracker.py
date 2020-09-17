@@ -37,12 +37,12 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     symbolic_parameters = MX.sym("u", 0, 0)
     nlp = NonLinearProgram(
         model=biorbd_model,
-        shape={"q": nb_q, "q_dot": nb_qdot, "tau": nb_tau, "muscle": nb_mus}
+        shape={"q": nb_q, "q_dot": nb_qdot, "tau": nb_tau, "muscle": nb_mus,},
         mapping={
             "q": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
             "q_dot": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
             "tau": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
-            }
+            },
     )
     markers_func = []
     for i in range(nb_markers):
