@@ -402,7 +402,9 @@ class OptimalControlProgram:
 
         if _type is not None:
             for nlp in self.nlp:
-                if ((name is None and getattr(nlp, param_name) is not None) or (name is not None and param is not None)) and not isinstance(param, _type):
+                if (
+                    (name is None and getattr(nlp, param_name) is not None) or (name is not None and param is not None)
+                ) and not isinstance(param, _type):
                     raise RuntimeError(f"Parameter {param_name} must be a {str(_type)}")
 
     def __prepare_dynamics(self, nlp):
