@@ -44,8 +44,7 @@ def prepare_ocp(biorbd_model_path="cubeSym.bioMod", ode_solver=OdeSolver.RK):
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[4:8, [0, -1]] = 0
-    x_bounds[0].max[4:8, [0, -1]] = 0
+    x_bounds[0][4:8, [0, -1]] = 0
 
     # Initial guess
     x_init = InitialConditionsList()

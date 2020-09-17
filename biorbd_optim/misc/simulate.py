@@ -12,26 +12,26 @@ class Simulate:
         offset = 0
         for nlp in ocp.nlp:
             # TODO adds StateTransitionFunctions between phases
-            for idx_nodes in range(nlp["ns"]):
-                x0 = v_output[offset : offset + nlp["nx"]] if single_shoot else v_input[offset : offset + nlp["nx"]]
+            for idx_nodes in range(nlp.ns):
+                x0 = v_output[offset : offset + nlp.nx] if single_shoot else v_input[offset : offset + nlp.nx]
 
-                if nlp["control_type"] == ControlType.CONSTANT:
-                    p = v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]]
-                elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                if nlp.control_type == ControlType.CONSTANT:
+                    p = v_input[offset + nlp.nx : offset + nlp.nx + nlp.nu]
+                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     p = np.vstack(
                         (
-                            v_input[offset + nlp["nx"] : offset + nlp["nx"] + nlp["nu"]],
-                            v_input[offset + 2 * nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + 2 * nlp["nu"]],
+                            v_input[offset + nlp.nx : offset + nlp.nx + nlp.nu],
+                            v_input[offset + 2 * nlp.nx + nlp.nu : offset + 2 * nlp.nx + 2 * nlp.nu],
                         )
                     ).T
                 else:
-                    raise NotImplementedError(f"Plotting {nlp['control_type']} is not implemented yet")
+                    raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
-                v_output[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
-                    nlp["dynamics"][idx_nodes](x0=x0, p=p)["xf"]
+                v_output[offset + nlp.nx + nlp.nu : offset + 2 * nlp.nx + nlp.nu] = np.array(
+                    nlp.dynamics[idx_nodes](x0=x0, p=p)["xf"]
                 ).squeeze()
 
-                offset += nlp["nx"] + nlp["nu"]
+                offset += nlp.nx + nlp.nu
         sol["x"] = v_output
         return sol
 
@@ -44,24 +44,24 @@ class Simulate:
         offset_phases = 0
         for nlp in ocp.nlp:
             offset = 0
-            if nlp["control_type"] == ControlType.CONSTANT:
-                v_phase = np.ndarray((nlp["ns"] + 1) * nlp["nx"] + nlp["ns"] * nlp["nu"])
-            elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
-                v_phase = np.ndarray((nlp["ns"] + 1) * (nlp["nx"] + nlp["nu"]))
+            if nlp.control_type == ControlType.CONSTANT:
+                v_phase = np.ndarray((nlp.ns + 1) * nlp.nx + nlp.ns * nlp.nu)
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                v_phase = np.ndarray((nlp.ns + 1) * (nlp.nx + nlp.nu))
             else:
-                raise NotImplementedError(f"Plotting {nlp['control_type']} is not implemented yet")
+                raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
-            v_phase[offset : offset + nlp["nx"]] = Simulate._concat_variables(states, offset_phases, 0)
-            for idx_nodes in range(nlp["ns"]):
+            v_phase[offset : offset + nlp.nx] = Simulate._concat_variables(states, offset_phases, 0)
+            for idx_nodes in range(nlp.ns):
                 x0 = (
-                    v_phase[offset : offset + nlp["nx"]]
+                    v_phase[offset : offset + nlp.nx]
                     if single_shoot
                     else Simulate._concat_variables(states, offset_phases, idx_nodes)
                 )
 
-                if nlp["control_type"] == ControlType.CONSTANT:
+                if nlp.control_type == ControlType.CONSTANT:
                     p = Simulate._concat_variables(controls, offset_phases, idx_nodes)
-                elif nlp["control_type"] == ControlType.LINEAR_CONTINUOUS:
+                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     p = np.vstack(
                         (
                             Simulate._concat_variables(controls, offset_phases, idx_nodes),
@@ -69,32 +69,32 @@ class Simulate:
                         )
                     ).T
                 else:
-                    raise NotImplementedError(f"Plotting {nlp['control_type']} is not implemented yet")
+                    raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
-                v_phase[offset + nlp["nx"] + nlp["nu"] : offset + 2 * nlp["nx"] + nlp["nu"]] = np.array(
-                    nlp["dynamics"][idx_nodes](
+                v_phase[offset + nlp.nx + nlp.nu : offset + 2 * nlp.nx + nlp.nu] = np.array(
+                    nlp.dynamics[idx_nodes](
                         x0=x0,
                         p=p,
                     )["xf"]
                 ).squeeze()
 
-                offset += nlp["nx"] + nlp["nu"]
+                offset += nlp.nx + nlp.nu
             v = np.append(v, v_phase)
-            offset_phases += nlp["ns"]
+            offset_phases += nlp.ns
         return {"x": v}
 
     @staticmethod
     def from_controls_and_initial_states(ocp, states, controls, single_shoot=False):
         # todo flag single/multiple here and in from_solve (copy states)
-        states.check_and_adjust_dimensions(ocp.nlp[0]["nx"], ocp.nlp[0]["ns"])
+        states.check_and_adjust_dimensions(ocp.nlp[0].nx, ocp.nlp[0].ns)
         v = states.init.evaluate_at(0)
 
         if not isinstance(controls, (list, tuple)):
             controls = (controls,)
 
         for idx_phase, nlp in enumerate(ocp.nlp):
-            controls[idx_phase].check_and_adjust_dimensions(nlp["nu"], nlp["ns"] - 1)
-            for idx_nodes in range(nlp["ns"]):
+            controls[idx_phase].check_and_adjust_dimensions(nlp.nu, nlp.ns - 1)
+            for idx_nodes in range(nlp.ns):
                 v = np.append(v, controls[idx_phase].init.evaluate_at(shooting_point=idx_nodes))
                 v = np.append(v, states.init.evaluate_at(0))
 

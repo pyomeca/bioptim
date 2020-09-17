@@ -57,12 +57,9 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK, long_o
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
-            bounds.min[i, [0, -1]] = 0
-            bounds.max[i, [0, -1]] = 0
-    x_bounds[0].min[2, 0] = 0.0
-    x_bounds[0].max[2, 0] = 0.0
-    x_bounds[2].min[2, [0, -1]] = [0.0, 1.57]
-    x_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
+            bounds[i, [0, -1]] = 0
+    x_bounds[0][2, 0] = 0.0
+    x_bounds[2][2, [0, -1]] = [0.0, 1.57]
 
     # Initial guess
     x_init = InitialConditionsList()

@@ -56,8 +56,7 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:, 0] = 0
-    x_bounds[0].max[:, 0] = 0
+    x_bounds[0][:, 0] = 0
 
     # Initial guess
     x_init = InitialConditionsList()
@@ -124,7 +123,7 @@ if __name__ == "__main__":
     label_markers = []
     title_markers = ["x", "y", "z"]
     for mark in range(biorbd_model.nbMarkers()):
-        label_markers.append(ocp.nlp[0]["model"].markerNames()[mark].to_string())
+        label_markers.append(ocp.nlp[0].model.markerNames()[mark].to_string())
 
     ocp.add_plot(
         "Markers plot coordinates",

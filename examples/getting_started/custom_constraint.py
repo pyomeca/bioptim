@@ -22,11 +22,11 @@ from biorbd_optim import (
 
 
 def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
-    nq = nlp["nbQ"]
+    nq = nlp.shape["q"]
     val = []
     for v in x:
         q = v[:nq]
-        markers = nlp["model"].markers(q)
+        markers = nlp.model.markers(q)
         first_marker = markers[:, first_marker_idx]
         second_marker = markers[:, second_marker_idx]
         val = vertcat(val, first_marker - second_marker)
@@ -56,10 +56,8 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
 
     # Path constraint
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-    x_bounds.min[1:6, [0, -1]] = 0
-    x_bounds.max[1:6, [0, -1]] = 0
-    x_bounds.min[2, -1] = 1.57
-    x_bounds.max[2, -1] = 1.57
+    x_bounds[1:6, [0, -1]] = 0
+    x_bounds[2, -1] = 1.57
 
     # Initial guess
     x_init = InitialConditionsOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))

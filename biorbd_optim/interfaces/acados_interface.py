@@ -38,12 +38,12 @@ class AcadosInterface(SolverInterface):
 
     def __acados_export_model(self, ocp):
         # Declare model variables
-        x = ocp.nlp[0]["X"][0]
-        u = ocp.nlp[0]["U"][0]
-        p = ocp.nlp[0]["p"]
+        x = ocp.nlp[0].X[0]
+        u = ocp.nlp[0].U[0]
+        p = ocp.nlp[0].p
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
-        f_expl = ocp.nlp[0]["dynamics_func"](x, u, p)
+        f_expl = ocp.nlp[0].dynamics_func(x, u, p)
         f_impl = x_dot - f_expl
 
         self.acados_model.f_impl_expr = f_impl
@@ -66,45 +66,45 @@ class AcadosInterface(SolverInterface):
         # set dimensions
         for i in range(ocp.nb_phases):
             # set time
-            self.acados_ocp.solver_options.tf = ocp.nlp[i]["tf"]
+            self.acados_ocp.solver_options.tf = ocp.nlp[i].tf
             # set dimensions
-            self.acados_ocp.dims.nx = ocp.nlp[i]["nx"]
-            self.acados_ocp.dims.nu = ocp.nlp[i]["nu"]
+            self.acados_ocp.dims.nx = ocp.nlp[i].nx
+            self.acados_ocp.dims.nu = ocp.nlp[i].nu
             self.acados_ocp.dims.ny = self.acados_ocp.dims.nx + self.acados_ocp.dims.nu
-            self.acados_ocp.dims.ny_e = ocp.nlp[i]["nx"]
-            self.acados_ocp.dims.N = ocp.nlp[i]["ns"]
+            self.acados_ocp.dims.ny_e = ocp.nlp[i].nx
+            self.acados_ocp.dims.N = ocp.nlp[i].ns
 
         for i in range(ocp.nb_phases):
             # set constraints
-            for j in range(ocp.nlp[i]["nx"]):
-                if ocp.nlp[i]["X_bounds"].min[j, 0] == -np.inf and ocp.nlp[i]["X_bounds"].max[j, 0] == np.inf:
+            for j in range(ocp.nlp[i].nx):
+                if ocp.nlp[i].X_bounds.min[j, 0] == -np.inf and ocp.nlp[i].X_bounds.max[j, 0] == np.inf:
                     pass
-                elif ocp.nlp[i]["X_bounds"].min[j, 0] != ocp.nlp[i]["X_bounds"].max[j, 0]:
+                elif ocp.nlp[i].X_bounds.min[j, 0] != ocp.nlp[i].X_bounds.max[j, 0]:
                     raise RuntimeError(
                         "Initial constraint on state must be hard. Hint: you can pass it as an objective"
                     )
                 else:
-                    self.acados_ocp.constraints.x0 = np.array(ocp.nlp[i]["X_bounds"].min[:, 0])
+                    self.acados_ocp.constraints.x0 = np.array(ocp.nlp[i].X_bounds.min[:, 0])
                     self.acados_ocp.dims.nbx_0 = self.acados_ocp.dims.nx
 
             # control constraints
             self.acados_ocp.constraints.constr_type = "BGH"
-            self.acados_ocp.constraints.lbu = np.array(ocp.nlp[i]["U_bounds"].min[:, 0])
-            self.acados_ocp.constraints.ubu = np.array(ocp.nlp[i]["U_bounds"].max[:, 0])
+            self.acados_ocp.constraints.lbu = np.array(ocp.nlp[i].U_bounds.min[:, 0])
+            self.acados_ocp.constraints.ubu = np.array(ocp.nlp[i].U_bounds.max[:, 0])
             self.acados_ocp.constraints.idxbu = np.array(range(self.acados_ocp.dims.nu))
             self.acados_ocp.dims.nbu = self.acados_ocp.dims.nu
 
             # path constraints
             self.acados_ocp.constraints.Jbx = np.eye(self.acados_ocp.dims.nx)
-            self.acados_ocp.constraints.ubx = np.array(ocp.nlp[i]["X_bounds"].max[:, 1])
-            self.acados_ocp.constraints.lbx = np.array(ocp.nlp[i]["X_bounds"].min[:, 1])
+            self.acados_ocp.constraints.ubx = np.array(ocp.nlp[i].X_bounds.max[:, 1])
+            self.acados_ocp.constraints.lbx = np.array(ocp.nlp[i].X_bounds.min[:, 1])
             self.acados_ocp.constraints.idxbx = np.array(range(self.acados_ocp.dims.nx))
             self.acados_ocp.dims.nbx = self.acados_ocp.dims.nx
 
             # terminal constraints
             self.acados_ocp.constraints.Jbx_e = np.eye(self.acados_ocp.dims.nx)
-            self.acados_ocp.constraints.ubx_e = np.array(ocp.nlp[i]["X_bounds"].max[:, -1])
-            self.acados_ocp.constraints.lbx_e = np.array(ocp.nlp[i]["X_bounds"].min[:, -1])
+            self.acados_ocp.constraints.ubx_e = np.array(ocp.nlp[i].X_bounds.max[:, -1])
+            self.acados_ocp.constraints.lbx_e = np.array(ocp.nlp[i].X_bounds.min[:, -1])
             self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
             self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
 
@@ -142,7 +142,7 @@ class AcadosInterface(SolverInterface):
                 # TODO: Yes the objectives in ocp are not dealt with,
                 #  does that makes sense since we only work with 1 phase ?
                 # TODO: If you use parameter, it is added to the main J
-                for j, J in enumerate(ocp.nlp[i]["J"]):
+                for j, J in enumerate(ocp.nlp[i].J):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
                         self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"].reshape((-1, 1)))
                         self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * J[0]["val"].numel()))
@@ -152,11 +152,11 @@ class AcadosInterface(SolverInterface):
                             self.y_ref.append([np.zeros((J_tp["val"].numel(), 1)) for J_tp in J])
 
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
-                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i]["X"][-1]], [J[0]["val"]])
+                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                         self.W_e = linalg.block_diag(
                             self.W_e, np.diag([J[0]["objective"].weight] * J[0]["val"].numel())
                         )
-                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i]["X"][0]))
+                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
                         if J[0]["target"] is not None:
                             self.y_ref_end.append([J[0]["target"]])
                         else:
@@ -183,16 +183,16 @@ class AcadosInterface(SolverInterface):
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
             for i in range(ocp.nb_phases):
-                for j in range(len(ocp.nlp[i]["J"])):
-                    J = ocp.nlp[i]["J"][j][0]
+                for j in range(len(ocp.nlp[i].J)):
+                    J = ocp.nlp[i].J[j][0]
 
                     raise RuntimeError("TODO: The target for EXTERNAL is not right currently")
                     if J["type"] == ObjectiveFunction.LagrangeFunction:
                         self.lagrange_costs = vertcat(self.lagrange_costs, J["val"][0] - J["target"][0])
                     elif J["type"] == ObjectiveFunction.MayerFunction:
                         raise RuntimeError("TODO: I may have broken this (is this the right J?)")
-                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i]["X"][-1]], [J["val"]])
-                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i]["X"][0]))
+                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J["val"]])
+                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
             self.acados_ocp.model.cost_expr_ext_cost = sum1(self.lagrange_costs)

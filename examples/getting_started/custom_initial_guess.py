@@ -50,10 +50,8 @@ def prepare_ocp(
 
     # Path constraint and control path constraints
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-    x_bounds.min[1:6, [0, -1]] = 0
-    x_bounds.max[1:6, [0, -1]] = 0
-    x_bounds.min[2, -1] = 1.57
-    x_bounds.max[2, -1] = 1.57
+    x_bounds[1:6, [0, -1]] = 0
+    x_bounds[2, -1] = 1.57
     u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
 
     # Initial guesses
