@@ -369,7 +369,7 @@ class DynamicsFunctions:
         """
         nq = nlp.mapping["q"].reduce.len
         q = nlp.mapping["q"].expand.map(states[:nq])
-        qdot = nlp.mapping["q"].expand.map(states[nq:])
+        qdot = nlp.mapping["q_dot"].expand.map(states[nq:])
         tau = nlp.mapping["tau"].expand.map(controls[: nlp.shape["tau"]])
 
         return q, qdot, tau
