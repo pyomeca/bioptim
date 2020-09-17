@@ -263,17 +263,16 @@ class OptimalControlProgram:
             if q_mapping is not None or q_dot_mapping is not None or tau_mapping is not None:
                 raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used alongside")
             q_mapping = q_dot_mapping = tau_mapping = all_generalized_mapping
-        # TODO: find a clean solution for those
-        self.__add_to_nlp("q", q_mapping, q_mapping is None, BidirectionalMapping, mapping=True)
-        self.__add_to_nlp("q_dot", q_dot_mapping, q_dot_mapping is None, BidirectionalMapping, mapping=True)
-        self.__add_to_nlp("tau", tau_mapping, tau_mapping is None, BidirectionalMapping, mapping=True)
+        self.__add_to_nlp("q", q_mapping, q_mapping is None, BidirectionalMapping, name="mapping")
+        self.__add_to_nlp("q_dot", q_dot_mapping, q_dot_mapping is None, BidirectionalMapping, name="mapping")
+        self.__add_to_nlp("tau", tau_mapping, tau_mapping is None, BidirectionalMapping, name="mapping")
         plot_mappings = plot_mappings if plot_mappings is not None else {}
         reshaped_plot_mappings = []
         for i in range(self.nb_phases):
             reshaped_plot_mappings.append({})
             for key in plot_mappings:
                 reshaped_plot_mappings[i][key] = plot_mappings[key][i]
-        self.__add_to_nlp("plot", reshaped_plot_mappings, False, mapping=True)
+        self.__add_to_nlp("plot", reshaped_plot_mappings, False, name="mapping")
 
         # Prepare the parameters to optimize
         self.state_transitions = []
@@ -353,7 +352,7 @@ class OptimalControlProgram:
         nlp.g_bounds = []
         nlp.casadi_func = {}
 
-    def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None, mapping=False):
+    def __add_to_nlp(self, param_name, param, duplicate_if_size_is_one, _type=None, name=None):
         """Adds coupled parameters to the non linear problem"""
         if isinstance(param, (list, tuple)):
             if len(param) != self.nb_phases:
@@ -362,24 +361,24 @@ class OptimalControlProgram:
                 )
             else:
                 for i in range(self.nb_phases):
-                    if not mapping:
+                    if name is None:
                         setattr(self.nlp[i], param_name, param[i])
                     else:
-                        self.nlp[i].mapping[param_name] = param[i]
+                        getattr(self.nlp[i], name)[param_name] = param[i]
         elif isinstance(param, OptionList):
             if len(param) == self.nb_phases:
                 for i in range(self.nb_phases):
-                    if not mapping:
+                    if name is None:
                         setattr(self.nlp[i], param_name, param[i])
                     else:
-                        self.nlp[i].mapping[param_name] = param[i]
+                        getattr(self.nlp[i], name)[param_name] = param[i]
             else:
                 if len(param) == 1 and duplicate_if_size_is_one:
                     for i in range(self.nb_phases):
-                        if not mapping:
+                        if name is None:
                             setattr(self.nlp[i], param_name, param[0])
                         else:
-                            self.nlp[i].mapping[param_name] = param[0]
+                            getattr(self.nlp[i], name)[param_name] = param[0]
                 else:
                     raise RuntimeError(
                         f"{param_name} size({len(param)}) does not correspond "
@@ -387,23 +386,23 @@ class OptimalControlProgram:
                     )
         else:
             if self.nb_phases == 1:
-                if not mapping:
+                if name is None:
                     setattr(self.nlp[0], param_name, param)
                 else:
-                    self.nlp[0].mapping[param_name] = param
+                    getattr(self.nlp[0], name)[param_name] = param
             else:
                 if duplicate_if_size_is_one:
                     for i in range(self.nb_phases):
-                        if not mapping:
+                        if name is None:
                             setattr(self.nlp[i], param_name, param)
                         else:
-                            self.nlp[i].mapping[param_name] = param
+                            getattr(self.nlp[i], name)[param_name] = param
                 else:
                     raise RuntimeError(f"{param_name} must be a list or tuple when number of phase is not equal to 1")
 
-        if _type is not None and not mapping:
+        if _type is not None:
             for nlp in self.nlp:
-                if getattr(nlp, param_name) is not None and not isinstance(getattr(nlp, param_name), _type):
+                if ((name is None and getattr(nlp, param_name) is not None) or (name is not None and param is not None)) and not isinstance(param, _type):
                     raise RuntimeError(f"Parameter {param_name} must be a {str(_type)}")
 
     def __prepare_dynamics(self, nlp):
