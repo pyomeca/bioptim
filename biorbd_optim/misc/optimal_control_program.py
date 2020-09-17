@@ -492,9 +492,7 @@ class OptimalControlProgram:
             offset += nlp.nx
             V = vertcat(V, X_)
 
-            if nlp.control_type != ControlType.CONSTANT or (
-                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
-                    ):
+            if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
                 U_ = nlp.CX.sym("U_" + str(idx_phase) + "_" + str(k), nlp.nu, 1)
                 U.append(U_)
                 V_bounds.min[offset : offset + nlp.nu, 0] = nlp.U_bounds.min.evaluate_at(shooting_point=k)

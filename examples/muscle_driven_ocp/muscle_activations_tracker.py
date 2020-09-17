@@ -58,7 +58,7 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
         mapping={
             "q": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
             "q_dot": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
-            },
+        },
     )
     if use_residual_torque:
         nlp.shape["tau"] = nb_tau
