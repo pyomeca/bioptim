@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 
 from biorbd_optim import (
     OptimalControlProgram,
+    NonLinearProgram,
     BidirectionalMapping,
     Mapping,
     DynamicsTypeList,
@@ -34,7 +35,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     symbolic_states = MX.sym("x", nb_q + nb_qdot + nb_mus, 1)
     symbolic_controls = MX.sym("u", nb_tau + nb_mus, 1)
     symbolic_parameters = MX.sym("u", 0, 0)
-    nlp = {
+    nlp = NonLinearProgram(
         model=biorbd_model,
         shape={"q": nb_q, "q_dot": nb_qdot, "tau": nb_tau, "muscle": nb_mus}
         mapping={
@@ -42,7 +43,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
             "q_dot": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
             "tau": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
             }
-    }
+    )
     markers_func = []
     for i in range(nb_markers):
         markers_func.append(
