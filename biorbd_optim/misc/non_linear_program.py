@@ -34,6 +34,7 @@ class NonLinearProgram:
         ode_solver=OdeSolver.RK,
         p=None,
         par_dynamics={},
+        parameters_to_optimize={},
         phase_idx=0,
         plot={},
         shape={},
@@ -71,6 +72,7 @@ class NonLinearProgram:
         self.ode_solver = ode_solver
         self.p = p
         self.par_dynamics = par_dynamics
+        self.parameters_to_optimize = parameters_to_optimize
         self.phase_idx = phase_idx
         self.plot = plot
         self.shape = shape
