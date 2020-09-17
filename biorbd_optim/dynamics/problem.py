@@ -226,7 +226,7 @@ class Problem:
         legend_qdot = ["qdot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q_dot"].reduce.map_idx]
 
         nlp.q = q_mx
-        nlp.qdot = q_dot_mx
+        nlp.q_dot = q_dot_mx
         if as_states:
             nlp.x = vertcat(nlp.x, q, q_dot)
             nlp.var_states["q"] = nlp.shape["q"]

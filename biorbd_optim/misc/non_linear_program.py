@@ -43,7 +43,7 @@ class NonLinearProgram:
         plot={},
         problem_type={},
         q=None,
-        qdot=None,
+        q_dot=None,
         shape={},
         tau=None,
         t0=0.0,
@@ -89,7 +89,7 @@ class NonLinearProgram:
         self.plot = plot
         self.problem_type = problem_type
         self.q = q
-        self.qdot = qdot
+        self.q_dot = q_dot
         self.shape = shape
         self.tau = tau
         self.t0 = t0

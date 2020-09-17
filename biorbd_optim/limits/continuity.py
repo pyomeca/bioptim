@@ -76,7 +76,7 @@ class StateTransitionFunctions:
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
             model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
             func = biorbd.to_casadi_func(
-                "impulse_direct", model.ComputeConstraintImpulsesDirect, nlp_pre.q, nlp_pre.qdot
+                "impulse_direct", model.ComputeConstraintImpulsesDirect, nlp_pre.q, nlp_pre.q_dot
             )
             qdot_post = func(q, qdot_pre)
             qdot_post = nlp_post.mapping["q_dot"].reduce.map(qdot_post)

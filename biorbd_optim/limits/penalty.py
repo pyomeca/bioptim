@@ -168,7 +168,7 @@ class PenaltyFunctionAbstract:
                 )
 
             PenaltyFunctionAbstract._add_to_casadi_func(
-                nlp, "biorbd_markerVelocity", nlp.model.markerVelocity, nlp.q, nlp.qdot, markers_idx[0]
+                nlp, "biorbd_markerVelocity", nlp.model.markerVelocity, nlp.q, nlp.q_dot, markers_idx[0]
             )
 
             target_tp = None
@@ -348,7 +348,7 @@ class PenaltyFunctionAbstract:
             """
             g = -9.81  # get gravity from biorbd
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM", nlp.model.CoM, nlp.q)
-            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp.model.CoMdot, nlp.q, nlp.qdot)
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
             for i, v in enumerate(x):
                 q = nlp.mapping["q"].expand.map(v[: nlp.shape["q"]])
                 q_dot = nlp.mapping["q_dot"].expand.map(v[nlp.shape["q"] :])
