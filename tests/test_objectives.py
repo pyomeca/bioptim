@@ -206,7 +206,9 @@ def test_objective_proportional_state():
     x = [np.ones((12, 1)) / 10]
     penalty_type = Objective.Lagrange.PROPORTIONAL_STATE
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], which_var="states", first_dof=0, second_dof=1, coef=2)
+    penalty_type.value[0](
+        penalty, ocp, ocp.nlp[0], [], x, [], [], which_var="states", first_dof=0, second_dof=1, coef=2
+    )
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0][0]["val"],
@@ -219,7 +221,9 @@ def test_objective_proportional_control():
     x = [np.ones((12, 1)) / 10]
     penalty_type = Objective.Lagrange.PROPORTIONAL_CONTROL
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], which_var="controls", first_dof=0, second_dof=1, coef=2)
+    penalty_type.value[0](
+        penalty, ocp, ocp.nlp[0], [], x, [], [], which_var="controls", first_dof=0, second_dof=1, coef=2
+    )
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0],
@@ -353,11 +357,7 @@ def test_objective_align_segment_with_custom_rt():
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0][0]["val"],
-        np.array([
-            [0],
-            [0.1],
-            [0]
-            ]),
+        np.array([[0], [0.1], [0]]),
     )
 
 
