@@ -11,6 +11,7 @@ class AcadosInterface(SolverInterface):
     def __init__(self, ocp, **solver_options):
         if not isinstance(ocp.CX(), SX):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS. Please set use_SX to True in OCP")
+
         super().__init__(ocp)
 
         # If Acados is installed using the acados_install.sh file, you probably can leave this to unset
@@ -36,6 +37,8 @@ class AcadosInterface(SolverInterface):
         self.y_ref_end = []
         self.__acados_export_model(ocp)
         self.__prepare_acados(ocp)
+        self.__set_costs(ocp)
+        self.__set_constrs(ocp)
         self.ocp_solver = None
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
@@ -83,7 +86,7 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.constraints.constr_type_e = constr_type
 
     def __set_constrs(self, ocp):
-        # constraints handling
+        # constraints handling in self.acados_ocp
         u_min = np.array(ocp.nlp[0]["U_bounds"].min)
         u_max = np.array(ocp.nlp[0]["U_bounds"].max)
         if not np.all(np.all(u_min.T == u_min.T[0, :], axis=0)):
@@ -124,6 +127,7 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.cost.cost_type_e = cost_type
 
     def __set_costs(self, ocp):
+        # costs handling in self.acados_ocp
         self.y_ref = []
         self.y_ref_end = []
         self.lagrange_costs = SX()
@@ -210,6 +214,21 @@ class AcadosInterface(SolverInterface):
         else:
             raise RuntimeError("Available acados cost type: 'LINEAR_LS', 'NONLINEAR_LS' and 'EXTERNAL'.")
 
+    def __init_and_update_solver(self):
+        for n in range(self.acados_ocp.dims.N):
+            self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
+            self.ocp_solver.set(n, 'x', self.ocp.nlp[0]["X_init"].init[:, n])
+            self.ocp_solver.set(n, 'u', self.ocp.nlp[0]["U_init"].init[:, n])
+            if n == 0:
+                self.ocp_solver.constraints_set(n, "lbx", self.ocp.nlp[0]["X_bounds"].min[:, n])
+                self.ocp_solver.constraints_set(n, "ubx", self.ocp.nlp[0]["X_bounds"].max[:, n])
+            else:
+                self.ocp_solver.constraints_set(n, "lbx", self.ocp.nlp[0]["X_bounds"].min[:, 1])
+                self.ocp_solver.constraints_set(n, "ubx", self.ocp.nlp[0]["X_bounds"].max[:, 1])
+        self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.ocp.nlp[0]["X_bounds"].min[:, -1])
+        self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.ocp.nlp[0]["X_bounds"].max[:, -1])
+        self.ocp_solver.set(self.acados_ocp.dims.N, 'x', self.ocp.nlp[0]["X_init"].init[:, self.acados_ocp.dims.N])
+
     def configure(self, options):
         if "acados_dir" in options:
             del options["acados_dir"]
@@ -271,30 +290,9 @@ class AcadosInterface(SolverInterface):
         # populate costs and constrs vectors
         self.__set_costs(self.ocp)
         self.__set_constrs(self.ocp)
-
         if self.ocp_solver is None:
             self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
-
-        for n in range(self.acados_ocp.dims.N):
-            self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
-            if n == 0:
-                self.ocp_solver.constraints_set(n, "lbx", self.ocp.nlp[0]["X_bounds"].min[:, n])
-                self.ocp_solver.constraints_set(n, "ubx", self.ocp.nlp[0]["X_bounds"].max[:, n])
-                # print(f"Xmin_{n} = {self.ocp.nlp[0]['X_bounds'].min[:, n]}")
-                # print(f"Xmax_{n} = {self.ocp.nlp[0]['X_bounds'].max[:, n]}")
-            elif n == self.acados_ocp.dims.N-1:
-                self.ocp_solver.constraints_set(n, "lbx", self.ocp.nlp[0]["X_bounds"].min[:, -1])
-                self.ocp_solver.constraints_set(n, "ubx", self.ocp.nlp[0]["X_bounds"].max[:, -1])
-                # print(f"Xmin_{n} = {self.ocp.nlp[0]['X_bounds'].min[:, -1]}")
-                # print(f"Xmax_{n} = {self.ocp.nlp[0]['X_bounds'].max[:, -1]}")
-            else:
-                self.ocp_solver.constraints_set(n, "lbx", self.ocp.nlp[0]["X_bounds"].min[:, 1])
-                self.ocp_solver.constraints_set(n, "ubx", self.ocp.nlp[0]["X_bounds"].max[:, 1])
-                # print(f"Xmin_{n} = {self.ocp.nlp[0]['X_bounds'].min[:, 1]}")
-                # print(f"Xmax_{n} = {self.ocp.nlp[0]['X_bounds'].max[:, 1]}")
-
+        self.__init_and_update_solver()
         self.ocp_solver.solve()
         self.get_optimized_value()
-        for i in range(self.acados_ocp.dims.N+1):
-            print(self.ocp_solver.get(i, 'x'))
         return self
