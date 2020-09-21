@@ -80,7 +80,7 @@ def test_objective_track_state(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.TRACK_STATE
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [1], x, [], [], target=np.ones((8, 11))*value)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [1], x, [], [], target=np.ones((8, 11)) * value)
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0][0]["val"],
@@ -109,16 +109,16 @@ def test_objective_minimize_markers(lagrange_or_mayer, value):
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
     res = np.array(
-            [
-                [0.1, 0.99517075, 1.9901749, 1.0950042, 1, 2, 0.49750208],
-                [0, 0, 0, 0, 0, 0, 0],
-                [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, -0.0499167],
-            ]
-        )
+        [
+            [0.1, 0.99517075, 1.9901749, 1.0950042, 1, 2, 0.49750208],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, -0.0499167],
+        ]
+    )
     if value == -10:
         res = np.array(
             [
-                [-10, -11.3830926, -12.2221642, -10.8390715, 1., 2., -0.4195358],
+                [-10, -11.3830926, -12.2221642, -10.8390715, 1.0, 2.0, -0.4195358],
                 [0, 0, 0, 0, 0, 0, 0],
                 [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, -0.2720106],
             ]
@@ -137,19 +137,19 @@ def test_objective_track_markers(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.TRACK_MARKERS
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [2], x, [], [], target=np.ones((3, 7, 11))*value)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [2], x, [], [], target=np.ones((3, 7, 11)) * value)
 
     res = np.array(
-            [
-                [0.1, 0.99517075, 1.9901749, 1.0950042, 1, 2, 0.49750208],
-                [0, 0, 0, 0, 0, 0, 0],
-                [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, -0.0499167],
-            ]
-        )
+        [
+            [0.1, 0.99517075, 1.9901749, 1.0950042, 1, 2, 0.49750208],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, -0.0499167],
+        ]
+    )
     if value == -10:
         res = np.array(
             [
-                [-10, -11.3830926, -12.2221642, -10.8390715, 1., 2., -0.4195358],
+                [-10, -11.3830926, -12.2221642, -10.8390715, 1.0, 2.0, -0.4195358],
                 [0, 0, 0, 0, 0, 0, 0],
                 [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, -0.2720106],
             ]
@@ -204,7 +204,7 @@ def test_objective_track_markers_velocity(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.TRACK_MARKERS_VELOCITY
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [3], x, [], [], target=np.ones((3, 7, 11))*value)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [3], x, [], [], target=np.ones((3, 7, 11)) * value)
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0][0]["val"],
@@ -228,12 +228,12 @@ def test_objective_align_markers(lagrange_or_mayer, value):
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], first_marker_idx=0, second_marker_idx=1)
 
     res = np.array(
-            [
-                [-0.8951707],
-                [0],
-                [1.0948376],
-            ]
-        )
+        [
+            [-0.8951707],
+            [0],
+            [1.0948376],
+        ]
+    )
     if value == -10:
         res = np.array(
             [
