@@ -36,27 +36,13 @@ def prepare_test_ocp():
     return ocp
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_time(lagrange_or_mayer, value):
-    ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.MINIMIZE_TIME
-    penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
-
-    np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0][0]["val"],
-        np.array(1),
-    )
-
-
-@pytest.mark.parametrize("value", [0.1, -10])
-def test_constraint(value):
+def test_penalty_minimize_time(penalty_origin, value):
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
-    penalty_type = Constraint.TRACK_STATE
-    penalty = ConstraintOption(penalty_type)
+    penalty_type = penalty_origin.MINIMIZE_TIME
+    penalty = ObjectiveOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
     np.testing.assert_almost_equal(
@@ -65,12 +51,12 @@ def test_constraint(value):
     )
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_state(lagrange_or_mayer, value):
+def test_penalty_minimize_state(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.MINIMIZE_STATE
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.MINIMIZE_STATE
     penalty = ObjectiveOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
@@ -91,38 +77,80 @@ def test_objective_minimize_state(lagrange_or_mayer, value):
     )
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_track_state(lagrange_or_mayer, value):
+def test_penalty_track_state(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.TRACK_STATE
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.TRACK_STATE
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [1], x, [], [], target=np.ones((8, 11)) * value)
 
-    np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0][0]["val"],
-        np.array(
-            [
-                [value],
-                [value],
-                [value],
-                [value],
-                [value],
-                [value],
-                [value],
-                [value],
-            ]
-        ),
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]
+
+    expected = np.array(
+        [
+            [value],
+            [value],
+            [value],
+            [value],
+            [value],
+            [value],
+            [value],
+            [value],
+        ]
     )
 
+    np.testing.assert_almost_equal(
+        res,
+        expected,
+    )
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+                ocp.nlp[0].g_bounds[0][0].min,
+                np.array(
+                [
+                    [0],
+                    [0],
+                    [0],
+                    [0],
+                    [0],
+                    [0],
+                    [0],
+                    [0],
+                ]
+            )
+        )
+        np.testing.assert_almost_equal(
+                ocp.nlp[0].g_bounds[0][0].max,
+                np.array(
+                [
+                    [0],
+                    [0],
+                    [0],
+                    [0],
+                    [0],
+                    [0],
+                    [0],
+                    [0],
+                ]
+            )
+        )
+
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_markers(lagrange_or_mayer, value):
+def test_penalty_minimize_markers(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.MINIMIZE_MARKERS
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.MINIMIZE_MARKERS
     penalty = ObjectiveOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
@@ -148,16 +176,26 @@ def test_objective_minimize_markers(lagrange_or_mayer, value):
     )
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_track_markers(lagrange_or_mayer, value):
+def test_penalty_track_markers(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.TRACK_MARKERS
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.TRACK_MARKERS
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [2], x, [], [], target=np.ones((3, 7, 11)) * value)
 
-    res = np.array(
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]
+
+    expected = np.array(
         [
             [0.1, 0.99517075, 1.9901749, 1.0950042, 1, 2, 0.49750208],
             [0, 0, 0, 0, 0, 0, 0],
@@ -165,7 +203,7 @@ def test_objective_track_markers(lagrange_or_mayer, value):
         ]
     )
     if value == -10:
-        res = np.array(
+        expected = np.array(
             [
                 [-10, -11.3830926, -12.2221642, -10.8390715, 1.0, 2.0, -0.4195358],
                 [0, 0, 0, 0, 0, 0, 0],
@@ -174,17 +212,39 @@ def test_objective_track_markers(lagrange_or_mayer, value):
         )
 
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0][0]["val"],
         res,
+        expected,
     )
 
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].min,
+            np.array(
+                [
+                    [0],
+                    [0],
+                    [0],
+                ]
+            )
+        )
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].max,
+            np.array(
+                [
+                    [0],
+                    [0],
+                    [0],
+                ]
+            )
+        )
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_markers_displacement(lagrange_or_mayer, value):
+def test_penalty_minimize_markers_displacement(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.MINIMIZE_MARKERS_DISPLACEMENT
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.MINIMIZE_MARKERS_DISPLACEMENT
     penalty = ObjectiveOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
@@ -194,12 +254,12 @@ def test_objective_minimize_markers_displacement(lagrange_or_mayer, value):
     )
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_markers_velocity(lagrange_or_mayer, value):
+def test_penalty_minimize_markers_velocity(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.MINIMIZE_MARKERS_VELOCITY
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.MINIMIZE_MARKERS_VELOCITY
     penalty = ObjectiveOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
@@ -215,17 +275,27 @@ def test_objective_minimize_markers_velocity(lagrange_or_mayer, value):
     )
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_track_markers_velocity(lagrange_or_mayer, value):
+def test_penalty_track_markers_velocity(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.TRACK_MARKERS_VELOCITY
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.TRACK_MARKERS_VELOCITY
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [3], x, [], [], target=np.ones((3, 7, 11)) * value)
 
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0][0]["val"],
+        res,
         np.array(
             [
                 [value],
@@ -235,17 +305,44 @@ def test_objective_track_markers_velocity(lagrange_or_mayer, value):
         ),
     )
 
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].min,
+            np.array(
+                [
+                    [0],
+                    [0],
+                    [0],
+                ]
+            )
+        )
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].max,
+            np.array(
+                [
+                    [0],
+                    [0],
+                    [0],
+                ]
+            )
+        )
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_align_markers(lagrange_or_mayer, value):
+def test_penalty_align_markers(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.ALIGN_MARKERS
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.ALIGN_MARKERS
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], first_marker_idx=0, second_marker_idx=1)
 
-    res = np.array(
+    expected = np.array(
         [
             [-0.8951707],
             [0],
@@ -253,7 +350,7 @@ def test_objective_align_markers(lagrange_or_mayer, value):
         ]
     )
     if value == -10:
-        res = np.array(
+        expected = np.array(
             [
                 [1.3830926],
                 [0],
@@ -261,52 +358,115 @@ def test_objective_align_markers(lagrange_or_mayer, value):
             ]
         )
 
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0][0]["val"],
         res,
+        expected,
     )
 
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].min,
+            np.array(
+                [
+                    [0],
+                    [0],
+                    [0],
+                ]
+            )
+        )
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].max,
+            np.array(
+                [
+                    [0],
+                    [0],
+                    [0],
+                ]
+            )
+        )
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_proportional_state(lagrange_or_mayer, value):
+def test_penalty_proportional_state(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.PROPORTIONAL_STATE
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.PROPORTIONAL_STATE
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
     penalty_type.value[0](
         penalty, ocp, ocp.nlp[0], [], x, [], [], which_var="states", first_dof=0, second_dof=1, coef=2
     )
 
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0][0]["val"],
-        np.array([-value]),
+        res,
+        np.array([[-value]]),
     )
 
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].min,
+            np.array([[0]])
+        )
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].max,
+            np.array([[0]])
+        )
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_proportional_control(lagrange_or_mayer, value):
+def test_penalty_proportional_control(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.PROPORTIONAL_CONTROL
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.PROPORTIONAL_CONTROL
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
     penalty_type.value[0](
         penalty, ocp, ocp.nlp[0], [], x, [], [], which_var="controls", first_dof=0, second_dof=1, coef=2
     )
 
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0]
+    else:
+        res = ocp.nlp[0].g[0]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0],
+        res,
         np.array([]),
     )
 
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0],
+            np.array([])
+        )
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_torque(lagrange_or_mayer, value):
+def test_penalty_minimize_torque(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.MINIMIZE_TORQUE
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.MINIMIZE_TORQUE
     penalty = ObjectiveOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
@@ -316,25 +476,41 @@ def test_objective_minimize_torque(lagrange_or_mayer, value):
     )
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_track_torque(lagrange_or_mayer, value):
+def test_penalty_track_torque(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = Objective.Lagrange.TRACK_TORQUE
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.TRACK_TORQUE
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [4], x, [], [], target=np.ones((4, 10)) * value)
 
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0]
+    else:
+        res = ocp.nlp[0].g[0]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0],
+        res,
         np.array([]),
     )
 
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0],
+            np.array([])
+        )
+
 
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_torque_derivative(value):
+def test_penalty_minimize_torque_derivative(value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
+    x = [DM.ones((12, 1)) * value]
     penalty_type = Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE
     penalty = ObjectiveOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
@@ -345,12 +521,12 @@ def test_objective_minimize_torque_derivative(value):
     )
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_muscles_control(lagrange_or_mayer, value):
+def test_penalty_minimize_muscles_control(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.MINIMIZE_MUSCLES_CONTROL
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.MINIMIZE_MUSCLES_CONTROL
     penalty = ObjectiveOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
@@ -360,27 +536,43 @@ def test_objective_minimize_muscles_control(lagrange_or_mayer, value):
     )
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_track_muscles_control(lagrange_or_mayer, value):
+def test_penalty_track_muscles_control(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.TRACK_MUSCLES_CONTROL
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.TRACK_MUSCLES_CONTROL
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [5], x, [], [], muscles_idx=(0), target=np.ones((1, 10)) * value)
 
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0]
+    else:
+        res = ocp.nlp[0].g[0]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0],
+        res,
         np.array([]),
     )
 
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0],
+            np.array([])
+        )
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_all_controls(lagrange_or_mayer, value):
+def test_penalty_minimize_all_controls(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.MINIMIZE_ALL_CONTROLS
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.MINIMIZE_ALL_CONTROLS
     penalty = ObjectiveOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
@@ -390,27 +582,43 @@ def test_objective_minimize_all_controls(lagrange_or_mayer, value):
     )
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_track_all_controls(lagrange_or_mayer, value):
+def test_penalty_track_all_controls(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.TRACK_ALL_CONTROLS
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.TRACK_ALL_CONTROLS
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [6], x, [], [], target=np.ones((4, 10)) * value)
 
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0]
+    else:
+        res = ocp.nlp[0].g[0]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0],
+        res,
         np.array([]),
     )
 
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0],
+            np.array([])
+        )
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_contact_forces(lagrange_or_mayer, value):
+def test_penalty_minimize_contact_forces(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.MINIMIZE_CONTACT_FORCES
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.MINIMIZE_CONTACT_FORCES
     penalty = ObjectiveOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
@@ -420,25 +628,41 @@ def test_objective_minimize_contact_forces(lagrange_or_mayer, value):
     )
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_contact_forces(lagrange_or_mayer, value):
+def test_penalty_track_contact_forces(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.TRACK_CONTACT_FORCES
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.TRACK_CONTACT_FORCES
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [7], x, [], [], contacts_idx=0, target=np.ones((1, 10)) * value)
 
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0]
+    else:
+        res = ocp.nlp[0].g[0]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0],
+        res,
         np.array([]),
     )
 
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0],
+            np.array([])
+        )
+
 
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_minimize_predicted_com_height(value):
+def test_penalty_minimize_predicted_com_height(value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
+    x = [DM.ones((12, 1)) * value]
     penalty_type = Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT
     penalty = ObjectiveOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
@@ -453,35 +677,75 @@ def test_objective_minimize_predicted_com_height(value):
     )
 
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_align_segment_with_custom_rt(lagrange_or_mayer, value):
+def test_penalty_align_segment_with_custom_rt(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.ALIGN_SEGMENT_WITH_CUSTOM_RT
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.ALIGN_SEGMENT_WITH_CUSTOM_RT
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], segment_idx=1, rt_idx=0)
 
-    res = np.array([[0], [0.1], [0]])
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]
+
+    expected = np.array([[0], [0.1], [0]])
     if value == -10:
-        res = np.array([[3.1415927], [0.575222], [3.1415927]])
+        expected = np.array([[3.1415927], [0.575222], [3.1415927]])
 
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0][0]["val"],
         res,
+        expected,
     )
 
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].min,
+            np.array([[0], [0], [0]])
+        )
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].max,
+            np.array([[0], [0], [0]])
+        )
 
-@pytest.mark.parametrize("lagrange_or_mayer", [Objective.Lagrange, Objective.Mayer])
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_objective_align_marker_with_segment_axis(lagrange_or_mayer, value):
+def test_penalty_align_marker_with_segment_axis(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
-    penalty_type = lagrange_or_mayer.ALIGN_MARKER_WITH_SEGMENT_AXIS
-    penalty = ObjectiveOption(penalty_type)
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.ALIGN_MARKER_WITH_SEGMENT_AXIS
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], marker_idx=0, segment_idx=1, axis=Axe.X)
 
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0][0]["val"],
+        res,
         np.array([[0]]),
     )
+
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].min,
+            np.array([[0]])
+        )
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].max,
+            np.array([[0]])
+        )
