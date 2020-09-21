@@ -716,3 +716,51 @@ def test_penalty_align_marker_with_segment_axis(penalty_origin, value):
     if isinstance(penalty_type, Constraint):
         np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0]]))
         np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0]]))
+
+
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_contact_force_inequality(value):
+    ocp = prepare_test_ocp()
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = Constraint.CONTACT_FORCE_INEQUALITY
+    penalty = ConstraintOption(penalty_type)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], direction=Axe.X, contact_force_idx=0, boundary=1)
+    res = ocp.nlp[0].g[0]
+
+    np.testing.assert_almost_equal(
+        res,
+        np.array([]),
+    )
+    np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0], np.array([]))
+
+
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_non_slipping(value):
+    ocp = prepare_test_ocp()
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = Constraint.NON_SLIPPING
+    penalty = ConstraintOption(penalty_type)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], tangential_component_idx=0, normal_component_idx=1, static_friction_coefficient=2)
+    res = ocp.nlp[0].g[0]
+
+    np.testing.assert_almost_equal(
+        res,
+        np.array([]),
+    )
+    np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0], np.array([]))
+
+
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_time_constraint(value):
+    ocp = prepare_test_ocp()
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = Constraint.TIME_CONSTRAINT
+    penalty = ConstraintOption(penalty_type)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+    res = ocp.nlp[0].g[0]
+
+    np.testing.assert_almost_equal(
+        res,
+        np.array([]),
+    )
+    np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0], np.array([]))
