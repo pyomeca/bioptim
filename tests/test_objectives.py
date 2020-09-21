@@ -14,6 +14,8 @@ from biorbd_optim import (
     ObjectiveOption,
     Objective,
     Axe,
+    Constraint,
+    ConstraintOption
 )
 
 
@@ -39,6 +41,20 @@ def test_objective_minimize_time(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.MINIMIZE_TIME
     penalty = ObjectiveOption(penalty_type)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[0].J[0][0]["val"],
+        np.array(1),
+    )
+
+
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_constraint(value):
+    ocp = prepare_test_ocp()
+    x = [np.ones((12, 1)) * value]
+    penalty_type = Constraint.TRACK_STATE
+    penalty = ConstraintOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
     np.testing.assert_almost_equal(
