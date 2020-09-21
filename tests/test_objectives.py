@@ -80,7 +80,7 @@ def test_objective_track_state(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.TRACK_STATE
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [1], x, [], [], target=np.ones((8, 11))*value)
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0][0]["val"],
@@ -137,7 +137,7 @@ def test_objective_track_markers(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.TRACK_MARKERS
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [2], x, [], [], target=np.ones((3, 7, 11))*value)
 
     res = np.array(
             [
@@ -204,7 +204,7 @@ def test_objective_track_markers_velocity(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.TRACK_MARKERS_VELOCITY
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [3], x, [], [], target=np.ones((3, 7, 11))*value)
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0][0]["val"],
@@ -305,7 +305,7 @@ def test_objective_track_torque(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = Objective.Lagrange.TRACK_TORQUE
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [4], x, [], [], target=np.ones((4, 10)) * value)
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0],
@@ -349,7 +349,7 @@ def test_objective_track_muscles_control(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.TRACK_MUSCLES_CONTROL
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [5], x, [], [])
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0],
@@ -379,7 +379,7 @@ def test_objective_track_all_controls(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.TRACK_ALL_CONTROLS
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [6], x, [], [], target=np.ones((4, 10)) * value)
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0],
@@ -409,7 +409,7 @@ def test_objective_minimize_contact_forces(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.TRACK_CONTACT_FORCES
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [7], x, [], [])
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0],
