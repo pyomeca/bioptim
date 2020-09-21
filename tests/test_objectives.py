@@ -1,8 +1,8 @@
 from pathlib import Path
-
-import numpy as np
 import pytest
 
+from casadi import DM
+import numpy as np
 import biorbd
 
 from biorbd_optim import (
@@ -31,6 +31,8 @@ def prepare_test_ocp():
     u_init = InitialConditionsOption(np.zeros((nq, 1)))
     ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds)
     ocp.nlp[0].J = [list()]
+    ocp.nlp[0].g = [list()]
+    ocp.nlp[0].g_bounds = [list()]
     return ocp
 
 
@@ -52,7 +54,7 @@ def test_objective_minimize_time(lagrange_or_mayer, value):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_constraint(value):
     ocp = prepare_test_ocp()
-    x = [np.ones((12, 1)) * value]
+    x = [DM.ones((12, 1)) * value]
     penalty_type = Constraint.TRACK_STATE
     penalty = ConstraintOption(penalty_type)
     penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
