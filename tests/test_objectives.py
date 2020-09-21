@@ -349,7 +349,7 @@ def test_objective_track_muscles_control(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.TRACK_MUSCLES_CONTROL
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [5], x, [], [])
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [5], x, [], [], muscles_idx=(0), target=np.ones((1, 10)) * value)
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0],
@@ -409,7 +409,7 @@ def test_objective_minimize_contact_forces(lagrange_or_mayer, value):
     x = [np.ones((12, 1)) * value]
     penalty_type = lagrange_or_mayer.TRACK_CONTACT_FORCES
     penalty = ObjectiveOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [7], x, [], [])
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [7], x, [], [], contacts_idx=0, target=np.ones((1, 10)) * value)
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0],
