@@ -16,6 +16,7 @@ from .limits.path_conditions import (
     QAndQDotBounds,
     PathCondition,
 )
+from .limits.penalty import PenaltyFunctionAbstract
 from .misc.data import Data
 from .misc.enums import Axe, Instant, InterpolationType, OdeSolver, PlotType, Solver, ControlType
 from .misc.mapping import BidirectionalMapping, Mapping
