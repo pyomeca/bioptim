@@ -92,10 +92,7 @@ def test_penalty_track_state(penalty_origin, value):
     )
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(
-            ocp.nlp[0].g_bounds[0][0].min,
-            np.array([[0]] * 8)
-        )
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0]] * 8))
         np.testing.assert_almost_equal(
             ocp.nlp[0].g_bounds[0][0].max,
             np.array([[0]] * 8),
@@ -723,14 +720,8 @@ def test_penalty_custom(penalty_origin, value):
     else:
         res = ocp.nlp[0].g[0][0]
 
-    np.testing.assert_almost_equal(
-        res, np.array([[value]] * 12)
-    )
+    np.testing.assert_almost_equal(res, np.array([[value]] * 12))
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(
-            ocp.nlp[0].g_bounds[0][0].min, np.array([[0]] * 12)
-        )
-        np.testing.assert_almost_equal(
-            ocp.nlp[0].g_bounds[0][0].max, np.array([[0]] * 12)
-        )
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0]] * 12))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0]] * 12))
