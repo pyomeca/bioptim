@@ -88,15 +88,21 @@ class AcadosInterface(SolverInterface):
     def __set_constrs(self, ocp):
         # constraints handling in self.acados_ocp
         u_min = np.array(ocp.nlp[0]["U_bounds"].min)
-        u_max = np.array(ocp.nlp[0]["U_bounds"].max)
+        u_max = np.array(ocp.nlp[0]["U_bounds"].min)
+        x_min = np.array(ocp.nlp[0]["X_bounds"].min)
+        x_max = np.array(ocp.nlp[0]["X_bounds"].max)
+
         if not np.all(np.all(u_min.T == u_min.T[0, :], axis=0)):
             raise NotImplementedError("U_bounds min must be the same at each shooting point with ACADOS")
         if not np.all(np.all(u_max.T == u_max.T[0, :], axis=0)):
             raise NotImplementedError("U_bounds max must be the same at each shooting point with ACADOS")
 
+        if u_min == -np.inf or x_min == -np.inf or u_max == np.inf or x_max == np.inf:
+            raise NotImplementedError("U_bounds and X_bounds cannot be set to infinity in ACADOS. Consider changing it"
+                                      "to a big value instead.")
 
-        ## TODO: raise error when inf bounds
-        ## TODO: implement constraints in g
+        ## TODO: implement constraints in g and chech for infinite bounds
+
         # path control constraints
 
         self.acados_ocp.constraints.lbu = np.array(ocp.nlp[0]["U_bounds"].min[:, 0])
