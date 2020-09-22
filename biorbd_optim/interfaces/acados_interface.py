@@ -94,7 +94,11 @@ class AcadosInterface(SolverInterface):
         if not np.all(np.all(u_max.T == u_max.T[0, :], axis=0)):
             raise NotImplementedError("U_bounds max must be the same at each shooting point with ACADOS")
 
+
+        ## TODO: raise error when inf bounds
+        ## TODO: implement constraints in g
         # path control constraints
+
         self.acados_ocp.constraints.lbu = np.array(ocp.nlp[0]["U_bounds"].min[:, 0])
         self.acados_ocp.constraints.ubu = np.array(ocp.nlp[0]["U_bounds"].max[:, 0])
         self.acados_ocp.constraints.idxbu = np.array(range(self.acados_ocp.dims.nu))
