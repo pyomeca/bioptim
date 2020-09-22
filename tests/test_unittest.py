@@ -740,7 +740,18 @@ def test_penalty_non_slipping(value):
     x = [DM.ones((12, 1)) * value]
     penalty_type = Constraint.NON_SLIPPING
     penalty = ConstraintOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], tangential_component_idx=0, normal_component_idx=1, static_friction_coefficient=2)
+    penalty_type.value[0](
+        penalty,
+        ocp,
+        ocp.nlp[0],
+        [],
+        x,
+        [],
+        [],
+        tangential_component_idx=0,
+        normal_component_idx=1,
+        static_friction_coefficient=2,
+    )
     res = ocp.nlp[0].g[0]
 
     np.testing.assert_almost_equal(
