@@ -43,10 +43,10 @@ class OptimalControlProgram:
         dynamics_type,
         number_shooting_points,
         phase_time,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
+        X_init=InitialConditionsList(),
+        U_init=InitialConditionsList(),
+        X_bounds=BoundsList(),
+        U_bounds=BoundsList(),
         objective_functions=ObjectiveList(),
         constraints=ConstraintList(),
         parameters=ParameterList(),
@@ -288,9 +288,11 @@ class OptimalControlProgram:
         self.__add_to_nlp("dynamics_type", dynamics_type, False)
         self.__add_to_nlp("ode_solver", ode_solver, True)
         self.__add_to_nlp("control_type", control_type, True)
+        #TODO to move maybe
         for i in range(self.nb_phases):
             self.__initialize_nlp(self.nlp[i])
             Problem.initialize(self, self.nlp[i])
+        #TODO to move
         for i in range(self.nb_phases):
             self.nlp[i].X_bounds.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
             if self.nlp[i].control_type == ControlType.CONSTANT:
@@ -303,6 +305,7 @@ class OptimalControlProgram:
         # Prepare initial guesses
         self.__add_to_nlp("X_init", X_init, False)
         self.__add_to_nlp("U_init", U_init, False)
+        #TODO to move
         for i in range(self.nb_phases):
             self.nlp[i].X_init.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
             if self.nlp[i].control_type == ControlType.CONSTANT:
@@ -614,6 +617,16 @@ class OptimalControlProgram:
 
         else:
             raise RuntimeError("new_parameter must be a ParameterOption or a ParameterList")
+
+    def update_initial_guess(self, new_X_init=None, new_U_init=None, new_X_bounds=None, new_U_bounds=None):
+        if new_X_bounds is not None:
+            self.__add_to_nlp("X_bounds", new_X_bounds, False)
+        if new_U_bounds is not None:
+            self.__add_to_nlp("U_bounds", new_U_bounds, False)
+        if new_X_init is not None:
+            self.__add_to_nlp("X_init", new_X_init, False)
+        if new_U_init is not None:
+            self.__add_to_nlp("U_init", new_U_init, False)
 
     def _modify_penalty(self, new_penalty, penalty_name):
         """
