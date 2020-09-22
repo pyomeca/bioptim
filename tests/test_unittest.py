@@ -16,6 +16,7 @@ from biorbd_optim import (
     Axe,
     Constraint,
     ConstraintOption,
+    PenaltyFunctionAbstract,
 )
 
 
@@ -775,3 +776,43 @@ def test_penalty_time_constraint(value):
         np.array([]),
     )
     np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0], np.array([]))
+
+
+def custom(ocp, nlp, t, x, u, p, **extra_params):
+    states_idx = PenaltyFunctionAbstract._check_and_fill_index((), nlp.nx, "states_idx")
+    for i, v in enumerate(x):
+        val = v[states_idx]
+    return val
+
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_custom(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.CUSTOM
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type)
+    else:
+        penalty = ConstraintOption(penalty_type)
+
+    penalty.custom_function = custom
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+
+    if isinstance(penalty_type, Objective.Lagrange) or isinstance(penalty_type, Objective.Mayer):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]
+
+    np.testing.assert_almost_equal(
+        res, np.array([[value], [value], [value], [value], [value], [value], [value], [value]])
+    )
+
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].min, np.array([[0], [0], [0], [0], [0], [0], [0], [0]])
+        )
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].max, np.array([[0], [0], [0], [0], [0], [0], [0], [0]])
+        )
