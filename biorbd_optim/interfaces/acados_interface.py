@@ -98,8 +98,10 @@ class AcadosInterface(SolverInterface):
             raise NotImplementedError("U_bounds max must be the same at each shooting point with ACADOS")
 
         if np.min(u_min) == -np.inf or np.min(x_min) == -np.inf or np.max(u_max) == np.inf or np.max(x_max) == np.inf:
-            raise NotImplementedError("U_bounds and X_bounds cannot be set to infinity in ACADOS. Consider changing it"
-                                      "to a big value instead.")
+            raise NotImplementedError(
+                "U_bounds and X_bounds cannot be set to infinity in ACADOS. Consider changing it"
+                "to a big value instead."
+            )
 
         ## TODO: implement constraints in g and chech for infinite bounds
 
@@ -130,7 +132,6 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.constraints.lbx_e = np.array(ocp.nlp[0].X_bounds.min[:, -1])
         self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
         self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
-
 
     def __set_cost_type(self, cost_type="NONLINEAR_LS"):
         self.acados_ocp.cost.cost_type = cost_type
@@ -227,11 +228,11 @@ class AcadosInterface(SolverInterface):
     def __init_and_update_solver(self):
         for n in range(self.acados_ocp.dims.N):
             self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
-            #TODO deal with non Instant.EACH_FRAME initializations
-            if self.ocp.nlp[0].X_init.init.shape[1] == self.acados_ocp.dims.N+1:
-                self.ocp_solver.set(n, 'x', self.ocp.nlp[0].X_init.init[:, n])
+            # TODO deal with non Instant.EACH_FRAME initializations
+            if self.ocp.nlp[0].X_init.init.shape[1] == self.acados_ocp.dims.N + 1:
+                self.ocp_solver.set(n, "x", self.ocp.nlp[0].X_init.init[:, n])
             if self.ocp.nlp[0].U_init.init.shape[1] == self.acados_ocp.dims.N:
-                self.ocp_solver.set(n, 'u', self.ocp.nlp[0].U_init.init[:, n])
+                self.ocp_solver.set(n, "u", self.ocp.nlp[0].U_init.init[:, n])
             if n == 0:
                 self.ocp_solver.constraints_set(n, "lbx", self.ocp.nlp[0].X_bounds.min[:, n])
                 self.ocp_solver.constraints_set(n, "ubx", self.ocp.nlp[0].X_bounds.max[:, n])
@@ -240,8 +241,8 @@ class AcadosInterface(SolverInterface):
                 self.ocp_solver.constraints_set(n, "ubx", self.ocp.nlp[0].X_bounds.max[:, 1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.ocp.nlp[0].X_bounds.min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.ocp.nlp[0].X_bounds.max[:, -1])
-        if self.ocp.nlp[0].X_init.init.shape[1] == self.acados_ocp.dims.N+1:
-            self.ocp_solver.set(self.acados_ocp.dims.N, 'x', self.ocp.nlp[0].X_init.init[:, self.acados_ocp.dims.N])
+        if self.ocp.nlp[0].X_init.init.shape[1] == self.acados_ocp.dims.N + 1:
+            self.ocp_solver.set(self.acados_ocp.dims.N, "x", self.ocp.nlp[0].X_init.init[:, self.acados_ocp.dims.N])
 
     def configure(self, options):
         if "acados_dir" in options:
