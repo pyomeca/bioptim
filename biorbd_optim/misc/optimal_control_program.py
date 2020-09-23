@@ -561,11 +561,11 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_parameter must be a ParameterOption or a ParameterList")
 
-    def update_initial_guess(self, new_X_init=None, new_U_init=None, new_X_bounds=None, new_U_bounds=None):
-        if new_X_bounds is not None:
+    def update_initial_guess(self, X_init=None, U_init=None, X_bounds=None, U_bounds=None):
+        if X_bounds is not None:
             if isinstance(X_bounds, BoundsOption):
                 X_bounds_tp = BoundsList()
-                X_bounds_tp.add(X_bounds)
+                X_bounds_tp.add(new_X_bounds)
                 X_bounds = X_bounds_tp
             elif not isinstance(X_bounds, BoundsList):
                 raise RuntimeError("X_bounds should be built from a BoundOption or a BoundsList")
@@ -573,9 +573,9 @@ class OptimalControlProgram:
                 X_bounds.add(
                     BoundsOption([np.zeros((biorbd_model[0].nbQ() * 2, 1)), np.zeros((biorbd_model[0].nbQ() * 2, 1))])
                 )
-            self.__add_to_nlp("X_bounds", new_X_bounds, False)
+            self.__add_to_nlp("X_bounds", X_bounds, False)
 
-        if new_U_bounds is not None:
+        if U_bounds is not None:
             if isinstance(U_bounds, BoundsOption):
                 U_bounds_tp = BoundsList()
                 U_bounds_tp.add(U_bounds)
@@ -584,9 +584,9 @@ class OptimalControlProgram:
                 raise RuntimeError("U_bounds should be built from a BoundOption or a BoundsList")
             elif len(U_bounds) == 0:
                 U_bounds.add(BoundsOption([np.zeros((biorbd_model[0].nbQ(), 1)), np.zeros((biorbd_model[0].nbQ(), 1))]))
-            self.__add_to_nlp("U_bounds", new_U_bounds, False)
+            self.__add_to_nlp("U_bounds", U_bounds, False)
 
-        if new_X_bounds is not None or new_U_bounds is not None:
+        if X_bounds is not None or U_bounds is not None:
             for i in range(self.nb_phases):
                 self.__initialize_nlp(self.nlp[i])
                 Problem.initialize(self, self.nlp[i])
@@ -599,7 +599,7 @@ class OptimalControlProgram:
                 else:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
-        if new_X_init is not None:
+        if X_init is not None:
             if isinstance(X_init, InitialConditionsOption):
                 X_init_tp = InitialConditionsList()
                 X_init_tp.add(X_init)
@@ -608,9 +608,9 @@ class OptimalControlProgram:
                 raise RuntimeError("X_init should be built from a InitialConditionsOption or InitialConditionsList")
             elif len(X_init) == 0:
                 X_init.add(InitialConditionsOption(np.zeros((biorbd_model[0].nbQ() * 2, 1))))
-            self.__add_to_nlp("X_init", new_X_init, False)
+            self.__add_to_nlp("X_init", X_init, False)
 
-        if new_U_init is not None:
+        if U_init is not None:
             if isinstance(U_init, InitialConditionsOption):
                 U_init_tp = InitialConditionsList()
                 U_init_tp.add(U_init)
@@ -619,9 +619,9 @@ class OptimalControlProgram:
                 raise RuntimeError("U_init should be built from a InitialConditionsOption or InitialConditionsList")
             elif len(U_init) == 0:
                 U_init.add(InitialConditionsOption(np.zeros((biorbd_model[0].nbQ(), 1))))
-            self.__add_to_nlp("U_init", new_U_init, False)
+            self.__add_to_nlp("U_init", U_init, False)
 
-        if new_X_init is not None or new_U_init is not None:
+        if X_init is not None or U_init is not None:
             for i in range(self.nb_phases):
                 self.nlp[i].X_init.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
                 if self.nlp[i].control_type == ControlType.CONSTANT:
