@@ -283,41 +283,11 @@ class OptimalControlProgram:
         self.__define_variable_time(initial_time_guess, time_min, time_max)
 
         # Prepare path constraints and dynamics of the program
-        self.__add_to_nlp("X_bounds", X_bounds, False)
-        self.__add_to_nlp("U_bounds", U_bounds, False)
         self.__add_to_nlp("dynamics_type", dynamics_type, False)
         self.__add_to_nlp("ode_solver", ode_solver, True)
         self.__add_to_nlp("control_type", control_type, True)
-        #TODO to move maybe
-        for i in range(self.nb_phases):
-            self.__initialize_nlp(self.nlp[i])
-            Problem.initialize(self, self.nlp[i])
-        #TODO to move
-        for i in range(self.nb_phases):
-            self.nlp[i].X_bounds.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
-            if self.nlp[i].control_type == ControlType.CONSTANT:
-                self.nlp[i].U_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
-            elif self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                self.nlp[i].U_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
-            else:
-                raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
-        # Prepare initial guesses
-        self.__add_to_nlp("X_init", X_init, False)
-        self.__add_to_nlp("U_init", U_init, False)
-        #TODO to move
-        for i in range(self.nb_phases):
-            self.nlp[i].X_init.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
-            if self.nlp[i].control_type == ControlType.CONSTANT:
-                self.nlp[i].U_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
-            elif self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                self.nlp[i].U_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
-            else:
-                raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
-
-        # Variables and constraint for the optimization program
-        for i in range(self.nb_phases):
-            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
+        self.update_initial_guess(X_init, U_init, X_bounds, U_bounds)
 
         # Define dynamic problem
         self.__add_to_nlp(
@@ -619,14 +589,36 @@ class OptimalControlProgram:
             raise RuntimeError("new_parameter must be a ParameterOption or a ParameterList")
 
     def update_initial_guess(self, new_X_init=None, new_U_init=None, new_X_bounds=None, new_U_bounds=None):
-        if new_X_bounds is not None:
-            self.__add_to_nlp("X_bounds", new_X_bounds, False)
-        if new_U_bounds is not None:
-            self.__add_to_nlp("U_bounds", new_U_bounds, False)
-        if new_X_init is not None:
-            self.__add_to_nlp("X_init", new_X_init, False)
-        if new_U_init is not None:
-            self.__add_to_nlp("U_init", new_U_init, False)
+        self.__add_to_nlp("X_bounds", new_X_bounds, False)
+        self.__add_to_nlp("U_bounds", new_U_bounds, False)
+
+        for i in range(self.nb_phases):
+            self.__initialize_nlp(self.nlp[i])
+            Problem.initialize(self, self.nlp[i])
+        for i in range(self.nb_phases):
+            self.nlp[i].X_bounds.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
+            if self.nlp[i].control_type == ControlType.CONSTANT:
+                self.nlp[i].U_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
+            elif self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
+                self.nlp[i].U_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
+            else:
+                raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
+
+        self.__add_to_nlp("X_init", new_X_init, False)
+        self.__add_to_nlp("U_init", new_U_init, False)
+
+        for i in range(self.nb_phases):
+            self.nlp[i].X_init.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
+            if self.nlp[i].control_type == ControlType.CONSTANT:
+                self.nlp[i].U_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
+            elif self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
+                self.nlp[i].U_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
+            else:
+                raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
+
+        # Variables and constraint for the optimization program
+        for i in range(self.nb_phases):
+            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
 
     def _modify_penalty(self, new_penalty, penalty_name):
         """
