@@ -163,44 +163,6 @@ class OptimalControlProgram:
             else:
                 raise RuntimeError("phase_time should be a number or a list of number")
 
-        if isinstance(X_init, InitialConditionsOption):
-            X_init_tp = InitialConditionsList()
-            X_init_tp.add(X_init)
-            X_init = X_init_tp
-        elif not isinstance(X_init, InitialConditionsList):
-            raise RuntimeError("X_init should be built from a InitialConditionsOption or InitialConditionsList")
-        elif len(X_init) == 0:
-            X_init.add(InitialConditionsOption(np.zeros((biorbd_model[0].nbQ() * 2, 1))))
-
-        if isinstance(U_init, InitialConditionsOption):
-            U_init_tp = InitialConditionsList()
-            U_init_tp.add(U_init)
-            U_init = U_init_tp
-        elif not isinstance(U_init, InitialConditionsList):
-            raise RuntimeError("U_init should be built from a InitialConditionsOption or InitialConditionsList")
-        elif len(U_init) == 0:
-            U_init.add(InitialConditionsOption(np.zeros((biorbd_model[0].nbQ(), 1))))
-
-        if isinstance(X_bounds, BoundsOption):
-            X_bounds_tp = BoundsList()
-            X_bounds_tp.add(X_bounds)
-            X_bounds = X_bounds_tp
-        elif not isinstance(X_bounds, BoundsList):
-            raise RuntimeError("X_bounds should be built from a BoundOption or a BoundsList")
-        elif len(X_bounds) == 0:
-            X_bounds.add(
-                BoundsOption([np.zeros((biorbd_model[0].nbQ() * 2, 1)), np.zeros((biorbd_model[0].nbQ() * 2, 1))])
-            )
-
-        if isinstance(U_bounds, BoundsOption):
-            U_bounds_tp = BoundsList()
-            U_bounds_tp.add(U_bounds)
-            U_bounds = U_bounds_tp
-        elif not isinstance(U_bounds, BoundsList):
-            raise RuntimeError("U_bounds should be built from a BoundOption or a BoundsList")
-        elif len(U_bounds) == 0:
-            U_bounds.add(BoundsOption([np.zeros((biorbd_model[0].nbQ(), 1)), np.zeros((biorbd_model[0].nbQ(), 1))]))
-
         if isinstance(objective_functions, ObjectiveOption):
             objective_functions_tp = ObjectiveList()
             objective_functions_tp.add(objective_functions)
@@ -601,8 +563,27 @@ class OptimalControlProgram:
 
     def update_initial_guess(self, new_X_init=None, new_U_init=None, new_X_bounds=None, new_U_bounds=None):
         if new_X_bounds is not None:
+            if isinstance(X_bounds, BoundsOption):
+                X_bounds_tp = BoundsList()
+                X_bounds_tp.add(X_bounds)
+                X_bounds = X_bounds_tp
+            elif not isinstance(X_bounds, BoundsList):
+                raise RuntimeError("X_bounds should be built from a BoundOption or a BoundsList")
+            elif len(X_bounds) == 0:
+                X_bounds.add(
+                    BoundsOption([np.zeros((biorbd_model[0].nbQ() * 2, 1)), np.zeros((biorbd_model[0].nbQ() * 2, 1))])
+                )
             self.__add_to_nlp("X_bounds", new_X_bounds, False)
+
         if new_U_bounds is not None:
+            if isinstance(U_bounds, BoundsOption):
+                U_bounds_tp = BoundsList()
+                U_bounds_tp.add(U_bounds)
+                U_bounds = U_bounds_tp
+            elif not isinstance(U_bounds, BoundsList):
+                raise RuntimeError("U_bounds should be built from a BoundOption or a BoundsList")
+            elif len(U_bounds) == 0:
+                U_bounds.add(BoundsOption([np.zeros((biorbd_model[0].nbQ(), 1)), np.zeros((biorbd_model[0].nbQ(), 1))]))
             self.__add_to_nlp("U_bounds", new_U_bounds, False)
 
         if new_X_bounds is not None or new_U_bounds is not None:
@@ -619,8 +600,25 @@ class OptimalControlProgram:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
         if new_X_init is not None:
+            if isinstance(X_init, InitialConditionsOption):
+                X_init_tp = InitialConditionsList()
+                X_init_tp.add(X_init)
+                X_init = X_init_tp
+            elif not isinstance(X_init, InitialConditionsList):
+                raise RuntimeError("X_init should be built from a InitialConditionsOption or InitialConditionsList")
+            elif len(X_init) == 0:
+                X_init.add(InitialConditionsOption(np.zeros((biorbd_model[0].nbQ() * 2, 1))))
             self.__add_to_nlp("X_init", new_X_init, False)
+
         if new_U_init is not None:
+            if isinstance(U_init, InitialConditionsOption):
+                U_init_tp = InitialConditionsList()
+                U_init_tp.add(U_init)
+                U_init = U_init_tp
+            elif not isinstance(U_init, InitialConditionsList):
+                raise RuntimeError("U_init should be built from a InitialConditionsOption or InitialConditionsList")
+            elif len(U_init) == 0:
+                U_init.add(InitialConditionsOption(np.zeros((biorbd_model[0].nbQ(), 1))))
             self.__add_to_nlp("U_init", new_U_init, False)
 
         if new_X_init is not None or new_U_init is not None:
