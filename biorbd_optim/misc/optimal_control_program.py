@@ -571,7 +571,9 @@ class OptimalControlProgram:
                 raise RuntimeError("X_bounds should be built from a BoundOption or a BoundsList")
             elif len(X_bounds) == 0:
                 X_bounds.add(
-                    BoundsOption([np.zeros((self.nlp[0].model.nbQ() * 2, 1)), np.zeros((self.nlp[0].model.nbQ() * 2, 1))])
+                    BoundsOption(
+                        [np.zeros((self.nlp[0].model.nbQ() * 2, 1)), np.zeros((self.nlp[0].model.nbQ() * 2, 1))]
+                    )
                 )
             self.__add_to_nlp("X_bounds", X_bounds, False)
 
@@ -583,7 +585,9 @@ class OptimalControlProgram:
             elif not isinstance(U_bounds, BoundsList):
                 raise RuntimeError("U_bounds should be built from a BoundOption or a BoundsList")
             elif len(U_bounds) == 0:
-                U_bounds.add(BoundsOption([np.zeros((self.nlp[0].model.nbQ(), 1)), np.zeros((self.nlp[0].model.nbQ(), 1))]))
+                U_bounds.add(
+                    BoundsOption([np.zeros((self.nlp[0].model.nbQ(), 1)), np.zeros((self.nlp[0].model.nbQ(), 1))])
+                )
             self.__add_to_nlp("U_bounds", U_bounds, False)
 
         if X_bounds is not None or U_bounds is not None:
