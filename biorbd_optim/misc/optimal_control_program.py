@@ -188,7 +188,9 @@ class OptimalControlProgram:
         elif not isinstance(X_bounds, BoundsList):
             raise RuntimeError("X_bounds should be built from a BoundOption or a BoundsList")
         elif len(X_bounds) == 0:
-            X_bounds.add(BoundsOption([np.zeros((biorbd_model[0].nbQ() * 2, 1)), np.zeros((biorbd_model[0].nbQ() * 2, 1))]))
+            X_bounds.add(
+                BoundsOption([np.zeros((biorbd_model[0].nbQ() * 2, 1)), np.zeros((biorbd_model[0].nbQ() * 2, 1))])
+            )
 
         if isinstance(U_bounds, BoundsOption):
             U_bounds_tp = BoundsList()
