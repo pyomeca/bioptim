@@ -565,13 +565,13 @@ class OptimalControlProgram:
         if X_bounds is not None:
             if isinstance(X_bounds, BoundsOption):
                 X_bounds_tp = BoundsList()
-                X_bounds_tp.add(new_X_bounds)
+                X_bounds_tp.add(X_bounds)
                 X_bounds = X_bounds_tp
             elif not isinstance(X_bounds, BoundsList):
                 raise RuntimeError("X_bounds should be built from a BoundOption or a BoundsList")
             elif len(X_bounds) == 0:
                 X_bounds.add(
-                    BoundsOption([np.zeros((biorbd_model[0].nbQ() * 2, 1)), np.zeros((biorbd_model[0].nbQ() * 2, 1))])
+                    BoundsOption([np.zeros((self.nlp[0].model.nbQ() * 2, 1)), np.zeros((self.nlp[0].model.nbQ() * 2, 1))])
                 )
             self.__add_to_nlp("X_bounds", X_bounds, False)
 
@@ -583,7 +583,7 @@ class OptimalControlProgram:
             elif not isinstance(U_bounds, BoundsList):
                 raise RuntimeError("U_bounds should be built from a BoundOption or a BoundsList")
             elif len(U_bounds) == 0:
-                U_bounds.add(BoundsOption([np.zeros((biorbd_model[0].nbQ(), 1)), np.zeros((biorbd_model[0].nbQ(), 1))]))
+                U_bounds.add(BoundsOption([np.zeros((self.nlp[0].model.nbQ(), 1)), np.zeros((self.nlp[0].model.nbQ(), 1))]))
             self.__add_to_nlp("U_bounds", U_bounds, False)
 
         if X_bounds is not None or U_bounds is not None:
@@ -607,7 +607,7 @@ class OptimalControlProgram:
             elif not isinstance(X_init, InitialConditionsList):
                 raise RuntimeError("X_init should be built from a InitialConditionsOption or InitialConditionsList")
             elif len(X_init) == 0:
-                X_init.add(InitialConditionsOption(np.zeros((biorbd_model[0].nbQ() * 2, 1))))
+                X_init.add(InitialConditionsOption(np.zeros((self.nlp[0].model.nbQ() * 2, 1))))
             self.__add_to_nlp("X_init", X_init, False)
 
         if U_init is not None:
@@ -618,7 +618,7 @@ class OptimalControlProgram:
             elif not isinstance(U_init, InitialConditionsList):
                 raise RuntimeError("U_init should be built from a InitialConditionsOption or InitialConditionsList")
             elif len(U_init) == 0:
-                U_init.add(InitialConditionsOption(np.zeros((biorbd_model[0].nbQ(), 1))))
+                U_init.add(InitialConditionsOption(np.zeros((self.nlp[0].model.nbQ(), 1))))
             self.__add_to_nlp("U_init", U_init, False)
 
         if X_init is not None or U_init is not None:
