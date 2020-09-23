@@ -2,6 +2,7 @@ import os
 import pickle
 from copy import deepcopy
 from math import inf
+import numpy as np
 
 import biorbd
 import casadi
@@ -168,6 +169,8 @@ class OptimalControlProgram:
             X_init = X_init_tp
         elif not isinstance(X_init, InitialConditionsList):
             raise RuntimeError("X_init should be built from a InitialConditionsOption or InitialConditionsList")
+        elif len(X_init) == 0:
+            X_init.add(InitialConditionsOption(np.zeros((biorbd_model[0].nbQ() * 2, 1))))
 
         if isinstance(U_init, InitialConditionsOption):
             U_init_tp = InitialConditionsList()
@@ -175,6 +178,8 @@ class OptimalControlProgram:
             U_init = U_init_tp
         elif not isinstance(U_init, InitialConditionsList):
             raise RuntimeError("U_init should be built from a InitialConditionsOption or InitialConditionsList")
+        elif len(U_init) == 0:
+            U_init.add(InitialConditionsOption(np.zeros((biorbd_model[0].nbQ(), 1))))
 
         if isinstance(X_bounds, BoundsOption):
             X_bounds_tp = BoundsList()
@@ -182,6 +187,8 @@ class OptimalControlProgram:
             X_bounds = X_bounds_tp
         elif not isinstance(X_bounds, BoundsList):
             raise RuntimeError("X_bounds should be built from a BoundOption or a BoundsList")
+        elif len(X_bounds) == 0:
+            X_bounds.add(BoundsOption([np.zeros((biorbd_model[0].nbQ() * 2, 1)), np.zeros((biorbd_model[0].nbQ() * 2, 1))]))
 
         if isinstance(U_bounds, BoundsOption):
             U_bounds_tp = BoundsList()
@@ -189,6 +196,8 @@ class OptimalControlProgram:
             U_bounds = U_bounds_tp
         elif not isinstance(U_bounds, BoundsList):
             raise RuntimeError("U_bounds should be built from a BoundOption or a BoundsList")
+        elif len(U_bounds) == 0:
+            U_bounds.add(BoundsOption([np.zeros((biorbd_model[0].nbQ(), 1)), np.zeros((biorbd_model[0].nbQ(), 1))]))
 
         if isinstance(objective_functions, ObjectiveOption):
             objective_functions_tp = ObjectiveList()
