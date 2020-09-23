@@ -631,9 +631,9 @@ class OptimalControlProgram:
                 else:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
-        # Variables and constraint for the optimization program
-        for i in range(self.nb_phases):
-            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
+            # Variables and constraint for the optimization program
+            for i in range(self.nb_phases):
+                self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
 
     def _modify_penalty(self, new_penalty, penalty_name):
         """
