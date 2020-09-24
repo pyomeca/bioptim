@@ -292,6 +292,8 @@ class OptimalControlProgram:
         self.def_U_init = False
         self.def_X_bounds = False
         self.def_U_bounds = False
+        self.def_bounds = False
+        self.def_V = False
 
         # Define dynamic problem
         self.__add_to_nlp(
@@ -452,9 +454,10 @@ class OptimalControlProgram:
         :param idx_phase: Index of the phase. (integer)
         """
 
-        V = []
-        X = []
-        U = []
+        if not self.def_V:
+            V = []
+            X = []
+            U = []
 
         if nlp.control_type == ControlType.CONSTANT:
             nV = nlp.nx * (nlp.ns + 1) + nlp.nu * nlp.ns
@@ -467,29 +470,34 @@ class OptimalControlProgram:
 
         offset = 0
         for k in range(nlp.ns + 1):
-            X_ = nlp.CX.sym("X_" + str(idx_phase) + "_" + str(k), nlp.nx)
-            X.append(X_)
+            if not self.def_V:
+                X_ = nlp.CX.sym("X_" + str(idx_phase) + "_" + str(k), nlp.nx)
+                X.append(X_)
             V_bounds.min[offset : offset + nlp.nx, 0] = nlp.X_bounds.min.evaluate_at(shooting_point=k)
             V_bounds.max[offset : offset + nlp.nx, 0] = nlp.X_bounds.max.evaluate_at(shooting_point=k)
             V_init.init[offset : offset + nlp.nx, 0] = nlp.X_init.init.evaluate_at(shooting_point=k)
             offset += nlp.nx
-            V = vertcat(V, X_)
+            if not self.def_V:
+                V = vertcat(V, X_)
 
             if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
-                U_ = nlp.CX.sym("U_" + str(idx_phase) + "_" + str(k), nlp.nu, 1)
-                U.append(U_)
+                if not self.def_V:
+                    U_ = nlp.CX.sym("U_" + str(idx_phase) + "_" + str(k), nlp.nu, 1)
+                    U.append(U_)
                 V_bounds.min[offset : offset + nlp.nu, 0] = nlp.U_bounds.min.evaluate_at(shooting_point=k)
                 V_bounds.max[offset : offset + nlp.nu, 0] = nlp.U_bounds.max.evaluate_at(shooting_point=k)
                 V_init.init[offset : offset + nlp.nu, 0] = nlp.U_init.init.evaluate_at(shooting_point=k)
                 offset += nlp.nu
-                V = vertcat(V, U_)
+                if not self.def_V:
+                    V = vertcat(V, U_)
 
         V_bounds.check_and_adjust_dimensions(nV, 1)
         V_init.check_and_adjust_dimensions(nV, 1)
 
-        nlp.X = X
-        nlp.U = U
-        self.V = vertcat(self.V, V)
+        if not self.def_V:
+            nlp.X = X
+            nlp.U = U
+            self.V = vertcat(self.V, V)
 
         self.V_bounds.concatenate(V_bounds)
         self.V_init.concatenate(V_init)
@@ -619,9 +627,10 @@ class OptimalControlProgram:
             self.__add_to_nlp("U_bounds", U_bounds, False)
 
         if self.def_X_bounds and self.def_U_bounds:
-            for i in range(self.nb_phases):
-                self.__initialize_nlp(self.nlp[i])
-                Problem.initialize(self, self.nlp[i])
+            if not self.def_bounds:
+                for i in range(self.nb_phases):
+                    self.__initialize_nlp(self.nlp[i])
+                    Problem.initialize(self, self.nlp[i])
             for i in range(self.nb_phases):
                 self.nlp[i].X_bounds.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
                 if self.nlp[i].control_type == ControlType.CONSTANT:
@@ -630,6 +639,7 @@ class OptimalControlProgram:
                     self.nlp[i].U_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
                 else:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
+            self.def_bounds = True
 
         if self.def_X_init and self.def_U_init and self.def_X_bounds and self.def_U_bounds:
             self._define_multiple_shooting_nodes()
