@@ -265,16 +265,26 @@ class OptimalControlProgram:
         self.def_X_bounds = False
         self.def_U_bounds = False
 
+        self.update_bounds(X_bounds, U_bounds)
+        self.update_initial_guess(X_init, U_init)
+
+        self._define_multiple_shooting_nodes()
+
         # Define dynamic problem
         self.__add_to_nlp(
             "nb_integration_steps", nb_integration_steps, True
         )  # Number of steps of integration (for now only RK4 steps are implemented)
-        self.tmp_state_transitions = state_transitions
+        for i in range(self.nb_phases):
+            if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
+                raise RuntimeError("Dynamics with different nx or nu is not supported yet")
+            self.__prepare_dynamics(self.nlp[i])
 
-        if X_bounds is not None or U_bounds is not None:
-            self.update_bounds(X_bounds, U_bounds)
-        if X_init is not None or U_init is not None:
-            self.update_initial_guess(X_init, U_init)
+        # Prepare phase transitions (Reminder, it is important that parameters are declared
+        # before, otherwise they will erase the state_transitions)
+        self.state_transitions = StateTransitionFunctions.prepare_state_transitions(self, state_transitions)
+
+        # Inner- and inter-phase continuity
+        ContinuityFunctions.continuity(self)
 
         # Prepare constraints
         self.update_constraints(constraints)
@@ -580,7 +590,7 @@ class OptimalControlProgram:
                 raise RuntimeError("X_bounds should be built from a BoundOption or a BoundsList")
             self.__add_to_nlp("X_bounds", X_bounds, False)
 
-        if X_bounds is not None:
+        if U_bounds is not None:
             self.def_U_bounds = True
             if isinstance(U_bounds, BoundsOption):
                 U_bounds_tp = BoundsList()
@@ -602,8 +612,6 @@ class OptimalControlProgram:
                     self.nlp[i].U_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
                 else:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
-
-        self._define_multiple_shooting_nodes()
 
     def update_initial_guess(self, X_init=None, U_init=None):
         if X_init is not None:
@@ -636,27 +644,10 @@ class OptimalControlProgram:
                 else:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
-        self._define_multiple_shooting_nodes()
-
     def _define_multiple_shooting_nodes(self):
         # Variables and constraint for the optimization program
-        self.V = []
-        self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        self.V_init = InitialConditions(interpolation=InterpolationType.CONSTANT)
         for i in range(self.nb_phases):
             self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
-        if self.def_X_init and self.def_U_init and self.def_X_bounds and self.def_U_bounds:
-            for i in range(self.nb_phases):
-                if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
-                    raise RuntimeError("Dynamics with different nx or nu is not supported yet")
-                self.__prepare_dynamics(self.nlp[i])
-
-            # Prepare phase transitions (Reminder, it is important that parameters are declared
-            # before, otherwise they will erase the state_transitions)
-            self.state_transitions = StateTransitionFunctions.prepare_state_transitions(self, self.tmp_state_transitions)
-
-            # Inner- and inter-phase continuity
-            ContinuityFunctions.continuity(self)
 
     def _modify_penalty(self, new_penalty, penalty_name):
         """
