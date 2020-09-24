@@ -44,10 +44,10 @@ class OptimalControlProgram:
         dynamics_type,
         number_shooting_points,
         phase_time,
-        X_init=None,
-        U_init=None,
-        X_bounds=None,
-        U_bounds=None,
+        X_init=InitialConditionsList(),
+        U_init=InitialConditionsList(),
+        X_bounds=BoundsList(),
+        U_bounds=BoundsList(),
         objective_functions=ObjectiveList(),
         constraints=ConstraintList(),
         parameters=ParameterList(),
@@ -163,6 +163,34 @@ class OptimalControlProgram:
             else:
                 raise RuntimeError("phase_time should be a number or a list of number")
 
+        if isinstance(X_bounds, BoundsOption):
+            X_bounds_tp = BoundsList()
+            X_bounds_tp.add(X_bounds)
+            X_bounds = X_bounds_tp
+        elif not isinstance(X_bounds, BoundsList):
+            raise RuntimeError("X_bounds should be built from a BoundOption or a BoundsList")
+
+        if isinstance(U_bounds, BoundsOption):
+            U_bounds_tp = BoundsList()
+            U_bounds_tp.add(U_bounds)
+            U_bounds = U_bounds_tp
+        elif not isinstance(U_bounds, BoundsList):
+            raise RuntimeError("U_bounds should be built from a BoundOption or a BoundsList")
+
+        if isinstance(X_init, InitialConditionsOption):
+            X_init_tp = InitialConditionsList()
+            X_init_tp.add(X_init)
+            X_init = X_init_tp
+        elif not isinstance(X_init, InitialConditionsList):
+            raise RuntimeError("X_init should be built from a InitialConditionsOption or InitialConditionsList")
+
+        if isinstance(U_init, InitialConditionsOption):
+            U_init_tp = InitialConditionsList()
+            U_init_tp.add(U_init)
+            U_init = U_init_tp
+        elif not isinstance(U_init, InitialConditionsList):
+            raise RuntimeError("U_init should be built from a InitialConditionsOption or InitialConditionsList")
+
         if isinstance(objective_functions, ObjectiveOption):
             objective_functions_tp = ObjectiveList()
             objective_functions_tp.add(objective_functions)
@@ -272,8 +300,19 @@ class OptimalControlProgram:
 
         self.tmp_state_transitions = state_transitions
 
-        self.update_bounds(X_bounds, U_bounds)
-        self.update_initial_guess(X_init, U_init)
+        if len(X_bounds) > 0 and len(U_bounds) > 0:
+            self.update_bounds(X_bounds, U_bounds)
+        elif len(X_bounds) > 0:
+            self.update_bounds(X_bounds=X_bounds)
+        elif len(U_bounds) > 0:
+            self.update_bounds(U_bounds=U_bounds)
+
+        if len(X_init) > 0 and len(U_init) > 0:
+            self.update_initial_guess(X_init, U_init)
+        elif len(X_init) > 0:
+            self.update_initial_guess(X_init=X_init)
+        elif len(U_init) > 0:
+            self.update_initial_guess(U_init=U_init)
 
         # Prepare constraints
         self.update_constraints(constraints)
