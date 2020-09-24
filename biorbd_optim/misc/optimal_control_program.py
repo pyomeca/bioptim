@@ -193,6 +193,9 @@ class OptimalControlProgram:
         self.J = []
         self.g = []
         self.g_bounds = []
+        self.V = []
+        self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        self.V_init = InitialConditions(interpolation=InterpolationType.CONSTANT)
         self.param_to_optimize = {}
 
         # nlp is the core of a phase
