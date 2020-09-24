@@ -26,21 +26,18 @@ def prepare_test_ocp():
     nq = biorbd_model.nbQ()
     dynamics = DynamicsTypeList()
     dynamics.add(DynamicsType.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0)
-    ocp.nlp[0].J = [list()]
-    ocp.nlp[0].g = [list()]
-    ocp.nlp[0].g_bounds = [list()]
-    return ocp
+    return OptimalControlProgram(biorbd_model, dynamics, 10, 1.0)
 
 
 def test_penalty_minimize_time():
     ocp = prepare_test_ocp()
-    X_init = InitialConditionsOption(np.zeros((4 * 2, 1)))
-    U_init = InitialConditionsOption(np.zeros((4, 1)))
     X_bounds = BoundsOption([np.zeros((8, 1)), np.zeros((4 * 2, 1))])
     U_bounds = BoundsOption([np.zeros((4, 1)), np.zeros((4, 1))])
     ocp.update_bounds(X_bounds, U_bounds)
+    X_init = InitialConditionsOption(np.zeros((4 * 2, 1)))
+    U_init = InitialConditionsOption(np.zeros((4, 1)))
     ocp.update_initial_guess(X_init, U_init)
+    ocp.nlp[0].J = [list()]
     x = [DM.ones((12, 1)) * -10]
     penalty_type = Objective.Lagrange.MINIMIZE_TIME
     penalty = ObjectiveOption(penalty_type)
