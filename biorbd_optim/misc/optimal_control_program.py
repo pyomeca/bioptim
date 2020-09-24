@@ -303,18 +303,24 @@ class OptimalControlProgram:
         self.tmp_state_transitions = state_transitions
 
         if len(X_bounds) > 0 and len(U_bounds) > 0:
-            self.update_bounds(X_bounds, U_bounds)
+            self.update_bounds(X_bounds, U_bounds, False)
         elif len(X_bounds) > 0:
-            self.update_bounds(X_bounds=X_bounds)
+            self.update_bounds(X_bounds=X_bounds, update=False)
         elif len(U_bounds) > 0:
-            self.update_bounds(U_bounds=U_bounds)
+            self.update_bounds(U_bounds=U_bounds, update=False)
 
         if len(X_init) > 0 and len(U_init) > 0:
-            self.update_initial_guess(X_init, U_init)
+            self.update_initial_guess(X_init, U_init, False)
         elif len(X_init) > 0:
-            self.update_initial_guess(X_init=X_init)
+            self.update_initial_guess(X_init=X_init, update=False)
         elif len(U_init) > 0:
-            self.update_initial_guess(U_init=U_init)
+            self.update_initial_guess(U_init=U_init, update=False)
+
+        for i in range(self.nb_phases):
+            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
+
+        if self.def_X_bounds and self.def_U_bounds and self.def_X_init and self.def_U_init:
+            self._define_multiple_shooting_nodes()
 
         # Prepare constraints
         self.update_constraints(constraints)
@@ -621,7 +627,7 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_parameter must be a ParameterOption or a ParameterList")
 
-    def update_bounds(self, X_bounds=None, U_bounds=None):
+    def update_bounds(self, X_bounds=None, U_bounds=None, update=True):
         if X_bounds is not None:
             self.def_X_bounds = True
             if isinstance(X_bounds, BoundsOption):
@@ -657,10 +663,10 @@ class OptimalControlProgram:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
             self.def_bounds = True
 
-        if self.def_X_init and self.def_U_init and self.def_X_bounds and self.def_U_bounds:
+        if self.def_X_init and self.def_U_init and self.def_X_bounds and self.def_U_bounds and update:
             self._define_multiple_shooting_nodes()
 
-    def update_initial_guess(self, X_init=None, U_init=None):
+    def update_initial_guess(self, X_init=None, U_init=None, update=True):
         if X_init is not None:
             self.def_X_init = True
             if isinstance(X_init, InitialConditionsOption):
@@ -691,13 +697,12 @@ class OptimalControlProgram:
                 else:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
-        if self.def_X_init and self.def_U_init and self.def_X_bounds and self.def_U_bounds:
+        if self.def_X_init and self.def_U_init and self.def_X_bounds and self.def_U_bounds and update:
             self._define_multiple_shooting_nodes()
 
     def _define_multiple_shooting_nodes(self):
         # Variables and constraint for the optimization program
         for i in range(self.nb_phases):
-            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
             self.__define_multiple_shooting_nodes_per_phase_init_and_bounds(self.nlp[i], i)
 
         for i in range(self.nb_phases):
