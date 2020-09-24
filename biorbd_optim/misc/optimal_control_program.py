@@ -265,26 +265,15 @@ class OptimalControlProgram:
         self.def_X_bounds = False
         self.def_U_bounds = False
 
-        self.update_bounds(X_bounds, U_bounds)
-        self.update_initial_guess(X_init, U_init)
-
-        self._define_multiple_shooting_nodes()
-
         # Define dynamic problem
         self.__add_to_nlp(
             "nb_integration_steps", nb_integration_steps, True
         )  # Number of steps of integration (for now only RK4 steps are implemented)
-        for i in range(self.nb_phases):
-            if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
-                raise RuntimeError("Dynamics with different nx or nu is not supported yet")
-            self.__prepare_dynamics(self.nlp[i])
 
-        # Prepare phase transitions (Reminder, it is important that parameters are declared
-        # before, otherwise they will erase the state_transitions)
-        self.state_transitions = StateTransitionFunctions.prepare_state_transitions(self, state_transitions)
+        self.tmp_state_transitions = state_transitions
 
-        # Inner- and inter-phase continuity
-        ContinuityFunctions.continuity(self)
+        self.update_bounds(X_bounds, U_bounds)
+        self.update_initial_guess(X_init, U_init)
 
         # Prepare constraints
         self.update_constraints(constraints)
@@ -434,47 +423,37 @@ class OptimalControlProgram:
             nV = (nlp.nx + nlp.nu) * (nlp.ns + 1)
         else:
             raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp['control_type']}")
-        if self.def_X_bounds and self.def_U_bounds:
-            V_bounds = Bounds([0] * nV, [0] * nV, interpolation=InterpolationType.CONSTANT)
-        if self.def_X_init and self.def_U_init:
-            V_init = InitialConditions([0] * nV, interpolation=InterpolationType.CONSTANT)
+        V_bounds = Bounds([0] * nV, [0] * nV, interpolation=InterpolationType.CONSTANT)
+        V_init = InitialConditions([0] * nV, interpolation=InterpolationType.CONSTANT)
 
         offset = 0
         for k in range(nlp.ns + 1):
             X_ = nlp.CX.sym("X_" + str(idx_phase) + "_" + str(k), nlp.nx)
             X.append(X_)
-            if self.def_X_bounds and self.def_U_bounds:
-                V_bounds.min[offset : offset + nlp.nx, 0] = nlp.X_bounds.min.evaluate_at(shooting_point=k)
-                V_bounds.max[offset : offset + nlp.nx, 0] = nlp.X_bounds.max.evaluate_at(shooting_point=k)
-            if self.def_X_init and self.def_U_init:
-                V_init.init[offset : offset + nlp.nx, 0] = nlp.X_init.init.evaluate_at(shooting_point=k)
+            V_bounds.min[offset : offset + nlp.nx, 0] = nlp.X_bounds.min.evaluate_at(shooting_point=k)
+            V_bounds.max[offset : offset + nlp.nx, 0] = nlp.X_bounds.max.evaluate_at(shooting_point=k)
+            V_init.init[offset : offset + nlp.nx, 0] = nlp.X_init.init.evaluate_at(shooting_point=k)
             offset += nlp.nx
             V = vertcat(V, X_)
 
             if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
                 U_ = nlp.CX.sym("U_" + str(idx_phase) + "_" + str(k), nlp.nu, 1)
                 U.append(U_)
-                if self.def_X_bounds and self.def_U_bounds:
-                    V_bounds.min[offset : offset + nlp.nu, 0] = nlp.U_bounds.min.evaluate_at(shooting_point=k)
-                    V_bounds.max[offset : offset + nlp.nu, 0] = nlp.U_bounds.max.evaluate_at(shooting_point=k)
-                if self.def_X_init and self.def_U_init:
-                    V_init.init[offset : offset + nlp.nu, 0] = nlp.U_init.init.evaluate_at(shooting_point=k)
+                V_bounds.min[offset : offset + nlp.nu, 0] = nlp.U_bounds.min.evaluate_at(shooting_point=k)
+                V_bounds.max[offset : offset + nlp.nu, 0] = nlp.U_bounds.max.evaluate_at(shooting_point=k)
+                V_init.init[offset : offset + nlp.nu, 0] = nlp.U_init.init.evaluate_at(shooting_point=k)
                 offset += nlp.nu
                 V = vertcat(V, U_)
 
-        if self.def_X_bounds and self.def_U_bounds:
-            V_bounds.check_and_adjust_dimensions(nV, 1)
-        if self.def_X_init and self.def_U_init:
-            V_init.check_and_adjust_dimensions(nV, 1)
+        V_bounds.check_and_adjust_dimensions(nV, 1)
+        V_init.check_and_adjust_dimensions(nV, 1)
 
         nlp.X = X
         nlp.U = U
         self.V = vertcat(self.V, V)
 
-        if self.def_X_bounds and self.def_U_bounds:
-            self.V_bounds.concatenate(V_bounds)
-        if self.def_X_init and self.def_U_init:
-            self.V_init.concatenate(V_init)
+        self.V_bounds.concatenate(V_bounds)
+        self.V_init.concatenate(V_init)
 
     def __init_phase_time(self, phase_time, objective_functions, constraints):
         """
@@ -613,6 +592,9 @@ class OptimalControlProgram:
                 else:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
+        if self.def_X_init and self.def_U_init and self.def_X_bounds and self.def_U_bounds:
+            self._define_multiple_shooting_nodes()
+
     def update_initial_guess(self, X_init=None, U_init=None):
         if X_init is not None:
             self.def_X_init = True
@@ -644,10 +626,25 @@ class OptimalControlProgram:
                 else:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
+        if self.def_X_init and self.def_U_init and self.def_X_bounds and self.def_U_bounds:
+            self._define_multiple_shooting_nodes()
+
     def _define_multiple_shooting_nodes(self):
         # Variables and constraint for the optimization program
         for i in range(self.nb_phases):
             self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
+
+        for i in range(self.nb_phases):
+            if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
+                raise RuntimeError("Dynamics with different nx or nu is not supported yet")
+            self.__prepare_dynamics(self.nlp[i])
+
+        # Prepare phase transitions (Reminder, it is important that parameters are declared
+        # before, otherwise they will erase the state_transitions)
+        self.state_transitions = StateTransitionFunctions.prepare_state_transitions(self, self.tmp_state_transitions)
+
+        # Inner- and inter-phase continuity
+        ContinuityFunctions.continuity(self)
 
     def _modify_penalty(self, new_penalty, penalty_name):
         """
