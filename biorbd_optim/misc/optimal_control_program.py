@@ -193,9 +193,6 @@ class OptimalControlProgram:
         self.J = []
         self.g = []
         self.g_bounds = []
-        self.V = []
-        self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        self.V_init = InitialConditions(interpolation=InterpolationType.CONSTANT)
         self.param_to_optimize = {}
 
         # nlp is the core of a phase
@@ -640,9 +637,11 @@ class OptimalControlProgram:
 
     def _define_multiple_shooting_nodes(self):
         # Variables and constraint for the optimization program
+        self.V = []
+        self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        self.V_init = InitialConditions(interpolation=InterpolationType.CONSTANT)
         for i in range(self.nb_phases):
             self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
-
         if self.def_X_init and self.def_U_init and self.def_X_bounds and self.def_U_bounds:
             for i in range(self.nb_phases):
                 if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
