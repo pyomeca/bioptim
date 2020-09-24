@@ -288,10 +288,10 @@ class OptimalControlProgram:
         self.__add_to_nlp("ode_solver", ode_solver, True)
         self.__add_to_nlp("control_type", control_type, True)
 
-        self.def_X_init = False
-        self.def_U_init = False
-        self.def_X_bounds = False
-        self.def_U_bounds = False
+        self.isdef_X_init = False
+        self.isdef_U_init = False
+        self.isdef_X_bounds = False
+        self.isdef_U_bounds = False
         self.def_bounds = False
         self.def_V = False
 
@@ -319,7 +319,7 @@ class OptimalControlProgram:
         for i in range(self.nb_phases):
             self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
 
-        if self.def_X_bounds and self.def_U_bounds and self.def_X_init and self.def_U_init:
+        if self.isdef_X_bounds and self.isdef_U_bounds and self.isdef_X_init and self.isdef_U_init:
             self._define_multiple_shooting_nodes()
 
         # Prepare constraints
@@ -629,7 +629,7 @@ class OptimalControlProgram:
 
     def update_bounds(self, X_bounds=None, U_bounds=None, update=True):
         if X_bounds is not None:
-            self.def_X_bounds = True
+            self.isdef_X_bounds = True
             if isinstance(X_bounds, BoundsOption):
                 X_bounds_tp = BoundsList()
                 X_bounds_tp.add(X_bounds)
@@ -639,7 +639,7 @@ class OptimalControlProgram:
             self.__add_to_nlp("X_bounds", X_bounds, False)
 
         if U_bounds is not None:
-            self.def_U_bounds = True
+            self.isdef_U_bounds = True
             if isinstance(U_bounds, BoundsOption):
                 U_bounds_tp = BoundsList()
                 U_bounds_tp.add(U_bounds)
@@ -648,7 +648,7 @@ class OptimalControlProgram:
                 raise RuntimeError("U_bounds should be built from a BoundOption or a BoundsList")
             self.__add_to_nlp("U_bounds", U_bounds, False)
 
-        if self.def_X_bounds and self.def_U_bounds:
+        if self.isdef_X_bounds and self.isdef_U_bounds:
             if not self.def_bounds:
                 for i in range(self.nb_phases):
                     self.__initialize_nlp(self.nlp[i])
@@ -663,12 +663,12 @@ class OptimalControlProgram:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
             self.def_bounds = True
 
-        if self.def_X_init and self.def_U_init and self.def_X_bounds and self.def_U_bounds and update:
+        if self.isdef_X_init and self.isdef_U_init and self.isdef_X_bounds and self.isdef_U_bounds and update:
             self._define_multiple_shooting_nodes()
 
     def update_initial_guess(self, X_init=None, U_init=None, update=True):
         if X_init is not None:
-            self.def_X_init = True
+            self.isdef_X_init = True
             if isinstance(X_init, InitialConditionsOption):
                 X_init_tp = InitialConditionsList()
                 X_init_tp.add(X_init)
@@ -678,7 +678,7 @@ class OptimalControlProgram:
             self.__add_to_nlp("X_init", X_init, False)
 
         if U_init is not None:
-            self.def_U_init = True
+            self.isdef_U_init = True
             if isinstance(U_init, InitialConditionsOption):
                 U_init_tp = InitialConditionsList()
                 U_init_tp.add(U_init)
@@ -687,7 +687,7 @@ class OptimalControlProgram:
                 raise RuntimeError("U_init should be built from a InitialConditionsOption or InitialConditionsList")
             self.__add_to_nlp("U_init", U_init, False)
 
-        if self.def_X_init and self.def_U_init:
+        if self.isdef_X_init and self.isdef_U_init:
             for i in range(self.nb_phases):
                 self.nlp[i].X_init.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
                 if self.nlp[i].control_type == ControlType.CONSTANT:
@@ -697,7 +697,7 @@ class OptimalControlProgram:
                 else:
                     raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
-        if self.def_X_init and self.def_U_init and self.def_X_bounds and self.def_U_bounds and update:
+        if self.isdef_X_init and self.isdef_U_init and self.isdef_X_bounds and self.isdef_U_bounds and update:
             self._define_multiple_shooting_nodes()
 
     def _define_multiple_shooting_nodes(self):
