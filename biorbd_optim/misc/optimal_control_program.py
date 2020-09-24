@@ -454,10 +454,41 @@ class OptimalControlProgram:
         :param idx_phase: Index of the phase. (integer)
         """
 
-        if not self.def_V:
-            V = []
-            X = []
-            U = []
+        V = []
+        X = []
+        U = []
+
+        if nlp.control_type == ControlType.CONSTANT:
+            nV = nlp.nx * (nlp.ns + 1) + nlp.nu * nlp.ns
+        elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            nV = (nlp.nx + nlp.nu) * (nlp.ns + 1)
+        else:
+            raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp['control_type']}")
+
+        offset = 0
+        for k in range(nlp.ns + 1):
+            X_ = nlp.CX.sym("X_" + str(idx_phase) + "_" + str(k), nlp.nx)
+            X.append(X_)
+            offset += nlp.nx
+            V = vertcat(V, X_)
+
+            if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
+                U_ = nlp.CX.sym("U_" + str(idx_phase) + "_" + str(k), nlp.nu, 1)
+                U.append(U_)
+                offset += nlp.nu
+                V = vertcat(V, U_)
+
+        nlp.X = X
+        nlp.U = U
+        self.V = vertcat(self.V, V)
+
+    def __define_multiple_shooting_nodes_per_phase_init_and_bounds(self, nlp, idx_phase):
+        """
+        For each node, puts X_bounds and U_bounds in V_bounds.
+        Links X and U with V.
+        :param nlp: The non linear problem.
+        :param idx_phase: Index of the phase. (integer)
+        """
 
         if nlp.control_type == ControlType.CONSTANT:
             nV = nlp.nx * (nlp.ns + 1) + nlp.nu * nlp.ns
@@ -470,34 +501,19 @@ class OptimalControlProgram:
 
         offset = 0
         for k in range(nlp.ns + 1):
-            if not self.def_V:
-                X_ = nlp.CX.sym("X_" + str(idx_phase) + "_" + str(k), nlp.nx)
-                X.append(X_)
             V_bounds.min[offset : offset + nlp.nx, 0] = nlp.X_bounds.min.evaluate_at(shooting_point=k)
             V_bounds.max[offset : offset + nlp.nx, 0] = nlp.X_bounds.max.evaluate_at(shooting_point=k)
             V_init.init[offset : offset + nlp.nx, 0] = nlp.X_init.init.evaluate_at(shooting_point=k)
             offset += nlp.nx
-            if not self.def_V:
-                V = vertcat(V, X_)
 
             if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
-                if not self.def_V:
-                    U_ = nlp.CX.sym("U_" + str(idx_phase) + "_" + str(k), nlp.nu, 1)
-                    U.append(U_)
                 V_bounds.min[offset : offset + nlp.nu, 0] = nlp.U_bounds.min.evaluate_at(shooting_point=k)
                 V_bounds.max[offset : offset + nlp.nu, 0] = nlp.U_bounds.max.evaluate_at(shooting_point=k)
                 V_init.init[offset : offset + nlp.nu, 0] = nlp.U_init.init.evaluate_at(shooting_point=k)
                 offset += nlp.nu
-                if not self.def_V:
-                    V = vertcat(V, U_)
 
         V_bounds.check_and_adjust_dimensions(nV, 1)
         V_init.check_and_adjust_dimensions(nV, 1)
-
-        if not self.def_V:
-            nlp.X = X
-            nlp.U = U
-            self.V = vertcat(self.V, V)
 
         self.V_bounds.concatenate(V_bounds)
         self.V_init.concatenate(V_init)
@@ -682,6 +698,7 @@ class OptimalControlProgram:
         # Variables and constraint for the optimization program
         for i in range(self.nb_phases):
             self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
+            self.__define_multiple_shooting_nodes_per_phase_init_and_bounds(self.nlp[i], i)
 
         for i in range(self.nb_phases):
             if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
