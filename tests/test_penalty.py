@@ -23,9 +23,14 @@ from biorbd_optim import (
 def prepare_test_ocp():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod")
+    nq = biorbd_model.nbQ()
     dynamics = DynamicsTypeList()
     dynamics.add(DynamicsType.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0)
+    X_init = InitialConditionsOption(np.zeros((nq * 2, 1)))
+    U_init = InitialConditionsOption(np.zeros((nq, 1)))
+    X_bounds = BoundsOption([np.zeros((8, 1)), np.zeros((nq * 2, 1))])
+    U_bounds = BoundsOption([np.zeros((4, 1)), np.zeros((nq, 1))])
+    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, X_init, U_init, X_bounds, U_bounds)
     ocp.nlp[0].J = [list()]
     ocp.nlp[0].g = [list()]
     ocp.nlp[0].g_bounds = [list()]
