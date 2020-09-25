@@ -315,22 +315,8 @@ class OptimalControlProgram:
         self.isdef_X_bounds = False
         self.isdef_U_bounds = False
 
-        if len(X_bounds) > 0 and len(U_bounds) > 0:
-            self.update_bounds(X_bounds, U_bounds, False)
-        elif len(X_bounds) > 0:
-            self.update_bounds(X_bounds=X_bounds, update=False)
-        elif len(U_bounds) > 0:
-            self.update_bounds(U_bounds=U_bounds, update=False)
-
-        if X_init:
-            self.update_initial_guess(X_init, U_init, False)
-        elif len(X_init) > 0:
-            self.update_initial_guess(X_init=X_init, update=False)
-        elif len(U_init) > 0:
-            self.update_initial_guess(U_init=U_init, update=False)
-
-        if self.isdef_X_bounds and self.isdef_U_bounds and self.isdef_X_init and self.isdef_U_init:
-            self._define_multiple_shooting_nodes()
+        self.update_bounds(X_bounds, U_bounds)
+        self.update_initial_guess(X_init, U_init)
 
         # Prepare constraints
         self.update_constraints(constraints)
@@ -683,18 +669,18 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_parameter must be a ParameterOption or a ParameterList")
 
-    def update_bounds(self, X_bounds=None, U_bounds=None):
-        if X_bounds is not None:
+    def update_bounds(self, X_bounds=BoundsList(), U_bounds=BoundsList()):
+        if X_bounds:
             self.__add_path_condition_to_nlp(X_bounds, "X_bounds", BoundsOption, BoundsList, "Bounds")
-        if U_bounds is not None:
+        if U_bounds:
             self.__add_path_condition_to_nlp(U_bounds, "U_bounds", BoundsOption, BoundsList, "Bounds")
         if self.isdef_X_bounds and self.isdef_U_bounds:
             self.__define_bounds()
 
-    def update_initial_guess(self, X_init=None, U_init=None):
-        if X_init is not None:
+    def update_initial_guess(self, X_init=InitialConditionsList(), U_init=InitialConditionsList()):
+        if X_init:
             self.__add_path_condition_to_nlp(X_init, "X_init", InitialConditionsOption, InitialConditionsList, "InitialConditions")
-        if U_init is not None:
+        if U_init:
             self.__add_path_condition_to_nlp(U_init, "U_init", InitialConditionsOption, InitialConditionsList, "InitialConditions")
         if self.isdef_X_init and self.isdef_U_init:
             self.__define_initial_conditions()

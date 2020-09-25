@@ -202,6 +202,7 @@ class BoundsOption(OptionGeneric):
 
     def __setitem__(self, slice, value):
         self.bounds[slice] = value
+        return len
 
 
 class BoundsList(UniquePerPhaseOptionList):
@@ -221,6 +222,8 @@ class BoundsList(UniquePerPhaseOptionList):
     def __next__(self):
         return super(BoundsList, self).__next__().bounds
 
+    def __bool__(self):
+        return len(self) > 0
 
 class Bounds:
     """
@@ -379,6 +382,9 @@ class InitialConditionsList(UniquePerPhaseOptionList):
 
     def __next__(self):
         return super(InitialConditionsList, self).__next__().initial_condition
+
+    def __bool__(self):
+        return len(self) > 0
 
 
 class InitialConditions:
