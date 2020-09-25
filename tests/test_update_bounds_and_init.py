@@ -20,22 +20,23 @@ def test_double_update_bounds_and_init():
 
     dynamics = DynamicsTypeList()
     dynamics.add(DynamicsType.TORQUE_DRIVEN)
-    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0)
+    ns = 10
+    ocp = OptimalControlProgram(biorbd_model, dynamics, ns, 1.0)
 
     X_bounds = BoundsOption([-np.ones((nq * 2, 1)), np.ones((nq * 2, 1))])
     U_bounds = BoundsOption([-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))])
     ocp.update_bounds(X_bounds, U_bounds)
 
-    expected = np.append(np.tile(np.append(-np.ones((nq * 2, 1)), -2.0 * np.ones((nq, 1))), 10), -np.ones((nq * 2, 1)))
+    expected = np.append(np.tile(np.append(-np.ones((nq * 2, 1)), -2.0 * np.ones((nq, 1))), ns), -np.ones((nq * 2, 1)))
     np.testing.assert_almost_equal(ocp.V_bounds.min, expected.reshape(128, 1))
-    expected = np.append(np.tile(np.append(np.ones((nq * 2, 1)), 2.0 * np.ones((nq, 1))), 10), np.ones((nq * 2, 1)))
+    expected = np.append(np.tile(np.append(np.ones((nq * 2, 1)), 2.0 * np.ones((nq, 1))), ns), np.ones((nq * 2, 1)))
     np.testing.assert_almost_equal(ocp.V_bounds.max, expected.reshape(128, 1))
 
     X_init = InitialConditionsOption(0.5 * np.ones((nq * 2, 1)))
     U_init = InitialConditionsOption(-0.5 * np.ones((nq, 1)))
     ocp.update_initial_guess(X_init, U_init)
     expected = np.append(
-        np.tile(np.append(0.5 * np.ones((nq * 2, 1)), -0.5 * np.ones((nq, 1))), 10), 0.5 * np.ones((nq * 2, 1))
+        np.tile(np.append(0.5 * np.ones((nq * 2, 1)), -0.5 * np.ones((nq, 1))), ns), 0.5 * np.ones((nq * 2, 1))
     )
     np.testing.assert_almost_equal(ocp.V_init.init, expected.reshape(128, 1))
 
@@ -45,11 +46,11 @@ def test_double_update_bounds_and_init():
     ocp.update_bounds(U_bounds=U_bounds)
 
     expected = np.append(
-        np.tile(np.append(-2.0 * np.ones((nq * 2, 1)), -4.0 * np.ones((nq, 1))), 10), -2.0 * np.ones((nq * 2, 1))
+        np.tile(np.append(-2.0 * np.ones((nq * 2, 1)), -4.0 * np.ones((nq, 1))), ns), -2.0 * np.ones((nq * 2, 1))
     )
     np.testing.assert_almost_equal(ocp.V_bounds.min, expected.reshape(128, 1))
     expected = np.append(
-        np.tile(np.append(2.0 * np.ones((nq * 2, 1)), 4.0 * np.ones((nq, 1))), 10), 2.0 * np.ones((nq * 2, 1))
+        np.tile(np.append(2.0 * np.ones((nq * 2, 1)), 4.0 * np.ones((nq, 1))), ns), 2.0 * np.ones((nq * 2, 1))
     )
     np.testing.assert_almost_equal(ocp.V_bounds.max, expected.reshape(128, 1))
 
@@ -57,7 +58,7 @@ def test_double_update_bounds_and_init():
     U_init = InitialConditionsOption(-0.25 * np.ones((nq, 1)))
     ocp.update_initial_guess(X_init, U_init)
     expected = np.append(
-        np.tile(np.append(0.25 * np.ones((nq * 2, 1)), -0.25 * np.ones((nq, 1))), 10), 0.25 * np.ones((nq * 2, 1))
+        np.tile(np.append(0.25 * np.ones((nq * 2, 1)), -0.25 * np.ones((nq, 1))), ns), 0.25 * np.ones((nq * 2, 1))
     )
     np.testing.assert_almost_equal(ocp.V_init.init, expected.reshape(128, 1))
 
