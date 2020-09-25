@@ -13,7 +13,7 @@ from biorbd_optim import (
 )
 
 
-def test_penalty_minimize_time():
+def test_double_update_bounds_and_init():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod")
     nq = biorbd_model.nbQ()
