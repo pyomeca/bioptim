@@ -521,12 +521,13 @@ class OptimalControlProgram:
 
             offset = 0
             for k in range(nlp.ns + 1):
-                V_init.init[offset: offset + nlp.nx, 0] = nlp.X_init.init.evaluate_at(shooting_point=k)
+                V_init.init[offset : offset + nlp.nx, 0] = nlp.X_init.init.evaluate_at(shooting_point=k)
                 offset += nlp.nx
 
                 if nlp.control_type != ControlType.CONSTANT or (
-                        nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
-                    V_init.init[offset: offset + nlp.nu, 0] = nlp.U_init.init.evaluate_at(shooting_point=k)
+                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
+                ):
+                    V_init.init[offset : offset + nlp.nu, 0] = nlp.U_init.init.evaluate_at(shooting_point=k)
                     offset += nlp.nu
 
             V_init.check_and_adjust_dimensions(nV, 1)
@@ -558,7 +559,9 @@ class OptimalControlProgram:
                 V_bounds.max[offset : offset + nlp.nx, 0] = nlp.X_bounds.max.evaluate_at(shooting_point=k)
                 offset += nlp.nx
 
-                if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
+                if nlp.control_type != ControlType.CONSTANT or (
+                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
+                ):
                     V_bounds.min[offset : offset + nlp.nu, 0] = nlp.U_bounds.min.evaluate_at(shooting_point=k)
                     V_bounds.max[offset : offset + nlp.nu, 0] = nlp.U_bounds.max.evaluate_at(shooting_point=k)
                     offset += nlp.nu
@@ -679,9 +682,13 @@ class OptimalControlProgram:
 
     def update_initial_guess(self, X_init=InitialConditionsList(), U_init=InitialConditionsList()):
         if X_init:
-            self.__add_path_condition_to_nlp(X_init, "X_init", InitialConditionsOption, InitialConditionsList, "InitialConditions")
+            self.__add_path_condition_to_nlp(
+                X_init, "X_init", InitialConditionsOption, InitialConditionsList, "InitialConditions"
+            )
         if U_init:
-            self.__add_path_condition_to_nlp(U_init, "U_init", InitialConditionsOption, InitialConditionsList, "InitialConditions")
+            self.__add_path_condition_to_nlp(
+                U_init, "U_init", InitialConditionsOption, InitialConditionsList, "InitialConditions"
+            )
         if self.isdef_X_init and self.isdef_U_init:
             self.__define_initial_conditions()
 
