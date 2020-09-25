@@ -104,6 +104,8 @@ class Parameters:
             "func": function,
             "size": size,
             "extra_params": extra_params,
+            "bounds": bounds,
+            "initial_condition": initial_guess,
         }
         if name in ocp.param_to_optimize:
             p = ocp.param_to_optimize[name]

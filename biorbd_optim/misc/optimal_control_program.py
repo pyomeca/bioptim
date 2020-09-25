@@ -508,7 +508,9 @@ class OptimalControlProgram:
             else:
                 raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
-        self.V_init = InitialConditions()
+        self.V_init = InitialConditions(interpolation=InterpolationType.CONSTANT)
+        # TODO add parameters initial conditions
+
         for idx_phase, nlp in enumerate(self.nlp):
             if nlp.control_type == ControlType.CONSTANT:
                 nV = nlp.nx * (nlp.ns + 1) + nlp.nu * nlp.ns
@@ -544,6 +546,8 @@ class OptimalControlProgram:
                 raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
         self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        # TODO add parameters bounds
+
         for idx_phase, nlp in enumerate(self.nlp):
             if nlp.control_type == ControlType.CONSTANT:
                 nV = nlp.nx * (nlp.ns + 1) + nlp.nu * nlp.ns
