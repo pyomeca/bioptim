@@ -32,10 +32,9 @@ class ParameterList(OptionList):
         if isinstance(parameter_name, ParameterOption):
             self.copy(parameter_name)
         else:
-            # TODO raise if Bounds or InitialCondition is empty
             if not function or not initial_guess or not bounds or not size:
                 raise RuntimeError(
-                    "function, initial_guess, bounds and size are " "mandatory elements to declare a parameter"
+                    "function, initial_guess, bounds and size are mandatory elements to declare a parameter"
                 )
 
             super(ParameterList, self)._add(

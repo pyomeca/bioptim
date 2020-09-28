@@ -300,11 +300,13 @@ class Bounds:
                 t=t,
                 **param,
             )
-            # TODO: Verify if it is ok that slice_list arg sent is used only if it is a custom type (otherwise, slice_list is used before calling Bounds constructor
+            # TODO: Verify if it is ok that slice_list arg sent is used only if it is a custom type
+            #  (otherwise, slice_list is used before calling Bounds constructor)
             return bounds_sliced
         else:
             raise RuntimeError(
-                "Invalid input for slicing bounds. It should be like [a:b] or [a:b:c] with a the start index, b the stop index and c the step for slicing."
+                "Invalid input for slicing bounds. It should be like [a:b] or [a:b:c] with a the start index, "
+                "b the stop index and c the step for slicing."
             )
 
     def __setitem__(self, slice, value):
