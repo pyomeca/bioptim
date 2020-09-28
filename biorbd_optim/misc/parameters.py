@@ -118,6 +118,8 @@ class Parameters:
             p["size"] += param_to_store["size"]
             if p["extra_params"] != param_to_store["extra_params"]:
                 raise RuntimeError("Extra parameters of same parameters must be the same")
+            p["bounds"].concatenate(param_to_store["bounds"])
+            p["initial_condition"].concatenate(param_to_store["initial_condition"])
         else:
             ocp.param_to_optimize[name] = param_to_store
 
