@@ -90,13 +90,14 @@ def test_update_bounds_and_init_with_param():
     biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod")
     nq = biorbd_model.nbQ()
     ns = 10
+    g_min, g_max, g_init = -10, -6, -8
 
     dynamics = DynamicsTypeList()
     dynamics.add(DynamicsType.TORQUE_DRIVEN)
 
     parameters = ParameterList()
-    bounds_gravity = Bounds(min_bound=-10, max_bound=-6, interpolation=InterpolationType.CONSTANT)
-    initial_gravity = InitialConditions(-8)
+    bounds_gravity = Bounds(min_bound=g_min, max_bound=g_max, interpolation=InterpolationType.CONSTANT)
+    initial_gravity = InitialConditions(g_init)
     parameter_objective_functions = ObjectiveOption(
         my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=-8
     )
@@ -117,9 +118,9 @@ def test_update_bounds_and_init_with_param():
     ocp.update_bounds(X_bounds, U_bounds)
 
     expected = np.append(np.tile(np.append(-np.ones((nq * 2, 1)), -2.0 * np.ones((nq, 1))), ns), -np.ones((nq * 2, 1)))
-    np.testing.assert_almost_equal(ocp.V_bounds.min, expected.reshape(128, 1))
+    np.testing.assert_almost_equal(ocp.V_bounds.min, np.append([g_min], expected).reshape(129, 1))
     expected = np.append(np.tile(np.append(np.ones((nq * 2, 1)), 2.0 * np.ones((nq, 1))), ns), np.ones((nq * 2, 1)))
-    np.testing.assert_almost_equal(ocp.V_bounds.max, expected.reshape(128, 1))
+    np.testing.assert_almost_equal(ocp.V_bounds.max, np.append([[g_max]], expected).reshape(129, 1))
 
     X_init = InitialConditionsOption(0.5 * np.ones((nq * 2, 1)))
     U_init = InitialConditionsOption(-0.5 * np.ones((nq, 1)))
@@ -127,4 +128,4 @@ def test_update_bounds_and_init_with_param():
     expected = np.append(
         np.tile(np.append(0.5 * np.ones((nq * 2, 1)), -0.5 * np.ones((nq, 1))), ns), 0.5 * np.ones((nq * 2, 1))
     )
-    np.testing.assert_almost_equal(ocp.V_init.init, expected.reshape(128, 1))
+    np.testing.assert_almost_equal(ocp.V_init.init, np.append([g_init], expected).reshape(129, 1))
