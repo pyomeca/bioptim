@@ -510,6 +510,8 @@ class OptimalControlProgram:
 
         self.V_init = InitialConditions(interpolation=InterpolationType.CONSTANT)
         # TODO add parameters initial conditions
+        for key in self.param_to_optimize.keys():
+            self.V_init.concatenate(self.param_to_optimize[key]["initial_condition"])
 
         for idx_phase, nlp in enumerate(self.nlp):
             if nlp.control_type == ControlType.CONSTANT:
@@ -547,6 +549,8 @@ class OptimalControlProgram:
 
         self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         # TODO add parameters bounds
+        for key in self.param_to_optimize.keys():
+            self.V_bounds.concatenate(self.param_to_optimize[key]["bounds"])
 
         for idx_phase, nlp in enumerate(self.nlp):
             if nlp.control_type == ControlType.CONSTANT:
