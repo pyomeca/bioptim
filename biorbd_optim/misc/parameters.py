@@ -1,6 +1,8 @@
 from casadi import vertcat
 
 from .enums import Instant
+from ..limits.constraints import Bounds
+from ..limits.path_conditions import InitialConditions
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveOption, ObjectiveList
 from .options_lists import OptionList, OptionGeneric
 
@@ -20,8 +22,8 @@ class ParameterList(OptionList):
         self,
         parameter_name,
         function=None,
-        initial_guess=None,
-        bounds=None,
+        initial_guess=InitialConditions(),
+        bounds=Bounds(),
         size=None,
         phase=0,
         penalty_list=None,
@@ -30,6 +32,7 @@ class ParameterList(OptionList):
         if isinstance(parameter_name, ParameterOption):
             self.copy(parameter_name)
         else:
+            # TODO raise if Bounds or InitialCondition is empty
             if not function or not initial_guess or not bounds or not size:
                 raise RuntimeError(
                     "function, initial_guess, bounds and size are " "mandatory elements to declare a parameter"

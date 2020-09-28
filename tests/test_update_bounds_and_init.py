@@ -76,11 +76,14 @@ def test_double_update_bounds_and_init():
     with pytest.raises(RuntimeError, match="X_bounds should be built from a BoundsOption or BoundsList"):
         ocp.update_bounds(X_init, U_init)
 
+
 def my_parameter_function(biorbd_model, value, extra_value):
     biorbd_model.setGravity(biorbd.Vector3d(0, 0, value + extra_value))
 
+
 def my_target_function(ocp, value, target_value):
     return value + target_value
+
 
 def test_update_bounds_and_init_with_param():
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -92,7 +95,7 @@ def test_update_bounds_and_init_with_param():
     dynamics.add(DynamicsType.TORQUE_DRIVEN)
 
     parameters = ParameterList()
-    bounds_gravity = Bounds(min_bounds=-10, max_bounds=-6, interpolation=InterpolationType.CONSTANT)
+    bounds_gravity = Bounds(min_bound=-10, max_bound=-6, interpolation=InterpolationType.CONSTANT)
     initial_gravity = InitialConditions(-8)
     parameter_objective_functions = ObjectiveOption(
             my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=-8
