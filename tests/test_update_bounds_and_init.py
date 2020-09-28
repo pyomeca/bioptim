@@ -98,17 +98,17 @@ def test_update_bounds_and_init_with_param():
     bounds_gravity = Bounds(min_bound=-10, max_bound=-6, interpolation=InterpolationType.CONSTANT)
     initial_gravity = InitialConditions(-8)
     parameter_objective_functions = ObjectiveOption(
-            my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=-8
-            )
+        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=-8
+    )
     parameters.add(
-            "gravity_z",
-            my_parameter_function,
-            initial_gravity,
-            bounds_gravity,
-            size=1,
-            penalty_list=parameter_objective_functions,
-            extra_value=1
-            )
+        "gravity_z",
+        my_parameter_function,
+        initial_gravity,
+        bounds_gravity,
+        size=1,
+        penalty_list=parameter_objective_functions,
+        extra_value=1,
+    )
 
     ocp = OptimalControlProgram(biorbd_model, dynamics, ns, 1.0, parameters=parameters)
 
