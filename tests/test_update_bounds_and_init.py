@@ -145,7 +145,9 @@ def test_add_wrong_param():
         my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=-8
     )
 
-    with pytest.raises(RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"):
+    with pytest.raises(
+        RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"
+    ):
         parameters.add(
             "gravity_z",
             [],
@@ -156,7 +158,9 @@ def test_add_wrong_param():
             extra_value=1,
         )
 
-    with pytest.raises(RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"):
+    with pytest.raises(
+        RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"
+    ):
         parameters.add(
             "gravity_z",
             my_parameter_function,
@@ -167,7 +171,9 @@ def test_add_wrong_param():
             extra_value=1,
         )
 
-    with pytest.raises(RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"):
+    with pytest.raises(
+        RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"
+    ):
         parameters.add(
             "gravity_z",
             my_parameter_function,
@@ -178,7 +184,9 @@ def test_add_wrong_param():
             extra_value=1,
         )
 
-    with pytest.raises(RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"):
+    with pytest.raises(
+        RuntimeError, match="function, initial_guess, bounds and size are mandatory elements to declare a parameter"
+    ):
         parameters.add(
             "gravity_z",
             my_parameter_function,

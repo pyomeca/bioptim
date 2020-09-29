@@ -313,6 +313,9 @@ class Bounds:
         self.min[slice] = value
         self.max[slice] = value
 
+    def __bool__(self):
+        return len(self.min) > 0
+
 
 class QAndQDotBounds(Bounds):
     """Sets bounds on states which are [generalized coordinates positions, generalized coordinates velocities]"""
@@ -414,3 +417,6 @@ class InitialConditions:
             np.concatenate((self.init, other.init)),
             interpolation=self.init.type,
         )
+
+    def __bool__(self):
+        return len(self.init) > 0
