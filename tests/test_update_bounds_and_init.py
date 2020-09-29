@@ -151,7 +151,7 @@ def test_add_wrong_param():
         parameters.add(
             "gravity_z",
             [],
-            InitialConditions(),
+            initial_gravity,
             bounds_gravity,
             size=1,
             penalty_list=parameter_objective_functions,
@@ -191,7 +191,7 @@ def test_add_wrong_param():
             "gravity_z",
             my_parameter_function,
             initial_gravity,
-            Bounds(),
+            bounds_gravity,
             penalty_list=parameter_objective_functions,
             extra_value=1,
         )
