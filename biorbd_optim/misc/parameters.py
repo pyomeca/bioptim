@@ -1,6 +1,8 @@
 from casadi import vertcat
 
 from .enums import Instant
+from ..limits.constraints import Bounds
+from ..limits.path_conditions import InitialConditions
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveOption, ObjectiveList
 from .options_lists import OptionList, OptionGeneric
 
@@ -20,8 +22,8 @@ class ParameterList(OptionList):
         self,
         parameter_name,
         function=None,
-        initial_guess=None,
-        bounds=None,
+        initial_guess=InitialConditions(),
+        bounds=Bounds(),
         size=None,
         phase=0,
         penalty_list=None,
@@ -32,7 +34,7 @@ class ParameterList(OptionList):
         else:
             if not function or not initial_guess or not bounds or not size:
                 raise RuntimeError(
-                    "function, initial_guess, bounds and size are " "mandatory elements to declare a parameter"
+                    "function, initial_guess, bounds and size are mandatory elements to declare a parameter"
                 )
 
             super(ParameterList, self)._add(
@@ -104,6 +106,8 @@ class Parameters:
             "func": function,
             "size": size,
             "extra_params": extra_params,
+            "bounds": bounds,
+            "initial_condition": initial_guess,
         }
         if name in ocp.param_to_optimize:
             p = ocp.param_to_optimize[name]
@@ -113,6 +117,8 @@ class Parameters:
             p["size"] += param_to_store["size"]
             if p["extra_params"] != param_to_store["extra_params"]:
                 raise RuntimeError("Extra parameters of same parameters must be the same")
+            p["bounds"].concatenate(param_to_store["bounds"])
+            p["initial_condition"].concatenate(param_to_store["initial_condition"])
         else:
             ocp.param_to_optimize[name] = param_to_store
 

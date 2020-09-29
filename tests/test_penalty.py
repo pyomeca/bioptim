@@ -26,11 +26,11 @@ def prepare_test_ocp():
     nq = biorbd_model.nbQ()
     dynamics = DynamicsTypeList()
     dynamics.add(DynamicsType.TORQUE_DRIVEN)
-    x_bounds = BoundsOption([np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1))])
-    x_init = InitialConditionsOption(np.zeros((nq * 2, 1)))
-    u_bounds = BoundsOption([np.zeros((nq, 1)), np.zeros((nq, 1))])
-    u_init = InitialConditionsOption(np.zeros((nq, 1)))
-    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds)
+    X_init = InitialConditionsOption(np.zeros((nq * 2, 1)))
+    U_init = InitialConditionsOption(np.zeros((nq, 1)))
+    X_bounds = BoundsOption([np.zeros((8, 1)), np.zeros((nq * 2, 1))])
+    U_bounds = BoundsOption([np.zeros((4, 1)), np.zeros((nq, 1))])
+    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, X_init, U_init, X_bounds, U_bounds)
     ocp.nlp[0].J = [list()]
     ocp.nlp[0].g = [list()]
     ocp.nlp[0].g_bounds = [list()]
