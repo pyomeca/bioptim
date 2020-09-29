@@ -24,7 +24,7 @@ BiorbdOptim relies on several libraries. The most obvious one is BIORBD, but pyo
 
 There are two ways to install Biorbd, to choose the better way for you please refer to the ReadMe file here : https://github.com/pyomeca/biorbd.
 
-Moreover, BiorbdViz is optional but can be useful to visualize your simulations. To install BiorbdViz please refer to the ReadMe file here : https://github.com/pyomeca/bioviz.
+Moreover, `bioviz` is optional but can be useful to visualize your simulations. To install `bioviz` please refer to the ReadMe file here : https://github.com/pyomeca/bioviz.
 
 The first hand dependencies (meaning that some dependencies may require other libraries themselves) are: rbdl-casadi (https://github.com/pyomeca/rbdl-casadi) with the casadi backend (https://web.casadi.org/), pandas (https://pandas.pydata.org/), numpy (https://numpy.org/), scipy (https://scipy.org/), matplotlib (https://matplotlib.org/), vtk (https://vtk.org/), PyQt (https://www.riverbankcomputing.com/software/pyqt), pyomeca (https://github.com/pyomeca/pyomeca), tinyxml (http://www.grinninglizard.com/tinyxmldocs/index.html) and Ipopt (https://github.com/coin-or/Ipopt). All these can manually be install using (assuming the anaconda environment is loaded if needed) `pip3` command or the Anaconda's following command.
 ```bash
