@@ -316,6 +316,10 @@ class Bounds:
     def __bool__(self):
         return len(self.min) > 0
 
+    @property
+    def shape(self):
+        return self.min.shape
+
 
 class QAndQDotBounds(Bounds):
     """Sets bounds on states which are [generalized coordinates positions, generalized coordinates velocities]"""
@@ -420,3 +424,7 @@ class InitialConditions:
 
     def __bool__(self):
         return len(self.init) > 0
+
+    @property
+    def shape(self):
+        return self.init.shape
