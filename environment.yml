@@ -10,6 +10,6 @@ dependencies:
 - casadi
 - rbdl =*=*casadi*
 - biorbd =*=*casadi*
-- biorbd-viz =*=*casadi*
+- bioviz =*=*casadi*
 - scipy
 - packaging
