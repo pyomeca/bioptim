@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from biorbd_optim import Data
+from bioptim import Data
 from .utils import TestUtils
 
 

@@ -2,14 +2,14 @@ import os
 import pickle
 import numpy as np
 
-from biorbd_optim.gui.plot import Iterations
+from bioptim.gui.plot import Iterations
 
 
 def test_iterations():
     V = [np.random.random((10, 1)) for _ in range(5)]
 
-    directory = ".__tmp_biorbd_optim"
-    file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
+    directory = ".__tmp_bioptim"
+    file_path = ".__tmp_bioptim/temp_save_iter.bobo"
     os.mkdir(directory)
     if os.path.isfile(file_path):
         os.remove(file_path)

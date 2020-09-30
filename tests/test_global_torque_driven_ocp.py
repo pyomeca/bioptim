@@ -8,7 +8,7 @@ import pytest
 import numpy as np
 import biorbd
 
-from biorbd_optim import Data, OdeSolver, ConstraintList, Constraint, Instant
+from bioptim import Data, OdeSolver, ConstraintList, Constraint, Instant
 from .utils import TestUtils
 
 

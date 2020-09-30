@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from biorbd_optim import Data, InitialConditions, InterpolationType, Simulate
+from bioptim import Data, InitialConditions, InterpolationType, Simulate
 
 # TODO: Add negative test for sizes
 
