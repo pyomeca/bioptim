@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     BoundsOption,
     InterpolationType,
 )

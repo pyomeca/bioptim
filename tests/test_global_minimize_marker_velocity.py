@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from biorbd_optim import Data, OdeSolver, ControlType
+from bioptim import Data, OdeSolver, ControlType
 from .utils import TestUtils
 
 

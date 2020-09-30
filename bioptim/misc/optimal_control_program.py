@@ -101,7 +101,7 @@ class OptimalControlProgram:
             biorbd_model = [biorbd.Model(m) if isinstance(m, str) else m for m in biorbd_model]
         else:
             raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
-        self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "biorbd_optim": __version__}
+        self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.nb_phases = len(biorbd_model)
 
         biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]

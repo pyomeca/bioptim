@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     Data,
     DynamicsTypeList,

@@ -597,7 +597,7 @@ class OnlineCallback(Callback):
 class Iterations:
     @staticmethod
     def save(V):
-        file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
+        file_path = ".__tmp_bioptim/temp_save_iter.bobo"
         if os.path.isfile(file_path):
             with open(file_path, "rb") as file:
                 previews_iterations = pickle.load(file)
