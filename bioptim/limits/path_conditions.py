@@ -203,6 +203,10 @@ class BoundsOption(OptionGeneric):
     def __setitem__(self, slice, value):
         self.bounds[slice] = value
 
+    @property
+    def shape(self):
+        return self.bounds.shape
+
 
 class BoundsList(UniquePerPhaseOptionList):
     def add(
@@ -372,6 +376,10 @@ class InitialGuessOption(OptionGeneric):
 
         super(InitialGuessOption, self).__init__(**params)
         self.initial_guess = initial_guess
+
+    @property
+    def shape(self):
+        return self.initial_guess.shape
 
 
 class InitialGuessList(UniquePerPhaseOptionList):

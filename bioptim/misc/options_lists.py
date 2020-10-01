@@ -8,6 +8,10 @@ class OptionGeneric:
 
         self.params = params
 
+    @property
+    def shape(self):
+        raise RuntimeError("OptionGeneric is Abstract")
+
 
 class OptionList:
     def __init__(self):
