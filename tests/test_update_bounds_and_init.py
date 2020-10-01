@@ -69,9 +69,7 @@ def test_double_update_bounds_and_init():
     )
     np.testing.assert_almost_equal(ocp.V_init.init, expected.reshape(128, 1))
 
-    with pytest.raises(
-        RuntimeError, match="x_init should be built from a InitialGuessOption or InitialGuessList"
-    ):
+    with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessOption or InitialGuessList"):
         ocp.update_initial_guess(x_bounds, u_bounds)
     with pytest.raises(RuntimeError, match="x_bounds should be built from a BoundsOption or BoundsList"):
         ocp.update_bounds(x_init, u_init)
