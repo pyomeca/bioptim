@@ -1,6 +1,6 @@
 from casadi import MX
 
-from ..limits.path_conditions import Bounds, InitialConditions
+from ..limits.path_conditions import Bounds, InitialGuess
 from .. import ControlType, OdeSolver, DynamicsType
 
 
@@ -10,11 +10,11 @@ class NonLinearProgram:
         CX=MX,
         J=[],
         U=[],
-        U_bounds=Bounds(),
-        U_init=InitialConditions(),
+        u_bounds=Bounds(),
+        u_init=InitialGuess(),
         X=[],
-        X_bounds=Bounds(),
-        X_init=InitialConditions(),
+        x_bounds=Bounds(),
+        x_init=InitialGuess(),
         casadi_func={},
         contact_forces_func=None,
         control_type=ControlType.CONSTANT,
@@ -56,11 +56,11 @@ class NonLinearProgram:
         self.CX = CX
         self.J = J
         self.U = U
-        self.U_bounds = U_bounds
-        self.U_init = U_init
+        self.u_bounds = u_bounds
+        self.u_init = u_init
         self.X = X
-        self.X_bounds = X_bounds
-        self.X_init = X_init
+        self.x_bounds = x_bounds
+        self.x_init = x_init
         self.casadi_func = casadi_func
         self.contact_forces_func = contact_forces_func
         self.control_type = control_type

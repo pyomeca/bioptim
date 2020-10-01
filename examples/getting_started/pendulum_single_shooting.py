@@ -1,7 +1,7 @@
 import importlib.util
 from pathlib import Path
 
-from bioptim import InitialConditions, Simulate, ShowResult
+from bioptim import InitialGuess, Simulate, ShowResult
 
 
 # It is not an optimal control, it only apply a Runge Kutta at each nodes
@@ -20,8 +20,8 @@ ocp = pendulum.prepare_ocp(
     nb_threads=2,
 )
 
-X = InitialConditions([0, 0, 0, 0])
-U = InitialConditions([-1, 1])
+X = InitialGuess([0, 0, 0, 0])
+U = InitialGuess([-1, 1])
 
 # --- Single shooting --- #
 sol_simulate_single_shooting = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=True)

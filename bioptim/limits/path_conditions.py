@@ -203,6 +203,10 @@ class BoundsOption(OptionGeneric):
     def __setitem__(self, slice, value):
         self.bounds[slice] = value
 
+    @property
+    def shape(self):
+        return self.bounds.shape
+
 
 class BoundsList(UniquePerPhaseOptionList):
     def add(
@@ -365,32 +369,36 @@ class QAndQDotBounds(Bounds):
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
 
-class InitialConditionsOption(OptionGeneric):
-    def __init__(self, initial_condition, interpolation=InterpolationType.CONSTANT, **params):
-        if not isinstance(initial_condition, InitialConditions):
-            initial_condition = InitialConditions(initial_condition, interpolation=interpolation, **params)
+class InitialGuessOption(OptionGeneric):
+    def __init__(self, initial_guess, interpolation=InterpolationType.CONSTANT, **params):
+        if not isinstance(initial_guess, InitialGuess):
+            initial_guess = InitialGuess(initial_guess, interpolation=interpolation, **params)
 
-        super(InitialConditionsOption, self).__init__(**params)
-        self.initial_condition = initial_condition
+        super(InitialGuessOption, self).__init__(**params)
+        self.initial_guess = initial_guess
+
+    @property
+    def shape(self):
+        return self.initial_guess.shape
 
 
-class InitialConditionsList(UniquePerPhaseOptionList):
-    def add(self, initial_condition, **extra_arguments):
-        if isinstance(initial_condition, InitialConditionsOption):
-            self.copy(initial_condition)
+class InitialGuessList(UniquePerPhaseOptionList):
+    def add(self, initial_guess, **extra_arguments):
+        if isinstance(initial_guess, InitialGuessOption):
+            self.copy(initial_guess)
         else:
-            super(InitialConditionsList, self)._add(
-                initial_condition=initial_condition, option_type=InitialConditionsOption, **extra_arguments
+            super(InitialGuessList, self)._add(
+                initial_guess=initial_guess, option_type=InitialGuessOption, **extra_arguments
             )
 
     def __getitem__(self, item):
-        return super(InitialConditionsList, self).__getitem__(item).initial_condition
+        return super(InitialGuessList, self).__getitem__(item).initial_guess
 
     def __next__(self):
-        return super(InitialConditionsList, self).__next__().initial_condition
+        return super(InitialGuessList, self).__next__().initial_guess
 
 
-class InitialConditions:
+class InitialGuess:
     def __init__(self, initial_guess=(), interpolation=InterpolationType.CONSTANT, **parameters):
         """
         Sets initial guesses.
@@ -410,7 +418,7 @@ class InitialConditions:
         :param nb_elements: Number of elements to interpolate. (integer)
         :param nb_shooting: Number of shooting points. (integer)
         """
-        self.init.check_and_adjust_dimensions(nb_elements, nb_shooting, "InitialConditions")
+        self.init.check_and_adjust_dimensions(nb_elements, nb_shooting, "InitialGuess")
 
     def concatenate(self, other):
         """

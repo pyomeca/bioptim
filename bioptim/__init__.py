@@ -10,9 +10,9 @@ from .limits.path_conditions import (
     Bounds,
     BoundsList,
     BoundsOption,
-    InitialConditions,
-    InitialConditionsList,
-    InitialConditionsOption,
+    InitialGuess,
+    InitialGuessList,
+    InitialGuessOption,
     QAndQDotBounds,
     PathCondition,
 )
