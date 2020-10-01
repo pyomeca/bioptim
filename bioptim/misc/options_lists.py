@@ -56,6 +56,9 @@ class OptionList:
             self.options[phase].append(None)
         return idx
 
+    def __bool__(self):
+        return len(self) > 0
+
     def print(self):
         # TODO: Print all elements in the console
         pass

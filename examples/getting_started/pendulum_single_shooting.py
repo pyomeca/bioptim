@@ -1,7 +1,7 @@
 import importlib.util
 from pathlib import Path
 
-from biorbd_optim import InitialConditions, Simulate, ShowResult
+from bioptim import InitialConditions, Simulate, ShowResult
 
 
 # It is not an optimal control, it only apply a Runge Kutta at each nodes

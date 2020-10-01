@@ -12,7 +12,7 @@ matplotlib.use("Agg")
 import numpy as np
 import biorbd
 
-from biorbd_optim import ShowResult, OptimalControlProgram
+from bioptim import ShowResult, OptimalControlProgram
 
 
 def test_plot_graphs_one_phase():

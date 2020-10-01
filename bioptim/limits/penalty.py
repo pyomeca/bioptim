@@ -425,10 +425,10 @@ class PenaltyFunctionAbstract:
             instant(s).
             :param marker_idx: Index of the marker to be aligned. (integer)
             :param segment_idx: Index of the segment to be aligned. (integer)
-            :param axis: Axis of the segment to be aligned. (biorbd_optim.Axe)
+            :param axis: Axis of the segment to be aligned. (bioptim.Axe)
             """
             if not isinstance(axis, Axe):
-                raise RuntimeError("axis must be a biorbd_optim.Axe")
+                raise RuntimeError("axis must be a bioptim.Axe")
 
             def biorbd_meta_func(q, segment_idx, marker_idx):
                 r_rt = nlp.model.globalJCS(q, segment_idx)

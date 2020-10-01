@@ -5,7 +5,7 @@ As an example, this custom constraint reproduces exactly the behavior of the ALI
 import biorbd
 from casadi import vertcat
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
     DynamicsTypeOption,

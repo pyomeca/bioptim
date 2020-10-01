@@ -490,15 +490,15 @@ class ShowResult:
 
     def animate(self, nb_frames=80, show_now=True, **kwargs):
         """
-        Animate solution with BiorbdViz
+        Animate solution with bioviz
         :param nb_frames: Number of frames in the animation. (integer)
         :param show_now: If updates must be automatically done (True) or not (False)
         """
         try:
-            import BiorbdViz
+            import bioviz
         except ModuleNotFoundError:
-            raise RuntimeError("BiorbdViz must be install to animate the model")
-        check_version(BiorbdViz, "1.3.3", "1.4.0")
+            raise RuntimeError("bioviz must be install to animate the model")
+        check_version(bioviz, "2.0.0", "2.1.0")
         data_interpolate, data_control = Data.get_data(
             self.ocp, self.sol["x"], integrate=False, interpolate_nb_frames=nb_frames
         )
@@ -507,7 +507,7 @@ class ShowResult:
 
         all_bioviz = []
         for idx_phase, data in enumerate(data_interpolate["q"]):
-            all_bioviz.append(BiorbdViz.BiorbdViz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
+            all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].expand.map(data))
 
         if show_now:
@@ -597,7 +597,7 @@ class OnlineCallback(Callback):
 class Iterations:
     @staticmethod
     def save(V):
-        file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
+        file_path = ".__tmp_bioptim/temp_save_iter.bobo"
         if os.path.isfile(file_path):
             with open(file_path, "rb") as file:
                 previews_iterations = pickle.load(file)

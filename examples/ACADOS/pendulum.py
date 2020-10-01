@@ -1,7 +1,7 @@
 import biorbd
 import numpy as np
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     Objective,

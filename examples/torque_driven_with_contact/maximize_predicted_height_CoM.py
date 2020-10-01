@@ -1,6 +1,6 @@
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     Objective,

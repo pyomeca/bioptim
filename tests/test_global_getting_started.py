@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from biorbd_optim import Data, InterpolationType
+from bioptim import Data, InterpolationType
 from .utils import TestUtils
 
 

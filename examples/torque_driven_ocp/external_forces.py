@@ -2,7 +2,7 @@ import numpy as np
 
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
     DynamicsTypeList,

@@ -4,7 +4,7 @@ from time import time
 import numpy as np
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     DynamicsType,
     DynamicsTypeOption,

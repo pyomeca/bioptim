@@ -5,7 +5,7 @@ import pickle
 from casadi import MX
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     Data,
     Bounds,

@@ -8,7 +8,7 @@ import pytest
 import numpy as np
 import biorbd
 
-from biorbd_optim import Data
+from bioptim import Data
 from .utils import TestUtils
 
 

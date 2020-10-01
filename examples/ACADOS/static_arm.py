@@ -2,7 +2,7 @@ import biorbd
 from time import time
 import numpy as np
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     Objective,

@@ -4,7 +4,7 @@ import biorbd
 from casadi import MX, Function
 from matplotlib import pyplot as plt
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     NonLinearProgram,
     BidirectionalMapping,
