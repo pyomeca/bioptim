@@ -37,8 +37,6 @@ class AcadosInterface(SolverInterface):
         self.y_ref_end = []
         self.__acados_export_model(ocp)
         self.__prepare_acados(ocp)
-        self.__set_costs(ocp)
-        self.__set_constrs(ocp)
         self.ocp_solver = None
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
@@ -97,7 +95,8 @@ class AcadosInterface(SolverInterface):
         if not np.all(np.all(u_max.T == u_max.T[0, :], axis=0)):
             raise NotImplementedError("U_bounds max must be the same at each shooting point with ACADOS")
 
-        if np.min(u_min) == -np.inf or np.min(x_min) == -np.inf or np.max(u_max) == np.inf or np.max(x_max) == np.inf:
+        if not np.isfinite(u_min).all() or not np.isfinite(x_min).all() \
+                or not np.isfinite(u_max).all() or not np.isfinite(x_max).all():
             raise NotImplementedError(
                 "U_bounds and X_bounds cannot be set to infinity in ACADOS. Consider changing it"
                 "to a big value instead."
@@ -228,11 +227,8 @@ class AcadosInterface(SolverInterface):
     def __init_and_update_solver(self):
         for n in range(self.acados_ocp.dims.N):
             self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
-            # TODO deal with non Instant.EACH_FRAME initializations
-            if self.ocp.nlp[0].X_init.init.shape[1] == self.acados_ocp.dims.N + 1:
-                self.ocp_solver.set(n, "x", self.ocp.nlp[0].X_init.init[:, n])
-            if self.ocp.nlp[0].U_init.init.shape[1] == self.acados_ocp.dims.N:
-                self.ocp_solver.set(n, "u", self.ocp.nlp[0].U_init.init[:, n])
+            self.ocp_solver.set(n, "x", self.ocp.nlp[0].X_init.init.evaluate_at(n))
+            self.ocp_solver.set(n, "u", self.ocp.nlp[0].U_init.init.evaluate_at(n))
             if n == 0:
                 self.ocp_solver.constraints_set(n, "lbx", self.ocp.nlp[0].X_bounds.min[:, n])
                 self.ocp_solver.constraints_set(n, "ubx", self.ocp.nlp[0].X_bounds.max[:, n])
@@ -302,7 +298,7 @@ class AcadosInterface(SolverInterface):
         return out[0] if len(out) == 1 else out
 
     def solve(self):
-        # populate costs and constrs vectors
+        # Populate costs and constrs vectors
         self.__set_costs(self.ocp)
         self.__set_constrs(self.ocp)
         if self.ocp_solver is None:
