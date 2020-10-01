@@ -690,13 +690,9 @@ class OptimalControlProgram:
 
     def update_initial_guess(self, x_init=InitialGuessList(), u_init=InitialGuessList()):
         if x_init:
-            self.__add_path_condition_to_nlp(
-                x_init, "x_init", InitialGuessOption, InitialGuessList, "InitialGuess"
-            )
+            self.__add_path_condition_to_nlp(x_init, "x_init", InitialGuessOption, InitialGuessList, "InitialGuess")
         if u_init:
-            self.__add_path_condition_to_nlp(
-                u_init, "u_init", InitialGuessOption, InitialGuessList, "InitialGuess"
-            )
+            self.__add_path_condition_to_nlp(u_init, "u_init", InitialGuessOption, InitialGuessList, "InitialGuess")
         if self.isdef_x_init and self.isdef_u_init:
             self.__define_initial_guesss()
 
