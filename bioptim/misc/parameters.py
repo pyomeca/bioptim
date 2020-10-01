@@ -2,7 +2,7 @@ from casadi import vertcat
 
 from .enums import Instant
 from ..limits.constraints import Bounds
-from ..limits.path_conditions import InitialConditions
+from ..limits.path_conditions import InitialGuess
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveOption, ObjectiveList
 from .options_lists import OptionList, OptionGeneric
 
@@ -22,7 +22,7 @@ class ParameterList(OptionList):
         self,
         parameter_name,
         function=None,
-        initial_guess=InitialConditions(),
+        initial_guess=InitialGuess(),
         bounds=Bounds(),
         size=None,
         phase=0,
@@ -107,7 +107,7 @@ class Parameters:
             "size": size,
             "extra_params": extra_params,
             "bounds": bounds,
-            "initial_condition": initial_guess,
+            "initial_guess": initial_guess,
         }
         if name in ocp.param_to_optimize:
             p = ocp.param_to_optimize[name]
@@ -118,7 +118,7 @@ class Parameters:
             if p["extra_params"] != param_to_store["extra_params"]:
                 raise RuntimeError("Extra parameters of same parameters must be the same")
             p["bounds"].concatenate(param_to_store["bounds"])
-            p["initial_condition"].concatenate(param_to_store["initial_condition"])
+            p["initial_guess"].concatenate(param_to_store["initial_guess"])
         else:
             ocp.param_to_optimize[name] = param_to_store
 

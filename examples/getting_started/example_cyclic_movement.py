@@ -11,7 +11,7 @@ from bioptim import (
     Constraint,
     BoundsOption,
     QAndQDotBounds,
-    InitialConditionsOption,
+    InitialGuessOption,
     ShowResult,
     OdeSolver,
     StateTransitionList,
@@ -44,14 +44,14 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, loop_from
     x_bounds[2:6, -1] = [1.57, 0, 0, 0]
 
     # Initial guess
-    x_init = InitialConditionsOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialGuessOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
     u_bounds = BoundsOption(
         [[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()]
     )
 
-    u_init = InitialConditionsOption([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init = InitialGuessOption([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
     # A state transition loop constraint is treated as

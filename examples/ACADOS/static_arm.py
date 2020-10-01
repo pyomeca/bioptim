@@ -10,8 +10,8 @@ from bioptim import (
     DynamicsType,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
-    InitialConditionsOption,
+    InitialGuessList,
+    InitialGuessOption,
     ShowResult,
     Solver,
     InterpolationType,
@@ -43,9 +43,9 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
 
     # Initial guess
     if x_warm is None:
-        x_init = InitialConditionsOption([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
+        x_init = InitialGuessOption([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
     else:
-        x_init = InitialConditionsOption(x_warm, interpolation=InterpolationType.EACH_FRAME)
+        x_init = InitialGuessOption(x_warm, interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     u_bounds = BoundsList()
@@ -56,7 +56,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
         ]
     )
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
 

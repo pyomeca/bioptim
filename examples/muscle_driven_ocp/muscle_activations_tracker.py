@@ -17,7 +17,7 @@ from bioptim import (
     Objective,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
 )
 
 
@@ -150,12 +150,12 @@ def prepare_ocp(
     x_bounds[0].max[:nq, :] = 2 * np.pi
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     if use_residual_torque:
         u_bounds.add(
             [

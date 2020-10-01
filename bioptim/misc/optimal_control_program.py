@@ -26,7 +26,7 @@ from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, S
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList, ObjectiveOption
 from ..limits.path_conditions import OptionGeneric
 from ..limits.path_conditions import Bounds, BoundsList, BoundsOption
-from ..limits.path_conditions import InitialConditions, InitialConditionsList, InitialConditionsOption
+from ..limits.path_conditions import InitialGuess, InitialGuessList, InitialGuessOption
 from ..limits.path_conditions import InterpolationType
 
 check_version(biorbd, "1.3.5", "1.4.0")
@@ -45,10 +45,10 @@ class OptimalControlProgram:
         dynamics_type,
         number_shooting_points,
         phase_time,
-        X_init=InitialConditionsList(),
-        U_init=InitialConditionsList(),
-        X_bounds=BoundsList(),
-        U_bounds=BoundsList(),
+        x_init=InitialGuessList(),
+        u_init=InitialGuessList(),
+        x_bounds=BoundsList(),
+        u_bounds=BoundsList(),
         objective_functions=ObjectiveList(),
         constraints=ConstraintList(),
         parameters=ParameterList(),
@@ -74,10 +74,10 @@ class OptimalControlProgram:
         :param dynamics_type: A selected method handler of the class dynamics.Dynamics.
         :param number_shooting_points: Subdivision number. (integer)
         :param phase_time: Simulation time in seconds. (float)
-        :param X_init: States initial guess. (MX.sym from CasADi)
-        :param U_init: Controls initial guess. (MX.sym from CasADi)
-        :param X_bounds: States upper and lower bounds. (Instance of the class Bounds)
-        :param U_bounds: Controls upper and lower bounds. (Instance of the class Bounds)
+        :param x_init: States initial guess. (MX.sym from CasADi)
+        :param u_init: Controls initial guess. (MX.sym from CasADi)
+        :param x_bounds: States upper and lower bounds. (Instance of the class Bounds)
+        :param u_bounds: Controls upper and lower bounds. (Instance of the class Bounds)
         :param objective_functions: Tuple of tuple of objectives functions handler's and weights.
         :param constraints: Tuple of constraints, instant (which node(s)) and tuple of geometric structures used.
         :param external_forces: Tuple of external forces.
@@ -110,10 +110,10 @@ class OptimalControlProgram:
             "dynamics_type": dynamics_type,
             "number_shooting_points": number_shooting_points,
             "phase_time": phase_time,
-            "X_init": X_init,
-            "U_init": U_init,
-            "X_bounds": X_bounds,
-            "U_bounds": U_bounds,
+            "x_init": x_init,
+            "u_init": u_init,
+            "x_bounds": x_bounds,
+            "u_bounds": u_bounds,
             "objective_functions": ObjectiveList(),
             "constraints": ConstraintList(),
             "parameters": ParameterList(),
@@ -164,33 +164,33 @@ class OptimalControlProgram:
             else:
                 raise RuntimeError("phase_time should be a number or a list of number")
 
-        if isinstance(X_bounds, BoundsOption):
-            X_bounds_tp = BoundsList()
-            X_bounds_tp.add(X_bounds)
-            X_bounds = X_bounds_tp
-        elif not isinstance(X_bounds, BoundsList):
-            raise RuntimeError("X_bounds should be built from a BoundOption or a BoundsList")
+        if isinstance(x_bounds, BoundsOption):
+            x_bounds_tp = BoundsList()
+            x_bounds_tp.add(x_bounds)
+            x_bounds = x_bounds_tp
+        elif not isinstance(x_bounds, BoundsList):
+            raise RuntimeError("x_bounds should be built from a BoundOption or a BoundsList")
 
-        if isinstance(U_bounds, BoundsOption):
-            U_bounds_tp = BoundsList()
-            U_bounds_tp.add(U_bounds)
-            U_bounds = U_bounds_tp
-        elif not isinstance(U_bounds, BoundsList):
-            raise RuntimeError("U_bounds should be built from a BoundOption or a BoundsList")
+        if isinstance(u_bounds, BoundsOption):
+            u_bounds_tp = BoundsList()
+            u_bounds_tp.add(u_bounds)
+            u_bounds = u_bounds_tp
+        elif not isinstance(u_bounds, BoundsList):
+            raise RuntimeError("u_bounds should be built from a BoundOption or a BoundsList")
 
-        if isinstance(X_init, InitialConditionsOption):
-            X_init_tp = InitialConditionsList()
-            X_init_tp.add(X_init)
-            X_init = X_init_tp
-        elif not isinstance(X_init, InitialConditionsList):
-            raise RuntimeError("X_init should be built from a InitialConditionsOption or InitialConditionsList")
+        if isinstance(x_init, InitialGuessOption):
+            x_init_tp = InitialGuessList()
+            x_init_tp.add(x_init)
+            x_init = x_init_tp
+        elif not isinstance(x_init, InitialGuessList):
+            raise RuntimeError("x_init should be built from a InitialGuessOption or InitialGuessList")
 
-        if isinstance(U_init, InitialConditionsOption):
-            U_init_tp = InitialConditionsList()
-            U_init_tp.add(U_init)
-            U_init = U_init_tp
-        elif not isinstance(U_init, InitialConditionsList):
-            raise RuntimeError("U_init should be built from a InitialConditionsOption or InitialConditionsList")
+        if isinstance(u_init, InitialGuessOption):
+            u_init_tp = InitialGuessList()
+            u_init_tp.add(u_init)
+            u_init = u_init_tp
+        elif not isinstance(u_init, InitialGuessList):
+            raise RuntimeError("u_init should be built from a InitialGuessOption or InitialGuessList")
 
         if isinstance(objective_functions, ObjectiveOption):
             objective_functions_tp = ObjectiveList()
@@ -224,7 +224,7 @@ class OptimalControlProgram:
         self.g_bounds = []
         self.V = []
         self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        self.V_init = InitialConditions(interpolation=InterpolationType.CONSTANT)
+        self.V_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
         self.param_to_optimize = {}
 
         # nlp is the core of a phase
@@ -310,13 +310,13 @@ class OptimalControlProgram:
         # Inner- and inter-phase continuity
         ContinuityFunctions.continuity(self)
 
-        self.isdef_X_init = False
-        self.isdef_U_init = False
-        self.isdef_X_bounds = False
-        self.isdef_U_bounds = False
+        self.isdef_x_init = False
+        self.isdef_u_init = False
+        self.isdef_x_bounds = False
+        self.isdef_u_bounds = False
 
-        self.update_bounds(X_bounds, U_bounds)
-        self.update_initial_guess(X_init, U_init)
+        self.update_bounds(x_bounds, u_bounds)
+        self.update_initial_guess(x_init, u_init)
 
         # Prepare constraints
         self.update_constraints(constraints)
@@ -464,7 +464,7 @@ class OptimalControlProgram:
 
     def __define_multiple_shooting_nodes_per_phase(self, nlp, idx_phase):
         """
-        For each node, puts X_bounds and U_bounds in V_bounds.
+        For each node, puts x_bounds and u_bounds in V_bounds.
         Links X and U with V.
         :param nlp: The non linear problem.
         :param idx_phase: Index of the phase. (integer)
@@ -498,20 +498,20 @@ class OptimalControlProgram:
         nlp.U = U
         self.V = vertcat(self.V, V)
 
-    def __define_initial_conditions(self):
+    def __define_initial_guesss(self):
         for i in range(self.nb_phases):
-            self.nlp[i].X_init.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
+            self.nlp[i].x_init.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
             if self.nlp[i].control_type == ControlType.CONSTANT:
-                self.nlp[i].U_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
+                self.nlp[i].u_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
             elif self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                self.nlp[i].U_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
+                self.nlp[i].u_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
             else:
                 raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
-        self.V_init = InitialConditions(interpolation=InterpolationType.CONSTANT)
+        self.V_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
 
         for key in self.param_to_optimize.keys():
-            self.V_init.concatenate(self.param_to_optimize[key]["initial_condition"])
+            self.V_init.concatenate(self.param_to_optimize[key]["initial_guess"])
 
         for idx_phase, nlp in enumerate(self.nlp):
             if nlp.control_type == ControlType.CONSTANT:
@@ -521,17 +521,17 @@ class OptimalControlProgram:
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp['control_type']}")
 
-            V_init = InitialConditions([0] * nV, interpolation=InterpolationType.CONSTANT)
+            V_init = InitialGuess([0] * nV, interpolation=InterpolationType.CONSTANT)
 
             offset = 0
             for k in range(nlp.ns + 1):
-                V_init.init[offset : offset + nlp.nx, 0] = nlp.X_init.init.evaluate_at(shooting_point=k)
+                V_init.init[offset : offset + nlp.nx, 0] = nlp.x_init.init.evaluate_at(shooting_point=k)
                 offset += nlp.nx
 
                 if nlp.control_type != ControlType.CONSTANT or (
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                 ):
-                    V_init.init[offset : offset + nlp.nu, 0] = nlp.U_init.init.evaluate_at(shooting_point=k)
+                    V_init.init[offset : offset + nlp.nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
                     offset += nlp.nu
 
             V_init.check_and_adjust_dimensions(nV, 1)
@@ -539,11 +539,11 @@ class OptimalControlProgram:
 
     def __define_bounds(self):
         for i in range(self.nb_phases):
-            self.nlp[i].X_bounds.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
+            self.nlp[i].x_bounds.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
             if self.nlp[i].control_type == ControlType.CONSTANT:
-                self.nlp[i].U_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
+                self.nlp[i].u_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
             elif self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                self.nlp[i].U_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
+                self.nlp[i].u_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
             else:
                 raise NotImplementedError(f"Plotting {self.nlp[i]['control_type']} is not implemented yet")
 
@@ -563,15 +563,15 @@ class OptimalControlProgram:
 
             offset = 0
             for k in range(nlp.ns + 1):
-                V_bounds.min[offset : offset + nlp.nx, 0] = nlp.X_bounds.min.evaluate_at(shooting_point=k)
-                V_bounds.max[offset : offset + nlp.nx, 0] = nlp.X_bounds.max.evaluate_at(shooting_point=k)
+                V_bounds.min[offset : offset + nlp.nx, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=k)
+                V_bounds.max[offset : offset + nlp.nx, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=k)
                 offset += nlp.nx
 
                 if nlp.control_type != ControlType.CONSTANT or (
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                 ):
-                    V_bounds.min[offset : offset + nlp.nu, 0] = nlp.U_bounds.min.evaluate_at(shooting_point=k)
-                    V_bounds.max[offset : offset + nlp.nu, 0] = nlp.U_bounds.max.evaluate_at(shooting_point=k)
+                    V_bounds.min[offset : offset + nlp.nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
+                    V_bounds.max[offset : offset + nlp.nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
                     offset += nlp.nu
 
             V_bounds.check_and_adjust_dimensions(nV, 1)
@@ -640,7 +640,7 @@ class OptimalControlProgram:
         for nlp in self.nlp:
             if isinstance(nlp.tf, self.CX):
                 time_bounds = Bounds(minimum[i], maximum[i], interpolation=InterpolationType.CONSTANT)
-                time_init = InitialConditions(initial_guess[i])
+                time_init = InitialGuess(initial_guess[i])
                 Parameters._add_to_v(self, "time", 1, None, time_bounds, time_init, nlp.tf)
                 i += 1
 
@@ -680,32 +680,30 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_parameter must be a ParameterOption or a ParameterList")
 
-    def update_bounds(self, X_bounds=BoundsList(), U_bounds=BoundsList()):
-        if X_bounds:
-            self.__add_path_condition_to_nlp(X_bounds, "X_bounds", BoundsOption, BoundsList, "Bounds")
-        if U_bounds:
-            self.__add_path_condition_to_nlp(U_bounds, "U_bounds", BoundsOption, BoundsList, "Bounds")
-        if self.isdef_X_bounds and self.isdef_U_bounds:
+    def update_bounds(self, x_bounds=BoundsList(), u_bounds=BoundsList()):
+        if x_bounds:
+            self.__add_path_condition_to_nlp(x_bounds, "x_bounds", BoundsOption, BoundsList, "Bounds")
+        if u_bounds:
+            self.__add_path_condition_to_nlp(u_bounds, "u_bounds", BoundsOption, BoundsList, "Bounds")
+        if self.isdef_x_bounds and self.isdef_u_bounds:
             self.__define_bounds()
 
-    def update_initial_guess(self, X_init=InitialConditionsList(), U_init=InitialConditionsList()):
-        if X_init:
+    def update_initial_guess(self, x_init=InitialGuessList(), u_init=InitialGuessList()):
+        if x_init:
             self.__add_path_condition_to_nlp(
-                X_init, "X_init", InitialConditionsOption, InitialConditionsList, "InitialConditions"
+                x_init, "x_init", InitialGuessOption, InitialGuessList, "InitialGuess"
             )
-        if U_init:
+        if u_init:
             self.__add_path_condition_to_nlp(
-                U_init, "U_init", InitialConditionsOption, InitialConditionsList, "InitialConditions"
+                u_init, "u_init", InitialGuessOption, InitialGuessList, "InitialGuess"
             )
-        if self.isdef_X_init and self.isdef_U_init:
-            self.__define_initial_conditions()
+        if self.isdef_x_init and self.isdef_u_init:
+            self.__define_initial_guesss()
 
     def __modify_penalty(self, new_penalty, penalty_name):
         """
         Modification of a penalty (constraint or objective)
         :param new_penalty: Penalty to keep after the modification.
-        :param penalty: Index of the penalty to be modified. (integer)
-        :param phase_idx: Index of the phase in which the penalty will be modified. (integer)
         :param penalty_name: Name of the penalty to modify. (string)
         """
         if not new_penalty:
@@ -745,6 +743,7 @@ class OptimalControlProgram:
         nlp = self.nlp[phase_number]
         custom_plot = CustomPlot(update_function, **parameters)
 
+        plot_name = "no_name"
         if fig_name in nlp.plot:
             # Make sure we add a unique name in the dict
             custom_plot.combine_to = fig_name
@@ -883,7 +882,7 @@ class OptimalControlProgram:
             original_values = data["ocp_initializer"]
             print("****************************** Informations ******************************")
             for key in original_values.keys():
-                if key not in ["X_init", "U_init", "X_bounds", "U_bounds"]:
+                if key not in ["x_init", "u_init", "x_bounds", "u_bounds"]:
                     print(f"{key} : ")
                     OptimalControlProgram._deep_print(original_values[key])
                     print("")
