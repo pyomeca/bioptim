@@ -12,7 +12,7 @@ from bioptim import (
     Constraint,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
 )
 
@@ -51,7 +51,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, initializ
     x_bounds[0][2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
     if initialize_near_solution:
         for i in range(2):
@@ -65,7 +65,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, initializ
     u_bounds = BoundsList()
     u_bounds.add([[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()])
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #

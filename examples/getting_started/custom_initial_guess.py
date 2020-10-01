@@ -12,7 +12,7 @@ from bioptim import (
     Constraint,
     BoundsOption,
     QAndQDotBounds,
-    InitialConditionsOption,
+    InitialGuessOption,
     ShowResult,
     InterpolationType,
 )
@@ -83,9 +83,9 @@ def prepare_ocp(
         extra_params_u = {"my_values": np.random.random((ntau, 2)), "nb_shooting": number_shooting_points}
     else:
         raise RuntimeError("Initial guess not implemented yet")
-    x_init = InitialConditionsOption(x, t=t, interpolation=initial_guess, **extra_params_x)
+    x_init = InitialGuessOption(x, t=t, interpolation=initial_guess, **extra_params_x)
 
-    u_init = InitialConditionsOption(u, t=t, interpolation=initial_guess, **extra_params_u)
+    u_init = InitialGuessOption(u, t=t, interpolation=initial_guess, **extra_params_u)
     # ------------- #
 
     return OptimalControlProgram(

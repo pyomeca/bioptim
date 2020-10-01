@@ -11,7 +11,7 @@ from bioptim import (
     DynamicsTypeList,
     DynamicsType,
     BoundsOption,
-    InitialConditionsOption,
+    InitialGuessOption,
     ObjectiveOption,
     Objective,
     Axe,
@@ -26,11 +26,11 @@ def prepare_test_ocp():
     nq = biorbd_model.nbQ()
     dynamics = DynamicsTypeList()
     dynamics.add(DynamicsType.TORQUE_DRIVEN)
-    X_init = InitialConditionsOption(np.zeros((nq * 2, 1)))
-    U_init = InitialConditionsOption(np.zeros((nq, 1)))
-    X_bounds = BoundsOption([np.zeros((8, 1)), np.zeros((nq * 2, 1))])
-    U_bounds = BoundsOption([np.zeros((4, 1)), np.zeros((nq, 1))])
-    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, X_init, U_init, X_bounds, U_bounds)
+    x_init = InitialGuessOption(np.zeros((nq * 2, 1)))
+    u_init = InitialGuessOption(np.zeros((nq, 1)))
+    x_bounds = BoundsOption([np.zeros((8, 1)), np.zeros((nq * 2, 1))])
+    u_bounds = BoundsOption([np.zeros((4, 1)), np.zeros((nq, 1))])
+    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds)
     ocp.nlp[0].J = [list()]
     ocp.nlp[0].g = [list()]
     ocp.nlp[0].g_bounds = [list()]

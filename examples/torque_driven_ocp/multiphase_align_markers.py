@@ -11,7 +11,7 @@ from bioptim import (
     Constraint,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
     OdeSolver,
 )
@@ -62,7 +62,7 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK, long_o
     x_bounds[2][2, [0, -1]] = [0.0, 1.57]
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
     x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
     x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
@@ -73,7 +73,7 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK, long_o
     u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
     u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())

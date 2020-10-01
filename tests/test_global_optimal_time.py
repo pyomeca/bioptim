@@ -15,7 +15,7 @@ from bioptim import (
     QAndQDotBounds,
     DynamicsTypeList,
     DynamicsType,
-    InitialConditionsList,
+    InitialGuessList,
     BoundsList,
     Instant,
     ObjectiveList,
@@ -313,7 +313,7 @@ def partial_ocp_parameters(nb_phases):
         x_bounds[2].min[2, [0, -1]] = [0.0, 1.57]
         x_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
 
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
     if nb_phases > 1:
         x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
@@ -329,7 +329,7 @@ def partial_ocp_parameters(nb_phases):
             [[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()]
         )
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
     if nb_phases > 1:
         u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())

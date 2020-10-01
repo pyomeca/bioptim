@@ -16,7 +16,7 @@ from bioptim import (
     BoundsList,
     Bounds,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
     Data,
 )
@@ -61,14 +61,14 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     nb_mus = biorbd_model.nbMuscleTotal()
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
-    # Initialize X_bounds
+    # Initialize x_bounds
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
     x_bounds[0].concatenate(Bounds([activation_min] * nb_mus, [activation_max] * nb_mus))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add(pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus)
 
     # Define control path constraint
@@ -80,7 +80,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
         ]
     )
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([torque_init] * tau_mapping.reduce.len + [activation_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
 
