@@ -232,8 +232,12 @@ class PlotOcp:
 
                     elif plot_type == PlotType.STEP:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:orange"
-                        linestyle = self.plot_func[variable][i].linestyle if self.plot_func[variable][i].linestyle else "-"
-                        self.plots.append([plot_type, i, ax.step(t, zero, linestyle,  where="post", color=color, zorder=0)[0]])
+                        linestyle = (
+                            self.plot_func[variable][i].linestyle if self.plot_func[variable][i].linestyle else "-"
+                        )
+                        self.plots.append(
+                            [plot_type, i, ax.step(t, zero, linestyle, where="post", color=color, zorder=0)[0]]
+                        )
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
