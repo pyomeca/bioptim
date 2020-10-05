@@ -28,11 +28,7 @@ class PenaltyFunctionAbstract:
                 )
 
                 # Prepare the plot
-                if len(t) == 1 and t[0] == nlp.ns:
-                    # This is a tweak so the step plot won't start after the graph
-                    t[0] = nlp.ns - 1
                 target[:, np.setxor1d(range(nlp.ns + 1), t)] = np.nan
-
                 running_idx = 0
                 for s in nlp.var_states:
                     idx = [idx for idx in states_idx if idx >= running_idx and idx < running_idx + nlp.var_states[s]]
@@ -581,12 +577,12 @@ class PenaltyFunctionAbstract:
                     data_to_track = data_to_track.reshape(data_to_track.shape[0], 1)
                 else:
                     raise RuntimeError(
-                        f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}"
+                        f"data_to_track {data_to_track.shape} doesn't correspond to expected minimum size {target_size}"
                     )
             for i in range(len(target_size)):
                 if data_to_track.shape[i] < target_size[i]:
                     raise RuntimeError(
-                        f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}"
+                        f"data_to_track {data_to_track.shape} doesn't correspond to expected minimum size {target_size}"
                     )
         else:
             data_to_track = np.zeros(target_size)
@@ -700,6 +696,7 @@ class PenaltyFunctionAbstract:
             combine_to,
             lambda x, u, p: data,
             color="tab:red",
+            linestyle=".-",
             plot_type=PlotType.STEP,
             phase_number=nlp.phase_idx,
             axes_idx=axes_idx,
