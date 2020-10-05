@@ -700,6 +700,7 @@ class PenaltyFunctionAbstract:
             combine_to,
             lambda x, u, p: data,
             color="tab:red",
+            linestyle=".-",
             plot_type=PlotType.STEP,
             phase_number=nlp.phase_idx,
             axes_idx=axes_idx,
