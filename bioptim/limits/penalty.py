@@ -5,9 +5,8 @@ import numpy as np
 import biorbd
 from casadi import vertcat, horzcat
 
-from ..misc.enums import Instant, Axe, PlotType
+from ..misc.enums import Instant, Axe, PlotType, ControlType
 from ..misc.mapping import Mapping
-from ..misc.options_lists import OptionGeneric
 
 
 class PenaltyFunctionAbstract:
@@ -657,7 +656,10 @@ class PenaltyFunctionAbstract:
                     raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp.ns}")
                 t.append(node)
                 x.append(nlp.X[node])
-                u.append(nlp.U[node])
+                if (
+                    nlp.control_type == ControlType.CONSTANT and node != nlp.ns
+                ) or nlp.control_type != ControlType.CONSTANT:
+                    u.append(nlp.U[node])
 
             elif node == Instant.START:
                 t.append(0)
