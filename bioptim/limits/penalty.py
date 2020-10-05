@@ -474,7 +474,9 @@ class PenaltyFunctionAbstract:
                 max_bound = 0
 
             val = penalty.custom_function(ocp, nlp, t, x, u, p, **parameters)
-            penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, min_bound, max_bound, **parameters)
+            penalty.type.get_type().add_to_penalty(
+                ocp, nlp, val, penalty, min_bound=min_bound, max_bound=max_bound, **parameters
+            )
 
     @staticmethod
     def add(ocp, nlp):
