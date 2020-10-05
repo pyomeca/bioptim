@@ -643,7 +643,9 @@ class PenaltyFunctionAbstract:
                     raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp.ns}")
                 t.append(node)
                 x.append(nlp.X[node])
-                if (nlp.control_type == ControlType.CONSTANT and node != nlp.ns) or nlp.control_type != ControlType.CONSTANT:
+                if (
+                    nlp.control_type == ControlType.CONSTANT and node != nlp.ns
+                ) or nlp.control_type != ControlType.CONSTANT:
                     u.append(nlp.U[node])
 
             elif node == Instant.START:
