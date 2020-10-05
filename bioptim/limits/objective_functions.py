@@ -140,19 +140,7 @@ class ObjectiveFunction:
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared (bool)
             """
-            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=1, target=target, **extra_param)
-
-            # # TODO: This next block is at the wrong place
-            # if nlp:
-            #     if quadratic:
-            #         # TODO : This seems simply wrong
-            #         J_acados_mayer = casadi.dot(nlp.X[0], nlp.X[0]) * weight
-            #     else:
-            #         # TODO : So this is
-            #         J_acados_mayer = casadi.sum1(nlp.X[0]) * weight
-            #     nlp.J_acados_mayer.append(J_acados_mayer)  # TODO: Find a better name (J_mayer_from_node_0?)
-            # else:
-            #     pass
+            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=1, target=target)
 
         @staticmethod
         def clear_penalty(ocp, nlp, penalty_idx):

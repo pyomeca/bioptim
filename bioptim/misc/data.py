@@ -256,7 +256,7 @@ class Data:
                     p = Data._vertcat(data_controls, list(nlp.var_controls.keys()), idx_phase, [idx_node, idx_node + 1])
                 else:
                     raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
-                params = Data._vertcat(data_parameters, [key for key in ocp.param_to_optimize if key != "time"])
+                params = Data._vertcat(data_parameters, [key for key in ocp.param_to_optimize])
                 xf_dof = np.array(ocp.nlp[idx_phase].dynamics[idx_node](x0=x0, p=p, params=params)["xall"])
 
                 offset = 0

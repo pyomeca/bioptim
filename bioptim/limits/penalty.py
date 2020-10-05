@@ -458,8 +458,21 @@ class PenaltyFunctionAbstract:
             parameters["penalty"] -> Index of the penalty (integer), parameters.weight -> Weight of the penalty
             (float)
             """
+            if "min_bound" in parameters:
+                min_bound = parameters["min_bound"]
+                del parameters["min_bound"]
+            else:
+                min_bound = 0
+            if "max_bound" in parameters:
+                max_bound = parameters["max_bound"]
+                del parameters["max_bound"]
+            else:
+                max_bound = 0
+
             val = penalty.custom_function(ocp, nlp, t, x, u, p, **parameters)
-            penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **parameters)
+            penalty.type.get_type().add_to_penalty(
+                ocp, nlp, val, penalty, min_bound=min_bound, max_bound=max_bound, **parameters
+            )
 
     @staticmethod
     def add(ocp, nlp):
