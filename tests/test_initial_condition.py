@@ -4,32 +4,32 @@ from pathlib import Path
 
 import numpy as np
 
-from bioptim import Data, InitialConditions, InterpolationType, Simulate
+from bioptim import Data, InitialGuess, InterpolationType, Simulate
 
 # TODO: Add negative test for sizes
 
 
-def test_initial_condition_constant():
+def test_initial_guess_constant():
     nb_elements = 6
     nb_shoot = 10
 
     init_val = np.random.random(
         nb_elements,
     )
-    init = InitialConditions(init_val, interpolation=InterpolationType.CONSTANT)
+    init = InitialGuess(init_val, interpolation=InterpolationType.CONSTANT)
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     expected_val = init_val
     for i in range(nb_shoot):
         np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
 
-def test_initial_condition_constant_with_first_and_last_different():
+def test_initial_guess_constant_with_first_and_last_different():
     nb_elements = 6
     nb_shoot = 10
 
     init_val = np.random.random((nb_elements, 3))
 
-    init = InitialConditions(init_val, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
+    init = InitialGuess(init_val, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     for i in range(nb_shoot + 1):
         if i == 0:
@@ -41,33 +41,33 @@ def test_initial_condition_constant_with_first_and_last_different():
         np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
 
-def test_initial_condition_linear():
+def test_initial_guess_linear():
     nb_elements = 6
     nb_shoot = 10
 
     init_val = np.random.random((nb_elements, 2))
 
-    init = InitialConditions(init_val, interpolation=InterpolationType.LINEAR)
+    init = InitialGuess(init_val, interpolation=InterpolationType.LINEAR)
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     for i in range(nb_shoot + 1):
         expected_val = init_val[:, 0] + (init_val[:, 1] - init_val[:, 0]) * i / nb_shoot
         np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
 
-def test_initial_condition_each_frame():
+def test_initial_guess_each_frame():
     nb_elements = 6
     nb_shoot = 10
 
     init_val = np.random.random((nb_elements, nb_shoot + 1))
 
-    init = InitialConditions(init_val, interpolation=InterpolationType.EACH_FRAME)
+    init = InitialGuess(init_val, interpolation=InterpolationType.EACH_FRAME)
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     for i in range(nb_shoot + 1):
         expected_val = init_val[:, i]
         np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
 
-def test_initial_condition_spline():
+def test_initial_guess_spline():
     nb_shoot = 10
     spline_time = np.hstack((0.0, 1.0, 2.2, 6.0))
     init_val = np.array(
@@ -84,9 +84,9 @@ def test_initial_condition_spline():
 
     # Raise if time is not sent
     with pytest.raises(RuntimeError):
-        InitialConditions(init_val, interpolation=InterpolationType.SPLINE)
+        InitialGuess(init_val, interpolation=InterpolationType.SPLINE)
 
-    init = InitialConditions(init_val, t=spline_time, interpolation=InterpolationType.SPLINE)
+    init = InitialGuess(init_val, t=spline_time, interpolation=InterpolationType.SPLINE)
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
 
     time_to_test = [0, nb_shoot // 3, nb_shoot // 2, nb_shoot]
@@ -103,7 +103,7 @@ def test_initial_condition_spline():
         np.testing.assert_almost_equal(init.init.evaluate_at(t), expected_val)
 
 
-def test_initial_condition_custom():
+def test_initial_guess_custom():
     nb_elements = 6
     nb_shoot = 10
 
@@ -113,7 +113,7 @@ def test_initial_condition_custom():
 
     init_val = np.random.random((nb_elements, 2))
 
-    init = InitialConditions(
+    init = InitialGuess(
         custom_bound_func,
         interpolation=InterpolationType.CUSTOM,
         val=init_val,
@@ -141,8 +141,8 @@ def test_simulate_from_initial_multiple_shoot():
         nb_threads=4,
     )
 
-    X = InitialConditions([-1, -2, 1, 0.5])
-    U = InitialConditions(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
+    X = InitialGuess([-1, -2, 1, 0.5])
+    U = InitialGuess(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
 
     sol_simulate_multiple_shooting = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=False)
 
@@ -179,8 +179,8 @@ def test_simulate_from_initial_single_shoot():
         nb_threads=4,
     )
 
-    X = InitialConditions([-1, -2, 1, 0.5])
-    U = InitialConditions(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
+    X = InitialGuess([-1, -2, 1, 0.5])
+    U = InitialGuess(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
 
     sol_simulate_single_shooting = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=True)
 

@@ -9,7 +9,7 @@ from bioptim import (
     Objective,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
     InterpolationType,
 )
@@ -74,10 +74,10 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
         x[12, i] = Arm_Quat_D[0]
         x[9:12, i] = Arm_Quat_G[1:]
         x[13, i] = Arm_Quat_G[0]
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add(x, interpolation=InterpolationType.LINEAR)
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * ntau)
 
     # ------------- #

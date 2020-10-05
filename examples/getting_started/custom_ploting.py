@@ -6,7 +6,7 @@ from bioptim import (
     DynamicsType,
     BoundsOption,
     QAndQDotBounds,
-    InitialConditionsOption,
+    InitialGuessOption,
     ShowResult,
     PlotType,
 )
@@ -29,13 +29,13 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     x_bounds[1, -1] = 3.14
 
     # Initial guess
-    x_init = InitialConditionsOption([0] * (n_q + n_qdot))
+    x_init = InitialGuessOption([0] * (n_q + n_qdot))
 
     # Define control path constraint
     u_bounds = BoundsOption([[torque_min] * n_tau, [torque_max] * n_tau])
     u_bounds[n_tau - 1, :] = 0
 
-    u_init = InitialConditionsOption([torque_init] * n_tau)
+    u_init = InitialGuessOption([torque_init] * n_tau)
 
     # ------------- #
 

@@ -231,8 +231,8 @@ class Problem:
             nlp.x = vertcat(nlp.x, q, q_dot)
             nlp.var_states["q"] = nlp.shape["q"]
             nlp.var_states["q_dot"] = nlp.shape["q_dot"]
-            q_bounds = nlp.X_bounds[: nlp.shape["q"]]
-            qdot_bounds = nlp.X_bounds[nlp.shape["q"] :]
+            q_bounds = nlp.x_bounds[: nlp.shape["q"]]
+            qdot_bounds = nlp.x_bounds[nlp.shape["q"] :]
 
             nlp.plot["q"] = CustomPlot(
                 lambda x, u, p: x[: nlp.shape["q"]],
@@ -294,7 +294,7 @@ class Problem:
         if as_controls:
             nlp.u = vertcat(nlp.u, horzcat(*all_tau))
             nlp.var_controls["tau"] = nlp.shape["tau"]
-            tau_bounds = nlp.U_bounds[: nlp.shape["tau"]]
+            tau_bounds = nlp.u_bounds[: nlp.shape["tau"]]
 
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.PLOT
@@ -358,7 +358,7 @@ class Problem:
             nlp.var_states["muscles"] = nlp.shape["muscle"]
 
             nx_q = nlp.shape["q"] + nlp.shape["q_dot"]
-            muscles_bounds = nlp.X_bounds[nx_q : nx_q + nlp.shape["muscle"]]
+            muscles_bounds = nlp.x_bounds[nx_q : nx_q + nlp.shape["muscle"]]
             nlp.plot["muscles_states"] = CustomPlot(
                 lambda x, u, p: x[nx_q : nx_q + nlp.shape["muscle"]],
                 plot_type=PlotType.INTEGRATED,
@@ -379,7 +379,7 @@ class Problem:
 
             nlp.u = vertcat(nlp.u, horzcat(*all_muscles))
             nlp.var_controls["muscles"] = nlp.shape["muscle"]
-            muscles_bounds = nlp.U_bounds[nlp.shape["tau"] : nlp.shape["tau"] + nlp.shape["muscle"]]
+            muscles_bounds = nlp.u_bounds[nlp.shape["tau"] : nlp.shape["tau"] + nlp.shape["muscle"]]
 
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.LINEAR

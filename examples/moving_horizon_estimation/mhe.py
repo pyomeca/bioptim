@@ -16,7 +16,7 @@ from bioptim import (
     ConstraintList,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     InterpolationType,
     PlotType,
     Data,
@@ -152,8 +152,8 @@ def prepare_ocp(
     x_bounds.add(QAndQDotBounds(biorbd_model))
     x_bounds[0].min[:, 0] = -np.inf
     x_bounds[0].max[:, 0] = np.inf
-    # X_bounds[0].min[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
-    # X_bounds[0].max[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
+    # x_bounds[0].min[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
+    # x_bounds[0].max[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
 
     # Define control path constraint
     u_bounds = BoundsList()
@@ -162,10 +162,10 @@ def prepare_ocp(
     # Initial guesses
     x = X0
     u = U0
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add(x, interpolation=interpolation)
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add(u, interpolation=interpolation)
     # ------------- #
 
