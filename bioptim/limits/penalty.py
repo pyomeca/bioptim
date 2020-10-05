@@ -28,11 +28,7 @@ class PenaltyFunctionAbstract:
                 )
 
                 # Prepare the plot
-                if len(t) == 1 and t[0] == nlp.ns:
-                    # This is a tweak so the step plot won't start after the graph
-                    t[0] = nlp.ns - 1
                 target[:, np.setxor1d(range(nlp.ns + 1), t)] = np.nan
-
                 running_idx = 0
                 for s in nlp.var_states:
                     idx = [idx for idx in states_idx if idx >= running_idx and idx < running_idx + nlp.var_states[s]]
