@@ -581,12 +581,12 @@ class PenaltyFunctionAbstract:
                     data_to_track = data_to_track.reshape(data_to_track.shape[0], 1)
                 else:
                     raise RuntimeError(
-                        f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}"
+                        f"data_to_track {data_to_track.shape} doesn't correspond to expected minimum size {target_size}"
                     )
             for i in range(len(target_size)):
                 if data_to_track.shape[i] < target_size[i]:
                     raise RuntimeError(
-                        f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}"
+                        f"data_to_track {data_to_track.shape} doesn't correspond to expected minimum size {target_size}"
                     )
         else:
             data_to_track = np.zeros(target_size)
