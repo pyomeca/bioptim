@@ -389,9 +389,11 @@ class OptimalControlProgram:
         if _type is not None:
             for nlp in self.nlp:
                 if (
-                    (name is None and getattr(nlp, param_name) is not None) or (name is not None and param is not None)
-                ) and (
-                    not isinstance(param, _type)
+                    (
+                        (name is None and getattr(nlp, param_name) is not None)
+                        or (name is not None and param is not None)
+                    )
+                    and not isinstance(param, _type)
                     and isinstance(param, (list, tuple))
                     and False in [False for i in param if not isinstance(i, _type)]
                 ):
