@@ -102,7 +102,7 @@ class AcadosInterface(SolverInterface):
                 "to a big value instead."
             )
 
-        ## TODO: implement constraints in g and chech for infinite bounds
+        ## TODO: implement constraints in g
 
         # path control constraints
 
