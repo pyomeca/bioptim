@@ -5,9 +5,8 @@ import numpy as np
 import biorbd
 from casadi import vertcat, horzcat
 
-from ..misc.enums import Instant, Axe, PlotType
+from ..misc.enums import Instant, Axe, PlotType, ControlType
 from ..misc.mapping import Mapping
-from ..misc.options_lists import OptionGeneric
 
 
 class PenaltyFunctionAbstract:
@@ -28,11 +27,7 @@ class PenaltyFunctionAbstract:
                 )
 
                 # Prepare the plot
-                if len(t) == 1 and t[0] == nlp.ns:
-                    # This is a tweak so the step plot won't start after the graph
-                    t[0] = nlp.ns - 1
                 target[:, np.setxor1d(range(nlp.ns + 1), t)] = np.nan
-
                 running_idx = 0
                 for s in nlp.var_states:
                     idx = [idx for idx in states_idx if idx >= running_idx and idx < running_idx + nlp.var_states[s]]
@@ -462,8 +457,21 @@ class PenaltyFunctionAbstract:
             parameters["penalty"] -> Index of the penalty (integer), parameters.weight -> Weight of the penalty
             (float)
             """
+            if "min_bound" in parameters:
+                min_bound = parameters["min_bound"]
+                del parameters["min_bound"]
+            else:
+                min_bound = 0
+            if "max_bound" in parameters:
+                max_bound = parameters["max_bound"]
+                del parameters["max_bound"]
+            else:
+                max_bound = 0
+
             val = penalty.custom_function(ocp, nlp, t, x, u, p, **parameters)
-            penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, **parameters)
+            penalty.type.get_type().add_to_penalty(
+                ocp, nlp, val, penalty, min_bound=min_bound, max_bound=max_bound, **parameters
+            )
 
     @staticmethod
     def add(ocp, nlp):
@@ -581,12 +589,12 @@ class PenaltyFunctionAbstract:
                     data_to_track = data_to_track.reshape(data_to_track.shape[0], 1)
                 else:
                     raise RuntimeError(
-                        f"data_to_track {data_to_track.shape}don't correspond to expected minimum size {target_size}"
+                        f"data_to_track {data_to_track.shape} doesn't correspond to expected minimum size {target_size}"
                     )
             for i in range(len(target_size)):
                 if data_to_track.shape[i] < target_size[i]:
                     raise RuntimeError(
-                        f"data_to_track {data_to_track.shape} don't correspond to expected minimum size {target_size}"
+                        f"data_to_track {data_to_track.shape} doesn't correspond to expected minimum size {target_size}"
                     )
         else:
             data_to_track = np.zeros(target_size)
@@ -648,7 +656,10 @@ class PenaltyFunctionAbstract:
                     raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp.ns}")
                 t.append(node)
                 x.append(nlp.X[node])
-                u.append(nlp.U[node])
+                if (
+                    nlp.control_type == ControlType.CONSTANT and node != nlp.ns
+                ) or nlp.control_type != ControlType.CONSTANT:
+                    u.append(nlp.U[node])
 
             elif node == Instant.START:
                 t.append(0)
@@ -700,6 +711,7 @@ class PenaltyFunctionAbstract:
             combine_to,
             lambda x, u, p: data,
             color="tab:red",
+            linestyle=".-",
             plot_type=PlotType.STEP,
             phase_number=nlp.phase_idx,
             axes_idx=axes_idx,
