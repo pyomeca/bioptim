@@ -330,10 +330,13 @@ class AcadosInterface(SolverInterface):
 
     def get_optimized_value(self):
         ns = self.acados_ocp.dims.N
-        nu = self.acados_ocp.dims.nu
+        nx = self.acados_ocp.dims.nx
+        nq = self.ocp.nlp[0].q.shape[0]
+        nparams = self.ocp.nlp[0].np
         acados_x = np.array([self.ocp_solver.get(i, "x") for i in range(ns + 1)]).T
-        acados_q = acados_x[:nu, :]
-        acados_qdot = acados_x[nu:, :]
+        acados_p = acados_x[:nparams, :]
+        acados_q = acados_x[nparams:nq+nparams, :]
+        acados_qdot = acados_x[nq+nparams:nx, :]
         acados_u = np.array([self.ocp_solver.get(i, "u") for i in range(ns)]).T
 
         out = {
@@ -349,6 +352,7 @@ class AcadosInterface(SolverInterface):
 
         out["x"] = vertcat(out["x"], acados_q[:, ns])
         out["x"] = vertcat(out["x"], acados_qdot[:, ns])
+        out["x"] = vertcat(acados_p[:, 0], out["x"])
         self.out["sol"] = out
         out = []
         for key in self.out.keys():
