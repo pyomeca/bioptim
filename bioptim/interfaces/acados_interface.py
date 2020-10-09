@@ -47,6 +47,8 @@ class AcadosInterface(SolverInterface):
         x = ocp.nlp[0].X[0]
         u = ocp.nlp[0].U[0]
         p = ocp.nlp[0].p
+        self.params = ocp.nlp[0].parameters_to_optimize
+
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
@@ -210,14 +212,10 @@ class AcadosInterface(SolverInterface):
                 for j, J in enumerate(ocp.J):
                     mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                     self.W_e = linalg.block_diag(
-                    #     self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel()) + [0]*ocp.nlp[i].nx))
-                    # self.mayer_costs = vertcat(self.mayer_costs, vertcat(mayer_func_tp(ocp.nlp[i].X[0]), [0]*ocp.nlp[i].nx))
-                    # if J[0]['target'] is not None:
-                    #     self.y_ref_end.append([J[0]["target"]] + [0]*ocp.nlp[i].nx)
                       self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel())))
                     self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
                     if J[0]['target'] is not None:
-                        self.y_ref_end.append([J[0]["target"]])
+                        self.y_ref_end.append(J[0]["target"])
                     else:
                         self.y_ref_end.append([0] * (J[0]["val"].numel()))
 
