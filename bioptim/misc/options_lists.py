@@ -50,7 +50,7 @@ class OptionList:
         for i in range(len(self.options), phase + 1):
             self.options.append([])
         if idx == -1:
-            for i, opt in enumerate(self.options):
+            for i, opt in enumerate(self.options[phase]):
                 if not opt:
                     idx = i
                     break
