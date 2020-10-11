@@ -111,18 +111,17 @@ class AcadosInterface(SolverInterface):
         # path control constraints
         self.x_bound_max = {}
         self.x_bound_min = {}
-        d = [-1, 0, 1]
-        for i in range(len(d)):
+        for i in [-1, 0, 1]:
             if self.params:
-                self.x_bound_max[f'{str(d[i])}'] = np.concatenate(
+                self.x_bound_max[f'{str(i)}'] = np.concatenate(
                     (np.concatenate([self.params[key]['bounds'].max[0] for key in self.params.keys()]),
-                     np.array(ocp.nlp[0].x_bounds.max[:, d[i]])))
-                self.x_bound_min[f'{str(d[i])}'] = np.concatenate(
+                     np.array(ocp.nlp[0].x_bounds.max[:, i])))
+                self.x_bound_min[f'{str(i)}'] = np.concatenate(
                     (np.concatenate([self.params[key]['bounds'].min[0] for key in self.params.keys()]),
-                     np.array(ocp.nlp[0].x_bounds.min[:, d[i]])))
+                     np.array(ocp.nlp[0].x_bounds.min[:, i])))
             else:
-                self.x_bound_max[f'{str(d[i])}'] = (np.array(ocp.nlp[0].x_bounds.max[:, d[i]]))
-                self.x_bound_min[f'{str(d[i])}'] = (np.array(ocp.nlp[0].x_bounds.min[:, d[i]]))
+                self.x_bound_max[f'{str(i)}'] = (np.array(ocp.nlp[0].x_bounds.max[:, i]))
+                self.x_bound_min[f'{str(i)}'] = (np.array(ocp.nlp[0].x_bounds.min[:, i]))
 
         self.acados_ocp.constraints.lbu = np.array(ocp.nlp[0].u_bounds.min[:, 0])
         self.acados_ocp.constraints.ubu = np.array(ocp.nlp[0].u_bounds.max[:, 0])
@@ -228,9 +227,8 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]
             self.acados_ocp.dims.ny_e = self.acados_ocp.model.cost_y_expr_e.shape[0]
             self.acados_ocp.cost.yref = np.zeros((max(self.acados_ocp.dims.ny, 1),))
-            self.acados_ocp.cost.yref_e = (np.concatenate(self.y_ref_end, -1).T
-                                          if len(self.y_ref_end)
-                                          else np.zeros((1,)))
+            self.acados_ocp.cost.yref_e = (np.concatenate(self.y_ref_end, -1).T if len(self.y_ref_end)
+                                           else np.zeros((1,)))
 
             # Set weight
             self.acados_ocp.cost.W = np.zeros((1, 1)) if self.W.shape == (0, 0) else self.W
@@ -279,8 +277,6 @@ class AcadosInterface(SolverInterface):
 
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min['-1'])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max['-1'])
-
-        self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", self.acados_ocp.cost.yref_e)
 
         if self.ocp.nlp[0].x_init.init.shape[1] == self.acados_ocp.dims.N + 1:
             self.ocp_solver.set(self.acados_ocp.dims.N, "x", self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N])
