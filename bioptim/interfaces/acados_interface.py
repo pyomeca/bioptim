@@ -66,9 +66,6 @@ class AcadosInterface(SolverInterface):
     def __prepare_acados(self, ocp):
         if ocp.nb_phases > 1:
             raise NotImplementedError("More than 1 phase is not implemented yet with ACADOS backend")
-        # if ocp.param_to_optimize:
-        #     self.acados_ocp.parameter_values = np.zeros(ocp.nlp[0].np)
-        #     raise NotImplementedError("Parameters optimization is not implemented yet with ACADOS")
 
         # set model
         self.acados_ocp.model = self.acados_model
@@ -146,7 +143,7 @@ class AcadosInterface(SolverInterface):
 
         # state terminal constraints
         self.acados_ocp.constraints.Jbx_e = np.eye(self.acados_ocp.dims.nx)
-        self.acados_ocp.constraints.ubx_e = self.x_bound_min['-1']
+        self.acados_ocp.constraints.ubx_e = self.x_bound_max['-1']
         self.acados_ocp.constraints.lbx_e = self.x_bound_min['-1']
         self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
         self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
@@ -222,7 +219,6 @@ class AcadosInterface(SolverInterface):
                         self.y_ref_end.append(J[0]["target"])
                     else:
                         self.y_ref_end.append([0] * (J[0]["val"].numel()))
-
 
             # Set costs
             self.acados_ocp.model.cost_y_expr = self.lagrange_costs if self.lagrange_costs.numel() else SX(1, 1)
