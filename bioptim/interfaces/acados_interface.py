@@ -106,19 +106,19 @@ class AcadosInterface(SolverInterface):
         ## TODO: implement constraints in g
 
         # path control constraints
-        self.x_bound_max = {}
-        self.x_bound_min = {}
-        for i in [-1, 0, 1]:
+        self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
+        self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
+        for i in range(3):
             if self.params:
-                self.x_bound_max[f'{str(i)}'] = np.concatenate(
-                    (np.concatenate([self.params[key]['bounds'].max[0] for key in self.params.keys()]),
-                     np.array(ocp.nlp[0].x_bounds.max[:, i])))
-                self.x_bound_min[f'{str(i)}'] = np.concatenate(
-                    (np.concatenate([self.params[key]['bounds'].min[0] for key in self.params.keys()]),
-                     np.array(ocp.nlp[0].x_bounds.min[:, i])))
+                param_bounds_max = np.concatenate([self.params[key]['bounds'].max[0] for key in self.params.keys()])
+                param_bounds_min = np.concatenate([self.params[key]['bounds'].min[0] for key in self.params.keys()])
+                self.x_bound_max[:, i] = np.concatenate((
+                    param_bounds_max, np.array(ocp.nlp[0].x_bounds.max[:, i])))
+                self.x_bound_min[:, i] = np.concatenate(
+                    (param_bounds_min, np.array(ocp.nlp[0].x_bounds.min[:, i])))
             else:
-                self.x_bound_max[f'{str(i)}'] = (np.array(ocp.nlp[0].x_bounds.max[:, i]))
-                self.x_bound_min[f'{str(i)}'] = (np.array(ocp.nlp[0].x_bounds.min[:, i]))
+                self.x_bound_max[:, i] = (np.array(ocp.nlp[0].x_bounds.max[:, i]))
+                self.x_bound_min[:, i] = (np.array(ocp.nlp[0].x_bounds.min[:, i]))
 
         self.acados_ocp.constraints.lbu = np.array(ocp.nlp[0].u_bounds.min[:, 0])
         self.acados_ocp.constraints.ubu = np.array(ocp.nlp[0].u_bounds.max[:, 0])
@@ -127,8 +127,8 @@ class AcadosInterface(SolverInterface):
 
         # initial state constraints
 
-        self.acados_ocp.constraints.ubx_0 = self.x_bound_max['0']
-        self.acados_ocp.constraints.lbx_0 = self.x_bound_min['0']
+        self.acados_ocp.constraints.ubx_0 = self.x_bound_max[:, 0]
+        self.acados_ocp.constraints.lbx_0 = self.x_bound_min[:, 0]
         self.acados_ocp.constraints.idxbx_0 = np.array(range(self.acados_ocp.dims.nx))
         self.acados_ocp.constraints.idxbxe_0 = np.array(range(self.acados_ocp.dims.nx))
         self.acados_ocp.dims.nbx_0 = self.acados_ocp.dims.nx
@@ -136,15 +136,15 @@ class AcadosInterface(SolverInterface):
 
         # state path constraints
         self.acados_ocp.constraints.Jbx = np.eye(self.acados_ocp.dims.nx)
-        self.acados_ocp.constraints.ubx = self.x_bound_max['1']
-        self.acados_ocp.constraints.lbx = self.x_bound_min['1']
+        self.acados_ocp.constraints.ubx = self.x_bound_max[:, 1]
+        self.acados_ocp.constraints.lbx = self.x_bound_min[:, 1]
         self.acados_ocp.constraints.idxbx = np.array(range(self.acados_ocp.dims.nx))
         self.acados_ocp.dims.nbx = self.acados_ocp.dims.nx
 
         # state terminal constraints
         self.acados_ocp.constraints.Jbx_e = np.eye(self.acados_ocp.dims.nx)
-        self.acados_ocp.constraints.ubx_e = self.x_bound_max['-1']
-        self.acados_ocp.constraints.lbx_e = self.x_bound_min['-1']
+        self.acados_ocp.constraints.ubx_e = self.x_bound_max[:, 1]
+        self.acados_ocp.constraints.lbx_e = self.x_bound_min[:, 1]
         self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
         self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
 
@@ -270,14 +270,14 @@ class AcadosInterface(SolverInterface):
             self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
 
             if n == 0:
-                self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min['0'])
-                self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max['0'])
+                self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 0])
+                self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 0])
             else:
-                self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min['1'])
-                self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max['1'])
+                self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 1])
+                self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 1])
 
-        self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min['-1'])
-        self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max['-1'])
+        self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, 1])
+        self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, 1])
 
         if self.params:
             if np.concatenate((np.concatenate([self.params[key]['initial_guess'].init for key in self.params.keys()]),
