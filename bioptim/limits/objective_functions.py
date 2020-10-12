@@ -400,16 +400,16 @@ def get_objective_values(ocp, sol):
 
     sol = sol["x"]
     out = []
-    for idx_phase, nlp in enumerate(ocp.nlp):
-        nJ = len(nlp.J) - idx_phase
+    for nlp in ocp.nlp:
+        nJ = len(nlp.J)
         out.append(np.ndarray((nJ, nlp.ns)))
-        out[-1][:][:] = np.nan
+        out[-1][:, :] = np.nan
         for idx_obj_func in range(nJ):
-            nodes = __get_instant(nlp.J[idx_phase + idx_obj_func][0]["objective"].instant, nlp)
-            nodes = nodes[: len(nlp.J[idx_phase + idx_obj_func])]
+            nodes = __get_instant(nlp.J[idx_obj_func][0]["objective"].instant, nlp)
+            nodes = nodes[: len(nlp.J[idx_obj_func])]
             for node, idx_node in enumerate(nodes):
-                obj = casadi.Function("obj", [ocp.V], [get_objective_value(nlp.J[idx_phase + idx_obj_func][node])])
-                out[-1][idx_obj_func][idx_node] = obj(sol)
+                obj = casadi.Function("obj", [ocp.V], [get_objective_value(nlp.J[idx_obj_func][node])])
+                out[-1][idx_obj_func, idx_node] = obj(sol)
     return out
 
 
