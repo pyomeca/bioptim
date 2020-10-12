@@ -108,17 +108,15 @@ class AcadosInterface(SolverInterface):
         # path control constraints
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
         self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
+        param_bounds_max = []
+        param_bounds_min = []
+        if self.params:
+            param_bounds_max = np.concatenate([self.params[key]['bounds'].max[0] for key in self.params.keys()])
+            param_bounds_min = np.concatenate([self.params[key]['bounds'].min[0] for key in self.params.keys()])
+
         for i in range(3):
-            if self.params:
-                param_bounds_max = np.concatenate([self.params[key]['bounds'].max[0] for key in self.params.keys()])
-                param_bounds_min = np.concatenate([self.params[key]['bounds'].min[0] for key in self.params.keys()])
-                self.x_bound_max[:, i] = np.concatenate((
-                    param_bounds_max, np.array(ocp.nlp[0].x_bounds.max[:, i])))
-                self.x_bound_min[:, i] = np.concatenate(
-                    (param_bounds_min, np.array(ocp.nlp[0].x_bounds.min[:, i])))
-            else:
-                self.x_bound_max[:, i] = (np.array(ocp.nlp[0].x_bounds.max[:, i]))
-                self.x_bound_min[:, i] = (np.array(ocp.nlp[0].x_bounds.min[:, i]))
+            self.x_bound_max[:, i] = np.concatenate((param_bounds_max, np.array(ocp.nlp[0].x_bounds.max[:, i])))
+            self.x_bound_min[:, i] = np.concatenate((param_bounds_min, np.array(ocp.nlp[0].x_bounds.min[:, i])))
 
         self.acados_ocp.constraints.lbu = np.array(ocp.nlp[0].u_bounds.min[:, 0])
         self.acados_ocp.constraints.ubu = np.array(ocp.nlp[0].u_bounds.max[:, 0])
