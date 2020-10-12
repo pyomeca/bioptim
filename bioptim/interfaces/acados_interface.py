@@ -128,9 +128,7 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.constraints.ubx_0 = self.x_bound_max[:, 0]
         self.acados_ocp.constraints.lbx_0 = self.x_bound_min[:, 0]
         self.acados_ocp.constraints.idxbx_0 = np.array(range(self.acados_ocp.dims.nx))
-        self.acados_ocp.constraints.idxbxe_0 = np.array(range(self.acados_ocp.dims.nx))
         self.acados_ocp.dims.nbx_0 = self.acados_ocp.dims.nx
-        self.acados_ocp.dims.nbxe_0 = self.acados_ocp.dims.nx
 
         # state path constraints
         self.acados_ocp.constraints.Jbx = np.eye(self.acados_ocp.dims.nx)
