@@ -157,6 +157,7 @@ class AcadosInterface(SolverInterface):
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
+            raise RuntimeError("LINEAR_LS is not interfaced yet.")
             # set Lagrange terms
             self.acados_ocp.cost.Vx = np.zeros((self.acados_ocp.dims.ny, self.acados_ocp.dims.nx))
             self.acados_ocp.cost.Vx[: self.acados_ocp.dims.nx, :] = np.eye(self.acados_ocp.dims.nx)
@@ -232,37 +233,22 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.W_e = np.zeros((1, 1)) if self.W_e.shape == (0, 0) else self.W_e
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
-            for i in range(ocp.nb_phases):
-                for j in range(len(ocp.nlp[i].J)):
-                    J = ocp.nlp[i].J[j][0]
+            raise RuntimeError("External is not interfaced yet, please use NONLINEAR_LS")
 
-                    raise RuntimeError("TODO: The target for EXTERNAL is not right currently")
-                    if J["type"] == ObjectiveFunction.LagrangeFunction:
-                        self.lagrange_costs = vertcat(self.lagrange_costs, J["val"][0] - J["target"][0])
-                    elif J["type"] == ObjectiveFunction.MayerFunction:
-                        raise RuntimeError("TODO: I may have broken this (is this the right J?)")
-                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J["val"]])
-                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
-                    else:
-                        raise RuntimeError("The objective function is not Lagrange nor Mayer.")
-            self.acados_ocp.model.cost_expr_ext_cost = sum1(self.lagrange_costs)
-            self.acados_ocp.model.cost_expr_ext_cost_e = sum1(self.mayer_costs)
 
         else:
             raise RuntimeError("Available acados cost type: 'LINEAR_LS', 'NONLINEAR_LS' and 'EXTERNAL'.")
 
     def __init_and_update_solver(self):
-
+        param_init = []
         for n in range(self.acados_ocp.dims.N):
             self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
 
             if self.params:
-                self.ocp_solver.set(n, "x", np.concatenate((np.concatenate(
-                    [self.params[key]['initial_guess'].init.evaluate_at(n) for key in self.params.keys()]),
-                    self.ocp.nlp[0].x_init.init.evaluate_at(n))))
-            else:
-                self.ocp_solver.set(n, "x", self.ocp.nlp[0].x_init.init.evaluate_at(n))
+                param_init = np.concatenate(
+                    [self.params[key]['initial_guess'].init.evaluate_at(n) for key in self.params.keys()])
 
+            self.ocp_solver.set(n, "x", np.concatenate((param_init, self.ocp.nlp[0].x_init.init.evaluate_at(n))))
             self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
 
             if n == 0:
