@@ -205,6 +205,8 @@ class AcadosInterface(SolverInterface):
                 # TODO: I consider that only parameters are stored in ocp.J.
                 #  Is it possible to have a Lagrange terms here? In this case we have to add a lagrange_cost for ocp.J.
                 #  Also if there are other mayer terms we have to make it works with.
+                # TODO: Find a way to pick the J[0]['val'] without the target
+                #  (take self.params[key]['cx'] is not the right way).
                 if self.params:
                     for j, J in enumerate(ocp.J):
                         mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]],
