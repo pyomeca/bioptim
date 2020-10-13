@@ -204,20 +204,17 @@ class AcadosInterface(SolverInterface):
                 # TODO: I consider that only parameters are stored in ocp.J.
                 #  Is it possible to have a Lagrange terms here? In this case we have to add a lagrange_cost for ocp.J.
                 #  Also if there are other mayer terms we have to make it works with.
-                for j, J in enumerate(ocp.J):
-                    mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
-                    for key in self.params.keys():
-                        if J[0]["val"] != self.params[key]['cx']:
-                            raise ValueError(f"With Acados the function : '{self.params[key]['func'].__name__}'"
-                                             f" must return only the value of parameter, not "
-                                             "the difference between value and target.")
-                    self.W_e = linalg.block_diag(
-                      self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel())))
-                    self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
-                    if J[0]['target'] is not None:
-                        self.y_ref_end.append(J[0]["target"])
-                    else:
-                        self.y_ref_end.append([0] * (J[0]["val"].numel()))
+                if self.params:
+                    for j, J in enumerate(ocp.J):
+                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]],
+                                                 [self.params[key]['cx'] for key in self.params.keys()])
+                        self.W_e = linalg.block_diag(
+                          self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel())))
+                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
+                        if J[0]['target'] is not None:
+                            self.y_ref_end.append(J[0]["target"])
+                        else:
+                            self.y_ref_end.append([0] * (J[0]["val"].numel()))
 
             # Set costs
             self.acados_ocp.model.cost_y_expr = self.lagrange_costs if self.lagrange_costs.numel() else SX(1, 1)
