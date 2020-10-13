@@ -201,6 +201,9 @@ class AcadosInterface(SolverInterface):
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
                 # parameter as mayer function
+                # TODO: I consider that only parameters are stored in ocp.J.
+                #  Is it possible to have a Lagrange terms here? In this case we have to add a lagrange_cost for ocp.J.
+                #  Also if there are other mayer terms we have to make it works with.
                 for j, J in enumerate(ocp.J):
                     mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                     for key in self.params.keys():
