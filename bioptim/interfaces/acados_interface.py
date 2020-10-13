@@ -111,8 +111,8 @@ class AcadosInterface(SolverInterface):
         param_bounds_max = []
         param_bounds_min = []
         if self.params:
-            param_bounds_max = np.concatenate([self.params[key]['bounds'].max[0] for key in self.params.keys()])
-            param_bounds_min = np.concatenate([self.params[key]['bounds'].min[0] for key in self.params.keys()])
+            param_bounds_max = np.concatenate([self.params[key]['bounds'].max for key in self.params.keys()])[:, 0]
+            param_bounds_min = np.concatenate([self.params[key]['bounds'].min for key in self.params.keys()])[:, 0]
 
         for i in range(3):
             self.x_bound_max[:, i] = np.concatenate((param_bounds_max, np.array(ocp.nlp[0].x_bounds.max[:, i])))
@@ -263,16 +263,12 @@ class AcadosInterface(SolverInterface):
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
 
-        if self.params:
-            if np.concatenate((np.concatenate([self.params[key]['initial_guess'].init for key in self.params.keys()]),
-                               self.ocp.nlp[0].x_init.init)).shape[1] == self.acados_ocp.dims.N + 1:
-
+        if self.ocp.nlp[0].x_init.init.shape[1] == self.acados_ocp.dims.N + 1:
+            if self.params:
                 self.ocp_solver.set(self.acados_ocp.dims.N, "x", np.concatenate((
-                    np.concatenate([self.params[key]['initial_guess'].init for key in self.params.keys()]),
-                    self.ocp.nlp[0].x_init.init))[:, self.acados_ocp.dims.N])
-
-        else:
-            if self.ocp.nlp[0].x_init.init.shape[1] == self.acados_ocp.dims.N + 1:
+                    np.concatenate([self.params[key]['initial_guess'].init for key in self.params.keys()])[:, 0],
+                    self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N])))
+            else:
                 self.ocp_solver.set(self.acados_ocp.dims.N, "x", self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N])
 
     def configure(self, options):
