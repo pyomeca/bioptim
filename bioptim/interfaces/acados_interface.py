@@ -52,7 +52,7 @@ class AcadosInterface(SolverInterface):
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
-        f_expl = vertcat([0] * ocp.nlp[0].np, ocp.nlp[0].dynamics_func(x[ocp.nlp[0].np:, :], u, p))
+        f_expl = vertcat([0] * ocp.nlp[0].np, ocp.nlp[0].dynamics_func(x[ocp.nlp[0].np :, :], u, p))
         f_impl = x_dot - f_expl
 
         self.acados_model.f_impl_expr = f_impl
@@ -96,8 +96,12 @@ class AcadosInterface(SolverInterface):
         if not np.all(np.all(u_max.T == u_max.T[0, :], axis=0)):
             raise NotImplementedError("u_bounds max must be the same at each shooting point with ACADOS")
 
-        if not np.isfinite(u_min).all() or not np.isfinite(x_min).all() \
-                or not np.isfinite(u_max).all() or not np.isfinite(x_max).all():
+        if (
+            not np.isfinite(u_min).all()
+            or not np.isfinite(x_min).all()
+            or not np.isfinite(u_max).all()
+            or not np.isfinite(x_max).all()
+        ):
             raise NotImplementedError(
                 "u_bounds and x_bounds cannot be set to infinity in ACADOS. Consider changing it"
                 "to a big value instead."
@@ -163,7 +167,7 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.Vx[: self.acados_ocp.dims.nx, :] = np.eye(self.acados_ocp.dims.nx)
 
             Vu = np.zeros((self.acados_ocp.dims.ny, self.acados_ocp.dims.nu))
-            Vu[self.acados_ocp.dims.nx:, :] = np.eye(self.acados_ocp.dims.nu)
+            Vu[self.acados_ocp.dims.nx :, :] = np.eye(self.acados_ocp.dims.nu)
             self.acados_ocp.cost.Vu = Vu
 
             # set Mayer term
@@ -209,12 +213,16 @@ class AcadosInterface(SolverInterface):
                 #  (take self.params[key]['cx'] is not the right way).
                 if self.params:
                     for j, J in enumerate(ocp.J):
-                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]],
-                                                 [self.params[key]['cx'] for key in self.params.keys()])
+                        mayer_func_tp = Function(
+                            f"cas_mayer_func_{i}_{j}",
+                            [ocp.nlp[i].X[-1]],
+                            [self.params[key]["cx"] for key in self.params.keys()],
+                        )
                         self.W_e = linalg.block_diag(
-                          self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel())))
+                            self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel()))
+                        )
                         self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
-                        if J[0]['target'] is not None:
+                        if J[0]["target"] is not None:
                             self.y_ref_end.append(J[0]["target"])
                         else:
                             self.y_ref_end.append([0] * (J[0]["val"].numel()))
@@ -227,8 +235,9 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]
             self.acados_ocp.dims.ny_e = self.acados_ocp.model.cost_y_expr_e.shape[0]
             self.acados_ocp.cost.yref = np.zeros((max(self.acados_ocp.dims.ny, 1),))
-            self.acados_ocp.cost.yref_e = (np.concatenate(self.y_ref_end, -1).T if len(self.y_ref_end)
-                                           else np.zeros((1,)))
+            self.acados_ocp.cost.yref_e = (
+                np.concatenate(self.y_ref_end, -1).T if len(self.y_ref_end) else np.zeros((1,))
+            )
 
             # Set weight
             self.acados_ocp.cost.W = np.zeros((1, 1)) if self.W.shape == (0, 0) else self.W
@@ -236,7 +245,6 @@ class AcadosInterface(SolverInterface):
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
             raise RuntimeError("External is not interfaced yet, please use NONLINEAR_LS")
-
 
         else:
             raise RuntimeError("Available acados cost type: 'LINEAR_LS', 'NONLINEAR_LS' and 'EXTERNAL'.")
@@ -248,7 +256,8 @@ class AcadosInterface(SolverInterface):
 
             if self.params:
                 param_init = np.concatenate(
-                    [self.params[key]['initial_guess'].init.evaluate_at(n) for key in self.params.keys()])
+                    [self.params[key]["initial_guess"].init.evaluate_at(n) for key in self.params.keys()]
+                )
 
             self.ocp_solver.set(n, "x", np.concatenate((param_init, self.ocp.nlp[0].x_init.init.evaluate_at(n))))
             self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
@@ -308,8 +317,8 @@ class AcadosInterface(SolverInterface):
         nparams = self.ocp.nlp[0].np
         acados_x = np.array([self.ocp_solver.get(i, "x") for i in range(ns + 1)]).T
         acados_p = acados_x[:nparams, :]
-        acados_q = acados_x[nparams:nq+nparams, :]
-        acados_qdot = acados_x[nq+nparams:nx, :]
+        acados_q = acados_x[nparams : nq + nparams, :]
+        acados_qdot = acados_x[nq + nparams : nx, :]
         acados_u = np.array([self.ocp_solver.get(i, "u") for i in range(ns)]).T
 
         out = {

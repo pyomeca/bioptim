@@ -92,8 +92,13 @@ class Parameters:
             val = func(ocp, cx, **penalty.params)
             ObjectiveFunction.ParameterFunction.clear_penalty(ocp, None, penalty)
             ObjectiveFunction.ParameterFunction.add_to_penalty(
-                ocp, None, val, penalty, weight=weight, quadratic=quadratic,
-                target=np.array([penalty.params['target_value']]),
+                ocp,
+                None,
+                val,
+                penalty,
+                weight=weight,
+                quadratic=quadratic,
+                target=np.array([penalty.params["target_value"]]),
             )
 
     @staticmethod
