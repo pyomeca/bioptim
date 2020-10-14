@@ -1,5 +1,5 @@
 from casadi import vertcat
-
+import numpy as np
 from .enums import Instant
 from ..limits.constraints import Bounds
 from ..limits.path_conditions import InitialGuess
@@ -89,10 +89,15 @@ class Parameters:
             weight = penalty.weight
             quadratic = False if penalty.quadratic is None else penalty.quadratic
 
+            if "target" in penalty.params:
+                target = penalty.params["target"]
+                del penalty.params["target"]
+            else:
+                target = None
             val = func(ocp, cx, **penalty.params)
             ObjectiveFunction.ParameterFunction.clear_penalty(ocp, None, penalty)
             ObjectiveFunction.ParameterFunction.add_to_penalty(
-                ocp, None, val, penalty, weight=weight, quadratic=quadratic
+                ocp, None, val, penalty, target=target, weight=weight, quadratic=quadratic
             )
 
     @staticmethod
