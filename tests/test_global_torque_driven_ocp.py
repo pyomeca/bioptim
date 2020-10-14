@@ -569,7 +569,8 @@ def test_trampo_quaternions():
     # Load trampo_quaternion
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "trampo_quaternions", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/trampo_quaternions.py",
+        "trampo_quaternions",
+        str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/trampo_quaternions.py",
     )
     trampo_quaternions = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(trampo_quaternions)

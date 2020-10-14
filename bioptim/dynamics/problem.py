@@ -235,7 +235,10 @@ class Problem:
             qdot_bounds = nlp.x_bounds[nlp.shape["q"] :]
 
             nlp.plot["q"] = CustomPlot(
-                lambda x, u, p: x[: nlp.shape["q"]], plot_type=PlotType.INTEGRATED, legend=legend_q, bounds=q_bounds,
+                lambda x, u, p: x[: nlp.shape["q"]],
+                plot_type=PlotType.INTEGRATED,
+                legend=legend_q,
+                bounds=q_bounds,
             )
             nlp.plot["q_dot"] = CustomPlot(
                 lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["q_dot"]],
