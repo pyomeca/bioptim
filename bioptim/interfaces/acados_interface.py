@@ -198,7 +198,9 @@ class AcadosInterface(SolverInterface):
                         )
                         self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
                         if J[0]["target"] is not None:
-                            self.y_ref_end.append(J[0]["target"])
+                            self.y_ref_end.append(
+                                J[0]["target"] if isinstance(J[0]["target"], list) else [J[0]["target"]]
+                            )
                         else:
                             self.y_ref_end.append([0] * (J[0]["val"].numel()))
 
@@ -206,24 +208,18 @@ class AcadosInterface(SolverInterface):
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
                 # parameter as mayer function
-                # TODO: I consider that only parameters are stored in ocp.J.
-                #  Is it possible to have a Lagrange terms here? In this case we have to add a lagrange_cost for ocp.J.
-                #  Also if there are other mayer terms we have to make it works with.
-                # TODO: Find a way to pick the J[0]['val'] without the target
-                #  (take self.params[key]['cx'] is not the right way).
+                # TODO: I consider that only parameters are stored in ocp.J, for now.
                 if self.params:
                     for j, J in enumerate(ocp.J):
-                        mayer_func_tp = Function(
-                            f"cas_mayer_func_{i}_{j}",
-                            [ocp.nlp[i].X[-1]],
-                            [self.params[key]["cx"] for key in self.params.keys()],
-                        )
+                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                         self.W_e = linalg.block_diag(
                             self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel()))
                         )
                         self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
                         if J[0]["target"] is not None:
-                            self.y_ref_end.append(J[0]["target"])
+                            self.y_ref_end.append(
+                                J[0]["target"] if isinstance(J[0]["target"], list) else [J[0]["target"]]
+                            )
                         else:
                             self.y_ref_end.append([0] * (J[0]["val"].numel()))
 
