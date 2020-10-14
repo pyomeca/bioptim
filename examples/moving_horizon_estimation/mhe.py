@@ -208,13 +208,7 @@ if __name__ == "__main__":
     Y_i = Y_N_[:, :, : N_mhe + 1]
 
     ocp = prepare_ocp(
-        biorbd_model_path,
-        number_shooting_points=N_mhe,
-        final_time=Tf_mhe,
-        max_torque=T_max,
-        X0=X0,
-        U0=U0,
-        target=Y_i,
+        biorbd_model_path, number_shooting_points=N_mhe, final_time=Tf_mhe, max_torque=T_max, X0=X0, U0=U0, target=Y_i,
     )
     options_ipopt = {
         "hessian_approximation": "limited-memory",

@@ -199,7 +199,8 @@ class AcadosInterface(SolverInterface):
                         self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
                         if J[0]["target"] is not None:
                             self.y_ref_end.append(
-                                [J[0]["target"]] if isinstance(J[0]["target"], (int, float)) else J[0]["target"])
+                                [J[0]["target"]] if isinstance(J[0]["target"], (int, float)) else J[0]["target"]
+                            )
                         else:
                             self.y_ref_end.append([0] * (J[0]["val"].numel()))
 

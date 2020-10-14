@@ -86,11 +86,7 @@ if __name__ == "__main__":
     sol_acados, sol_obj_acados = ocp_acados.solve(
         solver=Solver.ACADOS,
         show_online_optim=False,
-        solver_options={
-            "nlp_solver_tol_comp": 1e-3,
-            "nlp_solver_tol_eq": 1e-3,
-            "nlp_solver_tol_stat": 1e-3,
-        },
+        solver_options={"nlp_solver_tol_comp": 1e-3, "nlp_solver_tol_eq": 1e-3, "nlp_solver_tol_stat": 1e-3,},
         return_objectives=True,
     )
     toc_acados = time() - tic
