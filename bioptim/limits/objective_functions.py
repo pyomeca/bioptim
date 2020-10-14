@@ -174,7 +174,7 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def add_to_penalty(ocp, _, val, penalty, **extra_param):
+        def add_to_penalty(ocp, _, val, penalty, target=None, **extra_param):
             """
             Adds an objective.
             :param val: Value to be optimized. (MX.sym from CasADi)
@@ -182,7 +182,7 @@ class ObjectiveFunction:
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared (bool)
             """
-            ObjectiveFunction.add_to_penalty(ocp, None, val, penalty, dt=1)
+            ObjectiveFunction.add_to_penalty(ocp, None, val, penalty, dt=1, target=target)
 
         @staticmethod
         def clear_penalty(ocp, _, penalty_idx):
@@ -236,8 +236,6 @@ class ObjectiveFunction:
         :param J: Objective. (dict of [val, target, weight, is_quadratic])
         :param penalty: Index of the objective. (integer)
         """
-        val = val
-        target = target if target is not None else None
         J = {"objective": penalty, "val": val, "target": target, "dt": dt}
 
         if nlp:

@@ -27,11 +27,13 @@ def my_parameter_function(biorbd_model, value, extra_value):
     biorbd_model.setGravity(biorbd.Vector3d(0, 0, value * extra_value))
 
 
-def my_target_function(ocp, value, target_value):
+def my_target_function(ocp, value):
     # The target function is a penalty function.
     # `ocp` and `value` are mandatory. The rest is defined in the
     # parameter by the user
-    return value - target_value
+    # Please note that if a target value exist (target parameters) it is automatically added, and therefore
+    # should not be added by hand here (that is, the next line should not read: return value - target)
+    return value
 
 
 def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, max_g, target_g):
@@ -69,7 +71,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
     # and an initial condition
     initial_gravity = InitialGuess((min_g + max_g) / 2)
     parameter_objective_functions = ObjectiveOption(
-        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=target_g
+        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target=target_g
     )
     parameters.add(
         "gravity_z",  # The name of the parameter
