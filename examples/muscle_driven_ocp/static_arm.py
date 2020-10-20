@@ -13,7 +13,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, weight):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -24,7 +24,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     objective_functions = ObjectiveList()
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
     objective_functions.add(Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL)
-    objective_functions.add(Objective.Mayer.ALIGN_MARKERS, first_marker_idx=0, second_marker_idx=5)
+    objective_functions.add(Objective.Mayer.ALIGN_MARKERS, first_marker_idx=0, second_marker_idx=5, weight=weight)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -66,7 +66,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, number_shooting_points=20)
+    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=3, number_shooting_points=50, weight=1000)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
