@@ -20,7 +20,10 @@ def test_muscle_driven_ocp():
     spec.loader.exec_module(static_arm)
 
     ocp = static_arm.prepare_ocp(
-        str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod", final_time=2, number_shooting_points=10
+        str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod",
+        final_time=2,
+        number_shooting_points=10,
+        weight=1,
     )
     sol, obj = ocp.solve(return_objectives=True)
 
