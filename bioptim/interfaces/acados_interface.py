@@ -110,6 +110,8 @@ class AcadosInterface(SolverInterface):
         ## TODO: implement constraints in g
 
         # path control constraints
+        self.u_bound_max = ocp.nlp[0].u_bounds.max[:, 0]
+        self.u_bound_min = ocp.nlp[0].u_bounds.min[:, 0]
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
         self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
         param_bounds_max = []
@@ -257,6 +259,8 @@ class AcadosInterface(SolverInterface):
 
             self.ocp_solver.set(n, "x", np.concatenate((param_init, self.ocp.nlp[0].x_init.init.evaluate_at(n))))
             self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
+            self.ocp_solver.constraints_set(n, "lbu", self.u_bound_min)
+            self.ocp_solver.constraints_set(n, "ubu", self.u_bound_max)
 
             if n == 0:
                 self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 0])
