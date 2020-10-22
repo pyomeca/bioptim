@@ -91,6 +91,9 @@ class PathCondition(np.ndarray):
             return
         self.nb_shooting = getattr(obj, "nb_shooting", None)
         self.type = getattr(obj, "type", None)
+        self.t = getattr(obj, "t", None)
+        self.extra_params = getattr(obj, "extra_params", None)
+        self.slice_list = getattr(obj, "slice_list", None)
 
     def __reduce__(self):
         pickled_state = super(PathCondition, self).__reduce__()
