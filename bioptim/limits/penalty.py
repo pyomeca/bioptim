@@ -23,29 +23,27 @@ class PenaltyFunctionAbstract:
             states_idx = PenaltyFunctionAbstract._check_and_fill_index(states_idx, nlp.nx, "state_idx")
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [max(states_idx) + 1, nlp.ns + 1]
+                    target, (len(states_idx), len(x))
                 )
 
                 # Prepare the plot
-                target[:, np.setxor1d(range(nlp.ns + 1), t)] = np.nan
-                running_idx = 0
+                prev_idx = 0  # offset due to previous states
                 for s in nlp.var_states:
-                    idx = [idx for idx in states_idx if idx >= running_idx and idx < running_idx + nlp.var_states[s]]
-                    mapping = Mapping([idx for idx in states_idx if idx < nlp.var_states[s]])
-                    PenaltyFunctionAbstract._add_track_data_to_plot(
-                        ocp, nlp, target[idx, :], combine_to=s, axes_idx=mapping
-                    )
-                    running_idx += nlp.var_states[s]
+                    state_idx = []
+                    for i, idx in enumerate(states_idx):
+                        if prev_idx <= idx < nlp.var_states[s] + prev_idx:
+                            state_idx.append([idx - prev_idx, i])
+                    state_idx = np.array(state_idx)
+                    if state_idx.shape[0] > 0:
+                        mapping = Mapping(state_idx[:, 0])
+                        PenaltyFunctionAbstract._add_track_data_to_plot(
+                            ocp, nlp, target[state_idx[:, 1], :], combine_to=s, axes_idx=mapping
+                        )
+                    prev_idx += nlp.var_states[s]
 
-            target_tp = None
             for i, v in enumerate(x):
                 val = v[states_idx]
-                if target is not None:
-                    target_tp = target[states_idx, t[i]]
-
-                    index_of_nan, *_ = np.where(np.isnan(target_tp))
-                    target_tp[index_of_nan] = 0
-                    val[index_of_nan] = 0
+                target_tp = target[:, t[i]] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -75,21 +73,14 @@ class PenaltyFunctionAbstract:
             )
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [3, max(markers_idx) + 1, nlp.ns + 1]
+                    target, (3, len(markers_idx), len(x))
                 )
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_markers", nlp.model.markers, nlp.q)
             nq = nlp.mapping["q"].reduce.len
-            target_tp = None
             for i, v in enumerate(x):
                 q = nlp.mapping["q"].expand.map(v[:nq])
                 val = nlp.casadi_func["biorbd_markers"](q)[axis_to_track, markers_idx]
-                if target is not None:
-                    target_tp = target[:, markers_idx, t[i]]
-                    target_tp = target_tp[axis_to_track, :]
-
-                    index_of_nan, *_ = np.where(np.isnan(target_tp[0, :]))
-                    target_tp[:, index_of_nan] = 0
-                    val[:, index_of_nan] = 0
+                target_tp = target[axis_to_track, :, t[i]] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -159,7 +150,7 @@ class PenaltyFunctionAbstract:
 
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [3, max(markers_idx) + 1, nlp.ns + 1]
+                    target, (3, len(markers_idx), len(x))
                 )
 
             PenaltyFunctionAbstract._add_to_casadi_func(
@@ -170,12 +161,7 @@ class PenaltyFunctionAbstract:
             for m in markers_idx:
                 for i, v in enumerate(x):
                     val = nlp.casadi_func["biorbd_markerVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
-                    if target is not None:
-                        target_tp = target[:, markers_idx, t[i]]
-
-                        index_of_nan, *_ = np.where(np.isnan(target_tp[0, :]))
-                        target_tp[:, index_of_nan] = 0
-                        val[:, index_of_nan] = 0
+                    target_tp = target[:, :, t[i]] if target is not None else None
                     penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -241,21 +227,15 @@ class PenaltyFunctionAbstract:
 
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [max(controls_idx) + 1, nlp.ns]
+                    target, (len(controls_idx), len(u))
                 )
                 PenaltyFunctionAbstract._add_track_data_to_plot(
                     ocp, nlp, target, combine_to="tau", axes_idx=Mapping(controls_idx)
                 )
 
-            target_tp = None
             for i, v in enumerate(u):
                 val = v[controls_idx]
-                if target is not None:
-                    target_tp = target[controls_idx, t[i]]
-
-                    index_of_nan, *_ = np.where(np.isnan(target_tp))
-                    target_tp[index_of_nan] = 0
-                    val[index_of_nan] = 0
+                target_tp = target[:, t[i]] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -287,7 +267,7 @@ class PenaltyFunctionAbstract:
 
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [max(muscles_idx) + 1, nlp.ns]
+                    target, (len(muscles_idx), len(u))
                 )
 
                 PenaltyFunctionAbstract._add_track_data_to_plot(
@@ -296,15 +276,9 @@ class PenaltyFunctionAbstract:
 
             # Add the nbTau offset to the muscle index
             muscles_idx_plus_tau = [idx + nlp.shape["tau"] for idx in muscles_idx]
-            target_tp = None
             for i, v in enumerate(u):
                 val = v[muscles_idx_plus_tau]
-                if target is not None:
-                    target_tp = target[muscles_idx, t[i]]
-
-                    index_of_nan, *_ = np.where(np.isnan(target_tp))
-                    target_tp[index_of_nan] = 0
-                    val[index_of_nan] = 0
+                target_tp = target[:, t[i]] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -321,18 +295,12 @@ class PenaltyFunctionAbstract:
 
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [max(controls_idx) + 1, nlp.ns]
+                    target, (len(controls_idx), len(u))
                 )
 
-            target_tp = None
             for i, v in enumerate(u):
                 val = v[controls_idx]
-                if target is not None:
-                    target_tp = target[t[i], controls_idx]
-
-                    index_of_nan, *_ = np.where(np.isnan(target_tp))
-                    target_tp[index_of_nan] = 0
-                    val[index_of_nan] = 0
+                target_tp = target[:, t[i]] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -366,23 +334,17 @@ class PenaltyFunctionAbstract:
 
             if target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, [max(contacts_idx) + 1, nlp.ns]
+                    target, (len(contacts_idx), len(u))
                 )
 
                 PenaltyFunctionAbstract._add_track_data_to_plot(
                     ocp, nlp, target, combine_to="contact_forces", axes_idx=Mapping(contacts_idx)
                 )
 
-            target_tp = None
             for i, v in enumerate(u):
                 force = nlp.contact_forces_func(x[i], u[i], p)
                 val = force[contacts_idx]
-                if target is not None:
-                    target_tp = target[contacts_idx, t[i]]
-
-                    index_of_nan, *_ = np.where(np.isnan(target_tp))
-                    target_tp[index_of_nan] = 0
-                    val[index_of_nan] = 0
+                target_tp = target[:, t[i]] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -571,7 +533,7 @@ class PenaltyFunctionAbstract:
                 var_idx = [var_idx]
             if max(var_idx) > target_size:
                 raise RuntimeError(f"{var_name} in minimize_states cannot be higher than nx ({target_size})")
-        return var_idx
+        return np.array(var_idx)
 
     @staticmethod
     def _check_and_fill_tracking_data_size(data_to_track, target_size):
@@ -583,20 +545,19 @@ class PenaltyFunctionAbstract:
         :return: data_to_track -> Data used for tracking. (numpy array of size target_size)
         """
         if data_to_track is not None:
-            if len(data_to_track.shape) != len(target_size):
-                if target_size[1] == 1 and len(data_to_track.shape) == 1:
-                    # If we have a vector it is still okay
-                    data_to_track = data_to_track.reshape(data_to_track.shape[0], 1)
-                else:
-                    raise RuntimeError(
-                        f"data_to_track {data_to_track.shape} doesn't correspond to expected minimum size {target_size}"
-                    )
-            for i in range(len(target_size)):
-                if data_to_track.shape[i] < target_size[i]:
-                    raise RuntimeError(
-                        f"data_to_track {data_to_track.shape} doesn't correspond to expected minimum size {target_size}"
-                    )
+            if len(data_to_track.shape) == 1:
+                raise RuntimeError(
+                    f"data_to_track cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
+                )
+            if data_to_track.shape[1] == 1:
+                data_to_track = np.repeat(data_to_track, target_size[1], axis=1)
+
+            if data_to_track.shape != target_size:
+                raise RuntimeError(
+                    f"data_to_track {data_to_track.shape} doesn't correspond to expected minimum size {target_size}"
+                )
         else:
+            raise ValueError("COUCOU!!!!")
             data_to_track = np.zeros(target_size)
         return data_to_track
 
