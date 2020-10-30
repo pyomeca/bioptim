@@ -49,6 +49,6 @@ If you use `biorb-optim`, we would be grateful if you could cite it as follows:
     author = {Michaud, Benjamin and Begon, Mickael},
     title = {bioptim: An optimal control framework for biomechanical analyses using biorbd},
     howpublished={Web page},
-    url = {https://github.com/pyomeca/BiorbOptim},
+    url = {https://github.com/pyomeca/bioptim},
     year = {2020}
 }
