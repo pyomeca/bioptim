@@ -336,7 +336,7 @@ class AcadosInterface(SolverInterface):
             "x": [],
             "u": acados_u,
             "time_tot": self.ocp_solver.get_stats("time_tot")[0],
-            "status": self.status
+            "status": self.status,
         }
         for i in range(ns):
             out["x"] = vertcat(out["x"], acados_q[:, i])
