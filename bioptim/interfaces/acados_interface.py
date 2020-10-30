@@ -298,7 +298,7 @@ class AcadosInterface(SolverInterface):
 
         self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
         self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
-        self.acados_ocp.solver_options.integrator_type = "ERK"
+        self.acados_ocp.solver_options.integrator_type = "IRK"
         self.acados_ocp.solver_options.nlp_solver_type = "SQP"
 
         self.acados_ocp.solver_options.nlp_solver_tol_comp = 1e-06
