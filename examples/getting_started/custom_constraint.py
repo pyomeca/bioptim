@@ -5,26 +5,28 @@ As an example, this custom constraint reproduces exactly the behavior of the ALI
 import biorbd
 from casadi import vertcat
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
-    ProblemType,
+    DynamicsTypeOption,
+    DynamicsType,
+    ObjectiveOption,
     Objective,
-    Constraint,
-    Bounds,
+    ConstraintList,
+    BoundsOption,
     QAndQDotBounds,
-    InitialConditions,
+    InitialGuessOption,
     ShowResult,
     OdeSolver,
 )
 
 
 def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
-    nq = nlp["nbQ"]
+    nq = nlp.shape["q"]
     val = []
     for v in x:
         q = v[:nq]
-        markers = nlp["model"].markers(q)
+        markers = nlp.model.markers(q)
         first_marker = markers[:, first_marker_idx]
         second_marker = markers[:, second_marker_idx]
         val = vertcat(val, first_marker - second_marker)
@@ -39,59 +41,45 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     # Problem parameters
     number_shooting_points = 30
     final_time = 2
-    torque_min, torque_max, torque_init = -100, 100, 0
+    tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
+    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics
-    problem_type = {"type": ProblemType.TORQUE_DRIVEN}
+    dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
 
     # Constraints
-    constraints = (
-        {
-            "type": Constraint.CUSTOM,
-            "function": custom_func_align_markers,
-            "instant": Instant.START,
-            "first_marker_idx": 0,
-            "second_marker_idx": 1,
-        },
-        {
-            "type": Constraint.CUSTOM,
-            "function": custom_func_align_markers,
-            "instant": Instant.END,
-            "first_marker_idx": 0,
-            "second_marker_idx": 2,
-        },
-    )
+    constraints = ConstraintList()
+    constraints.add(custom_func_align_markers, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(custom_func_align_markers, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint
-    X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.min[1:6, [0, -1]] = 0
-    X_bounds.max[1:6, [0, -1]] = 0
-    X_bounds.min[2, -1] = 1.57
-    X_bounds.max[2, -1] = 1.57
+    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds[1:6, [0, -1]] = 0
+    x_bounds[2, -1] = 1.57
 
     # Initial guess
-    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialGuessOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque()
+    u_bounds = BoundsOption(
+        [[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()]
     )
-    U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
+
+    u_init = InitialGuessOption([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
-        problem_type,
+        dynamics,
         number_shooting_points,
         final_time,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
         objective_functions,
         constraints,
         ode_solver=ode_solver,

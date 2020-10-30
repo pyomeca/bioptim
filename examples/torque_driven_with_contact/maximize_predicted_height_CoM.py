@@ -1,14 +1,16 @@
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
+    ObjectiveList,
     Objective,
-    ProblemType,
+    DynamicsTypeList,
+    DynamicsType,
     BidirectionalMapping,
     Mapping,
-    Bounds,
+    BoundsList,
     QAndQDotBounds,
-    InitialConditions,
+    InitialGuessList,
     ShowResult,
 )
 
@@ -19,57 +21,56 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=Fa
     biorbd_model = biorbd.Model(model_path)
 
     if use_actuators:
-        torque_min, torque_max, torque_init = -1, 1, 0
+        tau_min, tau_max, tau_init = -1, 1, 0
     else:
-        torque_min, torque_max, torque_init = -500, 500, 0
+        tau_min, tau_max, tau_init = -500, 500, 0
 
     tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
 
     # Add objective functions
-    objective_functions = (
-        {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
-        {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
-    )
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=1 / 100)
 
     # Dynamics
+    dynamics = DynamicsTypeList()
     if use_actuators:
-        problem_type = {"type": ProblemType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT}
+        dynamics.add(DynamicsType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT)
     else:
-        problem_type = {"type": ProblemType.TORQUE_DRIVEN_WITH_CONTACT}
-
-    # Constraints
-    constraints = ()
+        dynamics.add(DynamicsType.TORQUE_DRIVEN_WITH_CONTACT)
 
     # Path constraint
     nb_q = biorbd_model.nbQ()
     nb_qdot = nb_q
     pose_at_first_node = [0, 0, -0.5, 0.5]
 
-    # Initialize X_bounds
-    X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.min[:, 0] = pose_at_first_node + [0] * nb_qdot
-    X_bounds.max[:, 0] = pose_at_first_node + [0] * nb_qdot
+    # Initialize x_bounds
+    x_bounds = BoundsList()
+    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
-    X_init = InitialConditions(pose_at_first_node + [0] * nb_qdot)
+    x_init = InitialGuessList()
+    x_init.add(pose_at_first_node + [0] * nb_qdot)
 
     # Define control path constraint
-    U_bounds = Bounds(min_bound=[torque_min] * tau_mapping.reduce.len, max_bound=[torque_max] * tau_mapping.reduce.len)
+    u_bounds = BoundsList()
+    u_bounds.add([[tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len])
 
-    U_init = InitialConditions([torque_init] * tau_mapping.reduce.len)
+    u_init = InitialGuessList()
+    u_init.add([tau_init] * tau_mapping.reduce.len)
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
-        problem_type,
+        dynamics,
         number_shooting_points,
         phase_time,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
         objective_functions,
-        constraints,
         tau_mapping=tau_mapping,
     )
 

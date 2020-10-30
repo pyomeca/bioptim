@@ -5,13 +5,14 @@ import pickle
 from casadi import MX
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     Data,
     Bounds,
-    InitialConditions,
+    InitialGuess,
     BidirectionalMapping,
     Mapping,
+    Simulate,
     OdeSolver,
 )
 
@@ -54,7 +55,7 @@ class TestUtils:
             for i in range(len(first_elem)):
                 TestUtils.deep_assert(first_elem[i], second_elem[i])
         elif isinstance(
-            first_elem, (OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping, OdeSolver)
+            first_elem, (OptimalControlProgram, Bounds, InitialGuess, BidirectionalMapping, Mapping, OdeSolver)
         ):
             for key in dir(first_elem):
                 TestUtils.deep_assert(getattr(first_elem, key), getattr(second_elem, key))
@@ -66,3 +67,18 @@ class TestUtils:
                     np.testing.assert_almost_equal(elem_original, elem_loaded)
                 except (ValueError, Exception):
                     pass
+
+    @staticmethod
+    def simulate(sol, ocp, decimal_value=None):
+        sol_from_solver = np.array(sol["x"]).squeeze()
+        sol_simulation_from_solve = Simulate.from_solve(ocp, sol)["x"]
+        sol_simulation_from_data = Simulate.from_data(ocp, Data.get_data(ocp, sol))["x"]
+
+        if decimal_value is None:
+            np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_solve)
+            np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_data)
+            np.testing.assert_almost_equal(sol_simulation_from_solve, sol_simulation_from_data)
+        else:
+            np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_solve, decimal=decimal_value)
+            np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_data, decimal=decimal_value)
+            np.testing.assert_almost_equal(sol_simulation_from_solve, sol_simulation_from_data, decimal=decimal_value)

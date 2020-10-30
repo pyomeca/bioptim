@@ -89,7 +89,7 @@ venv.bak/
 # Personnal stuff
 Misc/
 
-# Remove symbolic links to biorbd_optim in examples and tests folder
+# Remove symbolic links to bioptim in examples and tests folder
 examples/*/biorbd_optim
 examples/biorbd_optim
 

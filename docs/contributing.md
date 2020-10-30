@@ -65,6 +65,8 @@ BiorbdOptim tries to follow as much as possible the PEP recommendations (https:/
 Unless you have good reasons to disobey, pull-requests are required to follow these recommendations. 
 I won't get into details here, if you haven't yet, you should read these :) 
 
+All variable names that could be plural, should be written as such.
+
 Black is used to enforce the code spacing. 
 BiorbdOptim is linted with 120 characters max per line. 
 This means that your pull-request tests on GitHub will appear to fail if black fails. 

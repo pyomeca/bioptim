@@ -4,35 +4,38 @@ As an example, this custom constraint reproduces exactly the behavior of the TOR
 """
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
-    ProblemType,
+    DynamicsTypeList,
     Problem,
-    Dynamics,
+    DynamicsType,
+    DynamicsFunctions,
+    ObjectiveOption,
     Objective,
+    ConstraintList,
     Constraint,
-    Bounds,
+    BoundsOption,
     QAndQDotBounds,
-    InitialConditions,
+    InitialGuessOption,
     ShowResult,
     OdeSolver,
 )
 
 
 def custom_dynamic(states, controls, parameters, nlp):
-    Dynamics.apply_parameters(parameters, nlp)
-    q, qdot, tau = Dynamics.dispatch_q_qdot_tau_data(states, controls, nlp)
+    DynamicsFunctions.apply_parameters(parameters, nlp)
+    q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-    qddot = nlp["model"].ForwardDynamics(q, qdot, tau).to_mx()
+    qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
-    return (qdot, qddot)
+    return qdot, qddot
 
 
 def custom_configure(ocp, nlp):
     Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
     Problem.configure_tau(nlp, as_states=False, as_controls=True)
-    Problem.configure_forward_dyn_func(ocp, nlp, Dynamics.custom)
+    Problem.configure_forward_dyn_func(ocp, nlp, custom_dynamic)
 
 
 def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolver.RK):
@@ -43,50 +46,49 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
     # Problem parameters
     number_shooting_points = 30
     final_time = 2
-    torque_min, torque_max, torque_init = -100, 100, 0
+    tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 100}
+    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics
+    dynamics = DynamicsTypeList()
     if problem_type_custom:
-        problem_type = {"type": ProblemType.CUSTOM, "configure": custom_configure, "dynamic": custom_dynamic}
+        dynamics.add(custom_configure, dynamic_function=custom_dynamic)
     else:
-        problem_type = {"type": ProblemType.TORQUE_DRIVEN, "dynamic": custom_dynamic}
+        dynamics.add(DynamicsType.TORQUE_DRIVEN, dynamic_function=custom_dynamic)
 
     # Constraints
-    constraints = (
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.START, "first_marker_idx": 0, "second_marker_idx": 1,},
-        {"type": Constraint.ALIGN_MARKERS, "instant": Instant.END, "first_marker_idx": 0, "second_marker_idx": 2,},
-    )
+    constraints = ConstraintList()
+    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint
-    X_bounds = QAndQDotBounds(biorbd_model)
-    X_bounds.min[1:6, [0, -1]] = 0
-    X_bounds.max[1:6, [0, -1]] = 0
-    X_bounds.min[2, -1] = 1.57
-    X_bounds.max[2, -1] = 1.57
+    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds[1:6, [0, -1]] = 0
+    x_bounds[2, -1] = 1.57
 
     # Initial guess
-    X_init = InitialConditions([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialGuessOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    U_bounds = Bounds(
-        [torque_min] * biorbd_model.nbGeneralizedTorque(), [torque_max] * biorbd_model.nbGeneralizedTorque(),
+    u_bounds = BoundsOption(
+        [[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()]
     )
-    U_init = InitialConditions([torque_init] * biorbd_model.nbGeneralizedTorque())
+
+    u_init = InitialGuessOption([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
-        problem_type,
+        dynamics,
         number_shooting_points,
         final_time,
-        X_init,
-        U_init,
-        X_bounds,
-        U_bounds,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
         objective_functions,
         constraints,
         ode_solver=ode_solver,
