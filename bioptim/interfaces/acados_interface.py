@@ -40,6 +40,7 @@ class AcadosInterface(SolverInterface):
         self.ocp_solver = None
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
+        self.status = None
         self.out = {}
 
     def __acados_export_model(self, ocp):
@@ -335,6 +336,7 @@ class AcadosInterface(SolverInterface):
             "x": [],
             "u": acados_u,
             "time_tot": self.ocp_solver.get_stats("time_tot")[0],
+            "status": self.status
         }
         for i in range(ns):
             out["x"] = vertcat(out["x"], acados_q[:, i])
@@ -357,6 +359,6 @@ class AcadosInterface(SolverInterface):
         if self.ocp_solver is None:
             self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
         self.__init_and_update_solver()
-        self.ocp_solver.solve()
+        self.status = self.ocp_solver.solve()
         self.get_optimized_value()
         return self
