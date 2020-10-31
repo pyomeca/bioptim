@@ -22,9 +22,7 @@ class PenaltyFunctionAbstract:
             """
             states_idx = PenaltyFunctionAbstract._check_and_fill_index(states_idx, nlp.nx, "state_idx")
             if target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, (len(states_idx), len(x))
-                )
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(target, (len(states_idx), len(x)))
 
                 # Prepare the plot
                 prev_idx = 0  # offset due to previous states
@@ -228,9 +226,7 @@ class PenaltyFunctionAbstract:
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_tau, "controls_idx")
 
             if target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, (len(controls_idx), len(u))
-                )
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(target, (len(controls_idx), len(u)))
                 PenaltyFunctionAbstract._add_track_data_to_plot(
                     ocp, nlp, target, combine_to="tau", axes_idx=Mapping(controls_idx)
                 )
@@ -268,9 +264,7 @@ class PenaltyFunctionAbstract:
             muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(muscles_idx, nlp.shape["muscle"], "muscles_idx")
 
             if target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, (len(muscles_idx), len(u))
-                )
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(target, (len(muscles_idx), len(u)))
 
                 PenaltyFunctionAbstract._add_track_data_to_plot(
                     ocp, nlp, target, combine_to="muscles_control", axes_idx=Mapping(muscles_idx)
@@ -296,9 +290,7 @@ class PenaltyFunctionAbstract:
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(controls_idx, n_u, "muscles_idx")
 
             if target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, (len(controls_idx), len(u))
-                )
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(target, (len(controls_idx), len(u)))
 
             for i, v in enumerate(u):
                 val = v[controls_idx]
@@ -335,9 +327,7 @@ class PenaltyFunctionAbstract:
             contacts_idx = PenaltyFunctionAbstract._check_and_fill_index(contacts_idx, n_contact, "contacts_idx")
 
             if target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    target, (len(contacts_idx), len(u))
-                )
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(target, (len(contacts_idx), len(u)))
 
                 PenaltyFunctionAbstract._add_track_data_to_plot(
                     ocp, nlp, target, combine_to="contact_forces", axes_idx=Mapping(contacts_idx)

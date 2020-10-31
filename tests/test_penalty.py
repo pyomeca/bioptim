@@ -386,8 +386,8 @@ def test_penalty_proportional_control(penalty_origin, value):
     )
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.]]))
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.0]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.0]]))
 
 
 @pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
@@ -410,8 +410,8 @@ def test_penalty_minimize_torque(penalty_origin, value):
     )
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0., 0, 0, 0]]))
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0., 0, 0, 0]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.0, 0, 0, 0]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.0, 0, 0, 0]]))
 
 
 @pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
@@ -458,12 +458,12 @@ def test_penalty_minimize_torque_derivative(value):
 
     np.testing.assert_almost_equal(
         res,
-        np.array([[value*2, value*2, value*2, value*2]]).T,
+        np.array([[value * 2, value * 2, value * 2, value * 2]]).T,
     )
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0., 0, 0, 0]]))
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0., 0, 0, 0]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.0, 0, 0, 0]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.0, 0, 0, 0]]))
 
 
 @pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
@@ -486,8 +486,8 @@ def test_penalty_minimize_muscles_control(penalty_origin, value):
     )
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0., 0, 0, 0, 0, 0]]))
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0., 0, 0, 0, 0, 0]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.0, 0, 0, 0, 0, 0]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.0, 0, 0, 0, 0, 0]]))
 
 
 @pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
@@ -515,8 +515,8 @@ def test_penalty_track_muscles_control(penalty_origin, value):
     )
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.]]))
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.0]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.0]]))
 
 
 @pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
@@ -539,8 +539,8 @@ def test_penalty_minimize_all_controls(penalty_origin, value):
     )
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0., 0, 0, 0, 0, 0, 0, 0]]))
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0., 0, 0, 0, 0, 0, 0, 0]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.0, 0, 0, 0, 0, 0, 0, 0]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.0, 0, 0, 0, 0, 0, 0, 0]]))
 
 
 @pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
@@ -568,8 +568,8 @@ def test_penalty_track_all_controls(penalty_origin, value):
     )
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0., 0, 0, 0, 0, 0, 0, 0]]).T)
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0., 0, 0, 0, 0, 0, 0, 0]]).T)
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.0, 0, 0, 0, 0, 0, 0, 0]]).T)
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.0, 0, 0, 0, 0, 0, 0, 0]]).T)
 
 
 @pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
@@ -599,8 +599,8 @@ def test_penalty_minimize_contact_forces(penalty_origin, value):
         )
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.]]).T)
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.]]).T)
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.0]]).T)
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.0]]).T)
 
 
 @pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
@@ -635,8 +635,8 @@ def test_penalty_track_contact_forces(penalty_origin, value):
         )
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.]]).T)
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.]]).T)
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0.0]]).T)
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0.0]]).T)
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -732,22 +732,19 @@ def test_penalty_contact_force_inequality(penalty_origin, value, direction):
     res = ocp.nlp[0].g[0][0]
 
     if value == 0.1 and direction == "GREATER_THAN":
-        expected = [-9.6680105, 1., np.inf]
+        expected = [-9.6680105, 1.0, np.inf]
     elif value == -10 and direction == "GREATER_THAN":
-        expected = [25.6627161, 1., np.inf]
+        expected = [25.6627161, 1.0, np.inf]
     elif value == 0.1 and direction == "LESSER_THAN":
-        expected = [-9.6680105, -np.inf, 1.]
+        expected = [-9.6680105, -np.inf, 1.0]
     elif value == -10 and direction == "LESSER_THAN":
-        expected = [25.6627161, -np.inf, 1.]
+        expected = [25.6627161, -np.inf, 1.0]
 
-    np.testing.assert_almost_equal(
-        res,
-        np.array([[ expected[0] ]])
-    )
+    np.testing.assert_almost_equal(res, np.array([[expected[0]]]))
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[ expected[1] ]]))
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[ expected[2] ]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[expected[1]]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[expected[2]]]))
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -776,14 +773,11 @@ def test_penalty_non_slipping(value):
     elif value == -10:
         expected = [[899.9319451, 951.2573773], 0, np.inf]
 
-    np.testing.assert_almost_equal(
-        res,
-        np.array( expected[0] )
-    )
+    np.testing.assert_almost_equal(res, np.array(expected[0]))
 
     if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[ expected[1] ]]))
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[ expected[2] ]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[expected[1]]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[expected[2]]]))
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
