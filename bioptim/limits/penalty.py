@@ -43,7 +43,7 @@ class PenaltyFunctionAbstract:
 
             for i, v in enumerate(x):
                 val = v[states_idx]
-                target_tp = target[:, t[i]] if target is not None else None
+                target_tp = target[:, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -80,7 +80,7 @@ class PenaltyFunctionAbstract:
             for i, v in enumerate(x):
                 q = nlp.mapping["q"].expand.map(v[:nq])
                 val = nlp.casadi_func["biorbd_markers"](q)[axis_to_track, markers_idx]
-                target_tp = target[axis_to_track, :, t[i]] if target is not None else None
+                target_tp = target[axis_to_track, :, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -153,15 +153,17 @@ class PenaltyFunctionAbstract:
                     target, (3, len(markers_idx), len(x))
                 )
 
-            PenaltyFunctionAbstract._add_to_casadi_func(
-                nlp, "biorbd_markerVelocity", nlp.model.markerVelocity, nlp.q, nlp.q_dot, markers_idx[0]
-            )
-
-            target_tp = None
             for m in markers_idx:
-                for i, v in enumerate(x):
-                    val = nlp.casadi_func["biorbd_markerVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
-                    target_tp = target[:, :, t[i]] if target is not None else None
+                # TODO This should be available natively in biorbd instead of
+                # a for loop (major time lost if lot of markers)
+                PenaltyFunctionAbstract._add_to_casadi_func(
+                    nlp, f"biorbd_markerVelocity_{m}", nlp.model.markerVelocity, nlp.q, nlp.q_dot, int(m)
+                )
+
+            for i, v in enumerate(x):
+                for m in markers_idx:
+                    val = nlp.casadi_func[f"biorbd_markerVelocity_{m}"](v[:n_q], v[n_q : n_q + n_qdot])
+                    target_tp = target[:, m, i] if target is not None else None
                     penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -235,7 +237,7 @@ class PenaltyFunctionAbstract:
 
             for i, v in enumerate(u):
                 val = v[controls_idx]
-                target_tp = target[:, t[i]] if target is not None else None
+                target_tp = target[:, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -278,7 +280,7 @@ class PenaltyFunctionAbstract:
             muscles_idx_plus_tau = [idx + nlp.shape["tau"] for idx in muscles_idx]
             for i, v in enumerate(u):
                 val = v[muscles_idx_plus_tau]
-                target_tp = target[:, t[i]] if target is not None else None
+                target_tp = target[:, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -300,7 +302,7 @@ class PenaltyFunctionAbstract:
 
             for i, v in enumerate(u):
                 val = v[controls_idx]
-                target_tp = target[:, t[i]] if target is not None else None
+                target_tp = target[:, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -344,7 +346,7 @@ class PenaltyFunctionAbstract:
             for i, v in enumerate(u):
                 force = nlp.contact_forces_func(x[i], u[i], p)
                 val = force[contacts_idx]
-                target_tp = target[:, t[i]] if target is not None else None
+                target_tp = target[:, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
@@ -532,8 +534,11 @@ class PenaltyFunctionAbstract:
             if isinstance(var_idx, int):
                 var_idx = [var_idx]
             if max(var_idx) > target_size:
-                raise RuntimeError(f"{var_name} in minimize_states cannot be higher than nx ({target_size})")
-        return np.array(var_idx)
+                raise RuntimeError(f"{var_name} in cannot be higher than nx ({target_size})")
+        out = np.array(var_idx)
+        if not np.issubdtype(out.dtype, np.integer):
+            raise RuntimeError(f"{var_name} must be a list of integer")
+        return out
 
     @staticmethod
     def _check_and_fill_tracking_data_size(data_to_track, target_size):
