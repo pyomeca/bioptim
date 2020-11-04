@@ -29,7 +29,7 @@ from ..limits.path_conditions import Bounds, BoundsList, BoundsOption
 from ..limits.path_conditions import InitialGuess, InitialGuessList, InitialGuessOption
 from ..limits.path_conditions import InterpolationType
 
-check_version(biorbd, "1.3.5", "1.4.0")
+check_version(biorbd, "1.3.7", "1.4.0")
 
 
 class OptimalControlProgram:

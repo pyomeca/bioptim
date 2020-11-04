@@ -64,6 +64,8 @@ class IpoptInterface(SolverInterface):
         # Solve the problem
         self.out = {"sol": solver.call(self.ipopt_limits)}
         self.out["sol"]["time_tot"] = solver.stats()["t_wall_total"]
+        # To match acados convention (0 = success, 1 = error)
+        self.out["sol"]["status"] = int(not solver.stats()["success"])
 
         return self.out
 
