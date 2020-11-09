@@ -58,8 +58,9 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
         dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_driven
 
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot))
-    dynamics_func = biorbd.to_casadi_func("ForwardDyn",
-        dyn_func, symbolic_states, symbolic_controls, symbolic_parameters, nlp)
+    dynamics_func = biorbd.to_casadi_func(
+        "ForwardDyn", dyn_func, symbolic_states, symbolic_controls, symbolic_parameters, nlp
+    )
 
     def dyn_interface(t, x, u):
         if use_residual_torque:

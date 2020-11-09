@@ -60,7 +60,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
         symbolic_states,
         symbolic_controls,
         symbolic_parameters,
-        nlp
+        nlp,
     )
 
     def dyn_interface(t, x, u):
@@ -136,7 +136,7 @@ def prepare_ocp(
     x_bounds[0].concatenate(
         Bounds([activation_min] * biorbd_model.nbMuscles(), [activation_max] * biorbd_model.nbMuscles())
     )
-    x_bounds[0][(biorbd_model.nbQ() + biorbd_model.nbQdot()):, 0] = excitations_ref[:, 0]
+    x_bounds[0][(biorbd_model.nbQ() + biorbd_model.nbQdot()) :, 0] = excitations_ref[:, 0]
 
     # Initial guess
     x_init = InitialGuessList()

@@ -130,10 +130,11 @@ class PenaltyFunctionAbstract:
                         f"positive values must be between 0 and {nb_rts})"
                     )
 
-                val = jcs_1_T @ vertcat(nlp.casadi_func["biorbd_markers"](q_1)[:, markers_idx],
-                                        nlp.CX.ones(1, markers_idx.shape[0])) - \
-                      jcs_0_T @ vertcat(nlp.casadi_func["biorbd_markers"](q_0)[:, markers_idx],
-                                        nlp.CX.ones(1, markers_idx.shape[0]))
+                val = jcs_1_T @ vertcat(
+                    nlp.casadi_func["biorbd_markers"](q_1)[:, markers_idx], nlp.CX.ones(1, markers_idx.shape[0])
+                ) - jcs_0_T @ vertcat(
+                    nlp.casadi_func["biorbd_markers"](q_0)[:, markers_idx], nlp.CX.ones(1, markers_idx.shape[0])
+                )
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val[:3, :], penalty, **extra_param)
 
         @staticmethod
@@ -161,7 +162,7 @@ class PenaltyFunctionAbstract:
             )
 
             for i, v in enumerate(x):
-                val = nlp.casadi_func[f"biorbd_markersVelocity"](v[:n_q], v[n_q: n_q + n_qdot])[:, markers_idx]
+                val = nlp.casadi_func[f"biorbd_markersVelocity"](v[:n_q], v[n_q : n_q + n_qdot])[:, markers_idx]
                 target_tp = target[:, markers_idx, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
