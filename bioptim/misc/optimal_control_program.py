@@ -2,7 +2,6 @@ import os
 import pickle
 from copy import deepcopy
 from math import inf
-import numpy as np
 
 import biorbd
 import casadi
@@ -24,7 +23,6 @@ from ..interfaces.integrator import RK4
 from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList, ConstraintOption
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList, ObjectiveOption
-from ..limits.path_conditions import OptionGeneric
 from ..limits.path_conditions import Bounds, BoundsList, BoundsOption
 from ..limits.path_conditions import InitialGuess, InitialGuessList, InitialGuessOption
 from ..limits.path_conditions import InterpolationType
