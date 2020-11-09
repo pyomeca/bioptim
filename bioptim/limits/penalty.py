@@ -100,7 +100,11 @@ class PenaltyFunctionAbstract:
             )
 
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_markers", nlp.model.markers, nlp.q)
-            if coordinates_system_idx >= 0 and coordinates_system_idx < nb_rts:
+            if coordinates_system_idx >= 0:
+                if coordinates_system_idx >= nb_rts:
+                    raise RuntimeError(
+                        f"coordinates_system_idx ({coordinates_system_idx}) cannot be higher than {nb_rts - 1}"
+                    )
                 PenaltyFunctionAbstract._add_to_casadi_func(
                     nlp, f"globalJCS_{coordinates_system_idx}", nlp.model.globalJCS, nlp.q, coordinates_system_idx
                 )
@@ -126,10 +130,11 @@ class PenaltyFunctionAbstract:
                         f"positive values must be between 0 and {nb_rts})"
                     )
 
-                val = jcs_1_T @ vertcat(nlp.casadi_func["biorbd_markers"](q_1)[:, markers_idx], 1) - jcs_0_T @ vertcat(
-                    nlp.casadi_func["biorbd_markers"](q_0)[:, markers_idx], 1
-                )
-                penalty.type.get_type().add_to_penalty(ocp, nlp, val[:3], penalty, **extra_param)
+                val = jcs_1_T @ vertcat(nlp.casadi_func["biorbd_markers"](q_1)[:, markers_idx],
+                                        nlp.CX.ones(1, markers_idx.shape[0])) - \
+                      jcs_0_T @ vertcat(nlp.casadi_func["biorbd_markers"](q_0)[:, markers_idx],
+                                        nlp.CX.ones(1, markers_idx.shape[0]))
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val[:3, :], penalty, **extra_param)
 
         @staticmethod
         def minimize_markers_velocity(penalty, ocp, nlp, t, x, u, p, markers_idx=(), target=None, **extra_param):
@@ -156,8 +161,8 @@ class PenaltyFunctionAbstract:
             )
 
             for i, v in enumerate(x):
-                val = nlp.casadi_func[f"biorbd_markersVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
-                target_tp = target[:, :, i] if target is not None else None
+                val = nlp.casadi_func[f"biorbd_markersVelocity"](v[:n_q], v[n_q: n_q + n_qdot])[:, markers_idx]
+                target_tp = target[:, markers_idx, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod

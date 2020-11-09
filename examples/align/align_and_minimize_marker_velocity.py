@@ -32,8 +32,10 @@ def prepare_ocp(
 
     # Add objective functions
     if marker_in_first_coordinates_system:
+        # Marker should follow this segment (0 velocity when compare to this one)
         coordinates_system_idx = 0
     else:
+        # Marker should be static in global reference frame
         coordinates_system_idx = -1
 
     objective_functions = ObjectiveList()
@@ -51,6 +53,7 @@ def prepare_ocp(
             "Wrong choice of marker_velocity_or_displacement, actual value is "
             "{marker_velocity_or_displacement}, should be 'velo' or 'disp'."
         )
+    # Make sure the segments actually moves (in order to test the relative speed objective)
     objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, states_idx=6, weight=-1)
     objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, states_idx=7, weight=-1)
 
