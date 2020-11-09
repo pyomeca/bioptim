@@ -233,6 +233,8 @@ class AcadosInterface(SolverInterface):
             # Set dimensions
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]
             self.acados_ocp.dims.ny_e = self.acados_ocp.model.cost_y_expr_e.shape[0]
+
+            # To be cleaned
             self.acados_ocp.cost.yref = np.zeros((max(self.acados_ocp.dims.ny, 1),))
             self.acados_ocp.cost.yref_e = (
                 np.concatenate(self.y_ref_end, -1).T if len(self.y_ref_end) else np.zeros((1,))
@@ -270,6 +272,8 @@ class AcadosInterface(SolverInterface):
                 self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 1])
                 self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 1])
 
+        if self.y_ref_end:
+            self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate([data for data in self.y_ref_end]))
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
 
