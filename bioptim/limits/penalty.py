@@ -151,18 +151,14 @@ class PenaltyFunctionAbstract:
                     target, (3, len(markers_idx), len(x))
                 )
 
-            for m in markers_idx:
-                # TODO This should be available natively in biorbd instead of
-                # a for loop (major time lost if lot of markers)
-                PenaltyFunctionAbstract._add_to_casadi_func(
-                    nlp, f"biorbd_markerVelocity_{m}", nlp.model.markerVelocity, nlp.q, nlp.q_dot, int(m)
-                )
+            PenaltyFunctionAbstract._add_to_casadi_func(
+                nlp, f"biorbd_markersVelocity", nlp.model.markersVelocity, nlp.q, nlp.q_dot
+            )
 
             for i, v in enumerate(x):
-                for m in markers_idx:
-                    val = nlp.casadi_func[f"biorbd_markerVelocity_{m}"](v[:n_q], v[n_q : n_q + n_qdot])
-                    target_tp = target[:, m, i] if target is not None else None
-                    penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
+                val = nlp.casadi_func[f"biorbd_markersVelocity"](v[:n_q], v[n_q : n_q + n_qdot])
+                target_tp = target[:, :, i] if target is not None else None
+                penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty, target=target_tp, **extra_param)
 
         @staticmethod
         def align_markers(penalty, ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx, **extra_param):
