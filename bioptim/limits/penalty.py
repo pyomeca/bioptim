@@ -457,26 +457,29 @@ class PenaltyFunctionAbstract:
             parameters["penalty"] -> Index of the penalty (integer), parameters.weight -> Weight of the penalty
             (float)
             """
+            nl_bound = True
+            if "min_bound" in parameters:
+                min_bound = parameters["min_bound"]
+                del parameters["min_bound"]
+                nl_bound = False
+            else:
+                min_bound = 0
+            if "max_bound" in parameters:
+                max_bound = parameters["max_bound"]
+                del parameters["max_bound"]
+                nl_bound = False
+            else:
+                max_bound = 0
+
             val = penalty.custom_function(ocp, nlp, t, x, u, p, **parameters)
             if isinstance(val, tuple):
-                if "min_bound" in parameters or "max_bound" in parameters:
+                if not nl_bound:
                     raise RuntimeError(
                         "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined"
                     )
                 min_bound = val[0]
                 max_bound = val[2]
                 val = val[1]
-
-            if "min_bound" in parameters:
-                min_bound = parameters["min_bound"]
-                del parameters["min_bound"]
-            else:
-                min_bound = 0
-            if "max_bound" in parameters:
-                max_bound = parameters["max_bound"]
-                del parameters["max_bound"]
-            else:
-                max_bound = 0
 
             penalty.type.get_type().add_to_penalty(
                 ocp, nlp, val, penalty, min_bound=min_bound, max_bound=max_bound, **parameters
