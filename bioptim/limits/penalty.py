@@ -459,8 +459,10 @@ class PenaltyFunctionAbstract:
             """
             val = penalty.custom_function(ocp, nlp, t, x, u, p, **parameters)
             if isinstance(val, tuple):
-                if ("min_bound" in parameters or "max_bound" in parameters):
-                    raise RuntimeError("You cannot have non linear bounds for custom constraints and min_bound or max_bound defined")
+                if "min_bound" in parameters or "max_bound" in parameters:
+                    raise RuntimeError(
+                        "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined"
+                    )
                 min_bound = val[0]
                 max_bound = val[2]
                 val = val[1]
