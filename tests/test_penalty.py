@@ -750,19 +750,32 @@ def test_penalty_contact_force_inequality(penalty_origin, value, direction):
     ocp = prepare_test_ocp(with_contact=True)
     x = [DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
-    penalty_type = penalty_origin.CONTACT_FORCE_INEQUALITY
-    penalty = ConstraintOption(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, u, [], direction=direction, contact_force_idx=0, boundary=1)
-    res = ocp.nlp[0].g[0][0]
 
-    if value == 0.1 and direction == "GREATER_THAN":
-        expected = [-9.6680105, 1.0, np.inf]
-    elif value == -10 and direction == "GREATER_THAN":
-        expected = [25.6627161, 1.0, np.inf]
-    elif value == 0.1 and direction == "LESSER_THAN":
-        expected = [-9.6680105, -np.inf, 1.0]
-    elif value == -10 and direction == "LESSER_THAN":
-        expected = [25.6627161, -np.inf, 1.0]
+    if direction == "GREATER_THAN":
+        min_bound = 1
+        max_bound = np.inf
+        if value == 0.1:
+            expected = [-9.6680105, 1.0, np.inf]
+        elif value == -10:
+            expected = [25.6627161, 1.0, np.inf]
+        else:
+            raise RuntimeError("Wrong test")
+    elif direction == "LESSER_THAN":
+        min_bound = -np.inf
+        max_bound = 1
+        if value == 0.1:
+            expected = [-9.6680105, -np.inf, 1.0]
+        elif value == -10:
+            expected = [25.6627161, -np.inf, 1.0]
+        else:
+            raise RuntimeError("Wrong test")
+    else:
+        raise RuntimeError("Wrong test")
+
+    penalty_type = penalty_origin.CONTACT_FORCE
+    penalty = ConstraintOption(penalty_type, min_bound=min_bound, max_bound=max_bound)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, u, [], contact_force_idx=0,)
+    res = ocp.nlp[0].g[0][0]
 
     np.testing.assert_almost_equal(res, np.array([[expected[0]]]))
 

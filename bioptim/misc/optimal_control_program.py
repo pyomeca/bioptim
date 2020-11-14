@@ -626,24 +626,24 @@ class OptimalControlProgram:
                     initial_time_guess.append(phase_time[i])
                     phase_time[i] = self.CX.sym(f"time_phase_{i}", 1, 1)
                     if pen_fun.type.get_type() == ConstraintFunction:
-                        time_min.append(pen_fun.minimum if pen_fun.minimum else 0)
-                        time_max.append(pen_fun.maximum if pen_fun.maximum else inf)
+                        time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
+                        time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
                     else:
-                        time_min.append(pen_fun.params["minimum"] if "minimum" in pen_fun.params else 0)
-                        time_max.append(pen_fun.params["maximum"] if "maximum" in pen_fun.params else inf)
+                        time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
+                        time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
         return has_penalty
 
-    def __define_variable_time(self, initial_guess, minimum, maximum):
+    def __define_variable_time(self, initial_guess, min_bound, max_bound):
         """
         For each variable time, sets initial guess and bounds.
         :param initial_guess: The initial values taken from the phase_time vector
-        :param minimum: variable time minimums as set by user (default: 0)
-        :param maximum: variable time maximums as set by user (default: inf)
+        :param min_bound: variable time minimums as set by user (default: 0)
+        :param max_bound: variable time maximums as set by user (default: inf)
         """
         i = 0
         for nlp in self.nlp:
             if isinstance(nlp.tf, self.CX):
-                time_bounds = Bounds(minimum[i], maximum[i], interpolation=InterpolationType.CONSTANT)
+                time_bounds = Bounds(min_bound[i], max_bound[i], interpolation=InterpolationType.CONSTANT)
                 time_init = InitialGuess(initial_guess[i])
                 Parameters._add_to_v(self, "time", 1, None, time_bounds, time_init, nlp.tf)
                 i += 1
