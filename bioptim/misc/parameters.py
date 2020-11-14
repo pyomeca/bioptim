@@ -86,18 +86,12 @@ class Parameters:
                 raise RuntimeError("Parameters are timeless optimization, instant=Instant.DEFAULT should be declared")
 
             func = penalty.custom_function
-            weight = penalty.weight
-            quadratic = False if penalty.quadratic is None else penalty.quadratic
 
-            if "target" in penalty.params:
-                target = penalty.params["target"]
-                del penalty.params["target"]
-            else:
-                target = None
             val = func(ocp, cx, **penalty.params)
+            penalty.sliced_target = penalty.target
             ObjectiveFunction.ParameterFunction.clear_penalty(ocp, None, penalty)
             ObjectiveFunction.ParameterFunction.add_to_penalty(
-                ocp, None, val, penalty, target=target, weight=weight, quadratic=quadratic
+                ocp, None, val, penalty
             )
 
     @staticmethod

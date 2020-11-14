@@ -253,25 +253,25 @@ def test_penalty_track_markers_velocity(penalty_origin, value):
     penalty_type = penalty_origin.TRACK_MARKERS_VELOCITY
 
     if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
-        penalty = ObjectiveOption(penalty_type)
+        penalty = ObjectiveOption(penalty_type, target=np.ones((3, 7, 1)) * value)
     else:
-        penalty = ConstraintOption(penalty_type)
+        penalty = ConstraintOption(penalty_type, target=np.ones((3, 7, 1)) * value)
 
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [3], x, [], [], target=np.ones((3, 7, 1)) * value)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [3], x, [], [])
 
     if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
-        res = ocp.nlp[0].J[0][0]["val"]
+        res = ocp.nlp[0].J[0][6]["val"]
     else:
-        res = ocp.nlp[0].g[0][0]
+        res = ocp.nlp[0].g[0][6]
 
     if value == 0.1:
         np.testing.assert_almost_equal(
             res,
             np.array(
                 [
-                    [0.1, -0.00948376, -0.0194671, 0.0900167, 0, 0, -0.00499167],
-                    [0, 0, 0, 0, 0, 0, 0],
-                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, -0.0497502],
+                    [-0.00499167],
+                    [0],
+                    [-0.0497502],
                 ]
             ),
         )
@@ -280,9 +280,9 @@ def test_penalty_track_markers_velocity(penalty_origin, value):
             res,
             np.array(
                 [
-                    [-10, -12.9505042, -7.5102931, -4.5597889, 0, 0, 2.7201056],
-                    [0, 0, 0, 0, 0, 0, 0],
-                    [-10, -23.8309264, -32.2216417, -18.3907153, 0, 0, -4.1953576],
+                    [2.7201056],
+                    [0],
+                    [-4.1953576],
                 ]
             ),
         )
