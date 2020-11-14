@@ -22,7 +22,9 @@ class PenaltyFunctionAbstract:
             states_idx = PenaltyFunctionAbstract._check_and_fill_index(states_idx, nlp.nx, "state_idx")
             target = None
             if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (len(states_idx), len(x)))
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    penalty.target, (len(states_idx), len(x))
+                )
 
                 # Prepare the plot
                 prev_idx = 0  # offset due to previous states
@@ -46,15 +48,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_markers(
-            penalty,
-            ocp,
-            nlp,
-            t,
-            x,
-            u,
-            p,
-            axis_to_track=(Axe.X, Axe.Y, Axe.Z),
-            markers_idx=(),
+            penalty, ocp, nlp, t, x, u, p, axis_to_track=(Axe.X, Axe.Y, Axe.Z), markers_idx=(),
         ):
             """
             Adds the objective that the specific markers should be minimized.
@@ -81,9 +75,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def minimize_markers_displacement(
-            penalty, ocp, nlp, t, x, u, p, coordinates_system_idx=-1, markers_idx=()
-        ):
+        def minimize_markers_displacement(penalty, ocp, nlp, t, x, u, p, coordinates_system_idx=-1, markers_idx=()):
             """
             Adds the objective that the specific markers displacement (difference between the position of the
             markers at each neighbour frame)should be minimized.
@@ -229,7 +221,9 @@ class PenaltyFunctionAbstract:
 
             target = None
             if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (len(controls_idx), len(u)))
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    penalty.target, (len(controls_idx), len(u))
+                )
                 PenaltyFunctionAbstract._add_track_data_to_plot(
                     ocp, nlp, target, combine_to="tau", axes_idx=Mapping(controls_idx)
                 )
@@ -268,7 +262,9 @@ class PenaltyFunctionAbstract:
 
             target = None
             if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (len(muscles_idx), len(u)))
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    penalty.target, (len(muscles_idx), len(u))
+                )
 
                 PenaltyFunctionAbstract._add_track_data_to_plot(
                     ocp, nlp, target, combine_to="muscles_control", axes_idx=Mapping(muscles_idx)
@@ -295,7 +291,9 @@ class PenaltyFunctionAbstract:
 
             target = None
             if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (len(controls_idx), len(u)))
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    penalty.target, (len(controls_idx), len(u))
+                )
 
             for i, v in enumerate(u):
                 val = v[controls_idx]
@@ -333,7 +331,9 @@ class PenaltyFunctionAbstract:
 
             target = None
             if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (len(contacts_idx), len(u)))
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
+                    penalty.target, (len(contacts_idx), len(u))
+                )
 
                 PenaltyFunctionAbstract._add_track_data_to_plot(
                     ocp, nlp, target, combine_to="contact_forces", axes_idx=Mapping(contacts_idx)
@@ -418,9 +418,7 @@ class PenaltyFunctionAbstract:
             (float)
             """
             val = penalty.custom_function(ocp, nlp, t, x, u, p, **parameters)
-            penalty.type.get_type().add_to_penalty(
-                ocp, nlp, val, penalty
-            )
+            penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
     @staticmethod
     def add(ocp, nlp):

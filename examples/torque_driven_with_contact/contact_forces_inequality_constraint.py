@@ -37,18 +37,10 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        Constraint.CONTACT_FORCE,
-        min_bound=min_bound,
-        max_bound=max_bound,
-        instant=Instant.ALL,
-        contact_force_idx=1,
+        Constraint.CONTACT_FORCE, min_bound=min_bound, max_bound=max_bound, instant=Instant.ALL, contact_force_idx=1,
     )
     constraints.add(
-        Constraint.CONTACT_FORCE,
-        min_bound=min_bound,
-        max_bound=max_bound,
-        instant=Instant.ALL,
-        contact_force_idx=2,
+        Constraint.CONTACT_FORCE, min_bound=min_bound, max_bound=max_bound, instant=Instant.ALL, contact_force_idx=2,
     )
 
     # Path constraint
@@ -92,9 +84,7 @@ if __name__ == "__main__":
     model_path = "2segments_4dof_2contacts.bioMod"
     t = 0.3
     ns = 10
-    ocp = prepare_ocp(
-        model_path=model_path, phase_time=t, number_shooting_points=ns, min_bound=50, max_bound=np.inf,
-    )
+    ocp = prepare_ocp(model_path=model_path, phase_time=t, number_shooting_points=ns, min_bound=50, max_bound=np.inf,)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

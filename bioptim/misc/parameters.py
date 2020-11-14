@@ -90,9 +90,7 @@ class Parameters:
             val = func(ocp, cx, **penalty.params)
             penalty.sliced_target = penalty.target
             ObjectiveFunction.ParameterFunction.clear_penalty(ocp, None, penalty)
-            ObjectiveFunction.ParameterFunction.add_to_penalty(
-                ocp, None, val, penalty
-            )
+            ObjectiveFunction.ParameterFunction.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
     def _add_to_v(ocp, name, size, function, bounds, initial_guess, cx=None, **extra_params):

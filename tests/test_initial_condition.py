@@ -13,9 +13,7 @@ def test_initial_guess_constant():
     nb_elements = 6
     nb_shoot = 10
 
-    init_val = np.random.random(
-        nb_elements,
-    )
+    init_val = np.random.random(nb_elements,)
     init = InitialGuess(init_val, interpolation=InterpolationType.CONSTANT)
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     expected_val = init_val
@@ -114,10 +112,7 @@ def test_initial_guess_custom():
     init_val = np.random.random((nb_elements, 2))
 
     init = InitialGuess(
-        custom_bound_func,
-        interpolation=InterpolationType.CUSTOM,
-        val=init_val,
-        total_shooting=nb_shoot,
+        custom_bound_func, interpolation=InterpolationType.CUSTOM, val=init_val, total_shooting=nb_shoot,
     )
     init.check_and_adjust_dimensions(nb_elements, nb_shoot)
     for i in range(nb_shoot + 1):

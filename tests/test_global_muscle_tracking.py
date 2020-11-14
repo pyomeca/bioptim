@@ -209,11 +209,11 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking():
     )
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([-0.0002031 ,  0.00078964]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([ 0.08522694, -0.49749536]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([-0.0002031, 0.00078964]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.08522694, -0.49749536]))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([ 0.00926103, -0.07289721]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([ 0.13449917, -1.56033745]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00926103, -0.07289721]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.13449917, -1.56033745]))
     # initial and final muscle state
     np.testing.assert_almost_equal(
         mus_states[:, 0], np.array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864, 0.15599452])
@@ -223,12 +223,12 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking():
     )
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-4.21034161e-07, -1.00044103e-06]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-7.49737010e-07,  8.27732267e-07]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-7.49737010e-07, 8.27732267e-07]))
     np.testing.assert_almost_equal(
-        mus_controls[:, 0], np.array([0.37458704, 0.95067302, 0.73198322, 0.5986696 , 0.15604883, 0.15600538])
+        mus_controls[:, 0], np.array([0.37458704, 0.95067302, 0.73198322, 0.5986696, 0.15604883, 0.15600538])
     )
     np.testing.assert_almost_equal(
-        mus_controls[:, -1], np.array([0.54673089, 0.1848553 , 0.96954337, 0.77512999, 0.93947978, 0.89480973])
+        mus_controls[:, -1], np.array([0.54673089, 0.1848553, 0.96954337, 0.77512999, 0.93947978, 0.89480973])
     )
 
     # save and load
@@ -288,11 +288,11 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking():
     q, qdot, mus_states, mus_controls = (states["q"], states["q_dot"], states["muscles"], controls["muscles"])
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([-0.00020308,  0.00078961]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([ 0.08522697, -0.49749541]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([-0.00020308, 0.00078961]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.08522697, -0.49749541]))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([ 0.00926096, -0.07289709]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([ 0.13449945, -1.56033796]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0.00926096, -0.07289709]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.13449945, -1.56033796]))
     # initial and final muscle state
     np.testing.assert_almost_equal(
         mus_states[:, 0], np.array([0.37454012, 0.95071431, 0.73199394, 0.59865848, 0.15601864, 0.15599452])
@@ -305,7 +305,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking():
         mus_controls[:, 0], np.array([0.37458705, 0.95067302, 0.73198322, 0.59866959, 0.15604883, 0.15600538])
     )
     np.testing.assert_almost_equal(
-        mus_controls[:, -1], np.array([0.5467309 , 0.1848553 , 0.96954337, 0.77512999, 0.93947978, 0.89480973])
+        mus_controls[:, -1], np.array([0.5467309, 0.1848553, 0.96954337, 0.77512999, 0.93947978, 0.89480973])
     )
 
     # save and load

@@ -13,12 +13,7 @@ pendulum = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pendulum)
 
 
-ocp = pendulum.prepare_ocp(
-    biorbd_model_path="pendulum.bioMod",
-    final_time=2,
-    number_shooting_points=10,
-    nb_threads=2,
-)
+ocp = pendulum.prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=10, nb_threads=2,)
 
 X = InitialGuess([0, 0, 0, 0])
 U = InitialGuess([-1, 1])
