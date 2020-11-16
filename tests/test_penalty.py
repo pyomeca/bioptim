@@ -725,3 +725,26 @@ def test_penalty_custom(penalty_origin, value):
     if isinstance(penalty_type, Constraint):
         np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0]] * 12))
         np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0]] * 12))
+
+
+def custom_with_bounds(ocp, nlp, t, x, u, p, **extra_params):
+    my_values = DM.zeros((12, 1)) + x[0]
+    return -10, my_values, 10
+
+
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_custom_with_bounds(value):
+    ocp = prepare_test_ocp()
+    x = [DM.ones((12, 1)) * value]
+
+    penalty_type = Constraint.CUSTOM
+    penalty = ConstraintOption(penalty_type)
+
+    penalty.custom_function = custom_with_bounds
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+
+    res = ocp.nlp[0].g[0][0]
+
+    np.testing.assert_almost_equal(res, np.array([[value]] * 12))
+    np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[-10]] * 12))
+    np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[10]] * 12))
