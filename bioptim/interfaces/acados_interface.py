@@ -287,29 +287,44 @@ class AcadosInterface(SolverInterface):
             else:
                 self.ocp_solver.set(self.acados_ocp.dims.N, "x", self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N])
 
+
+
     def configure(self, options):
         if "acados_dir" in options:
             del options["acados_dir"]
         if "cost_type" in options:
             del options["cost_type"]
+        if self.ocp_solver is None:
+            self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
+            self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
+            self.acados_ocp.solver_options.integrator_type = "IRK"
+            self.acados_ocp.solver_options.nlp_solver_type = "SQP"
 
-        self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
-        self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
-        self.acados_ocp.solver_options.integrator_type = "IRK"
-        self.acados_ocp.solver_options.nlp_solver_type = "SQP"
+            self.acados_ocp.solver_options.nlp_solver_tol_comp = 1e-06
+            self.acados_ocp.solver_options.nlp_solver_tol_eq = 1e-06
+            self.acados_ocp.solver_options.nlp_solver_tol_ineq = 1e-06
+            self.acados_ocp.solver_options.nlp_solver_tol_stat = 1e-06
+            self.acados_ocp.solver_options.nlp_solver_max_iter = 200
+            self.acados_ocp.solver_options.sim_method_newton_iter = 5
+            self.acados_ocp.solver_options.sim_method_num_stages = 4
+            self.acados_ocp.solver_options.sim_method_num_steps = 1
+            self.acados_ocp.solver_options.print_level = 1
+            for key in options:
+                setattr(self.acados_ocp.solver_options, key, options[key])
+        else:
+            for key in options:
+                if key[:11] == "nlp_solver_":
+                    short_key = key[11:]
+                    self.ocp_solver.options_set(short_key, options[key])
+                else:
+                    raise RuntimeError("[ACADOS] Only editable solver options after solver creation are :\n"
+                                       "nlp_solver_tol_comp\n"
+                                        "nlp_solver_tol_eq\n"
+                                        "nlp_solver_tol_ineq\n"
+                                        "nlp_solver_tol_stat\n"
+                                        )
 
-        self.acados_ocp.solver_options.nlp_solver_tol_comp = 1e-06
-        self.acados_ocp.solver_options.nlp_solver_tol_eq = 1e-06
-        self.acados_ocp.solver_options.nlp_solver_tol_ineq = 1e-06
-        self.acados_ocp.solver_options.nlp_solver_tol_stat = 1e-06
-        self.acados_ocp.solver_options.nlp_solver_max_iter = 200
-        self.acados_ocp.solver_options.sim_method_newton_iter = 5
-        self.acados_ocp.solver_options.sim_method_num_stages = 4
-        self.acados_ocp.solver_options.sim_method_num_steps = 1
-        self.acados_ocp.solver_options.print_level = 1
 
-        for key in options:
-            setattr(self.acados_ocp.solver_options, key, options[key])
 
     def get_iterations(self):
         raise NotImplementedError("return_iterations is not implemented yet with ACADOS backend")
