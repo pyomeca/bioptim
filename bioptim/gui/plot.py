@@ -505,7 +505,7 @@ class ShowResult:
             import bioviz
         except ModuleNotFoundError:
             raise RuntimeError("bioviz must be install to animate the model")
-        check_version(bioviz, "2.0.0", "2.1.0")
+        check_version(bioviz, "2.0.1", "2.1.0")
         data_interpolate, data_control = Data.get_data(
             self.ocp, self.sol["x"], integrate=False, interpolate_nb_frames=nb_frames
         )

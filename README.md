@@ -5,6 +5,7 @@ An optimization framework that links CasADi, ipopt and biorbd for Optimal Contro
 
 | | |
 |---|---|
+| License | <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-success" alt="License"/></a> |
 | Continuous integration | [![Build Status](https://travis-ci.org/pyomeca/bioptim.svg?branch=master)](https://travis-ci.org/pyomeca/bioptim) |
 |  Code coverage | [![codecov](https://codecov.io/gh/pyomeca/bioptim/branch/master/graph/badge.svg)](https://codecov.io/gh/pyomeca/bioptim) |
 
