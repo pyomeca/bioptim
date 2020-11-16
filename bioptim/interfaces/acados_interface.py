@@ -287,8 +287,6 @@ class AcadosInterface(SolverInterface):
             else:
                 self.ocp_solver.set(self.acados_ocp.dims.N, "x", self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N])
 
-
-
     def configure(self, options):
         if "acados_dir" in options:
             del options["acados_dir"]
@@ -317,14 +315,13 @@ class AcadosInterface(SolverInterface):
                     short_key = key[11:]
                     self.ocp_solver.options_set(short_key, options[key])
                 else:
-                    raise RuntimeError("[ACADOS] Only editable solver options after solver creation are :\n"
-                                       "nlp_solver_tol_comp\n"
-                                        "nlp_solver_tol_eq\n"
-                                        "nlp_solver_tol_ineq\n"
-                                        "nlp_solver_tol_stat\n"
-                                        )
-
-
+                    raise RuntimeError(
+                        "[ACADOS] Only editable solver options after solver creation are :\n"
+                        "nlp_solver_tol_comp\n"
+                        "nlp_solver_tol_eq\n"
+                        "nlp_solver_tol_ineq\n"
+                        "nlp_solver_tol_stat\n"
+                    )
 
     def get_iterations(self):
         raise NotImplementedError("return_iterations is not implemented yet with ACADOS backend")
