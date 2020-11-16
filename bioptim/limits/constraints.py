@@ -10,7 +10,7 @@ from ..misc.options_lists import OptionList, OptionGeneric
 
 
 class ConstraintOption(OptionGeneric):
-    def __init__(self, constraint, instant=Instant.NONE, min_bound=0, max_bound=0, phase=0, **params):
+    def __init__(self, constraint, instant=Instant.NONE, min_bound=None, max_bound=None, phase=0, **params):
         custom_function = None
         if not isinstance(constraint, Constraint):
             custom_function = constraint
@@ -173,6 +173,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         :param penalty: Index of the parameter g in the penalty array nlp.g. (integer)
         """
         g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        penalty.min_bound = 0 if penalty.min_bound is None else penalty.min_bound
+        penalty.max_bound = 0 if penalty.max_bound is None else penalty.max_bound
         for _ in range(val.rows()):
             g_bounds.concatenate(Bounds(penalty.min_bound, penalty.max_bound, interpolation=InterpolationType.CONSTANT))
 
