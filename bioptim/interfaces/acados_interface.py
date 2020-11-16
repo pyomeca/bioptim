@@ -77,8 +77,6 @@ class AcadosInterface(SolverInterface):
         # set dimensions
         self.acados_ocp.dims.nx = ocp.nlp[0].nx + ocp.nlp[0].np
         self.acados_ocp.dims.nu = ocp.nlp[0].nu
-        # self.acados_ocp.dims.ny = self.acados_ocp.dims.nx + self.acados_ocp.dims.nu
-        # self.acados_ocp.dims.ny_e = ocp.nlp[0].nx + ocp.nlp[0].np
         self.acados_ocp.dims.N = ocp.nlp[0].ns
 
     def __set_constr_type(self, constr_type="BGH"):
@@ -247,6 +245,7 @@ class AcadosInterface(SolverInterface):
         param_init = []
         for n in range(self.acados_ocp.dims.N):
             self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
+            self.ocp_solver.cost_set(n, "W", self.W)
 
             if self.params:
                 param_init = np.concatenate(
@@ -267,6 +266,7 @@ class AcadosInterface(SolverInterface):
 
         if self.y_ref_end:
             self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate([data for data in self.y_ref_end]))
+            self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
 
