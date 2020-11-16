@@ -54,7 +54,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # To be modified later so that it can handle something other than lower bounds for greater than
             for i in range(len(u)):
                 ConstraintFunction.add_to_penalty(
-                    ocp, nlp, nlp.contact_forces_func(x[i], u[i], p)[contact_force_idx, 0], constraint,
+                    ocp,
+                    nlp,
+                    nlp.contact_forces_func(x[i], u[i], p)[contact_force_idx, 0],
+                    constraint,
                 )
 
         @staticmethod
@@ -96,10 +99,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                 # Since it is non-slipping normal forces are supposed to be greater than zero
                 ConstraintFunction.add_to_penalty(
-                    ocp, nlp, mu * normal_contact_force - tangential_contact_force, constraint,
+                    ocp,
+                    nlp,
+                    mu * normal_contact_force - tangential_contact_force,
+                    constraint,
                 )
                 ConstraintFunction.add_to_penalty(
-                    ocp, nlp, mu * normal_contact_force + tangential_contact_force, constraint,
+                    ocp,
+                    nlp,
+                    mu * normal_contact_force + tangential_contact_force,
+                    constraint,
                 )
 
         @staticmethod

@@ -213,7 +213,9 @@ class BoundsOption(OptionGeneric):
 
 class BoundsList(UniquePerPhaseOptionList):
     def add(
-        self, bounds, **extra_arguments,
+        self,
+        bounds,
+        **extra_arguments,
     ):
         if isinstance(bounds, BoundsOption):
             self.copy(bounds)
@@ -426,7 +428,10 @@ class InitialGuess:
         Concatenates initial guesses.
         :param other: Initial guesses to concatenate. (?)
         """
-        self.init = PathCondition(np.concatenate((self.init, other.init)), interpolation=self.init.type,)
+        self.init = PathCondition(
+            np.concatenate((self.init, other.init)),
+            interpolation=self.init.type,
+        )
 
     def __bool__(self):
         return len(self.init) > 0

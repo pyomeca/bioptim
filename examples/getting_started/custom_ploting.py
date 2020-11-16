@@ -40,7 +40,14 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model, dynamics, number_shooting_points, final_time, x_init, u_init, x_bounds, u_bounds,
+        biorbd_model,
+        dynamics,
+        number_shooting_points,
+        final_time,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
     )
 
 

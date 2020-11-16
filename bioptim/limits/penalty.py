@@ -48,7 +48,15 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_markers(
-            penalty, ocp, nlp, t, x, u, p, axis_to_track=(Axe.X, Axe.Y, Axe.Z), markers_idx=(),
+            penalty,
+            ocp,
+            nlp,
+            t,
+            x,
+            u,
+            p,
+            axis_to_track=(Axe.X, Axe.Y, Axe.Z),
+            markers_idx=(),
         ):
             """
             Adds the objective that the specific markers should be minimized.
