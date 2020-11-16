@@ -77,8 +77,8 @@ class AcadosInterface(SolverInterface):
         # set dimensions
         self.acados_ocp.dims.nx = ocp.nlp[0].nx + ocp.nlp[0].np
         self.acados_ocp.dims.nu = ocp.nlp[0].nu
-        self.acados_ocp.dims.ny = self.acados_ocp.dims.nx + self.acados_ocp.dims.nu
-        self.acados_ocp.dims.ny_e = ocp.nlp[0].nx + ocp.nlp[0].np
+        # self.acados_ocp.dims.ny = self.acados_ocp.dims.nx + self.acados_ocp.dims.nu
+        # self.acados_ocp.dims.ny_e = ocp.nlp[0].nx + ocp.nlp[0].np
         self.acados_ocp.dims.N = ocp.nlp[0].ns
 
     def __set_constr_type(self, constr_type="BGH"):
