@@ -10,7 +10,7 @@ from ..misc.options_lists import OptionList, OptionGeneric
 
 
 class ConstraintOption(OptionGeneric):
-    def __init__(self, constraint, instant=Instant.NONE, minimum=None, maximum=None, phase=0, **params):
+    def __init__(self, constraint, instant=Instant.NONE, min_bound=None, max_bound=None, phase=0, **params):
         custom_function = None
         if not isinstance(constraint, Constraint):
             custom_function = constraint
@@ -20,8 +20,8 @@ class ConstraintOption(OptionGeneric):
         self.instant = instant
         self.quadratic = None
         self.custom_function = custom_function
-        self.minimum = minimum
-        self.maximum = maximum
+        self.min_bound = min_bound
+        self.max_bound = max_bound
         self.custom_function = custom_function
 
 
@@ -45,9 +45,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def contact_force_inequality(
-            constraint, ocp, nlp, t, x, u, p, direction, contact_force_idx, boundary, **parameters
-        ):
+        def contact_force(constraint, ocp, nlp, t, x, u, p, contact_force_idx):
             """
             To be completed when this function will be fully developed, in particular the fact that policy is either a
             tuple/list or a tuple of tuples/list of lists,
@@ -55,24 +53,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             # To be modified later so that it can handle something other than lower bounds for greater than
             for i in range(len(u)):
-                if direction == "GREATER_THAN":
-                    min_bound = boundary
-                    max_bound = inf
-                elif direction == "LESSER_THAN":
-                    min_bound = -inf
-                    max_bound = boundary
-                else:
-                    raise RuntimeError(
-                        "direction parameter of contact_force_inequality must either be GREATER_THAN or LESSER_THAN"
-                    )
                 ConstraintFunction.add_to_penalty(
                     ocp,
                     nlp,
                     nlp.contact_forces_func(x[i], u[i], p)[contact_force_idx, 0],
                     constraint,
-                    min_bound=min_bound,
-                    max_bound=max_bound,
-                    **parameters,
                 )
 
         @staticmethod
@@ -105,6 +90,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 normal_component_idx = [normal_component_idx]
 
             mu = static_friction_coefficient
+            constraint.min_bound = 0
+            constraint.max_bound = inf
             for i in range(len(u)):
                 contact = nlp.contact_forces_func(x[i], u[i], p)
                 normal_contact_force = sum1(contact[normal_component_idx, 0])
@@ -116,18 +103,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     nlp,
                     mu * normal_contact_force - tangential_contact_force,
                     constraint,
-                    min_bound=0,
-                    max_bound=inf,
-                    **parameters,
                 )
                 ConstraintFunction.add_to_penalty(
                     ocp,
                     nlp,
                     mu * normal_contact_force + tangential_contact_force,
                     constraint,
-                    min_bound=0,
-                    max_bound=inf,
-                    **parameters,
                 )
 
         @staticmethod
@@ -182,20 +163,20 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         penalty.idx = -1
         pt.base.clear_penalty(ocp, None, penalty)
         val = pt.type.value[0](ocp, pt)
-        pt.base.add_to_penalty(ocp, None, val, penalty, **pt.params)
+        pt.base.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
-    def add_to_penalty(ocp, nlp, val, penalty, min_bound=0, max_bound=0, **extra_arguments):
+    def add_to_penalty(ocp, nlp, val, penalty):
         """
         Sets minimal and maximal bounds of the parameter g to be constrained.
         :param g: Parameter to be constrained. (?)
         :param penalty: Index of the parameter g in the penalty array nlp.g. (integer)
-        :param min_bound: Minimal bound of the parameter g. (list)
-        :param max_bound: Maximal bound of the parameter g. (list)
         """
         g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        penalty.min_bound = 0 if penalty.min_bound is None else penalty.min_bound
+        penalty.max_bound = 0 if penalty.max_bound is None else penalty.max_bound
         for _ in range(val.rows()):
-            g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
+            g_bounds.concatenate(Bounds(penalty.min_bound, penalty.max_bound, interpolation=InterpolationType.CONSTANT))
 
         if nlp:
             nlp.g[penalty.idx].append(val)
@@ -247,7 +228,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         # Everything that is suspicious in terms of the span of the penalty function can be checked here
         super(ConstraintFunction, ConstraintFunction)._span_checker(constraint_function, instant, nlp)
         if (
-            constraint_function == Constraint.CONTACT_FORCE_INEQUALITY.value[0]
+            constraint_function == Constraint.CONTACT_FORCE.value[0]
             or constraint_function == Constraint.NON_SLIPPING.value[0]
         ):
             if instant == Instant.END or instant == nlp.ns:
@@ -272,7 +253,7 @@ class Constraint(Enum):
     ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
     ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
     CUSTOM = (PenaltyType.CUSTOM,)
-    CONTACT_FORCE_INEQUALITY = (ConstraintFunction.Functions.contact_force_inequality,)
+    CONTACT_FORCE = (ConstraintFunction.Functions.contact_force,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
 

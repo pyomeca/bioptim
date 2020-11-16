@@ -3,7 +3,7 @@ File that shows an example of a custom constraint.
 As an example, this custom constraint reproduces exactly the behavior of the ALIGN_MARKERS constraint.
 """
 import biorbd
-from casadi import vertcat, MX
+from casadi import vertcat
 
 from bioptim import (
     Instant,
@@ -12,7 +12,7 @@ from bioptim import (
     DynamicsType,
     ObjectiveOption,
     Objective,
-    ConstraintList,
+    ObjectiveList,
     BoundsOption,
     QAndQDotBounds,
     InitialGuessOption,
@@ -24,11 +24,11 @@ from bioptim import (
 def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
     nq = nlp.shape["q"]
     val = []
-    markers = biorbd.to_casadi_func("markers", nlp.model.markers, nlp.q)
     for v in x:
         q = v[:nq]
-        first_marker = markers(q)[:, first_marker_idx]
-        second_marker = markers(q)[:, second_marker_idx]
+        markers = nlp.model.markers(q)
+        first_marker = markers[:, first_marker_idx]
+        second_marker = markers[:, second_marker_idx]
         val = vertcat(val, first_marker - second_marker)
     return val
 
@@ -44,15 +44,29 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
+    objective_functions.add(
+        custom_func_align_markers,
+        custom_type=Objective.Mayer,
+        instant=Instant.START,
+        quadratic=True,
+        first_marker_idx=0,
+        second_marker_idx=1,
+        weight=1000,
+    )
+    objective_functions.add(
+        custom_func_align_markers,
+        custom_type=Objective.Mayer,
+        instant=Instant.END,
+        quadratic=True,
+        first_marker_idx=0,
+        second_marker_idx=2,
+        weight=1000,
+    )
 
     # Dynamics
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
-
-    # Constraints
-    constraints = ConstraintList()
-    constraints.add(custom_func_align_markers, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(custom_func_align_markers, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
@@ -81,7 +95,6 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
         x_bounds,
         u_bounds,
         objective_functions,
-        constraints,
         ode_solver=ode_solver,
     )
 
