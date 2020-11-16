@@ -220,7 +220,10 @@ class Problem:
             q_bounds = nlp.x_bounds[: nlp.shape["q"]]
 
             nlp.plot["q"] = CustomPlot(
-                lambda x, u, p: x[: nlp.shape["q"]], plot_type=PlotType.INTEGRATED, legend=legend_q, bounds=q_bounds,
+                lambda x, u, p: x[: nlp.shape["q"]],
+                plot_type=PlotType.INTEGRATED,
+                legend=legend_q,
+                bounds=q_bounds,
             )
 
         if as_controls:

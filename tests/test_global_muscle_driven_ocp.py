@@ -164,8 +164,7 @@ def test_muscle_excitation_with_contact_driven_ocp():
         str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod",
         phase_time=0.3,
         number_shooting_points=10,
-        direction="GREATER_THAN",
-        boundary=boundary,
+        min_bound=boundary,
     )
     sol = ocp.solve()
 

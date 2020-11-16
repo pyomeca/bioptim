@@ -66,13 +66,13 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(penalty, ocp, nlp, t, x, u, p, **extra_param):
+            def minimize_time(penalty, ocp, nlp, t, x, u, p):
                 """Minimizes the duration of the movement (Lagrange)."""
                 val = 1
-                ObjectiveFunction.LagrangeFunction.add_to_penalty(ocp, nlp, val, penalty, **extra_param)
+                ObjectiveFunction.LagrangeFunction.add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def add_to_penalty(ocp, nlp, val, penalty, target=None, **extra_arguments):
+        def add_to_penalty(ocp, nlp, val, penalty):
             """
             Adds an objective.
             :param val: Value to be optimized. (MX.sym from CasADi)
@@ -80,7 +80,7 @@ class ObjectiveFunction:
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared. (bool)
             """
-            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=nlp.dt, target=target)
+            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=nlp.dt)
 
         @staticmethod
         def clear_penalty(ocp, nlp, penalty):
@@ -115,10 +115,10 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(penalty, ocp, nlp, t, x, u, p, **extra_param):
+            def minimize_time(penalty, ocp, nlp, t, x, u, p):
                 """Minimizes the duration of the movement (Mayer)."""
                 val = nlp.tf
-                ObjectiveFunction.MayerFunction.add_to_penalty(ocp, nlp, val, penalty, **extra_param)
+                ObjectiveFunction.MayerFunction.add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
         def inter_phase_continuity(ocp, pt):
@@ -129,10 +129,10 @@ class ObjectiveFunction:
             penalty.weight = pt.weight
             pt.base.clear_penalty(ocp, None, penalty)
             val = pt.type.value[0](ocp, pt)
-            pt.base.add_to_penalty(ocp, None, val, penalty, **pt.params)
+            pt.base.add_to_penalty(ocp, None, val, penalty)
 
         @staticmethod
-        def add_to_penalty(ocp, nlp, val, penalty, target=None, **extra_param):
+        def add_to_penalty(ocp, nlp, val, penalty):
             """
             Adds an objective.
             :param val: Value to be optimized. (MX.sym from CasADi)
@@ -140,7 +140,7 @@ class ObjectiveFunction:
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared (bool)
             """
-            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=1, target=target)
+            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=1)
 
         @staticmethod
         def clear_penalty(ocp, nlp, penalty_idx):
@@ -174,7 +174,7 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def add_to_penalty(ocp, _, val, penalty, target=None, **extra_param):
+        def add_to_penalty(ocp, _, val, penalty, target=None):
             """
             Adds an objective.
             :param val: Value to be optimized. (MX.sym from CasADi)
@@ -182,7 +182,7 @@ class ObjectiveFunction:
             :param weight: Weight of the objective. (float)
             :param quadratic: If True, value is squared (bool)
             """
-            ObjectiveFunction.add_to_penalty(ocp, None, val, penalty, dt=1, target=target)
+            ObjectiveFunction.add_to_penalty(ocp, None, val, penalty, dt=1)
 
         @staticmethod
         def clear_penalty(ocp, _, penalty_idx):
@@ -230,13 +230,13 @@ class ObjectiveFunction:
         ocp.J += casadi.dot(ocp.nlp[-1].X[-1] - ocp.nlp[0].X[0], ocp.nlp[-1].X[-1] - ocp.nlp[0].X[0]) * weight
 
     @staticmethod
-    def add_to_penalty(ocp, nlp, val, penalty, dt=0, target=None):
+    def add_to_penalty(ocp, nlp, val, penalty, dt=0):
         """
         Adds objective J to objective array nlp.J[penalty] or ocp.J[penalty] at index penalty.
         :param J: Objective. (dict of [val, target, weight, is_quadratic])
         :param penalty: Index of the objective. (integer)
         """
-        J = {"objective": penalty, "val": val, "target": target, "dt": dt}
+        J = {"objective": penalty, "val": val, "target": penalty.sliced_target, "dt": dt}
 
         if nlp:
             nlp.J[penalty.idx].append(J)
