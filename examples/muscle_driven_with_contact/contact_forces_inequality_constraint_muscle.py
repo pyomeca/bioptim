@@ -21,7 +21,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, direction, boundary):
+def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_bound):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -41,17 +41,17 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     constraints = ConstraintList()
     constraints.add(
         Constraint.CONTACT_FORCE,
-        direction=direction,
+        min_bound=min_bound,
+        max_bound=max_bound,
         instant=Instant.ALL,
         contact_force_idx=1,
-        boundary=boundary,
     )
     constraints.add(
         Constraint.CONTACT_FORCE,
-        direction=direction,
+        min_bound=min_bound,
+        max_bound=max_bound,
         instant=Instant.ALL,
         contact_force_idx=2,
-        boundary=boundary,
     )
 
     # Path constraint
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     t = 0.3
     ns = 10
     ocp = prepare_ocp(
-        model_path=model_path, phase_time=t, number_shooting_points=ns, direction="GREATER_THAN", boundary=50
+        model_path=model_path, phase_time=t, number_shooting_points=ns, min_bound=50, max_bound=np.inf,
     )
 
     # --- Solve the program --- #
