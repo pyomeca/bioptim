@@ -53,7 +53,7 @@ class AcadosInterface(SolverInterface):
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
-        f_expl = vertcat([0] * ocp.nlp[0].np, ocp.nlp[0].dynamics_func(x[ocp.nlp[0].np :, :], u, p))
+        f_expl = vertcat([0] * ocp.nlp[0].np, ocp.nlp[0].dynamics_func(x[ocp.nlp[0].np:, :], u, p))
         f_impl = x_dot - f_expl
 
         self.acados_model.f_impl_expr = f_impl
@@ -153,6 +153,9 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.cost.cost_type_e = cost_type
 
     def __set_costs(self, ocp):
+
+        if ocp.nb_phases != 1:
+            raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")
         # costs handling in self.acados_ocp
         self.y_ref = []
         self.y_ref_end = []
@@ -160,13 +163,11 @@ class AcadosInterface(SolverInterface):
         self.mayer_costs = SX()
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
+
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             raise RuntimeError("LINEAR_LS is not interfaced yet.")
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
-            if ocp.nb_phases != 1:
-                raise NotImplementedError("ACADOS with more than one phase is not implemented yet")
-
             for i in range(ocp.nb_phases):
                 for j, J in enumerate(ocp.nlp[i].J):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
