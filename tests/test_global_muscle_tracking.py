@@ -357,13 +357,13 @@ def test_muscle_activation_and_contacts_tracking():
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0, -0.75, 0.75]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.01785865, -0.01749107, -0.8,  0.8]), decimal=5)
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.01785865, -0.01749107, -0.8, 0.8]), decimal=5)
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0, 0.0, 0.0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.5199767, -0.535388, -1.49267023,  1.4926703]), decimal=5)
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.5199767, -0.535388, -1.49267023, 1.4926703]), decimal=5)
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([5.3773376, 127.6205162, -21.9933179,   1.3644034]), decimal=5)
-    np.testing.assert_almost_equal(tau[:, -1], np.array([57.203734, 72.3153286, -7.4076227,  1.2641681]), decimal=5)
+    np.testing.assert_almost_equal(tau[:, 0], np.array([5.3773376, 127.6205162, -21.9933179, 1.3644034]), decimal=5)
+    np.testing.assert_almost_equal(tau[:, -1], np.array([57.203734, 72.3153286, -7.4076227, 1.2641681]), decimal=5)
     np.testing.assert_almost_equal(mus_controls[:, 0], np.array([0.18722964]), decimal=5)
     np.testing.assert_almost_equal(mus_controls[:, -1], np.array([0.29591125]), decimal=5)
 

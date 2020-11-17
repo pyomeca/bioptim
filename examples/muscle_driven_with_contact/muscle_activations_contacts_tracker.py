@@ -91,7 +91,11 @@ if __name__ == "__main__":
 
     # Generate data using another optimization that will be feedback in as tracking data
     ocp_to_track = data_to_track.prepare_ocp(
-        model_path=model_path, phase_time=final_time, number_shooting_points=ns, min_bound=50, max_bound=np.inf,
+        model_path=model_path,
+        phase_time=final_time,
+        number_shooting_points=ns,
+        min_bound=50,
+        max_bound=np.inf,
     )
     sol_to_track = ocp_to_track.solve()
     states, controls = Data.get_data(ocp_to_track, sol_to_track)

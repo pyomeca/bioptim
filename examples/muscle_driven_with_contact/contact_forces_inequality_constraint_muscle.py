@@ -101,7 +101,11 @@ if __name__ == "__main__":
     t = 0.3
     ns = 10
     ocp = prepare_ocp(
-        model_path=model_path, phase_time=t, number_shooting_points=ns, min_bound=50, max_bound=np.inf,
+        model_path=model_path,
+        phase_time=t,
+        number_shooting_points=ns,
+        min_bound=50,
+        max_bound=np.inf,
     )
 
     # --- Solve the program --- #
