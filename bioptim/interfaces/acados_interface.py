@@ -218,13 +218,13 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]
             self.acados_ocp.dims.ny_e = self.acados_ocp.model.cost_y_expr_e.shape[0]
 
-            # To be cleaned
-            self.acados_ocp.cost.yref = np.zeros((self.W.shape[0],))
-            self.acados_ocp.cost.yref_e = np.zeros((self.W_e.shape[0],))
-
             # Set weight
             self.acados_ocp.cost.W = np.zeros((1, 1)) if self.W.shape == (0, 0) else self.W
             self.acados_ocp.cost.W_e = np.zeros((1, 1)) if self.W_e.shape == (0, 0) else self.W_e
+
+            # Set target shape
+            self.acados_ocp.cost.yref = np.zeros((self.acados_ocp.cost.W.shape[0],))
+            self.acados_ocp.cost.yref_e = np.zeros((self.acados_ocp.cost.W_e.shape[0],))
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
             raise RuntimeError("External is not interfaced yet, please use NONLINEAR_LS")
