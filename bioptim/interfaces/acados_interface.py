@@ -162,16 +162,6 @@ class AcadosInterface(SolverInterface):
         self.W_e = np.zeros((0, 0))
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             raise RuntimeError("LINEAR_LS is not interfaced yet.")
-            # set Lagrange terms
-            self.acados_ocp.cost.Vx = np.zeros((self.acados_ocp.dims.ny, self.acados_ocp.dims.nx))
-            self.acados_ocp.cost.Vx[: self.acados_ocp.dims.nx, :] = np.eye(self.acados_ocp.dims.nx)
-
-            Vu = np.zeros((self.acados_ocp.dims.ny, self.acados_ocp.dims.nu))
-            Vu[self.acados_ocp.dims.nx :, :] = np.eye(self.acados_ocp.dims.nu)
-            self.acados_ocp.cost.Vu = Vu
-
-            # set Mayer term
-            self.acados_ocp.cost.Vx_e = np.zeros((self.acados_ocp.dims.nx, self.acados_ocp.dims.nx))
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
             if ocp.nb_phases != 1:
