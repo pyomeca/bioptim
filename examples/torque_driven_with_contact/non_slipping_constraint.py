@@ -1,3 +1,4 @@
+import numpy as np
 import biorbd
 
 from bioptim import (
@@ -36,18 +37,16 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, mu):
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        Constraint.CONTACT_FORCE_INEQUALITY,
-        direction="GREATER_THAN",
+        Constraint.CONTACT_FORCE,
+        max_bound=np.inf,
         instant=Instant.ALL,
         contact_force_idx=1,
-        boundary=0,
     )
     constraints.add(
-        Constraint.CONTACT_FORCE_INEQUALITY,
-        direction="GREATER_THAN",
+        Constraint.CONTACT_FORCE,
+        max_bound=np.inf,
         instant=Instant.ALL,
         contact_force_idx=2,
-        boundary=0,
     )
     constraints.add(
         Constraint.NON_SLIPPING,

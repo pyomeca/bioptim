@@ -192,47 +192,32 @@ class Problem:
         )
 
     @staticmethod
-    def configure_q_qdot(nlp, as_states, as_controls):
+    def configure_q(nlp, as_states, as_controls):
         """
         Configures common settings for torque driven problems with and without contacts.
         :param nlp: An OptimalControlProgram class.
         """
         if nlp.mapping["q"] is None:
             nlp.mapping["q"] = BidirectionalMapping(Mapping(range(nlp.model.nbQ())), Mapping(range(nlp.model.nbQ())))
-        if nlp.mapping["q_dot"] is None:
-            nlp.mapping["q_dot"] = BidirectionalMapping(
-                Mapping(range(nlp.model.nbQdot())), Mapping(range(nlp.model.nbQdot()))
-            )
 
         dof_names = nlp.model.nameDof()
         q_mx = MX()
-        q_dot_mx = MX()
         q = nlp.CX()
-        q_dot = nlp.CX()
 
         for i in nlp.mapping["q"].reduce.map_idx:
             q = vertcat(q, nlp.CX.sym("Q_" + dof_names[i].to_string(), 1, 1))
-        for i in nlp.mapping["q_dot"].reduce.map_idx:
-            q_dot = vertcat(q_dot, nlp.CX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
         for i in nlp.mapping["q"].expand.map_idx:
             q_mx = vertcat(q_mx, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
-        for i in nlp.mapping["q_dot"].expand.map_idx:
-            q_dot_mx = vertcat(q_dot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
 
         nlp.shape["q"] = nlp.mapping["q"].reduce.len
-        nlp.shape["q_dot"] = nlp.mapping["q_dot"].reduce.len
 
         legend_q = ["q_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q"].reduce.map_idx]
-        legend_qdot = ["qdot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q_dot"].reduce.map_idx]
 
         nlp.q = q_mx
-        nlp.q_dot = q_dot_mx
         if as_states:
-            nlp.x = vertcat(nlp.x, q, q_dot)
+            nlp.x = vertcat(nlp.x, q)
             nlp.var_states["q"] = nlp.shape["q"]
-            nlp.var_states["q_dot"] = nlp.shape["q_dot"]
             q_bounds = nlp.x_bounds[: nlp.shape["q"]]
-            qdot_bounds = nlp.x_bounds[nlp.shape["q"] :]
 
             nlp.plot["q"] = CustomPlot(
                 lambda x, u, p: x[: nlp.shape["q"]],
@@ -240,6 +225,45 @@ class Problem:
                 legend=legend_q,
                 bounds=q_bounds,
             )
+
+        if as_controls:
+            nlp.u = vertcat(nlp.u, q)
+            nlp.var_controls["q"] = nlp.shape["q"]
+            # Add plot (and retrieving bounds if plots of bounds) if this problem is ever added
+
+        nlp.nx = nlp.x.rows()
+        nlp.nu = nlp.u.rows()
+
+    @staticmethod
+    def configure_qdot(nlp, as_states, as_controls):
+        """
+        Configures common settings for torque driven problems with and without contacts.
+        :param nlp: An OptimalControlProgram class.
+        """
+        if nlp.mapping["q_dot"] is None:
+            nlp.mapping["q_dot"] = BidirectionalMapping(
+                Mapping(range(nlp.model.nbQdot())), Mapping(range(nlp.model.nbQdot()))
+            )
+
+        dof_names = nlp.model.nameDof()
+        q_dot_mx = MX()
+        q_dot = nlp.CX()
+
+        for i in nlp.mapping["q_dot"].reduce.map_idx:
+            q_dot = vertcat(q_dot, nlp.CX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+        for i in nlp.mapping["q_dot"].expand.map_idx:
+            q_dot_mx = vertcat(q_dot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+
+        nlp.shape["q_dot"] = nlp.mapping["q_dot"].reduce.len
+
+        legend_qdot = ["qdot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q_dot"].reduce.map_idx]
+
+        nlp.q_dot = q_dot_mx
+        if as_states:
+            nlp.x = vertcat(nlp.x, q_dot)
+            nlp.var_states["q_dot"] = nlp.shape["q_dot"]
+            qdot_bounds = nlp.x_bounds[nlp.shape["q"] :]
+
             nlp.plot["q_dot"] = CustomPlot(
                 lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["q_dot"]],
                 plot_type=PlotType.INTEGRATED,
@@ -247,13 +271,21 @@ class Problem:
                 bounds=qdot_bounds,
             )
         if as_controls:
-            nlp.u = vertcat(nlp.u, q, q_dot)
-            nlp.var_controls["q"] = nlp.shape["q"]
+            nlp.u = vertcat(nlp.u, q_dot)
             nlp.var_controls["q_dot"] = nlp.shape["q_dot"]
             # Add plot (and retrieving bounds if plots of bounds) if this problem is ever added
 
         nlp.nx = nlp.x.rows()
         nlp.nu = nlp.u.rows()
+
+    @staticmethod
+    def configure_q_qdot(nlp, as_states, as_controls):
+        """
+        Configures common settings for torque driven problems with and without contacts.
+        :param nlp: An OptimalControlProgram class.
+        """
+        Problem.configure_q(nlp, as_states, as_controls)
+        Problem.configure_qdot(nlp, as_states, as_controls)
 
     @staticmethod
     def configure_tau(nlp, as_states, as_controls):

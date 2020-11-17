@@ -535,7 +535,7 @@ def test_track_marker_2D_pendulum():
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 3.15)
+    np.testing.assert_almost_equal(f[0, 0], 0)
 
     # Check constraints
     g = np.array(sol["g"])
