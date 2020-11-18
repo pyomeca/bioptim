@@ -1,5 +1,6 @@
 from enum import Enum
 from math import inf
+import inspect
 
 import numpy as np
 import biorbd
@@ -441,6 +442,25 @@ class PenaltyFunctionAbstract:
             parameters["penalty"] -> Index of the penalty (integer), parameters.weight -> Weight of the penalty
             (float)
             """
+            keywords = [
+                "phase",
+                "list_index",
+                "name",
+                "type",
+                "params",
+                "node",
+                "quadratic",
+                "index",
+                "target",
+                "sliced_target",
+                "min_bound",
+                "max_bound",
+                "custom_function",
+                "weight",
+            ]
+            for keyword in keywords:
+                if keyword in inspect.signature(penalty.custom_function).parameters:
+                    raise TypeError(f"{keyword} is a reserved word and cannot be used in a custom function signature")
 
             val = penalty.custom_function(ocp, nlp, t, x, u, p, **parameters)
             if isinstance(val, tuple):
