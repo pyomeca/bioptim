@@ -72,10 +72,7 @@ class Simulate:
                     raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
                 v_phase[offset + nlp.nx + nlp.nu : offset + 2 * nlp.nx + nlp.nu] = np.array(
-                    nlp.dynamics[idx_nodes](
-                        x0=x0,
-                        p=p,
-                    )["xf"]
+                    nlp.dynamics[idx_nodes](x0=x0, p=p,)["xf"]
                 ).squeeze()
 
                 offset += nlp.nx + nlp.nu

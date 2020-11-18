@@ -70,6 +70,7 @@ def RK4(ode, ode_opt):
         "integrator", [x_sym, u_sym, param_sym], dxdt(h, x_sym, u_sym, param_sym), ["x0", "p", "params"], ["xf", "xall"]
     )
 
+
 def IRK(ode, ode_opt):
     """
     Numerical integration using implicit Runge-Kutta method.
@@ -89,7 +90,7 @@ def IRK(ode, ode_opt):
     fun = ode["ode"]
     model = ode_opt["model"]
     step_time = t_span[1] - t_span[0]
-    h = step_time # Length between two nodes
+    h = step_time  # Length between two nodes
     control_type = ode_opt["control_type"]
 
     def get_u(u, dt_norm):
@@ -115,7 +116,7 @@ def IRK(ode, ode_opt):
             nb_dof += model.segment(j).nbDof()
 
         # Choose collocation points
-        time_points = [0] + collocation_points(degree, 'legendre')
+        time_points = [0] + collocation_points(degree, "legendre")
 
         # Coefficients of the collocation equation
         C = CX.zeros((degree + 1, degree + 1))
@@ -124,7 +125,7 @@ def IRK(ode, ode_opt):
         D = CX.zeros(degree + 1)
 
         # Dimensionless time inside one control interval
-        time_control_interval = CX.sym('time_control_interval')
+        time_control_interval = CX.sym("time_control_interval")
 
         # For all collocation points
         for j in range(degree + 1):
@@ -135,18 +136,18 @@ def IRK(ode, ode_opt):
                     L *= (time_control_interval - time_points[r]) / (time_points[j] - time_points[r])
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-            lfcn = Function('lfcn', [time_control_interval], [L])
+            lfcn = Function("lfcn", [time_control_interval], [L])
             D[j] = lfcn(1.0)
 
             # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
-            tfcn = Function('tfcn', [time_control_interval], [tangent(L, time_control_interval)])
+            tfcn = Function("tfcn", [time_control_interval], [tangent(L, time_control_interval)])
             for r in range(degree + 1):
                 C[j, r] = tfcn(time_points[r])
 
         # Total number of variables for one finite element
-        X0 = states # CX.sym('X0', states.shape[0])
-        U = controls # CX.sym('U', controls.shape[0])
-        V = CX.sym('V', degree * nx)
+        X0 = states  # CX.sym('X0', states.shape[0])
+        U = controls  # CX.sym('U', controls.shape[0])
+        V = CX.sym("V", degree * nx)
 
         # Get the state at each collocation point
         X = [X0] + vertsplit(V, [r * nx for r in range(degree + 1)])
@@ -168,34 +169,32 @@ def IRK(ode, ode_opt):
         V_eq = vertcat(*V_eq)
 
         # Root-finding function, implicitly defines V as a function of X0 and P
-        vfcn = Function('vfcn', [V, X0, U], [V_eq])
+        vfcn = Function("vfcn", [V, X0, U], [V_eq])
 
         # Convert to SX to decrease overhead
         vfcn_sx = vfcn.expand()
 
         # Create a implicit function instance to solve the system of equations
-        ifcn = rootfinder('ifcn', 'newton', vfcn_sx)
+        ifcn = rootfinder("ifcn", "newton", vfcn_sx)
         V = ifcn(CX(), X0, U)
-        X = [X0 if r == 0 else V[(r - 1) * nx:r * nx] for r in range(degree + 1)]
+        X = [X0 if r == 0 else V[(r - 1) * nx : r * nx] for r in range(degree + 1)]
 
         # Get an expression for the state at the end of the finie element
-        XF = CX.zeros(nx, degree+1) # 0 #
+        XF = CX.zeros(nx, degree + 1)  # 0 #
         for r in range(degree + 1):
             XF[:, r] = XF[:, r - 1] + D[r] * X[r]
 
             # Dont know if its better to renormalize at each collocation point or only the last one
             for j in range(model.nbQuat()):
                 quaternion = vertcat(
-                    XF[quat_idx[j][3], r], XF[quat_idx[j][0], r], XF[quat_idx[j][1], r],
-                    XF[quat_idx[j][2], r]
+                    XF[quat_idx[j][3], r], XF[quat_idx[j][0], r], XF[quat_idx[j][1], r], XF[quat_idx[j][2], r]
                 )
                 quaternion /= norm_fro(quaternion)
-                XF[quat_idx[j][0]: quat_idx[j][2] + 1, r] = quaternion[1:4]
+                XF[quat_idx[j][0] : quat_idx[j][2] + 1, r] = quaternion[1:4]
                 XF[quat_idx[j][3], r] = quaternion[0]
 
-        return XF[:,-1], XF
+        return XF[:, -1], XF
 
     return Function(
         "integrator", [x_sym, u_sym, param_sym], dxdt(h, x_sym, u_sym, param_sym), ["x0", "p", "params"], ["xf", "xall"]
     )
-
