@@ -8,11 +8,12 @@ import pytest
 import numpy as np
 import biorbd
 
-from bioptim import Data
+from bioptim import Data, OdeSolver
 from .utils import TestUtils
 
 
-def test_muscle_activations_and_states_tracking():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_muscle_activations_and_states_tracking(ode_solver):
     # Load muscle_activations_tracker
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -44,6 +45,7 @@ def test_muscle_activations_and_states_tracking():
         x_ref[: biorbd_model.nbQ(), :],
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -84,7 +86,8 @@ def test_muscle_activations_and_states_tracking():
     TestUtils.simulate(sol, ocp)
 
 
-def test_muscle_activation_no_residual_torque_and_markers_tracking():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     # Load muscle_activations_tracker
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -116,6 +119,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking():
         x_ref[: biorbd_model.nbQ(), :],
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -154,7 +158,8 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking():
     TestUtils.simulate(sol, ocp)
 
 
-def test_muscle_excitation_with_residual_torque_and_markers_tracking():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver):
     # Load muscle_excitations_tracker
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -185,6 +190,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking():
         x_ref[: biorbd_model.nbQ(), :].T,
         use_residual_torque=True,
         kin_data_to_track="markers",
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -239,7 +245,8 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking():
     #     TestUtils.simulate(sol, ocp)
 
 
-def test_muscle_excitation_no_residual_torque_and_markers_tracking():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     # Load muscle_excitations_tracker
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -270,6 +277,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking():
         x_ref[: biorbd_model.nbQ(), :].T,
         use_residual_torque=False,
         kin_data_to_track="markers",
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -315,7 +323,8 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking():
     TestUtils.simulate(sol, ocp)
 
 
-def test_muscle_activation_and_contacts_tracking():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_muscle_activation_and_contacts_tracking(ode_solver):
     # Load muscle_activations_contact_tracker
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -392,7 +401,7 @@ def test_muscle_activation_and_contacts_tracking():
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = muscle_activations_contact_tracker.prepare_ocp(
-        model_path, final_time, nb_shooting, muscle_activations_ref[:, :-1], contact_forces_ref
+        model_path, final_time, nb_shooting, muscle_activations_ref[:, :-1], contact_forces_ref, ode_solver=ode_solver,
     )
     sol = ocp.solve()
 

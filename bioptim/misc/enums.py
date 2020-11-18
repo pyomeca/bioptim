@@ -25,9 +25,9 @@ class OdeSolver(Enum):
 
     COLLOCATION = 0
     RK = 1
-    CVODES = 2
-    NO_SOLVER = 3
-    IRK = 4
+    IRK = 2
+    CVODES = 3
+    NO_SOLVER = 4
 
 
 class Instant(Enum):

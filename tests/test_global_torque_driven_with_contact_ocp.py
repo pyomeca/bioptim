@@ -11,11 +11,12 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from bioptim import Data
+from bioptim import Data, OdeSolver
 from .utils import TestUtils
 
 
-def test_maximize_predicted_height_CoM():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_maximize_predicted_height_CoM(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "maximize_predicted_height_CoM",
@@ -29,6 +30,7 @@ def test_maximize_predicted_height_CoM():
         phase_time=0.5,
         number_shooting_points=20,
         use_actuators=False,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -60,7 +62,8 @@ def test_maximize_predicted_height_CoM():
     TestUtils.save_and_load(sol, ocp, False)
 
 
-def test_maximize_predicted_height_CoM_with_actuators():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "maximize_predicted_height_CoM",
@@ -74,6 +77,7 @@ def test_maximize_predicted_height_CoM_with_actuators():
         phase_time=0.5,
         number_shooting_points=20,
         use_actuators=True,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -107,7 +111,8 @@ def test_maximize_predicted_height_CoM_with_actuators():
     TestUtils.save_and_load(sol, ocp, False)
 
 
-def test_contact_forces_inequality_GREATER_THAN_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "contact_forces_inequality_constraint",
@@ -123,6 +128,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint():
         number_shooting_points=10,
         direction="GREATER_THAN",
         boundary=boundary,
+        ode_solver=ode_solver
     )
     sol = ocp.solve()
 
@@ -183,7 +189,8 @@ def test_contact_forces_inequality_GREATER_THAN_constraint():
     TestUtils.simulate(sol, ocp)
 
 
-def test_contact_forces_inequality_LESSER_THAN_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "contact_forces_inequality_constraint",
@@ -199,6 +206,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint():
         number_shooting_points=10,
         direction="LESSER_THAN",
         boundary=boundary,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -261,7 +269,8 @@ def test_contact_forces_inequality_LESSER_THAN_constraint():
     TestUtils.simulate(sol, ocp)
 
 
-def test_non_slipping_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_non_slipping_constraint(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "non_slipping_constraint",
@@ -275,6 +284,7 @@ def test_non_slipping_constraint():
         phase_time=0.6,
         number_shooting_points=10,
         mu=0.005,
+        ode_solver=ode_solver
     )
     sol = ocp.solve()
 

@@ -21,11 +21,13 @@ from bioptim import (
     ObjectiveList,
     Objective,
     OptimalControlProgram,
+    OdeSolver,
 )
 from .utils import TestUtils
 
 
-def test_pendulum_min_time_mayer():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_pendulum_min_time_mayer(ode_solver):
     # Load pendulum_min_time_Mayer
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -38,6 +40,7 @@ def test_pendulum_min_time_mayer():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         number_shooting_points=10,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -75,7 +78,8 @@ def test_pendulum_min_time_mayer():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_pendulum_min_time_lagrange():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_pendulum_min_time_lagrange(ode_solver):
     # Load pendulum_min_time_Lagrange
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -88,6 +92,7 @@ def test_pendulum_min_time_lagrange():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         number_shooting_points=10,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -125,7 +130,8 @@ def test_pendulum_min_time_lagrange():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_time_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_time_constraint(ode_solver):
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -140,6 +146,7 @@ def test_time_constraint():
         number_shooting_points=10,
         time_min=0.6,
         time_max=1,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -177,7 +184,8 @@ def test_time_constraint():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_monophase_time_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_monophase_time_constraint(ode_solver):
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -192,6 +200,7 @@ def test_monophase_time_constraint():
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
         number_shooting_points=(20,),
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -229,7 +238,8 @@ def test_monophase_time_constraint():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_multiphase_time_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_multiphase_time_constraint(ode_solver):
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -244,6 +254,7 @@ def test_multiphase_time_constraint():
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
         number_shooting_points=(20, 30, 20),
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 

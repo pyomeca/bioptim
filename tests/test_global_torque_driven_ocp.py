@@ -62,7 +62,8 @@ def test_align_markers(ode_solver):
     TestUtils.simulate(sol, ocp)
 
 
-def test_align_markers_changing_constraints():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_align_markers_changing_constraints(ode_solver):
     # Load align_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -75,6 +76,7 @@ def test_align_markers_changing_constraints():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
         final_time=2,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -152,7 +154,8 @@ def test_align_markers_changing_constraints():
     TestUtils.simulate(sol, ocp)
 
 
-def test_align_markers_with_actuators():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_align_markers_with_actuators(ode_solver):
     # Load align_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -166,6 +169,7 @@ def test_align_markers_with_actuators():
         number_shooting_points=30,
         final_time=2,
         use_actuators=True,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -360,7 +364,8 @@ def test_multiphase_align_markers(ode_solver):
         TestUtils.simulate(sol, ocp)
 
 
-def test_external_forces():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_external_forces(ode_solver):
     # Load external_forces
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -370,7 +375,7 @@ def test_external_forces():
     spec.loader.exec_module(external_forces)
 
     ocp = external_forces.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube_with_forces.bioMod",
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube_with_forces.bioMod", ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -409,7 +414,8 @@ def test_external_forces():
     TestUtils.simulate(sol, ocp)
 
 
-def test_track_marker_2D_pendulum():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_track_marker_2D_pendulum(ode_solver):
     # Load muscle_activations_contact_tracker
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -529,7 +535,7 @@ def test_track_marker_2D_pendulum():
         ]
     )
 
-    ocp = track_markers_2D_pendulum.prepare_ocp(biorbd_model, final_time, nb_shooting, markers_ref, tau_ref)
+    ocp = track_markers_2D_pendulum.prepare_ocp(biorbd_model, final_time, nb_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check objective function value
@@ -565,7 +571,8 @@ def test_track_marker_2D_pendulum():
     TestUtils.simulate(sol, ocp)
 
 
-def test_trampo_quaternions():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_trampo_quaternions(ode_solver):
     # Load trampo_quaternion
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -579,7 +586,7 @@ def test_trampo_quaternions():
     final_time = 0.25
     nb_shooting = 5
 
-    ocp = trampo_quaternions.prepare_ocp(model_path, nb_shooting, final_time)
+    ocp = trampo_quaternions.prepare_ocp(model_path, nb_shooting, final_time, ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check objective function value

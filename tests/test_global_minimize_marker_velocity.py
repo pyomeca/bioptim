@@ -11,7 +11,8 @@ from bioptim import Data, OdeSolver, ControlType
 from .utils import TestUtils
 
 
-def test_align_and_minimize_marker_displacement_global():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_align_and_minimize_marker_displacement_global(ode_solver):
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -28,6 +29,7 @@ def test_align_and_minimize_marker_displacement_global():
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=False,
         control_type=ControlType.CONSTANT,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -65,8 +67,8 @@ def test_align_and_minimize_marker_displacement_global():
     # simulate
     TestUtils.simulate(sol, ocp)
 
-
-def test_align_and_minimize_marker_displacement_RT():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_align_and_minimize_marker_displacement_RT(ode_solver):
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -83,6 +85,7 @@ def test_align_and_minimize_marker_displacement_RT():
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=True,
         control_type=ControlType.CONSTANT,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -121,7 +124,8 @@ def test_align_and_minimize_marker_displacement_RT():
     TestUtils.simulate(sol, ocp)
 
 
-def test_align_and_minimize_marker_velocity():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_align_and_minimize_marker_velocity(ode_solver):
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -138,6 +142,7 @@ def test_align_and_minimize_marker_velocity():
         marker_velocity_or_displacement="velo",
         marker_in_first_coordinates_system=True,
         control_type=ControlType.CONSTANT,
+        ode_Solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -172,7 +177,8 @@ def test_align_and_minimize_marker_velocity():
     TestUtils.simulate(sol, ocp)
 
 
-def test_align_and_minimize_marker_velocity_linear_controls():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -189,6 +195,7 @@ def test_align_and_minimize_marker_velocity_linear_controls():
         marker_velocity_or_displacement="velo",
         marker_in_first_coordinates_system=True,
         control_type=ControlType.LINEAR_CONTINUOUS,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 

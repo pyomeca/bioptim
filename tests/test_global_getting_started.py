@@ -8,13 +8,14 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from bioptim import Data, InterpolationType
+from bioptim import Data, InterpolationType, OdeSolver
 from .utils import TestUtils
 
 
 @pytest.mark.parametrize("nb_threads", [1, 2])
 @pytest.mark.parametrize("use_SX", [False, True])
-def test_pendulum(nb_threads, use_SX):
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_pendulum(nb_threads, use_SX, ode_solver):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -29,6 +30,7 @@ def test_pendulum(nb_threads, use_SX):
         number_shooting_points=10,
         nb_threads=nb_threads,
         use_SX=use_SX,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -65,7 +67,8 @@ def test_pendulum(nb_threads, use_SX):
     TestUtils.simulate(sol, ocp)
 
 
-def test_custom_constraint_align_markers():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_custom_constraint_align_markers(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "custom_constraint", str(PROJECT_FOLDER) + "/examples/getting_started/custom_constraint.py"
@@ -73,7 +76,8 @@ def test_custom_constraint_align_markers():
     custom_constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(custom_constraint)
 
-    ocp = custom_constraint.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod")
+    ocp = custom_constraint.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+                                        ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check objective function value
@@ -102,7 +106,8 @@ def test_custom_constraint_align_markers():
 
 
 @pytest.mark.parametrize("interpolation", InterpolationType)
-def test_initial_guesses(interpolation):
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_initial_guesses(interpolation, ode_solver):
     #  Load initial_guess
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -117,6 +122,7 @@ def test_initial_guesses(interpolation):
         final_time=1,
         number_shooting_points=5,
         initial_guess=interpolation,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -152,7 +158,8 @@ def test_initial_guesses(interpolation):
         TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_cyclic_objective():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_cyclic_objective(ode_solver):
     #  Load initial_guess
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -167,6 +174,7 @@ def test_cyclic_objective():
         final_time=1,
         number_shooting_points=10,
         loop_from_constraint=False,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -201,7 +209,8 @@ def test_cyclic_objective():
     TestUtils.simulate(sol, ocp)
 
 
-def test_cyclic_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_cyclic_constraint(ode_solver):
     #  Load initial_guess
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -216,6 +225,7 @@ def test_cyclic_constraint():
         final_time=1,
         number_shooting_points=10,
         loop_from_constraint=True,
+        ode_Solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -250,7 +260,8 @@ def test_cyclic_constraint():
     TestUtils.simulate(sol, ocp)
 
 
-def test_state_transitions():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_state_transitions(ode_solver):
     # Load state_transitions
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -259,7 +270,7 @@ def test_state_transitions():
     state_transitions = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(state_transitions)
 
-    ocp = state_transitions.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod")
+    ocp = state_transitions.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check objective function value
@@ -301,7 +312,8 @@ def test_state_transitions():
         TestUtils.simulate(sol, ocp)
 
 
-def test_parameter_optimization():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_parameter_optimization(ode_solver):
     # Load phase_transitions
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -317,6 +329,7 @@ def test_parameter_optimization():
         min_g=-10,
         max_g=-6,
         target_g=-8,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -360,12 +373,12 @@ def test_parameter_optimization():
 
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])
-def test_custom_problem_type_and_dynamics(problem_type_custom):
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "custom_problem_type_and_dynamics",
-        str(PROJECT_FOLDER) + "/examples/getting_started/custom_dynamics.py",
+        "custom_problem_type_and_dynamics", str(PROJECT_FOLDER) + "/examples/getting_started/custom_dynamics.py",
     )
     pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum)
@@ -373,6 +386,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom):
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
         problem_type_custom=problem_type_custom,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 

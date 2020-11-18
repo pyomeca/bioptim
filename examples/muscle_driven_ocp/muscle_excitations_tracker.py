@@ -19,6 +19,7 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuessList,
+    OdeSolver,
 )
 
 
@@ -37,12 +38,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     symbolic_parameters = MX.sym("u", 0, 0)
     nlp = NonLinearProgram(
         model=biorbd_model,
-        shape={
-            "q": nb_q,
-            "q_dot": nb_qdot,
-            "tau": nb_tau,
-            "muscle": nb_mus,
-        },
+        shape={"q": nb_q, "q_dot": nb_qdot, "tau": nb_tau, "muscle": nb_mus,},
         mapping={
             "q": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
             "q_dot": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
@@ -108,6 +104,7 @@ def prepare_ocp(
     q_ref,
     use_residual_torque,
     kin_data_to_track="markers",
+    ode_solver=OdeSolver.RK,
 ):
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -168,15 +165,7 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model,
-        dynamics,
-        nb_shooting,
-        final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        biorbd_model, dynamics, nb_shooting, final_time, x_init, u_init, x_bounds, u_bounds, objective_functions, ode_solver=ode_solver
     )
 
 

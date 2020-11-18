@@ -12,6 +12,7 @@ from bioptim import (
     InitialGuessList,
     ShowResult,
     InterpolationType,
+    OdeSolver,
 )
 
 
@@ -33,7 +34,7 @@ def eul2quat(eul):
     return np.array([w, x, y, z])
 
 
-def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
+def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -92,17 +93,14 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
         x_bounds,
         u_bounds,
         objective_functions,
+        ode_solver=ode_solver,
     )
 
 
 if __name__ == "__main__":
 
     # changer le path quand ce sera pret
-    ocp = prepare_ocp(
-        "TruncAnd2Arm_Quaternion.bioMod",
-        number_shooting_points=5,
-        final_time=0.25,
-    )
+    ocp = prepare_ocp("TruncAnd2Arm_Quaternion.bioMod", number_shooting_points=5, final_time=0.25,)
     sol = ocp.solve()
     print("\n")
 
