@@ -12,7 +12,7 @@ from bioptim import Data, OdeSolver, ConstraintList, Constraint, Instant
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_align_markers(ode_solver):
     # Load align_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -200,7 +200,7 @@ def test_align_markers_with_actuators():
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_multiphase_align_markers(ode_solver):
     # Load multiphase_align_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -569,8 +569,7 @@ def test_trampo_quaternions():
     # Load trampo_quaternion
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "trampo_quaternions",
-        str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/trampo_quaternions.py",
+        "trampo_quaternions", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/trampo_quaternions.py",
     )
     trampo_quaternions = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(trampo_quaternions)
