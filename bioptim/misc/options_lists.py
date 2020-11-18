@@ -1,7 +1,7 @@
 class OptionGeneric:
-    def __init__(self, phase=-1, option_index=-1, name=None, type=None, **params):
+    def __init__(self, phase=-1, list_index=-1, name=None, type=None, **params):
         self.phase = phase
-        self.option_index = option_index
+        self.list_index = list_index
 
         self.name = name
         self.type = type
@@ -38,27 +38,27 @@ class OptionList:
     def __getitem__(self, item):
         return self.options[item]
 
-    def _add(self, option_type=OptionGeneric, phase=0, option_index=-1, **extra_arguments):
-        option_index = self.__prepare_option_list(phase, option_index)
-        self.options[phase][option_index] = option_type(phase=phase, option_index=option_index, **extra_arguments)
+    def _add(self, option_type=OptionGeneric, phase=0, list_index=-1, **extra_arguments):
+        list_index = self.__prepare_option_list(phase, list_index)
+        self.options[phase][list_index] = option_type(phase=phase, list_index=list_index, **extra_arguments)
 
     def copy(self, option):
-        self.__prepare_option_list(option.phase, option.option_index)
-        self.options[option.phase][option.option_index] = option
+        self.__prepare_option_list(option.phase, option.list_index)
+        self.options[option.phase][option.list_index] = option
 
-    def __prepare_option_list(self, phase, option_index):
+    def __prepare_option_list(self, phase, list_index):
         for i in range(len(self.options), phase + 1):
             self.options.append([])
-        if option_index == -1:
+        if list_index == -1:
             for i, opt in enumerate(self.options[phase]):
                 if not opt:
-                    option_index = i
+                    list_index = i
                     break
             else:
-                option_index = len(self.options[phase])
-        for i in range(len(self.options[phase]), option_index + 1):
+                list_index = len(self.options[phase])
+        for i in range(len(self.options[phase]), list_index + 1):
             self.options[phase].append(None)
-        return option_index
+        return list_index
 
     def __bool__(self):
         return len(self) > 0
@@ -72,7 +72,7 @@ class UniquePerPhaseOptionList(OptionList):
     def _add(self, phase=-1, **extra_arguments):
         if phase == -1:
             phase = len(self)
-        super(UniquePerPhaseOptionList, self)._add(phase=phase, option_index=0, **extra_arguments)
+        super(UniquePerPhaseOptionList, self)._add(phase=phase, list_index=0, **extra_arguments)
 
     def __getitem__(self, item):
         return super(UniquePerPhaseOptionList, self).__getitem__(item)[0]

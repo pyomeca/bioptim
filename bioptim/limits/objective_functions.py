@@ -122,7 +122,7 @@ class ObjectiveFunction:
         def inter_phase_continuity(ocp, pt):
             # Dynamics must be respected between phases
             penalty = OptionGeneric()
-            penalty.option_index = -1
+            penalty.list_index = -1
             penalty.quadratic = pt.quadratic
             penalty.weight = pt.weight
             penalty.sliced_target = None
@@ -238,9 +238,9 @@ class ObjectiveFunction:
         J = {"objective": penalty, "val": val, "target": penalty.sliced_target, "dt": dt}
 
         if nlp:
-            nlp.J[penalty.option_index].append(J)
+            nlp.J[penalty.list_index].append(J)
         else:
-            ocp.J[penalty.option_index].append(J)
+            ocp.J[penalty.list_index].append(J)
 
     @staticmethod
     def clear_penalty(ocp, nlp, penalty):
@@ -253,19 +253,19 @@ class ObjectiveFunction:
         else:
             J_to_add_to = ocp.J
 
-        if penalty.option_index < 0:
+        if penalty.list_index < 0:
             # Add a new one
             for i, j in enumerate(J_to_add_to):
                 if not j:
-                    penalty.option_index = i
+                    penalty.list_index = i
                     return
             else:
                 J_to_add_to.append([])
-                penalty.option_index = len(J_to_add_to) - 1
+                penalty.list_index = len(J_to_add_to) - 1
         else:
-            while penalty.option_index >= len(J_to_add_to):
+            while penalty.list_index >= len(J_to_add_to):
                 J_to_add_to.append([])
-            J_to_add_to[penalty.option_index] = []
+            J_to_add_to[penalty.list_index] = []
 
 
 class Objective:

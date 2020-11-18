@@ -38,17 +38,9 @@ class ParameterList(OptionList):
                     "function, initial_guess, bounds and size are mandatory elements to declare a parameter"
                 )
 
-            super(ParameterList, self)._add(
-                option_type=ParameterOption,
-                phase=phase,
-                function=function,
-                name=parameter_name,
-                initial_guess=initial_guess,
-                bounds=bounds,
-                size=size,
-                penalty_list=penalty_list,
-                **extra_arguments
-            )
+            super(ParameterList, self)._add(option_type=ParameterOption, phase=phase, function=function,
+                                            name=parameter_name, initial_guess=initial_guess, bounds=bounds, size=size,
+                                            penalty_list=penalty_list, **extra_arguments)
 
 
 class Parameters:

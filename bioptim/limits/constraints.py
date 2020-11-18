@@ -128,7 +128,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         # Dynamics must be sound within phases
         penalty = ConstraintOption([])
         for i, nlp in enumerate(ocp.nlp):
-            penalty.option_index = -1
+            penalty.list_index = -1
             ConstraintFunction.clear_penalty(ocp, None, penalty)
             # Loop over shooting nodes or use parallelization
             if ocp.nb_threads > 1:
@@ -159,7 +159,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         penalty = OptionGeneric()
         penalty.min_bound = 0
         penalty.max_bound = 0
-        penalty.option_index = -1
+        penalty.list_index = -1
         pt.base.clear_penalty(ocp, None, penalty)
         val = pt.type.value[0](ocp, pt)
         pt.base.add_to_penalty(ocp, None, val, penalty)
@@ -178,11 +178,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             g_bounds.concatenate(Bounds(penalty.min_bound, penalty.max_bound, interpolation=InterpolationType.CONSTANT))
 
         if nlp:
-            nlp.g[penalty.option_index].append(val)
-            nlp.g_bounds[penalty.option_index].append(g_bounds)
+            nlp.g[penalty.list_index].append(val)
+            nlp.g_bounds[penalty.list_index].append(g_bounds)
         else:
-            ocp.g[penalty.option_index].append(val)
-            ocp.g_bounds[penalty.option_index].append(g_bounds)
+            ocp.g[penalty.list_index].append(val)
+            ocp.g_bounds[penalty.list_index].append(g_bounds)
 
     @staticmethod
     def clear_penalty(ocp, nlp, penalty):
@@ -199,21 +199,21 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             g_to_add_to = ocp.g
             g_bounds_to_add_to = ocp.g_bounds
 
-        if penalty.option_index < 0:
+        if penalty.list_index < 0:
             for i, j in enumerate(g_to_add_to):
                 if not j:
-                    penalty.option_index = i
+                    penalty.list_index = i
                     return
             else:
                 g_to_add_to.append([])
                 g_bounds_to_add_to.append([])
-                penalty.option_index = len(g_to_add_to) - 1
+                penalty.list_index = len(g_to_add_to) - 1
         else:
-            while penalty.option_index >= len(g_to_add_to):
+            while penalty.list_index >= len(g_to_add_to):
                 g_to_add_to.append([])
                 g_bounds_to_add_to.append([])
-            g_to_add_to[penalty.option_index] = []
-            g_bounds_to_add_to[penalty.option_index] = []
+            g_to_add_to[penalty.list_index] = []
+            g_bounds_to_add_to[penalty.list_index] = []
 
     @staticmethod
     def _parameter_modifier(constraint_function, parameters):

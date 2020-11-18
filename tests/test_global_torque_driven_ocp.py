@@ -81,7 +81,7 @@ def test_align_markers_changing_constraints():
     # Add a new constraint and reoptimize
     new_constraints = ConstraintList()
     new_constraints.add(
-        Constraint.ALIGN_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=2, option_index=2
+        Constraint.ALIGN_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=2, list_index=2
     )
     ocp.update_constraints(new_constraints)
     sol = ocp.solve()
@@ -119,10 +119,10 @@ def test_align_markers_changing_constraints():
     # Replace constraints and reoptimize
     new_constraints = ConstraintList()
     new_constraints.add(
-        Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=2, option_index=0
+        Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=2, list_index=0
     )
     new_constraints.add(
-        Constraint.ALIGN_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=3, option_index=2
+        Constraint.ALIGN_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=3, list_index=2
     )
     ocp.update_constraints(new_constraints)
     sol = ocp.solve()
