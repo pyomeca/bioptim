@@ -33,9 +33,8 @@ class ObjectiveOption(PenaltyOption):
                     "It should either be Objective.Mayer or Objective.Lagrange"
                 )
 
-        super(ObjectiveOption, self).__init__(penalty=objective, phase=phase, **params)
+        super(ObjectiveOption, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
         self.weight = weight
-        self.custom_function = custom_function
 
 
 class ObjectiveList(OptionList):

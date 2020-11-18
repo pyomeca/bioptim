@@ -11,7 +11,17 @@ from ..misc.options_lists import OptionGeneric
 
 
 class PenaltyOption(OptionGeneric):
-    def __init__(self, penalty, phase=0, node=Node.DEFAULT, target=None, quadratic=None, index=None, **params):
+    def __init__(
+        self,
+        penalty,
+        phase=0,
+        node=Node.DEFAULT,
+        target=None,
+        quadratic=None,
+        index=None,
+        custom_function=None,
+        **params,
+    ):
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
         self.node = node
         self.quadratic = quadratic
@@ -19,6 +29,8 @@ class PenaltyOption(OptionGeneric):
         self.index = index
         self.target = target
         self.sliced_target = None  # This one is the sliced node from the target. This is what is actually tracked
+
+        self.custom_function = custom_function
 
 
 class PenaltyFunctionAbstract:

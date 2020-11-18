@@ -16,11 +16,11 @@ class ConstraintOption(PenaltyOption):
             custom_function = constraint
             constraint = Constraint.CUSTOM
 
-        super(ConstraintOption, self).__init__(penalty=constraint, phase=phase, **params)
-        self.custom_function = custom_function
+        super(ConstraintOption, self).__init__(
+            penalty=constraint, phase=phase, custom_function=custom_function, **params
+        )
         self.min_bound = min_bound
         self.max_bound = max_bound
-        self.custom_function = custom_function
 
 
 class ConstraintList(OptionList):
