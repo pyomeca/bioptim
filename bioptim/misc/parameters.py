@@ -1,5 +1,5 @@
 from casadi import vertcat
-import numpy as np
+
 from .enums import Instant
 from ..limits.constraints import Bounds
 from ..limits.path_conditions import InitialGuess
@@ -8,13 +8,14 @@ from .options_lists import OptionList, OptionGeneric
 
 
 class ParameterOption(OptionGeneric):
-    def __init__(self, function=None, initial_guess=None, bounds=None, size=None, penalty_list=None, **params):
+    def __init__(self, function=None, initial_guess=None, bounds=None, quadratic=True, size=None, penalty_list=None, **params):
         super(ParameterOption, self).__init__(**params)
         self.function = function
         self.initial_guess = initial_guess
         self.bounds = bounds
         self.size = size
         self.penalty_list = penalty_list
+        self.quadratic = quadratic
 
 
 class ParameterList(OptionList):

@@ -7,6 +7,17 @@ from casadi import vertcat, horzcat
 
 from ..misc.enums import Instant, Axe, PlotType, ControlType
 from ..misc.mapping import Mapping
+from ..misc.options_lists import OptionGeneric
+
+
+class PenaltyOption(OptionGeneric):
+    def __init__(self, penalty, phase=0, instant=Instant.DEFAULT, target=None, quadratic=None, **params):
+        super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
+        self.instant = instant
+        self.quadratic = quadratic
+
+        self.target = target
+        self.sliced_target = None  # This one is the sliced node from the target. This is what is actually tracked
 
 
 class PenaltyFunctionAbstract:

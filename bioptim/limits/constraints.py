@@ -4,21 +4,19 @@ from enum import Enum
 from casadi import sum1, horzcat
 
 from .path_conditions import Bounds
-from .penalty import PenaltyType, PenaltyFunctionAbstract
+from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
 from ..misc.enums import Instant, InterpolationType, OdeSolver, ControlType
 from ..misc.options_lists import OptionList, OptionGeneric
 
 
-class ConstraintOption(OptionGeneric):
-    def __init__(self, constraint, instant=Instant.NONE, min_bound=None, max_bound=None, phase=0, **params):
+class ConstraintOption(PenaltyOption):
+    def __init__(self, constraint, min_bound=None, max_bound=None, phase=0, **params):
         custom_function = None
         if not isinstance(constraint, Constraint):
             custom_function = constraint
             constraint = Constraint.CUSTOM
 
-        super(ConstraintOption, self).__init__(phase=phase, type=constraint, **params)
-        self.instant = instant
-        self.quadratic = None
+        super(ConstraintOption, self).__init__(penalty=constraint, phase=phase, **params)
         self.custom_function = custom_function
         self.min_bound = min_bound
         self.max_bound = max_bound
@@ -159,7 +157,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     @staticmethod
     def inter_phase_continuity(ocp, pt):
         # Dynamics must be respected between phases
-        penalty = ConstraintOption([])
+        penalty = OptionGeneric()
+        penalty.min_bound = 0
+        penalty.max_bound = 0
         penalty.option_index = -1
         pt.base.clear_penalty(ocp, None, penalty)
         val = pt.type.value[0](ocp, pt)

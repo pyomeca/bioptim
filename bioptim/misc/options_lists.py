@@ -1,5 +1,5 @@
 class OptionGeneric:
-    def __init__(self, phase=-1, option_index=-1, name=None, type=None, target=None, **params):
+    def __init__(self, phase=-1, option_index=-1, name=None, type=None, **params):
         self.phase = phase
         self.option_index = option_index
 
@@ -7,8 +7,6 @@ class OptionGeneric:
         self.type = type
 
         self.params = params
-        self.target = target
-        self.sliced_target = None  # This one is the sliced node from the target. This is what is actually tracked
 
     @property
     def shape(self):

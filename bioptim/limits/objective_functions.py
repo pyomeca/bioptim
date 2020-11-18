@@ -4,14 +4,14 @@ import numpy as np
 import casadi
 from casadi import dot, sum1
 
-from .penalty import PenaltyType, PenaltyFunctionAbstract
+from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
 from ..misc.enums import Instant
 from ..misc.options_lists import OptionList, OptionGeneric
 
 
-class ObjectiveOption(OptionGeneric):
+class ObjectiveOption(PenaltyOption):
     def __init__(
-        self, objective, instant=Instant.DEFAULT, quadratic=None, weight=1, custom_type=None, phase=0, **params
+        self, objective, weight=1, custom_type=None, phase=0, **params
     ):
         custom_function = None
         if not isinstance(objective, Objective.Lagrange) and not isinstance(objective, Objective.Mayer):
@@ -35,9 +35,7 @@ class ObjectiveOption(OptionGeneric):
                     "It should either be Objective.Mayer or Objective.Lagrange"
                 )
 
-        super(ObjectiveOption, self).__init__(phase=phase, type=objective, **params)
-        self.instant = instant
-        self.quadratic = quadratic
+        super(ObjectiveOption, self).__init__(penalty=objective, phase=phase, **params)
         self.weight = weight
         self.custom_function = custom_function
 
@@ -127,6 +125,7 @@ class ObjectiveFunction:
             penalty.option_index = -1
             penalty.quadratic = pt.quadratic
             penalty.weight = pt.weight
+            penalty.sliced_target = None
             pt.base.clear_penalty(ocp, None, penalty)
             val = pt.type.value[0](ocp, pt)
             pt.base.add_to_penalty(ocp, None, val, penalty)
