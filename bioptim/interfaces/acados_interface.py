@@ -77,8 +77,6 @@ class AcadosInterface(SolverInterface):
         # set dimensions
         self.acados_ocp.dims.nx = ocp.nlp[0].nx + ocp.nlp[0].np
         self.acados_ocp.dims.nu = ocp.nlp[0].nu
-        self.acados_ocp.dims.ny = self.acados_ocp.dims.nx + self.acados_ocp.dims.nu
-        self.acados_ocp.dims.ny_e = ocp.nlp[0].nx + ocp.nlp[0].np
         self.acados_ocp.dims.N = ocp.nlp[0].ns
 
     def __set_constr_type(self, constr_type="BGH"):
@@ -110,13 +108,12 @@ class AcadosInterface(SolverInterface):
 
         ## TODO: implement constraints in g
 
-        # path control constraints
-        self.u_bound_max = ocp.nlp[0].u_bounds.max[:, 0]
-        self.u_bound_min = ocp.nlp[0].u_bounds.min[:, 0]
+        # setup state constraints
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
         self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
         param_bounds_max = []
         param_bounds_min = []
+
         if self.params:
             param_bounds_max = np.concatenate([self.params[key]["bounds"].max for key in self.params.keys()])[:, 0]
             param_bounds_min = np.concatenate([self.params[key]["bounds"].min for key in self.params.keys()])[:, 0]
@@ -125,29 +122,29 @@ class AcadosInterface(SolverInterface):
             self.x_bound_max[:, i] = np.concatenate((param_bounds_max, np.array(ocp.nlp[0].x_bounds.max[:, i])))
             self.x_bound_min[:, i] = np.concatenate((param_bounds_min, np.array(ocp.nlp[0].x_bounds.min[:, i])))
 
+        # setup control constraints
         self.acados_ocp.constraints.lbu = np.array(ocp.nlp[0].u_bounds.min[:, 0])
         self.acados_ocp.constraints.ubu = np.array(ocp.nlp[0].u_bounds.max[:, 0])
         self.acados_ocp.constraints.idxbu = np.array(range(self.acados_ocp.dims.nu))
         self.acados_ocp.dims.nbu = self.acados_ocp.dims.nu
 
         # initial state constraints
-
-        self.acados_ocp.constraints.ubx_0 = self.x_bound_max[:, 0]
         self.acados_ocp.constraints.lbx_0 = self.x_bound_min[:, 0]
+        self.acados_ocp.constraints.ubx_0 = self.x_bound_max[:, 0]
         self.acados_ocp.constraints.idxbx_0 = np.array(range(self.acados_ocp.dims.nx))
         self.acados_ocp.dims.nbx_0 = self.acados_ocp.dims.nx
 
-        # state path constraints
+        # setup path state constraints
         self.acados_ocp.constraints.Jbx = np.eye(self.acados_ocp.dims.nx)
-        self.acados_ocp.constraints.ubx = self.x_bound_max[:, 1]
         self.acados_ocp.constraints.lbx = self.x_bound_min[:, 1]
+        self.acados_ocp.constraints.ubx = self.x_bound_max[:, 1]
         self.acados_ocp.constraints.idxbx = np.array(range(self.acados_ocp.dims.nx))
         self.acados_ocp.dims.nbx = self.acados_ocp.dims.nx
 
-        # state terminal constraints
+        # setup terminal state constraints
         self.acados_ocp.constraints.Jbx_e = np.eye(self.acados_ocp.dims.nx)
-        self.acados_ocp.constraints.ubx_e = self.x_bound_max[:, -1]
         self.acados_ocp.constraints.lbx_e = self.x_bound_min[:, -1]
+        self.acados_ocp.constraints.ubx_e = self.x_bound_max[:, -1]
         self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
         self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
 
@@ -156,6 +153,9 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.cost.cost_type_e = cost_type
 
     def __set_costs(self, ocp):
+
+        if ocp.nb_phases != 1:
+            raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")
         # costs handling in self.acados_ocp
         self.y_ref = []
         self.y_ref_end = []
@@ -163,28 +163,12 @@ class AcadosInterface(SolverInterface):
         self.mayer_costs = SX()
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
+
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             raise RuntimeError("LINEAR_LS is not interfaced yet.")
-            # set Lagrange terms
-            self.acados_ocp.cost.Vx = np.zeros((self.acados_ocp.dims.ny, self.acados_ocp.dims.nx))
-            self.acados_ocp.cost.Vx[: self.acados_ocp.dims.nx, :] = np.eye(self.acados_ocp.dims.nx)
-
-            Vu = np.zeros((self.acados_ocp.dims.ny, self.acados_ocp.dims.nu))
-            Vu[self.acados_ocp.dims.nx :, :] = np.eye(self.acados_ocp.dims.nu)
-            self.acados_ocp.cost.Vu = Vu
-
-            # set Mayer term
-            self.acados_ocp.cost.Vx_e = np.zeros((self.acados_ocp.dims.nx, self.acados_ocp.dims.nx))
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
-            if ocp.nb_phases != 1:
-                raise NotImplementedError("ACADOS with more than one phase is not implemented yet")
-
             for i in range(ocp.nb_phases):
-                # TODO: I think ocp.J is missing here (the parameters would be stored there)
-                # TODO: Yes the objectives in ocp are not dealt with,
-                #  does that makes sense since we only work with 1 phase ?
-                # TODO: If you use parameter, it is added to the main J
                 for j, J in enumerate(ocp.nlp[i].J):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
                         self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"].reshape((-1, 1)))
@@ -211,10 +195,10 @@ class AcadosInterface(SolverInterface):
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
                 # parameter as mayer function
-                # TODO: I consider that only parameters are stored in ocp.J, for now.
+                # IMPORTANT: it is considered that only parameters are stored in ocp.J, for now.
                 if self.params:
                     for j, J in enumerate(ocp.J):
-                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
+                        mayer_func_tp = Function(f"cas_J_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                         self.W_e = linalg.block_diag(
                             self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel()))
                         )
@@ -233,14 +217,14 @@ class AcadosInterface(SolverInterface):
             # Set dimensions
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]
             self.acados_ocp.dims.ny_e = self.acados_ocp.model.cost_y_expr_e.shape[0]
-            self.acados_ocp.cost.yref = np.zeros((max(self.acados_ocp.dims.ny, 1),))
-            self.acados_ocp.cost.yref_e = (
-                np.concatenate(self.y_ref_end, -1).T if len(self.y_ref_end) else np.zeros((1,))
-            )
 
             # Set weight
             self.acados_ocp.cost.W = np.zeros((1, 1)) if self.W.shape == (0, 0) else self.W
             self.acados_ocp.cost.W_e = np.zeros((1, 1)) if self.W_e.shape == (0, 0) else self.W_e
+
+            # Set target shape
+            self.acados_ocp.cost.yref = np.zeros((self.acados_ocp.cost.W.shape[0],))
+            self.acados_ocp.cost.yref_e = np.zeros((self.acados_ocp.cost.W_e.shape[0],))
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
             raise RuntimeError("External is not interfaced yet, please use NONLINEAR_LS")
@@ -248,10 +232,11 @@ class AcadosInterface(SolverInterface):
         else:
             raise RuntimeError("Available acados cost type: 'LINEAR_LS', 'NONLINEAR_LS' and 'EXTERNAL'.")
 
-    def __init_and_update_solver(self):
+    def __update_solver(self):
         param_init = []
         for n in range(self.acados_ocp.dims.N):
             self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
+            self.ocp_solver.cost_set(n, "W", self.W)
 
             if self.params:
                 param_init = np.concatenate(
@@ -260,8 +245,8 @@ class AcadosInterface(SolverInterface):
 
             self.ocp_solver.set(n, "x", np.concatenate((param_init, self.ocp.nlp[0].x_init.init.evaluate_at(n))))
             self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
-            self.ocp_solver.constraints_set(n, "lbu", self.u_bound_min)
-            self.ocp_solver.constraints_set(n, "ubu", self.u_bound_max)
+            self.ocp_solver.constraints_set(n, "lbu", self.ocp.nlp[0].u_bounds.min[:, 0])
+            self.ocp_solver.constraints_set(n, "ubu", self.ocp.nlp[0].u_bounds.max[:, 0])
 
             if n == 0:
                 self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 0])
@@ -270,6 +255,9 @@ class AcadosInterface(SolverInterface):
                 self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 1])
                 self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 1])
 
+        if self.y_ref_end:
+            self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate([data for data in self.y_ref_end]))
+            self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
 
@@ -295,24 +283,36 @@ class AcadosInterface(SolverInterface):
             del options["acados_dir"]
         if "cost_type" in options:
             del options["cost_type"]
+        if self.ocp_solver is None:
+            self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
+            self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
+            self.acados_ocp.solver_options.integrator_type = "IRK"
+            self.acados_ocp.solver_options.nlp_solver_type = "SQP"
 
-        self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
-        self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
-        self.acados_ocp.solver_options.integrator_type = "IRK"
-        self.acados_ocp.solver_options.nlp_solver_type = "SQP"
-
-        self.acados_ocp.solver_options.nlp_solver_tol_comp = 1e-06
-        self.acados_ocp.solver_options.nlp_solver_tol_eq = 1e-06
-        self.acados_ocp.solver_options.nlp_solver_tol_ineq = 1e-06
-        self.acados_ocp.solver_options.nlp_solver_tol_stat = 1e-06
-        self.acados_ocp.solver_options.nlp_solver_max_iter = 200
-        self.acados_ocp.solver_options.sim_method_newton_iter = 5
-        self.acados_ocp.solver_options.sim_method_num_stages = 4
-        self.acados_ocp.solver_options.sim_method_num_steps = 1
-        self.acados_ocp.solver_options.print_level = 1
-
-        for key in options:
-            setattr(self.acados_ocp.solver_options, key, options[key])
+            self.acados_ocp.solver_options.nlp_solver_tol_comp = 1e-06
+            self.acados_ocp.solver_options.nlp_solver_tol_eq = 1e-06
+            self.acados_ocp.solver_options.nlp_solver_tol_ineq = 1e-06
+            self.acados_ocp.solver_options.nlp_solver_tol_stat = 1e-06
+            self.acados_ocp.solver_options.nlp_solver_max_iter = 200
+            self.acados_ocp.solver_options.sim_method_newton_iter = 5
+            self.acados_ocp.solver_options.sim_method_num_stages = 4
+            self.acados_ocp.solver_options.sim_method_num_steps = 1
+            self.acados_ocp.solver_options.print_level = 1
+            for key in options:
+                setattr(self.acados_ocp.solver_options, key, options[key])
+        else:
+            for key in options:
+                if key[:11] == "nlp_solver_":
+                    short_key = key[11:]
+                    self.ocp_solver.options_set(short_key, options[key])
+                else:
+                    raise RuntimeError(
+                        "[ACADOS] Only editable solver options after solver creation are :\n"
+                        "nlp_solver_tol_comp\n"
+                        "nlp_solver_tol_eq\n"
+                        "nlp_solver_tol_ineq\n"
+                        "nlp_solver_tol_stat\n"
+                    )
 
     def get_iterations(self):
         raise NotImplementedError("return_iterations is not implemented yet with ACADOS backend")
@@ -358,7 +358,7 @@ class AcadosInterface(SolverInterface):
         self.__set_constrs(self.ocp)
         if self.ocp_solver is None:
             self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
-        self.__init_and_update_solver()
+        self.__update_solver()
         self.status = self.ocp_solver.solve()
         self.get_optimized_value()
         return self

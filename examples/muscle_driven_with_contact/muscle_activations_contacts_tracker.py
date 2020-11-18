@@ -35,6 +35,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, muscle_activatio
     objective_functions = ObjectiveList()
     objective_functions.add(Objective.Lagrange.TRACK_MUSCLES_CONTROL, target=muscle_activations_ref)
     objective_functions.add(Objective.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.001)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_ALL_CONTROLS, weight=0.001)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -89,7 +91,11 @@ if __name__ == "__main__":
 
     # Generate data using another optimization that will be feedback in as tracking data
     ocp_to_track = data_to_track.prepare_ocp(
-        model_path=model_path, phase_time=final_time, number_shooting_points=ns, direction="GREATER_THAN", boundary=50
+        model_path=model_path,
+        phase_time=final_time,
+        number_shooting_points=ns,
+        min_bound=50,
+        max_bound=np.inf,
     )
     sol_to_track = ocp_to_track.solve()
     states, controls = Data.get_data(ocp_to_track, sol_to_track)
