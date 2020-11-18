@@ -8,7 +8,7 @@ import pytest
 import numpy as np
 import biorbd
 
-from bioptim import Data, OdeSolver, ConstraintList, Constraint, Instant
+from bioptim import Data, OdeSolver, ConstraintList, Constraint, Node
 from .utils import TestUtils
 
 
@@ -80,7 +80,7 @@ def test_align_markers_changing_constraints():
 
     # Add a new constraint and reoptimize
     new_constraints = ConstraintList()
-    new_constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.MID, first_marker_idx=0, second_marker_idx=2, idx=2)
+    new_constraints.add(Constraint.ALIGN_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=2, list_index=2)
     ocp.update_constraints(new_constraints)
     sol = ocp.solve()
 
@@ -116,8 +116,10 @@ def test_align_markers_changing_constraints():
 
     # Replace constraints and reoptimize
     new_constraints = ConstraintList()
-    new_constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=2, idx=0)
-    new_constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.MID, first_marker_idx=0, second_marker_idx=3, idx=2)
+    new_constraints.add(
+        Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=2, list_index=0
+    )
+    new_constraints.add(Constraint.ALIGN_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=3, list_index=2)
     ocp.update_constraints(new_constraints)
     sol = ocp.solve()
 

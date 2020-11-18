@@ -522,11 +522,11 @@ def test_penalty_track_muscles_control(penalty_origin, value):
     penalty_type = penalty_origin.TRACK_MUSCLES_CONTROL
 
     if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
-        penalty = ObjectiveOption(penalty_type, target=np.ones((1, 1)) * value)
+        penalty = ObjectiveOption(penalty_type, target=np.ones((1, 1)) * value, index=0)
     else:
-        penalty = ConstraintOption(penalty_type, target=np.ones((1, 1)) * value)
+        penalty = ConstraintOption(penalty_type, target=np.ones((1, 1)) * value, index=0)
 
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [5], [], u, [], muscles_idx=0)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [5], [], u, [])
 
     if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
         res = ocp.nlp[0].J[0][0]["val"]
@@ -636,11 +636,11 @@ def test_penalty_track_contact_forces(penalty_origin, value):
     penalty_type = penalty_origin.TRACK_CONTACT_FORCES
 
     if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
-        penalty = ObjectiveOption(penalty_type, target=np.ones((1, 1)) * value)
+        penalty = ObjectiveOption(penalty_type, target=np.ones((1, 1)) * value, index=0)
     else:
-        penalty = ConstraintOption(penalty_type, target=np.ones((1, 1)) * value)
+        penalty = ConstraintOption(penalty_type, target=np.ones((1, 1)) * value, index=0)
 
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [7], x, u, [], contacts_idx=0)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [7], x, u, [])
 
     if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
         res = ocp.nlp[0].J[0][0]["val"]
@@ -841,14 +841,49 @@ def test_penalty_time_constraint(value):
     np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0], np.array([]))
 
 
-def custom(ocp, nlp, t, x, u, p, **extra_params):
-    my_values = DM.zeros((12, 1)) + x[0]
-    return my_values
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_custom(penalty_origin, value):
+    def custom(ocp, nlp, t, x, u, p, mult):
+        my_values = DM.zeros((12, 1)) + x[0] * mult
+        return my_values
+
+    ocp = prepare_test_ocp()
+    x = [DM.ones((12, 1)) * value]
+    penalty_type = penalty_origin.CUSTOM
+
+    if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
+        penalty = ObjectiveOption(penalty_type, index=0)
+    else:
+        penalty = ConstraintOption(penalty_type, index=0)
+
+    penalty.custom_function = custom
+    mult = 2
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], mult=mult)
+
+    if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]
+
+    np.testing.assert_almost_equal(res, np.array([[value * mult]] * 12))
+
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0]] * 12))
+        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0]] * 12))
 
 
 @pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_custom(penalty_origin, value):
+def test_penalty_custom_fail(penalty_origin, value):
+    def custom_no_mult(ocp, nlp, t, x, u, p):
+        my_values = DM.zeros((12, 1)) + x[0]
+        return my_values
+
+    def custom_with_mult(ocp, nlp, t, x, u, p, mult):
+        my_values = DM.zeros((12, 1)) + x[0] * mult
+        return my_values
+
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
     penalty_type = penalty_origin.CUSTOM
@@ -858,24 +893,44 @@ def test_penalty_custom(penalty_origin, value):
     else:
         penalty = ConstraintOption(penalty_type)
 
-    penalty.custom_function = custom
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+    with pytest.raises(TypeError):
+        penalty.custom_function = custom_no_mult
+        penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], mult=2)
 
-    if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
-        res = ocp.nlp[0].J[0][0]["val"]
-    else:
-        res = ocp.nlp[0].g[0][0]
+    with pytest.raises(TypeError):
+        penalty.custom_function = custom_with_mult
+        penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
-    np.testing.assert_almost_equal(res, np.array([[value]] * 12))
-
-    if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[0]] * 12))
-        np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[0]] * 12))
+    with pytest.raises(TypeError):
+        keywords = [
+            "phase",
+            "list_index",
+            "name",
+            "type",
+            "params",
+            "node",
+            "quadratic",
+            "index",
+            "target",
+            "sliced_target",
+            "min_bound",
+            "max_bound",
+            "custom_function",
+            "weight",
+        ]
+        for keyword in keywords:
+            exec(
+                f"""def custom_with_keyword(ocp, nlp, t, x, u, p, {keyword}):
+                            my_values = DM.zeros((12, 1)) + x[index]
+                            return my_values"""
+            )
+            exec("""penalty.custom_function = custom_with_keyword""")
+            exec(f"""penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], {keyword}=0)""")
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds(value):
-    def custom_with_bounds(ocp, nlp, t, x, u, p, **extra_params):
+    def custom_with_bounds(ocp, nlp, t, x, u, p):
         my_values = DM.zeros((12, 1)) + x[0]
         return -10, my_values, 10
 
@@ -897,7 +952,7 @@ def test_penalty_custom_with_bounds(value):
 
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_min_bound(value):
-    def custom_with_bounds(ocp, nlp, t, x, u, p, **extra_params):
+    def custom_with_bounds(ocp, nlp, t, x, u, p):
         my_values = DM.zeros((12, 1)) + x[0]
         return -10, my_values, 10
 
@@ -916,7 +971,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value):
 
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_max_bound(value):
-    def custom_with_bounds(ocp, nlp, t, x, u, p, **extra_params):
+    def custom_with_bounds(ocp, nlp, t, x, u, p):
         my_values = DM.zeros((12, 1)) + x[0]
         return -10, my_values, 10
 

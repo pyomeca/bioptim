@@ -44,7 +44,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_MARKERS, markers_idx=1, weight=-1)
+    objective_functions.add(Objective.Mayer.MINIMIZE_MARKERS, index=1, weight=-1)
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics

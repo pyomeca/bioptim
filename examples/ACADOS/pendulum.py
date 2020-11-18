@@ -11,7 +11,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     ShowResult,
-    Instant,
+    Node,
     Solver,
 )
 
@@ -33,7 +33,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
         Objective.Mayer.MINIMIZE_STATE,
         weight=50000.0,
         target=data_to_track.T,
-        instant=Instant.END,
+        node=Node.END,
     )
 
     # Dynamics

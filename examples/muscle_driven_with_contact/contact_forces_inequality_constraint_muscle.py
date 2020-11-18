@@ -3,7 +3,7 @@ import numpy as np
 import biorbd
 
 from bioptim import (
-    Instant,
+    Node,
     OptimalControlProgram,
     ConstraintList,
     Constraint,
@@ -43,14 +43,14 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
         Constraint.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=max_bound,
-        instant=Instant.ALL,
+        node=Node.ALL,
         contact_force_idx=1,
     )
     constraints.add(
         Constraint.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=max_bound,
-        instant=Instant.ALL,
+        node=Node.ALL,
         contact_force_idx=2,
     )
 

@@ -17,7 +17,7 @@ from .limits.path_conditions import (
     PathCondition,
 )
 from .misc.data import Data
-from .misc.enums import Axe, Instant, InterpolationType, OdeSolver, PlotType, Solver, ControlType
+from .misc.enums import Axe, Node, InterpolationType, OdeSolver, PlotType, Solver, ControlType
 from .misc.mapping import BidirectionalMapping, Mapping
 from .misc.non_linear_program import NonLinearProgram
 from .misc.optimal_control_program import OptimalControlProgram
