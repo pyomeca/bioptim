@@ -522,11 +522,11 @@ def test_penalty_track_muscles_control(penalty_origin, value):
     penalty_type = penalty_origin.TRACK_MUSCLES_CONTROL
 
     if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
-        penalty = ObjectiveOption(penalty_type, target=np.ones((1, 1)) * value)
+        penalty = ObjectiveOption(penalty_type, target=np.ones((1, 1)) * value, index=0)
     else:
-        penalty = ConstraintOption(penalty_type, target=np.ones((1, 1)) * value)
+        penalty = ConstraintOption(penalty_type, target=np.ones((1, 1)) * value, index=0)
 
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [5], [], u, [], muscles_idx=0)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [5], [], u, [])
 
     if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
         res = ocp.nlp[0].J[0][0]["val"]
@@ -636,11 +636,11 @@ def test_penalty_track_contact_forces(penalty_origin, value):
     penalty_type = penalty_origin.TRACK_CONTACT_FORCES
 
     if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
-        penalty = ObjectiveOption(penalty_type, target=np.ones((1, 1)) * value)
+        penalty = ObjectiveOption(penalty_type, target=np.ones((1, 1)) * value, index=0)
     else:
-        penalty = ConstraintOption(penalty_type, target=np.ones((1, 1)) * value)
+        penalty = ConstraintOption(penalty_type, target=np.ones((1, 1)) * value, index=0)
 
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [7], x, u, [], contacts_idx=0)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [7], x, u, [])
 
     if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
         res = ocp.nlp[0].J[0][0]["val"]

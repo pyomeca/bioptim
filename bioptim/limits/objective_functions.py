@@ -128,7 +128,7 @@ class ObjectiveFunction:
             penalty.sliced_target = None
             pt.base.clear_penalty(ocp, None, penalty)
             val = pt.type.value[0](ocp, pt)
-            pt.base.add_to_penalty(ocp, None, val, penalty)
+            pt.base.add_to_penalty(ocp,None,val,penalty)
 
         @staticmethod
         def add_to_penalty(ocp, nlp, val, penalty):
@@ -173,7 +173,7 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def add_to_penalty(ocp, _, val, penalty, target=None):
+        def add_to_penalty(ocp, _, val, penalty):
             """
             Adds an objective.
             :param val: Value to be optimized. (MX.sym from CasADi)

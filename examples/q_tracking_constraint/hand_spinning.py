@@ -38,7 +38,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, markers_idx=hand_marker_idx)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, index=hand_marker_idx)
     objective_functions.add(Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL)
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
 
@@ -54,7 +54,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
     constraints.add(
         Constraint.TRACK_STATE,
         node=Node.ALL,
-        states_idx=0,
+        index=0,
         target=np.linspace(0, 2 * np.pi, number_shooting_points + 1),
     )
 

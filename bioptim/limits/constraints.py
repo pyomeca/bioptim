@@ -70,7 +70,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tangential_component_idx,
             normal_component_idx,
             static_friction_coefficient,
-            **parameters,
         ):
             """
             Constraint preventing the contact point from slipping tangentially to the contact surface
@@ -110,7 +109,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
 
         @staticmethod
-        def time_constraint(constraint_type, ocp, nlp, t, x, u, p, **parameters):
+        def time_constraint(constraint_type, ocp, nlp, t, x, u, p, **unused_params):
             pass
 
     @staticmethod
