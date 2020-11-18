@@ -5,15 +5,15 @@ import numpy as np
 import biorbd
 from casadi import vertcat, horzcat
 
-from ..misc.enums import Instant, Axe, PlotType, ControlType
+from ..misc.enums import Node, Axe, PlotType, ControlType
 from ..misc.mapping import Mapping
 from ..misc.options_lists import OptionGeneric
 
 
 class PenaltyOption(OptionGeneric):
-    def __init__(self, penalty, phase=0, instant=Instant.DEFAULT, target=None, quadratic=None, **params):
+    def __init__(self, penalty, phase=0, node=Node.DEFAULT, target=None, quadratic=None, **params):
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
-        self.instant = instant
+        self.node = node
         self.quadratic = quadratic
 
         self.target = target
@@ -182,9 +182,9 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def align_markers(penalty, ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
             """
-            Adds the constraint that the two markers must be coincided at the desired instant(s).
+            Adds the constraint that the two markers must be coincided at the desired node(s).
             :param nlp: An OptimalControlProgram class.
-            :param x: List of instant(s).
+            :param x: List of node(s).
             :param first_marker_idx: Index of the first marker (integer).
             :param second_marker_idx: Index of the second marker (integer).
             """
@@ -204,7 +204,7 @@ class PenaltyFunctionAbstract:
             """
             Adds proportionality constraint between the elements (states or controls) chosen.
             :param nlp: An instance of the OptimalControlProgram class.
-            :param V: List of states or controls at instants on which this constraint must be applied.
+            :param V: List of states or controls at nodes on which this constraint must be applied.
             :param which_var: Type of the variable constrained to be proportional. (string) ("states" or "controls")
             :param first_dof: Index of the first state or control on which this constraint must be applied. (integer)
             :param second_dof: Index of the second state or control on which this constraint must be applied. (integer)
@@ -367,10 +367,9 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def align_segment_with_custom_rt(penalty, ocp, nlp, t, x, u, p, segment_idx, rt_idx):
             """
-            Adds the constraint that the local reference frame and the segment must be aligned at the desired
-            instant(s).
+            Adds the constraint that the local reference frame and the segment must be aligned at the desired node(s).
             :param nlp: An OptimalControlProgram class.
-            :param X: List of instant(s).
+            :param X: List of node(s).
             :param segment_idx: Index of the segment to be aligned. (integer)
             :param rt_idx: Index of the local reference frame to be aligned. (integer)
             """
@@ -395,8 +394,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def align_marker_with_segment_axis(penalty, ocp, nlp, t, x, u, p, marker_idx, segment_idx, axis):
             """
-            Adds the constraint that the marker and the segment must be aligned at the desired
-            instant(s).
+            Adds the constraint that the marker and the segment must be aligned at the desired node(s).
             :param marker_idx: Index of the marker to be aligned. (integer)
             :param segment_idx: Index of the segment to be aligned. (integer)
             :param axis: Axis of the segment to be aligned. (bioptim.Axe)
@@ -460,12 +458,12 @@ class PenaltyFunctionAbstract:
         new penalty.
         :param penalty: Penalty to be added. (instance of PenaltyFunctionAbstract class)
         """
-        t, x, u = PenaltyFunctionAbstract._get_instant(nlp, penalty)
+        t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
         penalty_function = penalty.type.value[0]
         penalty_type = penalty.type.get_type()
-        instant = penalty.instant
+        node = penalty.node
 
-        penalty_type._span_checker(penalty_function, instant, nlp)
+        penalty_type._span_checker(penalty_function, node, nlp)
         penalty_type._parameter_modifier(penalty_function, penalty)
 
         penalty_type.clear_penalty(ocp, nlp, penalty)
@@ -514,12 +512,12 @@ class PenaltyFunctionAbstract:
             parameters.params["which_var"] = "controls"
 
     @staticmethod
-    def _span_checker(penalty_function, instant, nlp):
+    def _span_checker(penalty_function, node, nlp):
         """
         Raises errors if the time span is not consistent with the problem definition.
         (There can not be any control at the last time node)
         :param penalty_function: Penalty function. (instance of PenaltyType class)
-        :param instant: Instant at which the penalty is applied. (instance of Instant class)
+        :param node: Node at which the penalty is applied. (instance of Node class)
         """
         # Everything that is suspicious in terms of the span of the penalty function ca be checked here
         if (
@@ -528,7 +526,7 @@ class PenaltyFunctionAbstract:
             or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
             or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
         ):
-            if instant == Instant.END or instant == nlp.ns:
+            if node == Node.END or node == nlp.ns:
                 raise RuntimeError("No control u at last node")
 
     @staticmethod
@@ -614,24 +612,24 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("_get_type cannot be called from an abstract class")
 
     @staticmethod
-    def _get_instant(nlp, constraint):
+    def _get_node(nlp, constraint):
         """
         Initializes x (states), u (controls) and t (time) with user provided initial guesses.
-        :param constraint: constraint.instant -> time nodes precision. (integer or instance of Instant class)
-        (integer, Instant.START, Instant.MID, Instant.INTERMEDIATES, Instant.END or Instant.ALL)
+        :param constraint: constraint.node -> time nodes precision. (integer or instance of Node class)
+        (integer, Node.START, Node.MID, Node.INTERMEDIATES, Node.END or Node.ALL)
         :return t: Time nodes. (list)
         :return x: States. (list of lists)
         :return u: Controls. (list of lists)
         """
-        if not isinstance(constraint.instant, (list, tuple)):
-            constraint.instant = (constraint.instant,)
+        if not isinstance(constraint.node, (list, tuple)):
+            constraint.node = (constraint.node,)
         t = []
         x = []
         u = []
-        for node in constraint.instant:
+        for node in constraint.node:
             if isinstance(node, int):
                 if node < 0 or node > nlp.ns:
-                    raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp.ns}")
+                    raise RuntimeError(f"Invalid node, {node} must be between 0 and {nlp.ns}")
                 t.append(node)
                 x.append(nlp.X[node])
                 if (
@@ -639,29 +637,29 @@ class PenaltyFunctionAbstract:
                 ) or nlp.control_type != ControlType.CONSTANT:
                     u.append(nlp.U[node])
 
-            elif node == Instant.START:
+            elif node == Node.START:
                 t.append(0)
                 x.append(nlp.X[0])
                 u.append(nlp.U[0])
 
-            elif node == Instant.MID:
+            elif node == Node.MID:
                 if nlp.ns % 2 == 1:
                     raise (ValueError("Number of shooting points must be even to use MID"))
                 t.append(nlp.ns // 2)
                 x.append(nlp.X[nlp.ns // 2])
                 u.append(nlp.U[nlp.ns // 2])
 
-            elif node == Instant.INTERMEDIATES:
+            elif node == Node.INTERMEDIATES:
                 for i in range(1, nlp.ns - 1):
                     t.append(i)
                     x.append(nlp.X[i])
                     u.append(nlp.U[i])
 
-            elif node == Instant.END:
+            elif node == Node.END:
                 t.append(nlp.ns)
                 x.append(nlp.X[nlp.ns])
 
-            elif node == Instant.ALL:
+            elif node == Node.ALL:
                 t.extend([i for i in range(nlp.ns + 1)])
                 for i in range(nlp.ns):
                     x.append(nlp.X[i])
@@ -669,7 +667,7 @@ class PenaltyFunctionAbstract:
                 x.append(nlp.X[nlp.ns])
 
             else:
-                raise RuntimeError(" is not a valid instant")
+                raise RuntimeError(" is not a valid node")
         return t, x, u
 
     @staticmethod

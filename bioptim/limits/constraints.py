@@ -5,7 +5,7 @@ from casadi import sum1, horzcat
 
 from .path_conditions import Bounds
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
-from ..misc.enums import Instant, InterpolationType, OdeSolver, ControlType
+from ..misc.enums import Node, InterpolationType, OdeSolver, ControlType
 from ..misc.options_lists import OptionList, OptionGeneric
 
 
@@ -116,7 +116,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     @staticmethod
     def add_or_replace(ocp, nlp, penalty):
         if penalty.type == Constraint.TIME_CONSTRAINT:
-            penalty.instant = Instant.END
+            penalty.node = Node.END
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, penalty)
 
     @staticmethod
@@ -223,15 +223,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         super(ConstraintFunction, ConstraintFunction)._parameter_modifier(constraint_function, parameters)
 
     @staticmethod
-    def _span_checker(constraint_function, instant, nlp):
+    def _span_checker(constraint_function, node, nlp):
         """Raises errors on the span of penalty functions"""
         # Everything that is suspicious in terms of the span of the penalty function can be checked here
-        super(ConstraintFunction, ConstraintFunction)._span_checker(constraint_function, instant, nlp)
+        super(ConstraintFunction, ConstraintFunction)._span_checker(constraint_function, node, nlp)
         if (
             constraint_function == Constraint.CONTACT_FORCE.value[0]
             or constraint_function == Constraint.NON_SLIPPING.value[0]
         ):
-            if instant == Instant.END or instant == nlp.ns:
+            if node == Node.END or node == nlp.ns:
                 raise RuntimeError("No control u at last node")
 
 

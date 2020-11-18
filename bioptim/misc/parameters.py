@@ -1,6 +1,6 @@
 from casadi import vertcat
 
-from .enums import Instant
+from .enums import Node
 from ..limits.constraints import Bounds
 from ..limits.path_conditions import InitialGuess
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveOption, ObjectiveList
@@ -83,8 +83,8 @@ class Parameters:
             # Sanity check
             if not isinstance(penalty.type, Objective.Parameter):
                 raise RuntimeError("Parameters should be declared custom_type=Objective.Parameters")
-            if penalty.instant != Instant.DEFAULT:
-                raise RuntimeError("Parameters are timeless optimization, instant=Instant.DEFAULT should be declared")
+            if penalty.node != Node.DEFAULT:
+                raise RuntimeError("Parameters are timeless optimization, node=Node.DEFAULT should be declared")
 
             func = penalty.custom_function
 

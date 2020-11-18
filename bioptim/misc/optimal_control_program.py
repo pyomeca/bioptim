@@ -77,7 +77,7 @@ class OptimalControlProgram:
         :param x_bounds: States upper and lower bounds. (Instance of the class Bounds)
         :param u_bounds: Controls upper and lower bounds. (Instance of the class Bounds)
         :param objective_functions: Tuple of tuple of objectives functions handler's and weights.
-        :param constraints: Tuple of constraints, instant (which node(s)) and tuple of geometric structures used.
+        :param constraints: Tuple of constraints, node(s) and tuple of geometric structures used.
         :param external_forces: Tuple of external forces.
         :param ode_solver: Name of chosen ode solver to use. (OdeSolver.COLLOCATION, OdeSolver.RK, OdeSolver.CVODES or
         OdeSolver.NO_SOLVER)

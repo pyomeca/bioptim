@@ -6,7 +6,7 @@ import biorbd
 from casadi import vertcat
 
 from bioptim import (
-    Instant,
+    Node,
     OptimalControlProgram,
     DynamicsTypeOption,
     DynamicsType,
@@ -49,7 +49,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     objective_functions.add(
         custom_func_align_markers,
         custom_type=Objective.Mayer,
-        instant=Instant.START,
+        node=Node.START,
         quadratic=True,
         first_marker_idx=0,
         second_marker_idx=1,
@@ -58,7 +58,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     objective_functions.add(
         custom_func_align_markers,
         custom_type=Objective.Mayer,
-        instant=Instant.END,
+        node=Node.END,
         quadratic=True,
         first_marker_idx=0,
         second_marker_idx=2,

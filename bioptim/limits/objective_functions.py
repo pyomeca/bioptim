@@ -5,7 +5,7 @@ import casadi
 from casadi import dot, sum1
 
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
-from ..misc.enums import Instant
+from ..misc.enums import Node
 from ..misc.options_lists import OptionList, OptionGeneric
 
 
@@ -97,10 +97,10 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
 
         @staticmethod
-        def _span_checker(penalty_function, instant, nlp):
+        def _span_checker(objective_function, node, nlp):
             """Raises errors on the span of penalty functions"""
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(penalty_function, instant, nlp)
+            PenaltyFunctionAbstract._span_checker(objective_function, node, nlp)
 
     class MayerFunction(PenaltyFunctionAbstract):
         """
@@ -155,10 +155,10 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
 
         @staticmethod
-        def _span_checker(penalty_function, instant, nlp):
+        def _span_checker(penalty_function, node, nlp):
             """Raises errors on the span of penalty functions"""
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(penalty_function, instant, nlp)
+            PenaltyFunctionAbstract._span_checker(penalty_function, node, nlp)
 
     class ParameterFunction(PenaltyFunctionAbstract):
         """
@@ -197,24 +197,24 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
 
         @staticmethod
-        def _span_checker(penalty_function, instant, nlp):
+        def _span_checker(penalty_function, node, nlp):
             """Raises errors on the span of penalty functions"""
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(penalty_function, instant, nlp)
+            PenaltyFunctionAbstract._span_checker(penalty_function, node, nlp)
 
     @staticmethod
     def add_or_replace(ocp, nlp, objective):
         """
-        Modifies or raises errors if user provided Instant does not match the objective type.
+        Modifies or raises errors if user provided Node does not match the objective type.
         :param objective: New objective to replace with. (dictionary)
         """
         if objective.type.get_type() == ObjectiveFunction.LagrangeFunction:
-            if objective.instant != Instant.ALL and objective.instant != Instant.DEFAULT:
-                raise RuntimeError("Lagrange objective are for Instant.ALL, did you mean Mayer?")
-            objective.instant = Instant.ALL
+            if objective.node != Node.ALL and objective.node != Node.DEFAULT:
+                raise RuntimeError("Lagrange objective are for Node.ALL, did you mean Mayer?")
+            objective.node = Node.ALL
         elif objective.type.get_type() == ObjectiveFunction.MayerFunction:
-            if objective.instant == Instant.DEFAULT:
-                objective.instant = Instant.END
+            if objective.node == Node.DEFAULT:
+                objective.node = Node.END
 
         else:
             raise RuntimeError("Objective function Type must be either a Lagrange or Mayer type")
@@ -367,30 +367,30 @@ class Objective:
 
 
 def get_objective_values(ocp, sol):
-    def __get_instant(instants, nlp):
+    def __get_nodes(all_nodes, nlp):
         nodes = []
-        for node in instants:
+        for node in all_nodes:
             if isinstance(node, int):
                 if node < 0 or node > nlp.ns:
-                    raise RuntimeError(f"Invalid instant, {node} must be between 0 and {nlp.ns}")
+                    raise RuntimeError(f"Invalid node, {node} must be between 0 and {nlp.ns}")
                 nodes.append(node)
 
-            elif node == Instant.START:
+            elif node == Node.START:
                 nodes.append(0)
 
-            elif node == Instant.MID:
+            elif node == Node.MID:
                 if nlp.ns % 2 == 1:
                     raise (ValueError("Number of shooting points must be even to use MID"))
                 nodes.append(nlp.ns // 2)
 
-            elif node == Instant.INTERMEDIATES:
+            elif node == Node.INTERMEDIATES:
                 for i in range(1, nlp.ns - 1):
                     nodes.append(i)
 
-            elif node == Instant.END:
+            elif node == Node.END:
                 nodes.append(nlp.ns - 1)
 
-            elif node == Instant.ALL:
+            elif node == Node.ALL:
                 for i in range(nlp.ns):
                     nodes.append(i)
         return nodes
@@ -402,7 +402,7 @@ def get_objective_values(ocp, sol):
         out.append(np.ndarray((nJ, nlp.ns)))
         out[-1][:, :] = np.nan
         for idx_obj_func in range(nJ):
-            nodes = __get_instant(nlp.J[idx_obj_func][0]["objective"].instant, nlp)
+            nodes = __get_nodes(nlp.J[idx_obj_func][0]["objective"].node, nlp)
             nodes = nodes[: len(nlp.J[idx_obj_func])]
             for node, idx_node in enumerate(nodes):
                 obj = casadi.Function("obj", [ocp.V], [get_objective_value(nlp.J[idx_obj_func][node])])

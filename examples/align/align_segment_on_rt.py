@@ -1,7 +1,7 @@
 import biorbd
 
 from bioptim import (
-    Instant,
+    Node,
     OptimalControlProgram,
     DynamicsTypeList,
     DynamicsType,
@@ -35,7 +35,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT, instant=Instant.ALL, segment_idx=2, rt_idx=0)
+    constraints.add(Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment_idx=2, rt_idx=0)
 
     # Path constraint
     x_bounds = BoundsList()
