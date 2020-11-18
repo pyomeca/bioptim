@@ -35,7 +35,7 @@ class ObjectiveOption(OptionGeneric):
                     "It should either be Objective.Mayer or Objective.Lagrange"
                 )
 
-        super(ObjectiveOption, self).__init__(type=objective, phase=phase, **params)
+        super(ObjectiveOption, self).__init__(phase=phase, type=objective, **params)
         self.instant = instant
         self.quadratic = quadratic
         self.weight = weight
@@ -47,7 +47,7 @@ class ObjectiveList(OptionList):
         if isinstance(objective, ObjectiveOption):
             self.copy(objective)
         else:
-            super(ObjectiveList, self)._add(objective=objective, option_type=ObjectiveOption, **extra_arguments)
+            super(ObjectiveList, self)._add(option_type=ObjectiveOption, objective=objective, **extra_arguments)
 
 
 class ObjectiveFunction:
@@ -124,7 +124,7 @@ class ObjectiveFunction:
         def inter_phase_continuity(ocp, pt):
             # Dynamics must be respected between phases
             penalty = OptionGeneric()
-            penalty.idx = -1
+            penalty.option_index = -1
             penalty.quadratic = pt.quadratic
             penalty.weight = pt.weight
             pt.base.clear_penalty(ocp, None, penalty)
@@ -239,9 +239,9 @@ class ObjectiveFunction:
         J = {"objective": penalty, "val": val, "target": penalty.sliced_target, "dt": dt}
 
         if nlp:
-            nlp.J[penalty.idx].append(J)
+            nlp.J[penalty.option_index].append(J)
         else:
-            ocp.J[penalty.idx].append(J)
+            ocp.J[penalty.option_index].append(J)
 
     @staticmethod
     def clear_penalty(ocp, nlp, penalty):
@@ -254,19 +254,19 @@ class ObjectiveFunction:
         else:
             J_to_add_to = ocp.J
 
-        if penalty.idx < 0:
+        if penalty.option_index < 0:
             # Add a new one
             for i, j in enumerate(J_to_add_to):
                 if not j:
-                    penalty.idx = i
+                    penalty.option_index = i
                     return
             else:
                 J_to_add_to.append([])
-                penalty.idx = len(J_to_add_to) - 1
+                penalty.option_index = len(J_to_add_to) - 1
         else:
-            while penalty.idx >= len(J_to_add_to):
+            while penalty.option_index >= len(J_to_add_to):
                 J_to_add_to.append([])
-            J_to_add_to[penalty.idx] = []
+            J_to_add_to[penalty.option_index] = []
 
 
 class Objective:

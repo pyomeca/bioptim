@@ -39,8 +39,8 @@ class ParameterList(OptionList):
 
             super(ParameterList, self)._add(
                 option_type=ParameterOption,
-                function=function,
                 phase=phase,
+                function=function,
                 name=parameter_name,
                 initial_guess=initial_guess,
                 bounds=bounds,
