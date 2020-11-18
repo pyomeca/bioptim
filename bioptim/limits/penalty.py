@@ -272,7 +272,9 @@ class PenaltyFunctionAbstract:
             :param muscles_idx: Index of the muscles which the activation in minimized. (list of integers)
             :param data_to_track: Reference muscle activation for tracking. (list of lists of float)
             """
-            muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, nlp.shape["muscle"], "muscles_idx")
+            muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(
+                penalty.index, nlp.shape["muscle"], "muscles_idx"
+            )
 
             target = None
             if penalty.target is not None:

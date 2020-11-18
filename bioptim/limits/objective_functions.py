@@ -10,9 +10,7 @@ from ..misc.options_lists import OptionList, OptionGeneric
 
 
 class ObjectiveOption(PenaltyOption):
-    def __init__(
-        self, objective, weight=1, custom_type=None, phase=0, **params
-    ):
+    def __init__(self, objective, weight=1, custom_type=None, phase=0, **params):
         custom_function = None
         if not isinstance(objective, Objective.Lagrange) and not isinstance(objective, Objective.Mayer):
             custom_function = objective
@@ -128,7 +126,7 @@ class ObjectiveFunction:
             penalty.sliced_target = None
             pt.base.clear_penalty(ocp, None, penalty)
             val = pt.type.value[0](ocp, pt)
-            pt.base.add_to_penalty(ocp,None,val,penalty)
+            pt.base.add_to_penalty(ocp, None, val, penalty)
 
         @staticmethod
         def add_to_penalty(ocp, nlp, val, penalty):

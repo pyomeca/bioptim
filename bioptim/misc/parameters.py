@@ -8,7 +8,9 @@ from .options_lists import OptionList, OptionGeneric
 
 
 class ParameterOption(OptionGeneric):
-    def __init__(self, function=None, initial_guess=None, bounds=None, quadratic=True, size=None, penalty_list=None, **params):
+    def __init__(
+        self, function=None, initial_guess=None, bounds=None, quadratic=True, size=None, penalty_list=None, **params
+    ):
         super(ParameterOption, self).__init__(**params)
         self.function = function
         self.initial_guess = initial_guess
@@ -38,9 +40,17 @@ class ParameterList(OptionList):
                     "function, initial_guess, bounds and size are mandatory elements to declare a parameter"
                 )
 
-            super(ParameterList, self)._add(option_type=ParameterOption, phase=phase, function=function,
-                                            name=parameter_name, initial_guess=initial_guess, bounds=bounds, size=size,
-                                            penalty_list=penalty_list, **extra_arguments)
+            super(ParameterList, self)._add(
+                option_type=ParameterOption,
+                phase=phase,
+                function=function,
+                name=parameter_name,
+                initial_guess=initial_guess,
+                bounds=bounds,
+                size=size,
+                penalty_list=penalty_list,
+                **extra_arguments
+            )
 
 
 class Parameters:

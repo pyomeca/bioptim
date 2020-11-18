@@ -37,9 +37,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, initializ
     constraints = ConstraintList()
     constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=4)
     constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
-    constraints.add(
-        Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X)
-    )
+    constraints.add(Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X))
 
     # Path constraint
     x_bounds = BoundsList()
