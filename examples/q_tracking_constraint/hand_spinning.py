@@ -2,7 +2,7 @@ import numpy as np
 import biorbd
 
 from bioptim import (
-    Instant,
+    Node,
     OptimalControlProgram,
     ConstraintList,
     Constraint,
@@ -38,7 +38,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, markers_idx=hand_marker_idx)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, index=hand_marker_idx)
     objective_functions.add(Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL)
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
 
@@ -49,12 +49,12 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        Constraint.ALIGN_MARKERS, first_marker_idx=hand_marker_idx, second_marker_idx=end_crank_idx, instant=Instant.ALL
+        Constraint.ALIGN_MARKERS, first_marker_idx=hand_marker_idx, second_marker_idx=end_crank_idx, node=Node.ALL
     )
     constraints.add(
         Constraint.TRACK_STATE,
-        instant=Instant.ALL,
-        states_idx=0,
+        node=Node.ALL,
+        index=0,
         target=np.linspace(0, 2 * np.pi, number_shooting_points + 1),
     )
 

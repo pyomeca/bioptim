@@ -1,7 +1,7 @@
 from scipy.integrate import solve_ivp
 import numpy as np
 import biorbd
-from casadi import MX, Function
+from casadi import MX, vertcat
 from matplotlib import pyplot as plt
 
 from bioptim import (
@@ -32,7 +32,9 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     dt = final_time / nb_shooting
 
     # Casadi related stuff
-    symbolic_states = MX.sym("x", nb_q + nb_qdot + nb_mus, 1)
+    symbolic_q = MX.sym("q", nb_q, 1)
+    symbolic_qdot = MX.sym("qdot", nb_qdot, 1)
+    symbolic_mus = MX.sym("mus", nb_mus, 1)
     symbolic_controls = MX.sym("u", nb_tau + nb_mus, 1)
     symbolic_parameters = MX.sym("u", 0, 0)
     nlp = NonLinearProgram(
@@ -49,28 +51,17 @@ def generate_data(biorbd_model, final_time, nb_shooting):
             "tau": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
         },
     )
-    markers_func = []
-    for i in range(nb_markers):
-        markers_func.append(
-            Function(
-                "ForwardKin",
-                [symbolic_states],
-                [biorbd_model.marker(symbolic_states[:nb_q], i).to_mx()],
-                ["q"],
-                ["marker_" + str(i)],
-            ).expand()
-        )
-    dynamics_func = Function(
+    markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_q)
+
+    symbolic_states = vertcat(*(symbolic_q, symbolic_qdot, symbolic_mus))
+    dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
-        [symbolic_states, symbolic_controls, symbolic_parameters],
-        [
-            DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven(
-                symbolic_states, symbolic_controls, symbolic_parameters, nlp
-            )
-        ],
-        ["x", "u", "p"],
-        ["xdot"],
-    ).expand()
+        DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven,
+        symbolic_states,
+        symbolic_controls,
+        symbolic_parameters,
+        nlp,
+    )
 
     def dyn_interface(t, x, u):
         u = np.concatenate([np.zeros(nb_tau), u])
@@ -85,8 +76,7 @@ def generate_data(biorbd_model, final_time, nb_shooting):
 
     def add_to_data(i, q):
         X[:, i] = q
-        for j, mark_func in enumerate(markers_func):
-            markers[:, j, i] = np.array(mark_func(q)).squeeze()
+        markers[:, :, i] = markers_func(q[:nb_q])
 
     x_init = np.array([0] * nb_q + [0] * nb_qdot + [0.5] * nb_mus)
     add_to_data(0, x_init)
@@ -123,7 +113,7 @@ def prepare_ocp(
         objective_functions.add(Objective.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)
     elif kin_data_to_track == "q":
         objective_functions.add(
-            Objective.Lagrange.TRACK_STATE, weight=100, target=q_ref, states_idx=range(biorbd_model.nbQ())
+            Objective.Lagrange.TRACK_STATE, weight=100, target=q_ref, index=range(biorbd_model.nbQ())
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
@@ -146,6 +136,7 @@ def prepare_ocp(
     x_bounds[0].concatenate(
         Bounds([activation_min] * biorbd_model.nbMuscles(), [activation_max] * biorbd_model.nbMuscles())
     )
+    x_bounds[0][(biorbd_model.nbQ() + biorbd_model.nbQdot()) :, 0] = excitations_ref[:, 0]
 
     # Initial guess
     x_init = InitialGuessList()
@@ -225,9 +216,7 @@ if __name__ == "__main__":
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
     symbolic_states = MX.sym("x", n_q, 1)
-    markers_func = Function(
-        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states)], ["q"], ["markers"]
-    ).expand()
+    markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_states)
     for i in range(n_frames):
         markers[:, :, i] = markers_func(q[:, i])
 

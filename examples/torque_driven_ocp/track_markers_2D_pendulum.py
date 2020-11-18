@@ -3,7 +3,7 @@ from pathlib import Path
 
 import biorbd
 import numpy as np
-from casadi import Function, MX, vertcat
+from casadi import MX, horzcat
 
 from bioptim import (
     OptimalControlProgram,
@@ -30,9 +30,9 @@ spec.loader.exec_module(data_to_track)
 def get_markers_pos(x, idx_coord, fun):
     marker_pos = []
     for i in range(x.shape[1]):
-        marker_pos.append(fun(x[:, i]))
-    marker_pos = vertcat(*marker_pos)
-    return marker_pos[idx_coord::3, :].T
+        marker_pos.append(fun(x[:nb_q, i]))
+    marker_pos = horzcat(*marker_pos)
+    return marker_pos[:, idx_coord]
 
 
 def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, tau_ref):
@@ -45,7 +45,7 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        Objective.Lagrange.TRACK_MARKERS, axis_tot_track=[Axe.Y, Axe.Z], weight=100, target=markers_ref
+        Objective.Lagrange.TRACK_MARKERS, axis_to_track=[Axe.Y, Axe.Z], weight=100, target=markers_ref
     )
     objective_functions.add(Objective.Lagrange.TRACK_TORQUE, target=tau_ref)
 
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     number_shooting_points = 20
 
     ocp_to_track = data_to_track.prepare_ocp(
-        biorbd_model_path=biorbd_path, final_time=3, number_shooting_points=20, nb_threads=4
+        biorbd_model_path=biorbd_path, final_time=3, number_shooting_points=19, nb_threads=4
     )
     sol_to_track = ocp_to_track.solve()
     states, controls = Data.get_data(ocp_to_track, sol_to_track)
@@ -101,14 +101,12 @@ if __name__ == "__main__":
     x = np.concatenate((q, q_dot))
     u = tau
 
-    symbolic_states = MX.sym("x", nb_q + nb_qdot, 1)
+    symbolic_states = MX.sym("q", nb_q, 1)
     symbolic_controls = MX.sym("u", nb_tau, 1)
-    markers_fun = Function(
-        "ForwardKin", [symbolic_states], [biorbd_model.markers(symbolic_states[:nb_q])], ["q"], ["marker"]
-    ).expand()
+    markers_fun = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_states)
     markers_ref = np.zeros((3, nb_marker, number_shooting_points + 1))
-    for i in range(number_shooting_points + 1):
-        markers_ref[:, :, i] = np.array(markers_fun(x[:, i]))
+    for i in range(number_shooting_points):
+        markers_ref[:, :, i] = markers_fun(x[:nb_q, i])
     tau_ref = tau
 
     ocp = prepare_ocp(
@@ -151,12 +149,12 @@ if __name__ == "__main__":
         color="black",
         legend=label_markers,
     )
-    ocp.add_plot(
-        "Markers plot coordinates",
-        update_function=lambda x, u, p: get_markers_pos(x, 2, markers_fun),
-        plot_type=PlotType.PLOT,
-        color="tab:blue",
-    )
+    # ocp.add_plot(
+    #     "Markers plot coordinates",
+    #     update_function=lambda x, u, p: get_markers_pos(x, 2, markers_fun),
+    #     plot_type=PlotType.PLOT,
+    #     color="tab:blue",
+    # )
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=False)
