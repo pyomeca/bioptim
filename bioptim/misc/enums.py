@@ -27,6 +27,7 @@ class OdeSolver(Enum):
     RK = 1
     CVODES = 2
     NO_SOLVER = 3
+    IRK = 4
 
 
 class Instant(Enum):
