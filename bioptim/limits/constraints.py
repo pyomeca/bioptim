@@ -175,8 +175,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         penalty.min_bound = 0 if penalty.min_bound is None else penalty.min_bound
         penalty.max_bound = 0 if penalty.max_bound is None else penalty.max_bound
         for i in range(val.rows()):
-            min_bound = penalty.min_bound[i] if hasattr(penalty.min_bound, "__getitem__") else penalty.min_bound
-            max_bound = penalty.max_bound[i] if hasattr(penalty.max_bound, "__getitem__") else penalty.max_bound
+            min_bound = penalty.min_bound[i] if hasattr(penalty.min_bound, "__getitem__") and penalty.min_bound.shape[0] > 1 else penalty.min_bound
+            max_bound = penalty.max_bound[i] if hasattr(penalty.max_bound, "__getitem__") and penalty.max_bound.shape[0] > 1 else penalty.max_bound
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
 
         if nlp:
