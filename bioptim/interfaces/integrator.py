@@ -105,15 +105,6 @@ def IRK(ode, ode_opt):
         nu = controls.shape[0]
         nx = states.shape[0]
 
-        nb_dof = 0
-        quat_idx = []
-        quat_number = 0
-        for j in range(model.nbSegment()):
-            if model.segment(j).isRotationAQuaternion():
-                quat_idx.append([nb_dof, nb_dof + 1, nb_dof + 2, model.nbDof() + quat_number])
-                quat_number += 1
-            nb_dof += model.segment(j).nbDof()
-
         # Choose collocation points
         time_points = [0] + collocation_points(degree, "legendre")
 
@@ -148,10 +139,6 @@ def IRK(ode, ode_opt):
         U = controls
         P = params
 
-        # Get the state at each collocation point
-        # X = [X0] + vertsplit(V, [r * nx for r in range(degree + 1)])
-
-        # Get the collocation equations (that define V)
         V = [CX.sym(f"X_irk_{j}", nx, 1) for j in range(1, degree + 1)]
         X = [X0] + V
 
@@ -184,15 +171,6 @@ def IRK(ode, ode_opt):
         XF = CX.zeros(nx, degree + 1)  # 0 #
         for r in range(degree + 1):
             XF[:, r] = XF[:, r - 1] + D[r] * X[r]
-
-            # Dont know if its better to renormalize at each collocation point or only the last one
-            for j in range(model.nbQuat()):
-                quaternion = vertcat(
-                    XF[quat_idx[j][3], r], XF[quat_idx[j][0], r], XF[quat_idx[j][1], r], XF[quat_idx[j][2], r]
-                )
-                quaternion /= norm_fro(quaternion)
-                XF[quat_idx[j][0] : quat_idx[j][2] + 1, r] = quaternion[1:4]
-                XF[quat_idx[j][3], r] = quaternion[0]
 
         return XF[:, -1], XF
 
