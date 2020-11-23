@@ -236,7 +236,8 @@ class AcadosInterface(SolverInterface):
         param_init = []
         for n in range(self.acados_ocp.dims.N):
             self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
-            self.ocp_solver.cost_set(n, "W", self.W)
+            # check following line
+            # self.ocp_solver.cost_set(n, "W", self.W)
 
             if self.params:
                 param_init = np.concatenate(
@@ -257,7 +258,8 @@ class AcadosInterface(SolverInterface):
 
         if self.y_ref_end:
             self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate([data for data in self.y_ref_end]))
-            self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
+            # check following line
+            # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
 
