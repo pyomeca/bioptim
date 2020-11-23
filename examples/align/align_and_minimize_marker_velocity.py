@@ -1,6 +1,6 @@
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     DynamicsTypeList,
     DynamicsType,
@@ -8,7 +8,7 @@ from biorbd_optim import (
     Objective,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
     ControlType,
 )
@@ -67,14 +67,14 @@ def prepare_ocp(
         x_bounds[0].max[i, :] = 10
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([1.5, 1.5, 0.0, 0.0, 0.7, 0.7, 0.6, 0.6])
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add([[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()])
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #

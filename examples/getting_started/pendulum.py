@@ -1,14 +1,16 @@
-import biorbd
 import pickle
 from time import time
 
-from biorbd_optim import (
+import numpy as np
+import biorbd
+
+from bioptim import (
     OptimalControlProgram,
     DynamicsType,
     DynamicsTypeOption,
     BoundsOption,
     QAndQDotBounds,
-    InitialConditionsOption,
+    InitialGuessOption,
     ShowResult,
     Data,
     Simulate,
@@ -33,20 +35,17 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
 
     # Path constraint
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-    x_bounds.min[:, [0, -1]] = 0
-    x_bounds.max[:, [0, -1]] = 0
-    x_bounds.min[1, -1] = 3.14
-    x_bounds.max[1, -1] = 3.14
+    x_bounds[:, [0, -1]] = 0
+    x_bounds[1, -1] = 3.14
 
     # Initial guess
-    x_init = InitialConditionsOption([0] * (n_q + n_qdot))
+    x_init = InitialGuessOption([0] * (n_q + n_qdot))
 
     # Define control path constraint
     u_bounds = BoundsOption([[tau_min] * n_tau, [tau_max] * n_tau])
-    u_bounds.min[n_tau - 1, :] = 0
-    u_bounds.max[n_tau - 1, :] = 0
+    u_bounds[n_tau - 1, :] = 0
 
-    u_init = InitialConditionsOption([tau_init] * n_tau)
+    u_init = InitialGuessOption([tau_init] * n_tau)
 
     # ------------- #
 
@@ -59,7 +58,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
         u_init,
         x_bounds,
         u_bounds,
-        objective_functions,
+        objective_functions=objective_functions,
         nb_threads=nb_threads,
         use_SX=use_SX,
     )
@@ -70,7 +69,7 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     tic = time()
-    sol, sol_iterations = ocp.solve(show_online_optim=True, return_iterations=True)
+    sol, sol_iterations, sol_obj = ocp.solve(show_online_optim=True, return_iterations=True, return_objectives=True)
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
@@ -80,8 +79,15 @@ if __name__ == "__main__":
     Simulate.from_data(ocp, Data.get_data(ocp, sol), single_shoot=False)
 
     # --- Access to all iterations  --- #
-    nb_iter = len(sol_iterations)
-    third_iteration = sol_iterations[2]
+    if sol_iterations:  # If the processor is too fast, this will be empty since it is attached to the update function
+        nb_iter = len(sol_iterations)
+        third_iteration = sol_iterations[2]
+
+    # --- Print objective cost  --- #
+    print(f"Final objective value : {np.nansum(sol_obj)} \n")
+    analyse = Objective.Printer(ocp, sol_obj)
+    analyse.by_function()
+    analyse.by_nodes()
 
     # --- Save result of get_data --- #
     ocp.save_get_data(sol, "pendulum.bob", sol_iterations)  # you don't have to specify the extension ".bob"

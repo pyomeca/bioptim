@@ -1,7 +1,7 @@
 import numpy as np
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
     DynamicsTypeOption,
@@ -12,7 +12,7 @@ from biorbd_optim import (
     Constraint,
     BoundsOption,
     QAndQDotBounds,
-    InitialConditionsOption,
+    InitialGuessOption,
     ShowResult,
     InterpolationType,
 )
@@ -28,7 +28,6 @@ def prepare_ocp(
     number_shooting_points,
     final_time,
     initial_guess=InterpolationType.CONSTANT,
-    boundsInterpolation=False,
 ):
     # --- Options --- #
     # Model path
@@ -49,38 +48,11 @@ def prepare_ocp(
     constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
     constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
 
-    spline_time = None
     # Path constraint and control path constraints
-    if boundsInterpolation:
-        if initial_guess == InterpolationType.SPLINE:
-            spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
-            x_min = np.random.random((nq + nqdot, 5)) - 100
-            x_max = np.random.random((nq + nqdot, 5)) + 100
-            u_min = np.random.random((ntau, 5)) - 100
-            u_max = np.random.random((ntau, 5)) + 100
-            x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.SPLINE)
-            u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.SPLINE)
-        elif initial_guess == InterpolationType.CUSTOM:
-            x_min = np.random.random((nq + nqdot, 2)) - 100
-            x_max = np.random.random((nq + nqdot, 2)) + 100
-            u_min = np.random.random((ntau, 2)) - 100
-            u_max = np.random.random((ntau, 2)) + 100
-            x_bounds = BoundsOption([x_min, x_max], interpolation=InterpolationType.CUSTOM)
-            u_bounds = BoundsOption([u_min, u_max], interpolation=InterpolationType.CUSTOM)
-        else:
-            x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-            x_bounds.min[1:6, [0, -1]] = 0
-            x_bounds.max[1:6, [0, -1]] = 0
-            x_bounds.min[2, -1] = 1.57
-            x_bounds.max[2, -1] = 1.57
-            u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
-    else:
-        x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-        x_bounds.min[1:6, [0, -1]] = 0
-        x_bounds.max[1:6, [0, -1]] = 0
-        x_bounds.min[2, -1] = 1.57
-        x_bounds.max[2, -1] = 1.57
-        u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
+    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds[1:6, [0, -1]] = 0
+    x_bounds[2, -1] = 1.57
+    u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
 
     # Initial guesses
     t = None
@@ -111,9 +83,9 @@ def prepare_ocp(
         extra_params_u = {"my_values": np.random.random((ntau, 2)), "nb_shooting": number_shooting_points}
     else:
         raise RuntimeError("Initial guess not implemented yet")
-    x_init = InitialConditionsOption(x, t=t, interpolation=initial_guess, **extra_params_x)
+    x_init = InitialGuessOption(x, t=t, interpolation=initial_guess, **extra_params_x)
 
-    u_init = InitialConditionsOption(u, t=t, interpolation=initial_guess, **extra_params_u)
+    u_init = InitialGuessOption(u, t=t, interpolation=initial_guess, **extra_params_u)
     # ------------- #
 
     return OptimalControlProgram(

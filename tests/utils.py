@@ -5,11 +5,11 @@ import pickle
 from casadi import MX
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     Data,
     Bounds,
-    InitialConditions,
+    InitialGuess,
     BidirectionalMapping,
     Mapping,
     Simulate,
@@ -55,7 +55,7 @@ class TestUtils:
             for i in range(len(first_elem)):
                 TestUtils.deep_assert(first_elem[i], second_elem[i])
         elif isinstance(
-            first_elem, (OptimalControlProgram, Bounds, InitialConditions, BidirectionalMapping, Mapping, OdeSolver)
+            first_elem, (OptimalControlProgram, Bounds, InitialGuess, BidirectionalMapping, Mapping, OdeSolver)
         ):
             for key in dir(first_elem):
                 TestUtils.deep_assert(getattr(first_elem, key), getattr(second_elem, key))

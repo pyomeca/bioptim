@@ -1,6 +1,6 @@
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
     ConstraintList,
@@ -13,7 +13,7 @@ from biorbd_optim import (
     Mapping,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
 )
 
@@ -62,21 +62,20 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, mu):
     nb_qdot = nb_q
     pose_at_first_node = [0, 0, -0.5, 0.5]
 
-    # Initialize X_bounds
+    # Initialize x_bounds
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:, 0] = pose_at_first_node + [0] * nb_qdot
-    x_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot
+    x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add(pose_at_first_node + [0] * nb_qdot)
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add([[tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len])
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * tau_mapping.reduce.len)
     # ------------- #
 

@@ -1,14 +1,14 @@
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     DynamicsTypeOption,
     DynamicsType,
     BoundsOption,
     Bounds,
     QAndQDotBounds,
-    InitialConditionsOption,
-    InitialConditions,
+    InitialGuessOption,
+    InitialGuess,
     ShowResult,
     ObjectiveOption,
     Objective,
@@ -27,11 +27,13 @@ def my_parameter_function(biorbd_model, value, extra_value):
     biorbd_model.setGravity(biorbd.Vector3d(0, 0, value * extra_value))
 
 
-def my_target_function(ocp, value, target_value):
+def my_target_function(ocp, value):
     # The target function is a penalty function.
     # `ocp` and `value` are mandatory. The rest is defined in the
     # parameter by the user
-    return value - target_value
+    # Please note that if a target value exist (target parameters) it is automatically added, and therefore
+    # should not be added by hand here (that is, the next line should not read: return value - target)
+    return value
 
 
 def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, max_g, target_g):
@@ -50,29 +52,26 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
 
     # Path constraint
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-    x_bounds.min[:, [0, -1]] = 0
-    x_bounds.max[:, [0, -1]] = 0
-    x_bounds.min[1, -1] = 3.14
-    x_bounds.max[1, -1] = 3.14
+    x_bounds[:, [0, -1]] = 0
+    x_bounds[1, -1] = 3.14
 
     # Initial guess
-    x_init = InitialConditionsOption([0] * (n_q + n_qdot))
+    x_init = InitialGuessOption([0] * (n_q + n_qdot))
 
     # Define control path constraint
     u_bounds = BoundsOption([[tau_min] * n_tau, [tau_max] * n_tau])
-    u_bounds.min[1, :] = 0
-    u_bounds.max[1, :] = 0
+    u_bounds[1, :] = 0
 
-    u_init = InitialConditionsOption([tau_init] * n_tau)
+    u_init = InitialGuessOption([tau_init] * n_tau)
 
     # Define the parameter to optimize
     # Give the parameter some min and max bounds
     parameters = ParameterList()
     bound_gravity = Bounds(min_bound=min_g, max_bound=max_g, interpolation=InterpolationType.CONSTANT)
     # and an initial condition
-    initial_gravity = InitialConditions((min_g + max_g) / 2)
+    initial_gravity = InitialGuess((min_g + max_g) / 2)
     parameter_objective_functions = ObjectiveOption(
-        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=target_g
+        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target=target_g
     )
     parameters.add(
         "gravity_z",  # The name of the parameter

@@ -4,8 +4,9 @@ import biorbd
 from casadi import MX, Function
 from matplotlib import pyplot as plt
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
+    NonLinearProgram,
     BidirectionalMapping,
     Mapping,
     Data,
@@ -16,7 +17,7 @@ from biorbd_optim import (
     Objective,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
 )
 
 
@@ -51,16 +52,17 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
             ).expand()
         )
 
-    nlp = {
-        "model": biorbd_model,
-        "nbMuscle": nb_mus,
-        "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
-        "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
-        "parameters_to_optimize": {},
-    }
+    nlp = NonLinearProgram(
+        model=biorbd_model,
+        shape={"muscle": nb_mus},
+        mapping={
+            "q": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
+            "q_dot": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
+        },
+    )
     if use_residual_torque:
-        nlp["nbTau"] = nb_tau
-        nlp["tau_mapping"] = BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau)))
+        nlp.shape["tau"] = nb_tau
+        nlp.mapping["tau"] = BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau)))
         dyn_func = DynamicsFunctions.forward_dynamics_torque_muscle_driven
     else:
         dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_driven
@@ -148,12 +150,12 @@ def prepare_ocp(
     x_bounds[0].max[:nq, :] = 2 * np.pi
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     if use_residual_torque:
         u_bounds.add(
             [
@@ -168,7 +170,15 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model, dynamics, nb_shooting, final_time, x_init, u_init, x_bounds, u_bounds, objective_functions,
+        biorbd_model,
+        dynamics,
+        nb_shooting,
+        final_time,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
+        objective_functions,
     )
 
 
@@ -211,8 +221,8 @@ if __name__ == "__main__":
     if use_residual_torque:
         tau = controls["tau"]
 
-    n_q = ocp.nlp[0]["model"].nbQ()
-    n_mark = ocp.nlp[0]["model"].nbMarkers()
+    n_q = ocp.nlp[0].model.nbQ()
+    n_mark = ocp.nlp[0].model.nbMarkers()
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))

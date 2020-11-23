@@ -4,8 +4,9 @@ import biorbd
 from casadi import MX, Function
 from matplotlib import pyplot as plt
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
+    NonLinearProgram,
     BidirectionalMapping,
     Mapping,
     DynamicsTypeList,
@@ -17,7 +18,7 @@ from biorbd_optim import (
     BoundsList,
     Bounds,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
 )
 
 
@@ -34,17 +35,20 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     symbolic_states = MX.sym("x", nb_q + nb_qdot + nb_mus, 1)
     symbolic_controls = MX.sym("u", nb_tau + nb_mus, 1)
     symbolic_parameters = MX.sym("u", 0, 0)
-    nlp = {
-        "model": biorbd_model,
-        "nbQ": nb_q,
-        "nbQdot": nb_qdot,
-        "nbTau": nb_tau,
-        "nbMuscle": nb_mus,
-        "q_mapping": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
-        "q_dot_mapping": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
-        "tau_mapping": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
-        "parameters_to_optimize": {},
-    }
+    nlp = NonLinearProgram(
+        model=biorbd_model,
+        shape={
+            "q": nb_q,
+            "q_dot": nb_qdot,
+            "tau": nb_tau,
+            "muscle": nb_mus,
+        },
+        mapping={
+            "q": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
+            "q_dot": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
+            "tau": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
+        },
+    )
     markers_func = []
     for i in range(nb_markers):
         markers_func.append(
@@ -144,12 +148,12 @@ def prepare_ocp(
     )
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()) + [0] * biorbd_model.nbMuscles())
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     if use_residual_torque:
         u_bounds.add(
             [
@@ -164,7 +168,15 @@ def prepare_ocp(
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model, dynamics, nb_shooting, final_time, x_init, u_init, x_bounds, u_bounds, objective_functions,
+        biorbd_model,
+        dynamics,
+        nb_shooting,
+        final_time,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
+        objective_functions,
     )
 
 
@@ -206,9 +218,9 @@ if __name__ == "__main__":
         tau = controls_sol["tau"]
     excitations = controls_sol["muscles"]
 
-    n_q = ocp.nlp[0]["model"].nbQ()
-    n_qdot = ocp.nlp[0]["model"].nbQdot()
-    n_mark = ocp.nlp[0]["model"].nbMarkers()
+    n_q = ocp.nlp[0].model.nbQ()
+    n_qdot = ocp.nlp[0].model.nbQdot()
+    n_mark = ocp.nlp[0].model.nbMarkers()
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))

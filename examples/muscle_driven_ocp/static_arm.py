@@ -1,6 +1,6 @@
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     Objective,
@@ -8,12 +8,12 @@ from biorbd_optim import (
     DynamicsType,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, weight):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -24,7 +24,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     objective_functions = ObjectiveList()
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
     objective_functions.add(Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL)
-    objective_functions.add(Objective.Mayer.ALIGN_MARKERS, first_marker_idx=0, second_marker_idx=5)
+    objective_functions.add(Objective.Mayer.ALIGN_MARKERS, first_marker_idx=0, second_marker_idx=5, weight=weight)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -33,11 +33,10 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:, 0] = (0.07, 1.4, 0, 0)
-    x_bounds[0].max[:, 0] = (0.07, 1.4, 0, 0)
+    x_bounds[0][:, 0] = (0.07, 1.4, 0, 0)
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
 
     # Define control path constraint
@@ -49,7 +48,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
         ]
     )
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
 
@@ -67,7 +66,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, number_shooting_points=20)
+    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=3, number_shooting_points=50, weight=1000)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

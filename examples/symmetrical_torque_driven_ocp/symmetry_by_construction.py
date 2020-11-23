@@ -1,6 +1,6 @@
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
     DynamicsTypeList,
@@ -13,7 +13,7 @@ from biorbd_optim import (
     Constraint,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
     OdeSolver,
 )
@@ -46,18 +46,17 @@ def prepare_ocp(biorbd_model_path="cubeSym.bioMod", ode_solver=OdeSolver.RK):
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model, all_generalized_mapping))
-    x_bounds[0].min[3:6, [0, -1]] = 0
-    x_bounds[0].max[3:6, [0, -1]] = 0
+    x_bounds[0][3:6, [0, -1]] = 0
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([0] * all_generalized_mapping.reduce.len * 2)
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add([[tau_min] * all_generalized_mapping.reduce.len, [tau_max] * all_generalized_mapping.reduce.len])
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * all_generalized_mapping.reduce.len)
 
     # ------------- #

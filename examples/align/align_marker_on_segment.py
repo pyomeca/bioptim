@@ -1,6 +1,6 @@
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     Axe,
     OptimalControlProgram,
@@ -12,7 +12,7 @@ from biorbd_optim import (
     Constraint,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
 )
 
@@ -47,13 +47,11 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, initializ
 
     for i in range(1, 8):
         if i != 3:
-            x_bounds[0].min[i, [0, -1]] = 0
-            x_bounds[0].max[i, [0, -1]] = 0
-    x_bounds[0].min[2, -1] = 1.57
-    x_bounds[0].max[2, -1] = 1.57
+            x_bounds[0][i, [0, -1]] = 0
+    x_bounds[0][2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
     if initialize_near_solution:
         for i in range(2):
@@ -67,7 +65,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, initializ
     u_bounds = BoundsList()
     u_bounds.add([[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()])
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #

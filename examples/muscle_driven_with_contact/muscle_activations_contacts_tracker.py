@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     Data,
     DynamicsTypeList,
@@ -13,7 +13,7 @@ from biorbd_optim import (
     Objective,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
 )
 
@@ -45,14 +45,13 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, muscle_activatio
     nb_qdot = nb_q
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
-    # Initialize X_bounds
+    # Initialize x_bounds
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:, 0] = pose_at_first_node + [0] * nb_qdot
-    x_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot
+    x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add(pose_at_first_node + [0] * nb_qdot)
 
     # Define control path constraint
@@ -64,7 +63,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, muscle_activatio
         ]
     )
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [activation_init] * biorbd_model.nbMuscleTotal())
 
     # ------------- #
@@ -97,7 +96,7 @@ if __name__ == "__main__":
     q, q_dot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
     x = np.concatenate((q, q_dot))
     u = np.concatenate((tau, mus))
-    contact_forces_ref = np.array(ocp_to_track.nlp[0]["contact_forces_func"](x[:, :-1], u[:, :-1], []))
+    contact_forces_ref = np.array(ocp_to_track.nlp[0].contact_forces_func(x[:, :-1], u[:, :-1], []))
     muscle_activations_ref = mus
 
     # Track these data

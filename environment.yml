@@ -1,5 +1,5 @@
 # create a dev conda environment with: `make create_env` or `conda env create -f environment.yml`
-name: biorbd_optim
+name: bioptim
 channels:
 - conda-forge
 - default
@@ -10,6 +10,6 @@ dependencies:
 - casadi
 - rbdl =*=*casadi*
 - biorbd =*=*casadi*
-- biorbd-viz =*=*casadi*
+- bioviz =*=*casadi*
 - scipy
 - packaging

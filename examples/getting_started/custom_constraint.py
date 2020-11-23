@@ -5,7 +5,7 @@ As an example, this custom constraint reproduces exactly the behavior of the ALI
 import biorbd
 from casadi import vertcat
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
     DynamicsTypeOption,
@@ -15,18 +15,18 @@ from biorbd_optim import (
     ConstraintList,
     BoundsOption,
     QAndQDotBounds,
-    InitialConditionsOption,
+    InitialGuessOption,
     ShowResult,
     OdeSolver,
 )
 
 
 def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
-    nq = nlp["nbQ"]
+    nq = nlp.shape["q"]
     val = []
     for v in x:
         q = v[:nq]
-        markers = nlp["model"].markers(q)
+        markers = nlp.model.markers(q)
         first_marker = markers[:, first_marker_idx]
         second_marker = markers[:, second_marker_idx]
         val = vertcat(val, first_marker - second_marker)
@@ -56,20 +56,18 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
 
     # Path constraint
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-    x_bounds.min[1:6, [0, -1]] = 0
-    x_bounds.max[1:6, [0, -1]] = 0
-    x_bounds.min[2, -1] = 1.57
-    x_bounds.max[2, -1] = 1.57
+    x_bounds[1:6, [0, -1]] = 0
+    x_bounds[2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialConditionsOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialGuessOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
     u_bounds = BoundsOption(
         [[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()]
     )
 
-    u_init = InitialConditionsOption([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init = InitialGuessOption([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
 

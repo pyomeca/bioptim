@@ -1,7 +1,7 @@
 import numpy as np
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     DynamicsTypeList,
     DynamicsType,
@@ -9,7 +9,7 @@ from biorbd_optim import (
     Objective,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
     InterpolationType,
 )
@@ -74,10 +74,10 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
         x[12, i] = Arm_Quat_D[0]
         x[9:12, i] = Arm_Quat_G[1:]
         x[13, i] = Arm_Quat_G[0]
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add(x, interpolation=InterpolationType.LINEAR)
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * ntau)
 
     # ------------- #
@@ -98,7 +98,11 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
 if __name__ == "__main__":
 
     # changer le path quand ce sera pret
-    ocp = prepare_ocp("TruncAnd2Arm_Quaternion.bioMod", number_shooting_points=5, final_time=0.25,)
+    ocp = prepare_ocp(
+        "TruncAnd2Arm_Quaternion.bioMod",
+        number_shooting_points=5,
+        final_time=0.25,
+    )
     sol = ocp.solve()
     print("\n")
 

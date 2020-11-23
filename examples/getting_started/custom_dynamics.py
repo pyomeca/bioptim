@@ -4,7 +4,7 @@ As an example, this custom constraint reproduces exactly the behavior of the TOR
 """
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
     DynamicsTypeList,
@@ -17,7 +17,7 @@ from biorbd_optim import (
     Constraint,
     BoundsOption,
     QAndQDotBounds,
-    InitialConditionsOption,
+    InitialGuessOption,
     ShowResult,
     OdeSolver,
 )
@@ -27,7 +27,7 @@ def custom_dynamic(states, controls, parameters, nlp):
     DynamicsFunctions.apply_parameters(parameters, nlp)
     q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-    qddot = nlp["model"].ForwardDynamics(q, qdot, tau).to_mx()
+    qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
     return qdot, qddot
 
@@ -65,20 +65,18 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
 
     # Path constraint
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-    x_bounds.min[1:6, [0, -1]] = 0
-    x_bounds.max[1:6, [0, -1]] = 0
-    x_bounds.min[2, -1] = 1.57
-    x_bounds.max[2, -1] = 1.57
+    x_bounds[1:6, [0, -1]] = 0
+    x_bounds[2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialConditionsOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialGuessOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
     u_bounds = BoundsOption(
         [[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()]
     )
 
-    u_init = InitialConditionsOption([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init = InitialGuessOption([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
 

@@ -1,6 +1,6 @@
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
     DynamicsTypeList,
@@ -11,7 +11,7 @@ from biorbd_optim import (
     Constraint,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
     OdeSolver,
 )
@@ -57,15 +57,12 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK, long_o
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
-            bounds.min[i, [0, -1]] = 0
-            bounds.max[i, [0, -1]] = 0
-    x_bounds[0].min[2, 0] = 0.0
-    x_bounds[0].max[2, 0] = 0.0
-    x_bounds[2].min[2, [0, -1]] = [0.0, 1.57]
-    x_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
+            bounds[i, [0, -1]] = 0
+    x_bounds[0][2, 0] = 0.0
+    x_bounds[2][2, [0, -1]] = [0.0, 1.57]
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
     x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
     x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
@@ -76,7 +73,7 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK, long_o
     u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
     u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())

@@ -1,7 +1,7 @@
 import numpy as np
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
     ConstraintList,
@@ -12,7 +12,7 @@ from biorbd_optim import (
     DynamicsType,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
     StateTransitionList,
 )
@@ -66,7 +66,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
     x_bounds.add(QAndQDotBounds(biorbd_model))
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([0, -0.9, 1.7, 0.9, 2.0, -1.3] + [0] * biorbd_model.nbQdot())
 
     # Define control path constraint
@@ -78,7 +78,7 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
         ]
     )
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [muscle_init] * biorbd_model.nbMuscleTotal())
 
     # ------------- #

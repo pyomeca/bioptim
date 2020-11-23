@@ -5,13 +5,13 @@ import biorbd
 import numpy as np
 from casadi import Function, MX, vertcat
 
-from biorbd_optim import (
+from bioptim import (
     OptimalControlProgram,
     DynamicsTypeList,
     DynamicsType,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     ShowResult,
     Data,
     ObjectiveList,
@@ -56,18 +56,17 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:, 0] = 0
-    x_bounds[0].max[:, 0] = 0
+    x_bounds[0][:, 0] = 0
 
     # Initial guess
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add([0] * (n_q + n_qdot))
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add([[tau_min] * n_tau, [tau_max] * n_tau])
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * n_tau)
 
     # ------------- #
@@ -124,7 +123,7 @@ if __name__ == "__main__":
     label_markers = []
     title_markers = ["x", "y", "z"]
     for mark in range(biorbd_model.nbMarkers()):
-        label_markers.append(ocp.nlp[0]["model"].markerNames()[mark].to_string())
+        label_markers.append(ocp.nlp[0].model.markerNames()[mark].to_string())
 
     ocp.add_plot(
         "Markers plot coordinates",
