@@ -165,7 +165,7 @@ def IRK(ode, ode_opt):
                 xp_j += C[r, j] * X[r]
 
             # Append collocation equations
-            f_j = fun(X[j], get_u(U, t_norm_init), P)
+            f_j = fun(X[j], get_u(U, t_norm_init), P)[:, idx]
             V_eq.append(h * f_j - xp_j)
 
         # Concatenate constraints

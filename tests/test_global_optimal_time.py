@@ -44,59 +44,41 @@ def test_pendulum_min_time_mayer(ode_solver):
     )
     sol = ocp.solve()
 
-    # # Check constraints
-    # g = np.array(sol["g"])
-    # np.testing.assert_equal(g.shape, (40, 1))
-    # np.testing.assert_almost_equal(g, np.zeros((40, 1))) # ???????????????????????????????????????????????????????????66
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (40, 1))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
     states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
     q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
     tf = param["time"][0, 0]
 
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.09322426155524201)
+        np.testing.assert_almost_equal(f[0, 0], 0.6209187886055388)
 
-        # # initial and final position
-        # np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        # np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-        #
-        # # initial and final velocities
-        # np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        # np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-        #
-        # # initial and final controls
-        # np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
-        # np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99980141, 0)))
-        #
-        # # optimized time
-        # np.testing.assert_almost_equal(tf, 0.6209213032003106)
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9535415, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99980138, 0)))
+
+        # optimized time
+        np.testing.assert_almost_equal(tf, 0.6209187886055388)
     else:
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 0.6209213032003106)
-
-        # Check constraints
-        g = np.array(sol["g"])
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
-
-        # Check some of the results
-        states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-        tf = param["time"][0, 0]
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
@@ -110,7 +92,7 @@ def test_pendulum_min_time_mayer(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
-def test_pendulum_min_time_lagrange(ode_solver): # ???????????????????????????????????????????????????????????66
+def test_pendulum_min_time_lagrange(ode_solver):
     # Load pendulum_min_time_Lagrange
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -127,59 +109,41 @@ def test_pendulum_min_time_lagrange(ode_solver): # ?????????????????????????????
     )
     sol = ocp.solve()
 
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (40, 1))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    tf = param["time"][0, 0]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
     if ode_solver == OdeSolver.IRK:
-        # # Check objective function value
+        # Check objective function value
         f = np.array(sol["f"])
-        # np.testing.assert_equal(f.shape, (1, 1))
-        # np.testing.assert_almost_equal(f[0, 0], 0.062092703196434854)
-        #
-        # # Check constraints
-        # g = np.array(sol["g"])
-        # np.testing.assert_equal(g.shape, (40, 1))
-        # np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
-        #
-        # # Check some of the results
-        # states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-        # q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-        # tf = param["time"][0, 0]
-        #
-        # # initial and final position
-        # np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        # np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-        #
-        # # initial and final velocities
-        # np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        # np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-        #
-        # # initial and final controls
-        # np.testing.assert_almost_equal(tau[:, 0], np.array((59.9529745, 0)))
-        # np.testing.assert_almost_equal(tau[:, -1], np.array((-99.9980341, 0)))
-        #
-        # # optimized time
-        # np.testing.assert_almost_equal(tf, 0.6209270319643485)
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.06209245173245879)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95201483, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99803395, 0)))
+
+        # optimized time
+        np.testing.assert_almost_equal(tf, 0.6209245173245879)
     else:
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 0.062092703196434854)
-
-        # Check constraints
-        g = np.array(sol["g"])
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
-
-        # Check some of the results
-        states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-        tf = param["time"][0, 0]
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((59.9529745, 0)))
@@ -212,66 +176,45 @@ def test_time_constraint(ode_solver):
     )
     sol = ocp.solve()
 
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (40, 1))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+
+    # Check some of the results
+    states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    tf = param["time"][0, 0]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    # optimized time
+    np.testing.assert_almost_equal(tf, 1.0)
+
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
         f = np.array(sol["f"])
-        # np.testing.assert_equal(f.shape, (1, 1))
-        # np.testing.assert_almost_equal(f[0, 0], 1451.2202233368012)
-        #
-        # # Check constraints
-        # g = np.array(sol["g"])
-        # np.testing.assert_equal(g.shape, (40, 1))
-        # np.testing.assert_almost_equal(g, np.zeros((40, 1)))
-        #
-        # # Check some of the results
-        # states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-        # q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-        # tf = param["time"][0, 0]
-        #
-        # # initial and final position
-        # np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        # np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-        #
-        # # initial and final velocities
-        # np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        # np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-        #
-        # # initial and final controls
-        # np.testing.assert_almost_equal(tau[:, 0], np.array((22.49775, 0)))
-        # np.testing.assert_almost_equal(tau[:, -1], np.array((-33.9047809, 0)))
-        #
-        # # optimized time
-        # np.testing.assert_almost_equal(tf, 1.0)
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 1451.2233946787849)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((22.49949667, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-33.90954581, 0)))
     else:
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 1451.2202233368012)
 
-        # Check constraints
-        g = np.array(sol["g"])
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
-
-        # Check some of the results
-        states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-        tf = param["time"][0, 0]
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((22.49775, 0)))
         np.testing.assert_almost_equal(tau[:, -1], np.array((-33.9047809, 0)))
-
-        # optimized time
-        np.testing.assert_almost_equal(tf, 1.0)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -297,72 +240,38 @@ def test_monophase_time_constraint(ode_solver):
     )
     sol = ocp.solve()
 
-    if ode_solver == OdeSolver.IRK: # ????????????????????????????????????????????????????????????????????????????????
-        # Check objective function value
-        f = np.array(sol["f"])
-        np.testing.assert_equal(f.shape, (1, 1))
-        # np.testing.assert_almost_equal(f[0, 0], 10826.61745874204)
-        #
-        # # Check constraints
-        # g = np.array(sol["g"])
-        # np.testing.assert_equal(g.shape, (126, 1))
-        # np.testing.assert_almost_equal(g, np.zeros((126, 1)))
-        #
-        # # Check some of the results
-        # states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-        # q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-        # tf = param["time"][0, 0]
-        #
-        # # initial and final position
-        # np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
-        # np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)))
-        #
-        # # initial and final velocities
-        # np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
-        # np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
-        #
-        # # initial and final controls
-        # np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)))
-        # np.testing.assert_almost_equal(tau[:, -1], np.array((-5.71428583, 9.81, 0)))
-        #
-        # # optimized time
-        # np.testing.assert_almost_equal(tf, 1.0)
-        #
-        # # save and load
-        # TestUtils.save_and_load(sol, ocp, True)
-    else:
-        # Check objective function value
-        f = np.array(sol["f"])
-        np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 10826.61745874204)
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 10826.61745874204)
 
-        # Check constraints
-        g = np.array(sol["g"])
-        np.testing.assert_equal(g.shape, (126, 1))
-        np.testing.assert_almost_equal(g, np.zeros((126, 1)))
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (126, 1))
+    np.testing.assert_almost_equal(g, np.zeros((126, 1)))
 
-        # Check some of the results
-        states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-        tf = param["time"][0, 0]
+    # Check some of the results
+    states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    tf = param["time"][0, 0]
 
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)))
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)))
 
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
 
-        # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-5.71428583, 9.81, 0)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.71428583, 9.81, 0)))
 
-        # optimized time
-        np.testing.assert_almost_equal(tf, 1.0)
+    # optimized time
+    np.testing.assert_almost_equal(tf, 1.0)
 
-        # save and load
-        TestUtils.save_and_load(sol, ocp, True)
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
@@ -385,72 +294,38 @@ def test_multiphase_time_constraint(ode_solver):
     )
     sol = ocp.solve()
 
-    if ode_solver == OdeSolver.IRK: # ????????????????????????????????????????????????????????????????????????????????
-        # Check objective function value
-        f = np.array(sol["f"])
-        # np.testing.assert_equal(f.shape, (1, 1))
-        # np.testing.assert_almost_equal(f[0, 0], 55582.04125059745)
-        #
-        # # Check constraints
-        # g = np.array(sol["g"])
-        # np.testing.assert_equal(g.shape, (444, 1))
-        # np.testing.assert_almost_equal(g, np.zeros((444, 1)))
-        #
-        # # Check some of the results
-        # states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-        # q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-        # tf = param["time"][0, 0]
-        #
-        # # initial and final position
-        # np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
-        # np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
-        #
-        # # initial and final velocities
-        # np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
-        # np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
-        #
-        # # initial and final controls
-        # np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)))
-        # np.testing.assert_almost_equal(tau[:, -1], np.array((-8.92857121, 9.81, -14.01785679)))
-        #
-        # # optimized time
-        # np.testing.assert_almost_equal(tf, 1.0)
-        #
-        # # save and load
-        # TestUtils.save_and_load(sol, ocp, True)
-    else:
-        # Check objective function value
-        f = np.array(sol["f"])
-        np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 55582.04125059745)
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 55582.04125059745)
 
-        # Check constraints
-        g = np.array(sol["g"])
-        np.testing.assert_equal(g.shape, (444, 1))
-        np.testing.assert_almost_equal(g, np.zeros((444, 1)))
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (444, 1))
+    np.testing.assert_almost_equal(g, np.zeros((444, 1)))
 
-        # Check some of the results
-        states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-        tf = param["time"][0, 0]
+    # Check some of the results
+    states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    tf = param["time"][0, 0]
 
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
 
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
 
-        # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-8.92857121, 9.81, -14.01785679)))
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-8.92857121, 9.81, -14.01785679)))
 
-        # optimized time
-        np.testing.assert_almost_equal(tf, 1.0)
+    # optimized time
+    np.testing.assert_almost_equal(tf, 1.0)
 
-        # save and load
-        TestUtils.save_and_load(sol, ocp, True)
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
 
 
 def partial_ocp_parameters(nb_phases):

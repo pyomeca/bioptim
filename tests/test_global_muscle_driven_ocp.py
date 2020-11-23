@@ -236,7 +236,7 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
         # Check constraints
         g = np.array(sol["g"])
         np.testing.assert_equal(g.shape, (110, 1))
-        np.testing.assert_almost_equal(g[:90], np.zeros((90, 1)), decimal=6) # oups ?!
+        np.testing.assert_almost_equal(g[:90], np.zeros((90, 1)), decimal=6)
         np.testing.assert_array_less(-g[90:], -boundary)
         expected_pos_g = np.array(
             [

@@ -218,19 +218,19 @@ def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], -80.20048585400949)
+        np.testing.assert_almost_equal(f[0, 0], -85.03817304169894)
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([7.18708669e-01, -4.45703930e-01, -3.14159262e00, 0]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([1.08646846e+00, -3.86731175e-01,  3.14159262e+00, 0]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([8.00388007e-01, 5.48867126e-02, -3.14159262e00, 0]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([7.98989394e-01, 4.42051585e-02,  3.14159262e+00, 0]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([3.78330878e-01, 3.70214281e+00, 10, 0]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([3.77168521e-01, -3.40782793e+00, 10, 0]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([-9.14673142e-04, 3.51181383e-02, 10, 0]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.05954739e-03, -1.11374374e-01, 10, 0]))
         # # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([-4.52216174e-02,  9.25170010e-01, -4.48131399e-09, 0]))
-        np.testing.assert_almost_equal(tau[:, -1], np.array([0, 0, 0, 0]))
+        np.testing.assert_almost_equal(tau[:, 0], np.array([-2.20725721e-03,  6.06141183e+00, -5.24736884e+00, 0]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([6.14841190e-03, 3.35965344e+00, -9.99999973e+01, 0]))
     else:
-    # Check objective function value
+        # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], -80.28869898410233)
@@ -245,8 +245,8 @@ def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
         np.testing.assert_almost_equal(tau[:, 0], np.array([5.6477202e-03, 3.9487332, -8.4955414, 0]))
         np.testing.assert_almost_equal(tau[:, -1], np.array([-9.9579303e-03, 4.0992343, 8.4955414, 0]))
 
-    # # save and load
+    # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    # TestUtils.simulate(sol, ocp, decimal_value=5) #??????????????????????????????????????????????????????????????????????????6
+    TestUtils.simulate(sol, ocp, decimal_value=5)

@@ -392,59 +392,37 @@ def test_parameter_optimization(ode_solver):
     )
     sol = ocp.solve()
 
-    if ode_solver == OdeSolver.IRK: # Pas converge ????????????????????????????????????????????????????????????????????
-        # # Check constraints
-        # g = np.array(sol["g"])
-        # np.testing.assert_equal(g.shape, (80, 1))
-        # np.testing.assert_almost_equal(g, np.zeros((80, 1)))
-        #
-        # # Check some of the results
-        # states, controls, params = Data.get_data(ocp, sol["x"], concatenate=False, get_parameters=True)
-        # q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-        # gravity = params["gravity_z"]
-        #
-        # # initial and final position
-        # np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        # np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-        #
-        # # initial and final velocities
-        # np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        # np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (80, 1))
+    np.testing.assert_almost_equal(g, np.zeros((80, 1)))
 
-        print('Pas convergé')
+    # Check some of the results
+    states, controls, params = Data.get_data(ocp, sol["x"], concatenate=False, get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    gravity = params["gravity_z"]
 
-        # # Check objective function value
-        # f = np.array(sol["f"])
-        # np.testing.assert_equal(f.shape, (1, 1))
-        # np.testing.assert_almost_equal(f[0, 0], 853.5406085230834, decimal=6)
-        #
-        # # initial and final controls
-        # np.testing.assert_almost_equal(tau[:, 0], np.array((8.1318336, 0)))
-        # np.testing.assert_almost_equal(tau[:, -1], np.array((-7.91806351, 0)))
-        #
-        # # gravity parameter
-        # np.testing.assert_almost_equal(gravity, np.array([[-9.09889371]]))
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    if ode_solver == OdeSolver.IRK:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 853.5298104707485, decimal=6)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((8.13135278, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-7.91821551, 0)))
+
+        # gravity parameter
+        np.testing.assert_almost_equal(gravity, np.array([[-9.0988827]]))
     else:
-        # Check constraints
-        g = np.array(sol["g"])
-        np.testing.assert_equal(g.shape, (80, 1))
-        np.testing.assert_almost_equal(g, np.zeros((80, 1)))
-
-        # Check some of the results
-        states, controls, params = Data.get_data(ocp, sol["x"], concatenate=False, get_parameters=True)
-        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-        gravity = params["gravity_z"]
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-
-        #----------------------------------------------------
-
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
