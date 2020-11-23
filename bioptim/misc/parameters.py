@@ -1,6 +1,6 @@
 from casadi import vertcat
-import numpy as np
-from .enums import Instant
+
+from .enums import Node
 from ..limits.constraints import Bounds
 from ..limits.path_conditions import InitialGuess
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveOption, ObjectiveList
@@ -8,13 +8,16 @@ from .options_lists import OptionList, OptionGeneric
 
 
 class ParameterOption(OptionGeneric):
-    def __init__(self, function=None, initial_guess=None, bounds=None, size=None, penalty_list=None, **params):
+    def __init__(
+        self, function=None, initial_guess=None, bounds=None, quadratic=True, size=None, penalty_list=None, **params
+    ):
         super(ParameterOption, self).__init__(**params)
         self.function = function
         self.initial_guess = initial_guess
         self.bounds = bounds
         self.size = size
         self.penalty_list = penalty_list
+        self.quadratic = quadratic
 
 
 class ParameterList(OptionList):
@@ -39,8 +42,8 @@ class ParameterList(OptionList):
 
             super(ParameterList, self)._add(
                 option_type=ParameterOption,
-                function=function,
                 phase=phase,
+                function=function,
                 name=parameter_name,
                 initial_guess=initial_guess,
                 bounds=bounds,
@@ -82,23 +85,15 @@ class Parameters:
             # Sanity check
             if not isinstance(penalty.type, Objective.Parameter):
                 raise RuntimeError("Parameters should be declared custom_type=Objective.Parameters")
-            if penalty.instant != Instant.DEFAULT:
-                raise RuntimeError("Parameters are timeless optimization, instant=Instant.DEFAULT should be declared")
+            if penalty.node != Node.DEFAULT:
+                raise RuntimeError("Parameters are timeless optimization, node=Node.DEFAULT should be declared")
 
             func = penalty.custom_function
-            weight = penalty.weight
-            quadratic = False if penalty.quadratic is None else penalty.quadratic
 
-            if "target" in penalty.params:
-                target = penalty.params["target"]
-                del penalty.params["target"]
-            else:
-                target = None
             val = func(ocp, cx, **penalty.params)
+            penalty.sliced_target = penalty.target
             ObjectiveFunction.ParameterFunction.clear_penalty(ocp, None, penalty)
-            ObjectiveFunction.ParameterFunction.add_to_penalty(
-                ocp, None, val, penalty, target=target, weight=weight, quadratic=quadratic
-            )
+            ObjectiveFunction.ParameterFunction.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
     def _add_to_v(ocp, name, size, function, bounds, initial_guess, cx=None, **extra_params):

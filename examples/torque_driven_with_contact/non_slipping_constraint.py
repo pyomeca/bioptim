@@ -1,7 +1,8 @@
+import numpy as np
 import biorbd
 
 from bioptim import (
-    Instant,
+    Node,
     OptimalControlProgram,
     ConstraintList,
     Constraint,
@@ -36,22 +37,20 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, mu):
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        Constraint.CONTACT_FORCE_INEQUALITY,
-        direction="GREATER_THAN",
-        instant=Instant.ALL,
+        Constraint.CONTACT_FORCE,
+        max_bound=np.inf,
+        node=Node.ALL,
         contact_force_idx=1,
-        boundary=0,
     )
     constraints.add(
-        Constraint.CONTACT_FORCE_INEQUALITY,
-        direction="GREATER_THAN",
-        instant=Instant.ALL,
+        Constraint.CONTACT_FORCE,
+        max_bound=np.inf,
+        node=Node.ALL,
         contact_force_idx=2,
-        boundary=0,
     )
     constraints.add(
         Constraint.NON_SLIPPING,
-        instant=Instant.ALL,
+        node=Node.ALL,
         normal_component_idx=(1, 2),
         tangential_component_idx=0,
         static_friction_coefficient=mu,

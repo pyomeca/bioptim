@@ -116,13 +116,13 @@ def test_contact_forces_inequality_GREATER_THAN_constraint():
     contact_forces_inequality_GREATER_THAN_constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(contact_forces_inequality_GREATER_THAN_constraint)
 
-    boundary = 50
+    min_bound = 50
     ocp = contact_forces_inequality_GREATER_THAN_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
         number_shooting_points=10,
-        direction="GREATER_THAN",
-        boundary=boundary,
+        min_bound=min_bound,
+        max_bound=np.inf,
     )
     sol = ocp.solve()
 
@@ -135,7 +135,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint():
     g = np.array(sol["g"])
     np.testing.assert_equal(g.shape, (100, 1))
     np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
-    np.testing.assert_array_less(-g[80:], -boundary)
+    np.testing.assert_array_less(-g[80:], -min_bound)
     expected_pos_g = np.array(
         [
             [50.76491919],
@@ -192,13 +192,13 @@ def test_contact_forces_inequality_LESSER_THAN_constraint():
     contact_forces_inequality_LESSER_THAN_constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(contact_forces_inequality_LESSER_THAN_constraint)
 
-    boundary = 100
+    max_bound = 100
     ocp = contact_forces_inequality_LESSER_THAN_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
         number_shooting_points=10,
-        direction="LESSER_THAN",
-        boundary=boundary,
+        min_bound=-np.inf,
+        max_bound=max_bound,
     )
     sol = ocp.solve()
 
@@ -211,7 +211,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint():
     g = np.array(sol["g"])
     np.testing.assert_equal(g.shape, (100, 1))
     np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
-    np.testing.assert_array_less(g[80:], boundary)
+    np.testing.assert_array_less(g[80:], max_bound)
     expected_non_zero_g = np.array(
         [
             [63.27237842],

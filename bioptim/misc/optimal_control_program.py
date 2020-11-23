@@ -2,7 +2,6 @@ import os
 import pickle
 from copy import deepcopy
 from math import inf
-import numpy as np
 
 import biorbd
 import casadi
@@ -24,12 +23,11 @@ from ..interfaces.integrator import RK4
 from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList, ConstraintOption
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList, ObjectiveOption
-from ..limits.path_conditions import OptionGeneric
 from ..limits.path_conditions import Bounds, BoundsList, BoundsOption
 from ..limits.path_conditions import InitialGuess, InitialGuessList, InitialGuessOption
 from ..limits.path_conditions import InterpolationType
 
-check_version(biorbd, "1.3.5", "1.4.0")
+check_version(biorbd, "1.4.0", "1.5.0")
 
 
 class OptimalControlProgram:
@@ -79,7 +77,7 @@ class OptimalControlProgram:
         :param x_bounds: States upper and lower bounds. (Instance of the class Bounds)
         :param u_bounds: Controls upper and lower bounds. (Instance of the class Bounds)
         :param objective_functions: Tuple of tuple of objectives functions handler's and weights.
-        :param constraints: Tuple of constraints, instant (which node(s)) and tuple of geometric structures used.
+        :param constraints: Tuple of constraints, node(s) and tuple of geometric structures used.
         :param external_forces: Tuple of external forces.
         :param ode_solver: Name of chosen ode solver to use. (OdeSolver.COLLOCATION, OdeSolver.RK, OdeSolver.CVODES or
         OdeSolver.NO_SOLVER)
@@ -628,24 +626,24 @@ class OptimalControlProgram:
                     initial_time_guess.append(phase_time[i])
                     phase_time[i] = self.CX.sym(f"time_phase_{i}", 1, 1)
                     if pen_fun.type.get_type() == ConstraintFunction:
-                        time_min.append(pen_fun.minimum if pen_fun.minimum else 0)
-                        time_max.append(pen_fun.maximum if pen_fun.maximum else inf)
+                        time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
+                        time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
                     else:
-                        time_min.append(pen_fun.params["minimum"] if "minimum" in pen_fun.params else 0)
-                        time_max.append(pen_fun.params["maximum"] if "maximum" in pen_fun.params else inf)
+                        time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
+                        time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
         return has_penalty
 
-    def __define_variable_time(self, initial_guess, minimum, maximum):
+    def __define_variable_time(self, initial_guess, min_bound, max_bound):
         """
         For each variable time, sets initial guess and bounds.
         :param initial_guess: The initial values taken from the phase_time vector
-        :param minimum: variable time minimums as set by user (default: 0)
-        :param maximum: variable time maximums as set by user (default: inf)
+        :param min_bound: variable time minimums as set by user (default: 0)
+        :param max_bound: variable time maximums as set by user (default: inf)
         """
         i = 0
         for nlp in self.nlp:
             if isinstance(nlp.tf, self.CX):
-                time_bounds = Bounds(minimum[i], maximum[i], interpolation=InterpolationType.CONSTANT)
+                time_bounds = Bounds(min_bound[i], max_bound[i], interpolation=InterpolationType.CONSTANT)
                 time_init = InitialGuess(initial_guess[i])
                 Parameters._add_to_v(self, "time", 1, None, time_bounds, time_init, nlp.tf)
                 i += 1
