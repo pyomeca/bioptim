@@ -104,7 +104,6 @@ def IRK(ode, ode_opt):
     def dxdt(h, states, controls, params):
         nu = controls.shape[0]
         nx = states.shape[0]
-        p = params
 
         nb_dof = 0
         quat_idx = []
@@ -145,16 +144,20 @@ def IRK(ode, ode_opt):
                 C[j, r] = tfcn(time_points[r])
 
         # Total number of variables for one finite element
-        X0 = states  # CX.sym('X0', states.shape[0])
-        U = controls  # CX.sym('U', controls.shape[0])
-        V = CX.sym("V", degree * nx)
+        X0 = states
+        U = controls
+        P = params
 
         # Get the state at each collocation point
-        X = [X0] + vertsplit(V, [r * nx for r in range(degree + 1)])
+        # X = [X0] + vertsplit(V, [r * nx for r in range(degree + 1)])
 
         # Get the collocation equations (that define V)
+        V = [CX.sym(f"X_irk_{j}", nx, 1) for j in range(1, degree + 1)]
+        X = [X0] + V
+
         V_eq = []
         for j in range(1, degree + 1):
+
             t_norm_init = (j - 1) / degree  # normalized time
             # Expression for the state derivative at the collocation point
             xp_j = 0
@@ -162,24 +165,22 @@ def IRK(ode, ode_opt):
                 xp_j += C[r, j] * X[r]
 
             # Append collocation equations
-            f_j = fun(X[j], get_u(U, t_norm_init), p)[:, idx]
+            f_j = fun(X[j], get_u(U, t_norm_init), P)
             V_eq.append(h * f_j - xp_j)
 
         # Concatenate constraints
+        V = vertcat(*V)
         V_eq = vertcat(*V_eq)
 
         # Root-finding function, implicitly defines V as a function of X0 and P
-        vfcn = Function("vfcn", [V, X0, U], [V_eq])
-
-        # Convert to SX to decrease overhead
-        vfcn_sx = vfcn.expand()
+        vfcn = Function("vfcn", [V, X0, U, P], [V_eq]).expand()
 
         # Create a implicit function instance to solve the system of equations
-        ifcn = rootfinder("ifcn", "newton", vfcn_sx)
-        V = ifcn(CX(), X0, U)
+        ifcn = rootfinder("ifcn", "newton", vfcn)
+        V = ifcn(CX(), X0, U, P)
         X = [X0 if r == 0 else V[(r - 1) * nx : r * nx] for r in range(degree + 1)]
 
-        # Get an expression for the state at the end of the finie element
+        # Get an expression for the state at the end of the finite element
         XF = CX.zeros(nx, degree + 1)  # 0 #
         for r in range(degree + 1):
             XF[:, r] = XF[:, r - 1] + D[r] * X[r]
