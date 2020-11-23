@@ -88,9 +88,8 @@ def IRK(ode, ode_opt):
     u_sym = ode["p"]
     param_sym = ode_opt["param"]
     fun = ode["ode"]
-    model = ode_opt["model"]
     step_time = t_span[1] - t_span[0]
-    h = step_time  # Length between two nodes
+    h = step_time
     control_type = ode_opt["control_type"]
 
     def get_u(u, dt_norm):
@@ -135,44 +134,43 @@ def IRK(ode, ode_opt):
                 C[j, r] = tfcn(time_points[r])
 
         # Total number of variables for one finite element
-        X0 = states
-        U = controls
-        P = params
+        x0 = states
+        u = controls
 
-        V = [CX.sym(f"X_irk_{j}", nx, 1) for j in range(1, degree + 1)]
-        X = [X0] + V
+        x_irk_points = [CX.sym(f"X_irk_{j}", nx, 1) for j in range(1, degree + 1)]
+        x = [x0] + x_irk_points
 
-        V_eq = []
+        x_irk_points_eq = []
         for j in range(1, degree + 1):
 
             t_norm_init = (j - 1) / degree  # normalized time
             # Expression for the state derivative at the collocation point
             xp_j = 0
             for r in range(degree + 1):
-                xp_j += C[r, j] * X[r]
+                xp_j += C[r, j] * x[r]
 
             # Append collocation equations
-            f_j = fun(X[j], get_u(U, t_norm_init), P)[:, idx]
-            V_eq.append(h * f_j - xp_j)
+            f_j = fun(x[j], get_u(u, t_norm_init), params)[:, idx]
+            x_irk_points_eq.append(h * f_j - xp_j)
 
         # Concatenate constraints
-        V = vertcat(*V)
-        V_eq = vertcat(*V_eq)
+        x_irk_points = vertcat(*x_irk_points)
+        x_irk_points_eq = vertcat(*x_irk_points_eq)
 
-        # Root-finding function, implicitly defines V as a function of X0 and P
-        vfcn = Function("vfcn", [V, X0, U, P], [V_eq]).expand()
+        # Root-finding function, implicitly defines x_irk_points as a function of x0 and p
+        vfcn = Function("vfcn", [x_irk_points, x0, u, params], [x_irk_points_eq]).expand()
 
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
-        V = ifcn(CX(), X0, U, P)
-        X = [X0 if r == 0 else V[(r - 1) * nx : r * nx] for r in range(degree + 1)]
+        x_irk_points = ifcn(CX(), x0, u, params)
+        x = [x0 if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(degree + 1)]
 
         # Get an expression for the state at the end of the finite element
-        XF = CX.zeros(nx, degree + 1)  # 0 #
+        xf = CX.zeros(nx, degree + 1)  # 0 #
         for r in range(degree + 1):
-            XF[:, r] = XF[:, r - 1] + D[r] * X[r]
+            xf[:, r] = xf[:, r - 1] + D[r] * x[r]
 
-        return XF[:, -1], XF
+        return xf[:, -1], xf
 
     return Function(
         "integrator", [x_sym, u_sym, param_sym], dxdt(h, x_sym, u_sym, param_sym), ["x0", "p", "params"], ["xf", "xall"]
