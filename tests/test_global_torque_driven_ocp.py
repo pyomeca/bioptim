@@ -12,7 +12,7 @@ from bioptim import Data, OdeSolver, ConstraintList, Constraint, Node
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
 def test_align_markers(ode_solver):
     # Load align_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -206,7 +206,7 @@ def test_align_markers_with_actuators(ode_solver):
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
 def test_multiphase_align_markers(ode_solver):
     # Load multiphase_align_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."

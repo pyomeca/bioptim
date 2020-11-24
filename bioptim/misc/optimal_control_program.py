@@ -80,7 +80,7 @@ class OptimalControlProgram:
         :param objective_functions: Tuple of tuple of objectives functions handler's and weights.
         :param constraints: Tuple of constraints, node(s) and tuple of geometric structures used.
         :param external_forces: Tuple of external forces.
-        :param ode_solver: Name of chosen ode solver to use. (OdeSolver.COLLOCATION, OdeSolver.RK, OdeSolver.CVODES or
+        :param ode_solver: Name of chosen ode solver to use. (OdeSolver.RK, OdeSolver.CVODES or
         OdeSolver.NO_SOLVER)
         :param all_generalized_mapping: States and controls mapping. (Instance of class Mapping)
         :param q_mapping: Generalized coordinates position states mapping. (Instance of class Mapping)
@@ -421,7 +421,7 @@ class OptimalControlProgram:
         """
 
         ode_opt = {"t0": 0, "tf": nlp.dt}
-        if nlp.ode_solver == OdeSolver.COLLOCATION or nlp.ode_solver == OdeSolver.RK:
+        if nlp.ode_solver == OdeSolver.RK:
             ode_opt["number_of_finite_elements"] = nlp.nb_integration_steps
         elif nlp.ode_solver == OdeSolver.IRK:
             nlp.nb_integration_steps = 1
@@ -463,16 +463,6 @@ class OptimalControlProgram:
                 elif nlp.ode_solver == OdeSolver.IRK:
                     ode_opt["irk_polynomial_interpolation_degree"] = nlp.irk_polynomial_interpolation_degree
                     nlp.dynamics.append(IRK(ode, ode_opt))
-        elif nlp.ode_solver == OdeSolver.COLLOCATION:
-            if not isinstance(self.CX(), MX):
-                raise RuntimeError("COLLOCATION integrator can only be used with MX graphs")
-            if len(self.param_to_optimize) != 0:
-                raise RuntimeError("COLLOCATION cannot be used while optimizing parameters")
-            if nlp.external_forces:
-                raise RuntimeError("COLLOCATION cannot be used with external_forces")
-            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                raise RuntimeError("COLLOCATION cannot be used with piece-wise linear controls (only RK4)")
-            nlp.dynamics.append(casadi.integrator("integrator", "collocation", ode, ode_opt))
         elif nlp.ode_solver == OdeSolver.CVODES:
             if not isinstance(self.CX(), MX):
                 raise RuntimeError("CVODES integrator can only be used with MX graphs")

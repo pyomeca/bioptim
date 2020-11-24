@@ -23,11 +23,10 @@ class OdeSolver(Enum):
     (RK is pretty much good balance)
     """
 
-    COLLOCATION = 0
-    RK = 1
-    IRK = 2
-    CVODES = 3
-    NO_SOLVER = 4
+    RK = 0
+    IRK = 1
+    CVODES = 2
+    NO_SOLVER = 3
 
 
 class Node(Enum):
