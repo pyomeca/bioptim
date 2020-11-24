@@ -235,7 +235,8 @@ class AcadosInterface(SolverInterface):
     def __update_solver(self):
         param_init = []
         for n in range(self.acados_ocp.dims.N):
-            self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
+            if self.y_ref:
+                self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
             # check following line
             # self.ocp_solver.cost_set(n, "W", self.W)
 
