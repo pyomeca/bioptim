@@ -238,15 +238,9 @@ class AcadosInterface(SolverInterface):
     def __update_solver(self):
         param_init = []
         for n in range(self.acados_ocp.dims.N):
-<<<<<<< Updated upstream
             if self.y_ref:
                 self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
             # check following line
-=======
-
-            if self.y_ref:
-                self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
->>>>>>> Stashed changes
             # self.ocp_solver.cost_set(n, "W", self.W)
 
             if self.params:
@@ -268,10 +262,7 @@ class AcadosInterface(SolverInterface):
 
         if self.y_ref_end:
             self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate([data for data in self.y_ref_end]))
-<<<<<<< Updated upstream
             # check following line
-=======
->>>>>>> Stashed changes
             # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
