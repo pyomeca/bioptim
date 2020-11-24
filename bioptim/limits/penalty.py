@@ -596,11 +596,10 @@ class PenaltyFunctionAbstract:
 
             if data_to_track.shape != target_size:
                 raise RuntimeError(
-                    f"data_to_track {data_to_track.shape} doesn't correspond to expected minimum size {target_size}"
+                    f"data_to_track {data_to_track.shape} does not correspond to expected minimum size {target_size}"
                 )
         else:
-            raise ValueError("COUCOU!!!!")
-            data_to_track = np.zeros(target_size)
+            raise RuntimeError("data_to_track is None and that should not happen, please contact a developer")
         return data_to_track
 
     @staticmethod

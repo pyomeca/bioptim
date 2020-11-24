@@ -1,6 +1,3 @@
-from ..limits.objective_functions import get_objective_values
-
-
 class SolverInterface:
     def __init__(self, ocp):
         self.ocp = ocp
@@ -30,6 +27,3 @@ class SolverInterface:
 
     def finish_get_iterations(self):
         raise RuntimeError("Get Iteration not implemented for solver")
-
-    def get_objective(self):
-        self.out["sol_obj"] = get_objective_values(self.ocp, self.out["sol"])

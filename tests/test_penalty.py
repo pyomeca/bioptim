@@ -1,10 +1,9 @@
 from pathlib import Path
 import pytest
 
-from casadi import DM
+from casadi import DM, Function
 import numpy as np
 import biorbd
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsTypeList,
@@ -16,7 +15,10 @@ from bioptim import (
     Axe,
     Constraint,
     ConstraintOption,
+    Node,
 )
+
+from bioptim.interfaces.ipopt_interface import IpoptInterface
 
 
 def prepare_test_ocp(with_muscles=False, with_contact=False):
@@ -988,56 +990,30 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
         penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
 
 
-@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_track_markers_with_nan(penalty_origin, value):
     ocp = prepare_test_ocp()
-    x = [DM.ones((12, 1)) * value]
-    # x[0][-2] = DM.nan()
     penalty_type = penalty_origin.TRACK_MARKERS
 
-    target = np.ones((3, 7, 1)) * value
-    target[:, -2] = np.nan
+    target = np.ones((3, 7, 11)) * value
+    target[:, -2, [0, -1]] = np.nan
 
-    if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
-        penalty = ObjectiveOption(penalty_type, target=target)
+    if isinstance(penalty_type, Objective.Lagrange):
+        penalty = ObjectiveOption(penalty_type, node=Node.ALL, target=target)
+        X = ocp.nlp[0].X[0]
+    elif isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type, node=Node.END, target=target[:, :, -1:])
+        X = ocp.nlp[0].X[10]
+    ocp.update_objectives(penalty)
+    res = Function("res", [X], [IpoptInterface.finalize_objective_value(ocp.nlp[0].J[0][0])]).expand()()["o0"]
+
+    if value == 0.1:
+        expected = 8.73 * ocp.nlp[0].J[0][0]["dt"]
     else:
-        penalty = ConstraintOption(penalty_type, target=target)
-
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [2], x, [], [])
-
-    if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
-        res = ocp.nlp[0].J[0][0]["val"]
-    else:
-        res = ocp.nlp[0].g[0][0]
-
-    expected = np.array(
-        [
-            [0.1, 0.99517075, 1.9901749, 1.0950042, 1, 2, 0.49750208],
-            [0, 0, 0, 0, 0, 0, 0],
-            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, -0.0499167],
-        ]
-    )
-    if value == -10:
-        expected = np.array(
-            [
-                [-10, -11.3830926, -12.2221642, -10.8390715, 1.0, 2.0, -0.4195358],
-                [0, 0, 0, 0, 0, 0, 0],
-                [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, -0.2720106],
-            ]
-        )
+        expected = 1879.25 * ocp.nlp[0].J[0][0]["dt"]
 
     np.testing.assert_almost_equal(
         res,
         expected,
     )
-
-    if isinstance(penalty_type, Constraint):
-        np.testing.assert_almost_equal(
-            ocp.nlp[0].g_bounds[0][0].min,
-            np.array([[0]] * 3),
-        )
-        np.testing.assert_almost_equal(
-            ocp.nlp[0].g_bounds[0][0].max,
-            np.array([[0]] * 3),
-        )
