@@ -91,5 +91,5 @@ class SolverInterface:
                 val[np.where(nan_idx)] = 0
 
         if j_dict["objective"].quadratic:
-            val = val**2
+            val = val ** 2
         return sum1(sum2(j_dict["objective"].weight * val * j_dict["dt"]))
