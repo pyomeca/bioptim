@@ -18,6 +18,7 @@ from bioptim import (
     Objective,
     Axe,
     PlotType,
+    OdeSolver,
 )
 
 # Load align_segment_on_rt
@@ -35,7 +36,7 @@ def get_markers_pos(x, idx_coord, fun):
     return marker_pos[:, idx_coord]
 
 
-def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, tau_ref):
+def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, tau_ref, ode_solver=OdeSolver.RK):
     # --- Options --- #
     tau_min, tau_max, tau_init = -100, 100, 0
     n_q = biorbd_model.nbQ()
@@ -81,6 +82,7 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
         x_bounds,
         u_bounds,
         objective_functions,
+        ode_solver=ode_solver,
     )
 
 

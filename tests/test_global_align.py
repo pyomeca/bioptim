@@ -11,7 +11,8 @@ from bioptim import Data, OdeSolver
 from .utils import TestUtils
 
 
-def test_align_segment_on_rt():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_align_segment_on_rt(ode_solver):
     # Load align_segment_on_rt
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -24,6 +25,7 @@ def test_align_segment_on_rt():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
         final_time=0.5,
         number_shooting_points=8,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -58,7 +60,8 @@ def test_align_segment_on_rt():
     TestUtils.simulate(sol, ocp)
 
 
-def test_align_marker_on_segment():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_align_marker_on_segment(ode_solver):
     # Load align_marker_on_segment
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -72,6 +75,7 @@ def test_align_marker_on_segment():
         final_time=0.5,
         number_shooting_points=8,
         initialize_near_solution=True,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 

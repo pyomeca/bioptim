@@ -15,6 +15,7 @@ from bioptim import (
     InterpolationType,
     Data,
     ParameterList,
+    OdeSolver,
 )
 
 
@@ -36,7 +37,7 @@ def my_target_function(ocp, value):
     return value
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, max_g, target_g):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, max_g, target_g, ode_solver=OdeSolver.RK):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     tau_min, tau_max, tau_init = -30, 30, 0
@@ -94,6 +95,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, min_g, ma
         u_bounds,
         objective_functions,
         parameters=parameters,
+        ode_solver=ode_solver,
     )
 
 
