@@ -2,7 +2,7 @@ from enum import Enum
 
 import numpy as np
 import casadi
-from casadi import dot, sum1
+from casadi import dot, sum1, sum2
 
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
 from ..misc.enums import Node
@@ -409,13 +409,19 @@ def get_objective_values(ocp, sol):
 
 def get_objective_value(j_dict):
     val = j_dict["val"]
+    target_nan = None
     if j_dict["target"] is not None:
-        val -= j_dict["target"]
+        target_nan = ~np.isnan(j_dict["target"])
+        val -= np.nan_to_num(j_dict["target"], nan=-9999)
 
     if j_dict["objective"].quadratic:
-        val = dot(val, val)
-    else:
-        val = sum1(val)
+        val = val**2
 
-    val *= j_dict["objective"].weight * j_dict["dt"]
+    if target_nan is not None:
+        val *= target_nan * j_dict["objective"].weight * j_dict["dt"]
+    else:
+        val *= j_dict["objective"].weight * j_dict["dt"]
+
+    val = sum1(sum2(val))
     return val
+

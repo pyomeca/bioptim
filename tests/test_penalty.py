@@ -986,3 +986,58 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
 
     with pytest.raises(RuntimeError):
         penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer, Constraint])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_track_markers_with_nan(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    x = [DM.ones((12, 1)) * value]
+    # x[0][-2] = DM.nan()
+    penalty_type = penalty_origin.TRACK_MARKERS
+
+    target = np.ones((3, 7, 1)) * value
+    target[:, -2] = np.nan
+
+    if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
+        penalty = ObjectiveOption(penalty_type, target=target)
+    else:
+        penalty = ConstraintOption(penalty_type, target=target)
+
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [2], x, [], [])
+
+    if isinstance(penalty_type, (Objective.Lagrange, Objective.Mayer)):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]
+
+    expected = np.array(
+        [
+            [0.1, 0.99517075, 1.9901749, 1.0950042, 1, 2, 0.49750208],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0.1, -0.9948376, -1.094671, 0.000166583, 0, 0, -0.0499167],
+        ]
+    )
+    if value == -10:
+        expected = np.array(
+            [
+                [-10, -11.3830926, -12.2221642, -10.8390715, 1.0, 2.0, -0.4195358],
+                [0, 0, 0, 0, 0, 0, 0],
+                [-10, -9.7049496, -10.2489707, -10.5440211, 0, 0, -0.2720106],
+            ]
+        )
+
+    np.testing.assert_almost_equal(
+        res,
+        expected,
+    )
+
+    if isinstance(penalty_type, Constraint):
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].min,
+            np.array([[0]] * 3),
+        )
+        np.testing.assert_almost_equal(
+            ocp.nlp[0].g_bounds[0][0].max,
+            np.array([[0]] * 3),
+        )
