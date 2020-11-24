@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import numpy as np
 from scipy import linalg
 from casadi import SX, vertcat, sum1, Function
@@ -62,7 +64,8 @@ class AcadosInterface(SolverInterface):
         self.acados_model.xdot = x_dot
         self.acados_model.u = u
         self.acados_model.p = []
-        self.acados_model.name = "model_name"
+        now = datetime.now()  # current date and time
+        self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S')}"
 
     def __prepare_acados(self, ocp):
         if ocp.nb_phases > 1:
@@ -235,9 +238,15 @@ class AcadosInterface(SolverInterface):
     def __update_solver(self):
         param_init = []
         for n in range(self.acados_ocp.dims.N):
+<<<<<<< Updated upstream
             if self.y_ref:
                 self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
             # check following line
+=======
+
+            if self.y_ref:
+                self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
+>>>>>>> Stashed changes
             # self.ocp_solver.cost_set(n, "W", self.W)
 
             if self.params:
@@ -259,7 +268,10 @@ class AcadosInterface(SolverInterface):
 
         if self.y_ref_end:
             self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate([data for data in self.y_ref_end]))
+<<<<<<< Updated upstream
             # check following line
+=======
+>>>>>>> Stashed changes
             # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
