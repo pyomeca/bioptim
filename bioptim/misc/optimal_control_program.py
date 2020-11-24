@@ -806,7 +806,7 @@ class OptimalControlProgram:
             self.solver.finish_get_iterations()
 
         if return_objectives:
-            self.solver.get_objective()
+            self.solver.get_objectives()
 
         return self.solver.get_optimized_value()
 

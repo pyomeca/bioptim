@@ -1,8 +1,7 @@
 import os
 import pickle
 
-import numpy as np
-from casadi import vertcat, sum1, sum2, nlpsol
+from casadi import vertcat, sum1, nlpsol
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
@@ -105,17 +104,3 @@ class IpoptInterface(SolverInterface):
                     all_J = vertcat(all_J, IpoptInterface.finalize_objective_value(obj))
 
         return all_J
-
-    @staticmethod
-    def finalize_objective_value(j_dict):
-        val = j_dict["val"]
-        if j_dict["target"] is not None:
-            nan_idx = np.isnan(j_dict["target"])
-            j_dict["target"][nan_idx] = 0
-            val -= j_dict["target"]
-            if np.any(nan_idx):
-                val[np.where(nan_idx)] = 0
-
-        if j_dict["objective"].quadratic:
-            val = val**2
-        return sum1(sum2(j_dict["objective"].weight * val * j_dict["dt"]))

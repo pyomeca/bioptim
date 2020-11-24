@@ -28,7 +28,7 @@ class PenaltyOption(OptionGeneric):
         self.quadratic = quadratic
 
         self.index = index
-        self.target = target
+        self.target = np.array(target) if np.any(target) else None
         self.sliced_target = None  # This one is the sliced node from the target. This is what is actually tracked
 
         self.custom_function = custom_function
