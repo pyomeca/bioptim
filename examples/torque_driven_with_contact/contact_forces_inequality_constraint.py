@@ -20,7 +20,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, direction, boundary, ode_solver=OdeSolver.RK):
+def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_bound, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)

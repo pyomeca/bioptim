@@ -95,10 +95,8 @@ def IRK(ode, ode_opt):
     def get_u(u, dt_norm):
         if control_type == ControlType.CONSTANT:
             return u
-        elif control_type == ControlType.LINEAR_CONTINUOUS:
-            return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
         else:
-            raise RuntimeError(f"{control_type} ControlType not implemented yet")
+            raise NotImplementedError(f"{control_type} ControlType not implemented yet")
 
     def dxdt(h, states, controls, params):
         nu = controls.shape[0]
@@ -128,7 +126,8 @@ def IRK(ode, ode_opt):
             lfcn = Function("lfcn", [time_control_interval], [L])
             D[j] = lfcn(1.0)
 
-            # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
+            # Evaluate the time derivative of the polynomial at all collocation points to get
+            # the coefficients of the continuity equation
             tfcn = Function("tfcn", [time_control_interval], [tangent(L, time_control_interval)])
             for r in range(degree + 1):
                 C[j, r] = tfcn(time_points[r])

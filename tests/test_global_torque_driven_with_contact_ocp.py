@@ -141,6 +141,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
         number_shooting_points=10,
         min_bound=min_bound,
         max_bound=np.inf,
+        ode_solver=ode_solver
     )
     sol = ocp.solve()
 
@@ -158,7 +159,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
         g = np.array(sol["g"])
         np.testing.assert_equal(g.shape, (100, 1))
         np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
-        np.testing.assert_array_less(-g[80:], -boundary)
+        np.testing.assert_array_less(-g[80:], -min_bound)
         expected_pos_g = np.array(
             [
                 [50.76334043],
@@ -199,7 +200,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
         g = np.array(sol["g"])
         np.testing.assert_equal(g.shape, (100, 1))
         np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
-        np.testing.assert_array_less(-g[80:], -boundary)
+        np.testing.assert_array_less(-g[80:], -min_bound)
         expected_pos_g = np.array(
             [
                 [50.76491919],
@@ -260,6 +261,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
         number_shooting_points=10,
         min_bound=-np.inf,
         max_bound=max_bound,
+        ode_solver=ode_solver
     )
     sol = ocp.solve()
 
@@ -282,7 +284,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
         g = np.array(sol["g"])
         np.testing.assert_equal(g.shape, (100, 1))
         np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
-        np.testing.assert_array_less(g[80:], boundary)
+        np.testing.assert_array_less(g[80:], max_bound)
         expected_non_zero_g = np.array(
             [
                 [63.27209168],
@@ -325,7 +327,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
         g = np.array(sol["g"])
         np.testing.assert_equal(g.shape, (100, 1))
         np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
-        np.testing.assert_array_less(g[80:], boundary)
+        np.testing.assert_array_less(g[80:], max_bound)
         expected_non_zero_g = np.array(
             [
                 [63.27237842],

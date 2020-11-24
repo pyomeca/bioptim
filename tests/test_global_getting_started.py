@@ -25,7 +25,17 @@ def test_pendulum(nb_threads, use_SX, ode_solver):
     spec.loader.exec_module(pendulum)
 
     if ode_solver == OdeSolver.IRK:
-        if use_SX != True:
+        if use_SX:
+            with pytest.raises(NotImplementedError, match="use_SX and OdeSolver.IRK are not yet compatible"):
+                pendulum.prepare_ocp(
+                    biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+                    final_time=2,
+                    number_shooting_points=10,
+                    nb_threads=nb_threads,
+                    use_SX=use_SX,
+                    ode_solver=ode_solver,
+                )
+        else:
             ocp = pendulum.prepare_ocp(
                 biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
                 final_time=2,

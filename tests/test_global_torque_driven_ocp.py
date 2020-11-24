@@ -381,15 +381,15 @@ def test_external_forces(ode_solver):
     )
     sol = ocp.solve()
 
-    # Check constraints
-    g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (246, 1))
-    np.testing.assert_almost_equal(g, np.zeros((246, 1)))
-
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 9875.88768746912)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (246, 1))
+    np.testing.assert_almost_equal(g, np.zeros((246, 1)))
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
@@ -444,109 +444,9 @@ def test_track_marker_2D_pendulum(ode_solver):
     nb_shooting = 20
 
     # Generate data to fit
-    markers_ref = np.zeros((3, 2, nb_shooting + 1))
-    markers_ref[1, :, :] = np.array(
-        [
-            [
-                0.0,
-                0.59994037,
-                1.41596094,
-                1.78078534,
-                2.00186844,
-                2.21202252,
-                2.44592581,
-                2.66008025,
-                2.52186711,
-                1.70750629,
-                1.01558254,
-                0.80411881,
-                0.93002487,
-                1.10917845,
-                0.99843605,
-                0.67973254,
-                0.50780818,
-                0.28087458,
-                -0.72163361,
-                -0.76304319,
-                0.0,
-            ],
-            [
-                0.1,
-                0.39821962,
-                0.84838182,
-                1.09895944,
-                1.30730217,
-                1.56395927,
-                1.89764787,
-                2.28282596,
-                2.53658449,
-                2.38557865,
-                2.00463841,
-                1.75824184,
-                1.65985162,
-                1.54219021,
-                1.25554824,
-                0.87993452,
-                0.59982138,
-                0.30228811,
-                -0.38347237,
-                -0.48508912,
-                -0.09840722,
-            ],
-        ]
-    )
-
-    markers_ref[2, 1, :] = np.array(
-        [
-            -1.0,
-            -0.98453478,
-            -0.8293696,
-            -0.73831799,
-            -0.72634543,
-            -0.7681237,
-            -0.84225371,
-            -0.931493,
-            -1.00487979,
-            -0.74176672,
-            -0.17823715,
-            0.31567267,
-            0.69090731,
-            0.90691831,
-            0.97154172,
-            0.98484474,
-            1.00076649,
-            1.0047594,
-            0.94638627,
-            0.96578545,
-            1.000158,
-        ]
-    )
-
-    tau_ref = np.zeros((2, nb_shooting))
-    tau_ref[0, :] = np.array(
-        [
-            26.50837752,
-            -13.00256609,
-            -4.73822352,
-            0.98400741,
-            3.31060529,
-            3.53663986,
-            1.04020674,
-            -12.72188939,
-            -23.25758642,
-            2.81968664,
-            9.13976837,
-            4.01638109,
-            -5.72934928,
-            -9.29116278,
-            1.38256926,
-            7.10636934,
-            -8.65483649,
-            -25.85422034,
-            77.77873644,
-            -34.37165499,
-        ]
-    )
+    np.random.seed(42)
+    markers_ref = np.random.rand(3, 2, nb_shooting + 1)
+    tau_ref = np.random.rand(2, nb_shooting)
 
     ocp = track_markers_2D_pendulum.prepare_ocp(biorbd_model, final_time, nb_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
     sol = ocp.solve()
@@ -564,36 +464,37 @@ def test_track_marker_2D_pendulum(ode_solver):
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 3.15, decimal=6)
+        np.testing.assert_almost_equal(f[0, 0], 537.1178745697684)
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)), decimal=4)
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.9764023 , 4.21321536)))
 
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0.00052309, 0.00030573)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((0.2645088 , 3.66993626)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((2.65083927e+01, 1.20541284e-04)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-3.43717716e+01, -4.03639175e-05)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((0.98431048, -13.78108592)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15668869,  0.77410131)))
+
     else:
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 3.15)
+        np.testing.assert_almost_equal(f[0, 0], 537.1280965743497)
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.9763794, 4.2129851)))
 
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((0.26528337, 3.6696134)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((26.5083775, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-34.3716550, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((0.98431925, -13.78108143)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15666955,  0.77421434)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

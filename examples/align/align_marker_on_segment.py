@@ -18,7 +18,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, initialize_near_solution, ode_solver=OdeSolver):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, initialize_near_solution, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)

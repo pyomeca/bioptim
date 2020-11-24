@@ -23,7 +23,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, direction, boundary, ode_solver=OdeSolver.RK):
+def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     x = np.concatenate((q, q_dot, activations))
     u = np.concatenate((tau, excitations))
-    contact_forces = np.array(nlp.contact_forces_func(x[:, :-1], u[:, :-1]))
+    contact_forces = np.array(nlp.contact_forces_func(x[:, :-1], u[:, :-1], []))
 
     names_contact_forces = ocp.nlp[0].model.contactNames()
     for i, elt in enumerate(contact_forces):

@@ -48,6 +48,14 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
     q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
     # initial and final velocities
+    if ode_solver == OdeSolver.IRK:
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array([0.71793369, -0.44573137, -2.97319049,  0.02378767]), decimal=2)
+        np.testing.assert_almost_equal(q[:, -1], np.array([1.08524701, -0.38694715,  3.02680956, -0.02378811]), decimal=2)
+    else:
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array([0.71797344, -0.44573002, -3.00001922, 0.02378758]), decimal=2)
+        np.testing.assert_almost_equal(q[:, -1], np.array([1.08530972, -0.3869361, 2.99998083, -0.02378757]), decimal=2)
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0.37791617, 3.70167396, 10.0, 10.0]), decimal=2)
     np.testing.assert_almost_equal(qdot[:, -1], np.array([0.37675299, -3.40771446, 10.0, 10.0]), decimal=2)
     # initial and final controls
@@ -58,20 +66,12 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
         tau[:, -1], np.array([4.42976253e-02, 1.40077846e00, -7.28864793e-13, 9.24667396e01]), decimal=2
     )
 
-    if ode_solver == OdeSolver.IRK:
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([0.71793369, -0.44573137, -2.97319049,  0.02378767]), decimal=2)
-        np.testing.assert_almost_equal(q[:, -1], np.array([1.08524701, -0.38694715,  3.02680956, -0.02378811]), decimal=2)
-    else:
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([0.71797344, -0.44573002, -3.00001922, 0.02378758]), decimal=2)
-        np.testing.assert_almost_equal(q[:, -1], np.array([1.08530972, -0.3869361, 2.99998083, -0.02378757]), decimal=2)
-
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, ocp)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
 def test_align_and_minimize_marker_displacement_RT(ode_solver):
@@ -194,59 +194,50 @@ def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
     align_and_minimize_marker_velocity = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(align_and_minimize_marker_velocity)
 
-    ocp = align_and_minimize_marker_velocity.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
-        number_shooting_points=5,
-        final_time=1,
-        marker_velocity_or_displacement="velo",
-        marker_in_first_coordinates_system=True,
-        control_type=ControlType.LINEAR_CONTINUOUS,
-        ode_solver=ode_solver,
-    )
-    sol = ocp.solve()
-
-    # Check constraints
-    g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
-
-    # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-
     if ode_solver == OdeSolver.IRK:
-        # Check objective function value
-        f = np.array(sol["f"])
-        np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], -85.03817304169894)
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([8.00388007e-01, 5.48867126e-02, -3.14159262e00, 0]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([7.98989394e-01, 4.42051585e-02,  3.14159262e+00, 0]))
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([-9.14673142e-04, 3.51181383e-02, 10, 0]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.05954739e-03, -1.11374374e-01, 10, 0]))
-        # # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([-2.20725721e-03,  6.06141183e+00, -5.24736884e+00, 0]))
-        np.testing.assert_almost_equal(tau[:, -1], np.array([6.14841190e-03, 3.35965344e+00, -9.99999973e+01, 0]))
+        with pytest.raises(NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet"):
+            align_and_minimize_marker_velocity.prepare_ocp(
+                biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+                number_shooting_points=5,
+                final_time=1,
+                marker_velocity_or_displacement="velo",
+                marker_in_first_coordinates_system=True,
+                control_type=ControlType.LINEAR_CONTINUOUS,
+                ode_solver=ode_solver,
+            )
     else:
-        # Check objective function value
-        f = np.array(sol["f"])
-        np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], -80.28869898410233)
+        ocp = align_and_minimize_marker_velocity.prepare_ocp(
+            biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+            number_shooting_points=5,
+            final_time=1,
+            marker_velocity_or_displacement="velo",
+            marker_in_first_coordinates_system=True,
+            control_type=ControlType.LINEAR_CONTINUOUS,
+            ode_solver=ode_solver,
+        )
+        sol = ocp.solve()
+
+        # Check constraints
+        g = np.array(sol["g"])
+        np.testing.assert_equal(g.shape, (40, 1))
+        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+
+        # Check some of the results
+        states, controls = Data.get_data(ocp, sol["x"])
+        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([0.79919667, -0.11729546, -3.1415926, 0]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.80144593, -0.10039572, 3.1415926, 0]))
+        np.testing.assert_almost_equal(q[2:, 0], np.array([-3.14159264, 0]))
+        np.testing.assert_almost_equal(q[2:, -1], np.array([3.14159264, 0]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.8420249e-03, 1.0703158, 10, 0]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([2.9192347e-03, -0.96476530, 10, 0]))
-        # # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([5.6477202e-03, 3.9487332, -8.4955414, 0]))
-        np.testing.assert_almost_equal(tau[:, -1], np.array([-9.9579303e-03, 4.0992343, 8.4955414, 0]))
+        np.testing.assert_almost_equal(qdot[2:, 0], np.array([10, 0]))
+        np.testing.assert_almost_equal(qdot[2:, -1], np.array([10, 0]))
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[2:, 0], np.array([-8.495542, 0]), decimal=5)
+        np.testing.assert_almost_equal(tau[2:, -1], np.array([8.495541, 0]), decimal=5)
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
+        # save and load
+        TestUtils.save_and_load(sol, ocp, False)
 
-    # simulate
-    TestUtils.simulate(sol, ocp, decimal_value=5)
+        # simulate
+        TestUtils.simulate(sol, ocp, decimal_value=5)
