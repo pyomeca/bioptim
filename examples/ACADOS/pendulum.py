@@ -11,7 +11,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     ShowResult,
-    Instant,
+    Node,
     Solver,
 )
 
@@ -30,7 +30,10 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100.0)
     objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=1.0)
     objective_functions.add(
-        Objective.Mayer.MINIMIZE_STATE, weight=50000.0, target=data_to_track.T, instant=Instant.END,
+        Objective.Mayer.MINIMIZE_STATE,
+        weight=50000.0,
+        target=data_to_track.T,
+        node=Node.END,
     )
 
     # Dynamics

@@ -134,14 +134,13 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     contact_forces_inequality_GREATER_THAN_constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(contact_forces_inequality_GREATER_THAN_constraint)
 
-    boundary = 50
+    min_bound = 50
     ocp = contact_forces_inequality_GREATER_THAN_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
         number_shooting_points=10,
-        direction="GREATER_THAN",
-        boundary=boundary,
-        ode_solver=ode_solver
+        min_bound=min_bound,
+        max_bound=np.inf,
     )
     sol = ocp.solve()
 
@@ -254,14 +253,13 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     contact_forces_inequality_LESSER_THAN_constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(contact_forces_inequality_LESSER_THAN_constraint)
 
-    boundary = 100
+    max_bound = 100
     ocp = contact_forces_inequality_LESSER_THAN_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
         number_shooting_points=10,
-        direction="LESSER_THAN",
-        boundary=boundary,
-        ode_solver=ode_solver,
+        min_bound=-np.inf,
+        max_bound=max_bound,
     )
     sol = ocp.solve()
 

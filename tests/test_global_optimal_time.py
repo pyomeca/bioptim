@@ -17,7 +17,7 @@ from bioptim import (
     DynamicsType,
     InitialGuessList,
     BoundsList,
-    Instant,
+    Node,
     ObjectiveList,
     Objective,
     OptimalControlProgram,
@@ -429,8 +429,8 @@ def test_mayer_neg_monophase_time_constraint():
     objective_functions.add(Objective.Mayer.MINIMIZE_TIME)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0])
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -469,8 +469,8 @@ def test_mayer1_neg_multiphase_time_constraint():
     objective_functions.add(Objective.Mayer.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0])
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -509,8 +509,8 @@ def test_mayer2_neg_multiphase_time_constraint():
     objective_functions.add(Objective.Mayer.MINIMIZE_TIME, phase=2)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=2)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=2)
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -549,8 +549,8 @@ def test_mayer_multiphase_time_constraint():
     objective_functions.add(Objective.Mayer.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=2)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=2)
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     OptimalControlProgram(
         biorbd_model,
@@ -588,8 +588,8 @@ def test_lagrange_neg_monophase_time_constraint():
     objective_functions.add(Objective.Lagrange.MINIMIZE_TIME)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0])
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -629,12 +629,8 @@ def test_lagrange1_neg_multiphase_time_constraint():
         objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, phase=0)
 
         constraints = ConstraintList()
-        constraints.add(
-            Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=0
-        )
-        constraints.add(
-            Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=0
-        )
+        constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0)
+        constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=0)
 
         OptimalControlProgram(
             biorbd_model,
@@ -673,12 +669,8 @@ def test_lagrange2_neg_multiphase_time_constraint():
         objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, phase=2)
 
         constraints = ConstraintList()
-        constraints.add(
-            Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=2
-        )
-        constraints.add(
-            Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=2
-        )
+        constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+        constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
         OptimalControlProgram(
             biorbd_model,
@@ -716,8 +708,8 @@ def test_lagrange_multiphase_time_constraint():
     objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=2)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=2)
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     OptimalControlProgram(
         biorbd_model,

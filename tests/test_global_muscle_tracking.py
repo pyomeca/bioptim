@@ -425,69 +425,14 @@ def test_muscle_activation_and_contacts_tracking(ode_solver):
     # Define the problem
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod"
     biorbd_model = biorbd.Model(model_path)
-    final_time = 0.3
-    nb_shooting = 10
+    final_time = 0.1
+    nb_shooting = 5
 
     # Generate random data to fit
-    contact_forces_ref = np.array(
-        [
-            [
-                -81.76167127,
-                -69.61586405,
-                -35.68564618,
-                -15.37939873,
-                -15.79649488,
-                -19.48643318,
-                -24.83072827,
-                -31.37006652,
-                -38.72133782,
-                -45.3732221,
-            ],
-            [
-                51.10694314,
-                52.00705138,
-                57.14841462,
-                63.25205608,
-                65.99940832,
-                67.33152066,
-                66.99052864,
-                64.46060997,
-                59.00664793,
-                50.29377455,
-            ],
-            [
-                158.47794037,
-                139.07750225,
-                89.50719005,
-                59.7699281,
-                55.18121509,
-                53.45748305,
-                52.5388107,
-                51.95213223,
-                51.51348129,
-                50.34932116,
-            ],
-        ]
-    )
-    muscle_activations_ref = np.array(
-        [
-            [
-                0.49723853,
-                0.49488324,
-                0.50091057,
-                0.51505782,
-                0.53542531,
-                0.56369329,
-                0.60171651,
-                0.64914307,
-                0.70026122,
-                0.47032099,
-                0.47032099,
-            ]
-        ]
-    )
+    np.random.seed(42)
+    contact_forces_ref = np.random.rand(biorbd_model.nbContacts(), nb_shooting)
+    muscle_activations_ref = np.random.rand(biorbd_model.nbMuscles(), nb_shooting + 1)
 
-    biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = muscle_activations_contact_tracker.prepare_ocp(
         model_path, final_time, nb_shooting, muscle_activations_ref[:, :-1], contact_forces_ref, ode_solver=ode_solver,
     )
@@ -496,12 +441,12 @@ def test_muscle_activation_and_contacts_tracking(ode_solver):
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 7.06749952e-11)
+    np.testing.assert_almost_equal(f[0, 0], 1.2080146471135251)
 
     # Check constraints
     g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (80, 1))
-    np.testing.assert_almost_equal(g, np.zeros((80, 1)), decimal=6)
+    np.testing.assert_equal(g.shape, (40, 1))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])

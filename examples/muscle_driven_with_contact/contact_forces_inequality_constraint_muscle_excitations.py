@@ -3,7 +3,7 @@ import numpy as np
 import biorbd
 
 from bioptim import (
-    Instant,
+    Node,
     OptimalControlProgram,
     ConstraintList,
     Constraint,
@@ -42,18 +42,18 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, direction, bound
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        Constraint.CONTACT_FORCE_INEQUALITY,
-        direction=direction,
-        instant=Instant.ALL,
+        Constraint.CONTACT_FORCE,
+        min_bound=min_bound,
+        max_bound=np.inf,
+        node=Node.ALL,
         contact_force_idx=1,
-        boundary=boundary,
     )
     constraints.add(
-        Constraint.CONTACT_FORCE_INEQUALITY,
-        direction=direction,
-        instant=Instant.ALL,
+        Constraint.CONTACT_FORCE,
+        min_bound=min_bound,
+        max_bound=np.inf,
+        node=Node.ALL,
         contact_force_idx=2,
-        boundary=boundary,
     )
 
     # Path constraint
@@ -105,9 +105,7 @@ if __name__ == "__main__":
     model_path = "2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.3
     ns = 10
-    ocp = prepare_ocp(
-        model_path=model_path, phase_time=t, number_shooting_points=ns, direction="GREATER_THAN", boundary=50
-    )
+    ocp = prepare_ocp(model_path=model_path, phase_time=t, number_shooting_points=ns, min_bound=50)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

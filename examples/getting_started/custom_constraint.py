@@ -3,10 +3,10 @@ File that shows an example of a custom constraint.
 As an example, this custom constraint reproduces exactly the behavior of the ALIGN_MARKERS constraint.
 """
 import biorbd
-from casadi import vertcat
+from casadi import vertcat, MX
 
 from bioptim import (
-    Instant,
+    Node,
     OptimalControlProgram,
     DynamicsTypeOption,
     DynamicsType,
@@ -24,11 +24,11 @@ from bioptim import (
 def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
     nq = nlp.shape["q"]
     val = []
+    markers = biorbd.to_casadi_func("markers", nlp.model.markers, nlp.q)
     for v in x:
         q = v[:nq]
-        markers = nlp.model.markers(q)
-        first_marker = markers[:, first_marker_idx]
-        second_marker = markers[:, second_marker_idx]
+        first_marker = markers(q)[:, first_marker_idx]
+        second_marker = markers(q)[:, second_marker_idx]
         val = vertcat(val, first_marker - second_marker)
     return val
 
@@ -51,8 +51,8 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(custom_func_align_markers, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(custom_func_align_markers, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(custom_func_align_markers, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(custom_func_align_markers, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
