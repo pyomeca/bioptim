@@ -26,7 +26,9 @@ data_to_track = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data_to_track)
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK):
+def prepare_ocp(
+    model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK
+):
     # Model path
     biorbd_model = biorbd.Model(model_path)
     tau_min, tau_max, tau_init = -500, 500, 0

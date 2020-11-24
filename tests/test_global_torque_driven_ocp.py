@@ -377,7 +377,8 @@ def test_external_forces(ode_solver):
     spec.loader.exec_module(external_forces)
 
     ocp = external_forces.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube_with_forces.bioMod", ode_solver=ode_solver,
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube_with_forces.bioMod",
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -448,7 +449,9 @@ def test_track_marker_2D_pendulum(ode_solver):
     markers_ref = np.random.rand(3, 2, nb_shooting + 1)
     tau_ref = np.random.rand(2, nb_shooting)
 
-    ocp = track_markers_2D_pendulum.prepare_ocp(biorbd_model, final_time, nb_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
+    ocp = track_markers_2D_pendulum.prepare_ocp(
+        biorbd_model, final_time, nb_shooting, markers_ref, tau_ref, ode_solver=ode_solver
+    )
     sol = ocp.solve()
 
     # Check constraints
@@ -468,15 +471,15 @@ def test_track_marker_2D_pendulum(ode_solver):
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0.9764023 , 4.21321536)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.9764023, 4.21321536)))
 
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0.2645088 , 3.66993626)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((0.2645088, 3.66993626)))
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((0.98431048, -13.78108592)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15668869,  0.77410131)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15668869, 0.77410131)))
 
     else:
         # Check objective function value
@@ -494,7 +497,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((0.98431925, -13.78108143)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15666955,  0.77421434)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15666955, 0.77421434)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
@@ -507,7 +510,8 @@ def test_trampo_quaternions():
     # Load trampo_quaternion
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "trampo_quaternions", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/trampo_quaternions.py",
+        "trampo_quaternions",
+        str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/trampo_quaternions.py",
     )
     trampo_quaternions = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(trampo_quaternions)

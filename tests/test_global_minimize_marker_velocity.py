@@ -50,8 +50,10 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
     # initial and final velocities
     if ode_solver == OdeSolver.IRK:
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([0.71793369, -0.44573137, -2.97319049,  0.02378767]), decimal=2)
-        np.testing.assert_almost_equal(q[:, -1], np.array([1.08524701, -0.38694715,  3.02680956, -0.02378811]), decimal=2)
+        np.testing.assert_almost_equal(q[:, 0], np.array([0.71793369, -0.44573137, -2.97319049, 0.02378767]), decimal=2)
+        np.testing.assert_almost_equal(
+            q[:, -1], np.array([1.08524701, -0.38694715, 3.02680956, -0.02378811]), decimal=2
+        )
     else:
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([0.71797344, -0.44573002, -3.00001922, 0.02378758]), decimal=2)

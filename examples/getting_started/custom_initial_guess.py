@@ -25,7 +25,11 @@ def custom_init_func(current_shooting_point, my_values, nb_shooting):
 
 
 def prepare_ocp(
-    biorbd_model_path, number_shooting_points, final_time, initial_guess=InterpolationType.CONSTANT, ode_solver=OdeSolver.RK
+    biorbd_model_path,
+    number_shooting_points,
+    final_time,
+    initial_guess=InterpolationType.CONSTANT,
+    ode_solver=OdeSolver.RK,
 ):
     # --- Options --- #
     # Model path

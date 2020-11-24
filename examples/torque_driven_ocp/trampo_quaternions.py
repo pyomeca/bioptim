@@ -100,7 +100,11 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, ode_solve
 if __name__ == "__main__":
 
     # changer le path quand ce sera pret
-    ocp = prepare_ocp("TruncAnd2Arm_Quaternion.bioMod", number_shooting_points=5, final_time=0.25,)
+    ocp = prepare_ocp(
+        "TruncAnd2Arm_Quaternion.bioMod",
+        number_shooting_points=5,
+        final_time=0.25,
+    )
     sol = ocp.solve()
     print("\n")
 

@@ -130,8 +130,9 @@ def test_custom_constraint_align_markers(ode_solver):
     custom_constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(custom_constraint)
 
-    ocp = custom_constraint.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
-                                        ode_solver=ode_solver)
+    ocp = custom_constraint.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver
+    )
     sol = ocp.solve()
 
     # Check constraints
@@ -220,6 +221,7 @@ def test_initial_guesses(interpolation, ode_solver):
             TestUtils.save_and_load(sol, ocp, True)
     else:
         TestUtils.save_and_load(sol, ocp, True)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
 def test_cyclic_objective(ode_solver):
@@ -333,7 +335,9 @@ def test_state_transitions(ode_solver):
     state_transitions = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(state_transitions)
 
-    ocp = state_transitions.prepare_ocp(biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver)
+    ocp = state_transitions.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver
+    )
     sol = ocp.solve()
 
     # Check objective function value
@@ -365,7 +369,7 @@ def test_state_transitions(ode_solver):
 
     if ode_solver == OdeSolver.IRK:
         # initial and final controls
-        np.testing.assert_almost_equal(tau[0][:, 0], np.array((0.95986719,  9.70855983, -0.06237331)))
+        np.testing.assert_almost_equal(tau[0][:, 0], np.array((0.95986719, 9.70855983, -0.06237331)))
         np.testing.assert_almost_equal(tau[-1][:, -1], np.array((0, 1.27170519e01, 1.14878049e00)))
     else:
         # initial and final controls
@@ -460,7 +464,8 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "custom_problem_type_and_dynamics", str(PROJECT_FOLDER) + "/examples/getting_started/custom_dynamics.py",
+        "custom_problem_type_and_dynamics",
+        str(PROJECT_FOLDER) + "/examples/getting_started/custom_dynamics.py",
     )
     pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum)

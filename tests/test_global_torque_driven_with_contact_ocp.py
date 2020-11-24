@@ -102,7 +102,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
         np.testing.assert_almost_equal(
-            qdot[:, -1], np.array((-4.87675667e-01,  3.28672149e-04,  9.75351556e-01, -9.75351556e-01))
+            qdot[:, -1], np.array((-4.87675667e-01, 3.28672149e-04, 9.75351556e-01, -9.75351556e-01))
         )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-0.5509092)))
@@ -141,7 +141,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
         number_shooting_points=10,
         min_bound=min_bound,
         max_bound=np.inf,
-        ode_solver=ode_solver
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -182,16 +182,18 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
                 [51.2579451],
                 [50.98768816],
                 [50.21989568],
-        ]
+            ]
         )
         np.testing.assert_almost_equal(g[80:], expected_pos_g)
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((-0.34054772,  0.1341555 , -0.00054332,  0.00054332)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((-0.34054772, 0.1341555, -0.00054332, 0.00054332)))
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((-2.01096899e+00,  1.09261741e-03,  4.02193851e+00, -4.02193851e+00)))
+        np.testing.assert_almost_equal(
+            qdot[:, -1], np.array((-2.01096899e00, 1.09261741e-03, 4.02193851e00, -4.02193851e00))
+        )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-54.17110048)))
         np.testing.assert_almost_equal(tau[:, -1], np.array((-15.69344349)))
@@ -261,7 +263,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
         number_shooting_points=10,
         min_bound=-np.inf,
         max_bound=max_bound,
-        ode_solver=ode_solver
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -307,13 +309,15 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
                 [95.03988984],
                 [91.72272481],
                 [77.29740256],
-        ]
+            ]
         )
         np.testing.assert_almost_equal(g[80:], expected_non_zero_g)
 
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((-2.86544932e+00,  9.38791617e-04,  5.73089895e+00, -5.73089895e+00)))
+        np.testing.assert_almost_equal(
+            qdot[:, -1], np.array((-2.86544932e00, 9.38791617e-04, 5.73089895e00, -5.73089895e00))
+        )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-32.78911887)))
         np.testing.assert_almost_equal(tau[:, -1], np.array((-25.1705709)))
@@ -387,7 +391,7 @@ def test_non_slipping_constraint(ode_solver):
         phase_time=0.6,
         number_shooting_points=10,
         mu=0.005,
-        ode_solver=ode_solver
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -415,45 +419,45 @@ def test_non_slipping_constraint(ode_solver):
         np.testing.assert_array_less(-g[80:], 0)
         expected_pos_g = np.array(
             [
-                [8.74337995e+01],
-                [8.74671258e+01],
-                [8.75687834e+01],
-                [8.77422815e+01],
-                [8.79913159e+01],
-                [8.83197846e+01],
-                [8.87318042e+01],
-                [8.92317303e+01],
-                [8.98241984e+01],
-                [9.05145023e+01],
-                [4.63475930e+01],
-                [4.63130361e+01],
-                [4.62075073e+01],
-                [4.60271955e+01],
-                [4.57680917e+01],
-                [4.54259739e+01],
-                [4.49963905e+01],
-                [4.44746352e+01],
-                [4.38556794e+01],
-                [4.31334131e+01],
-                [1.33775343e+00],
+                [8.74337995e01],
+                [8.74671258e01],
+                [8.75687834e01],
+                [8.77422815e01],
+                [8.79913159e01],
+                [8.83197846e01],
+                [8.87318042e01],
+                [8.92317303e01],
+                [8.98241984e01],
+                [9.05145023e01],
+                [4.63475930e01],
+                [4.63130361e01],
+                [4.62075073e01],
+                [4.60271955e01],
+                [4.57680917e01],
+                [4.54259739e01],
+                [4.49963905e01],
+                [4.44746352e01],
+                [4.38556794e01],
+                [4.31334131e01],
+                [1.33775343e00],
                 [6.04899683e-05],
-                [1.33773204e+00],
+                [1.33773204e00],
                 [6.95785710e-05],
-                [1.33768173e+00],
+                [1.33768173e00],
                 [8.11784388e-05],
-                [1.33759829e+00],
+                [1.33759829e00],
                 [9.64764544e-05],
-                [1.33747653e+00],
+                [1.33747653e00],
                 [1.17543268e-04],
-                [1.33730923e+00],
+                [1.33730923e00],
                 [1.48352207e-04],
-                [1.33708435e+00],
+                [1.33708435e00],
                 [1.97600315e-04],
-                [1.33677502e+00],
+                [1.33677502e00],
                 [2.88636405e-04],
-                [1.33628619e+00],
+                [1.33628619e00],
                 [5.12590351e-04],
-                [1.33466928e+00],
+                [1.33466928e00],
                 [1.80987563e-03],
             ]
         )
