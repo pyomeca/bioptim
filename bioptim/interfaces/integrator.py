@@ -1,4 +1,4 @@
-from casadi import Function, vertcat, norm_fro, collocation_points, tangent, vertsplit, rootfinder
+from casadi import Function, vertcat, norm_fro, collocation_points, tangent, rootfinder
 from ..misc.enums import ControlType
 
 
@@ -170,7 +170,7 @@ def IRK(ode, ode_opt):
         for r in range(degree + 1):
             xf[:, r] = xf[:, r - 1] + D[r] * x[r]
 
-        return xf[:, -1], xf
+        return xf[:, -1], vertcat(x0.T,xf.T).T
 
     return Function(
         "integrator", [x_sym, u_sym, param_sym], dxdt(h, x_sym, u_sym, param_sym), ["x0", "p", "params"], ["xf", "xall"]
