@@ -15,6 +15,7 @@ from bioptim import (
     InitialGuessOption,
     ShowResult,
     InterpolationType,
+    OdeSolver,
 )
 
 
@@ -28,6 +29,7 @@ def prepare_ocp(
     number_shooting_points,
     final_time,
     initial_guess=InterpolationType.CONSTANT,
+    ode_solver=OdeSolver.RK,
 ):
     # --- Options --- #
     # Model path
@@ -99,6 +101,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         constraints,
+        ode_solver=ode_solver,
     )
 
 

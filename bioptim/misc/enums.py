@@ -23,8 +23,8 @@ class OdeSolver(Enum):
     (RK is pretty much good balance)
     """
 
-    COLLOCATION = 0
-    RK = 1
+    RK = 0
+    IRK = 1
     CVODES = 2
     NO_SOLVER = 3
 

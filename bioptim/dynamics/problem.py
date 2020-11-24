@@ -270,6 +270,7 @@ class Problem:
                 legend=legend_qdot,
                 bounds=qdot_bounds,
             )
+
         if as_controls:
             nlp.u = vertcat(nlp.u, q_dot)
             nlp.var_controls["q_dot"] = nlp.shape["q_dot"]
