@@ -1,4 +1,5 @@
-from casadi import Function, vertcat, norm_fro, collocation_points, tangent, rootfinder
+from casadi import Function, vertcat, horzcat, norm_fro, collocation_points, tangent, rootfinder
+
 from ..misc.enums import ControlType
 
 
@@ -81,7 +82,7 @@ def IRK(ode, ode_opt):
     :return: Integration function. (CasADi function)
     """
     t_span = ode_opt["t0"], ode_opt["tf"]
-    degree = ode_opt["degree_of_interpolating_polynomial"]
+    degree = ode_opt["irk_polynomial_interpolation_degree"]
     idx = ode_opt["idx"]
     CX = ode_opt["CX"]
     x_sym = ode["x"]
@@ -169,7 +170,7 @@ def IRK(ode, ode_opt):
         for r in range(degree + 1):
             xf[:, r] = xf[:, r - 1] + D[r] * x[r]
 
-        return xf[:, -1], vertcat(x0.T, xf.T).T
+        return xf[:, -1], horzcat(x0, xf[:, -1])
 
     return Function(
         "integrator", [x_sym, u_sym, param_sym], dxdt(h, x_sym, u_sym, param_sym), ["x0", "p", "params"], ["xf", "xall"]

@@ -1,7 +1,7 @@
 from casadi import MX, vertcat, horzcat, Function
 
 from .dynamics_functions import DynamicsFunctions
-from ..misc.enums import PlotType, ControlType, OdeSolver
+from ..misc.enums import PlotType, ControlType
 from ..misc.mapping import BidirectionalMapping, Mapping
 from ..gui.plot import CustomPlot
 
@@ -219,14 +219,6 @@ class Problem:
             nlp.var_states["q"] = nlp.shape["q"]
             q_bounds = nlp.x_bounds[: nlp.shape["q"]]
 
-        if nlp.ode_solver == OdeSolver.IRK:
-            nlp.plot["q"] = CustomPlot(
-                lambda x, u, p: x[: nlp.shape["q"]],
-                plot_type=PlotType.PLOT,
-                legend=legend_q,
-                bounds=q_bounds,
-            )
-        else:
             nlp.plot["q"] = CustomPlot(
                 lambda x, u, p: x[: nlp.shape["q"]],
                 plot_type=PlotType.INTEGRATED,
@@ -272,20 +264,13 @@ class Problem:
             nlp.var_states["q_dot"] = nlp.shape["q_dot"]
             qdot_bounds = nlp.x_bounds[nlp.shape["q"] :]
 
-            if nlp.ode_solver == OdeSolver.IRK:
-                nlp.plot["q_dot"] = CustomPlot(
-                    lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["q_dot"]],
-                    plot_type=PlotType.PLOT,
-                    legend=legend_qdot,
-                    bounds=qdot_bounds,
-                )
-            else:
-                nlp.plot["q_dot"] = CustomPlot(
-                    lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["q_dot"]],
-                    plot_type=PlotType.INTEGRATED,
-                    legend=legend_qdot,
-                    bounds=qdot_bounds,
-                )
+            nlp.plot["q_dot"] = CustomPlot(
+                lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["q_dot"]],
+                plot_type=PlotType.INTEGRATED,
+                legend=legend_qdot,
+                bounds=qdot_bounds,
+            )
+
         if as_controls:
             nlp.u = vertcat(nlp.u, q_dot)
             nlp.var_controls["q_dot"] = nlp.shape["q_dot"]

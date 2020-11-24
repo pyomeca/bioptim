@@ -53,7 +53,7 @@ class OptimalControlProgram:
         external_forces=(),
         ode_solver=OdeSolver.RK,
         nb_integration_steps=5,
-        degree_interpolating_polynomial=4,
+        irk_polynomial_interpolation_degree=4,
         control_type=ControlType.CONSTANT,
         all_generalized_mapping=None,
         q_mapping=None,
@@ -119,7 +119,7 @@ class OptimalControlProgram:
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "nb_integration_steps": nb_integration_steps,
-            "degree_interpolating_polynomial": degree_interpolating_polynomial,
+            "irk_polynomial_interpolation_degree": irk_polynomial_interpolation_degree,
             "control_type": control_type,
             "all_generalized_mapping": all_generalized_mapping,
             "q_mapping": q_mapping,
@@ -289,7 +289,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("ode_solver", ode_solver, True)
         self.__add_to_nlp("control_type", control_type, True)
         self.__add_to_nlp("nb_integration_steps", nb_integration_steps, True)
-        self.__add_to_nlp("degree_interpolating_polynomial", degree_interpolating_polynomial, True)
+        self.__add_to_nlp("irk_polynomial_interpolation_degree", irk_polynomial_interpolation_degree, True)
 
         # Prepare the dynamics
         for i in range(self.nb_phases):
@@ -421,8 +421,10 @@ class OptimalControlProgram:
         """
 
         ode_opt = {"t0": 0, "tf": nlp.dt}
-        if nlp.ode_solver == OdeSolver.COLLOCATION or nlp.ode_solver == OdeSolver.RK or nlp.ode_solver == OdeSolver.IRK:
+        if nlp.ode_solver == OdeSolver.COLLOCATION or nlp.ode_solver == OdeSolver.RK:
             ode_opt["number_of_finite_elements"] = nlp.nb_integration_steps
+        elif nlp.ode_solver == OdeSolver.IRK:
+            nlp.nb_integration_steps = 1
 
         dynamics = nlp.dynamics_func
         ode = {"x": nlp.x, "p": nlp.u, "ode": dynamics(nlp.x, nlp.u, nlp.p)}
@@ -451,7 +453,7 @@ class OptimalControlProgram:
                     if nlp.ode_solver == OdeSolver.RK:
                         nlp.dynamics.append(RK4(ode, ode_opt))
                     elif nlp.ode_solver == OdeSolver.IRK:
-                        ode_opt["degree_of_interpolating_polynomial"] = nlp.degree_interpolating_polynomial
+                        ode_opt["irk_polynomial_interpolation_degree"] = nlp.irk_polynomial_interpolation_degree
                         nlp.dynamics.append(IRK(ode, ode_opt))
             else:
                 if self.nb_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -459,7 +461,7 @@ class OptimalControlProgram:
                 if nlp.ode_solver == OdeSolver.RK:
                     nlp.dynamics.append(RK4(ode, ode_opt))
                 elif nlp.ode_solver == OdeSolver.IRK:
-                    ode_opt["degree_of_interpolating_polynomial"] = nlp.degree_interpolating_polynomial
+                    ode_opt["irk_polynomial_interpolation_degree"] = nlp.irk_polynomial_interpolation_degree
                     nlp.dynamics.append(IRK(ode, ode_opt))
         elif nlp.ode_solver == OdeSolver.COLLOCATION:
             if not isinstance(self.CX(), MX):
