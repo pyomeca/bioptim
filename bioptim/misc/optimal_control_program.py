@@ -430,8 +430,10 @@ class OptimalControlProgram:
         nlp.par_dynamics = {}
         if nlp.ode_solver == OdeSolver.RK or nlp.ode_solver == OdeSolver.IRK:
             if nlp.ode_solver == OdeSolver.IRK and nlp.model.nbQuat() > 0:
-                raise RuntimeError("Quaternions can't be used with IRK yet. If you get this error, please notify the "
-                                   "developers and ping EveCharbie")
+                raise RuntimeError(
+                    "Quaternions can't be used with IRK yet. If you get this error, please notify the "
+                    "developers and ping EveCharbie"
+                )
             ode_opt["model"] = nlp.model
             ode_opt["param"] = nlp.p
             ode_opt["CX"] = nlp.CX

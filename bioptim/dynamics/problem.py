@@ -274,7 +274,7 @@ class Problem:
 
             if nlp.ode_solver == OdeSolver.IRK:
                 nlp.plot["q_dot"] = CustomPlot(
-                    lambda x, u, p: x[nlp.shape["q"]: nlp.shape["q"] + nlp.shape["q_dot"]],
+                    lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["q_dot"]],
                     plot_type=PlotType.PLOT,
                     legend=legend_qdot,
                     bounds=qdot_bounds,
