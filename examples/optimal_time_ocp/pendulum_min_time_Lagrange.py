@@ -1,3 +1,4 @@
+import numpy as np
 import biorbd
 
 from bioptim import (
@@ -15,7 +16,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver=OdeSolver.RK, weight=1):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -25,7 +26,8 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME)
+    # A weight of -1 will maximize time
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weight=weight)
 
     # Dynamics
     dynamics = DynamicsTypeList()
