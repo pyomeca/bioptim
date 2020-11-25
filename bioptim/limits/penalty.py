@@ -28,7 +28,7 @@ class PenaltyOption(OptionGeneric):
         self.quadratic = quadratic
 
         self.index = index
-        self.target = target
+        self.target = np.array(target) if np.any(target) else None
         self.sliced_target = None  # This one is the sliced node from the target. This is what is actually tracked
 
         self.custom_function = custom_function
@@ -596,11 +596,10 @@ class PenaltyFunctionAbstract:
 
             if data_to_track.shape != target_size:
                 raise RuntimeError(
-                    f"data_to_track {data_to_track.shape} doesn't correspond to expected minimum size {target_size}"
+                    f"data_to_track {data_to_track.shape} does not correspond to expected minimum size {target_size}"
                 )
         else:
-            raise ValueError("COUCOU!!!!")
-            data_to_track = np.zeros(target_size)
+            raise RuntimeError("data_to_track is None and that should not happen, please contact a developer")
         return data_to_track
 
     @staticmethod

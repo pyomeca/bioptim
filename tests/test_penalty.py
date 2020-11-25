@@ -1,10 +1,9 @@
 from pathlib import Path
 import pytest
 
-from casadi import DM
+from casadi import DM, Function
 import numpy as np
 import biorbd
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsTypeList,
@@ -16,7 +15,10 @@ from bioptim import (
     Axe,
     Constraint,
     ConstraintOption,
+    Node,
 )
+
+from bioptim.interfaces.ipopt_interface import IpoptInterface
 
 
 def prepare_test_ocp(with_muscles=False, with_contact=False):
@@ -986,3 +988,32 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
 
     with pytest.raises(RuntimeError):
         penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+
+
+@pytest.mark.parametrize("penalty_origin", [Objective.Lagrange, Objective.Mayer])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_track_markers_with_nan(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    penalty_type = penalty_origin.TRACK_MARKERS
+
+    target = np.ones((3, 7, 11)) * value
+    target[:, -2, [0, -1]] = np.nan
+
+    if isinstance(penalty_type, Objective.Lagrange):
+        penalty = ObjectiveOption(penalty_type, node=Node.ALL, target=target)
+        X = ocp.nlp[0].X[0]
+    elif isinstance(penalty_type, Objective.Mayer):
+        penalty = ObjectiveOption(penalty_type, node=Node.END, target=target[:, :, -1:])
+        X = ocp.nlp[0].X[10]
+    ocp.update_objectives(penalty)
+    res = Function("res", [X], [IpoptInterface.finalize_objective_value(ocp.nlp[0].J[0][0])]).expand()()["o0"]
+
+    if value == 0.1:
+        expected = 8.73 * ocp.nlp[0].J[0][0]["dt"]
+    else:
+        expected = 1879.25 * ocp.nlp[0].J[0][0]["dt"]
+
+    np.testing.assert_almost_equal(
+        res,
+        expected,
+    )
