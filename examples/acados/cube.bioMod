@@ -6,9 +6,9 @@ version 4
     segment Seg1
         translations	xz
         rotations	y
-        rangesQ  -10 10
-                -10 10
-                -10 10
+        rangesQ  -100 100
+                -100 100
+                -100 100
 	mass 1
 	inertia 
 	  1 0 0 
