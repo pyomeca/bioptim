@@ -65,7 +65,7 @@ class AcadosInterface(SolverInterface):
         self.acados_model.u = u
         self.acados_model.p = []
         now = datetime.now()  # current date and time
-        self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S')}"
+        self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S%f')[:-4]}"
 
     def __prepare_acados(self, ocp):
         if ocp.nb_phases > 1:
