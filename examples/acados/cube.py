@@ -34,7 +34,6 @@ def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK, use_SX=True
 
     # Path constraint
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
-    x_bounds[:, 0] = 0
 
     # Initial guess
     x_init = InitialGuessOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
