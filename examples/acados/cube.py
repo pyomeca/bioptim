@@ -18,14 +18,12 @@ from bioptim import (
     Solver,
 )
 
-def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK, use_SX=True):
+def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK, use_SX=True):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    number_shooting_points = 30
-    final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
@@ -53,8 +51,8 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK, use_SX=True):
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
-        final_time,
+        nbs,
+        tf,
         x_init,
         u_init,
         x_bounds,
@@ -67,13 +65,15 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK, use_SX=True):
 
 if __name__ == "__main__":
     model_path = "cube.bioMod"
-    ocp = prepare_ocp(biorbd_model_path=model_path, use_SX=True)
+    nbs = 30
+    tf = 2
+    ocp = prepare_ocp(biorbd_model_path=model_path, nbs=nbs, tf=tf, use_SX=True)
 
     # --- Solve the program --- #
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, states_idx=[0, 1], target=np.array([[1., 2.]]).T)
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, states_idx=[2], target=np.array([[3.]]))
-    # objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=1,)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1], target=np.array([[1., 2.]]).T)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.]]))
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=1,)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, show_online_optim=False)
@@ -81,8 +81,8 @@ if __name__ == "__main__":
     result.graphs()
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1, states_idx=[0, 1], target=np.array([[1., 2.]]).T)
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, states_idx=[2], target=np.array([[3.]]))
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1, index=[0, 1], target=np.array([[1., 2.]]).T)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.]]))
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=10,)
     ocp.update_objectives(objective_functions)
 
