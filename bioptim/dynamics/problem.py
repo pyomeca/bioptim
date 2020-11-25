@@ -346,7 +346,7 @@ class Problem:
     def configure_contact(ocp, nlp, dyn_func):
         symbolic_states = MX.sym("x", nlp.nx, 1)
         symbolic_controls = MX.sym("u", nlp.nu, 1)
-        symbolic_param = nlp.p
+        symbolic_param = MX.sym("p", nlp.np, 1)
         nlp.contact_forces_func = Function(
             "contact_forces_func",
             [symbolic_states, symbolic_controls, symbolic_param],
