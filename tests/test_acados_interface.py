@@ -48,7 +48,7 @@ def test_acados_one_mayer():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, states_idx=[0], target=np.array([[1.]]).T)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0], target=np.array([[1.]]).T)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS)
@@ -76,9 +76,9 @@ def test_acados_several_mayer():
             biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
         )
         objective_functions = ObjectiveList()
-        objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, states_idx=[0, 1],
+        objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1],
                                 target=np.array([[1., 2.]]).T)
-        objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, states_idx=[2], target=np.array([[3.]]))
+        objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.]]))
         ocp.update_objectives(objective_functions)
 
         sol = ocp.solve(solver=Solver.ACADOS)
