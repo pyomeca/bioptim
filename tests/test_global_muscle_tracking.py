@@ -302,8 +302,8 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
-    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
-        TestUtils.simulate(sol, ocp)
+    # with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
+    #     TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
