@@ -178,7 +178,6 @@ def test_acados_mhe():
     nbs = 5
     nbsample = 20
     target = np.expand_dims(np.cos(np.arange(0, nbsample + 1)), axis=0)
-    target[0, -1] = nbs - 2
 
     ocp = cube.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
@@ -201,3 +200,33 @@ def test_acados_mhe():
     # Clean test folder
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
+
+def test_acados_options():
+        PROJECT_FOLDER = Path(__file__).parent / ".."
+        spec = importlib.util.spec_from_file_location(
+            "pendulum",
+            str(PROJECT_FOLDER) + "/examples/acados/pendulum.py",
+        )
+        pendulum = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pendulum)
+
+        ocp = pendulum.prepare_ocp(
+            biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/pendulum.bioMod",
+            final_time=3,
+            number_shooting_points=12,
+        )
+
+        tol = [1e-1, 1e-0, 1e1]
+        iter = []
+        for i in range(3):
+            solver_options = {"nlp_solver_tol_stat": tol[i]}
+            sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
+            iter += [sol['iter']]
+
+        # Check that tol impacted convergence
+        np.testing.assert_array_less(iter[1], iter[0])
+        np.testing.assert_array_less(iter[2], iter[1])
+
+        # Clean test folder
+        os.remove(f"./acados_ocp.json")
+        shutil.rmtree(f"./c_generated_code/")
