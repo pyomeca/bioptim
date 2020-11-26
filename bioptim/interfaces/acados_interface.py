@@ -342,6 +342,7 @@ class AcadosInterface(SolverInterface):
             "x": [],
             "u": acados_u,
             "time_tot": self.ocp_solver.get_stats("time_tot")[0],
+            "iter": self.ocp_solver.get_stats("sqp_iter")[0],
             "status": self.status,
         }
         for i in range(ns):
