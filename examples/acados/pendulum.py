@@ -32,7 +32,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
     objective_functions.add(
         Objective.Mayer.MINIMIZE_STATE,
         weight=50000.0,
-        target=data_to_track[-2:-1, :].T,
+        target=data_to_track[-1:, :].T,
         node=Node.END,
     )
 
