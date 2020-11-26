@@ -189,13 +189,14 @@ class AcadosInterface(SolverInterface):
                             self.W_e = linalg.block_diag(
                              self.W_e, np.diag([J[0]["objective"].weight] * J[0]["val"].numel())
                             )
-                            self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
+                            self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                             if J[0]["target"] is not None:
                                 self.y_ref_end.append(
-                                    [J[-1]["target"]] if isinstance(J[1]["target"], (int, float)) else J[-1]["target"]
+                                    [J[-1]["target"].T.reshape((-1, 1))] if isinstance(J[1]["target"], (int, float))
+                                    else [J[-1]["target"].T.reshape((-1, 1))]
                                 )
                             else:
-                                self.y_ref_end.append([0] * (J[-1]["val"].numel()))
+                                self.y_ref_end.append([np.zeros((J[-1]["val"].numel(), 1))])
 
 
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
@@ -203,7 +204,7 @@ class AcadosInterface(SolverInterface):
                         self.W_e = linalg.block_diag(
                             self.W_e, np.diag([J[0]["objective"].weight] * J[0]["val"].numel())
                         )
-                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
+                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                         if J[0]["target"] is not None:
                             self.y_ref_end.append(
                                 [J[0]["target"]] if isinstance(J[0]["target"], (int, float)) else J[0]["target"]
@@ -222,7 +223,7 @@ class AcadosInterface(SolverInterface):
                         self.W_e = linalg.block_diag(
                             self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel()))
                         )
-                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
+                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                         if J[0]["target"] is not None:
                             self.y_ref_end.append(
                                 [J[0]["target"]] if isinstance(J[0]["target"], (int, float)) else J[0]["target"]
@@ -256,7 +257,7 @@ class AcadosInterface(SolverInterface):
         param_init = []
         for n in range(self.acados_ocp.dims.N):
             if self.y_ref:
-                self.ocp_solver.cost_set(n, "yref", np.concatenate([data[n] for data in self.y_ref])[:, 0])
+                self.ocp_solver.cost_set(n, "yref", np.vstack([data[n] for data in self.y_ref])[:, 0])
             # check following line
             # self.ocp_solver.cost_set(n, "W", self.W)
 
@@ -278,7 +279,7 @@ class AcadosInterface(SolverInterface):
                 self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 1])
 
         if self.y_ref_end:
-            self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate([data for data in self.y_ref_end]))
+            self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.hstack([data for data in self.y_ref_end])[0, :, 0])
             # check following line
             # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
@@ -324,18 +325,15 @@ class AcadosInterface(SolverInterface):
             for key in options:
                 setattr(self.acados_ocp.solver_options, key, options[key])
         else:
+            available_options = ['nlp_solver_tol_comp', 'nlp_solver_tol_eq', 'nlp_solver_tol_ineq',
+                                 'nlp_solver_tol_stat']
             for key in options:
-                if key[:11] == "nlp_solver_":
+                if key in available_options:
                     short_key = key[11:]
                     self.ocp_solver.options_set(short_key, options[key])
                 else:
                     raise RuntimeError(
-                        "[ACADOS] Only editable solver options after solver creation are :\n"
-                        "nlp_solver_tol_comp\n"
-                        "nlp_solver_tol_eq\n"
-                        "nlp_solver_tol_ineq\n"
-                        "nlp_solver_tol_stat\n"
-                    )
+                        f"[ACADOS] Only editable solver options after solver creation are :\n {available_options}")
 
     def get_iterations(self):
         raise NotImplementedError("return_iterations is not implemented yet with ACADOS backend")
