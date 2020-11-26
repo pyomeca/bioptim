@@ -110,8 +110,8 @@ def test_acados_one_lagrange():
     spec.loader.exec_module(cube)
 
     nbs = 10
-    target = np.expand_dims(np.arange(0, nbs+1), axis=0)
-    target[0, -1] = nbs-2
+    target = np.expand_dims(np.arange(0, nbs + 1), axis=0)
+    target[0, -1] = nbs - 2
     ocp = cube.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
         nbs=nbs,
@@ -134,6 +134,7 @@ def test_acados_one_lagrange():
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
 
+
 def test_acados_one_lagrange_and_one_mayer():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -144,8 +145,8 @@ def test_acados_one_lagrange_and_one_mayer():
     spec.loader.exec_module(cube)
 
     nbs = 10
-    target = np.expand_dims(np.arange(0, nbs+1), axis=0)
-    target[0, -1] = nbs-2
+    target = np.expand_dims(np.arange(0, nbs + 1), axis=0)
+    target[0, -1] = nbs - 2
     ocp = cube.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
         nbs=nbs,
@@ -153,8 +154,7 @@ def test_acados_one_lagrange_and_one_mayer():
     )
     objective_functions = ObjectiveList()
     objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=100000, index=[0], target=target)
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=100000, index=[0],
-                            target=target[:, -1:])
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=100000, index=[0], target=target[:, -1:])
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS)
