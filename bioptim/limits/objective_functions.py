@@ -88,6 +88,17 @@ class ObjectiveFunction:
             """Modification of parameters"""
             # Everything that should change the entry parameters depending on the penalty can be added here
             if penalty_function == Objective.Lagrange.MINIMIZE_TIME.value[0]:
+                # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
+                if "min_bound" in parameters.params:
+                    raise RuntimeError(
+                        "Objective.Lagrange.MINIMIZE_TIME cannot have min_bound. "
+                        "Please either use MAYER or constraint"
+                    )
+                if "max_bound" in parameters.params:
+                    raise RuntimeError(
+                        "Objective.Lagrange.MINIMIZE_TIME cannot have max_bound. "
+                        "Please either use MAYER or constraint"
+                    )
                 if not parameters.quadratic:
                     parameters.quadratic = True
             PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
@@ -148,6 +159,13 @@ class ObjectiveFunction:
         def _parameter_modifier(penalty_function, parameters):
             """Modification of parameters"""
             # Everything that should change the entry parameters depending on the penalty can be added here
+            if penalty_function == Objective.Mayer.MINIMIZE_TIME.value[0]:
+                # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
+                if "min_bound" in parameters.params:
+                    del parameters.params["min_bound"]
+                if "max_bound" in parameters.params:
+                    del parameters.params["max_bound"]
+
             PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
 
         @staticmethod
