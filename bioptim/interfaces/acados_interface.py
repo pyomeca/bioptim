@@ -166,6 +166,9 @@ class AcadosInterface(SolverInterface):
         self.mayer_costs = SX()
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
+        exclude_lagrange_to_convert_in_mayer = ['MINIMIZE_TORQUE', 'TRACK_TORQUE', 'MINIMIZE_TORQUE_DERIVATIVE',
+                                                'MINIMIZE_MUSCLES_CONTROL', 'TRACK_MUSCLES_CONTROL',
+                                                'MINIMIZE_ALL_CONTROLS', 'TRACK_ALL_CONTROLS']
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             raise RuntimeError("LINEAR_LS is not interfaced yet.")
@@ -180,6 +183,20 @@ class AcadosInterface(SolverInterface):
                             self.y_ref.append([J_tp["target"].T.reshape((-1, 1)) for J_tp in J])
                         else:
                             self.y_ref.append([np.zeros((J_tp["val"].numel(), 1)) for J_tp in J])
+                        if J[0]['objective'].node[0].value == 'all' and \
+                                not J[0]['objective'].type.name in exclude_lagrange_to_convert_in_mayer:
+                            mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
+                            self.W_e = linalg.block_diag(
+                             self.W_e, np.diag([J[0]["objective"].weight] * J[0]["val"].numel())
+                            )
+                            self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]))
+                            if J[0]["target"] is not None:
+                                self.y_ref_end.append(
+                                    [J[-1]["target"]] if isinstance(J[1]["target"], (int, float)) else J[-1]["target"]
+                                )
+                            else:
+                                self.y_ref_end.append([0] * (J[-1]["val"].numel()))
+
 
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
                         mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
