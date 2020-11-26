@@ -17,7 +17,7 @@ install:
   - conda install xorg-libx11 xorg-libxtst -cconda-forge
   - conda list
   - cd external
-  - ./acados_install.sh
+  - ./acados_install.sh /home/travis/miniconda
   - cd ..
 
 script:
