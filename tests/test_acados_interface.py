@@ -52,7 +52,7 @@ def test_acados_one_mayer():
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0], target=np.array([[1.0]]).T)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0], target=np.array([[1.0]]).T)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS)
@@ -82,8 +82,8 @@ def test_acados_several_mayer():
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.0]]))
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[2], target=np.array([[3.0]]))
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS)
@@ -118,15 +118,13 @@ def test_acados_one_lagrange():
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=100000, index=[0], target=target)
+    objective_functions.add(Objective.Lagrange.TRACK_STATE, index=[0], target=target)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS)
 
     # Check end state value
     model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
-    # states, controls = Data.get_data(ocp, sol["x"])
-    # q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
     q = np.array(sol["qqdot"])[: model.nbQ()]
     np.testing.assert_almost_equal(q[0, :-1], target[0, :-1].squeeze())
 
@@ -153,8 +151,8 @@ def test_acados_one_lagrange_and_one_mayer():
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=100000, index=[0], target=target)
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=100000, index=[0], target=target[:, -1:])
+    objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=10, index=[0], target=target)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0], target=target[:, -1:])
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS)
