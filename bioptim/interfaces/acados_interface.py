@@ -192,11 +192,10 @@ class AcadosInterface(SolverInterface):
                             self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                             if J[0]["target"] is not None:
                                 self.y_ref_end.append(
-                                    [J[-1]["target"].T.reshape((-1, 1))] if isinstance(J[1]["target"], (int, float))
-                                    else [J[-1]["target"].T.reshape((-1, 1))]
+                                    J[-1]["target"].T.reshape((-1, 1))
                                 )
                             else:
-                                self.y_ref_end.append([np.zeros((J[-1]["val"].numel(), 1))])
+                                self.y_ref_end.append(np.zeros((J[-1]["val"].numel(), 1)))
 
 
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
@@ -207,10 +206,10 @@ class AcadosInterface(SolverInterface):
                         self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                         if J[0]["target"] is not None:
                             self.y_ref_end.append(
-                                [J[0]["target"]] if isinstance(J[0]["target"], (int, float)) else J[0]["target"]
+                                J[0]["target"].T.reshape((-1, 1))
                             )
                         else:
-                            self.y_ref_end.append([0] * (J[0]["val"].numel()))
+                            self.y_ref_end.append(np.zeros((J[0]["val"].numel(), 1)))
 
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
@@ -226,10 +225,10 @@ class AcadosInterface(SolverInterface):
                         self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                         if J[0]["target"] is not None:
                             self.y_ref_end.append(
-                                [J[0]["target"]] if isinstance(J[0]["target"], (int, float)) else J[0]["target"]
+                                [J[0]["target"].T.reshape((-1, 1))]
                             )
                         else:
-                            self.y_ref_end.append([0] * (J[0]["val"].numel()))
+                            self.y_ref_end.append([np.zeros((J[0]["val"].numel(), 1))])
 
             # Set costs
             self.acados_ocp.model.cost_y_expr = self.lagrange_costs if self.lagrange_costs.numel() else SX(1, 1)
@@ -279,7 +278,10 @@ class AcadosInterface(SolverInterface):
                 self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 1])
 
         if self.y_ref_end:
-            self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate([data[0] for data in self.y_ref_end])[:, 0])
+            if len(self.y_ref_end) == 1:
+                self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.array(self.y_ref_end[0])[:, 0])
+            else:
+                self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate([data for data in self.y_ref_end])[:, 0])
             # check following line
             # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
