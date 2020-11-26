@@ -18,6 +18,7 @@ from bioptim import (
     Solver,
 )
 
+
 def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK, use_SX=True):
     # --- Options --- #
     # Model path
@@ -58,7 +59,7 @@ def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK, use_SX=True
         u_bounds,
         objective_functions,
         ode_solver=ode_solver,
-        use_SX=use_SX
+        use_SX=use_SX,
     )
 
 
@@ -70,9 +71,12 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1], target=np.array([[1., 2.]]).T)
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.]]))
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=1,)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.0]]))
+    objective_functions.add(
+        Objective.Lagrange.MINIMIZE_TORQUE,
+        weight=1,
+    )
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, show_online_optim=False)
@@ -80,9 +84,12 @@ if __name__ == "__main__":
     result.graphs()
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1, index=[0, 1], target=np.array([[1., 2.]]).T)
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.]]))
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=10,)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.0]]))
+    objective_functions.add(
+        Objective.Lagrange.MINIMIZE_TORQUE,
+        weight=10,
+    )
     ocp.update_objectives(objective_functions)
 
     solver_options = {"nlp_solver_tol_stat": 1e-2}

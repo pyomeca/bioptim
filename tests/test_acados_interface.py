@@ -52,15 +52,15 @@ def test_acados_one_mayer():
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0], target=np.array([[1.]]).T)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0], target=np.array([[1.0]]).T)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS)
 
     # Check end state value
     model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
-    q = np.array(sol["qqdot"])[:model.nbQ()]
-    np.testing.assert_almost_equal(q[0, -1], 1.)
+    q = np.array(sol["qqdot"])[: model.nbQ()]
+    np.testing.assert_almost_equal(q[0, -1], 1.0)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -68,37 +68,36 @@ def test_acados_one_mayer():
 
 
 def test_acados_several_mayer():
-        PROJECT_FOLDER = Path(__file__).parent / ".."
-        spec = importlib.util.spec_from_file_location(
-            "cube",
-            str(PROJECT_FOLDER) + "/examples/acados/cube.py",
-        )
-        cube = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(cube)
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "cube",
+        str(PROJECT_FOLDER) + "/examples/acados/cube.py",
+    )
+    cube = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cube)
 
-        ocp = cube.prepare_ocp(
-            biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
-            nbs=30,
-            tf=2,
-        )
-        objective_functions = ObjectiveList()
-        objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1],
-                                target=np.array([[1., 2.]]).T)
-        objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.]]))
-        ocp.update_objectives(objective_functions)
+    ocp = cube.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
+        nbs=30,
+        tf=2,
+    )
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
+    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.0]]))
+    ocp.update_objectives(objective_functions)
 
-        sol = ocp.solve(solver=Solver.ACADOS)
+    sol = ocp.solve(solver=Solver.ACADOS)
 
-        # Check end state value
-        model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
-        q = np.array(sol["qqdot"])[:model.nbQ()]
-        np.testing.assert_almost_equal(q[0, -1], 1.)
-        np.testing.assert_almost_equal(q[1, -1], 2.)
-        np.testing.assert_almost_equal(q[2, -1], 3.)
+    # Check end state value
+    model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
+    q = np.array(sol["qqdot"])[: model.nbQ()]
+    np.testing.assert_almost_equal(q[0, -1], 1.0)
+    np.testing.assert_almost_equal(q[1, -1], 2.0)
+    np.testing.assert_almost_equal(q[2, -1], 3.0)
 
-        # Clean test folder
-        os.remove(f"./acados_ocp.json")
-        shutil.rmtree(f"./c_generated_code/")
+    # Clean test folder
+    os.remove(f"./acados_ocp.json")
+    shutil.rmtree(f"./c_generated_code/")
 
 
 def test_acados_one_lagrange():
@@ -119,8 +118,7 @@ def test_acados_one_lagrange():
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=100000, index=[0],
-                            target=target)
+    objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=100000, index=[0], target=target)
     # objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=100, index=[0],
     #                         target=target[:, -1:])
     ocp.update_objectives(objective_functions)
@@ -131,9 +129,8 @@ def test_acados_one_lagrange():
     model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
     # states, controls = Data.get_data(ocp, sol["x"])
     # q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-    q = np.array(sol["qqdot"])[:model.nbQ()]
+    q = np.array(sol["qqdot"])[: model.nbQ()]
     np.testing.assert_almost_equal(q[0, :-1], target[0, :-1].squeeze())
-
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
