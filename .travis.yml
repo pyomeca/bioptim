@@ -22,8 +22,8 @@ script:
   - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
   - python setup.py install
   - cd
+  - ls /home/travis/miniconda/lib/python3.9/site-packages/bioptim-0.0.1-py3.9.egg/bioptim
   - python -c "import bioptim"
-  - python -c "import tata"
 
 after_success:
   - codecov
