@@ -165,3 +165,39 @@ def test_acados_one_lagrange_and_one_mayer():
     # Clean test folder
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
+
+def test_acados_mhe():
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "cube",
+        str(PROJECT_FOLDER) + "/examples/acados/cube.py",
+    )
+    cube = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cube)
+
+    nbs = 5
+    nbsample = 20
+    target = np.expand_dims(np.cos(np.arange(0, nbsample + 1)), axis=0)
+    target[0, -1] = nbs - 2
+
+    ocp = cube.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
+        nbs=nbs,
+        tf=2,
+    )
+
+    model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
+    for i in range(nbsample-nbs):
+        objective_functions = ObjectiveList()
+        objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=10, index=[0], target=target[:, i:i+nbs+1])
+        objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i+nbs:i+nbs+1])
+        ocp.update_objectives(objective_functions)
+        sol = ocp.solve(solver=Solver.ACADOS)
+
+        # Check end state value
+        q = np.array(sol["qqdot"])[: model.nbQ()]
+        np.testing.assert_almost_equal(q[0, :], target[0, i:i+nbs+1].squeeze())
+
+    # Clean test folder
+    os.remove(f"./acados_ocp.json")
+    shutil.rmtree(f"./c_generated_code/")
