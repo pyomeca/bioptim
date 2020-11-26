@@ -79,9 +79,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_SX=Tr
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(
-        biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=41
-    )
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=41)
 
     # --- Solve the program --- #
     sol = ocp.solve(solver=Solver.ACADOS)

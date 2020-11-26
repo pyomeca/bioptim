@@ -166,6 +166,7 @@ def test_acados_one_lagrange_and_one_mayer():
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
 
+
 def test_acados_mhe():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -186,47 +187,48 @@ def test_acados_mhe():
     )
 
     model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
-    for i in range(nbsample-nbs):
+    for i in range(nbsample - nbs):
         objective_functions = ObjectiveList()
-        objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=10, index=[0], target=target[:, i:i+nbs+1])
-        objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i+nbs:i+nbs+1])
+        objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=10, index=[0], target=target[:, i : i + nbs + 1])
+        objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i + nbs : i + nbs + 1])
         ocp.update_objectives(objective_functions)
         sol = ocp.solve(solver=Solver.ACADOS)
 
         # Check end state value
         q = np.array(sol["qqdot"])[: model.nbQ()]
-        np.testing.assert_almost_equal(q[0, :], target[0, i:i+nbs+1].squeeze())
+        np.testing.assert_almost_equal(q[0, :], target[0, i : i + nbs + 1].squeeze())
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
 
+
 def test_acados_options():
-        PROJECT_FOLDER = Path(__file__).parent / ".."
-        spec = importlib.util.spec_from_file_location(
-            "pendulum",
-            str(PROJECT_FOLDER) + "/examples/acados/pendulum.py",
-        )
-        pendulum = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(pendulum)
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "pendulum",
+        str(PROJECT_FOLDER) + "/examples/acados/pendulum.py",
+    )
+    pendulum = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum)
 
-        ocp = pendulum.prepare_ocp(
-            biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/pendulum.bioMod",
-            final_time=3,
-            number_shooting_points=12,
-        )
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/pendulum.bioMod",
+        final_time=3,
+        number_shooting_points=12,
+    )
 
-        tol = [1e-1, 1e-0, 1e1]
-        iter = []
-        for i in range(3):
-            solver_options = {"nlp_solver_tol_stat": tol[i]}
-            sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
-            iter += [sol['iter']]
+    tol = [1e-1, 1e-0, 1e1]
+    iter = []
+    for i in range(3):
+        solver_options = {"nlp_solver_tol_stat": tol[i]}
+        sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
+        iter += [sol["iter"]]
 
-        # Check that tol impacted convergence
-        np.testing.assert_array_less(iter[1], iter[0])
-        np.testing.assert_array_less(iter[2], iter[1])
+    # Check that tol impacted convergence
+    np.testing.assert_array_less(iter[1], iter[0])
+    np.testing.assert_array_less(iter[2], iter[1])
 
-        # Clean test folder
-        os.remove(f"./acados_ocp.json")
-        shutil.rmtree(f"./c_generated_code/")
+    # Clean test folder
+    os.remove(f"./acados_ocp.json")
+    shutil.rmtree(f"./c_generated_code/")
