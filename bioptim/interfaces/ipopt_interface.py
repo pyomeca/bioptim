@@ -5,7 +5,6 @@ from casadi import vertcat, sum1, nlpsol, SX, MX
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
-from ..limits.objective_functions import get_objective_value
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType
 
@@ -58,7 +57,18 @@ class IpoptInterface(SolverInterface):
         self.opts = {**options, **self.options_common}
 
     def solve(self):
-        self.__dispatch_bounds()
+        all_J = self.__dispatch_obj_func()
+        all_g, all_g_bounds = self.__dispatch_bounds()
+
+        self.ipopt_nlp = {"x": self.ocp.V, "f": sum1(all_J), "g": all_g}
+        self.ipopt_limits = {
+            "lbx": self.ocp.V_bounds.min,
+            "ubx": self.ocp.V_bounds.max,
+            "lbg": all_g_bounds.min,
+            "ubg": all_g_bounds.max,
+            "x0": self.ocp.V_init.init,
+        }
+
         solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts)
 
         # Solve the problem
@@ -70,7 +80,6 @@ class IpoptInterface(SolverInterface):
         return self.out
 
     def __dispatch_bounds(self):
-        all_J = self.__dispatch_obj_func()
         all_g = self.ocp.CX()
         all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(len(self.ocp.g)):
@@ -83,27 +92,18 @@ class IpoptInterface(SolverInterface):
                     all_g = vertcat(all_g, nlp.g[i][j])
                     all_g_bounds.concatenate(nlp.g_bounds[i][j])
 
-        self.ipopt_nlp = {"x": self.ocp.V, "f": sum1(all_J), "g": all_g}
-
         if isinstance(all_g_bounds.min, (SX, MX)) or isinstance(all_g_bounds.max, (SX, MX)):
             raise RuntimeError("Ipopt doesn't support SX/MX types in constraints bounds")
-
-        self.ipopt_limits = {
-            "lbx": self.ocp.V_bounds.min,
-            "ubx": self.ocp.V_bounds.max,
-            "lbg": all_g_bounds.min,
-            "ubg": all_g_bounds.max,
-            "x0": self.ocp.V_init.init,
-        }
+        return all_g, all_g_bounds
 
     def __dispatch_obj_func(self):
         all_J = self.ocp.CX()
         for j_nodes in self.ocp.J:
             for obj in j_nodes:
-                all_J = vertcat(all_J, get_objective_value(obj))
+                all_J = vertcat(all_J, IpoptInterface.finalize_objective_value(obj))
         for nlp in self.ocp.nlp:
             for obj_nodes in nlp.J:
                 for obj in obj_nodes:
-                    all_J = vertcat(all_J, get_objective_value(obj))
+                    all_J = vertcat(all_J, IpoptInterface.finalize_objective_value(obj))
 
         return all_J

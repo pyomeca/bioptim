@@ -19,6 +19,7 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuessList,
+    OdeSolver,
 )
 
 
@@ -98,6 +99,7 @@ def prepare_ocp(
     q_ref,
     use_residual_torque,
     kin_data_to_track="markers",
+    ode_solver=OdeSolver.RK,
 ):
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -168,6 +170,7 @@ def prepare_ocp(
         x_bounds,
         u_bounds,
         objective_functions,
+        ode_solver=ode_solver,
     )
 
 

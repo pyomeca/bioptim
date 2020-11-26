@@ -11,6 +11,7 @@ from bioptim import (
     InitialGuessList,
     ShowResult,
     ControlType,
+    OdeSolver,
 )
 
 
@@ -21,6 +22,7 @@ def prepare_ocp(
     marker_velocity_or_displacement,
     marker_in_first_coordinates_system,
     control_type,
+    ode_solver=OdeSolver.RK,
 ):
     # --- Options --- #
     # Model path
@@ -94,6 +96,7 @@ def prepare_ocp(
         objective_functions,
         nb_integration_steps=5,
         control_type=control_type,
+        ode_solver=ode_solver,
     )
 
 

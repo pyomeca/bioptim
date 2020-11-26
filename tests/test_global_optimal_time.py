@@ -21,11 +21,13 @@ from bioptim import (
     ObjectiveList,
     Objective,
     OptimalControlProgram,
+    OdeSolver,
 )
 from .utils import TestUtils
 
 
-def test_pendulum_min_time_mayer():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_pendulum_min_time_mayer(ode_solver):
     # Load pendulum_min_time_Mayer
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -38,13 +40,9 @@ def test_pendulum_min_time_mayer():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         number_shooting_points=10,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.6209213032003106)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -64,37 +62,113 @@ def test_pendulum_min_time_mayer():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99980141, 0)))
+    if ode_solver == OdeSolver.IRK:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.6209187886055388)
 
-    # optimized time
-    np.testing.assert_almost_equal(tf, 0.6209213032003106)
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9535415, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99980138, 0)))
+
+        # optimized time
+        np.testing.assert_almost_equal(tf, 0.6209187886055388)
+    else:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.6209213032003106)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99980141, 0)))
+
+        # optimized time
+        np.testing.assert_almost_equal(tf, 0.6209213032003106)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_pendulum_min_time_lagrange():
-    # Load pendulum_min_time_Lagrange
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_pendulum_min_time_mayer_constrained(ode_solver):
+    # Load pendulum_min_time_Mayer
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "pendulum_min_time_Lagrange", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py"
+        "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py"
     )
-    pendulum_min_time_Lagrange = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum_min_time_Lagrange)
+    pendulum_min_time_Mayer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum_min_time_Mayer)
 
-    ocp = pendulum_min_time_Lagrange.prepare_ocp(
+    ocp = pendulum_min_time_Mayer.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         number_shooting_points=10,
+        ode_solver=ode_solver,
+        min_time=1,
     )
     sol = ocp.solve()
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (40, 1))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+
+    # Check some of the results
+    states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    tf = param["time"][0, 0]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.062092703196434854)
+    np.testing.assert_almost_equal(f[0, 0], 1)
+
+    if ode_solver == OdeSolver.IRK:
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((24.34465091, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-53.24135804, 0)))
+
+    else:
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((24.71677932, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-53.6692385, 0)))
+
+    # optimized time
+    np.testing.assert_almost_equal(tf, 1.0)
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_pendulum_max_time_mayer_constrained(ode_solver):
+    # Load pendulum_min_time_Mayer
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py"
+    )
+    pendulum_min_time_Mayer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum_min_time_Mayer)
+
+    ocp = pendulum_min_time_Mayer.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
+        final_time=2,
+        number_shooting_points=10,
+        ode_solver=ode_solver,
+        max_time=1,
+        weight=-1,
+    )
+    sol = ocp.solve()
 
     # Check constraints
     g = np.array(sol["g"])
@@ -114,18 +188,145 @@ def test_pendulum_min_time_lagrange():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((59.9529745, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-99.9980341, 0)))
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], -1)
+
+    if ode_solver == OdeSolver.IRK:
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[1, 0], np.array(0))
+        np.testing.assert_almost_equal(tau[1, -1], np.array(0))
+
+    else:
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[1, 0], np.array(0))
+        np.testing.assert_almost_equal(tau[1, -1], np.array(0))
 
     # optimized time
-    np.testing.assert_almost_equal(tf, 0.6209270319643485)
+    np.testing.assert_almost_equal(tf, 1.0)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_time_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_pendulum_min_time_lagrange(ode_solver):
+    # Load pendulum_min_time_Lagrange
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "pendulum_min_time_Lagrange", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py"
+    )
+    pendulum_min_time_Lagrange = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum_min_time_Lagrange)
+
+    ocp = pendulum_min_time_Lagrange.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
+        final_time=2,
+        number_shooting_points=10,
+        ode_solver=ode_solver,
+    )
+    sol = ocp.solve()
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (40, 1))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    tf = param["time"][0, 0]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    if ode_solver == OdeSolver.IRK:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.06209245173245879)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95201483, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99803395, 0)))
+
+        # optimized time
+        np.testing.assert_almost_equal(tf, 0.6209245173245879)
+    else:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.062092703196434854)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9529745, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.9980341, 0)))
+
+        # optimized time
+        np.testing.assert_almost_equal(tf, 0.6209270319643485)
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_pendulum_min_time_lagrange_constrained(ode_solver):
+    # Load pendulum_min_time_Lagrange
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    biorbd_model_path = (str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",)
+
+    # --- Options --- #
+    biorbd_model = biorbd.Model(biorbd_model_path[0])
+
+    # Add objective functions
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, min_bound=1)
+
+    # Dynamics
+    dynamics = DynamicsTypeList()
+    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    # ------------- #
+
+    with pytest.raises(
+        RuntimeError,
+        match="Objective.Lagrange.MINIMIZE_TIME cannot have min_bound. Please either use MAYER or constraint",
+    ):
+        OptimalControlProgram(biorbd_model, dynamics, 10, 2, objective_functions=objective_functions)
+
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_pendulum_max_time_lagrange_constrained(ode_solver):
+    # Load pendulum_min_time_Lagrange
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    biorbd_model_path = (str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",)
+
+    # --- Options --- #
+    biorbd_model = biorbd.Model(biorbd_model_path[0])
+
+    # Add objective functions
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weigth=-1, max_bound=1)
+
+    # Dynamics
+    dynamics = DynamicsTypeList()
+    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    # ------------- #
+
+    with pytest.raises(
+        RuntimeError,
+        match="Objective.Lagrange.MINIMIZE_TIME cannot have max_bound. Please either use MAYER or constraint",
+    ):
+        OptimalControlProgram(biorbd_model, dynamics, 10, 2, objective_functions=objective_functions)
+
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_time_constraint(ode_solver):
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -140,13 +341,9 @@ def test_time_constraint():
         number_shooting_points=10,
         time_min=0.6,
         time_max=1,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 1451.2202233368012)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -166,18 +363,34 @@ def test_time_constraint():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((22.49775, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-33.9047809, 0)))
-
     # optimized time
     np.testing.assert_almost_equal(tf, 1.0)
+
+    if ode_solver == OdeSolver.IRK:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 1451.2233946787849)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((22.49949667, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-33.90954581, 0)))
+    else:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 1451.2202233368012)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((22.49775, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-33.9047809, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_monophase_time_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_monophase_time_constraint(ode_solver):
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -192,6 +405,7 @@ def test_monophase_time_constraint():
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
         number_shooting_points=(20,),
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -229,7 +443,8 @@ def test_monophase_time_constraint():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_multiphase_time_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_multiphase_time_constraint(ode_solver):
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -244,6 +459,7 @@ def test_multiphase_time_constraint():
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
         number_shooting_points=(20, 30, 20),
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
