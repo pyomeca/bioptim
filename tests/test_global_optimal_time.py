@@ -17,15 +17,17 @@ from bioptim import (
     DynamicsType,
     InitialGuessList,
     BoundsList,
-    Instant,
+    Node,
     ObjectiveList,
     Objective,
     OptimalControlProgram,
+    OdeSolver,
 )
 from .utils import TestUtils
 
 
-def test_pendulum_min_time_mayer():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_pendulum_min_time_mayer(ode_solver):
     # Load pendulum_min_time_Mayer
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -38,13 +40,9 @@ def test_pendulum_min_time_mayer():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         number_shooting_points=10,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.6209213032003106)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -64,18 +62,37 @@ def test_pendulum_min_time_mayer():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99980141, 0)))
+    if ode_solver == OdeSolver.IRK:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.6209187886055388)
 
-    # optimized time
-    np.testing.assert_almost_equal(tf, 0.6209213032003106)
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9535415, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99980138, 0)))
+
+        # optimized time
+        np.testing.assert_almost_equal(tf, 0.6209187886055388)
+    else:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.6209213032003106)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99980141, 0)))
+
+        # optimized time
+        np.testing.assert_almost_equal(tf, 0.6209213032003106)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_pendulum_min_time_lagrange():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_pendulum_min_time_lagrange(ode_solver):
     # Load pendulum_min_time_Lagrange
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -88,13 +105,9 @@ def test_pendulum_min_time_lagrange():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         number_shooting_points=10,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.062092703196434854)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -114,18 +127,37 @@ def test_pendulum_min_time_lagrange():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((59.9529745, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-99.9980341, 0)))
+    if ode_solver == OdeSolver.IRK:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.06209245173245879)
 
-    # optimized time
-    np.testing.assert_almost_equal(tf, 0.6209270319643485)
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95201483, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99803395, 0)))
+
+        # optimized time
+        np.testing.assert_almost_equal(tf, 0.6209245173245879)
+    else:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.062092703196434854)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9529745, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.9980341, 0)))
+
+        # optimized time
+        np.testing.assert_almost_equal(tf, 0.6209270319643485)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_time_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_time_constraint(ode_solver):
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -140,13 +172,9 @@ def test_time_constraint():
         number_shooting_points=10,
         time_min=0.6,
         time_max=1,
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 1451.2202233368012)
 
     # Check constraints
     g = np.array(sol["g"])
@@ -166,18 +194,34 @@ def test_time_constraint():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((22.49775, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-33.9047809, 0)))
-
     # optimized time
     np.testing.assert_almost_equal(tf, 1.0)
+
+    if ode_solver == OdeSolver.IRK:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 1451.2233946787849)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((22.49949667, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-33.90954581, 0)))
+    else:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 1451.2202233368012)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((22.49775, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-33.9047809, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_monophase_time_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_monophase_time_constraint(ode_solver):
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -192,6 +236,7 @@ def test_monophase_time_constraint():
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
         number_shooting_points=(20,),
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -229,7 +274,8 @@ def test_monophase_time_constraint():
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def test_multiphase_time_constraint():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+def test_multiphase_time_constraint(ode_solver):
     # Load time_constraint
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -244,6 +290,7 @@ def test_multiphase_time_constraint():
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
         number_shooting_points=(20, 30, 20),
+        ode_solver=ode_solver,
     )
     sol = ocp.solve()
 
@@ -382,8 +429,8 @@ def test_mayer_neg_monophase_time_constraint():
     objective_functions.add(Objective.Mayer.MINIMIZE_TIME)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0])
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -422,8 +469,8 @@ def test_mayer1_neg_multiphase_time_constraint():
     objective_functions.add(Objective.Mayer.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0])
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -462,8 +509,8 @@ def test_mayer2_neg_multiphase_time_constraint():
     objective_functions.add(Objective.Mayer.MINIMIZE_TIME, phase=2)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=2)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=2)
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -502,8 +549,8 @@ def test_mayer_multiphase_time_constraint():
     objective_functions.add(Objective.Mayer.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=2)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=2)
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     OptimalControlProgram(
         biorbd_model,
@@ -541,8 +588,8 @@ def test_lagrange_neg_monophase_time_constraint():
     objective_functions.add(Objective.Lagrange.MINIMIZE_TIME)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0])
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -582,12 +629,8 @@ def test_lagrange1_neg_multiphase_time_constraint():
         objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, phase=0)
 
         constraints = ConstraintList()
-        constraints.add(
-            Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=0
-        )
-        constraints.add(
-            Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=0
-        )
+        constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0)
+        constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=0)
 
         OptimalControlProgram(
             biorbd_model,
@@ -626,12 +669,8 @@ def test_lagrange2_neg_multiphase_time_constraint():
         objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, phase=2)
 
         constraints = ConstraintList()
-        constraints.add(
-            Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=2
-        )
-        constraints.add(
-            Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=2
-        )
+        constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+        constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
         OptimalControlProgram(
             biorbd_model,
@@ -669,8 +708,8 @@ def test_lagrange_multiphase_time_constraint():
     objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1, phase=2)
-    constraints.add(Constraint.TIME_CONSTRAINT, instant=Instant.END, minimum=time_min[0], maximum=time_max[0], phase=2)
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     OptimalControlProgram(
         biorbd_model,

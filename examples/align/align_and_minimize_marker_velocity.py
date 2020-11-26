@@ -11,6 +11,7 @@ from bioptim import (
     InitialGuessList,
     ShowResult,
     ControlType,
+    OdeSolver,
 )
 
 
@@ -21,6 +22,7 @@ def prepare_ocp(
     marker_velocity_or_displacement,
     marker_in_first_coordinates_system,
     control_type,
+    ode_solver=OdeSolver.RK,
 ):
     # --- Options --- #
     # Model path
@@ -43,19 +45,19 @@ def prepare_ocp(
         objective_functions.add(
             Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT,
             coordinates_system_idx=coordinates_system_idx,
-            markers_idx=6,
+            index=6,
             weight=1000,
         )
     elif marker_velocity_or_displacement == "velo":
-        objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_VELOCITY, markers_idx=6, weight=1000)
+        objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_VELOCITY, index=6, weight=1000)
     else:
         raise RuntimeError(
             "Wrong choice of marker_velocity_or_displacement, actual value is "
             "{marker_velocity_or_displacement}, should be 'velo' or 'disp'."
         )
     # Make sure the segments actually moves (in order to test the relative speed objective)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, states_idx=6, weight=-1)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, states_idx=7, weight=-1)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, index=6, weight=-1)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, index=7, weight=-1)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -94,6 +96,7 @@ def prepare_ocp(
         objective_functions,
         nb_integration_steps=5,
         control_type=control_type,
+        ode_solver=ode_solver,
     )
 
 

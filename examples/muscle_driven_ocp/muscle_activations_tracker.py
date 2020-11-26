@@ -18,6 +18,7 @@ from bioptim import (
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
+    OdeSolver,
 )
 
 
@@ -99,6 +100,7 @@ def prepare_ocp(
     q_ref,
     kin_data_to_track="markers",
     use_residual_torque=True,
+    ode_solver=OdeSolver.RK,
 ):
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -116,7 +118,7 @@ def prepare_ocp(
         objective_functions.add(Objective.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)
     elif kin_data_to_track == "q":
         objective_functions.add(
-            Objective.Lagrange.TRACK_STATE, weight=100, target=q_ref, states_idx=range(biorbd_model.nbQ())
+            Objective.Lagrange.TRACK_STATE, weight=100, target=q_ref, index=range(biorbd_model.nbQ())
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
@@ -165,6 +167,7 @@ def prepare_ocp(
         x_bounds,
         u_bounds,
         objective_functions,
+        ode_solver=ode_solver,
     )
 
 

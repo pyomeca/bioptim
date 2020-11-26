@@ -2,7 +2,7 @@ import numpy as np
 import biorbd
 
 from bioptim import (
-    Instant,
+    Node,
     OptimalControlProgram,
     ConstraintList,
     Constraint,
@@ -16,10 +16,11 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     ShowResult,
+    OdeSolver,
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_bound):
+def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_bound, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -40,14 +41,14 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
         Constraint.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=max_bound,
-        instant=Instant.ALL,
+        node=Node.ALL,
         contact_force_idx=1,
     )
     constraints.add(
         Constraint.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=max_bound,
-        instant=Instant.ALL,
+        node=Node.ALL,
         contact_force_idx=2,
     )
 
@@ -85,6 +86,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
         objective_functions,
         constraints,
         tau_mapping=tau_mapping,
+        ode_solver=ode_solver,
     )
 
 

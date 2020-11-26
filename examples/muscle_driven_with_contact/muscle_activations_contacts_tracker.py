@@ -15,6 +15,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     ShowResult,
+    OdeSolver,
 )
 
 # Load align_segment_on_rt
@@ -25,7 +26,9 @@ data_to_track = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data_to_track)
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref):
+def prepare_ocp(
+    model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK
+):
     # Model path
     biorbd_model = biorbd.Model(model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
@@ -80,6 +83,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, muscle_activatio
         x_bounds,
         u_bounds,
         objective_functions=objective_functions,
+        ode_solver=ode_solver,
     )
 
 

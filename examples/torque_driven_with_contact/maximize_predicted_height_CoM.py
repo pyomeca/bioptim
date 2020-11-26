@@ -12,10 +12,11 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     ShowResult,
+    OdeSolver,
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=False):
+def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=False, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -72,6 +73,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=Fa
         u_bounds,
         objective_functions,
         tau_mapping=tau_mapping,
+        ode_solver=ode_solver,
     )
 
 

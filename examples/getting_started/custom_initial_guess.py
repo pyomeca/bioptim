@@ -2,7 +2,7 @@ import numpy as np
 import biorbd
 
 from bioptim import (
-    Instant,
+    Node,
     OptimalControlProgram,
     DynamicsTypeOption,
     DynamicsType,
@@ -15,6 +15,7 @@ from bioptim import (
     InitialGuessOption,
     ShowResult,
     InterpolationType,
+    OdeSolver,
 )
 
 
@@ -28,6 +29,7 @@ def prepare_ocp(
     number_shooting_points,
     final_time,
     initial_guess=InterpolationType.CONSTANT,
+    ode_solver=OdeSolver.RK,
 ):
     # --- Options --- #
     # Model path
@@ -45,8 +47,8 @@ def prepare_ocp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.ALIGN_MARKERS, instant=Instant.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint and control path constraints
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
@@ -99,6 +101,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         constraints,
+        ode_solver=ode_solver,
     )
 
 

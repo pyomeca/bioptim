@@ -12,6 +12,7 @@ from bioptim import (
     InitialGuessList,
     ShowResult,
     InterpolationType,
+    OdeSolver,
 )
 
 
@@ -33,7 +34,7 @@ def eul2quat(eul):
     return np.array([w, x, y, z])
 
 
-def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
+def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -44,7 +45,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_MARKERS, markers_idx=1, weight=-1)
+    objective_functions.add(Objective.Mayer.MINIMIZE_MARKERS, index=1, weight=-1)
     objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics
@@ -92,6 +93,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time):
         x_bounds,
         u_bounds,
         objective_functions,
+        ode_solver=ode_solver,
     )
 
 

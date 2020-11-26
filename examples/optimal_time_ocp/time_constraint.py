@@ -11,13 +11,14 @@ from bioptim import (
     BoundsOption,
     QAndQDotBounds,
     InitialGuessOption,
-    Instant,
+    Node,
     ShowResult,
     Data,
+    OdeSolver,
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min, time_max):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min, time_max, ode_solver=OdeSolver.RK):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -32,9 +33,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min,
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
 
     # Constraints
-    constraints = ConstraintOption(
-        Constraint.TIME_CONSTRAINT, instant=Instant.END, min_bound=time_min, max_bound=time_max
-    )
+    constraints = ConstraintOption(Constraint.TIME_CONSTRAINT, node=Node.END, min_bound=time_min, max_bound=time_max)
 
     # Path constraint
     x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
@@ -63,6 +62,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min,
         u_bounds,
         objective_functions,
         constraints,
+        ode_solver=ode_solver,
     )
 
 

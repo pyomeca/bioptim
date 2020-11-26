@@ -19,7 +19,7 @@ from ..dynamics.problem import Problem
 from ..dynamics.dynamics_type import DynamicsTypeList, DynamicsTypeOption
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.integrator import RK4
+from ..interfaces.integrator import RK4, IRK
 from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList, ConstraintOption
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList, ObjectiveOption
@@ -53,6 +53,7 @@ class OptimalControlProgram:
         external_forces=(),
         ode_solver=OdeSolver.RK,
         nb_integration_steps=5,
+        irk_polynomial_interpolation_degree=4,
         control_type=ControlType.CONSTANT,
         all_generalized_mapping=None,
         q_mapping=None,
@@ -77,9 +78,9 @@ class OptimalControlProgram:
         :param x_bounds: States upper and lower bounds. (Instance of the class Bounds)
         :param u_bounds: Controls upper and lower bounds. (Instance of the class Bounds)
         :param objective_functions: Tuple of tuple of objectives functions handler's and weights.
-        :param constraints: Tuple of constraints, instant (which node(s)) and tuple of geometric structures used.
+        :param constraints: Tuple of constraints, node(s) and tuple of geometric structures used.
         :param external_forces: Tuple of external forces.
-        :param ode_solver: Name of chosen ode solver to use. (OdeSolver.COLLOCATION, OdeSolver.RK, OdeSolver.CVODES or
+        :param ode_solver: Name of chosen ode solver to use. (OdeSolver.RK, OdeSolver.CVODES or
         OdeSolver.NO_SOLVER)
         :param all_generalized_mapping: States and controls mapping. (Instance of class Mapping)
         :param q_mapping: Generalized coordinates position states mapping. (Instance of class Mapping)
@@ -118,6 +119,7 @@ class OptimalControlProgram:
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "nb_integration_steps": nb_integration_steps,
+            "irk_polynomial_interpolation_degree": irk_polynomial_interpolation_degree,
             "control_type": control_type,
             "all_generalized_mapping": all_generalized_mapping,
             "q_mapping": q_mapping,
@@ -287,6 +289,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("ode_solver", ode_solver, True)
         self.__add_to_nlp("control_type", control_type, True)
         self.__add_to_nlp("nb_integration_steps", nb_integration_steps, True)
+        self.__add_to_nlp("irk_polynomial_interpolation_degree", irk_polynomial_interpolation_degree, True)
 
         # Prepare the dynamics
         for i in range(self.nb_phases):
@@ -418,14 +421,26 @@ class OptimalControlProgram:
         """
 
         ode_opt = {"t0": 0, "tf": nlp.dt}
-        if nlp.ode_solver == OdeSolver.COLLOCATION or nlp.ode_solver == OdeSolver.RK:
+        if nlp.ode_solver == OdeSolver.RK:
             ode_opt["number_of_finite_elements"] = nlp.nb_integration_steps
+        elif nlp.ode_solver == OdeSolver.IRK:
+            nlp.nb_integration_steps = 1
 
         dynamics = nlp.dynamics_func
         ode = {"x": nlp.x, "p": nlp.u, "ode": dynamics(nlp.x, nlp.u, nlp.p)}
         nlp.dynamics = []
         nlp.par_dynamics = {}
-        if nlp.ode_solver == OdeSolver.RK:
+        if nlp.ode_solver == OdeSolver.RK or nlp.ode_solver == OdeSolver.IRK:
+            if nlp.ode_solver == OdeSolver.IRK:
+                if self.CX is SX:
+                    raise NotImplementedError("use_SX and OdeSolver.IRK are not yet compatible")
+
+                if nlp.model.nbQuat() > 0:
+                    raise NotImplementedError(
+                        "Quaternions can't be used with IRK yet. If you get this error, please notify the "
+                        "developers and ping EveCharbie"
+                    )
+
             ode_opt["model"] = nlp.model
             ode_opt["param"] = nlp.p
             ode_opt["CX"] = nlp.CX
@@ -435,21 +450,19 @@ class OptimalControlProgram:
             if nlp.external_forces:
                 for idx in range(len(nlp.external_forces)):
                     ode_opt["idx"] = idx
-                    nlp.dynamics.append(RK4(ode, ode_opt))
+                    if nlp.ode_solver == OdeSolver.RK:
+                        nlp.dynamics.append(RK4(ode, ode_opt))
+                    elif nlp.ode_solver == OdeSolver.IRK:
+                        ode_opt["irk_polynomial_interpolation_degree"] = nlp.irk_polynomial_interpolation_degree
+                        nlp.dynamics.append(IRK(ode, ode_opt))
             else:
                 if self.nb_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
-                nlp.dynamics.append(RK4(ode, ode_opt))
-        elif nlp.ode_solver == OdeSolver.COLLOCATION:
-            if not isinstance(self.CX(), MX):
-                raise RuntimeError("COLLOCATION integrator can only be used with MX graphs")
-            if len(self.param_to_optimize) != 0:
-                raise RuntimeError("COLLOCATION cannot be used while optimizing parameters")
-            if nlp.external_forces:
-                raise RuntimeError("COLLOCATION cannot be used with external_forces")
-            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                raise RuntimeError("COLLOCATION cannot be used with piece-wise linear controls (only RK4)")
-            nlp.dynamics.append(casadi.integrator("integrator", "collocation", ode, ode_opt))
+                if nlp.ode_solver == OdeSolver.RK:
+                    nlp.dynamics.append(RK4(ode, ode_opt))
+                elif nlp.ode_solver == OdeSolver.IRK:
+                    ode_opt["irk_polynomial_interpolation_degree"] = nlp.irk_polynomial_interpolation_degree
+                    nlp.dynamics.append(IRK(ode, ode_opt))
         elif nlp.ode_solver == OdeSolver.CVODES:
             if not isinstance(self.CX(), MX):
                 raise RuntimeError("CVODES integrator can only be used with MX graphs")
@@ -806,7 +819,7 @@ class OptimalControlProgram:
             self.solver.finish_get_iterations()
 
         if return_objectives:
-            self.solver.get_objective()
+            self.solver.get_objectives()
 
         return self.solver.get_optimized_value()
 

@@ -1,7 +1,7 @@
 import biorbd
 
 from bioptim import (
-    Instant,
+    Node,
     OptimalControlProgram,
     DynamicsTypeList,
     DynamicsType,
@@ -13,10 +13,11 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     ShowResult,
+    OdeSolver,
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver=OdeSolver.RK):
     # --- Options --- #nq
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -35,7 +36,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT, instant=Instant.ALL, segment_idx=2, rt_idx=0)
+    constraints.add(Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment_idx=2, rt_idx=0)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -67,6 +68,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
         u_bounds,
         objective_functions,
         constraints,
+        ode_solver=ode_solver,
     )
 
 

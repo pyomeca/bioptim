@@ -4,25 +4,23 @@ from enum import Enum
 from casadi import sum1, horzcat
 
 from .path_conditions import Bounds
-from .penalty import PenaltyType, PenaltyFunctionAbstract
-from ..misc.enums import Instant, InterpolationType, OdeSolver, ControlType
+from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
+from ..misc.enums import Node, InterpolationType, OdeSolver, ControlType
 from ..misc.options_lists import OptionList, OptionGeneric
 
 
-class ConstraintOption(OptionGeneric):
-    def __init__(self, constraint, instant=Instant.NONE, min_bound=None, max_bound=None, phase=0, **params):
+class ConstraintOption(PenaltyOption):
+    def __init__(self, constraint, min_bound=None, max_bound=None, phase=0, **params):
         custom_function = None
         if not isinstance(constraint, Constraint):
             custom_function = constraint
             constraint = Constraint.CUSTOM
 
-        super(ConstraintOption, self).__init__(type=constraint, phase=phase, **params)
-        self.instant = instant
-        self.quadratic = None
-        self.custom_function = custom_function
+        super(ConstraintOption, self).__init__(
+            penalty=constraint, phase=phase, custom_function=custom_function, **params
+        )
         self.min_bound = min_bound
         self.max_bound = max_bound
-        self.custom_function = custom_function
 
 
 class ConstraintList(OptionList):
@@ -31,7 +29,7 @@ class ConstraintList(OptionList):
             self.copy(constraint)
 
         else:
-            super(ConstraintList, self)._add(constraint=constraint, option_type=ConstraintOption, **extra_arguments)
+            super(ConstraintList, self)._add(option_type=ConstraintOption, constraint=constraint, **extra_arguments)
 
 
 class ConstraintFunction(PenaltyFunctionAbstract):
@@ -72,7 +70,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tangential_component_idx,
             normal_component_idx,
             static_friction_coefficient,
-            **parameters,
         ):
             """
             Constraint preventing the contact point from slipping tangentially to the contact surface
@@ -112,13 +109,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
 
         @staticmethod
-        def time_constraint(constraint_type, ocp, nlp, t, x, u, p, **parameters):
+        def time_constraint(constraint_type, ocp, nlp, t, x, u, p, **unused_params):
             pass
 
     @staticmethod
     def add_or_replace(ocp, nlp, penalty):
         if penalty.type == Constraint.TIME_CONSTRAINT:
-            penalty.instant = Instant.END
+            penalty.node = Node.END
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, penalty)
 
     @staticmethod
@@ -131,7 +128,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         # Dynamics must be sound within phases
         penalty = ConstraintOption([])
         for i, nlp in enumerate(ocp.nlp):
-            penalty.idx = -1
+            penalty.list_index = -1
             ConstraintFunction.clear_penalty(ocp, None, penalty)
             # Loop over shooting nodes or use parallelization
             if ocp.nb_threads > 1:
@@ -141,7 +138,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             else:
                 for k in range(nlp.ns):
                     # Create an evaluation node
-                    if nlp.ode_solver == OdeSolver.RK:
+                    if nlp.ode_solver == OdeSolver.RK or nlp.ode_solver == OdeSolver.IRK:
                         if nlp.control_type == ControlType.CONSTANT:
                             u = nlp.U[k]
                         elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -159,8 +156,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     @staticmethod
     def inter_phase_continuity(ocp, pt):
         # Dynamics must be respected between phases
-        penalty = ConstraintOption([])
-        penalty.idx = -1
+        penalty = OptionGeneric()
+        penalty.min_bound = 0
+        penalty.max_bound = 0
+        penalty.list_index = -1
         pt.base.clear_penalty(ocp, None, penalty)
         val = pt.type.value[0](ocp, pt)
         pt.base.add_to_penalty(ocp, None, val, penalty)
@@ -179,11 +178,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             g_bounds.concatenate(Bounds(penalty.min_bound, penalty.max_bound, interpolation=InterpolationType.CONSTANT))
 
         if nlp:
-            nlp.g[penalty.idx].append(val)
-            nlp.g_bounds[penalty.idx].append(g_bounds)
+            nlp.g[penalty.list_index].append(val)
+            nlp.g_bounds[penalty.list_index].append(g_bounds)
         else:
-            ocp.g[penalty.idx].append(val)
-            ocp.g_bounds[penalty.idx].append(g_bounds)
+            ocp.g[penalty.list_index].append(val)
+            ocp.g_bounds[penalty.list_index].append(g_bounds)
 
     @staticmethod
     def clear_penalty(ocp, nlp, penalty):
@@ -200,21 +199,21 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             g_to_add_to = ocp.g
             g_bounds_to_add_to = ocp.g_bounds
 
-        if penalty.idx < 0:
+        if penalty.list_index < 0:
             for i, j in enumerate(g_to_add_to):
                 if not j:
-                    penalty.idx = i
+                    penalty.list_index = i
                     return
             else:
                 g_to_add_to.append([])
                 g_bounds_to_add_to.append([])
-                penalty.idx = len(g_to_add_to) - 1
+                penalty.list_index = len(g_to_add_to) - 1
         else:
-            while penalty.idx >= len(g_to_add_to):
+            while penalty.list_index >= len(g_to_add_to):
                 g_to_add_to.append([])
                 g_bounds_to_add_to.append([])
-            g_to_add_to[penalty.idx] = []
-            g_bounds_to_add_to[penalty.idx] = []
+            g_to_add_to[penalty.list_index] = []
+            g_bounds_to_add_to[penalty.list_index] = []
 
     @staticmethod
     def _parameter_modifier(constraint_function, parameters):
@@ -223,15 +222,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         super(ConstraintFunction, ConstraintFunction)._parameter_modifier(constraint_function, parameters)
 
     @staticmethod
-    def _span_checker(constraint_function, instant, nlp):
+    def _span_checker(constraint_function, node, nlp):
         """Raises errors on the span of penalty functions"""
         # Everything that is suspicious in terms of the span of the penalty function can be checked here
-        super(ConstraintFunction, ConstraintFunction)._span_checker(constraint_function, instant, nlp)
+        super(ConstraintFunction, ConstraintFunction)._span_checker(constraint_function, node, nlp)
         if (
             constraint_function == Constraint.CONTACT_FORCE.value[0]
             or constraint_function == Constraint.NON_SLIPPING.value[0]
         ):
-            if instant == Instant.END or instant == nlp.ns:
+            if node == Node.END or node == nlp.ns:
                 raise RuntimeError("No control u at last node")
 
 
