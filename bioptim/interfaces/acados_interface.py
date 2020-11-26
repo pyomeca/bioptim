@@ -279,7 +279,7 @@ class AcadosInterface(SolverInterface):
                 self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 1])
 
         if self.y_ref_end:
-            self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.hstack([data for data in self.y_ref_end])[0, :, 0])
+            self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate([data[0] for data in self.y_ref_end])[:, 0])
             # check following line
             # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
