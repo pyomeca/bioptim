@@ -118,7 +118,7 @@ def test_acados_one_lagrange():
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_STATE, index=[0], target=target)
+    objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=10, index=[0], target=target)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS)
@@ -126,7 +126,7 @@ def test_acados_one_lagrange():
     # Check end state value
     model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
     q = np.array(sol["qqdot"])[: model.nbQ()]
-    np.testing.assert_almost_equal(q[0, :-1], target[0, :-1].squeeze())
+    np.testing.assert_almost_equal(q[0, :], target[0, :].squeeze())
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
