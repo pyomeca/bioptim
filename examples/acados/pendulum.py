@@ -16,7 +16,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_threads, use_SX=False):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_SX=True):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     torque_min, torque_max, torque_init = -100, 100, 0
@@ -27,12 +27,15 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
     data_to_track[:, 1] = 3.14
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100.0)
+    objective_functions.add(
+        Objective.Lagrange.MINIMIZE_TORQUE,
+        weight=100.0,
+    )
     objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=1.0)
     objective_functions.add(
         Objective.Mayer.MINIMIZE_STATE,
         weight=50000.0,
-        target=data_to_track.T,
+        target=data_to_track[-1:, :].T,
         node=Node.END,
     )
 
@@ -74,15 +77,12 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, nb_thread
         x_bounds,
         u_bounds,
         objective_functions,
-        nb_threads=nb_threads,
         use_SX=use_SX,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(
-        biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=41, nb_threads=4, use_SX=True
-    )
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=41)
 
     # --- Solve the program --- #
     sol = ocp.solve(solver=Solver.ACADOS)
