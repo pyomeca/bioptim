@@ -166,6 +166,7 @@ def test_acados_one_lagrange_and_one_mayer():
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
 
+
 def test_acados_control_lagrange_and_state_mayer():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -183,7 +184,9 @@ def test_acados_control_lagrange_and_state_mayer():
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_ALL_CONTROLS,)
+    objective_functions.add(
+        Objective.Lagrange.MINIMIZE_ALL_CONTROLS,
+    )
     objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0], target=target)
     ocp.update_objectives(objective_functions)
 
