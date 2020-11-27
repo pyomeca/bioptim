@@ -1,7 +1,7 @@
 import os
 import pickle
 
-from casadi import vertcat, sum1, nlpsol
+from casadi import vertcat, sum1, nlpsol, SX, MX
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
@@ -91,6 +91,9 @@ class IpoptInterface(SolverInterface):
                 for j in range(len(nlp.g[i])):
                     all_g = vertcat(all_g, nlp.g[i][j])
                     all_g_bounds.concatenate(nlp.g_bounds[i][j])
+
+        if isinstance(all_g_bounds.min, (SX, MX)) or isinstance(all_g_bounds.max, (SX, MX)):
+            raise RuntimeError("Ipopt doesn't support SX/MX types in constraints bounds")
         return all_g, all_g_bounds
 
     def __dispatch_obj_func(self):

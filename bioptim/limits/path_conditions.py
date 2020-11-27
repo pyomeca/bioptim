@@ -1,4 +1,5 @@
 import numpy as np
+from casadi import MX, SX, vertcat
 from scipy.interpolate import interp1d
 
 from ..misc.enums import InterpolationType
@@ -24,7 +25,7 @@ class PathCondition(np.ndarray):
                 raise TypeError("The input when using InterpolationType.CUSTOM should be a callable function")
             custom_function = input_array
             input_array = np.array(())
-        else:
+        if not isinstance(input_array, (MX, SX)):
             input_array = np.asarray(input_array, dtype=float)
 
         if len(input_array.shape) == 0:
@@ -72,7 +73,10 @@ class PathCondition(np.ndarray):
             pass
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
-        obj = np.asarray(input_array).view(cls)
+        if not isinstance(input_array, (MX, SX)):
+            obj = np.asarray(input_array).view(cls)
+        else:
+            obj = input_array
 
         # Additional information (do not forget to update __reduce__ and __setstate__)
         obj.nb_shooting = None
@@ -280,8 +284,14 @@ class Bounds:
         Concatenates minimal and maximal bounds.
         :param other: Bounds to concatenate. (Instance of Bounds class)
         """
-        self.min = PathCondition(np.concatenate((self.min, other.min)), interpolation=self.min.type)
-        self.max = PathCondition(np.concatenate((self.max, other.max)), interpolation=self.max.type)
+        if not isinstance(self.min, (MX, SX)) and not isinstance(other.min, (MX, SX)):
+            self.min = PathCondition(np.concatenate((self.min, other.min)), interpolation=self.min.type)
+        else:
+            self.min = PathCondition(vertcat(self.min, other.min), interpolation=self.min.type)
+        if not isinstance(self.max, (MX, SX)) and not isinstance(other.max, (MX, SX)):
+            self.max = PathCondition(np.concatenate((self.max, other.max)), interpolation=self.max.type)
+        else:
+            self.max = PathCondition(vertcat(self.max, other.max), interpolation=self.max.type)
 
         self.type = self.min.type
         self.t = self.min.t
