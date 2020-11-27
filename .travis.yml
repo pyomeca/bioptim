@@ -11,7 +11,6 @@ before_install:
   - conda update -q conda
 
 install:
-  - conda update python -cconda-forge
   - conda env update -n root -f environment.yml
   - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
   - conda install xorg-libx11 xorg-libxtst -cconda-forge
@@ -19,8 +18,10 @@ install:
 
 script:
   - black . -l120 --exclude "external/*" --check
-  - python setup.py install
   - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
+  - python setup.py install
+  - cd
+  - python -c "import bioptim"
 
 after_success:
   - codecov
