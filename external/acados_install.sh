@@ -83,6 +83,6 @@ sed -i "s/$REPLACE_PATH_BY/$TO_REPLACE_PATH/" acados_template/utils.py
 # Automatically download Tera 
 TERA_INSTALL_SCRIPT=$(pwd)/../../ci/linux/install_t_renderer.sh
 pushd $ARG1;
-	chmod +x $TERA_INSTALL_SCRIPT;
-	exec $TERA_INSTALL_SCRIPT;
+  chmod +x $TERA_INSTALL_SCRIPT;
+  exec $TERA_INSTALL_SCRIPT;
 popd;
