@@ -735,12 +735,12 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("Unrecognized penalty")
 
-    def add_plot(self, fig_name, update_function, phase_number=-1, **parameters):
+    def add_plot(self, fig_name, update_function, phase=-1, **parameters):
         """
         Adds plots to show the result of the optimization
         :param fig_name: Name of the figure (string)
         :param update_function: Function to be plotted. (string) ???
-        :param phase_number: Phase to be plotted. (integer)
+        :param phase: Phase to be plotted. (integer)
         """
         if "combine_to" in parameters:
             raise RuntimeError(
@@ -749,11 +749,11 @@ class OptimalControlProgram:
 
         # --- Solve the program --- #
         if len(self.nlp) == 1:
-            phase_number = 0
+            phase = 0
         else:
-            if phase_number < 0:
+            if phase < 0:
                 raise RuntimeError("phase_idx must be specified for multiphase OCP")
-        nlp = self.nlp[phase_number]
+        nlp = self.nlp[phase]
         custom_plot = CustomPlot(update_function, **parameters)
 
         plot_name = "no_name"
@@ -764,7 +764,7 @@ class OptimalControlProgram:
             if fig_name:
                 cmp = 0
                 while True:
-                    plot_name = f"{fig_name}_phase{phase_number}_{cmp}"
+                    plot_name = f"{fig_name}_phase{phase}_{cmp}"
                     if plot_name not in nlp.plot:
                         break
                     cmp += 1

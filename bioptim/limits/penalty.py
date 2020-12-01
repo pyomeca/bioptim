@@ -715,7 +715,7 @@ class PenaltyFunctionAbstract:
             color="tab:red",
             linestyle=".-",
             plot_type=PlotType.STEP,
-            phase_number=nlp.phase_idx,
+            phase=nlp.phase_idx,
             axes_idx=axes_idx,
         )
 
