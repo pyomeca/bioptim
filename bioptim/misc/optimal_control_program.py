@@ -764,7 +764,7 @@ class OptimalControlProgram:
             if fig_name:
                 cmp = 0
                 while True:
-                    plot_name = f"{fig_name}_{cmp}"
+                    plot_name = f"{fig_name}_phase{phase_number}_{cmp}"
                     if plot_name not in nlp.plot:
                         break
                     cmp += 1
