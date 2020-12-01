@@ -382,7 +382,14 @@ class PlotOcp:
                 else:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
-                    y[:, :] = self.plot_func[key][i].function(state[:, ::step_size], control, data_param_in_dyn)
+                    try:
+                        y[:, :] = self.plot_func[key][i].function(state[:, ::step_size], control, data_param_in_dyn)
+                    except ValueError:
+                        raise ValueError(
+                            f"Wrong dimensions for plot {key}. Got "
+                            f"{self.plot_func[key][i].function(state[:, ::step_size], control, data_param_in_dyn).shape}"
+                            f", but expected {y.shape}"
+                        )
                     self.__append_to_ydata(y)
         self.__update_axes()
 
