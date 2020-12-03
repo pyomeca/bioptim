@@ -1,0 +1,65 @@
+version	3
+
+// General informations
+root_actuated 1
+external_forces 0
+
+
+//__________________________________________
+// Informations about Spring segment
+	// Segment
+	segment	Spring
+		RT 0 0 0 xyz 0 0 0
+		mass	0.000001
+		inertia
+			1	0	0
+			0	1	0
+			0	0	1
+		com	0	0	0
+		mesh	0	0	0
+		mesh	0	0	-1
+	endsegment
+
+	// Markers
+	marker	Spring_1
+		parent	Spring
+		position	0	0	0
+	endmarker	
+	// Markers
+	marker	Spring_2
+		parent	Spring
+		position	0	0	-1
+	endmarker	
+
+// Informations about Point segment
+	// Segment
+	segment	Point
+		RT 0 0 0 xyz 0 0 0
+		translations	z
+		mass	1
+		inertia
+			1	0	0
+			0	1	0
+			0	0	1
+		com	0	0	0
+		mesh	0	0	0
+		mesh	0	0	0.1
+		mesh	0	0	0
+		mesh	0	0	-0.1
+		mesh	0	0	0
+		mesh	0	0.1	0
+		mesh	0	0	0
+		mesh	0	-0.1	0
+		mesh	0	0	0
+		mesh	0.1	0	0
+		mesh	0	0	0
+		mesh	-0.1	0	0
+		externalforceindex 0
+	endsegment
+
+	// Markers
+	marker	PointMarker
+		parent	Point
+		position	0	0	0
+	endmarker	
+
