@@ -293,19 +293,21 @@ def test_acados_fail_external():
 def test_acados_fail_lls():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "pendulum",
-        str(PROJECT_FOLDER) + "/examples/acados/pendulum.py",
+        "arm",
+        str(PROJECT_FOLDER) + "/examples/acados/static_arm.py",
     )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
+    arm = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(arm)
 
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/pendulum.bioMod",
+    ocp = arm.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/arm26.bioMod",
         final_time=1,
         number_shooting_points=2,
+        use_SX=True,
     )
 
     solver_options = {"cost_type": "LINEAR_LS"}
 
-    with pytest.raises(RuntimeError, match="LINEAR_LS is not interfaced yet, please use NONLINEAR_LS"):
+    with pytest.raises(RuntimeError, match="Incompatible objective term with LINEAR_LS cost type"):
         sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
+
