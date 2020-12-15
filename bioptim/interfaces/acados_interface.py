@@ -211,6 +211,7 @@ class AcadosInterface(SolverInterface):
                                 self.y_ref.append([np.zeros((ocp.nlp[0].nx, 1)) for J_tp in J])
                         else:
                             raise RuntimeError("Incompatible objective term with LINEAR_LS cost type")
+
                         # Deal with last node to match ipopt formulation
                         if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
                             index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
@@ -226,17 +227,20 @@ class AcadosInterface(SolverInterface):
                                 self.y_ref_end.append(np.zeros((ocp.nlp[0].nx, 1)))
 
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
-                        index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
-                        vxe = np.zeros(ocp.nlp[0].nx)
-                        vxe[index] = 1.
-                        self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
-                        self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
-                        if J[0]["target"] is not None:
-                            y_tp = np.zeros((ocp.nlp[0].nx, 1))
-                            y_tp[index] = J[-1]["target"].T.reshape((-1, 1))
-                            self.y_ref_end.append(y_tp)
+                        if J[0]['objective'].type.name in state_objs:
+                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                            vxe = np.zeros(ocp.nlp[0].nx)
+                            vxe[index] = 1.
+                            self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
+                            self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
+                            if J[0]["target"] is not None:
+                                y_tp = np.zeros((ocp.nlp[0].nx, 1))
+                                y_tp[index] = J[-1]["target"].T.reshape((-1, 1))
+                                self.y_ref_end.append(y_tp)
+                            else:
+                                self.y_ref_end.append(np.zeros((ocp.nlp[0].nx, 1)))
                         else:
-                            self.y_ref_end.append(np.zeros((ocp.nlp[0].nx, 1)))
+                            raise RuntimeError("Incompatible objective term with LINEAR_LS cost type")
 
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
