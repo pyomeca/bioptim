@@ -168,7 +168,7 @@ class AcadosInterface(SolverInterface):
         self.W_e = np.zeros((0, 0))
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
-            raise RuntimeError("LINEAR_LS is not interfaced yet.")
+            raise RuntimeError("LINEAR_LS is not interfaced yet, please use NONLINEAR_LS")
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
             for i in range(ocp.nb_phases):
