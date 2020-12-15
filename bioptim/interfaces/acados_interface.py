@@ -166,8 +166,14 @@ class AcadosInterface(SolverInterface):
         self.mayer_costs = SX()
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
-        ctrl_objs = ["TRACK_TORQUE", "MINIMIZE_TORQUE", "MINIMIZE_MUSCLES_CONTROL", "TRACK_MUSCLES_CONTROL",
-                     "MINIMIZE_ALL_CONTROLS", "TRACK_ALL_CONTROLS"]
+        ctrl_objs = [
+            "TRACK_TORQUE",
+            "MINIMIZE_TORQUE",
+            "MINIMIZE_MUSCLES_CONTROL",
+            "TRACK_MUSCLES_CONTROL",
+            "MINIMIZE_ALL_CONTROLS",
+            "TRACK_ALL_CONTROLS",
+        ]
         state_objs = ["MINIMIZE_STATE", "TRACK_STATE"]
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
@@ -177,10 +183,12 @@ class AcadosInterface(SolverInterface):
             for i in range(ocp.nb_phases):
                 for j, J in enumerate(ocp.nlp[i].J):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
-                        if J[0]['objective'].type.name in ctrl_objs:
-                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nu))
+                        if J[0]["objective"].type.name in ctrl_objs:
+                            index = (
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nu))
+                            )
                             vu = np.zeros(ocp.nlp[0].nu)
-                            vu[index] = 1.
+                            vu[index] = 1.0
                             self.Vu = np.vstack((self.Vu, np.diag(vu)))
                             self.Vx = np.vstack((self.Vx, np.zeros((ocp.nlp[0].nu, ocp.nlp[0].nx))))
                             self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nu))
@@ -193,10 +201,12 @@ class AcadosInterface(SolverInterface):
                                 self.y_ref.append(y_ref_tp)
                             else:
                                 self.y_ref.append([np.zeros((ocp.nlp[0].nu, 1)) for J_tp in J])
-                        elif J[0]['objective'].type.name in state_objs:
-                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                        elif J[0]["objective"].type.name in state_objs:
+                            index = (
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                            )
                             vx = np.zeros(ocp.nlp[0].nx)
-                            vx[index] = 1.
+                            vx[index] = 1.0
                             self.Vx = np.vstack((self.Vx, np.diag(vx)))
                             self.Vu = np.vstack((self.Vu, np.zeros((ocp.nlp[0].nx, ocp.nlp[0].nu))))
                             self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
@@ -214,9 +224,11 @@ class AcadosInterface(SolverInterface):
 
                         # Deal with last node to match ipopt formulation
                         if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
-                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                            index = (
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                            )
                             vxe = np.zeros(ocp.nlp[0].nx)
-                            vxe[index] = 1.
+                            vxe[index] = 1.0
                             self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
                             self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
                             if J[0]["target"] is not None:
@@ -227,10 +239,12 @@ class AcadosInterface(SolverInterface):
                                 self.y_ref_end.append(np.zeros((ocp.nlp[0].nx, 1)))
 
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
-                        if J[0]['objective'].type.name in state_objs:
-                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                        if J[0]["objective"].type.name in state_objs:
+                            index = (
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                            )
                             vxe = np.zeros(ocp.nlp[0].nx)
-                            vxe[index] = 1.
+                            vxe[index] = 1.0
                             self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
                             self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
                             if J[0]["target"] is not None:

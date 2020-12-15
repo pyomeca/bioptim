@@ -14,6 +14,7 @@ import shutil
 import biorbd
 from bioptim import Data, Solver, ObjectiveList, Objective
 
+
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_no_obj(cost_type):
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -35,6 +36,7 @@ def test_acados_no_obj(cost_type):
     # Clean test folder
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
+
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_mayer(cost_type):
@@ -65,6 +67,7 @@ def test_acados_one_mayer(cost_type):
     # Clean test folder
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
+
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_several_mayer(cost_type):
@@ -99,6 +102,7 @@ def test_acados_several_mayer(cost_type):
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
 
+
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_lagrange(cost_type):
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -131,6 +135,7 @@ def test_acados_one_lagrange(cost_type):
     # Clean test folder
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
+
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_lagrange_and_one_mayer(cost_type):
@@ -165,6 +170,7 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     # Clean test folder
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
+
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_control_lagrange_and_state_mayer(cost_type):
@@ -201,6 +207,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
 
+
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_mhe(cost_type):
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -236,6 +243,7 @@ def test_acados_mhe(cost_type):
     # Clean test folder
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
+
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_options(cost_type):
