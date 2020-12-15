@@ -267,3 +267,24 @@ def test_acados_options():
     # Clean test folder
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
+
+def test_acados_fail_external():
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "pendulum",
+        str(PROJECT_FOLDER) + "/examples/acados/pendulum.py",
+    )
+    pendulum = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum)
+
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/pendulum.bioMod",
+        final_time=1,
+        number_shooting_points=2,
+    )
+
+    solver_options = {"cost_type": "EXTERNAL"}
+
+    with pytest.raises(RuntimeError, match="External is not interfaced yet, please use NONLINEAR_LS"):
+        sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
+
