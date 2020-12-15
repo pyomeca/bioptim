@@ -36,8 +36,10 @@ class DynamicsType(Enum):
     MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = (Problem.muscle_activations_and_torque_driven_with_contact,)
 
     TORQUE_DRIVEN = (Problem.torque_driven,)
+    TORQUE_DRIVEN_WITH_ACTUATOR_CONSTRAINTS = (Problem.torque_driven_with_actuator_constraints,)
     TORQUE_ACTIVATIONS_DRIVEN = (Problem.torque_activations_driven,)
     TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT = (Problem.torque_activations_driven_with_contact,)
     TORQUE_DRIVEN_WITH_CONTACT = (Problem.torque_driven_with_contact,)
+    TORQUE_DRIVEN_WITH_CONTACT_AND_ACTUATOR_CONSTRAINTS = (Problem.torque_driven_with_contact_and_actuator_constraints,)
 
     CUSTOM = (Problem.custom,)

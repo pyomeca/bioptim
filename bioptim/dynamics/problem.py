@@ -1,9 +1,10 @@
 from casadi import MX, vertcat, horzcat, Function
 
 from .dynamics_functions import DynamicsFunctions
-from ..misc.enums import PlotType, ControlType
+from ..misc.enums import PlotType, ControlType, Node
 from ..misc.mapping import BidirectionalMapping, Mapping
 from ..gui.plot import CustomPlot
+from ..limits.constraints import ConstraintList
 
 
 class Problem:
@@ -34,7 +35,104 @@ class Problem:
             Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven)
 
     @staticmethod
+    def torque_driven_with_actuator_constraints(ocp, nlp):
+        """
+        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
+        Works with torques but without muscles, must be used with dynamics without contacts.
+        :param nlp: An instance of the OptimalControlProgram class.
+        """
+        def tau_actuator_constraints(ocp, nlp, t, x, u, p, minimal_tau=None):
+            nq = nlp.mapping["q"].reduce.len
+            q = [nlp.mapping["q"].expand.map(mx[:nq]) for mx in x]
+            q_dot = [nlp.mapping["q_dot"].expand.map(mx[nq:]) for mx in x]
+
+            min_bound = []
+            max_bound = []
+
+            func = biorbd.to_casadi_func("torqueMax", nlp.model.torqueMax, nlp.q, nlp.q_dot)
+            for i in range(len(u)):
+                bound = func(q[i], q_dot[i])
+                if minimal_tau:
+                    min_bound.append(nlp.mapping["tau"].reduce.map(if_else(lt(bound[:, 1], minimal_tau), minimal_tau, bound[:, 1])))
+                    max_bound.append(nlp.mapping["tau"].reduce.map(if_else(lt(bound[:, 0], minimal_tau), minimal_tau, bound[:, 0])))
+                else:
+                    min_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 1]))
+                    max_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 0]))
+
+            obj = vertcat(*u)
+            min_bound = vertcat(*min_bound)
+            max_bound = vertcat(*max_bound)
+
+            return (
+                vertcat(np.zeros(min_bound.shape), np.ones(max_bound.shape) * -np.inf),
+                vertcat(obj + min_bound, obj - max_bound),
+                vertcat(np.ones(min_bound.shape) * np.inf, np.zeros(max_bound.shape)),
+            )
+
+        constraints = ConstraintList()
+        for i in range(ocp.nb_phases):
+            constraints.add(tau_actuator_constraints, phase=i, node=Node.ALL)
+        ocp.update_constraints(constraints)
+
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        if nlp.dynamics_type.dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
+        else:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven)
+
+    @staticmethod
     def torque_driven_with_contact(ocp, nlp):
+        """
+        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
+        Works with torques, without muscles, must be used with dynamics with contacts.
+        :param nlp: An OptimalControlProgram class.
+        """
+        def tau_actuator_constraints(ocp, nlp, t, x, u, p, minimal_tau=None):
+            nq = nlp.mapping["q"].reduce.len
+            q = [nlp.mapping["q"].expand.map(mx[:nq]) for mx in x]
+            q_dot = [nlp.mapping["q_dot"].expand.map(mx[nq:]) for mx in x]
+
+            min_bound = []
+            max_bound = []
+
+            func = biorbd.to_casadi_func("torqueMax", nlp.model.torqueMax, nlp.q, nlp.q_dot)
+            for i in range(len(u)):
+                bound = func(q[i], q_dot[i])
+                if minimal_tau:
+                    min_bound.append(nlp.mapping["tau"].reduce.map(if_else(lt(bound[:, 1], minimal_tau), minimal_tau, bound[:, 1])))
+                    max_bound.append(nlp.mapping["tau"].reduce.map(if_else(lt(bound[:, 0], minimal_tau), minimal_tau, bound[:, 0])))
+                else:
+                    min_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 1]))
+                    max_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 0]))
+
+            obj = vertcat(*u)
+            min_bound = vertcat(*min_bound)
+            max_bound = vertcat(*max_bound)
+
+            return (
+                vertcat(np.zeros(min_bound.shape), np.ones(max_bound.shape) * -np.inf),
+                vertcat(obj + min_bound, obj - max_bound),
+                vertcat(np.ones(min_bound.shape) * np.inf, np.zeros(max_bound.shape)),
+            )
+
+        constraints = ConstraintList()
+        for i in range(ocp.nb_phases):
+            constraints.add(tau_actuator_constraints, phase=i, node=Node.ALL)
+        ocp.update_constraints(constraints)
+
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        if nlp.dynamics_type.dynamics:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
+        else:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven_with_contact)
+        Problem.configure_contact(
+            ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact_for_torque_driven_problem
+        )
+
+    @staticmethod
+    def torque_driven_with_contact_and_actuator_constraints(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques, without muscles, must be used with dynamics with contacts.
