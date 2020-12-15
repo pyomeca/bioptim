@@ -201,9 +201,9 @@ class AcadosInterface(SolverInterface):
                             self.Vu = np.vstack((self.Vu, np.zeros((ocp.nlp[0].nx, ocp.nlp[0].nu))))
                             self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
                             if J[0]["target"] is not None:
-                                y_tp = np.zeros((ocp.nlp[0].nx, 1))
                                 y_ref_tp = []
                                 for J_tp in J:
+                                    y_tp = np.zeros((ocp.nlp[0].nx, 1))
                                     y_tp[index] = J_tp["target"].T.reshape((-1, 1))
                                     y_ref_tp.append(y_tp)
                                 self.y_ref.append(y_ref_tp)
@@ -245,32 +245,21 @@ class AcadosInterface(SolverInterface):
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
-                # parameter as mayer function
-                # IMPORTANT: it is considered that only parameters are stored in ocp.J, for now.
                 if self.params:
-                    for j, J in enumerate(ocp.J):
-                        mayer_func_tp = Function(f"cas_J_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
-                        self.W_e = linalg.block_diag(
-                            self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel()))
-                        )
-                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
-                        if J[0]["target"] is not None:
-                            self.y_ref_end.append([J[0]["target"].T.reshape((-1, 1))])
-                        else:
-                            self.y_ref_end.append([np.zeros((J[0]["val"].numel(), 1))])
+                    raise RuntimeError("Params not yet handled with LINEAR_LS cost type")
 
             # Set costs
-            self.acados_ocp.cost.Vx = self.Vx
-            self.acados_ocp.cost.Vu = self.Vu
-            self.acados_ocp.cost.Vx_e = self.Vxe
+            self.acados_ocp.cost.Vx = self.Vx if self.Vx.shape[0] else np.zeros((0, 0))
+            self.acados_ocp.cost.Vu = self.Vu if self.Vu.shape[0] else np.zeros((0, 0))
+            self.acados_ocp.cost.Vx_e = self.Vxe if self.Vxe.shape[0] else np.zeros((0, 0))
 
             # Set dimensions
             self.acados_ocp.dims.ny = sum([len(data[0]) for data in self.y_ref])
             self.acados_ocp.dims.ny_e = sum([len(data) for data in self.y_ref_end])
 
             # Set weight
-            self.acados_ocp.cost.W = np.zeros((1, 1)) if self.W.shape == (0, 0) else self.W
-            self.acados_ocp.cost.W_e = np.zeros((1, 1)) if self.W_e.shape == (0, 0) else self.W_e
+            self.acados_ocp.cost.W = self.W
+            self.acados_ocp.cost.W_e = self.W_e
 
             # Set target shape
             self.acados_ocp.cost.yref = np.zeros((self.acados_ocp.cost.W.shape[0],))
