@@ -166,9 +166,111 @@ class AcadosInterface(SolverInterface):
         self.mayer_costs = SX()
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
+        ctrl_objs = ["TRACK_TORQUE", "MINIMIZE_TORQUE", "MINIMIZE_MUSCLES_CONTROL", "TRACK_MUSCLES_CONTROL",
+                     "MINIMIZE_ALL_CONTROLS", "TRACK_ALL_CONTROLS"]
+        state_objs = ["MINIMIZE_STATE", "TRACK_STATE"]
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
-            raise RuntimeError("LINEAR_LS is not interfaced yet, please use NONLINEAR_LS")
+            self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nu)
+            self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nx)
+            self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nx)
+            for i in range(ocp.nb_phases):
+                for j, J in enumerate(ocp.nlp[i].J):
+                    if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
+                        if J[0]['objective'].type.name in ctrl_objs:
+                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nu))
+                            vu = np.zeros(ocp.nlp[0].nu)
+                            vu[index] = 1.
+                            self.Vu = np.vstack((self.Vu, np.diag(vu)))
+                            self.Vx = np.vstack((self.Vx, np.zeros((ocp.nlp[0].nu, ocp.nlp[0].nx))))
+                            self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nu))
+                            if J[0]["target"] is not None:
+                                y_tp = np.zeros((ocp.nlp[0].nu, 1))
+                                y_ref_tp = []
+                                for J_tp in J:
+                                    y_tp[index] = J_tp["target"].T.reshape((-1, 1))
+                                    y_ref_tp.append(y_tp)
+                                self.y_ref.append(y_ref_tp)
+                            else:
+                                self.y_ref.append([np.zeros((ocp.nlp[0].nu, 1)) for J_tp in J])
+                        elif J[0]['objective'].type.name in state_objs:
+                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                            vx = np.zeros(ocp.nlp[0].nx)
+                            vx[index] = 1.
+                            self.Vx = np.vstack((self.Vx, np.diag(vx)))
+                            self.Vu = np.vstack((self.Vu, np.zeros((ocp.nlp[0].nx, ocp.nlp[0].nu))))
+                            self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
+                            if J[0]["target"] is not None:
+                                y_tp = np.zeros((ocp.nlp[0].nx, 1))
+                                y_ref_tp = []
+                                for J_tp in J:
+                                    y_tp[index] = J_tp["target"].T.reshape((-1, 1))
+                                    y_ref_tp.append(y_tp)
+                                self.y_ref.append(y_ref_tp)
+                            else:
+                                self.y_ref.append([np.zeros((ocp.nlp[0].nx, 1)) for J_tp in J])
+                        else:
+                            raise RuntimeError("Incompatible objective term with LINEAR_LS cost type")
+                        # Deal with last node to match ipopt formulation
+                        if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
+                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                            vxe = np.zeros(ocp.nlp[0].nx)
+                            vxe[index] = 1.
+                            self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
+                            self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
+                            if J[0]["target"] is not None:
+                                y_tp = np.zeros((ocp.nlp[0].nx, 1))
+                                y_tp[index] = J[-1]["target"].T.reshape((-1, 1))
+                                self.y_ref_end.append(y_tp)
+                            else:
+                                self.y_ref_end.append(np.zeros((ocp.nlp[0].nx, 1)))
+
+                    elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
+                        index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                        vxe = np.zeros(ocp.nlp[0].nx)
+                        vxe[index] = 1.
+                        self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
+                        self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
+                        if J[0]["target"] is not None:
+                            y_tp = np.zeros((ocp.nlp[0].nx, 1))
+                            y_tp[index] = J[-1]["target"].T.reshape((-1, 1))
+                            self.y_ref_end.append(y_tp)
+                        else:
+                            self.y_ref_end.append(np.zeros((ocp.nlp[0].nx, 1)))
+
+                    else:
+                        raise RuntimeError("The objective function is not Lagrange nor Mayer.")
+
+                # parameter as mayer function
+                # IMPORTANT: it is considered that only parameters are stored in ocp.J, for now.
+                if self.params:
+                    for j, J in enumerate(ocp.J):
+                        mayer_func_tp = Function(f"cas_J_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
+                        self.W_e = linalg.block_diag(
+                            self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel()))
+                        )
+                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
+                        if J[0]["target"] is not None:
+                            self.y_ref_end.append([J[0]["target"].T.reshape((-1, 1))])
+                        else:
+                            self.y_ref_end.append([np.zeros((J[0]["val"].numel(), 1))])
+
+            # Set costs
+            self.acados_ocp.cost.Vx = self.Vx
+            self.acados_ocp.cost.Vu = self.Vu
+            self.acados_ocp.cost.Vx_e = self.Vxe
+
+            # Set dimensions
+            self.acados_ocp.dims.ny = sum([len(data[0]) for data in self.y_ref])
+            self.acados_ocp.dims.ny_e = sum([len(data) for data in self.y_ref_end])
+
+            # Set weight
+            self.acados_ocp.cost.W = np.zeros((1, 1)) if self.W.shape == (0, 0) else self.W
+            self.acados_ocp.cost.W_e = np.zeros((1, 1)) if self.W_e.shape == (0, 0) else self.W_e
+
+            # Set target shape
+            self.acados_ocp.cost.yref = np.zeros((self.acados_ocp.cost.W.shape[0],))
+            self.acados_ocp.cost.yref_e = np.zeros((self.acados_ocp.cost.W_e.shape[0],))
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
             for i in range(ocp.nb_phases):
@@ -192,7 +294,7 @@ class AcadosInterface(SolverInterface):
                                 self.y_ref_end.append(J[-1]["target"].T.reshape((-1, 1)))
                             else:
                                 self.y_ref_end.append(np.zeros((J[-1]["val"].numel(), 1)))
-
+                    # Deal with last node to match ipopt formulation
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
                         mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                         self.W_e = linalg.block_diag(
