@@ -238,7 +238,7 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.yref_e = np.zeros((self.acados_ocp.cost.W_e.shape[0],))
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
-            raise RuntimeError("External is not interfaced yet, please use NONLINEAR_LS")
+            raise RuntimeError("EXTERNAL is not interfaced yet, please use NONLINEAR_LS")
 
         else:
             raise RuntimeError("Available acados cost type: 'LINEAR_LS', 'NONLINEAR_LS' and 'EXTERNAL'.")
