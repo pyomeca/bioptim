@@ -187,12 +187,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
 
+        g = {"constraint": penalty, "val": val, "bounds": g_bounds}
         if nlp:
-            nlp.g[penalty.list_index].append(val)
-            nlp.g_bounds[penalty.list_index].append(g_bounds)
+            nlp.g[penalty.list_index].append(g)
         else:
-            ocp.g[penalty.list_index].append(val)
-            ocp.g_bounds[penalty.list_index].append(g_bounds)
+            ocp.g[penalty.list_index].append(g)
+
 
     @staticmethod
     def clear_penalty(ocp, nlp, penalty):
