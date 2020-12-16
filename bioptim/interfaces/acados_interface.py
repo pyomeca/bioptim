@@ -185,13 +185,13 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
 
         # setup algebraic constraint
-        self.acados_ocp.constraints.lh = np.array(g_bounds[0].min[:, 0])
-        self.acados_ocp.constraints.uh = np.array(g_bounds[0].max[:, 0])
+        self.acados_ocp.constraints.lh = np.array(self.g_bounds.min[:, 0])
+        self.acados_ocp.constraints.uh = np.array(self.g_bounds.max[:, 0])
         # self.acados_ocp.constraints.idxsh = np.array(range(self.acados_ocp.dims.nh))
 
         # setup terminal algebraic constraint
-        self.acados_ocp.constraints.lh_e = np.array(g_bounds[0].min[:, -1])
-        self.acados_ocp.constraints.uh_e = np.array(g_bounds[0].max[:, -1])
+        self.acados_ocp.constraints.lh_e = np.array(self.g_bounds.min[:, -1])
+        self.acados_ocp.constraints.uh_e = np.array(self.g_bounds.max[:, -1])
         self.acados_ocp.constraints.idxsh_e = np.array(range(self.acados_ocp.dims.nh))
 
     def __set_cost_type(self, cost_type="NONLINEAR_LS"):
@@ -303,7 +303,6 @@ class AcadosInterface(SolverInterface):
             self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
             self.ocp_solver.constraints_set(n, "lbu", self.ocp.nlp[0].u_bounds.min[:, 0])
             self.ocp_solver.constraints_set(n, "ubu", self.ocp.nlp[0].u_bounds.max[:, 0])
-
             if n == 0:
                 self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 0])
                 self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 0])
