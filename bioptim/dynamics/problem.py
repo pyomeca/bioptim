@@ -1,10 +1,9 @@
 from casadi import MX, vertcat, horzcat, Function
 
 from .dynamics_functions import DynamicsFunctions
-from ..misc.enums import PlotType, ControlType, Node
+from ..misc.enums import PlotType, ControlType
 from ..misc.mapping import BidirectionalMapping, Mapping
 from ..gui.plot import CustomPlot
-from ..limits.constraints import ConstraintList
 
 
 class Problem:
@@ -35,47 +34,12 @@ class Problem:
             Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven)
 
     @staticmethod
-    def torque_driven_with_actuator_constraints(ocp, nlp):
-        """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Works with torques but without muscles, must be used with dynamics without contacts.
-        :param nlp: An instance of the OptimalControlProgram class.
-        """
-        ocp.pending_constraints = True
-
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
-        if nlp.dynamics_type.dynamics:
-            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
-        else:
-            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven)
-
-    @staticmethod
     def torque_driven_with_contact(ocp, nlp):
         """
         Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
         Works with torques, without muscles, must be used with dynamics with contacts.
         :param nlp: An OptimalControlProgram class.
         """
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
-        if nlp.dynamics_type.dynamics:
-            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
-        else:
-            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven_with_contact)
-        Problem.configure_contact(
-            ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact_for_torque_driven_problem
-        )
-
-    @staticmethod
-    def torque_driven_with_contact_and_actuator_constraints(ocp, nlp):
-        """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Works with torques, without muscles, must be used with dynamics with contacts.
-        :param nlp: An OptimalControlProgram class.
-        """
-        ocp.pending_constraints = True
-
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         if nlp.dynamics_type.dynamics:

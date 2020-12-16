@@ -21,10 +21,10 @@ from bioptim import (
 from bioptim.interfaces.ipopt_interface import IpoptInterface
 
 
-def prepare_test_ocp(with_muscles=False, with_contact=False):
+def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False):
     PROJECT_FOLDER = Path(__file__).parent / ".."
-    if with_muscles and with_contact:
-        raise RuntimeError("With muscles and with contact together is not defined")
+    if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
+        raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
     elif with_muscles:
         biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod")
         dynamics = DynamicsTypeList()
@@ -37,6 +37,14 @@ def prepare_test_ocp(with_muscles=False, with_contact=False):
         )
         dynamics = DynamicsTypeList()
         dynamics.add(DynamicsType.TORQUE_DRIVEN_WITH_CONTACT)
+        nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
+        nu = biorbd_model.nbGeneralizedTorque()
+    elif with_actuator:
+        biorbd_model = biorbd.Model(
+            str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod"
+        )
+        dynamics = DynamicsTypeList()
+        dynamics.add(DynamicsType.TORQUE_DRIVEN)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     else:
@@ -826,6 +834,30 @@ def test_penalty_non_slipping(value):
     if isinstance(penalty_type, Constraint):
         np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].min, np.array([[expected[1]]]))
         np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0][0].max, np.array([[expected[2]]]))
+
+
+@pytest.mark.parametrize("value", [2])
+@pytest.mark.parametrize("threshold", [None, 15, -15])
+def test_tau_max_from_actuators(value, threshold):
+    ocp = prepare_test_ocp(with_actuator=True)
+    x = [DM.zeros((6, 1)), DM.zeros((6, 1))]
+    u = [DM.ones((3, 1)) * value, DM.ones((3, 1)) * value]
+    penalty_type = Constraint.TORQUE_MAX_FROM_ACTUATORS
+    penalty = ConstraintOption(penalty_type)
+    if threshold and threshold < 0:
+        with pytest.raises(ValueError, match="min_torque cannot be negative in tau_max_from_actuators"):
+            penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, u, [], min_torque=threshold),
+    else:
+        penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, u, [], min_torque=threshold)
+
+    for res in ocp.nlp[0].g[0]:
+        if threshold:
+            np.testing.assert_almost_equal(res, np.repeat([value + threshold, value - threshold], 3)[:, np.newaxis])
+        else:
+            np.testing.assert_almost_equal(res, np.repeat([value + 5, value - 10], 3)[:, np.newaxis])
+    for res in ocp.nlp[0].g_bounds[0]:
+        np.testing.assert_almost_equal(res.min, np.repeat([0, -np.inf], 3)[:, np.newaxis])
+        np.testing.assert_almost_equal(res.max, np.repeat([np.inf, 0], 3)[:, np.newaxis])
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
