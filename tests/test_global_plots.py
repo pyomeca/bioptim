@@ -19,7 +19,7 @@ def test_plot_graphs_one_phase():
     # Load graphs_one_phase
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
+        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
     )
     graphs_one_phase = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(graphs_one_phase)
@@ -93,7 +93,7 @@ def test_add_new_plot():
     # Load graphs_one_phase
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
+        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
     )
     graphs_one_phase = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(graphs_one_phase)

@@ -1,7 +1,9 @@
 from math import inf
 from enum import Enum
 
-from casadi import sum1, horzcat
+import numpy as np
+from casadi import sum1, horzcat, if_else, vertcat, lt
+import biorbd
 
 from .path_conditions import Bounds
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
@@ -107,6 +109,32 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     mu * normal_contact_force + tangential_contact_force,
                     constraint,
                 )
+
+        @staticmethod
+        def torque_max_from_actuators(constraint, ocp, nlp, t, x, u, p, min_torque=None):
+            nq = nlp.mapping["q"].reduce.len
+            q = [nlp.mapping["q"].expand.map(mx[:nq]) for mx in x]
+            q_dot = [nlp.mapping["q_dot"].expand.map(mx[nq:]) for mx in x]
+
+            if min_torque and min_torque < 0:
+                raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
+            func = biorbd.to_casadi_func("torqueMax", nlp.model.torqueMax, nlp.q, nlp.q_dot)
+            constraint.min_bound = np.repeat([0, -np.inf], nlp.nu)
+            constraint.max_bound = np.repeat([np.inf, 0], nlp.nu)
+            for i in range(len(u)):
+                bound = func(q[i], q_dot[i])
+                if min_torque:
+                    min_bound = nlp.mapping["tau"].reduce.map(
+                        if_else(lt(bound[:, 1], min_torque), min_torque, bound[:, 1])
+                    )
+                    max_bound = nlp.mapping["tau"].reduce.map(
+                        if_else(lt(bound[:, 0], min_torque), min_torque, bound[:, 0])
+                    )
+                else:
+                    min_bound = nlp.mapping["tau"].reduce.map(bound[:, 1])
+                    max_bound = nlp.mapping["tau"].reduce.map(bound[:, 0])
+
+                ConstraintFunction.add_to_penalty(ocp, nlp, vertcat(*[u[i] + min_bound, u[i] - max_bound]), constraint)
 
         @staticmethod
         def time_constraint(constraint_type, ocp, nlp, t, x, u, p, **unused_params):
@@ -264,6 +292,7 @@ class Constraint(Enum):
     CUSTOM = (PenaltyType.CUSTOM,)
     CONTACT_FORCE = (ConstraintFunction.Functions.contact_force,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
+    TORQUE_MAX_FROM_ACTUATORS = (ConstraintFunction.Functions.torque_max_from_actuators,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
 
     @staticmethod
