@@ -7,6 +7,7 @@ from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from .solver_interface import SolverInterface
 from ..limits.objective_functions import ObjectiveFunction
+from ..limits.penalty import PenaltyType
 
 
 class AcadosInterface(SolverInterface):
@@ -167,14 +168,11 @@ class AcadosInterface(SolverInterface):
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
         ctrl_objs = [
-            "TRACK_TORQUE",
-            "MINIMIZE_TORQUE",
-            "MINIMIZE_MUSCLES_CONTROL",
-            "TRACK_MUSCLES_CONTROL",
-            "MINIMIZE_ALL_CONTROLS",
-            "TRACK_ALL_CONTROLS",
+            PenaltyType.MINIMIZE_TORQUE,
+            PenaltyType.MINIMIZE_MUSCLES_CONTROL,
+            PenaltyType.MINIMIZE_ALL_CONTROLS,
         ]
-        state_objs = ["MINIMIZE_STATE", "TRACK_STATE"]
+        state_objs = [PenaltyType.MINIMIZE_STATE,]
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nu)
@@ -183,7 +181,7 @@ class AcadosInterface(SolverInterface):
             for i in range(ocp.nb_phases):
                 for j, J in enumerate(ocp.nlp[i].J):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
-                        if J[0]["objective"].type.name in ctrl_objs:
+                        if J[0]["objective"].type.value[0] in ctrl_objs:
                             index = (
                                 J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nu))
                             )
@@ -201,7 +199,7 @@ class AcadosInterface(SolverInterface):
                                 self.y_ref.append(y_ref_tp)
                             else:
                                 self.y_ref.append([np.zeros((ocp.nlp[0].nu, 1)) for J_tp in J])
-                        elif J[0]["objective"].type.name in state_objs:
+                        elif J[0]["objective"].type.value[0] in state_objs:
                             index = (
                                 J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
                             )
@@ -239,7 +237,7 @@ class AcadosInterface(SolverInterface):
                                 self.y_ref_end.append(np.zeros((ocp.nlp[0].nx, 1)))
 
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
-                        if J[0]["objective"].type.name in state_objs:
+                        if J[0]["objective"].type.value[0] in state_objs:
                             index = (
                                 J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
                             )
