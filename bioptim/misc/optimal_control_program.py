@@ -292,7 +292,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("nb_integration_steps", nb_integration_steps, True)
         self.__add_to_nlp("irk_polynomial_interpolation_degree", irk_polynomial_interpolation_degree, True)
 
-        if self.pending_contraints:
+        if self.pending_constraints:
             def tau_actuator_constraints(ocp, nlp, t, x, u, p, minimal_tau=None):
                 nq = nlp.mapping["q"].reduce.len
                 q = [nlp.mapping["q"].expand.map(mx[:nq]) for mx in x]
