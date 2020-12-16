@@ -1,5 +1,6 @@
 import os
 import pickle
+import numpy as np
 from copy import deepcopy
 from math import inf
 
@@ -10,7 +11,7 @@ from casadi import MX, vertcat, SX
 from .non_linear_program import NonLinearProgram
 from .__version__ import __version__
 from .data import Data
-from .enums import ControlType, OdeSolver, Solver
+from .enums import ControlType, OdeSolver, Solver, Node
 from .mapping import BidirectionalMapping
 from .options_lists import OptionList
 from .parameters import Parameters, ParameterList, ParameterOption

@@ -17,13 +17,13 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, use_actuators=False, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, actuator_type=None, ode_solver=OdeSolver.RK):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    if use_actuators:
+    if actuator_type and actuator_type == 1:
         tau_min, tau_max, tau_init = -1, 1, 0
     else:
         tau_min, tau_max, tau_init = -100, 100, 0
@@ -34,8 +34,13 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, use_actua
 
     # Dynamics
     dynamics = DynamicsTypeList()
-    if use_actuators:
-        dynamics.add(DynamicsType.TORQUE_ACTIVATIONS_DRIVEN)
+    if actuator_type:
+        if actuator_type == 1:
+            dynamics.add(DynamicsType.TORQUE_ACTIVATIONS_DRIVEN)
+        elif actuator_type == 2:
+            dynamics.add(DynamicsType.TORQUE_DRIVEN)
+        else:
+            raise ValueError("actuator_type is 1 (torque activations) or 2 (torque max constraints)")
     else:
         dynamics.add(DynamicsType.TORQUE_DRIVEN)
 
@@ -43,6 +48,8 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, use_actua
     constraints = ConstraintList()
     constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
     constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    if actuator_type == 2:
+        constraints.add(Constraint.TORQUE_MAX_FROM_ACTUATORS, node=Node.ALL, min_torque=7.5)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -79,7 +86,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, use_actua
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, use_actuators=False)
+    ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, actuator_type=2)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

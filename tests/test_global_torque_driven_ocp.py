@@ -13,11 +13,12 @@ from .utils import TestUtils
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
-def test_align_markers(ode_solver):
+@pytest.mark.parametrize("actuator_type", [None, 2])
+def test_align_markers(ode_solver, actuator_type):
     # Load align_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
+        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
     )
     align_markers = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(align_markers)
@@ -26,7 +27,7 @@ def test_align_markers(ode_solver):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
         final_time=2,
-        use_actuators=False,
+        actuator_type=actuator_type,
         ode_solver=ode_solver,
     )
     sol = ocp.solve()
@@ -38,8 +39,11 @@ def test_align_markers(ode_solver):
 
     # Check constraints
     g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (186, 1))
-    np.testing.assert_almost_equal(g, np.zeros((186, 1)))
+    if not actuator_type:
+        np.testing.assert_equal(g.shape, (186, 1))
+    else:
+        np.testing.assert_equal(g.shape, (366, 1))
+    np.testing.assert_almost_equal(g[:186], np.zeros((186, 1)))
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
@@ -67,7 +71,7 @@ def test_align_markers_changing_constraints(ode_solver):
     # Load align_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
+        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
     )
     align_markers = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(align_markers)
@@ -161,7 +165,7 @@ def test_align_markers_with_actuators(ode_solver):
     # Load align_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers.py"
+        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
     )
     align_markers = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(align_markers)
@@ -170,7 +174,7 @@ def test_align_markers_with_actuators(ode_solver):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
         final_time=2,
-        use_actuators=True,
+        actuator_type=1,
         ode_solver=ode_solver,
     )
     sol = ocp.solve()

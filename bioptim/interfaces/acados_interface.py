@@ -209,9 +209,123 @@ class AcadosInterface(SolverInterface):
         self.mayer_costs = SX()
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
+        ctrl_objs = [
+            PenaltyType.MINIMIZE_TORQUE,
+            PenaltyType.MINIMIZE_MUSCLES_CONTROL,
+            PenaltyType.MINIMIZE_ALL_CONTROLS,
+        ]
+        state_objs = [
+            PenaltyType.MINIMIZE_STATE,
+        ]
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
-            raise RuntimeError("LINEAR_LS is not interfaced yet.")
+            self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nu)
+            self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nx)
+            self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nx)
+            for i in range(ocp.nb_phases):
+                for j, J in enumerate(ocp.nlp[i].J):
+                    if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
+                        if J[0]["objective"].type.value[0] in ctrl_objs:
+                            index = (
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nu))
+                            )
+                            vu = np.zeros(ocp.nlp[0].nu)
+                            vu[index] = 1.0
+                            self.Vu = np.vstack((self.Vu, np.diag(vu)))
+                            self.Vx = np.vstack((self.Vx, np.zeros((ocp.nlp[0].nu, ocp.nlp[0].nx))))
+                            self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nu))
+                            if J[0]["target"] is not None:
+                                y_tp = np.zeros((ocp.nlp[0].nu, 1))
+                                y_ref_tp = []
+                                for J_tp in J:
+                                    y_tp[index] = J_tp["target"].T.reshape((-1, 1))
+                                    y_ref_tp.append(y_tp)
+                                self.y_ref.append(y_ref_tp)
+                            else:
+                                self.y_ref.append([np.zeros((ocp.nlp[0].nu, 1)) for J_tp in J])
+                        elif J[0]["objective"].type.value[0] in state_objs:
+                            index = (
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                            )
+                            vx = np.zeros(ocp.nlp[0].nx)
+                            vx[index] = 1.0
+                            self.Vx = np.vstack((self.Vx, np.diag(vx)))
+                            self.Vu = np.vstack((self.Vu, np.zeros((ocp.nlp[0].nx, ocp.nlp[0].nu))))
+                            self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
+                            if J[0]["target"] is not None:
+                                y_ref_tp = []
+                                for J_tp in J:
+                                    y_tp = np.zeros((ocp.nlp[0].nx, 1))
+                                    y_tp[index] = J_tp["target"].T.reshape((-1, 1))
+                                    y_ref_tp.append(y_tp)
+                                self.y_ref.append(y_ref_tp)
+                            else:
+                                self.y_ref.append([np.zeros((ocp.nlp[0].nx, 1)) for J_tp in J])
+                        else:
+                            raise RuntimeError(
+                                f"{J[0]['objective'].type.name} is an incompatible objective term with "
+                                f"LINEAR_LS cost type"
+                            )
+
+                        # Deal with last node to match ipopt formulation
+                        if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
+                            index = (
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                            )
+                            vxe = np.zeros(ocp.nlp[0].nx)
+                            vxe[index] = 1.0
+                            self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
+                            self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
+                            if J[0]["target"] is not None:
+                                y_tp = np.zeros((ocp.nlp[0].nx, 1))
+                                y_tp[index] = J[-1]["target"].T.reshape((-1, 1))
+                                self.y_ref_end.append(y_tp)
+                            else:
+                                self.y_ref_end.append(np.zeros((ocp.nlp[0].nx, 1)))
+
+                    elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
+                        if J[0]["objective"].type.value[0] in state_objs:
+                            index = (
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
+                            )
+                            vxe = np.zeros(ocp.nlp[0].nx)
+                            vxe[index] = 1.0
+                            self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
+                            self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * ocp.nlp[0].nx))
+                            if J[0]["target"] is not None:
+                                y_tp = np.zeros((ocp.nlp[0].nx, 1))
+                                y_tp[index] = J[-1]["target"].T.reshape((-1, 1))
+                                self.y_ref_end.append(y_tp)
+                            else:
+                                self.y_ref_end.append(np.zeros((ocp.nlp[0].nx, 1)))
+                        else:
+                            raise RuntimeError(
+                                f"{J[0]['objective'].type.name} is an incompatible objective term "
+                                f"with LINEAR_LS cost type"
+                            )
+
+                    else:
+                        raise RuntimeError("The objective function is not Lagrange nor Mayer.")
+
+                if self.params:
+                    raise RuntimeError("Params not yet handled with LINEAR_LS cost type")
+
+            # Set costs
+            self.acados_ocp.cost.Vx = self.Vx if self.Vx.shape[0] else np.zeros((0, 0))
+            self.acados_ocp.cost.Vu = self.Vu if self.Vu.shape[0] else np.zeros((0, 0))
+            self.acados_ocp.cost.Vx_e = self.Vxe if self.Vxe.shape[0] else np.zeros((0, 0))
+
+            # Set dimensions
+            self.acados_ocp.dims.ny = sum([len(data[0]) for data in self.y_ref])
+            self.acados_ocp.dims.ny_e = sum([len(data) for data in self.y_ref_end])
+
+            # Set weight
+            self.acados_ocp.cost.W = self.W
+            self.acados_ocp.cost.W_e = self.W_e
+
+            # Set target shape
+            self.acados_ocp.cost.yref = np.zeros((self.acados_ocp.cost.W.shape[0],))
+            self.acados_ocp.cost.yref_e = np.zeros((self.acados_ocp.cost.W_e.shape[0],))
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
             for i in range(ocp.nb_phases):
@@ -235,7 +349,7 @@ class AcadosInterface(SolverInterface):
                                 self.y_ref_end.append(J[-1]["target"].T.reshape((-1, 1)))
                             else:
                                 self.y_ref_end.append(np.zeros((J[-1]["val"].numel(), 1)))
-
+                    # Deal with last node to match ipopt formulation
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
                         mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                         self.W_e = linalg.block_diag(
@@ -281,7 +395,7 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.yref_e = np.zeros((self.acados_ocp.cost.W_e.shape[0],))
 
         elif self.acados_ocp.cost.cost_type == "EXTERNAL":
-            raise RuntimeError("External is not interfaced yet, please use NONLINEAR_LS")
+            raise RuntimeError("EXTERNAL is not interfaced yet, please use NONLINEAR_LS")
 
         else:
             raise RuntimeError("Available acados cost type: 'LINEAR_LS', 'NONLINEAR_LS' and 'EXTERNAL'.")
