@@ -84,13 +84,13 @@ class IpoptInterface(SolverInterface):
         all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(len(self.ocp.g)):
             for j in range(len(self.ocp.g[i])):
-                all_g = vertcat(all_g, self.ocp.g[i][j])
-                all_g_bounds.concatenate(self.ocp.g_bounds[i][j])
+                all_g = vertcat(all_g, self.ocp.g[i][j]["val"])
+                all_g_bounds.concatenate(self.ocp.g[i][j]["bounds"])
         for nlp in self.ocp.nlp:
             for i in range(len(nlp.g)):
                 for j in range(len(nlp.g[i])):
-                    all_g = vertcat(all_g, nlp.g[i][j])
-                    all_g_bounds.concatenate(nlp.g_bounds[i][j])
+                    all_g = vertcat(all_g, nlp.g[i][j]["val"])
+                    all_g_bounds.concatenate(nlp.g[i][j]["bounds"])
 
         if isinstance(all_g_bounds.min, (SX, MX)) or isinstance(all_g_bounds.max, (SX, MX)):
             raise RuntimeError("Ipopt doesn't support SX/MX types in constraints bounds")
