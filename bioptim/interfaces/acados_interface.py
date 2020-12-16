@@ -172,7 +172,9 @@ class AcadosInterface(SolverInterface):
             PenaltyType.MINIMIZE_MUSCLES_CONTROL,
             PenaltyType.MINIMIZE_ALL_CONTROLS,
         ]
-        state_objs = [PenaltyType.MINIMIZE_STATE,]
+        state_objs = [
+            PenaltyType.MINIMIZE_STATE,
+        ]
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nu)
@@ -218,8 +220,10 @@ class AcadosInterface(SolverInterface):
                             else:
                                 self.y_ref.append([np.zeros((ocp.nlp[0].nx, 1)) for J_tp in J])
                         else:
-                            raise RuntimeError(f"{J[0]['objective'].type.name} is an incompatible objective term with "
-                                               f"LINEAR_LS cost type")
+                            raise RuntimeError(
+                                f"{J[0]['objective'].type.name} is an incompatible objective term with "
+                                f"LINEAR_LS cost type"
+                            )
 
                         # Deal with last node to match ipopt formulation
                         if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
@@ -253,8 +257,10 @@ class AcadosInterface(SolverInterface):
                             else:
                                 self.y_ref_end.append(np.zeros((ocp.nlp[0].nx, 1)))
                         else:
-                            raise RuntimeError(f"{J[0]['objective'].type.name} is an incompatible objective term "
-                                               f"with LINEAR_LS cost type")
+                            raise RuntimeError(
+                                f"{J[0]['objective'].type.name} is an incompatible objective term "
+                                f"with LINEAR_LS cost type"
+                            )
 
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
