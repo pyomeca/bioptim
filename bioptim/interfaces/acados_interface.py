@@ -2,7 +2,7 @@ from datetime import datetime
 
 import numpy as np
 from scipy import linalg
-from casadi import SX, vertcat, sum1, Function
+from casadi import SX, vertcat, Function
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from .solver_interface import SolverInterface
@@ -220,7 +220,8 @@ class AcadosInterface(SolverInterface):
                             else:
                                 self.y_ref.append([np.zeros((ocp.nlp[0].nx, 1)) for J_tp in J])
                         else:
-                            raise RuntimeError("Incompatible objective term with LINEAR_LS cost type")
+                            raise RuntimeError(f"{J[0]['objective'].type.name} is an incompatible objective term with "
+                                               f"LINEAR_LS cost type")
 
                         # Deal with last node to match ipopt formulation
                         if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
@@ -254,7 +255,8 @@ class AcadosInterface(SolverInterface):
                             else:
                                 self.y_ref_end.append(np.zeros((ocp.nlp[0].nx, 1)))
                         else:
-                            raise RuntimeError("Incompatible objective term with LINEAR_LS cost type")
+                            raise RuntimeError(f"{J[0]['objective'].type.name} is an incompatible objective term "
+                                               f"with LINEAR_LS cost type")
 
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
