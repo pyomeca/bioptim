@@ -40,9 +40,7 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     elif with_actuator:
-        biorbd_model = biorbd.Model(
-            str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod"
-        )
+        biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod")
         dynamics = DynamicsTypeList()
         dynamics.add(DynamicsType.TORQUE_DRIVEN)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()

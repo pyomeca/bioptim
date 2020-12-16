@@ -124,8 +124,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             for i in range(len(u)):
                 bound = func(q[i], q_dot[i])
                 if min_torque:
-                    min_bound = nlp.mapping["tau"].reduce.map(if_else(lt(bound[:, 1], min_torque), min_torque, bound[:, 1]))
-                    max_bound = nlp.mapping["tau"].reduce.map(if_else(lt(bound[:, 0], min_torque), min_torque, bound[:, 0]))
+                    min_bound = nlp.mapping["tau"].reduce.map(
+                        if_else(lt(bound[:, 1], min_torque), min_torque, bound[:, 1])
+                    )
+                    max_bound = nlp.mapping["tau"].reduce.map(
+                        if_else(lt(bound[:, 0], min_torque), min_torque, bound[:, 0])
+                    )
                 else:
                     min_bound = nlp.mapping["tau"].reduce.map(bound[:, 1])
                     max_bound = nlp.mapping["tau"].reduce.map(bound[:, 0])
