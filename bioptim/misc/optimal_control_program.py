@@ -293,6 +293,7 @@ class OptimalControlProgram:
         self.__add_to_nlp("irk_polynomial_interpolation_degree", irk_polynomial_interpolation_degree, True)
 
         if self.pending_constraints:
+
             def tau_actuator_constraints(ocp, nlp, t, x, u, p, minimal_tau=None):
                 nq = nlp.mapping["q"].reduce.len
                 q = [nlp.mapping["q"].expand.map(mx[:nq]) for mx in x]
@@ -305,8 +306,16 @@ class OptimalControlProgram:
                 for i in range(len(u)):
                     bound = func(q[i], q_dot[i])
                     if minimal_tau:
-                        min_bound.append(nlp.mapping["tau"].reduce.map(if_else(lt(bound[:, 1], minimal_tau), minimal_tau, bound[:, 1])))
-                        max_bound.append(nlp.mapping["tau"].reduce.map(if_else(lt(bound[:, 0], minimal_tau), minimal_tau, bound[:, 0])))
+                        min_bound.append(
+                            nlp.mapping["tau"].reduce.map(
+                                if_else(lt(bound[:, 1], minimal_tau), minimal_tau, bound[:, 1])
+                            )
+                        )
+                        max_bound.append(
+                            nlp.mapping["tau"].reduce.map(
+                                if_else(lt(bound[:, 0], minimal_tau), minimal_tau, bound[:, 0])
+                            )
+                        )
                     else:
                         min_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 1]))
                         max_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 0]))
@@ -320,9 +329,9 @@ class OptimalControlProgram:
                     vertcat(obj + min_bound, obj - max_bound),
                     vertcat(np.ones(min_bound.shape) * np.inf, np.zeros(max_bound.shape)),
                 )
+
             for i in range(self.nb_phases):
                 constraints.add(tau_actuator_constraints, phase=i, node=Node.ALL)
-
 
         # Prepare the dynamics
         for i in range(self.nb_phases):
