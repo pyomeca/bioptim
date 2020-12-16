@@ -1,5 +1,6 @@
 import os
 import pickle
+import numpy as np
 from copy import deepcopy
 from math import inf
 
@@ -10,7 +11,7 @@ from casadi import MX, vertcat, SX
 from .non_linear_program import NonLinearProgram
 from .__version__ import __version__
 from .data import Data
-from .enums import ControlType, OdeSolver, Solver
+from .enums import ControlType, OdeSolver, Solver, Node
 from .mapping import BidirectionalMapping
 from .options_lists import OptionList
 from .parameters import Parameters, ParameterList, ParameterOption
@@ -292,6 +293,26 @@ class OptimalControlProgram:
         self.__add_to_nlp("nb_integration_steps", nb_integration_steps, True)
         self.__add_to_nlp("irk_polynomial_interpolation_degree", irk_polynomial_interpolation_degree, True)
 
+        # Prepare the dynamics
+        for i in range(self.nb_phases):
+            self.__initialize_nlp(self.nlp[i])
+            Problem.initialize(self, self.nlp[i])
+            if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
+                raise RuntimeError("Dynamics with different nx or nu is not supported yet")
+            self.__prepare_dynamics(self.nlp[i])
+
+        # Define the actual NLP problem
+        for i in range(self.nb_phases):
+            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
+
+        # Define continuity constraints
+        # Prepare phase transitions (Reminder, it is important that parameters are declared before,
+        # otherwise they will erase the state_transitions)
+        self.state_transitions = StateTransitionFunctions.prepare_state_transitions(self, state_transitions)
+
+        # Inner- and inter-phase continuity
+        ContinuityFunctions.continuity(self)
+
         if self.pending_constraints:
 
             def tau_actuator_constraints(ocp, nlp, t, x, u, p, minimal_tau=None):
@@ -332,26 +353,6 @@ class OptimalControlProgram:
 
             for i in range(self.nb_phases):
                 constraints.add(tau_actuator_constraints, phase=i, node=Node.ALL)
-
-        # Prepare the dynamics
-        for i in range(self.nb_phases):
-            self.__initialize_nlp(self.nlp[i])
-            Problem.initialize(self, self.nlp[i])
-            if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
-                raise RuntimeError("Dynamics with different nx or nu is not supported yet")
-            self.__prepare_dynamics(self.nlp[i])
-
-        # Define the actual NLP problem
-        for i in range(self.nb_phases):
-            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
-
-        # Define continuity constraints
-        # Prepare phase transitions (Reminder, it is important that parameters are declared before,
-        # otherwise they will erase the state_transitions)
-        self.state_transitions = StateTransitionFunctions.prepare_state_transitions(self, state_transitions)
-
-        # Inner- and inter-phase continuity
-        ContinuityFunctions.continuity(self)
 
         self.isdef_x_init = False
         self.isdef_u_init = False
