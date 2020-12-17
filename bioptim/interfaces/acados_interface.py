@@ -109,6 +109,7 @@ class AcadosInterface(SolverInterface):
         x_max = np.array(ocp.nlp[0].x_bounds.max)
         self.all_constr = SX()
         self.end_constr = SX()
+        ##TODO:change for more node flexibility on bounds
         self.all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(ocp.nb_phases):
@@ -117,14 +118,22 @@ class AcadosInterface(SolverInterface):
                     self.all_constr = vertcat(self.all_constr, G[0]["val"].reshape((-1, 1)))
                     self.all_g_bounds.concatenate(G[0]["bounds"])
                     if len(G) > ocp.nlp[0].ns:
-                        self.end_constr = vertcat(self.end_constr, G[0]["val"].reshape((-1, 1)))
+                        constr_end_func_tp = Function(f"cas_constr_end_func_{i}_{g}", [ocp.nlp[i].X[-1]], [G[0]["val"]])
+                        self.end_constr = vertcat(
+                            self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1))
+                        )
                         self.end_g_bounds.concatenate(G[0]["bounds"])
 
                 elif G[0]["constraint"].node[0].value == "end":
-                    self.end_constr = vertcat(self.end_constr, G[0]["val"].reshape((-1, 1)))
+                    constr_end_func_tp = Function(f"cas_constr_end_func_{i}_{g}", [ocp.nlp[i].X[-1]], [G[0]["val"]])
+                    self.end_constr = vertcat(
+                        self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1))
+                    )
                     self.end_g_bounds.concatenate(G[0]["bounds"])
+
                 else:
                     RuntimeError("Acados solver only handles constraints on all or last node.")
+
         self.acados_model.con_h_expr = self.all_constr
         self.acados_model.con_h_expr_e = self.end_constr
 
@@ -143,7 +152,7 @@ class AcadosInterface(SolverInterface):
                 "u_bounds and x_bounds cannot be set to infinity in ACADOS. Consider changing it"
                 "to a big value instead."
             )
-        ## TODO: implement constraints in g
+
         # setup state constraints
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
         self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
@@ -436,8 +445,9 @@ class AcadosInterface(SolverInterface):
             # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
-        # self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "uh_e", self.end_g_bounds.max[:, 0])
-        # self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lh_e", self.end_g_bounds.min[:, 0])
+        if len(self.end_g_bounds.max[:, 0]):
+            self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "uh", self.end_g_bounds.max[:, 0])
+            self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lh", self.end_g_bounds.min[:, 0])
 
         if self.ocp.nlp[0].x_init.init.shape[1] == self.acados_ocp.dims.N + 1:
             if self.params:
