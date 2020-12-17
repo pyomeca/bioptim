@@ -44,11 +44,11 @@ TODO + It is expected to slow down the optimization by about 15%
 
 ## Citing
 
-If you use `biorb-optim`, we would be grateful if you could cite it as follows:
+If you use `bioptim`, we would be grateful if you could cite it as follows:
 
-@misc{Michaud2018bioptim,
-    author = {Michaud, Benjamin and Begon, Mickael},
-    title = {bioptim: An optimal control framework for biomechanical analyses using biorbd},
+@misc{Michaud2020bioptim,
+    author = {Michaud, Benjamin and Bailly, Francois and Begon, Mickael et al.},
+    title = {bioptim, a Python interface for Musculoskeletal Optimal Control in Biomechanics},
     howpublished={Web page},
     url = {https://github.com/pyomeca/bioptim},
     year = {2020}
