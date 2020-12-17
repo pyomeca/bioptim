@@ -132,7 +132,7 @@ class AcadosInterface(SolverInterface):
                     self.end_g_bounds.concatenate(G[0]["bounds"])
 
                 else:
-                    RuntimeError("Acados solver only handles constraints on all or last node.")
+                    raise RuntimeError("Acados solver only handles constraints on all or last node.")
 
         self.acados_model.con_h_expr = self.all_constr
         self.acados_model.con_h_expr_e = self.end_constr
