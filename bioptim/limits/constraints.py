@@ -221,7 +221,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         else:
             ocp.g[penalty.list_index].append(g)
 
-
     @staticmethod
     def clear_penalty(ocp, nlp, penalty):
         """

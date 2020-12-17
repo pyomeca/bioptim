@@ -66,7 +66,7 @@ class AcadosInterface(SolverInterface):
         self.acados_model.x = x
         self.acados_model.xdot = x_dot
         self.acados_model.u = u
-        self.acados_model.con_h_expr = np.zeros((0,0))
+        self.acados_model.con_h_expr = np.zeros((0, 0))
         self.acados_model.con_h_expr_e = np.zeros((0, 0))
         self.acados_model.p = []
         now = datetime.now()  # current date and time
@@ -95,7 +95,7 @@ class AcadosInterface(SolverInterface):
         all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(ocp.nb_phases):
             for g, G in enumerate(ocp.nlp[i].g):
-                    all_g_bounds.concatenate(G[0]['bounds'])
+                all_g_bounds.concatenate(G[0]["bounds"])
 
         if isinstance(all_g_bounds.min, (SX, MX)) or isinstance(all_g_bounds.max, (SX, MX)):
             raise RuntimeError("Ipopt doesn't support SX/MX types in constraints bounds")
@@ -113,20 +113,18 @@ class AcadosInterface(SolverInterface):
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(ocp.nb_phases):
             for g, G in enumerate(ocp.nlp[i].g):
-                if G[0]["constraint"].node[0].value == 'all':
+                if G[0]["constraint"].node[0].value == "all":
                     self.all_constr = vertcat(self.all_constr, G[0]["val"].reshape((-1, 1)))
-                    self.all_g_bounds.concatenate(G[0]['bounds'])
+                    self.all_g_bounds.concatenate(G[0]["bounds"])
                     if len(G) > ocp.nlp[0].ns:
                         self.end_constr = vertcat(self.end_constr, G[0]["val"].reshape((-1, 1)))
-                        self.end_g_bounds.concatenate(G[0]['bounds'])
+                        self.end_g_bounds.concatenate(G[0]["bounds"])
 
-                elif G[0]["constraint"].node[0].value == 'end':
+                elif G[0]["constraint"].node[0].value == "end":
                     self.end_constr = vertcat(self.end_constr, G[0]["val"].reshape((-1, 1)))
-                    self.end_g_bounds.concatenate(G[0]['bounds'])
+                    self.end_g_bounds.concatenate(G[0]["bounds"])
                 else:
-                    RuntimeError(
-                        'Acados solver only handles constraints on all or last node.'
-                    )
+                    RuntimeError("Acados solver only handles constraints on all or last node.")
         self.acados_model.con_h_expr = self.all_constr
         self.acados_model.con_h_expr_e = self.end_constr
 
@@ -426,7 +424,6 @@ class AcadosInterface(SolverInterface):
             else:
                 self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 1])
                 self.ocp_solver.constraints_set(n, "ubx", self.x_bound_max[:, 1])
-
 
         if self.y_ref_end:
             if len(self.y_ref_end) == 1:
