@@ -1044,6 +1044,6 @@ def test_penalty_track_markers_with_nan(penalty_origin, value):
         expected = 1879.25 * ocp.nlp[0].J[0][0]["dt"]
 
     np.testing.assert_almost_equal(
-        res,
+        np.array(res),
         expected,
     )
