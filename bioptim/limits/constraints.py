@@ -112,6 +112,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def torque_max_from_actuators(constraint, ocp, nlp, t, x, u, p, min_torque=None):
+            # TODO: Add index to select the u (control_idx)
             nq = nlp.mapping["q"].reduce.len
             q = [nlp.mapping["q"].expand.map(mx[:nq]) for mx in x]
             q_dot = [nlp.mapping["q_dot"].expand.map(mx[nq:]) for mx in x]
