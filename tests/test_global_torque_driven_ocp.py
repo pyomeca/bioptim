@@ -63,7 +63,7 @@ def test_align_markers(ode_solver, actuator_type):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol, ocp, decimal_value=6)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
