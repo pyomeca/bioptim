@@ -48,7 +48,7 @@ If you use `bioptim`, we would be grateful if you could cite it as follows:
 
 @misc{Michaud2020bioptim,
     author = {Michaud, Benjamin and Bailly, Francois and Begon, Mickael et al.},
-    title = {Bioptim, a Python interface for Musculoskeletal Optimal Control in Biomechanics},
+    title = {bioptim, a Python interface for Musculoskeletal Optimal Control in Biomechanics},
     howpublished={Web page},
     url = {https://github.com/pyomeca/bioptim},
     year = {2020}
