@@ -135,13 +135,13 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
 
     if ode_solver == OdeSolver.IRK:
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((24.34465091, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-53.24135804, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((24.34465091, 0)), decimal=3)
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-53.24135804, 0)), decimal=3)
 
     else:
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((24.71677932, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-53.6692385, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((24.71677932, 0)), decimal=3)
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-53.6692385, 0)), decimal=3)
 
     # optimized time
     np.testing.assert_almost_equal(tf, 1.0)
