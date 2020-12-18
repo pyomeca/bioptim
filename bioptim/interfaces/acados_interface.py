@@ -49,11 +49,19 @@ class AcadosInterface(SolverInterface):
         self.out = {}
 
     def __acados_export_model(self, ocp):
+        if ocp.nb_phases > 1:
+            raise NotImplementedError("More than 1 phase is not implemented yet with ACADOS backend")
+
         # Declare model variables
         x = ocp.nlp[0].X[0]
         u = ocp.nlp[0].U[0]
         p = ocp.nlp[0].p
-        self.params = ocp.nlp[0].parameters_to_optimize
+        for n in range(ocp.nb_phases):
+            for i in range(len(ocp.nlp[0].parameters_to_optimize)):
+                if str(ocp.nlp[0].p[i]) == f"time_phase_{n}":
+                    raise RuntimeError("Time constraint not implemented yet with Acados.")
+                else:
+                    self.params = ocp.nlp[0].parameters_to_optimize
 
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
@@ -73,9 +81,6 @@ class AcadosInterface(SolverInterface):
         self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S%f')[:-4]}"
 
     def __prepare_acados(self, ocp):
-        if ocp.nb_phases > 1:
-            raise NotImplementedError("More than 1 phase is not implemented yet with ACADOS backend")
-
         # set model
         self.acados_ocp.model = self.acados_model
 
