@@ -114,7 +114,8 @@ class AcadosInterface(SolverInterface):
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(ocp.nb_phases):
             for g, G in enumerate(ocp.nlp[i].g):
-                if G[0]["constraint"].node[0].value == "all":
+                ##TODO: Clean if there are no constraintsList but a time constraint
+                if G and G[0]["constraint"].node[0].value == "all":
                     self.all_constr = vertcat(self.all_constr, G[0]["val"].reshape((-1, 1)))
                     self.all_g_bounds.concatenate(G[0]["bounds"])
                     if len(G) > ocp.nlp[0].ns:
@@ -124,15 +125,15 @@ class AcadosInterface(SolverInterface):
                         )
                         self.end_g_bounds.concatenate(G[0]["bounds"])
 
-                elif G[0]["constraint"].node[0].value == "end":
+                elif G and G[0]["constraint"].node[0].value == "end":
                     constr_end_func_tp = Function(f"cas_constr_end_func_{i}_{g}", [ocp.nlp[i].X[-1]], [G[0]["val"]])
                     self.end_constr = vertcat(
                         self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1))
                     )
                     self.end_g_bounds.concatenate(G[0]["bounds"])
 
-                else:
-                    raise RuntimeError("Acados solver only handles constraints on all or last node.")
+                elif G and G[0]["constraint"].node[0].value == "start":
+                    raise RuntimeError("Acados solver only handles constraints on first node for states and controls.")
 
         self.acados_model.con_h_expr = self.all_constr
         self.acados_model.con_h_expr_e = self.end_constr
@@ -344,6 +345,8 @@ class AcadosInterface(SolverInterface):
                             self.y_ref.append([J_tp["target"].T.reshape((-1, 1)) for J_tp in J])
                         else:
                             self.y_ref.append([np.zeros((J_tp["val"].numel(), 1)) for J_tp in J])
+
+                        # Deal with last node to match ipopt formulation
                         if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
                             mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                             self.W_e = linalg.block_diag(
@@ -356,7 +359,7 @@ class AcadosInterface(SolverInterface):
                                 self.y_ref_end.append(J[-1]["target"].T.reshape((-1, 1)))
                             else:
                                 self.y_ref_end.append(np.zeros((J[-1]["val"].numel(), 1)))
-                    # Deal with last node to match ipopt formulation
+
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
                         mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                         self.W_e = linalg.block_diag(
@@ -381,9 +384,9 @@ class AcadosInterface(SolverInterface):
                         )
                         self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                         if J[0]["target"] is not None:
-                            self.y_ref_end.append([J[0]["target"].T.reshape((-1, 1))])
+                            self.y_ref_end.append(J[0]["target"].T.reshape((-1, 1)))
                         else:
-                            self.y_ref_end.append([np.zeros((J[0]["val"].numel(), 1))])
+                            self.y_ref_end.append(np.zeros((J[0]["val"].numel(), 1)))
 
             # Set costs
             self.acados_ocp.model.cost_y_expr = self.lagrange_costs if self.lagrange_costs.numel() else SX(1, 1)
