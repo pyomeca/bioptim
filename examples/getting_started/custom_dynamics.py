@@ -20,6 +20,7 @@ from bioptim import (
     InitialGuessOption,
     ShowResult,
     OdeSolver,
+    Solver,
 )
 
 
@@ -38,7 +39,7 @@ def custom_configure(ocp, nlp):
     Problem.configure_forward_dyn_func(ocp, nlp, custom_dynamic)
 
 
-def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolver.RK, use_SX=False):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -92,6 +93,7 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        use_SX=use_SX,
     )
 
 
