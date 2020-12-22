@@ -56,13 +56,14 @@ class AcadosInterface(SolverInterface):
         x = ocp.nlp[0].X[0]
         u = ocp.nlp[0].U[0]
         p = ocp.nlp[0].p
-        for n in range(ocp.nb_phases):
-            for i in range(len(ocp.nlp[0].parameters_to_optimize)):
-                if str(ocp.nlp[0].p[i]) == f"time_phase_{n}":
-                    raise RuntimeError("Time constraint not implemented yet with Acados.")
-                else:
-                    self.params = ocp.nlp[0].parameters_to_optimize
-
+        if ocp.nlp[0].parameters_to_optimize:
+            for n in range(ocp.nb_phases):
+                for i in range(len(ocp.nlp[0].parameters_to_optimize)):
+                    if str(ocp.nlp[0].p[i]) == f"time_phase_{n}":
+                        raise RuntimeError("Time constraint not implemented yet with Acados.")
+                    else:
+                        self.params = ocp.nlp[0].parameters_to_optimize
+        self.params = ocp.nlp[0].parameters_to_optimize
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
@@ -119,22 +120,17 @@ class AcadosInterface(SolverInterface):
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(ocp.nb_phases):
             for g, G in enumerate(ocp.nlp[i].g):
-                ##TODO: Clean if there are no constraintsList but a time constraint
                 if G and G[0]["constraint"].node[0].value == "all":
                     self.all_constr = vertcat(self.all_constr, G[0]["val"].reshape((-1, 1)))
                     self.all_g_bounds.concatenate(G[0]["bounds"])
                     if len(G) > ocp.nlp[0].ns:
                         constr_end_func_tp = Function(f"cas_constr_end_func_{i}_{g}", [ocp.nlp[i].X[-1]], [G[0]["val"]])
-                        self.end_constr = vertcat(
-                            self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1))
-                        )
+                        self.end_constr = vertcat(self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                         self.end_g_bounds.concatenate(G[0]["bounds"])
 
                 elif G and G[0]["constraint"].node[0].value == "end":
                     constr_end_func_tp = Function(f"cas_constr_end_func_{i}_{g}", [ocp.nlp[i].X[-1]], [G[0]["val"]])
-                    self.end_constr = vertcat(
-                        self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1))
-                    )
+                    self.end_constr = vertcat(self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                     self.end_g_bounds.concatenate(G[0]["bounds"])
 
                 elif G and G[0]["constraint"].node[0].value == "start":
