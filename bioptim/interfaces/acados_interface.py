@@ -2,9 +2,10 @@ from datetime import datetime
 
 import numpy as np
 from scipy import linalg
-from casadi import SX, vertcat, sum1, Function, MX
+from casadi import SX, vertcat, Function, MX
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
+from ..misc.enums import Node
 from .solver_interface import SolverInterface
 from ..limits.objective_functions import ObjectiveFunction
 from ..limits.path_conditions import Bounds
@@ -110,7 +111,7 @@ class AcadosInterface(SolverInterface):
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(ocp.nb_phases):
             for g, G in enumerate(ocp.nlp[i].g):
-                if G and G[0]["constraint"].node[0].value == "all":
+                if G and G[0]["constraint"].node[0] is Node.ALL:
                     self.all_constr = vertcat(self.all_constr, G[0]["val"].reshape((-1, 1)))
                     self.all_g_bounds.concatenate(G[0]["bounds"])
                     if len(G) > ocp.nlp[0].ns:
@@ -118,12 +119,12 @@ class AcadosInterface(SolverInterface):
                         self.end_constr = vertcat(self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                         self.end_g_bounds.concatenate(G[0]["bounds"])
 
-                elif G and G[0]["constraint"].node[0].value == "end":
+                elif G and G[0]["constraint"].node[0] is Node.END:
                     constr_end_func_tp = Function(f"cas_constr_end_func_{i}_{g}", [ocp.nlp[i].X[-1]], [G[0]["val"]])
                     self.end_constr = vertcat(self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                     self.end_g_bounds.concatenate(G[0]["bounds"])
 
-                elif G and G[0]["constraint"].node[0].value == "start":
+                elif G and G[0]["constraint"].node[0] is Node.START:
                     raise RuntimeError("Acados solver only handles constraints on first node for states and controls.")
 
         self.acados_model.con_h_expr = self.all_constr
