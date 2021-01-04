@@ -419,8 +419,8 @@ def test_acados_one_parameter():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((189.674313, 0)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-260.150570, 0)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, 0], np.array((189.674313, 0)), decimal=3)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-260.150570, 0)), decimal=3)
 
     # gravity parameter
     np.testing.assert_almost_equal(gravity, np.array([[-8]]), decimal=6)
