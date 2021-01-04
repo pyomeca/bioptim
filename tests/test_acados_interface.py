@@ -12,7 +12,19 @@ import os
 import shutil
 
 import biorbd
-from bioptim import Data, Solver, ObjectiveList, Objective
+from bioptim import (
+    Axe,
+    Data,
+    Solver,
+    ObjectiveList,
+    Objective,
+    BoundsOption,
+    QAndQDotBounds,
+    OdeSolver,
+    ConstraintList,
+    Constraint,
+    Node,
+)
 
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
@@ -318,3 +330,227 @@ def test_acados_fail_lls():
 
     with pytest.raises(RuntimeError, match="ALIGN_MARKERS is an incompatible objective term with LINEAR_LS cost type"):
         sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
+
+
+@pytest.mark.parametrize("problem_type_custom", [True, False])
+def test_acados_custom_dynamics(problem_type_custom):
+    # Load pendulum
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "custom_problem_type_and_dynamics",
+        str(PROJECT_FOLDER) + "/examples/getting_started/custom_dynamics.py",
+    )
+    pendulum = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum)
+
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+        problem_type_custom=problem_type_custom,
+        ode_solver=OdeSolver.RK,
+        use_SX=True,
+    )
+    constraints = ConstraintList()
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    ocp.update_constraints(constraints)
+    sol = ocp.solve(solver=Solver.ACADOS)
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((2, 0, 0)), decimal=6)
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226)))
+
+
+def test_acados_one_parameter():
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "parameters",
+        str(PROJECT_FOLDER) + "/examples/getting_started/custom_parameters.py",
+    )
+    parameters = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(parameters)
+
+    ocp = parameters.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        final_time=2,
+        number_shooting_points=100,
+        min_g=-10,
+        max_g=-6,
+        target_g=-8,
+        use_SX=True,
+    )
+    model = ocp.nlp[0].model
+    objectives = ObjectiveList()
+    objectives.add(Objective.Mayer.TRACK_STATE, index=[0, 1], target=np.array([[0, 3.14]]).T, weight=100000)
+    objectives.add(Objective.Mayer.TRACK_STATE, index=[2, 3], target=np.array([[0, 0]]).T, weight=100)
+    objectives.add(Objective.Lagrange.MINIMIZE_TORQUE, index=1, weight=10)
+    objectives.add(Objective.Lagrange.MINIMIZE_STATE, index=[2, 3], weight=0.000000010)
+    ocp.update_objectives(objectives)
+
+    # Path constraint
+    x_bounds = BoundsOption(QAndQDotBounds(model))
+    x_bounds[[0, 1, 2, 3], 0] = 0
+    u_bounds = BoundsOption([[-300] * model.nbQ(), [300] * model.nbQ()])
+    ocp.update_bounds(x_bounds, u_bounds)
+
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
+
+    # Check some of the results
+    states, controls, params = Data.get_data(ocp, sol["x"], concatenate=False, get_parameters=True)
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    gravity = params["gravity_z"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)), decimal=6)
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)), decimal=6)
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((189.674313, 0)), decimal=3)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-260.150570, 0)), decimal=3)
+
+    # gravity parameter
+    np.testing.assert_almost_equal(gravity, np.array([[-8]]), decimal=6)
+
+    # Clean test folder
+    os.remove(f"./acados_ocp.json")
+    shutil.rmtree(f"./c_generated_code/")
+
+
+def test_acados_one_end_constraints():
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "constraint",
+        str(PROJECT_FOLDER) + "/examples/acados/cube.py",
+    )
+    constraint = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(constraint)
+
+    ocp = constraint.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
+        nbs=10,
+        tf=2,
+    )
+
+    model = ocp.nlp[0].model
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective.Mayer.TRACK_STATE, index=0, weight=100, target=np.array([[1]]))
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
+    ocp.update_objectives(objective_functions)
+
+    # Path constraint
+    x_bounds = BoundsOption(QAndQDotBounds(model))
+    x_bounds[1:6, [0, -1]] = 0
+    x_bounds[0, 0] = 0
+    ocp.update_bounds(x_bounds=x_bounds)
+
+    constraints = ConstraintList()
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    ocp.update_constraints(constraints)
+
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # final position
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)), decimal=6)
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((2.72727272, 9.81, 0)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-2.72727272, 9.81, 0)), decimal=6)
+
+
+def test_acados_constraints_all():
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "constraint",
+        str(PROJECT_FOLDER) + "/examples/align/align_marker_on_segment.py",
+    )
+    constraint = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(constraint)
+
+    ocp = constraint.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+        number_shooting_points=30,
+        final_time=2,
+        initialize_near_solution=True,
+        constr=False,
+        use_SX=True,
+    )
+
+    constraints = ConstraintList()
+    constraints.add(Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X))
+    ocp.update_constraints(constraints)
+
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.8385190835, 0, 0, -0.212027938]), decimal=6)
+    np.testing.assert_almost_equal(q[:, -1], np.array((0.8385190835, 0, 1.57, -0.212027938)), decimal=6)
+
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=6)
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 0, 0]), decimal=6)
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226, 0)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226, 0)), decimal=6)
+
+
+def test_acados_constraints_end_all():
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "constraint",
+        str(PROJECT_FOLDER) + "/examples/align/align_marker_on_segment.py",
+    )
+    constraint = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(constraint)
+
+    ocp = constraint.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+        number_shooting_points=30,
+        final_time=2,
+        initialize_near_solution=True,
+        constr=False,
+        use_SX=True,
+    )
+
+    constraints = ConstraintList()
+    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
+    constraints.add(Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X))
+    ocp.update_constraints(constraints)
+
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([2, 0, 0, -0.139146705]), decimal=6)
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57, -0.139146705)), decimal=6)
+
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=6)
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 0, 0]), decimal=6)
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226, 0)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226, 0)), decimal=6)

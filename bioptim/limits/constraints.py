@@ -216,12 +216,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
 
+        g = {"constraint": penalty, "val": val, "bounds": g_bounds}
         if nlp:
-            nlp.g[penalty.list_index].append(val)
-            nlp.g_bounds[penalty.list_index].append(g_bounds)
+            nlp.g[penalty.list_index].append(g)
         else:
-            ocp.g[penalty.list_index].append(val)
-            ocp.g_bounds[penalty.list_index].append(g_bounds)
+            ocp.g[penalty.list_index].append(g)
 
     @staticmethod
     def clear_penalty(ocp, nlp, penalty):
@@ -233,10 +232,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
         if nlp:
             g_to_add_to = nlp.g
-            g_bounds_to_add_to = nlp.g_bounds
         else:
             g_to_add_to = ocp.g
-            g_bounds_to_add_to = ocp.g_bounds
 
         if penalty.list_index < 0:
             for i, j in enumerate(g_to_add_to):
@@ -245,14 +242,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     return
             else:
                 g_to_add_to.append([])
-                g_bounds_to_add_to.append([])
                 penalty.list_index = len(g_to_add_to) - 1
         else:
             while penalty.list_index >= len(g_to_add_to):
                 g_to_add_to.append([])
-                g_bounds_to_add_to.append([])
             g_to_add_to[penalty.list_index] = []
-            g_bounds_to_add_to[penalty.list_index] = []
 
     @staticmethod
     def _parameter_modifier(constraint_function, parameters):

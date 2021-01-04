@@ -2,11 +2,14 @@ from datetime import datetime
 
 import numpy as np
 from scipy import linalg
-from casadi import SX, vertcat, Function
+from casadi import SX, vertcat, Function, MX
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
+from ..misc.enums import Node
 from .solver_interface import SolverInterface
 from ..limits.objective_functions import ObjectiveFunction
+from ..limits.path_conditions import Bounds
+from ..misc.enums import InterpolationType
 from ..limits.penalty import PenaltyType
 
 
@@ -47,12 +50,20 @@ class AcadosInterface(SolverInterface):
         self.out = {}
 
     def __acados_export_model(self, ocp):
+        if ocp.nb_phases > 1:
+            raise NotImplementedError("More than 1 phase is not implemented yet with ACADOS backend")
+
         # Declare model variables
         x = ocp.nlp[0].X[0]
         u = ocp.nlp[0].U[0]
         p = ocp.nlp[0].p
-        self.params = ocp.nlp[0].parameters_to_optimize
+        if ocp.nlp[0].parameters_to_optimize:
+            for n in range(ocp.nb_phases):
+                for i in range(len(ocp.nlp[0].parameters_to_optimize)):
+                    if str(ocp.nlp[0].p[i]) == f"time_phase_{n}":
+                        raise RuntimeError("Time constraint not implemented yet with Acados.")
 
+        self.params = ocp.nlp[0].parameters_to_optimize
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
@@ -64,14 +75,13 @@ class AcadosInterface(SolverInterface):
         self.acados_model.x = x
         self.acados_model.xdot = x_dot
         self.acados_model.u = u
+        self.acados_model.con_h_expr = np.zeros((0, 0))
+        self.acados_model.con_h_expr_e = np.zeros((0, 0))
         self.acados_model.p = []
         now = datetime.now()  # current date and time
         self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S%f')[:-4]}"
 
     def __prepare_acados(self, ocp):
-        if ocp.nb_phases > 1:
-            raise NotImplementedError("More than 1 phase is not implemented yet with ACADOS backend")
-
         # set model
         self.acados_ocp.model = self.acados_model
 
@@ -93,6 +103,35 @@ class AcadosInterface(SolverInterface):
         u_max = np.array(ocp.nlp[0].u_bounds.max)
         x_min = np.array(ocp.nlp[0].x_bounds.min)
         x_max = np.array(ocp.nlp[0].x_bounds.max)
+        self.all_constr = SX()
+        self.end_constr = SX()
+        ##TODO:change for more node flexibility on bounds
+        self.all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        for i in range(ocp.nb_phases):
+            for g, G in enumerate(ocp.nlp[i].g):
+                if not G:
+                    continue
+                if G[0]["constraint"].node[0] is Node.ALL:
+                    self.all_constr = vertcat(self.all_constr, G[0]["val"].reshape((-1, 1)))
+                    self.all_g_bounds.concatenate(G[0]["bounds"])
+                    if len(G) > ocp.nlp[0].ns:
+                        constr_end_func_tp = Function(f"cas_constr_end_func_{i}_{g}", [ocp.nlp[i].X[-1]], [G[0]["val"]])
+                        self.end_constr = vertcat(self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
+                        self.end_g_bounds.concatenate(G[0]["bounds"])
+
+                elif G[0]["constraint"].node[0] is Node.END:
+                    constr_end_func_tp = Function(f"cas_constr_end_func_{i}_{g}", [ocp.nlp[i].X[-1]], [G[0]["val"]])
+                    self.end_constr = vertcat(self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
+                    self.end_g_bounds.concatenate(G[0]["bounds"])
+
+                else:
+                    raise RuntimeError(
+                        "Except for states and controls, Acados solver only handles constraints on last or all nodes."
+                    )
+
+        self.acados_model.con_h_expr = self.all_constr
+        self.acados_model.con_h_expr_e = self.end_constr
 
         if not np.all(np.all(u_min.T == u_min.T[0, :], axis=0)):
             raise NotImplementedError("u_bounds min must be the same at each shooting point with ACADOS")
@@ -109,8 +148,6 @@ class AcadosInterface(SolverInterface):
                 "u_bounds and x_bounds cannot be set to infinity in ACADOS. Consider changing it"
                 "to a big value instead."
             )
-
-        ## TODO: implement constraints in g
 
         # setup state constraints
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
@@ -151,6 +188,14 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.constraints.ubx_e = self.x_bound_max[:, -1]
         self.acados_ocp.constraints.idxbx_e = np.array(range(self.acados_ocp.dims.nx))
         self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
+
+        # setup algebraic constraint
+        self.acados_ocp.constraints.lh = np.array(self.all_g_bounds.min[:, 0])
+        self.acados_ocp.constraints.uh = np.array(self.all_g_bounds.max[:, 0])
+
+        # setup terminal algebraic constraint
+        self.acados_ocp.constraints.lh_e = np.array(self.end_g_bounds.min[:, 0])
+        self.acados_ocp.constraints.uh_e = np.array(self.end_g_bounds.max[:, 0])
 
     def __set_cost_type(self, cost_type="NONLINEAR_LS"):
         self.acados_ocp.cost.cost_type = cost_type
@@ -295,6 +340,8 @@ class AcadosInterface(SolverInterface):
                             self.y_ref.append([J_tp["target"].T.reshape((-1, 1)) for J_tp in J])
                         else:
                             self.y_ref.append([np.zeros((J_tp["val"].numel(), 1)) for J_tp in J])
+
+                        # Deal with last node to match ipopt formulation
                         if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
                             mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                             self.W_e = linalg.block_diag(
@@ -307,7 +354,7 @@ class AcadosInterface(SolverInterface):
                                 self.y_ref_end.append(J[-1]["target"].T.reshape((-1, 1)))
                             else:
                                 self.y_ref_end.append(np.zeros((J[-1]["val"].numel(), 1)))
-                    # Deal with last node to match ipopt formulation
+
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
                         mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                         self.W_e = linalg.block_diag(
@@ -332,9 +379,9 @@ class AcadosInterface(SolverInterface):
                         )
                         self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                         if J[0]["target"] is not None:
-                            self.y_ref_end.append([J[0]["target"].T.reshape((-1, 1))])
+                            self.y_ref_end.append(J[0]["target"].T.reshape((-1, 1)))
                         else:
-                            self.y_ref_end.append([np.zeros((J[0]["val"].numel(), 1))])
+                            self.y_ref_end.append(np.zeros((J[0]["val"].numel(), 1)))
 
             # Set costs
             self.acados_ocp.model.cost_y_expr = self.lagrange_costs if self.lagrange_costs.numel() else SX(1, 1)
@@ -375,6 +422,8 @@ class AcadosInterface(SolverInterface):
             self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
             self.ocp_solver.constraints_set(n, "lbu", self.ocp.nlp[0].u_bounds.min[:, 0])
             self.ocp_solver.constraints_set(n, "ubu", self.ocp.nlp[0].u_bounds.max[:, 0])
+            self.ocp_solver.constraints_set(n, "uh", self.all_g_bounds.max[:, 0])
+            self.ocp_solver.constraints_set(n, "lh", self.all_g_bounds.min[:, 0])
 
             if n == 0:
                 self.ocp_solver.constraints_set(n, "lbx", self.x_bound_min[:, 0])
@@ -394,6 +443,9 @@ class AcadosInterface(SolverInterface):
             # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
+        if len(self.end_g_bounds.max[:, 0]):
+            self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "uh", self.end_g_bounds.max[:, 0])
+            self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lh", self.end_g_bounds.min[:, 0])
 
         if self.ocp.nlp[0].x_init.init.shape[1] == self.acados_ocp.dims.N + 1:
             if self.params:
