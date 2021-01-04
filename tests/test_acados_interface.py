@@ -479,7 +479,7 @@ def test_acados_constraints_all():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "constraint",
-        str(PROJECT_FOLDER) + "/examples/acados/align_marker_on_segment.py",
+        str(PROJECT_FOLDER) + "/examples/align/align_marker_on_segment.py",
     )
     constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(constraint)
@@ -489,6 +489,7 @@ def test_acados_constraints_all():
         number_shooting_points=30,
         final_time=2,
         initialize_near_solution=True,
+        constr=False,
         use_SX=True,
     )
 
@@ -518,16 +519,17 @@ def test_acados_constraints_end_all():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "constraint",
-        str(PROJECT_FOLDER) + "/examples/acados/align_marker_on_segment.py",
+        str(PROJECT_FOLDER) + "/examples/align/align_marker_on_segment.py",
     )
     constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(constraint)
 
     ocp = constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube_and_line.bioMod",
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
         number_shooting_points=30,
         final_time=2,
         initialize_near_solution=True,
+        constr=False,
         use_SX=True,
     )
 
