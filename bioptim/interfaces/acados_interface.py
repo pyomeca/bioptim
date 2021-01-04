@@ -110,7 +110,9 @@ class AcadosInterface(SolverInterface):
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(ocp.nb_phases):
             for g, G in enumerate(ocp.nlp[i].g):
-                if G and G[0]["constraint"].node[0] is Node.ALL:
+                if not G:
+                    continue
+                if G[0]["constraint"].node[0] is Node.ALL:
                     self.all_constr = vertcat(self.all_constr, G[0]["val"].reshape((-1, 1)))
                     self.all_g_bounds.concatenate(G[0]["bounds"])
                     if len(G) > ocp.nlp[0].ns:
@@ -118,7 +120,7 @@ class AcadosInterface(SolverInterface):
                         self.end_constr = vertcat(self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                         self.end_g_bounds.concatenate(G[0]["bounds"])
 
-                elif G and G[0]["constraint"].node[0] is Node.END:
+                elif G[0]["constraint"].node[0] is Node.END:
                     constr_end_func_tp = Function(f"cas_constr_end_func_{i}_{g}", [ocp.nlp[i].X[-1]], [G[0]["val"]])
                     self.end_constr = vertcat(self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                     self.end_g_bounds.concatenate(G[0]["bounds"])
