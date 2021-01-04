@@ -97,16 +97,6 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.constraints.constr_type = constr_type
         self.acados_ocp.constraints.constr_type_e = constr_type
 
-    def __dispatch_bounds(self, ocp):
-        all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        for i in range(ocp.nb_phases):
-            for g, G in enumerate(ocp.nlp[i].g):
-                all_g_bounds.concatenate(G[0]["bounds"])
-
-        if isinstance(all_g_bounds.min, (SX, MX)) or isinstance(all_g_bounds.max, (SX, MX)):
-            raise RuntimeError("Ipopt doesn't support SX/MX types in constraints bounds")
-        return all_g_bounds
-
     def __set_constrs(self, ocp):
         # constraints handling in self.acados_ocp
         u_min = np.array(ocp.nlp[0].u_bounds.min)
