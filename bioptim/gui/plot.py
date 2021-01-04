@@ -169,14 +169,19 @@ class PlotOcp:
         self.plot_func = {}
         for i, nlp in enumerate(self.ocp.nlp):
             for variable in self.variable_sizes[i]:
-                nb = max(nlp.plot[variable].phase_mappings.map_idx) + 1
-                nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
                 if nlp.plot[variable].combine_to:
                     self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
                     axes = self.axes[variable][1]
                 elif i > 0 and variable in self.axes:
                     axes = self.axes[variable][1]
                 else:
+                    nb = max(
+                        [
+                            max(nlp.plot[variable].phase_mappings.map_idx) + 1 if variable in nlp.plot else 0
+                            for nlp in self.ocp.nlp
+                        ]
+                    )
+                    nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
                     axes = self.__add_new_axis(variable, nb, nb_rows, nb_cols)
                     self.axes[variable] = [nlp.plot[variable], axes]
 
