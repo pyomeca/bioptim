@@ -123,8 +123,9 @@ class AcadosInterface(SolverInterface):
                     self.end_constr = vertcat(self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
                     self.end_g_bounds.concatenate(G[0]["bounds"])
 
-                elif G and G[0]["constraint"].node[0] is Node.START:
-                    raise RuntimeError("Acados solver only handles constraints on first node for states and controls.")
+                else:
+                    raise RuntimeError(
+                        "Except for states and controls, Acados solver only handles constraints on last or all nodes.")
 
         self.acados_model.con_h_expr = self.all_constr
         self.acados_model.con_h_expr_e = self.end_constr
