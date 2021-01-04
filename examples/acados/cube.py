@@ -27,9 +27,6 @@ def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK, use_SX=True
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0
 
-    # Add objective functions
-    objective_functions = ObjectiveList()
-
     # Dynamics
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
 
@@ -57,7 +54,6 @@ def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK, use_SX=True
         u_init,
         x_bounds,
         u_bounds,
-        objective_functions,
         ode_solver=ode_solver,
         use_SX=use_SX,
     )
