@@ -125,7 +125,8 @@ class AcadosInterface(SolverInterface):
 
                 else:
                     raise RuntimeError(
-                        "Except for states and controls, Acados solver only handles constraints on last or all nodes.")
+                        "Except for states and controls, Acados solver only handles constraints on last or all nodes."
+                    )
 
         self.acados_model.con_h_expr = self.all_constr
         self.acados_model.con_h_expr_e = self.end_constr

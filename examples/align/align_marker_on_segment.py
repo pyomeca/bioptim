@@ -19,7 +19,13 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path, final_time, number_shooting_points, initialize_near_solution, ode_solver=OdeSolver.RK, constr=True, use_SX=False
+    biorbd_model_path,
+    final_time,
+    number_shooting_points,
+    initialize_near_solution,
+    ode_solver=OdeSolver.RK,
+    constr=True,
+    use_SX=False,
 ):
     # --- Options --- #
     # Model path
@@ -41,7 +47,9 @@ def prepare_ocp(
         constraints = ConstraintList()
         constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=4)
         constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
-        constraints.add(Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X))
+        constraints.add(
+            Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X)
+        )
     else:
         constraints = ConstraintList()
 
@@ -86,7 +94,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        use_SX=use_SX
+        use_SX=use_SX,
     )
 
 
