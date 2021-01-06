@@ -10,7 +10,7 @@ from bioptim import (
     Objective,
     ConstraintList,
     Constraint,
-    BoundsOption,
+    Bounds,
     QAndQDotBounds,
     InitialGuessOption,
     ShowResult,
@@ -51,10 +51,10 @@ def prepare_ocp(
     constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint and control path constraints
-    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
-    u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
+    u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
 
     # Initial guesses
     t = None

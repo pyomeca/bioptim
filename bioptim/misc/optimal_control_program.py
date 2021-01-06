@@ -1,6 +1,5 @@
 import os
 import pickle
-import numpy as np
 from copy import deepcopy
 from math import inf
 
@@ -11,7 +10,7 @@ from casadi import MX, vertcat, SX
 from .non_linear_program import NonLinearProgram
 from .__version__ import __version__
 from .data import Data
-from .enums import ControlType, OdeSolver, Solver, Node
+from .enums import ControlType, OdeSolver, Solver
 from .mapping import BidirectionalMapping
 from .options_lists import OptionList
 from .parameters import Parameters, ParameterList, ParameterOption
@@ -24,7 +23,7 @@ from ..interfaces.integrator import RK4, IRK
 from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList, ConstraintOption
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList, ObjectiveOption
-from ..limits.path_conditions import Bounds, BoundsList, BoundsOption
+from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList, InitialGuessOption
 from ..limits.path_conditions import InterpolationType
 
@@ -165,19 +164,19 @@ class OptimalControlProgram:
             else:
                 raise RuntimeError("phase_time should be a number or a list of number")
 
-        if isinstance(x_bounds, BoundsOption):
+        if isinstance(x_bounds, Bounds):
             x_bounds_tp = BoundsList()
-            x_bounds_tp.add(x_bounds)
+            x_bounds_tp.add(bounds=x_bounds)
             x_bounds = x_bounds_tp
         elif not isinstance(x_bounds, BoundsList):
-            raise RuntimeError("x_bounds should be built from a BoundOption or a BoundsList")
+            raise RuntimeError("x_bounds should be built from a Bounds or a BoundsList")
 
-        if isinstance(u_bounds, BoundsOption):
+        if isinstance(u_bounds, Bounds):
             u_bounds_tp = BoundsList()
-            u_bounds_tp.add(u_bounds)
+            u_bounds_tp.add(bounds=u_bounds)
             u_bounds = u_bounds_tp
         elif not isinstance(u_bounds, BoundsList):
-            raise RuntimeError("u_bounds should be built from a BoundOption or a BoundsList")
+            raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
         if isinstance(x_init, InitialGuessOption):
             x_init_tp = InitialGuessList()
@@ -407,7 +406,10 @@ class OptimalControlProgram:
         if isinstance(var, path_type_option):
             var_tp = path_type_list()
             try:
-                var_tp.add(var)
+                if isinstance(var_tp, BoundsList):
+                    var_tp.add(bounds=var)
+                else:
+                    var_tp.add(var)
             except TypeError:
                 raise RuntimeError(f"{path_name} should be built from a {name}Option or {name}List")
             var = var_tp
@@ -700,9 +702,9 @@ class OptimalControlProgram:
 
     def update_bounds(self, x_bounds=BoundsList(), u_bounds=BoundsList()):
         if x_bounds:
-            self.__add_path_condition_to_nlp(x_bounds, "x_bounds", BoundsOption, BoundsList, "Bounds")
+            self.__add_path_condition_to_nlp(x_bounds, "x_bounds", Bounds, BoundsList, "Bounds")
         if u_bounds:
-            self.__add_path_condition_to_nlp(u_bounds, "u_bounds", BoundsOption, BoundsList, "Bounds")
+            self.__add_path_condition_to_nlp(u_bounds, "u_bounds", Bounds, BoundsList, "Bounds")
         if self.isdef_x_bounds and self.isdef_u_bounds:
             self.__define_bounds()
 

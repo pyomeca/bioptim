@@ -1,7 +1,7 @@
 import importlib.util
 from pathlib import Path
 
-from bioptim import InitialGuess, Simulate, ShowResult
+from bioptim import InitialGuessOption, Simulate, ShowResult
 
 
 # It is not an optimal control, it only apply a Runge Kutta at each nodes
@@ -20,16 +20,16 @@ ocp = pendulum.prepare_ocp(
     nb_threads=2,
 )
 
-X = InitialGuess([0, 0, 0, 0])
-U = InitialGuess([-1, 1])
+X = InitialGuessOption([0, 0, 0, 0])
+U = InitialGuessOption([-1, 1])
 
 # --- Single shooting --- #
-sol_simulate_single_shooting = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=True)
+sol_simulate_single_shooting = Simulate.from_controls_and_initial_states(ocp, X.initial_guess, U.initial_guess, single_shoot=True)
 result_single = ShowResult(ocp, sol_simulate_single_shooting)
 result_single.graphs()
 
 # --- Multiple shooting --- #
-sol_simulate_multiple_shooting = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=False)
+sol_simulate_multiple_shooting = Simulate.from_controls_and_initial_states(ocp, X.initial_guess, U.initial_guess, single_shoot=False)
 result_multiple = ShowResult(ocp, sol_simulate_multiple_shooting)
 result_multiple.graphs()
 

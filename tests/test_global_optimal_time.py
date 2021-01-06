@@ -515,10 +515,10 @@ def partial_ocp_parameters(nb_phases):
         dynamics.add(DynamicsType.TORQUE_DRIVEN)
 
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
     if nb_phases > 1:
-        x_bounds.add(QAndQDotBounds(biorbd_model[0]))
-        x_bounds.add(QAndQDotBounds(biorbd_model[0]))
+        x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
+        x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
             bounds.min[i, [0, -1]] = 0
@@ -536,13 +536,13 @@ def partial_ocp_parameters(nb_phases):
         x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
 
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
+    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
     if nb_phases > 1:
         u_bounds.add(
-            [[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()]
+            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
         )
         u_bounds.add(
-            [[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()]
+            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
         )
 
     u_init = InitialGuessList()

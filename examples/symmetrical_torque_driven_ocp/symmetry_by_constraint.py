@@ -43,7 +43,7 @@ def prepare_ocp(biorbd_model_path="cubeSym.bioMod", ode_solver=OdeSolver.RK):
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][4:8, [0, -1]] = 0
 
     # Initial guess
@@ -52,7 +52,7 @@ def prepare_ocp(biorbd_model_path="cubeSym.bioMod", ode_solver=OdeSolver.RK):
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * biorbd_model.nbQ(), [tau_max] * biorbd_model.nbQ()])
+    u_bounds.add([tau_min] * biorbd_model.nbQ(), [tau_max] * biorbd_model.nbQ())
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model.nbQ())

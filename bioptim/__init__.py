@@ -7,10 +7,8 @@ from .limits.constraints import Constraint, ConstraintList, ConstraintOption
 from .limits.continuity import StateTransition, StateTransitionList
 from .limits.objective_functions import Objective, ObjectiveList, ObjectiveOption
 from .limits.path_conditions import (
-    Bounds,
     BoundsList,
-    BoundsOption,
-    InitialGuess,
+    Bounds,
     InitialGuessList,
     InitialGuessOption,
     QAndQDotBounds,

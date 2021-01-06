@@ -194,54 +194,33 @@ class PathCondition(np.ndarray):
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
 
-class BoundsOption(OptionGeneric):
-    def __init__(self, bounds, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, **params):
-        if not isinstance(bounds, Bounds):
-            bounds = Bounds(min_bound=bounds[0], max_bound=bounds[1], interpolation=interpolation, **params)
-
-        super(BoundsOption, self).__init__(**params)
-        self.bounds = bounds
-        self.min = self.bounds.min
-        self.max = self.bounds.max
-
-    def __getitem__(self, slice):
-        return self.min[slice], self.max[slice]
-
-    def __setitem__(self, slice, value):
-        self.bounds[slice] = value
-
-    @property
-    def shape(self):
-        return self.bounds.shape
-
-
 class BoundsList(UniquePerPhaseOptionList):
-    def add(
-        self,
-        bounds,
-        **extra_arguments,
-    ):
-        if isinstance(bounds, BoundsOption):
+    def add(self, min_bound=None, max_bound=None, bounds=None, **extra_arguments):
+        if bounds and (min_bound or max_bound):
+            RuntimeError("min_bound/max_bound and bounds cannot be set alongside")
+        if isinstance(bounds, Bounds):
+            if bounds.phase == -1:
+                bounds.phase = len(self.options) if self.options[0] else 0
             self.copy(bounds)
         else:
-            super(BoundsList, self)._add(bounds=bounds, option_type=BoundsOption, **extra_arguments)
+            super(BoundsList, self)._add(min_bound=min_bound, max_bound=max_bound, option_type=Bounds, **extra_arguments)
 
     def __getitem__(self, item):
-        return super(BoundsList, self).__getitem__(item).bounds
+        return super(BoundsList, self).__getitem__(item)
 
     def __next__(self):
-        return super(BoundsList, self).__next__().bounds
+        return super(BoundsList, self).__next__()
 
 
-class Bounds:
+class Bounds(OptionGeneric):
     """
     Organizes bounds of states("X"), controls("U") and "V".
     """
 
     def __init__(
         self,
-        min_bound=(),
-        max_bound=(),
+        min_bound=[],
+        max_bound=[],
         interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         slice_list=None,
         **parameters,
@@ -262,6 +241,7 @@ class Bounds:
         else:
             self.max = PathCondition(max_bound, interpolation=interpolation, slice_list=slice_list, **parameters)
 
+        super(Bounds, self).__init__(**parameters)
         self.type = interpolation
         self.t = None
         self.extra_params = self.min.extra_params
@@ -322,8 +302,9 @@ class Bounds:
             return bounds_sliced
         else:
             raise RuntimeError(
-                "Invalid input for slicing bounds. It should be like [a:b] or [a:b:c] with a the start index, "
-                "b the stop index and c the step for slicing."
+                "Invalid input for slicing bounds. Please note that columns should not be specified. "
+                "Therefore, it should look like [a:b] or [a:b:c] where a is the starting index, "
+                "b is the stopping index and c is the step for slicing."
             )
 
     def __setitem__(self, slice, value):

@@ -15,12 +15,11 @@ from bioptim import (
     Objective,
     ConstraintList,
     Constraint,
-    BoundsOption,
+    Bounds,
     QAndQDotBounds,
     InitialGuessOption,
     ShowResult,
     OdeSolver,
-    Solver,
 )
 
 
@@ -65,7 +64,7 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
     constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint
-    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -73,8 +72,8 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
     x_init = InitialGuessOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    u_bounds = BoundsOption(
-        [[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()]
+    u_bounds = Bounds(
+        [tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()
     )
 
     u_init = InitialGuessOption([tau_init] * biorbd_model.nbGeneralizedTorque())

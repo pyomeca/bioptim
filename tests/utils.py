@@ -8,13 +8,13 @@ import biorbd
 from bioptim import (
     OptimalControlProgram,
     Data,
-    Bounds,
-    InitialGuess,
     BidirectionalMapping,
     Mapping,
     Simulate,
     OdeSolver,
+    Bounds,
 )
+from bioptim.limits.path_conditions import InitialGuess
 
 
 class TestUtils:

@@ -3,7 +3,7 @@ File that shows an example of a custom constraint.
 As an example, this custom constraint reproduces exactly the behavior of the ALIGN_MARKERS constraint.
 """
 import biorbd
-from casadi import vertcat, MX
+from casadi import vertcat
 
 from bioptim import (
     Node,
@@ -13,7 +13,7 @@ from bioptim import (
     ObjectiveOption,
     Objective,
     ConstraintList,
-    BoundsOption,
+    Bounds,
     QAndQDotBounds,
     InitialGuessOption,
     ShowResult,
@@ -55,7 +55,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     constraints.add(custom_func_align_markers, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint
-    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
@@ -63,8 +63,8 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     x_init = InitialGuessOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    u_bounds = BoundsOption(
-        [[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()]
+    u_bounds = Bounds(
+        [tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()
     )
 
     u_init = InitialGuessOption([tau_init] * biorbd_model.nbGeneralizedTorque())

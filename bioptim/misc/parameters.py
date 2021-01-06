@@ -1,8 +1,6 @@
 from casadi import vertcat
 
 from .enums import Node
-from ..limits.constraints import Bounds
-from ..limits.path_conditions import InitialGuess
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveOption, ObjectiveList
 from .options_lists import OptionList, OptionGeneric
 
@@ -25,8 +23,8 @@ class ParameterList(OptionList):
         self,
         parameter_name,
         function=None,
-        initial_guess=InitialGuess(),
-        bounds=Bounds(),
+        initial_guess=None,
+        bounds=None,
         size=None,
         phase=0,
         penalty_list=None,
@@ -45,7 +43,7 @@ class ParameterList(OptionList):
                 phase=phase,
                 function=function,
                 name=parameter_name,
-                initial_guess=initial_guess,
+                initial_guess=initial_guess.initial_guess,
                 bounds=bounds,
                 size=size,
                 penalty_list=penalty_list,

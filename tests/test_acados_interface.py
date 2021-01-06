@@ -18,7 +18,7 @@ from bioptim import (
     Solver,
     ObjectiveList,
     Objective,
-    BoundsOption,
+    Bounds,
     QAndQDotBounds,
     OdeSolver,
     ConstraintList,
@@ -398,9 +398,9 @@ def test_acados_one_parameter():
     ocp.update_objectives(objectives)
 
     # Path constraint
-    x_bounds = BoundsOption(QAndQDotBounds(model))
+    x_bounds = QAndQDotBounds(model)
     x_bounds[[0, 1, 2, 3], 0] = 0
-    u_bounds = BoundsOption([[-300] * model.nbQ(), [300] * model.nbQ()])
+    u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
     ocp.update_bounds(x_bounds, u_bounds)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
@@ -452,7 +452,7 @@ def test_acados_one_end_constraints():
     ocp.update_objectives(objective_functions)
 
     # Path constraint
-    x_bounds = BoundsOption(QAndQDotBounds(model))
+    x_bounds = QAndQDotBounds(model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[0, 0] = 0
     ocp.update_bounds(x_bounds=x_bounds)

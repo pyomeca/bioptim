@@ -9,7 +9,7 @@ from bioptim import (
     Objective,
     ConstraintList,
     Constraint,
-    BoundsOption,
+    Bounds,
     QAndQDotBounds,
     InitialGuessOption,
     ShowResult,
@@ -40,15 +40,15 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, loop_from
     constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=1)
 
     # Path constraint
-    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[2:6, -1] = [1.57, 0, 0, 0]
 
     # Initial guess
     x_init = InitialGuessOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    u_bounds = BoundsOption(
-        [[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()]
+    u_bounds = Bounds(
+        [tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()
     )
 
     u_init = InitialGuessOption([tau_init] * biorbd_model.nbGeneralizedTorque())

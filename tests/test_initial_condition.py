@@ -4,8 +4,8 @@ from pathlib import Path
 
 import numpy as np
 
-from bioptim import Data, InitialGuess, InterpolationType, Simulate
-
+from bioptim import Data, InterpolationType, Simulate
+from bioptim.limits.path_conditions import InitialGuess
 # TODO: Add negative test for sizes
 
 

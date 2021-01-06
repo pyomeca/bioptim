@@ -8,7 +8,7 @@ from bioptim import (
     ObjectiveOption,
     DynamicsFunctions,
     Objective,
-    BoundsOption,
+    Bounds,
     QAndQDotBounds,
     InitialGuessOption,
     ShowResult,
@@ -49,7 +49,7 @@ objective_functions = ObjectiveOption(Objective.Mayer.MINIMIZE_STATE, index=1, w
 dynamics = DynamicsTypeOption(custom_configure, dynamic_function=custom_dynamic)
 
 # Path constraint
-x_bounds = BoundsOption(QAndQDotBounds(m))
+x_bounds = QAndQDotBounds(m)
 x_bounds[:, 0] = [0] * m.nbQ() + [0] * m.nbQdot()
 x_bounds.min[:, 1] = [-1] * m.nbQ() + [-100] * m.nbQdot()
 x_bounds.max[:, 1] = [1] * m.nbQ() + [100] * m.nbQdot()
@@ -60,7 +60,7 @@ x_bounds.max[:, 2] = [1] * m.nbQ() + [100] * m.nbQdot()
 x_init = InitialGuessOption([0] * (m.nbQ() + m.nbQdot()))
 
 # Define control path constraint
-u_bounds = BoundsOption([[-100] * m.nbGeneralizedTorque(), [0] * m.nbGeneralizedTorque()])
+u_bounds = Bounds([-100] * m.nbGeneralizedTorque(), [0] * m.nbGeneralizedTorque())
 
 u_init = InitialGuessOption([0] * m.nbGeneralizedTorque())
 ocp = OptimalControlProgram(

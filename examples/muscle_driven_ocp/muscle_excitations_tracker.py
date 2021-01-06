@@ -129,7 +129,7 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
     x_bounds[0].min[[0, 1], :] = -2 * np.pi
     x_bounds[0].max[[0, 1], :] = 2 * np.pi
@@ -149,14 +149,12 @@ def prepare_ocp(
     u_init = InitialGuessList()
     if use_residual_torque:
         u_bounds.add(
-            [
-                [tau_min] * biorbd_model.nbGeneralizedTorque() + [excitation_min] * biorbd_model.nbMuscles(),
-                [tau_max] * biorbd_model.nbGeneralizedTorque() + [excitation_max] * biorbd_model.nbMuscles(),
-            ]
+            [tau_min] * biorbd_model.nbGeneralizedTorque() + [excitation_min] * biorbd_model.nbMuscles(),
+            [tau_max] * biorbd_model.nbGeneralizedTorque() + [excitation_max] * biorbd_model.nbMuscles(),
         )
         u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [excitation_init] * biorbd_model.nbMuscles())
     else:
-        u_bounds.add([[excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles()])
+        u_bounds.add([excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles())
         u_init.add([excitation_init] * biorbd_model.nbMuscles())
     # ------------- #
 

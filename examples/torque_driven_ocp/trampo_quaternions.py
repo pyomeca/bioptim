@@ -54,11 +54,11 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, ode_solve
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * ntau, [tau_max] * ntau])
+    u_bounds.add([tau_min] * ntau, [tau_max] * ntau)
 
     # Initial guesses
     x = np.vstack((np.zeros((biorbd_model.nbQ(), 2)), np.ones((biorbd_model.nbQdot(), 2))))

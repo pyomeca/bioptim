@@ -4,18 +4,17 @@ import numpy as np
 import pytest
 
 import biorbd
-import casadi
 
 from bioptim import (
-    Bounds,
     BoundsList,
+    Bounds,
     Constraint,
     ConstraintList,
     Data,
     DynamicsType,
     DynamicsTypeList,
-    InitialGuess,
     InitialGuessList,
+    InitialGuessOption,
     Node,
     InterpolationType,
     Objective,
@@ -25,7 +24,6 @@ from bioptim import (
     OptimalControlProgram,
     ParameterList,
     QAndQDotBounds,
-    ShowResult,
 )
 
 
@@ -77,9 +75,9 @@ def prepare_ocp(phase_time_constraint, use_parameter):
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model[0]))  # Phase 0
-    x_bounds.add(QAndQDotBounds(biorbd_model[0]))  # Phase 1
-    x_bounds.add(QAndQDotBounds(biorbd_model[0]))  # Phase 2
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 0
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 1
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 2
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
@@ -95,9 +93,9 @@ def prepare_ocp(phase_time_constraint, use_parameter):
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
-    u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
-    u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
+    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
+    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
+    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
@@ -116,8 +114,8 @@ def prepare_ocp(phase_time_constraint, use_parameter):
         min_g = -10
         max_g = -6
         target_g = -8
-        bound_gravity = Bounds(min_bound=min_g, max_bound=max_g, interpolation=InterpolationType.CONSTANT)
-        initial_gravity = InitialGuess((min_g + max_g) / 2)
+        bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
+        initial_gravity = InitialGuessOption((min_g + max_g) / 2)
         parameter_objective_functions = ObjectiveOption(
             my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=target_g
         )

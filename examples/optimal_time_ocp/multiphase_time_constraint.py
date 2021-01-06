@@ -63,10 +63,10 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model[0]))  # Phase 0
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 0
     if nb_phases == 3:
-        x_bounds.add(QAndQDotBounds(biorbd_model[0]))  # Phase 1
-        x_bounds.add(QAndQDotBounds(biorbd_model[0]))  # Phase 2
+        x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 1
+        x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))  # Phase 2
 
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
@@ -84,13 +84,13 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
+    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
     if nb_phases == 3:
         u_bounds.add(
-            [[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()]
+            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
         )
         u_bounds.add(
-            [[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()]
+            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
         )
 
     u_init = InitialGuessList()

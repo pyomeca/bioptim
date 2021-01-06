@@ -64,7 +64,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_s
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0].concatenate(Bounds([activation_min] * nb_mus, [activation_max] * nb_mus))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus
 
@@ -75,10 +75,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_s
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [
-            [torque_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(),
-            [torque_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal(),
-        ]
+        [torque_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(),
+        [torque_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal(),
     )
 
     u_init = InitialGuessList()
