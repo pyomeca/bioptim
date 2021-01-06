@@ -73,9 +73,9 @@ class IpoptInterface(SolverInterface):
         }
 
         if self.lam_g is not None:
-            self.ipopt_limits['lam_g0'] = self.lam_g
+            self.ipopt_limits["lam_g0"] = self.lam_g
         if self.lam_x is not None:
-            self.ipopt_limits['lam_x0'] = self.lam_x
+            self.ipopt_limits["lam_x0"] = self.lam_x
 
         solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts)
 
@@ -88,8 +88,8 @@ class IpoptInterface(SolverInterface):
         return self.out
 
     def set_lagrange_multiplier(self, sol):
-        self.lam_g = sol['lam_g']
-        self.lam_x = sol['lam_x']
+        self.lam_g = sol["lam_g"]
+        self.lam_x = sol["lam_x"]
 
     def __dispatch_bounds(self):
         all_g = self.ocp.CX()
