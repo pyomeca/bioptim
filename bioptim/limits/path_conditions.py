@@ -363,36 +363,23 @@ class QAndQDotBounds(Bounds):
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
 
-class InitialGuessOption(OptionGeneric):
-    def __init__(self, initial_guess, interpolation=InterpolationType.CONSTANT, **params):
-        if not isinstance(initial_guess, InitialGuess):
-            initial_guess = InitialGuess(initial_guess, interpolation=interpolation, **params)
-
-        super(InitialGuessOption, self).__init__(**params)
-        self.initial_guess = initial_guess
-
-    @property
-    def shape(self):
-        return self.initial_guess.shape
-
-
 class InitialGuessList(UniquePerPhaseOptionList):
     def add(self, initial_guess, **extra_arguments):
-        if isinstance(initial_guess, InitialGuessOption):
+        if isinstance(initial_guess, InitialGuess):
             self.copy(initial_guess)
         else:
             super(InitialGuessList, self)._add(
-                initial_guess=initial_guess, option_type=InitialGuessOption, **extra_arguments
+                initial_guess=initial_guess, option_type=InitialGuess, **extra_arguments
             )
 
     def __getitem__(self, item):
-        return super(InitialGuessList, self).__getitem__(item).initial_guess
+        return super(InitialGuessList, self).__getitem__(item)
 
     def __next__(self):
-        return super(InitialGuessList, self).__next__().initial_guess
+        return super(InitialGuessList, self).__next__()
 
 
-class InitialGuess:
+class InitialGuess(OptionGeneric):
     def __init__(self, initial_guess=(), interpolation=InterpolationType.CONSTANT, **parameters):
         """
         Sets initial guesses.
@@ -403,6 +390,8 @@ class InitialGuess:
             self.init = initial_guess
         else:
             self.init = PathCondition(initial_guess, interpolation=interpolation, **parameters)
+
+        super(InitialGuess, self).__init__(**parameters)
 
     def check_and_adjust_dimensions(self, nb_elements, nb_shooting):
         """

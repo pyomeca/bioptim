@@ -10,7 +10,7 @@ from bioptim import (
     Objective,
     Bounds,
     QAndQDotBounds,
-    InitialGuessOption,
+    InitialGuess,
     ShowResult,
 )
 
@@ -57,12 +57,12 @@ x_bounds.min[:, 2] = [-1] * m.nbQ() + [-100] * m.nbQdot()
 x_bounds.max[:, 2] = [1] * m.nbQ() + [100] * m.nbQdot()
 
 # Initial guess
-x_init = InitialGuessOption([0] * (m.nbQ() + m.nbQdot()))
+x_init = InitialGuess([0] * (m.nbQ() + m.nbQdot()))
 
 # Define control path constraint
 u_bounds = Bounds([-100] * m.nbGeneralizedTorque(), [0] * m.nbGeneralizedTorque())
 
-u_init = InitialGuessOption([0] * m.nbGeneralizedTorque())
+u_init = InitialGuess([0] * m.nbGeneralizedTorque())
 ocp = OptimalControlProgram(
         m,
         dynamics,

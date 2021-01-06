@@ -6,14 +6,7 @@ from .gui.plot import CustomPlot, ShowResult
 from .limits.constraints import Constraint, ConstraintList, ConstraintOption
 from .limits.continuity import StateTransition, StateTransitionList
 from .limits.objective_functions import Objective, ObjectiveList, ObjectiveOption
-from .limits.path_conditions import (
-    BoundsList,
-    Bounds,
-    InitialGuessList,
-    InitialGuessOption,
-    QAndQDotBounds,
-    PathCondition,
-)
+from .limits.path_conditions import (BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds, PathCondition)
 from .misc.data import Data
 from .misc.enums import Axe, Node, InterpolationType, OdeSolver, PlotType, Solver, ControlType
 from .misc.mapping import BidirectionalMapping, Mapping

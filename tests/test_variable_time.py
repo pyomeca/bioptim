@@ -14,7 +14,7 @@ from bioptim import (
     DynamicsType,
     DynamicsTypeList,
     InitialGuessList,
-    InitialGuessOption,
+    InitialGuess,
     Node,
     InterpolationType,
     Objective,
@@ -115,7 +115,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
         max_g = -6
         target_g = -8
         bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
-        initial_gravity = InitialGuessOption((min_g + max_g) / 2)
+        initial_gravity = InitialGuess((min_g + max_g) / 2)
         parameter_objective_functions = ObjectiveOption(
             my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=target_g
         )

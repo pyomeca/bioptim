@@ -43,7 +43,7 @@ class ParameterList(OptionList):
                 phase=phase,
                 function=function,
                 name=parameter_name,
-                initial_guess=initial_guess.initial_guess,
+                initial_guess=initial_guess,
                 bounds=bounds,
                 size=size,
                 penalty_list=penalty_list,

@@ -24,7 +24,7 @@ from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList,
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
 from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList, ObjectiveOption
 from ..limits.path_conditions import BoundsList, Bounds
-from ..limits.path_conditions import InitialGuess, InitialGuessList, InitialGuessOption
+from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.path_conditions import InterpolationType
 
 check_version(biorbd, "1.4.0", "1.5.0")
@@ -178,19 +178,19 @@ class OptimalControlProgram:
         elif not isinstance(u_bounds, BoundsList):
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
-        if isinstance(x_init, InitialGuessOption):
+        if isinstance(x_init, InitialGuess):
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init)
             x_init = x_init_tp
         elif not isinstance(x_init, InitialGuessList):
-            raise RuntimeError("x_init should be built from a InitialGuessOption or InitialGuessList")
+            raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
-        if isinstance(u_init, InitialGuessOption):
+        if isinstance(u_init, InitialGuess):
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init)
             u_init = u_init_tp
         elif not isinstance(u_init, InitialGuessList):
-            raise RuntimeError("u_init should be built from a InitialGuessOption or InitialGuessList")
+            raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
         if isinstance(objective_functions, ObjectiveOption):
             objective_functions_tp = ObjectiveList()
@@ -411,10 +411,10 @@ class OptimalControlProgram:
                 else:
                     var_tp.add(var)
             except TypeError:
-                raise RuntimeError(f"{path_name} should be built from a {name}Option or {name}List")
+                raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
             var = var_tp
         elif not isinstance(var, path_type_list):
-            raise RuntimeError(f"{path_name} should be built from a {name}Option or {name}List")
+            raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
         self.__add_to_nlp(path_name, var, False)
 
     def __prepare_dynamics(self, nlp):
@@ -710,9 +710,9 @@ class OptimalControlProgram:
 
     def update_initial_guess(self, x_init=InitialGuessList(), u_init=InitialGuessList()):
         if x_init:
-            self.__add_path_condition_to_nlp(x_init, "x_init", InitialGuessOption, InitialGuessList, "InitialGuess")
+            self.__add_path_condition_to_nlp(x_init, "x_init", InitialGuess, InitialGuessList, "InitialGuess")
         if u_init:
-            self.__add_path_condition_to_nlp(u_init, "u_init", InitialGuessOption, InitialGuessList, "InitialGuess")
+            self.__add_path_condition_to_nlp(u_init, "u_init", InitialGuess, InitialGuessList, "InitialGuess")
         if self.isdef_x_init and self.isdef_u_init:
             self.__define_initial_guesss()
 

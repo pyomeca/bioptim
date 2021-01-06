@@ -11,7 +11,7 @@ from bioptim import (
     Bounds,
     ParameterList,
     InterpolationType,
-    InitialGuessOption,
+    InitialGuess,
     ObjectiveOption,
     Objective,
 )
@@ -36,8 +36,8 @@ def test_double_update_bounds_and_init():
     expected = np.append(np.tile(np.append(np.ones((nq * 2, 1)), 2.0 * np.ones((nq, 1))), ns), np.ones((nq * 2, 1)))
     np.testing.assert_almost_equal(ocp.V_bounds.max, expected.reshape(128, 1))
 
-    x_init = InitialGuessOption(0.5 * np.ones((nq * 2, 1)))
-    u_init = InitialGuessOption(-0.5 * np.ones((nq, 1)))
+    x_init = InitialGuess(0.5 * np.ones((nq * 2, 1)))
+    u_init = InitialGuess(-0.5 * np.ones((nq, 1)))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.append(
         np.tile(np.append(0.5 * np.ones((nq * 2, 1)), -0.5 * np.ones((nq, 1))), ns), 0.5 * np.ones((nq * 2, 1))
@@ -58,17 +58,17 @@ def test_double_update_bounds_and_init():
     )
     np.testing.assert_almost_equal(ocp.V_bounds.max, expected.reshape(128, 1))
 
-    x_init = InitialGuessOption(0.25 * np.ones((nq * 2, 1)))
-    u_init = InitialGuessOption(-0.25 * np.ones((nq, 1)))
+    x_init = InitialGuess(0.25 * np.ones((nq * 2, 1)))
+    u_init = InitialGuess(-0.25 * np.ones((nq, 1)))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.append(
         np.tile(np.append(0.25 * np.ones((nq * 2, 1)), -0.25 * np.ones((nq, 1))), ns), 0.25 * np.ones((nq * 2, 1))
     )
     np.testing.assert_almost_equal(ocp.V_init.init, expected.reshape(128, 1))
 
-    with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessOption or InitialGuessList"):
+    with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuess or InitialGuessList"):
         ocp.update_initial_guess(x_bounds, u_bounds)
-    with pytest.raises(RuntimeError, match="x_bounds should be built from a BoundsOption or BoundsList"):
+    with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
         ocp.update_bounds(x_init, u_init)
 
 
@@ -90,7 +90,7 @@ def test_update_bounds_and_init_with_param():
 
     parameters = ParameterList()
     bounds_gravity = Bounds(g_min, g_max, interpolation=InterpolationType.CONSTANT)
-    initial_gravity = InitialGuessOption(g_init)
+    initial_gravity = InitialGuess(g_init)
     parameter_objective_functions = ObjectiveOption(
         my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=-8
     )
@@ -115,8 +115,8 @@ def test_update_bounds_and_init_with_param():
     expected = np.append(np.tile(np.append(np.ones((nq * 2, 1)), 2.0 * np.ones((nq, 1))), ns), np.ones((nq * 2, 1)))
     np.testing.assert_almost_equal(ocp.V_bounds.max, np.append([[g_max]], expected).reshape(129, 1))
 
-    x_init = InitialGuessOption(0.5 * np.ones((nq * 2, 1)))
-    u_init = InitialGuessOption(-0.5 * np.ones((nq, 1)))
+    x_init = InitialGuess(0.5 * np.ones((nq * 2, 1)))
+    u_init = InitialGuess(-0.5 * np.ones((nq, 1)))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.append(
         np.tile(np.append(0.5 * np.ones((nq * 2, 1)), -0.5 * np.ones((nq, 1))), ns), 0.5 * np.ones((nq * 2, 1))
@@ -134,7 +134,7 @@ def test_add_wrong_param():
         return value + target_value
 
     parameters = ParameterList()
-    initial_gravity = InitialGuessOption(g_init)
+    initial_gravity = InitialGuess(g_init)
     bounds_gravity = Bounds(g_min, g_max, interpolation=InterpolationType.CONSTANT)
     parameter_objective_functions = ObjectiveOption(
         my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=-8

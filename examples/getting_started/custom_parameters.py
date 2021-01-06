@@ -6,7 +6,7 @@ from bioptim import (
     DynamicsType,
     Bounds,
     QAndQDotBounds,
-    InitialGuessOption,
+    InitialGuess,
     ShowResult,
     ObjectiveOption,
     Objective,
@@ -57,20 +57,20 @@ def prepare_ocp(
     x_bounds[1, -1] = 3.14
 
     # Initial guess
-    x_init = InitialGuessOption([0] * (n_q + n_qdot))
+    x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0
 
-    u_init = InitialGuessOption([tau_init] * n_tau)
+    u_init = InitialGuess([tau_init] * n_tau)
 
     # Define the parameter to optimize
     # Give the parameter some min and max bounds
     parameters = ParameterList()
     bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
     # and an initial condition
-    initial_gravity = InitialGuessOption((min_g + max_g) / 2)
+    initial_gravity = InitialGuess((min_g + max_g) / 2)
     parameter_objective_functions = ObjectiveOption(
         my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target=target_g
     )

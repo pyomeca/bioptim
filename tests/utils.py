@@ -13,8 +13,8 @@ from bioptim import (
     Simulate,
     OdeSolver,
     Bounds,
+    InitialGuess,
 )
-from bioptim.limits.path_conditions import InitialGuess
 
 
 class TestUtils:
