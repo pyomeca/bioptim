@@ -5,11 +5,11 @@ from ..limits.objective_functions import Objective, ObjectiveFunction, Objective
 from .options_lists import OptionList, OptionGeneric
 
 
-class ParameterOption(OptionGeneric):
+class Parameter(OptionGeneric):
     def __init__(
         self, function=None, initial_guess=None, bounds=None, quadratic=True, size=None, penalty_list=None, **params
     ):
-        super(ParameterOption, self).__init__(**params)
+        super(Parameter, self).__init__(**params)
         self.function = function
         self.initial_guess = initial_guess
         self.bounds = bounds
@@ -30,7 +30,7 @@ class ParameterList(OptionList):
         penalty_list=None,
         **extra_arguments
     ):
-        if isinstance(parameter_name, ParameterOption):
+        if isinstance(parameter_name, Parameter):
             self.copy(parameter_name)
         else:
             if not function or not initial_guess or not bounds or not size:
@@ -39,7 +39,7 @@ class ParameterList(OptionList):
                 )
 
             super(ParameterList, self)._add(
-                option_type=ParameterOption,
+                option_type=Parameter,
                 phase=phase,
                 function=function,
                 name=parameter_name,

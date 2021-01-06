@@ -13,7 +13,7 @@ from .data import Data
 from .enums import ControlType, OdeSolver, Solver
 from .mapping import BidirectionalMapping
 from .options_lists import OptionList
-from .parameters import Parameters, ParameterList, ParameterOption
+from .parameters import Parameters, ParameterList, Parameter
 from .utils import check_version
 from ..dynamics.problem import Problem
 from ..dynamics.dynamics_type import DynamicsTypeList, DynamicsTypeOption
@@ -689,7 +689,7 @@ class OptimalControlProgram:
             raise RuntimeError("new_constraint must be a ConstraintOption or a ConstraintList")
 
     def update_parameters(self, new_parameters):
-        if isinstance(new_parameters, ParameterOption):
+        if isinstance(new_parameters, Parameter):
             self.__modify_penalty(new_parameters, "parameters")
 
         elif isinstance(new_parameters, ParameterList):
@@ -698,7 +698,7 @@ class OptimalControlProgram:
                     self.__modify_penalty(parameter, "parameters")
 
         else:
-            raise RuntimeError("new_parameter must be a ParameterOption or a ParameterList")
+            raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
     def update_bounds(self, x_bounds=BoundsList(), u_bounds=BoundsList()):
         if x_bounds:
