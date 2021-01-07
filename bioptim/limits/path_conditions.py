@@ -17,7 +17,7 @@ class PathCondition(np.ndarray):
         :param interpolation: Type of interpolation. (Instance of InterpolationType)
         (InterpolationType.CONSTANT, InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, InterpolationType.LINEAR_CONTINUOUS
         or InterpolationType.EACH_FRAME)
-        :return: obj -> Objective. (?)
+        :return: obj -> ObjectiveFcn. (?)
         """
         # Check and reinterpret input
         if interpolation == InterpolationType.CUSTOM:
@@ -194,54 +194,35 @@ class PathCondition(np.ndarray):
             raise RuntimeError(f"InterpolationType is not implemented yet")
 
 
-class BoundsOption(OptionGeneric):
-    def __init__(self, bounds, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, **params):
-        if not isinstance(bounds, Bounds):
-            bounds = Bounds(min_bound=bounds[0], max_bound=bounds[1], interpolation=interpolation, **params)
-
-        super(BoundsOption, self).__init__(**params)
-        self.bounds = bounds
-        self.min = self.bounds.min
-        self.max = self.bounds.max
-
-    def __getitem__(self, slice):
-        return self.min[slice], self.max[slice]
-
-    def __setitem__(self, slice, value):
-        self.bounds[slice] = value
-
-    @property
-    def shape(self):
-        return self.bounds.shape
-
-
 class BoundsList(UniquePerPhaseOptionList):
-    def add(
-        self,
-        bounds,
-        **extra_arguments,
-    ):
-        if isinstance(bounds, BoundsOption):
+    def add(self, min_bound=None, max_bound=None, bounds=None, **extra_arguments):
+        if bounds and (min_bound or max_bound):
+            RuntimeError("min_bound/max_bound and bounds cannot be set alongside")
+        if isinstance(bounds, Bounds):
+            if bounds.phase == -1:
+                bounds.phase = len(self.options) if self.options[0] else 0
             self.copy(bounds)
         else:
-            super(BoundsList, self)._add(bounds=bounds, option_type=BoundsOption, **extra_arguments)
+            super(BoundsList, self)._add(
+                min_bound=min_bound, max_bound=max_bound, option_type=Bounds, **extra_arguments
+            )
 
     def __getitem__(self, item):
-        return super(BoundsList, self).__getitem__(item).bounds
+        return super(BoundsList, self).__getitem__(item)
 
     def __next__(self):
-        return super(BoundsList, self).__next__().bounds
+        return super(BoundsList, self).__next__()
 
 
-class Bounds:
+class Bounds(OptionGeneric):
     """
     Organizes bounds of states("X"), controls("U") and "V".
     """
 
     def __init__(
         self,
-        min_bound=(),
-        max_bound=(),
+        min_bound=[],
+        max_bound=[],
         interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         slice_list=None,
         **parameters,
@@ -262,6 +243,7 @@ class Bounds:
         else:
             self.max = PathCondition(max_bound, interpolation=interpolation, slice_list=slice_list, **parameters)
 
+        super(Bounds, self).__init__(**parameters)
         self.type = interpolation
         self.t = None
         self.extra_params = self.min.extra_params
@@ -322,8 +304,9 @@ class Bounds:
             return bounds_sliced
         else:
             raise RuntimeError(
-                "Invalid input for slicing bounds. It should be like [a:b] or [a:b:c] with a the start index, "
-                "b the stop index and c the step for slicing."
+                "Invalid input for slicing bounds. Please note that columns should not be specified. "
+                "Therefore, it should look like [a:b] or [a:b:c] where a is the starting index, "
+                "b is the stopping index and c is the step for slicing."
             )
 
     def __setitem__(self, slice, value):
@@ -382,36 +365,21 @@ class QAndQDotBounds(Bounds):
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
 
-class InitialGuessOption(OptionGeneric):
-    def __init__(self, initial_guess, interpolation=InterpolationType.CONSTANT, **params):
-        if not isinstance(initial_guess, InitialGuess):
-            initial_guess = InitialGuess(initial_guess, interpolation=interpolation, **params)
-
-        super(InitialGuessOption, self).__init__(**params)
-        self.initial_guess = initial_guess
-
-    @property
-    def shape(self):
-        return self.initial_guess.shape
-
-
 class InitialGuessList(UniquePerPhaseOptionList):
     def add(self, initial_guess, **extra_arguments):
-        if isinstance(initial_guess, InitialGuessOption):
+        if isinstance(initial_guess, InitialGuess):
             self.copy(initial_guess)
         else:
-            super(InitialGuessList, self)._add(
-                initial_guess=initial_guess, option_type=InitialGuessOption, **extra_arguments
-            )
+            super(InitialGuessList, self)._add(initial_guess=initial_guess, option_type=InitialGuess, **extra_arguments)
 
     def __getitem__(self, item):
-        return super(InitialGuessList, self).__getitem__(item).initial_guess
+        return super(InitialGuessList, self).__getitem__(item)
 
     def __next__(self):
-        return super(InitialGuessList, self).__next__().initial_guess
+        return super(InitialGuessList, self).__next__()
 
 
-class InitialGuess:
+class InitialGuess(OptionGeneric):
     def __init__(self, initial_guess=(), interpolation=InterpolationType.CONSTANT, **parameters):
         """
         Sets initial guesses.
@@ -422,6 +390,8 @@ class InitialGuess:
             self.init = initial_guess
         else:
             self.init = PathCondition(initial_guess, interpolation=interpolation, **parameters)
+
+        super(InitialGuess, self).__init__(**parameters)
 
     def check_and_adjust_dimensions(self, nb_elements, nb_shooting):
         """

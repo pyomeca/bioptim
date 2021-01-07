@@ -3,9 +3,9 @@ import biorbd
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
-    Objective,
-    DynamicsTypeList,
-    DynamicsType,
+    ObjectiveFcn,
+    DynamicsList,
+    DynamicsFcn,
     BidirectionalMapping,
     Mapping,
     BoundsList,
@@ -30,15 +30,15 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=Fa
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=1 / 100)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=1 / 100)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
+    dynamics = DynamicsList()
     if use_actuators:
-        dynamics.add(DynamicsType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT)
+        dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT)
     else:
-        dynamics.add(DynamicsType.TORQUE_DRIVEN_WITH_CONTACT)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)
 
     # Path constraint
     nb_q = biorbd_model.nbQ()
@@ -47,7 +47,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=Fa
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
@@ -56,7 +56,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=Fa
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len])
+    u_bounds.add([tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len)
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * tau_mapping.reduce.len)

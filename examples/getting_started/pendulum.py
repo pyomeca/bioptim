@@ -6,16 +6,17 @@ import biorbd
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsType,
-    DynamicsTypeOption,
-    BoundsOption,
+    DynamicsFcn,
+    Dynamics,
+    Bounds,
     QAndQDotBounds,
-    InitialGuessOption,
+    InitialGuess,
     ShowResult,
     Data,
     Simulate,
+    ObjectiveFcn,
     Objective,
-    ObjectiveOption,
+    ObjectivePrinter,
     OdeSolver,
 )
 
@@ -31,24 +32,24 @@ def prepare_ocp(
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE_DERIVATIVE)
 
     # Dynamics
-    dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
     # Initial guess
-    x_init = InitialGuessOption([0] * (n_q + n_qdot))
+    x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    u_bounds = BoundsOption([[tau_min] * n_tau, [tau_max] * n_tau])
+    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[n_tau - 1, :] = 0
 
-    u_init = InitialGuessOption([tau_init] * n_tau)
+    u_init = InitialGuess([tau_init] * n_tau)
 
     # ------------- #
 
@@ -89,7 +90,7 @@ if __name__ == "__main__":
 
     # --- Print objective cost  --- #
     print(f"Final objective value : {np.nansum(sol_obj)} \n")
-    analyse = Objective.Printer(ocp, sol_obj)
+    analyse = ObjectivePrinter(ocp, sol_obj)
     analyse.by_function()
     analyse.by_nodes()
 

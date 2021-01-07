@@ -3,10 +3,10 @@ import biorbd
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -27,15 +27,15 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
     # Add objective functions
     objective_functions = ObjectiveList()
     # A weight of -1 will maximize time
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weight=weight)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=weight)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][:, [0, -1]] = 0
     x_bounds[0][n_q - 1, -1] = 3.14
 
@@ -45,7 +45,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * n_tau, [tau_max] * n_tau])
+    u_bounds.add([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[0][n_tau - 1, :] = 0
 
     u_init = InitialGuessList()

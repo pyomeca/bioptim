@@ -3,14 +3,14 @@ import casadi as cas
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeOption,
+    Dynamics,
     Problem,
-    ObjectiveOption,
-    DynamicsFunctions,
     Objective,
-    BoundsOption,
+    DynamicsFunctions,
+    ObjectiveFcn,
+    Bounds,
     QAndQDotBounds,
-    InitialGuessOption,
+    InitialGuess,
     ShowResult,
 )
 
@@ -43,13 +43,13 @@ m = biorbd.Model("mass_point.bioMod")
 m.setGravity(biorbd.Vector3d(0, 0, 0))
 
 # Add objective functions (high upward velocity at end point)
-objective_functions = ObjectiveOption(Objective.Mayer.MINIMIZE_STATE, index=1, weight=-1)
+objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=1, weight=-1)
 
 # Dynamics
-dynamics = DynamicsTypeOption(custom_configure, dynamic_function=custom_dynamic)
+dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic)
 
 # Path constraint
-x_bounds = BoundsOption(QAndQDotBounds(m))
+x_bounds = QAndQDotBounds(m)
 x_bounds[:, 0] = [0] * m.nbQ() + [0] * m.nbQdot()
 x_bounds.min[:, 1] = [-1] * m.nbQ() + [-100] * m.nbQdot()
 x_bounds.max[:, 1] = [1] * m.nbQ() + [100] * m.nbQdot()
@@ -57,12 +57,12 @@ x_bounds.min[:, 2] = [-1] * m.nbQ() + [-100] * m.nbQdot()
 x_bounds.max[:, 2] = [1] * m.nbQ() + [100] * m.nbQdot()
 
 # Initial guess
-x_init = InitialGuessOption([0] * (m.nbQ() + m.nbQdot()))
+x_init = InitialGuess([0] * (m.nbQ() + m.nbQdot()))
 
 # Define control path constraint
-u_bounds = BoundsOption([[-100] * m.nbGeneralizedTorque(), [0] * m.nbGeneralizedTorque()])
+u_bounds = Bounds([-100] * m.nbGeneralizedTorque(), [0] * m.nbGeneralizedTorque())
 
-u_init = InitialGuessOption([0] * m.nbGeneralizedTorque())
+u_init = InitialGuess([0] * m.nbGeneralizedTorque())
 ocp = OptimalControlProgram(
         m,
         dynamics,

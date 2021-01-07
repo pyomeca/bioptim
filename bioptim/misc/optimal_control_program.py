@@ -1,6 +1,5 @@
 import os
 import pickle
-import numpy as np
 from copy import deepcopy
 from math import inf
 
@@ -11,21 +10,21 @@ from casadi import MX, vertcat, SX
 from .non_linear_program import NonLinearProgram
 from .__version__ import __version__
 from .data import Data
-from .enums import ControlType, OdeSolver, Solver, Node
+from .enums import ControlType, OdeSolver, Solver
 from .mapping import BidirectionalMapping
 from .options_lists import OptionList
-from .parameters import Parameters, ParameterList, ParameterOption
+from .parameters import Parameters, ParameterList, Parameter
 from .utils import check_version
 from ..dynamics.problem import Problem
-from ..dynamics.dynamics_type import DynamicsTypeList, DynamicsTypeOption
+from ..dynamics.dynamics_type import DynamicsList, Dynamics
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.integrator import RK4, IRK
-from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList, ConstraintOption
+from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
-from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList, ObjectiveOption
-from ..limits.path_conditions import Bounds, BoundsList, BoundsOption
-from ..limits.path_conditions import InitialGuess, InitialGuessList, InitialGuessOption
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, ObjectiveList, Objective
+from ..limits.path_conditions import BoundsList, Bounds
+from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.path_conditions import InterpolationType
 
 check_version(biorbd, "1.4.0", "1.5.0")
@@ -136,12 +135,12 @@ class OptimalControlProgram:
         if not isinstance(nb_threads, int) or isinstance(nb_threads, bool) or nb_threads < 1:
             raise RuntimeError("nb_threads should be a positive integer greater or equal than 1")
 
-        if isinstance(dynamics_type, DynamicsTypeOption):
-            dynamics_type_tp = DynamicsTypeList()
+        if isinstance(dynamics_type, Dynamics):
+            dynamics_type_tp = DynamicsList()
             dynamics_type_tp.add(dynamics_type)
             dynamics_type = dynamics_type_tp
-        elif not isinstance(dynamics_type, DynamicsTypeList):
-            raise RuntimeError("dynamics_type should be a DynamicsTypeOption or a DynamicsTypeList")
+        elif not isinstance(dynamics_type, DynamicsList):
+            raise RuntimeError("dynamics_type should be a Dynamics or a DynamicsList")
 
         ns = number_shooting_points
         if not isinstance(ns, int) or ns < 2:
@@ -165,47 +164,47 @@ class OptimalControlProgram:
             else:
                 raise RuntimeError("phase_time should be a number or a list of number")
 
-        if isinstance(x_bounds, BoundsOption):
+        if isinstance(x_bounds, Bounds):
             x_bounds_tp = BoundsList()
-            x_bounds_tp.add(x_bounds)
+            x_bounds_tp.add(bounds=x_bounds)
             x_bounds = x_bounds_tp
         elif not isinstance(x_bounds, BoundsList):
-            raise RuntimeError("x_bounds should be built from a BoundOption or a BoundsList")
+            raise RuntimeError("x_bounds should be built from a Bounds or a BoundsList")
 
-        if isinstance(u_bounds, BoundsOption):
+        if isinstance(u_bounds, Bounds):
             u_bounds_tp = BoundsList()
-            u_bounds_tp.add(u_bounds)
+            u_bounds_tp.add(bounds=u_bounds)
             u_bounds = u_bounds_tp
         elif not isinstance(u_bounds, BoundsList):
-            raise RuntimeError("u_bounds should be built from a BoundOption or a BoundsList")
+            raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
-        if isinstance(x_init, InitialGuessOption):
+        if isinstance(x_init, InitialGuess):
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init)
             x_init = x_init_tp
         elif not isinstance(x_init, InitialGuessList):
-            raise RuntimeError("x_init should be built from a InitialGuessOption or InitialGuessList")
+            raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
-        if isinstance(u_init, InitialGuessOption):
+        if isinstance(u_init, InitialGuess):
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init)
             u_init = u_init_tp
         elif not isinstance(u_init, InitialGuessList):
-            raise RuntimeError("u_init should be built from a InitialGuessOption or InitialGuessList")
+            raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
-        if isinstance(objective_functions, ObjectiveOption):
+        if isinstance(objective_functions, Objective):
             objective_functions_tp = ObjectiveList()
             objective_functions_tp.add(objective_functions)
             objective_functions = objective_functions_tp
         elif not isinstance(objective_functions, ObjectiveList):
-            raise RuntimeError("objective_functions should be built from an ObjectiveOption or ObjectiveList")
+            raise RuntimeError("objective_functions should be built from an Objective or ObjectiveList")
 
-        if isinstance(constraints, ConstraintOption):
+        if isinstance(constraints, Constraint):
             constraints_tp = ConstraintList()
             constraints_tp.add(constraints)
             constraints = constraints_tp
         elif not isinstance(constraints, ConstraintList):
-            raise RuntimeError("constraints should be built from an ConstraintOption or ConstraintList")
+            raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
 
         if not isinstance(parameters, ParameterList):
             raise RuntimeError("parameters should be built from an ParameterList")
@@ -407,12 +406,15 @@ class OptimalControlProgram:
         if isinstance(var, path_type_option):
             var_tp = path_type_list()
             try:
-                var_tp.add(var)
+                if isinstance(var_tp, BoundsList):
+                    var_tp.add(bounds=var)
+                else:
+                    var_tp.add(var)
             except TypeError:
-                raise RuntimeError(f"{path_name} should be built from a {name}Option or {name}List")
+                raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
             var = var_tp
         elif not isinstance(var, path_type_list):
-            raise RuntimeError(f"{path_name} should be built from a {name}Option or {name}List")
+            raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
         self.__add_to_nlp(path_name, var, False)
 
     def __prepare_dynamics(self, nlp):
@@ -529,7 +531,7 @@ class OptimalControlProgram:
         self.V_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
 
         for key in self.param_to_optimize.keys():
-            self.V_init.concatenate(self.param_to_optimize[key]["initial_guess"])
+            self.V_init.concatenate(self.param_to_optimize[key].initial_guess)
 
         for idx_phase, nlp in enumerate(self.nlp):
             if nlp.control_type == ControlType.CONSTANT:
@@ -568,7 +570,7 @@ class OptimalControlProgram:
         self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
         for key in self.param_to_optimize.keys():
-            self.V_bounds.concatenate(self.param_to_optimize[key]["bounds"])
+            self.V_bounds.concatenate(self.param_to_optimize[key].bounds)
 
         for idx_phase, nlp in enumerate(self.nlp):
             if nlp.control_type == ControlType.CONSTANT:
@@ -629,9 +631,9 @@ class OptimalControlProgram:
                 if not pen_fun:
                     continue
                 if (
-                    pen_fun.type == Objective.Mayer.MINIMIZE_TIME
-                    or pen_fun.type == Objective.Lagrange.MINIMIZE_TIME
-                    or pen_fun.type == Constraint.TIME_CONSTRAINT
+                    pen_fun.type == ObjectiveFcn.Mayer.MINIMIZE_TIME
+                    or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
+                    or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
                 ):
                     if has_penalty[i]:
                         raise RuntimeError("Time constraint/objective cannot declare more than once")
@@ -663,7 +665,7 @@ class OptimalControlProgram:
                 i += 1
 
     def update_objectives(self, new_objective_function):
-        if isinstance(new_objective_function, ObjectiveOption):
+        if isinstance(new_objective_function, Objective):
             self.__modify_penalty(new_objective_function, "objective_functions")
 
         elif isinstance(new_objective_function, ObjectiveList):
@@ -672,10 +674,10 @@ class OptimalControlProgram:
                     self.__modify_penalty(objective, "objective_functions")
 
         else:
-            raise RuntimeError("new_objective_function must be a ObjectiveOption or an ObjectiveList")
+            raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
 
     def update_constraints(self, new_constraint):
-        if isinstance(new_constraint, ConstraintOption):
+        if isinstance(new_constraint, Constraint):
             self.__modify_penalty(new_constraint, "constraints")
 
         elif isinstance(new_constraint, ConstraintList):
@@ -684,10 +686,10 @@ class OptimalControlProgram:
                     self.__modify_penalty(constraint, "constraints")
 
         else:
-            raise RuntimeError("new_constraint must be a ConstraintOption or a ConstraintList")
+            raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
 
     def update_parameters(self, new_parameters):
-        if isinstance(new_parameters, ParameterOption):
+        if isinstance(new_parameters, Parameter):
             self.__modify_penalty(new_parameters, "parameters")
 
         elif isinstance(new_parameters, ParameterList):
@@ -696,32 +698,34 @@ class OptimalControlProgram:
                     self.__modify_penalty(parameter, "parameters")
 
         else:
-            raise RuntimeError("new_parameter must be a ParameterOption or a ParameterList")
+            raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
     def update_bounds(self, x_bounds=BoundsList(), u_bounds=BoundsList()):
         if x_bounds:
-            self.__add_path_condition_to_nlp(x_bounds, "x_bounds", BoundsOption, BoundsList, "Bounds")
+            self.__add_path_condition_to_nlp(x_bounds, "x_bounds", Bounds, BoundsList, "Bounds")
         if u_bounds:
-            self.__add_path_condition_to_nlp(u_bounds, "u_bounds", BoundsOption, BoundsList, "Bounds")
+            self.__add_path_condition_to_nlp(u_bounds, "u_bounds", Bounds, BoundsList, "Bounds")
         if self.isdef_x_bounds and self.isdef_u_bounds:
             self.__define_bounds()
 
     def update_initial_guess(self, x_init=InitialGuessList(), u_init=InitialGuessList(), param_init=InitialGuessList()):
         if x_init:
-            self.__add_path_condition_to_nlp(x_init, "x_init", InitialGuessOption, InitialGuessList, "InitialGuess")
+            self.__add_path_condition_to_nlp(x_init, "x_init", InitialGuess, InitialGuessList, "InitialGuess")
         if u_init:
-            self.__add_path_condition_to_nlp(u_init, "u_init", InitialGuessOption, InitialGuessList, "InitialGuess")
+            self.__add_path_condition_to_nlp(u_init, "u_init", InitialGuess, InitialGuessList, "InitialGuess")
 
-        if isinstance(param_init, InitialGuessOption):
-            tmp = param_init
-            param_init = InitialGuessList()
-            param_init.add(tmp)
-        for param in param_init.options[0]:
+        if isinstance(param_init, InitialGuess):
+            param_init_list = InitialGuessList()
+            param_init_list.add(param_init)
+        else:
+            param_init_list = param_init
+
+        for param in param_init_list:
             if not param.name:
                 raise ValueError("update_initial_guess must specify a name for the parameters")
             if param.name not in self.param_to_optimize:
                 raise ValueError("update_initial_guess cannot declare new parameters")
-            self.param_to_optimize[param.name]["initial_guess"] = param.initial_guess
+            self.param_to_optimize[param.name].initial_guess.init = param.init
 
         if self.isdef_x_init and self.isdef_u_init:
             self.__define_initial_guesss()

@@ -11,27 +11,25 @@ from ..misc.enums import Node, InterpolationType, OdeSolver, ControlType
 from ..misc.options_lists import OptionList, OptionGeneric
 
 
-class ConstraintOption(PenaltyOption):
+class Constraint(PenaltyOption):
     def __init__(self, constraint, min_bound=None, max_bound=None, phase=0, **params):
         custom_function = None
-        if not isinstance(constraint, Constraint):
+        if not isinstance(constraint, ConstraintFcn):
             custom_function = constraint
-            constraint = Constraint.CUSTOM
+            constraint = ConstraintFcn.CUSTOM
 
-        super(ConstraintOption, self).__init__(
-            penalty=constraint, phase=phase, custom_function=custom_function, **params
-        )
+        super(Constraint, self).__init__(penalty=constraint, phase=phase, custom_function=custom_function, **params)
         self.min_bound = min_bound
         self.max_bound = max_bound
 
 
 class ConstraintList(OptionList):
     def add(self, constraint, **extra_arguments):
-        if isinstance(constraint, ConstraintOption):
+        if isinstance(constraint, Constraint):
             self.copy(constraint)
 
         else:
-            super(ConstraintList, self)._add(option_type=ConstraintOption, constraint=constraint, **extra_arguments)
+            super(ConstraintList, self)._add(option_type=Constraint, constraint=constraint, **extra_arguments)
 
 
 class ConstraintFunction(PenaltyFunctionAbstract):
@@ -74,7 +72,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             static_friction_coefficient,
         ):
             """
-            Constraint preventing the contact point from slipping tangentially to the contact surface
+            ConstraintFcn preventing the contact point from slipping tangentially to the contact surface
             with a chosen static friction coefficient.
             One constraint per tangential direction.
             Normal forces are considered to be greater than zero.
@@ -143,7 +141,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
     @staticmethod
     def add_or_replace(ocp, nlp, penalty):
-        if penalty.type == Constraint.TIME_CONSTRAINT:
+        if penalty.type == ConstraintFcn.TIME_CONSTRAINT:
             penalty.node = Node.END
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, penalty)
 
@@ -155,7 +153,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         :param ocp: An OptimalControlProgram class.
         """
         # Dynamics must be sound within phases
-        penalty = ConstraintOption([])
+        penalty = Constraint([])
         for i, nlp in enumerate(ocp.nlp):
             penalty.list_index = -1
             ConstraintFunction.clear_penalty(ocp, None, penalty)
@@ -260,14 +258,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         # Everything that is suspicious in terms of the span of the penalty function can be checked here
         super(ConstraintFunction, ConstraintFunction)._span_checker(constraint_function, node, nlp)
         if (
-            constraint_function == Constraint.CONTACT_FORCE.value[0]
-            or constraint_function == Constraint.NON_SLIPPING.value[0]
+            constraint_function == ConstraintFcn.CONTACT_FORCE.value[0]
+            or constraint_function == ConstraintFcn.NON_SLIPPING.value[0]
         ):
             if node == Node.END or node == nlp.ns:
                 raise RuntimeError("No control u at last node")
 
 
-class Constraint(Enum):
+class ConstraintFcn(Enum):
     """
     Different conditions between biorbd geometric structures.
     """

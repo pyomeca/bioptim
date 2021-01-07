@@ -1,7 +1,7 @@
 from casadi import MX
 
 from ..limits.path_conditions import Bounds, InitialGuess
-from .. import ControlType, OdeSolver, DynamicsType
+from .. import ControlType, OdeSolver, DynamicsFcn
 
 
 class NonLinearProgram:
@@ -21,7 +21,7 @@ class NonLinearProgram:
         dt=0.0,
         dynamics=[],
         dynamics_func=None,
-        dynamics_type=DynamicsType.TORQUE_DRIVEN,
+        dynamics_type=DynamicsFcn.TORQUE_DRIVEN,
         external_forces=None,
         g=[],
         g_bounds=Bounds(),

@@ -8,14 +8,13 @@ from casadi import vertcat
 from bioptim import (
     Node,
     OptimalControlProgram,
-    DynamicsTypeOption,
-    DynamicsType,
-    ObjectiveOption,
-    Objective,
+    Dynamics,
+    DynamicsFcn,
+    ObjectiveFcn,
     ObjectiveList,
-    BoundsOption,
+    Bounds,
     QAndQDotBounds,
-    InitialGuessOption,
+    InitialGuess,
     ShowResult,
     OdeSolver,
 )
@@ -24,9 +23,10 @@ from bioptim import (
 def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
     nq = nlp.shape["q"]
     val = []
+    markers_func = biorbd.to_casadi_func("markers", nlp.model.markers, nlp.q)
     for v in x:
         q = v[:nq]
-        markers = nlp.model.markers(q)
+        markers = markers_func(q)
         first_marker = markers[:, first_marker_idx]
         second_marker = markers[:, second_marker_idx]
         val = vertcat(val, first_marker - second_marker)
@@ -45,10 +45,10 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
     objective_functions.add(
         custom_func_align_markers,
-        custom_type=Objective.Mayer,
+        custom_type=ObjectiveFcn.Mayer,
         node=Node.START,
         quadratic=True,
         first_marker_idx=0,
@@ -57,7 +57,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     )
     objective_functions.add(
         custom_func_align_markers,
-        custom_type=Objective.Mayer,
+        custom_type=ObjectiveFcn.Mayer,
         node=Node.END,
         quadratic=True,
         first_marker_idx=0,
@@ -66,22 +66,20 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     )
 
     # Dynamics
-    dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
 
     # Initial guess
-    x_init = InitialGuessOption([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+    x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    u_bounds = BoundsOption(
-        [[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()]
-    )
+    u_bounds = Bounds([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
 
-    u_init = InitialGuessOption([tau_init] * biorbd_model.nbGeneralizedTorque())
+    u_init = InitialGuess([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
 

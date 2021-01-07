@@ -8,8 +8,8 @@ from casadi import vertcat, MX
 from bioptim import (
     Node,
     OptimalControlProgram,
-    DynamicsTypeOption,
-    DynamicsType,
+    Dynamics,
+    DynamicsFcn,
     ConstraintList,
 )
 
@@ -25,7 +25,7 @@ def test_custom_constraint_mx_fail():
 
     ocp = OptimalControlProgram(
         biorbd.Model(model_path),
-        DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         30,
         2,
         constraints=constraints,

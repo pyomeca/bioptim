@@ -380,5 +380,5 @@ class DynamicsFunctions:
             param = nlp.parameters_to_optimize[key]
 
             # Call the pre dynamics function
-            if param["func"]:
-                param["func"](nlp.model, mx, **param["extra_params"])
+            if param.function:
+                param.function(nlp.model, mx, **param.params)

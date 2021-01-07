@@ -5,13 +5,14 @@ import numpy as np
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
-    Objective,
-    DynamicsTypeList,
-    DynamicsType,
+    ObjectiveFcn,
+    ObjectivePrinter,
+    DynamicsList,
+    DynamicsFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
-    InitialGuessOption,
+    InitialGuess,
     ShowResult,
     Solver,
     InterpolationType,
@@ -27,33 +28,31 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=10)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=10)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10)
-    objective_functions.add(Objective.Mayer.ALIGN_MARKERS, weight=100000, first_marker_idx=0, second_marker_idx=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=10)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=10)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10)
+    objective_functions.add(ObjectiveFcn.Mayer.ALIGN_MARKERS, weight=100000, first_marker_idx=0, second_marker_idx=1)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][:, 0] = (1.0, 1.0, 0, 0)
 
     # Initial guess
     if x_warm is None:
-        x_init = InitialGuessOption([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
+        x_init = InitialGuess([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
     else:
-        x_init = InitialGuessOption(x_warm, interpolation=InterpolationType.EACH_FRAME)
+        x_init = InitialGuess(x_warm, interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [
-            [tau_min] * biorbd_model.nbGeneralizedTorque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
-            [tau_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
-        ]
+        [tau_min] * biorbd_model.nbGeneralizedTorque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
+        [tau_max] * biorbd_model.nbGeneralizedTorque() + [muscle_max] * biorbd_model.nbMuscleTotal(),
     )
 
     u_init = InitialGuessList()
@@ -127,16 +126,17 @@ if __name__ == "__main__":
     print("\n\n")
     print("Results using ACADOS")
     print(f"Final objective: {np.nansum(sol_obj_acados)}")
-    analyse_acados = Objective.Printer(ocp_acados, sol_obj_acados)
+    analyse_acados = ObjectivePrinter(ocp_acados, sol_obj_acados)
     analyse_acados.by_function()
     print(f"Time to solve: {sol_acados['time_tot']}sec")
     print(f"")
 
     print(
-        f"Results using Ipopt{'' if warm_start_ipopt_from_acados_solution else ' not'} warm started from ACADOS solution"
+        f"Results using Ipopt{'' if warm_start_ipopt_from_acados_solution else ' not'} "
+        f"warm started from ACADOS solution"
     )
     print(f"Final objective : {np.nansum(sol_obj_ipopt)}")
-    analyse_ipopt = Objective.Printer(ocp_ipopt, sol_obj_ipopt)
+    analyse_ipopt = ObjectivePrinter(ocp_ipopt, sol_obj_ipopt)
     analyse_ipopt.by_function()
     print(f"Time to solve: {sol_ipopt['time_tot']}sec")
     print(f"")

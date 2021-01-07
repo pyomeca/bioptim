@@ -6,17 +6,14 @@ import biorbd
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeList,
-    DynamicsType,
-    BoundsOption,
-    InitialGuessOption,
-    ParameterList,
+    DynamicsList,
+    DynamicsFcn,
     Bounds,
+    ParameterList,
     InterpolationType,
-    InitialGuessOption,
     InitialGuess,
-    ObjectiveOption,
     Objective,
+    ObjectiveFcn,
 )
 
 
@@ -26,12 +23,12 @@ def test_double_update_bounds_and_init():
     nq = biorbd_model.nbQ()
     ns = 10
 
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     ocp = OptimalControlProgram(biorbd_model, dynamics, ns, 1.0)
 
-    x_bounds = BoundsOption([-np.ones((nq * 2, 1)), np.ones((nq * 2, 1))])
-    u_bounds = BoundsOption([-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))])
+    x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
+    u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
     ocp.update_bounds(x_bounds, u_bounds)
 
     expected = np.append(np.tile(np.append(-np.ones((nq * 2, 1)), -2.0 * np.ones((nq, 1))), ns), -np.ones((nq * 2, 1)))
@@ -39,16 +36,16 @@ def test_double_update_bounds_and_init():
     expected = np.append(np.tile(np.append(np.ones((nq * 2, 1)), 2.0 * np.ones((nq, 1))), ns), np.ones((nq * 2, 1)))
     np.testing.assert_almost_equal(ocp.V_bounds.max, expected.reshape(128, 1))
 
-    x_init = InitialGuessOption(0.5 * np.ones((nq * 2, 1)))
-    u_init = InitialGuessOption(-0.5 * np.ones((nq, 1)))
+    x_init = InitialGuess(0.5 * np.ones((nq * 2, 1)))
+    u_init = InitialGuess(-0.5 * np.ones((nq, 1)))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.append(
         np.tile(np.append(0.5 * np.ones((nq * 2, 1)), -0.5 * np.ones((nq, 1))), ns), 0.5 * np.ones((nq * 2, 1))
     )
     np.testing.assert_almost_equal(ocp.V_init.init, expected.reshape(128, 1))
 
-    x_bounds = BoundsOption([-2.0 * np.ones((nq * 2, 1)), 2.0 * np.ones((nq * 2, 1))])
-    u_bounds = BoundsOption([-4.0 * np.ones((nq, 1)), 4.0 * np.ones((nq, 1))])
+    x_bounds = Bounds(-2.0 * np.ones((nq * 2, 1)), 2.0 * np.ones((nq * 2, 1)))
+    u_bounds = Bounds(-4.0 * np.ones((nq, 1)), 4.0 * np.ones((nq, 1)))
     ocp.update_bounds(x_bounds=x_bounds)
     ocp.update_bounds(u_bounds=u_bounds)
 
@@ -61,17 +58,17 @@ def test_double_update_bounds_and_init():
     )
     np.testing.assert_almost_equal(ocp.V_bounds.max, expected.reshape(128, 1))
 
-    x_init = InitialGuessOption(0.25 * np.ones((nq * 2, 1)))
-    u_init = InitialGuessOption(-0.25 * np.ones((nq, 1)))
+    x_init = InitialGuess(0.25 * np.ones((nq * 2, 1)))
+    u_init = InitialGuess(-0.25 * np.ones((nq, 1)))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.append(
         np.tile(np.append(0.25 * np.ones((nq * 2, 1)), -0.25 * np.ones((nq, 1))), ns), 0.25 * np.ones((nq * 2, 1))
     )
     np.testing.assert_almost_equal(ocp.V_init.init, expected.reshape(128, 1))
 
-    with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessOption or InitialGuessList"):
+    with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuess or InitialGuessList"):
         ocp.update_initial_guess(x_bounds, u_bounds)
-    with pytest.raises(RuntimeError, match="x_bounds should be built from a BoundsOption or BoundsList"):
+    with pytest.raises(RuntimeError, match="x_bounds should be built from a Bounds or BoundsList"):
         ocp.update_bounds(x_init, u_init)
 
 
@@ -88,14 +85,14 @@ def test_update_bounds_and_init_with_param():
     ns = 10
     g_min, g_max, g_init = -10, -6, -8
 
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     parameters = ParameterList()
-    bounds_gravity = Bounds(min_bound=g_min, max_bound=g_max, interpolation=InterpolationType.CONSTANT)
+    bounds_gravity = Bounds(g_min, g_max, interpolation=InterpolationType.CONSTANT)
     initial_gravity = InitialGuess(g_init)
-    parameter_objective_functions = ObjectiveOption(
-        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=-8
+    parameter_objective_functions = Objective(
+        my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target_value=-8
     )
     parameters.add(
         "gravity_z",
@@ -109,8 +106,8 @@ def test_update_bounds_and_init_with_param():
 
     ocp = OptimalControlProgram(biorbd_model, dynamics, ns, 1.0, parameters=parameters)
 
-    x_bounds = BoundsOption([-np.ones((nq * 2, 1)), np.ones((nq * 2, 1))])
-    u_bounds = BoundsOption([-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))])
+    x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
+    u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
     ocp.update_bounds(x_bounds, u_bounds)
 
     expected = np.append(np.tile(np.append(-np.ones((nq * 2, 1)), -2.0 * np.ones((nq, 1))), ns), -np.ones((nq * 2, 1)))
@@ -118,8 +115,8 @@ def test_update_bounds_and_init_with_param():
     expected = np.append(np.tile(np.append(np.ones((nq * 2, 1)), 2.0 * np.ones((nq, 1))), ns), np.ones((nq * 2, 1)))
     np.testing.assert_almost_equal(ocp.V_bounds.max, np.append([[g_max]], expected).reshape(129, 1))
 
-    x_init = InitialGuessOption(0.5 * np.ones((nq * 2, 1)))
-    u_init = InitialGuessOption(-0.5 * np.ones((nq, 1)))
+    x_init = InitialGuess(0.5 * np.ones((nq * 2, 1)))
+    u_init = InitialGuess(-0.5 * np.ones((nq, 1)))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.append(
         np.tile(np.append(0.5 * np.ones((nq * 2, 1)), -0.5 * np.ones((nq, 1))), ns), 0.5 * np.ones((nq * 2, 1))
@@ -138,9 +135,9 @@ def test_add_wrong_param():
 
     parameters = ParameterList()
     initial_gravity = InitialGuess(g_init)
-    bounds_gravity = Bounds(min_bound=g_min, max_bound=g_max, interpolation=InterpolationType.CONSTANT)
-    parameter_objective_functions = ObjectiveOption(
-        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=-8
+    bounds_gravity = Bounds(g_min, g_max, interpolation=InterpolationType.CONSTANT)
+    parameter_objective_functions = Objective(
+        my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target_value=-8
     )
 
     with pytest.raises(
@@ -162,7 +159,7 @@ def test_add_wrong_param():
         parameters.add(
             "gravity_z",
             my_parameter_function,
-            InitialGuess(),
+            None,
             bounds_gravity,
             size=1,
             penalty_list=parameter_objective_functions,
@@ -176,7 +173,7 @@ def test_add_wrong_param():
             "gravity_z",
             my_parameter_function,
             initial_gravity,
-            Bounds(),
+            None,
             size=1,
             penalty_list=parameter_objective_functions,
             extra_value=1,

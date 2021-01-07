@@ -4,9 +4,9 @@ import numpy as np
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
-    Objective,
-    DynamicsTypeList,
-    DynamicsType,
+    ObjectiveFcn,
+    DynamicsList,
+    DynamicsFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -28,24 +28,24 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_SX=Tr
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        Objective.Lagrange.MINIMIZE_TORQUE,
+        ObjectiveFcn.Lagrange.MINIMIZE_TORQUE,
         weight=100.0,
     )
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=1.0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=1.0)
     objective_functions.add(
-        Objective.Mayer.MINIMIZE_STATE,
+        ObjectiveFcn.Mayer.MINIMIZE_STATE,
         weight=50000.0,
         target=data_to_track[-1:, :].T,
         node=Node.END,
     )
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][:, 0] = 0
 
     # Initial guess
@@ -54,12 +54,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_SX=Tr
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add(
-        [
-            [torque_min] * n_tau,
-            [torque_max] * n_tau,
-        ]
-    )
+    u_bounds.add([torque_min] * n_tau, [torque_max] * n_tau)
     u_bounds[0][n_tau - 1, :] = 0
 
     u_init = InitialGuessList()

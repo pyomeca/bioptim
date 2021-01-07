@@ -11,15 +11,15 @@ import biorbd
 from bioptim import (
     Data,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     QAndQDotBounds,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     InitialGuessList,
     BoundsList,
     Node,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     OptimalControlProgram,
     OdeSolver,
 )
@@ -286,16 +286,16 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, min_bound=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, min_bound=1)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
     with pytest.raises(
         RuntimeError,
-        match="Objective.Lagrange.MINIMIZE_TIME cannot have min_bound. Please either use MAYER or constraint",
+        match="ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have min_bound. Please either use MAYER or constraint",
     ):
         OptimalControlProgram(biorbd_model, dynamics, 10, 2, objective_functions=objective_functions)
 
@@ -311,16 +311,16 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weigth=-1, max_bound=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weigth=-1, max_bound=1)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
     with pytest.raises(
         RuntimeError,
-        match="Objective.Lagrange.MINIMIZE_TIME cannot have max_bound. Please either use MAYER or constraint",
+        match="ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have max_bound. Please either use MAYER or constraint",
     ):
         OptimalControlProgram(biorbd_model, dynamics, 10, 2, objective_functions=objective_functions)
 
@@ -508,17 +508,17 @@ def partial_ocp_parameters(nb_phases):
     time_min = [1, 3, 0.1]
     time_max = [2, 4, 0.8]
     tau_min, tau_max, tau_init = -100, 100, 0
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     if nb_phases > 1:
-        dynamics.add(DynamicsType.TORQUE_DRIVEN)
-        dynamics.add(DynamicsType.TORQUE_DRIVEN)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model[0]))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
     if nb_phases > 1:
-        x_bounds.add(QAndQDotBounds(biorbd_model[0]))
-        x_bounds.add(QAndQDotBounds(biorbd_model[0]))
+        x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
+        x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
     for bounds in x_bounds:
         for i in [1, 3, 4, 5]:
             bounds.min[i, [0, -1]] = 0
@@ -536,13 +536,13 @@ def partial_ocp_parameters(nb_phases):
         x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
 
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()])
+    u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
     if nb_phases > 1:
         u_bounds.add(
-            [[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()]
+            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
         )
         u_bounds.add(
-            [[tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()]
+            [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
         )
 
     u_init = InitialGuessList()
@@ -595,11 +595,11 @@ def test_mayer_neg_monophase_time_constraint():
     ) = partial_ocp_parameters(nb_phases=1)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_TIME)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -634,12 +634,12 @@ def test_mayer1_neg_multiphase_time_constraint():
     ) = partial_ocp_parameters(nb_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
-    objective_functions.add(Objective.Mayer.MINIMIZE_TIME, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -674,12 +674,12 @@ def test_mayer2_neg_multiphase_time_constraint():
     ) = partial_ocp_parameters(nb_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
-    objective_functions.add(Objective.Mayer.MINIMIZE_TIME, phase=2)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=2)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
-    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -714,12 +714,12 @@ def test_mayer_multiphase_time_constraint():
     ) = partial_ocp_parameters(nb_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
-    objective_functions.add(Objective.Mayer.MINIMIZE_TIME, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
-    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     OptimalControlProgram(
         biorbd_model,
@@ -753,12 +753,12 @@ def test_lagrange_neg_monophase_time_constraint():
     ) = partial_ocp_parameters(nb_phases=1)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0])
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(
@@ -794,12 +794,12 @@ def test_lagrange1_neg_multiphase_time_constraint():
         ) = partial_ocp_parameters(nb_phases=3)
 
         objective_functions = ObjectiveList()
-        objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
-        objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, phase=0)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=0)
 
         constraints = ConstraintList()
-        constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0)
-        constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=0)
+        constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0)
+        constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=0)
 
         OptimalControlProgram(
             biorbd_model,
@@ -834,12 +834,12 @@ def test_lagrange2_neg_multiphase_time_constraint():
         ) = partial_ocp_parameters(nb_phases=3)
 
         objective_functions = ObjectiveList()
-        objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
-        objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, phase=2)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=2)
 
         constraints = ConstraintList()
-        constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
-        constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
+        constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+        constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
         OptimalControlProgram(
             biorbd_model,
@@ -873,12 +873,12 @@ def test_lagrange_multiphase_time_constraint():
     ) = partial_ocp_parameters(nb_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
-    constraints.add(Constraint.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     OptimalControlProgram(
         biorbd_model,
@@ -912,8 +912,8 @@ def test_mayer_neg_two_objectives():
     ) = partial_ocp_parameters(nb_phases=1)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_TIME, phase=0)
-    objective_functions.add(Objective.Mayer.MINIMIZE_TIME, phase=0)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         OptimalControlProgram(

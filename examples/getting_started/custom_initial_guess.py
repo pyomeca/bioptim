@@ -4,15 +4,15 @@ import biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,
-    DynamicsTypeOption,
-    DynamicsType,
-    ObjectiveOption,
+    Dynamics,
+    DynamicsFcn,
     Objective,
+    ObjectiveFcn,
     ConstraintList,
-    Constraint,
-    BoundsOption,
+    ConstraintFcn,
+    Bounds,
     QAndQDotBounds,
-    InitialGuessOption,
+    InitialGuess,
     ShowResult,
     InterpolationType,
     OdeSolver,
@@ -40,21 +40,21 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics
-    dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint and control path constraints
-    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[1:6, [0, -1]] = 0
     x_bounds[2, -1] = 1.57
-    u_bounds = BoundsOption([[tau_min] * ntau, [tau_max] * ntau])
+    u_bounds = Bounds([tau_min] * ntau, [tau_max] * ntau)
 
     # Initial guesses
     t = None
@@ -85,9 +85,9 @@ def prepare_ocp(
         extra_params_u = {"my_values": np.random.random((ntau, 2)), "nb_shooting": number_shooting_points}
     else:
         raise RuntimeError("Initial guess not implemented yet")
-    x_init = InitialGuessOption(x, t=t, interpolation=initial_guess, **extra_params_x)
+    x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
 
-    u_init = InitialGuessOption(u, t=t, interpolation=initial_guess, **extra_params_u)
+    u_init = InitialGuess(u, t=t, interpolation=initial_guess, **extra_params_u)
     # ------------- #
 
     return OptimalControlProgram(

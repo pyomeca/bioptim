@@ -5,11 +5,11 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     ObjectiveList,
-    Objective,
-    DynamicsTypeList,
-    DynamicsType,
+    ObjectiveFcn,
+    DynamicsList,
+    DynamicsFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -38,21 +38,21 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, index=hand_marker_idx)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, index=hand_marker_idx)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        Constraint.ALIGN_MARKERS, first_marker_idx=hand_marker_idx, second_marker_idx=end_crank_idx, node=Node.ALL
+        ConstraintFcn.ALIGN_MARKERS, first_marker_idx=hand_marker_idx, second_marker_idx=end_crank_idx, node=Node.ALL
     )
     constraints.add(
-        Constraint.TRACK_STATE,
+        ConstraintFcn.TRACK_STATE,
         node=Node.ALL,
         index=0,
         target=np.linspace(0, 2 * np.pi, number_shooting_points + 1),

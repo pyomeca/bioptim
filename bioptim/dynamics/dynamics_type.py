@@ -4,30 +4,28 @@ from .problem import Problem
 from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
 
 
-class DynamicsTypeOption(OptionGeneric):
+class Dynamics(OptionGeneric):
     def __init__(self, dynamics_type, dynamics=None, configure=None, dynamic_function=None, **params):
         params["dynamic_function"] = dynamic_function
-        if not isinstance(dynamics_type, DynamicsType):
+        if not isinstance(dynamics_type, DynamicsFcn):
             configure = dynamics_type
-            dynamics_type = DynamicsType.CUSTOM
+            dynamics_type = DynamicsFcn.CUSTOM
 
-        super(DynamicsTypeOption, self).__init__(type=dynamics_type, **params)
+        super(Dynamics, self).__init__(type=dynamics_type, **params)
         self.dynamics = dynamics
         self.configure = configure
 
 
-class DynamicsTypeList(UniquePerPhaseOptionList):
+class DynamicsList(UniquePerPhaseOptionList):
     def add(self, dynamics_type, **extra_parameters):
-        if isinstance(dynamics_type, DynamicsTypeOption):
+        if isinstance(dynamics_type, Dynamics):
             self.copy(dynamics_type)
 
         else:
-            super(DynamicsTypeList, self)._add(
-                dynamics_type=dynamics_type, option_type=DynamicsTypeOption, **extra_parameters
-            )
+            super(DynamicsList, self)._add(dynamics_type=dynamics_type, option_type=Dynamics, **extra_parameters)
 
 
-class DynamicsType(Enum):
+class DynamicsFcn(Enum):
     MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = (Problem.muscle_excitations_and_torque_driven,)
     MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN = (Problem.muscle_activations_and_torque_driven,)
     MUSCLE_ACTIVATIONS_DRIVEN = (Problem.muscle_activations_driven,)

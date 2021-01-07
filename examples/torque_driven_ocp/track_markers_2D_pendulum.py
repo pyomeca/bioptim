@@ -7,15 +7,15 @@ from casadi import MX, horzcat
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
     ShowResult,
     Data,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     Axe,
     PlotType,
     OdeSolver,
@@ -46,17 +46,17 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        Objective.Lagrange.TRACK_MARKERS, axis_to_track=[Axe.Y, Axe.Z], weight=100, target=markers_ref
+        ObjectiveFcn.Lagrange.TRACK_MARKERS, axis_to_track=[Axe.Y, Axe.Z], weight=100, target=markers_ref
     )
-    objective_functions.add(Objective.Lagrange.TRACK_TORQUE, target=tau_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_TORQUE, target=tau_ref)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][:, 0] = 0
 
     # Initial guess
@@ -65,7 +65,7 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * n_tau, [tau_max] * n_tau])
+    u_bounds.add([tau_min] * n_tau, [tau_max] * n_tau)
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * n_tau)

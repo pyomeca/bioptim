@@ -2,10 +2,10 @@ import biorbd
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -43,29 +43,29 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     if marker_velocity_or_displacement == "disp":
         objective_functions.add(
-            Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT,
+            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT,
             coordinates_system_idx=coordinates_system_idx,
             index=6,
             weight=1000,
         )
     elif marker_velocity_or_displacement == "velo":
-        objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_VELOCITY, index=6, weight=1000)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, index=6, weight=1000)
     else:
         raise RuntimeError(
             "Wrong choice of marker_velocity_or_displacement, actual value is "
             "{marker_velocity_or_displacement}, should be 'velo' or 'disp'."
         )
     # Make sure the segments actually moves (in order to test the relative speed objective)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, index=6, weight=-1)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, index=7, weight=-1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=6, weight=-1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=7, weight=-1)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
 
     for i in range(nq, 2 * nq):
         x_bounds[0].min[i, :] = -10
@@ -77,7 +77,7 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()])
+    u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())

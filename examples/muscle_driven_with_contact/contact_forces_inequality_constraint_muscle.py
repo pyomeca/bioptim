@@ -6,11 +6,11 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     ObjectiveList,
-    Objective,
-    DynamicsTypeList,
-    DynamicsType,
+    ObjectiveFcn,
+    DynamicsList,
+    DynamicsFcn,
     BidirectionalMapping,
     Mapping,
     BoundsList,
@@ -31,23 +31,23 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT)
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        Constraint.CONTACT_FORCE,
+        ConstraintFcn.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=max_bound,
         node=Node.ALL,
         contact_force_idx=1,
     )
     constraints.add(
-        Constraint.CONTACT_FORCE,
+        ConstraintFcn.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=max_bound,
         node=Node.ALL,

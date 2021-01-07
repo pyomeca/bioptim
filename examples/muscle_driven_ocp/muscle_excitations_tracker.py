@@ -9,12 +9,12 @@ from bioptim import (
     NonLinearProgram,
     BidirectionalMapping,
     Mapping,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     DynamicsFunctions,
     Data,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     BoundsList,
     Bounds,
     QAndQDotBounds,
@@ -108,28 +108,28 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_MUSCLES_CONTROL, target=excitations_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL, target=excitations_ref)
     if use_residual_torque:
-        objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
     if kin_data_to_track == "markers":
-        objective_functions.add(Objective.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)
     elif kin_data_to_track == "q":
         objective_functions.add(
-            Objective.Lagrange.TRACK_STATE, weight=100, target=q_ref, index=range(biorbd_model.nbQ())
+            ObjectiveFcn.Lagrange.TRACK_STATE, weight=100, target=q_ref, index=range(biorbd_model.nbQ())
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
-    dynamics = DynamicsTypeList()
+    dynamics = DynamicsList()
     if use_residual_torque:
-        dynamics.add(DynamicsType.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN)
+        dynamics.add(DynamicsFcn.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN)
     else:
-        dynamics.add(DynamicsType.MUSCLE_EXCITATIONS_DRIVEN)
+        dynamics.add(DynamicsFcn.MUSCLE_EXCITATIONS_DRIVEN)
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
     x_bounds[0].min[[0, 1], :] = -2 * np.pi
     x_bounds[0].max[[0, 1], :] = 2 * np.pi
@@ -149,14 +149,12 @@ def prepare_ocp(
     u_init = InitialGuessList()
     if use_residual_torque:
         u_bounds.add(
-            [
-                [tau_min] * biorbd_model.nbGeneralizedTorque() + [excitation_min] * biorbd_model.nbMuscles(),
-                [tau_max] * biorbd_model.nbGeneralizedTorque() + [excitation_max] * biorbd_model.nbMuscles(),
-            ]
+            [tau_min] * biorbd_model.nbGeneralizedTorque() + [excitation_min] * biorbd_model.nbMuscles(),
+            [tau_max] * biorbd_model.nbGeneralizedTorque() + [excitation_max] * biorbd_model.nbMuscles(),
         )
         u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque() + [excitation_init] * biorbd_model.nbMuscles())
     else:
-        u_bounds.add([[excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles()])
+        u_bounds.add([excitation_min] * biorbd_model.nbMuscles(), [excitation_max] * biorbd_model.nbMuscles())
         u_init.add([excitation_init] * biorbd_model.nbMuscles())
     # ------------- #
 

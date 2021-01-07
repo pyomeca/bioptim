@@ -6,11 +6,11 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     ObjectiveList,
-    Objective,
-    DynamicsTypeList,
-    DynamicsType,
+    ObjectiveFcn,
+    DynamicsList,
+    DynamicsFcn,
     BidirectionalMapping,
     Mapping,
     BoundsList,
@@ -33,23 +33,23 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_s
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT)
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        Constraint.CONTACT_FORCE,
+        ConstraintFcn.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=np.inf,
         node=Node.ALL,
         contact_force_idx=1,
     )
     constraints.add(
-        Constraint.CONTACT_FORCE,
+        ConstraintFcn.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=np.inf,
         node=Node.ALL,
@@ -64,7 +64,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_s
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0].concatenate(Bounds([activation_min] * nb_mus, [activation_max] * nb_mus))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus
 
@@ -75,10 +75,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_s
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [
-            [torque_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(),
-            [torque_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal(),
-        ]
+        [torque_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(),
+        [torque_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal(),
     )
 
     u_init = InitialGuessList()

@@ -5,11 +5,11 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     ObjectiveList,
-    Objective,
-    DynamicsTypeList,
-    DynamicsType,
+    ObjectiveFcn,
+    DynamicsList,
+    DynamicsFcn,
     BidirectionalMapping,
     Mapping,
     BoundsList,
@@ -29,23 +29,23 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN_WITH_CONTACT)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        Constraint.CONTACT_FORCE,
+        ConstraintFcn.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=max_bound,
         node=Node.ALL,
         contact_force_idx=1,
     )
     constraints.add(
-        Constraint.CONTACT_FORCE,
+        ConstraintFcn.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=max_bound,
         node=Node.ALL,
@@ -59,7 +59,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
@@ -68,7 +68,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len])
+    u_bounds.add([tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len)
 
     u_init = InitialGuessList()
     u_init.add([tau_ini] * tau_mapping.reduce.len)

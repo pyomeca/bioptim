@@ -1,23 +1,30 @@
 from casadi import vertcat
 
 from .enums import Node
-from ..limits.constraints import Bounds
-from ..limits.path_conditions import InitialGuess
-from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveOption, ObjectiveList
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
 from .options_lists import OptionList, OptionGeneric
 
 
-class ParameterOption(OptionGeneric):
+class Parameter(OptionGeneric):
     def __init__(
-        self, function=None, initial_guess=None, bounds=None, quadratic=True, size=None, penalty_list=None, **params
+        self,
+        function=None,
+        initial_guess=None,
+        bounds=None,
+        quadratic=True,
+        size=None,
+        penalty_list=None,
+        cx=None,
+        **params
     ):
-        super(ParameterOption, self).__init__(**params)
+        super(Parameter, self).__init__(**params)
         self.function = function
         self.initial_guess = initial_guess
         self.bounds = bounds
         self.size = size
         self.penalty_list = penalty_list
         self.quadratic = quadratic
+        self.cx = cx
 
 
 class ParameterList(OptionList):
@@ -25,14 +32,14 @@ class ParameterList(OptionList):
         self,
         parameter_name,
         function=None,
-        initial_guess=InitialGuess(),
-        bounds=Bounds(),
+        initial_guess=None,
+        bounds=None,
         size=None,
         phase=0,
         penalty_list=None,
         **extra_arguments
     ):
-        if isinstance(parameter_name, ParameterOption):
+        if isinstance(parameter_name, Parameter):
             self.copy(parameter_name)
         else:
             if not function or not initial_guess or not bounds or not size:
@@ -41,7 +48,7 @@ class ParameterList(OptionList):
                 )
 
             super(ParameterList, self)._add(
-                option_type=ParameterOption,
+                option_type=Parameter,
                 phase=phase,
                 function=function,
                 name=parameter_name,
@@ -71,20 +78,20 @@ class Parameters:
             if ocp.state_transitions:
                 raise NotImplementedError("Updating parameters while having state_transition is not supported yet")
 
-            if isinstance(penalty_list, ObjectiveOption):
+            if isinstance(penalty_list, Objective):
                 penalty_list_tp = ObjectiveList()
                 penalty_list_tp.add(penalty_list)
                 penalty_list = penalty_list_tp
             elif not isinstance(penalty_list, ObjectiveList):
-                raise RuntimeError("penalty_list should be built from an ObjectiveOption or ObjectiveList")
+                raise RuntimeError("penalty_list should be built from an Objective or ObjectiveList")
 
             if len(penalty_list) > 1 or len(penalty_list[0]) > 1:
                 raise NotImplementedError("Parameters with more that one penalty is not implemented yet")
             penalty = penalty_list[0][0]
 
             # Sanity check
-            if not isinstance(penalty.type, Objective.Parameter):
-                raise RuntimeError("Parameters should be declared custom_type=Objective.Parameters")
+            if not isinstance(penalty.type, ObjectiveFcn.Parameter):
+                raise RuntimeError("Parameters should be declared custom_type=ObjectiveFcn.Parameters")
             if penalty.node != Node.DEFAULT:
                 raise RuntimeError("Parameters are timeless optimization, node=Node.DEFAULT should be declared")
 
@@ -101,24 +108,20 @@ class Parameters:
             cx = ocp.CX.sym(name, size, 1)
 
         ocp.V = vertcat(ocp.V, cx)
-        param_to_store = {
-            "cx": cx,
-            "func": function,
-            "size": size,
-            "extra_params": extra_params,
-            "bounds": bounds,
-            "initial_guess": initial_guess,
-        }
+        param_to_store = Parameter(
+            cx=cx, function=function, size=size, bounds=bounds, initial_guess=initial_guess, **extra_params
+        )
+
         if name in ocp.param_to_optimize:
             p = ocp.param_to_optimize[name]
-            p["cx"] = vertcat(p["cx"], param_to_store["cx"])
-            if p["func"] != param_to_store["func"]:
+            p.cx = vertcat(p.cx, param_to_store.cx)
+            if p.function != param_to_store.function:
                 raise RuntimeError("Pre dynamic function of same parameters must be the same")
-            p["size"] += param_to_store["size"]
-            if p["extra_params"] != param_to_store["extra_params"]:
+            p.size += param_to_store.size
+            if p.params != param_to_store.params:
                 raise RuntimeError("Extra parameters of same parameters must be the same")
-            p["bounds"].concatenate(param_to_store["bounds"])
-            p["initial_guess"].concatenate(param_to_store["initial_guess"])
+            p.bounds.concatenate(param_to_store.bounds)
+            p.initial_guess.concatenate(param_to_store.initial_guess)
         else:
             ocp.param_to_optimize[name] = param_to_store
 

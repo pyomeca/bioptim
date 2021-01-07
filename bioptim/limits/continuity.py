@@ -6,13 +6,12 @@ from casadi import vertcat
 
 from .constraints import ConstraintFunction
 from .objective_functions import ObjectiveFunction
-from .penalty import PenaltyFunctionAbstract
 from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
 
 
-class StateTransitionOption(OptionGeneric):
+class StateTransition(OptionGeneric):
     def __init__(self, phase_pre_idx=None, weight=0, custom_function=None, **params):
-        super(StateTransitionOption, self).__init__(**params)
+        super(StateTransition, self).__init__(**params)
         self.base = ConstraintFunction
         self.phase_pre_idx = phase_pre_idx
 
@@ -23,11 +22,11 @@ class StateTransitionOption(OptionGeneric):
 
 class StateTransitionList(UniquePerPhaseOptionList):
     def add(self, transition, phase=-1, **extra_arguments):
-        if not isinstance(transition, StateTransition):
+        if not isinstance(transition, StateTransitionFcn):
             extra_arguments["custom_function"] = transition
-            transition = StateTransition.CUSTOM
+            transition = StateTransitionFcn.CUSTOM
         super(StateTransitionList, self)._add(
-            option_type=StateTransitionOption, type=transition, phase=phase, **extra_arguments
+            option_type=StateTransition, type=transition, phase=phase, **extra_arguments
         )
 
 
@@ -98,12 +97,12 @@ class StateTransitionFunctions:
     def prepare_state_transitions(ocp, state_transitions):
         # By default it assume Continuous. It can be change later
         full_state_transitions = [
-            StateTransitionOption(type=StateTransition.CONTINUOUS, phase_pre_idx=i) for i in range(ocp.nb_phases - 1)
+            StateTransition(type=StateTransitionFcn.CONTINUOUS, phase_pre_idx=i) for i in range(ocp.nb_phases - 1)
         ]
 
         existing_phases = []
         for pt in state_transitions:
-            if pt.phase_pre_idx is None and pt.type == StateTransition.CYCLIC:
+            if pt.phase_pre_idx is None and pt.type == StateTransitionFcn.CYCLIC:
                 pt.phase_pre_idx = ocp.nb_phases - 1
 
             idx_phase = pt.phase_pre_idx
@@ -134,7 +133,7 @@ class ContinuityFunctions:
             pt.base.inter_phase_continuity(ocp, pt)
 
 
-class StateTransition(Enum):
+class StateTransitionFcn(Enum):
     """
     Different types of state transitions.
     """

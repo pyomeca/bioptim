@@ -8,40 +8,40 @@ from ..misc.enums import Node
 from ..misc.options_lists import OptionList, OptionGeneric
 
 
-class ObjectiveOption(PenaltyOption):
+class Objective(PenaltyOption):
     def __init__(self, objective, weight=1, custom_type=None, phase=0, **params):
         custom_function = None
-        if not isinstance(objective, Objective.Lagrange) and not isinstance(objective, Objective.Mayer):
+        if not isinstance(objective, ObjectiveFcn.Lagrange) and not isinstance(objective, ObjectiveFcn.Mayer):
             custom_function = objective
 
             if custom_type is None:
                 raise RuntimeError(
                     "Custom objective function detected, but custom_function is missing. "
-                    "It should either be Objective.Mayer or Objective.Lagrange"
+                    "It should either be ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange"
                 )
             objective = custom_type(custom_type.CUSTOM)
-            if isinstance(objective, Objective.Lagrange):
+            if isinstance(objective, ObjectiveFcn.Lagrange):
                 pass
-            elif isinstance(objective, Objective.Mayer):
+            elif isinstance(objective, ObjectiveFcn.Mayer):
                 pass
-            elif isinstance(objective, Objective.Parameter):
+            elif isinstance(objective, ObjectiveFcn.Parameter):
                 pass
             else:
                 raise RuntimeError(
                     "Custom objective function detected, but custom_function is invalid. "
-                    "It should either be Objective.Mayer or Objective.Lagrange"
+                    "It should either be ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange"
                 )
 
-        super(ObjectiveOption, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
+        super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
         self.weight = weight
 
 
 class ObjectiveList(OptionList):
     def add(self, objective, **extra_arguments):
-        if isinstance(objective, ObjectiveOption):
+        if isinstance(objective, Objective):
             self.copy(objective)
         else:
-            super(ObjectiveList, self)._add(option_type=ObjectiveOption, objective=objective, **extra_arguments)
+            super(ObjectiveList, self)._add(option_type=Objective, objective=objective, **extra_arguments)
 
 
 class ObjectiveFunction:
@@ -87,16 +87,16 @@ class ObjectiveFunction:
         def _parameter_modifier(penalty_function, parameters):
             """Modification of parameters"""
             # Everything that should change the entry parameters depending on the penalty can be added here
-            if penalty_function == Objective.Lagrange.MINIMIZE_TIME.value[0]:
+            if penalty_function == ObjectiveFcn.Lagrange.MINIMIZE_TIME.value[0]:
                 # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
                 if "min_bound" in parameters.params:
                     raise RuntimeError(
-                        "Objective.Lagrange.MINIMIZE_TIME cannot have min_bound. "
+                        "ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have min_bound. "
                         "Please either use MAYER or constraint"
                     )
                 if "max_bound" in parameters.params:
                     raise RuntimeError(
-                        "Objective.Lagrange.MINIMIZE_TIME cannot have max_bound. "
+                        "ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have max_bound. "
                         "Please either use MAYER or constraint"
                     )
                 if not parameters.quadratic:
@@ -159,7 +159,7 @@ class ObjectiveFunction:
         def _parameter_modifier(penalty_function, parameters):
             """Modification of parameters"""
             # Everything that should change the entry parameters depending on the penalty can be added here
-            if penalty_function == Objective.Mayer.MINIMIZE_TIME.value[0]:
+            if penalty_function == ObjectiveFcn.Mayer.MINIMIZE_TIME.value[0]:
                 # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
                 if "min_bound" in parameters.params:
                     del parameters.params["min_bound"]
@@ -231,7 +231,7 @@ class ObjectiveFunction:
                 objective.node = Node.END
 
         else:
-            raise RuntimeError("Objective function Type must be either a Lagrange or Mayer type")
+            raise RuntimeError("ObjectiveFcn function Type must be either a Lagrange or Mayer type")
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective)
 
     @staticmethod
@@ -246,7 +246,7 @@ class ObjectiveFunction:
     def add_to_penalty(ocp, nlp, val, penalty, dt=0):
         """
         Adds objective J to objective array nlp.J[penalty] or ocp.J[penalty] at index penalty.
-        :param J: Objective. (dict of [val, target, weight, is_quadratic])
+        :param J: ObjectiveFcn. (dict of [val, target, weight, is_quadratic])
         :param penalty: Index of the objective. (integer)
         """
         J = {"objective": penalty, "val": val, "target": penalty.sliced_target, "dt": dt}
@@ -282,7 +282,33 @@ class ObjectiveFunction:
             J_to_add_to[penalty.list_index] = []
 
 
-class Objective:
+class ObjectivePrinter:
+    def __init__(self, ocp, sol_obj):
+        self.ocp = ocp
+        self.sol_obj = sol_obj
+
+    def by_function(self):
+        for idx_phase, phase in enumerate(self.sol_obj):
+            print(f"********** Phase {idx_phase} **********")
+            for idx_obj in range(phase.shape[0]):
+                print(
+                    f"{self.ocp.original_values['objective_functions'][idx_phase][idx_phase + idx_obj].type.name} : {np.nansum(phase[idx_obj])}"
+                )
+
+    def by_nodes(self):
+        for idx_phase, phase in enumerate(self.sol_obj):
+            print(f"********** Phase {idx_phase} **********")
+            for idx_node in range(phase.shape[1]):
+                print(f"Node {idx_node} : {np.nansum(phase[:, idx_node])}")
+
+    def mean(self):
+        m = 0
+        for idx_phase, phase in enumerate(self.sol_obj):
+            m += np.nansum(phase)
+        return m / len(self.sol_obj)
+
+
+class ObjectiveFcn:
     class Lagrange(Enum):
         """
         Different conditions between biorbd geometric structures.
@@ -354,27 +380,7 @@ class Objective:
     class Parameter(Enum):
         CUSTOM = (PenaltyType.CUSTOM,)
 
-    class Printer:
-        def __init__(self, ocp, sol_obj):
-            self.ocp = ocp
-            self.sol_obj = sol_obj
-
-        def by_function(self):
-            for idx_phase, phase in enumerate(self.sol_obj):
-                print(f"********** Phase {idx_phase} **********")
-                for idx_obj in range(phase.shape[0]):
-                    print(
-                        f"{self.ocp.original_values['objective_functions'][idx_phase][idx_phase + idx_obj].type.name} : {np.nansum(phase[idx_obj])}"
-                    )
-
-        def by_nodes(self):
-            for idx_phase, phase in enumerate(self.sol_obj):
-                print(f"********** Phase {idx_phase} **********")
-                for idx_node in range(phase.shape[1]):
-                    print(f"Node {idx_node} : {np.nansum(phase[:, idx_node])}")
-
-        def mean(self):
-            m = 0
-            for idx_phase, phase in enumerate(self.sol_obj):
-                m += np.nansum(phase)
-            return m / len(self.sol_obj)
+        @staticmethod
+        def get_type():
+            """Returns the type of the objective function"""
+            return ObjectiveFunction.ParameterFunction

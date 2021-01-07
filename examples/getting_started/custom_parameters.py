@@ -2,16 +2,14 @@ import biorbd
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeOption,
-    DynamicsType,
-    BoundsOption,
+    Dynamics,
+    DynamicsFcn,
     Bounds,
     QAndQDotBounds,
-    InitialGuessOption,
     InitialGuess,
     ShowResult,
-    ObjectiveOption,
     Objective,
+    ObjectiveFcn,
     InterpolationType,
     Data,
     ParameterList,
@@ -48,33 +46,33 @@ def prepare_ocp(
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE, weight=10)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=10)
 
     # Dynamics
-    dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
-    x_bounds = BoundsOption(QAndQDotBounds(biorbd_model))
+    x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
 
     # Initial guess
-    x_init = InitialGuessOption([0] * (n_q + n_qdot))
+    x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    u_bounds = BoundsOption([[tau_min] * n_tau, [tau_max] * n_tau])
+    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0
 
-    u_init = InitialGuessOption([tau_init] * n_tau)
+    u_init = InitialGuess([tau_init] * n_tau)
 
     # Define the parameter to optimize
     # Give the parameter some min and max bounds
     parameters = ParameterList()
-    bound_gravity = Bounds(min_bound=min_g, max_bound=max_g, interpolation=InterpolationType.CONSTANT)
+    bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
     # and an initial condition
     initial_gravity = InitialGuess((min_g + max_g) / 2)
-    parameter_objective_functions = ObjectiveOption(
-        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target=target_g
+    parameter_objective_functions = Objective(
+        my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
     )
     parameters.add(
         "gravity_z",  # The name of the parameter
@@ -82,7 +80,7 @@ def prepare_ocp(
         initial_gravity,  # The initial guess
         bound_gravity,  # The bounds
         size=1,  # The number of elements this particular parameter vector has
-        penalty_list=parameter_objective_functions,  # Objective of constraint for this particular parameter
+        penalty_list=parameter_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
         extra_value=1,  # You can define as many extra arguments as you want
     )
 
