@@ -102,6 +102,54 @@ def test_initial_guess_spline():
         np.testing.assert_almost_equal(init.init.evaluate_at(t), expected_val)
 
 
+def test_initial_guess_update():
+    # Load pendulum
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "pendulum", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py"
+    )
+    pendulum = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum)
+
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
+        final_time=2,
+        number_shooting_points=10,
+    )
+
+    np.testing.assert_almost_equal(ocp.nlp[0].x_init.init, np.zeros((4, 1)))
+    np.testing.assert_almost_equal(ocp.nlp[0].u_init.init, np.zeros((2, 1)))
+    np.testing.assert_almost_equal(ocp.param_to_optimize["time"].initial_guess.init[0, 0], 2)
+    np.testing.assert_almost_equal(ocp.V_init.init, np.concatenate(([[2]], np.zeros((4*11 + 2 * 10, 1)))))
+
+    wrong_new_x_init = InitialGuess([1] * 6)
+    new_x_init = InitialGuess([1] * 4)
+    wrong_new_u_init = InitialGuess([3] * 4)
+    new_u_init = InitialGuess([3] * 2)
+    new_time_init = InitialGuess([4])
+
+    # No name for the param
+    with pytest.raises(ValueError, match="update_initial_guess must specify a name for the parameters"):
+        ocp.update_initial_guess(new_x_init, new_u_init, new_time_init)
+
+    new_time_init.name = "dumb name"
+    with pytest.raises(ValueError, match="update_initial_guess cannot declare new parameters"):
+        ocp.update_initial_guess(new_x_init, new_u_init, new_time_init)
+
+    new_time_init.name = "time"
+    with pytest.raises(RuntimeError):
+        ocp.update_initial_guess(new_x_init, wrong_new_u_init, new_time_init)
+    with pytest.raises(RuntimeError):
+        ocp.update_initial_guess(wrong_new_x_init, wrong_new_u_init, new_time_init)
+
+    ocp.update_initial_guess(new_x_init, new_u_init, new_time_init)
+
+    np.testing.assert_almost_equal(ocp.nlp[0].x_init.init, np.ones((4, 1)))
+    np.testing.assert_almost_equal(ocp.nlp[0].u_init.init, np.ones((2, 1))*3)
+    np.testing.assert_almost_equal(ocp.param_to_optimize["time"].initial_guess.init[0, 0], 4)
+    np.testing.assert_almost_equal(ocp.V_init.init, np.array([[4] + [1, 1, 1, 1, 3, 3] * 10 + [1, 1, 1, 1]]).T )
+
+
 def test_initial_guess_custom():
     nb_elements = 6
     nb_shoot = 10
