@@ -379,3 +379,8 @@ class Objective:
 
     class Parameter(Enum):
         CUSTOM = (PenaltyType.CUSTOM,)
+
+        @staticmethod
+        def get_type():
+            """Returns the type of the objective function"""
+            return ObjectiveFunction.ParameterFunction
