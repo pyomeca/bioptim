@@ -2,8 +2,8 @@ import biorbd
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeOption,
-    DynamicsType,
+    Dynamics,
+    DynamicsFcn,
     Bounds,
     QAndQDotBounds,
     InitialGuess,
@@ -21,7 +21,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Dynamics
-    dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)

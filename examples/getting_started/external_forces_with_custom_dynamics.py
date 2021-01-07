@@ -3,7 +3,7 @@ import casadi as cas
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeOption,
+    Dynamics,
     Problem,
     Objective,
     DynamicsFunctions,
@@ -46,7 +46,7 @@ m.setGravity(biorbd.Vector3d(0, 0, 0))
 objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=1, weight=-1)
 
 # Dynamics
-dynamics = DynamicsTypeOption(custom_configure, dynamic_function=custom_dynamic)
+dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic)
 
 # Path constraint
 x_bounds = QAndQDotBounds(m)

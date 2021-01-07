@@ -6,8 +6,8 @@ import numpy as np
 import biorbd
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     Bounds,
     InitialGuess,
     Objective,
@@ -27,28 +27,28 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
     elif with_muscles:
         biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod")
-        dynamics = DynamicsTypeList()
-        dynamics.add(DynamicsType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
+        dynamics = DynamicsList()
+        dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque() + biorbd_model.nbMuscles()
     elif with_contact:
         biorbd_model = biorbd.Model(
             str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod"
         )
-        dynamics = DynamicsTypeList()
-        dynamics.add(DynamicsType.TORQUE_DRIVEN_WITH_CONTACT)
+        dynamics = DynamicsList()
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     elif with_actuator:
         biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod")
-        dynamics = DynamicsTypeList()
-        dynamics.add(DynamicsType.TORQUE_DRIVEN)
+        dynamics = DynamicsList()
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     else:
         biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod")
-        dynamics = DynamicsTypeList()
-        dynamics.add(DynamicsType.TORQUE_DRIVEN)
+        dynamics = DynamicsList()
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     x_init = InitialGuess(np.zeros((nx, 1)))

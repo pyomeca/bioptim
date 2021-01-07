@@ -7,8 +7,8 @@ from casadi import MX, horzcat
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -51,8 +51,8 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
     objective_functions.add(ObjectiveFcn.Lagrange.TRACK_TORQUE, target=tau_ref)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = BoundsList()

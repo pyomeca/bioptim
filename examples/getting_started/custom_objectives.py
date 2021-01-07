@@ -8,8 +8,8 @@ from casadi import vertcat
 from bioptim import (
     Node,
     OptimalControlProgram,
-    DynamicsTypeOption,
-    DynamicsType,
+    Dynamics,
+    DynamicsFcn,
     ObjectiveFcn,
     ObjectiveList,
     Bounds,
@@ -66,7 +66,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     )
 
     # Dynamics
-    dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)

@@ -9,8 +9,8 @@ import biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -144,8 +144,8 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=100, target=X0)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = BoundsList()

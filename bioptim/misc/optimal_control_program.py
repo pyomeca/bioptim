@@ -16,7 +16,7 @@ from .options_lists import OptionList
 from .parameters import Parameters, ParameterList, Parameter
 from .utils import check_version
 from ..dynamics.problem import Problem
-from ..dynamics.dynamics_type import DynamicsTypeList, DynamicsTypeOption
+from ..dynamics.dynamics_type import DynamicsList, Dynamics
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.integrator import RK4, IRK
@@ -135,12 +135,12 @@ class OptimalControlProgram:
         if not isinstance(nb_threads, int) or isinstance(nb_threads, bool) or nb_threads < 1:
             raise RuntimeError("nb_threads should be a positive integer greater or equal than 1")
 
-        if isinstance(dynamics_type, DynamicsTypeOption):
-            dynamics_type_tp = DynamicsTypeList()
+        if isinstance(dynamics_type, Dynamics):
+            dynamics_type_tp = DynamicsList()
             dynamics_type_tp.add(dynamics_type)
             dynamics_type = dynamics_type_tp
-        elif not isinstance(dynamics_type, DynamicsTypeList):
-            raise RuntimeError("dynamics_type should be a DynamicsTypeOption or a DynamicsTypeList")
+        elif not isinstance(dynamics_type, DynamicsList):
+            raise RuntimeError("dynamics_type should be a Dynamics or a DynamicsList")
 
         ns = number_shooting_points
         if not isinstance(ns, int) or ns < 2:

@@ -6,8 +6,8 @@ import biorbd
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     Bounds,
     ParameterList,
     InterpolationType,
@@ -23,8 +23,8 @@ def test_double_update_bounds_and_init():
     nq = biorbd_model.nbQ()
     ns = 10
 
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     ocp = OptimalControlProgram(biorbd_model, dynamics, ns, 1.0)
 
     x_bounds = Bounds(-np.ones((nq * 2, 1)), np.ones((nq * 2, 1)))
@@ -85,8 +85,8 @@ def test_update_bounds_and_init_with_param():
     ns = 10
     g_min, g_max, g_init = -10, -6, -8
 
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     parameters = ParameterList()
     bounds_gravity = Bounds(g_min, g_max, interpolation=InterpolationType.CONSTANT)

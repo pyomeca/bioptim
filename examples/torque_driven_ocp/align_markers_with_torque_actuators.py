@@ -3,8 +3,8 @@ import biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -33,16 +33,16 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, actuator_
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
+    dynamics = DynamicsList()
     if actuator_type:
         if actuator_type == 1:
-            dynamics.add(DynamicsType.TORQUE_ACTIVATIONS_DRIVEN)
+            dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN)
         elif actuator_type == 2:
-            dynamics.add(DynamicsType.TORQUE_DRIVEN)
+            dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
         else:
             raise ValueError("actuator_type is 1 (torque activations) or 2 (torque max constraints)")
     else:
-        dynamics.add(DynamicsType.TORQUE_DRIVEN)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Constraints
     constraints = ConstraintList()

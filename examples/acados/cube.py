@@ -6,8 +6,8 @@ import numpy as np
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsTypeOption,
-    DynamicsType,
+    Dynamics,
+    DynamicsFcn,
     ObjectiveFcn,
     ObjectiveList,
     Bounds,
@@ -28,7 +28,7 @@ def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK, use_SX=True
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Dynamics
-    dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)

@@ -3,8 +3,8 @@ import biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,
-    DynamicsType,
-    DynamicsTypeList,
+    DynamicsFcn,
+    DynamicsList,
     ObjectiveFcn,
     ObjectiveList,
     ConstraintFcn,
@@ -52,11 +52,11 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=3)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Constraints
     constraints = ConstraintList()

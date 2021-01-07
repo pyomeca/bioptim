@@ -8,8 +8,8 @@ from bioptim import (
     ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -43,8 +43,8 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
 
     # Constraints
     constraints = ConstraintList()

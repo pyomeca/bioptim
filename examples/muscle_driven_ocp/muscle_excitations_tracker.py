@@ -9,8 +9,8 @@ from bioptim import (
     NonLinearProgram,
     BidirectionalMapping,
     Mapping,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     DynamicsFunctions,
     Data,
     ObjectiveList,
@@ -121,11 +121,11 @@ def prepare_ocp(
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
-    dynamics = DynamicsTypeList()
+    dynamics = DynamicsList()
     if use_residual_torque:
-        dynamics.add(DynamicsType.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN)
+        dynamics.add(DynamicsFcn.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN)
     else:
-        dynamics.add(DynamicsType.MUSCLE_EXCITATIONS_DRIVEN)
+        dynamics.add(DynamicsFcn.MUSCLE_EXCITATIONS_DRIVEN)
 
     # Path constraint
     x_bounds = BoundsList()

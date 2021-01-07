@@ -7,8 +7,8 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     ObjectivePrinter,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -34,8 +34,8 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
     objective_functions.add(ObjectiveFcn.Mayer.ALIGN_MARKERS, weight=100000, first_marker_idx=0, second_marker_idx=1)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = BoundsList()

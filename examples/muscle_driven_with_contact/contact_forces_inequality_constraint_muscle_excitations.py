@@ -9,8 +9,8 @@ from bioptim import (
     ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     BidirectionalMapping,
     Mapping,
     BoundsList,
@@ -36,8 +36,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_s
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT)
 
     # Constraints
     constraints = ConstraintList()

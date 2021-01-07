@@ -11,8 +11,8 @@ from bioptim import (
     ConstraintFcn,
     ConstraintList,
     Data,
-    DynamicsType,
-    DynamicsTypeList,
+    DynamicsFcn,
+    DynamicsList,
     InitialGuessList,
     InitialGuess,
     Node,
@@ -53,10 +53,10 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN, phase=0)
-    dynamics.add(DynamicsType.TORQUE_DRIVEN, phase=1)
-    dynamics.add(DynamicsType.TORQUE_DRIVEN, phase=2)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=0)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=1)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=2)
 
     # Constraints
     constraints = ConstraintList()

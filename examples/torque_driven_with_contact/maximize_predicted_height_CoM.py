@@ -4,8 +4,8 @@ from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     BidirectionalMapping,
     Mapping,
     BoundsList,
@@ -34,11 +34,11 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=Fa
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=1 / 100)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
+    dynamics = DynamicsList()
     if use_actuators:
-        dynamics.add(DynamicsType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT)
+        dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT)
     else:
-        dynamics.add(DynamicsType.TORQUE_DRIVEN_WITH_CONTACT)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)
 
     # Path constraint
     nb_q = biorbd_model.nbQ()

@@ -13,8 +13,8 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     QAndQDotBounds,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     InitialGuessList,
     BoundsList,
     Node,
@@ -289,8 +289,8 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, min_bound=1)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
     with pytest.raises(
@@ -314,8 +314,8 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weigth=-1, max_bound=1)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
     with pytest.raises(
@@ -508,11 +508,11 @@ def partial_ocp_parameters(nb_phases):
     time_min = [1, 3, 0.1]
     time_max = [2, 4, 0.8]
     tau_min, tau_max, tau_init = -100, 100, 0
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     if nb_phases > 1:
-        dynamics.add(DynamicsType.TORQUE_DRIVEN)
-        dynamics.add(DynamicsType.TORQUE_DRIVEN)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))

@@ -4,8 +4,8 @@ from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsTypeList,
-    DynamicsType,
+    DynamicsList,
+    DynamicsFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -28,8 +28,8 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, weight, o
     objective_functions.add(ObjectiveFcn.Mayer.ALIGN_MARKERS, first_marker_idx=0, second_marker_idx=5, weight=weight)
 
     # Dynamics
-    dynamics = DynamicsTypeList()
-    dynamics.add(DynamicsType.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = BoundsList()

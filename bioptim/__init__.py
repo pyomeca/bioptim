@@ -1,6 +1,6 @@
 from .misc.__version__ import __version__
 from .dynamics.problem import Problem
-from .dynamics.dynamics_type import DynamicsType, DynamicsTypeList, DynamicsTypeOption
+from .dynamics.dynamics_type import DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
 from .gui.plot import CustomPlot, ShowResult
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
