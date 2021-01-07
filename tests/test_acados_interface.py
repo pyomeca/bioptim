@@ -243,8 +243,10 @@ def test_acados_mhe(cost_type):
     model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
     for i in range(nbsample - nbs):
         objective_functions = ObjectiveList()
-        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, weight=10, index=[0], target=target[:, i: i + nbs + 1])
-        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i + nbs: i + nbs + 1])
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.TRACK_STATE, weight=10, index=[0], target=target[:, i : i + nbs + 1]
+        )
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i + nbs : i + nbs + 1])
         ocp.update_objectives(objective_functions)
         sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
 
@@ -494,7 +496,9 @@ def test_acados_constraints_all():
     )
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X))
+    constraints.add(
+        ConstraintFcn.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X)
+    )
     ocp.update_constraints(constraints)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
@@ -535,7 +539,9 @@ def test_acados_constraints_end_all():
 
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
-    constraints.add(ConstraintFcn.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X))
+    constraints.add(
+        ConstraintFcn.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X)
+    )
     ocp.update_constraints(constraints)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})

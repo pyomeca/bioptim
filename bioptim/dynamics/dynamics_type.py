@@ -22,9 +22,7 @@ class DynamicsList(UniquePerPhaseOptionList):
             self.copy(dynamics_type)
 
         else:
-            super(DynamicsList, self)._add(
-                dynamics_type=dynamics_type, option_type=Dynamics, **extra_parameters
-            )
+            super(DynamicsList, self)._add(dynamics_type=dynamics_type, option_type=Dynamics, **extra_parameters)
 
 
 class DynamicsFcn(Enum):

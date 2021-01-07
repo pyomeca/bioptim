@@ -7,7 +7,15 @@ from .options_lists import OptionList, OptionGeneric
 
 class Parameter(OptionGeneric):
     def __init__(
-        self, function=None, initial_guess=None, bounds=None, quadratic=True, size=None, penalty_list=None, cx=None, **params
+        self,
+        function=None,
+        initial_guess=None,
+        bounds=None,
+        quadratic=True,
+        size=None,
+        penalty_list=None,
+        cx=None,
+        **params
     ):
         super(Parameter, self).__init__(**params)
         self.function = function
@@ -100,7 +108,9 @@ class Parameters:
             cx = ocp.CX.sym(name, size, 1)
 
         ocp.V = vertcat(ocp.V, cx)
-        param_to_store = Parameter(cx=cx, function=function, size=size, bounds=bounds, initial_guess=initial_guess, **extra_params)
+        param_to_store = Parameter(
+            cx=cx, function=function, size=size, bounds=bounds, initial_guess=initial_guess, **extra_params
+        )
 
         if name in ocp.param_to_optimize:
             p = ocp.param_to_optimize[name]

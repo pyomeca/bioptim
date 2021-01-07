@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from bioptim import Data, InterpolationType, Simulate, InitialGuess
+
 # TODO: Add negative test for sizes
 
 
@@ -120,7 +121,7 @@ def test_initial_guess_update():
     np.testing.assert_almost_equal(ocp.nlp[0].x_init.init, np.zeros((4, 1)))
     np.testing.assert_almost_equal(ocp.nlp[0].u_init.init, np.zeros((2, 1)))
     np.testing.assert_almost_equal(ocp.param_to_optimize["time"].initial_guess.init[0, 0], 2)
-    np.testing.assert_almost_equal(ocp.V_init.init, np.concatenate(([[2]], np.zeros((4*11 + 2 * 10, 1)))))
+    np.testing.assert_almost_equal(ocp.V_init.init, np.concatenate(([[2]], np.zeros((4 * 11 + 2 * 10, 1)))))
 
     wrong_new_x_init = InitialGuess([1] * 6)
     new_x_init = InitialGuess([1] * 4)
@@ -145,9 +146,9 @@ def test_initial_guess_update():
     ocp.update_initial_guess(new_x_init, new_u_init, new_time_init)
 
     np.testing.assert_almost_equal(ocp.nlp[0].x_init.init, np.ones((4, 1)))
-    np.testing.assert_almost_equal(ocp.nlp[0].u_init.init, np.ones((2, 1))*3)
+    np.testing.assert_almost_equal(ocp.nlp[0].u_init.init, np.ones((2, 1)) * 3)
     np.testing.assert_almost_equal(ocp.param_to_optimize["time"].initial_guess.init[0, 0], 4)
-    np.testing.assert_almost_equal(ocp.V_init.init, np.array([[4] + [1, 1, 1, 1, 3, 3] * 10 + [1, 1, 1, 1]]).T )
+    np.testing.assert_almost_equal(ocp.V_init.init, np.array([[4] + [1, 1, 1, 1, 3, 3] * 10 + [1, 1, 1, 1]]).T)
 
 
 def test_initial_guess_custom():

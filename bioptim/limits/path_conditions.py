@@ -203,7 +203,9 @@ class BoundsList(UniquePerPhaseOptionList):
                 bounds.phase = len(self.options) if self.options[0] else 0
             self.copy(bounds)
         else:
-            super(BoundsList, self)._add(min_bound=min_bound, max_bound=max_bound, option_type=Bounds, **extra_arguments)
+            super(BoundsList, self)._add(
+                min_bound=min_bound, max_bound=max_bound, option_type=Bounds, **extra_arguments
+            )
 
     def __getitem__(self, item):
         return super(BoundsList, self).__getitem__(item)
@@ -368,9 +370,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
         if isinstance(initial_guess, InitialGuess):
             self.copy(initial_guess)
         else:
-            super(InitialGuessList, self)._add(
-                initial_guess=initial_guess, option_type=InitialGuess, **extra_arguments
-            )
+            super(InitialGuessList, self)._add(initial_guess=initial_guess, option_type=InitialGuess, **extra_arguments)
 
     def __getitem__(self, item):
         return super(InitialGuessList, self).__getitem__(item)
