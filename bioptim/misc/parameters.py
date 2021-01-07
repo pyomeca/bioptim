@@ -7,7 +7,7 @@ from .options_lists import OptionList, OptionGeneric
 
 class Parameter(OptionGeneric):
     def __init__(
-        self, function=None, initial_guess=None, bounds=None, quadratic=True, size=None, penalty_list=None, **params
+        self, function=None, initial_guess=None, bounds=None, quadratic=True, size=None, penalty_list=None, cx=None, **params
     ):
         super(Parameter, self).__init__(**params)
         self.function = function
@@ -16,6 +16,7 @@ class Parameter(OptionGeneric):
         self.size = size
         self.penalty_list = penalty_list
         self.quadratic = quadratic
+        self.cx = cx
 
 
 class ParameterList(OptionList):
@@ -99,24 +100,18 @@ class Parameters:
             cx = ocp.CX.sym(name, size, 1)
 
         ocp.V = vertcat(ocp.V, cx)
-        param_to_store = {
-            "cx": cx,
-            "func": function,
-            "size": size,
-            "extra_params": extra_params,
-            "bounds": bounds,
-            "initial_guess": initial_guess,
-        }
+        param_to_store = Parameter(cx=cx, function=function, size=size, bounds=bounds, initial_guess=initial_guess, **extra_params)
+
         if name in ocp.param_to_optimize:
             p = ocp.param_to_optimize[name]
-            p["cx"] = vertcat(p["cx"], param_to_store["cx"])
-            if p["func"] != param_to_store["func"]:
+            p.cx = vertcat(p.cx, param_to_store.cx)
+            if p.function != param_to_store.function:
                 raise RuntimeError("Pre dynamic function of same parameters must be the same")
-            p["size"] += param_to_store["size"]
-            if p["extra_params"] != param_to_store["extra_params"]:
+            p.size += param_to_store.size
+            if p.params != param_to_store.params:
                 raise RuntimeError("Extra parameters of same parameters must be the same")
-            p["bounds"].concatenate(param_to_store["bounds"])
-            p["initial_guess"].concatenate(param_to_store["initial_guess"])
+            p.bounds.concatenate(param_to_store.bounds)
+            p.initial_guess.concatenate(param_to_store.initial_guess)
         else:
             ocp.param_to_optimize[name] = param_to_store
 

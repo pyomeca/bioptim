@@ -531,7 +531,7 @@ class OptimalControlProgram:
         self.V_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
 
         for key in self.param_to_optimize.keys():
-            self.V_init.concatenate(self.param_to_optimize[key]["initial_guess"])
+            self.V_init.concatenate(self.param_to_optimize[key].initial_guess)
 
         for idx_phase, nlp in enumerate(self.nlp):
             if nlp.control_type == ControlType.CONSTANT:
@@ -570,7 +570,7 @@ class OptimalControlProgram:
         self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
         for key in self.param_to_optimize.keys():
-            self.V_bounds.concatenate(self.param_to_optimize[key]["bounds"])
+            self.V_bounds.concatenate(self.param_to_optimize[key].bounds)
 
         for idx_phase, nlp in enumerate(self.nlp):
             if nlp.control_type == ControlType.CONSTANT:
@@ -720,12 +720,12 @@ class OptimalControlProgram:
         else:
             param_init_list = param_init
 
-        for param in param_init_list.options[0]:
+        for param in param_init_list:
             if not param.name:
                 raise ValueError("update_initial_guess must specify a name for the parameters")
             if param.name not in self.param_to_optimize:
                 raise ValueError("update_initial_guess cannot declare new parameters")
-            self.param_to_optimize[param.name]["initial_guess"] = param.initial_guess
+            self.param_to_optimize[param.name].initial_guess.init = param.init
 
         if self.isdef_x_init and self.isdef_u_init:
             self.__define_initial_guesss()

@@ -156,8 +156,8 @@ class AcadosInterface(SolverInterface):
         param_bounds_min = []
 
         if self.params:
-            param_bounds_max = np.concatenate([self.params[key]["bounds"].max for key in self.params.keys()])[:, 0]
-            param_bounds_min = np.concatenate([self.params[key]["bounds"].min for key in self.params.keys()])[:, 0]
+            param_bounds_max = np.concatenate([self.params[key].bounds.max for key in self.params.keys()])[:, 0]
+            param_bounds_min = np.concatenate([self.params[key].bounds.min for key in self.params.keys()])[:, 0]
 
         for i in range(3):
             self.x_bound_max[:, i] = np.concatenate((param_bounds_max, np.array(ocp.nlp[0].x_bounds.max[:, i])))
@@ -415,7 +415,7 @@ class AcadosInterface(SolverInterface):
 
             if self.params:
                 param_init = np.concatenate(
-                    [self.params[key]["initial_guess"].init.evaluate_at(n) for key in self.params.keys()]
+                    [self.params[key].initial_guess.init.evaluate_at(n) for key in self.params.keys()]
                 )
 
             self.ocp_solver.set(n, "x", np.concatenate((param_init, self.ocp.nlp[0].x_init.init.evaluate_at(n))))

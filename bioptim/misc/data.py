@@ -165,7 +165,7 @@ class Data:
         offset = 0
         for key in ocp.param_to_optimize:
             if ocp.param_to_optimize[key]:
-                nb_param = ocp.param_to_optimize[key]["size"]
+                nb_param = ocp.param_to_optimize[key].size
                 data_parameters[key] = np.array(V[offset : offset + nb_param])
                 offset += nb_param
 

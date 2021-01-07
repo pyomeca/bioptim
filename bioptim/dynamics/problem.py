@@ -440,7 +440,7 @@ class Problem:
         symbolic_params = nlp.CX()
         nlp.parameters_to_optimize = ocp.param_to_optimize
         for key in nlp.parameters_to_optimize:
-            symbolic_params = vertcat(symbolic_params, nlp.parameters_to_optimize[key]["cx"])
+            symbolic_params = vertcat(symbolic_params, nlp.parameters_to_optimize[key].cx)
         nlp.p = symbolic_params
         nlp.np = symbolic_params.rows()
         MX_symbolic_params = MX.sym("p", nlp.np, 1)
