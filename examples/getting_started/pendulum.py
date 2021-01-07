@@ -16,6 +16,7 @@ from bioptim import (
     Simulate,
     Objective,
     ObjectiveOption,
+    ObjectivePrinter,
     OdeSolver,
 )
 
@@ -89,7 +90,7 @@ if __name__ == "__main__":
 
     # --- Print objective cost  --- #
     print(f"Final objective value : {np.nansum(sol_obj)} \n")
-    analyse = Objective.Printer(ocp, sol_obj)
+    analyse = ObjectivePrinter(ocp, sol_obj)
     analyse.by_function()
     analyse.by_nodes()
 

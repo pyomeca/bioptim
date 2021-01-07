@@ -6,6 +6,7 @@ from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     Objective,
+    ObjectivePrinter,
     DynamicsTypeList,
     DynamicsType,
     BoundsList,
@@ -125,16 +126,17 @@ if __name__ == "__main__":
     print("\n\n")
     print("Results using ACADOS")
     print(f"Final objective: {np.nansum(sol_obj_acados)}")
-    analyse_acados = Objective.Printer(ocp_acados, sol_obj_acados)
+    analyse_acados = ObjectivePrinter(ocp_acados, sol_obj_acados)
     analyse_acados.by_function()
     print(f"Time to solve: {sol_acados['time_tot']}sec")
     print(f"")
 
     print(
-        f"Results using Ipopt{'' if warm_start_ipopt_from_acados_solution else ' not'} warm started from ACADOS solution"
+        f"Results using Ipopt{'' if warm_start_ipopt_from_acados_solution else ' not'} "
+        f"warm started from ACADOS solution"
     )
     print(f"Final objective : {np.nansum(sol_obj_ipopt)}")
-    analyse_ipopt = Objective.Printer(ocp_ipopt, sol_obj_ipopt)
+    analyse_ipopt = ObjectivePrinter(ocp_ipopt, sol_obj_ipopt)
     analyse_ipopt.by_function()
     print(f"Time to solve: {sol_ipopt['time_tot']}sec")
     print(f"")
