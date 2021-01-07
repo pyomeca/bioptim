@@ -37,9 +37,7 @@ def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK, use_SX=True
     x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
-    u_bounds = Bounds(
-        [tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque()
-    )
+    u_bounds = Bounds([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
 
     u_init = InitialGuess([tau_init] * biorbd_model.nbGeneralizedTorque())
 
@@ -67,7 +65,9 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1], target=np.array([[1.0, 2.0]]).T
+    )
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.0]]))
     objective_functions.add(
         ObjectiveFcn.Lagrange.MINIMIZE_TORQUE,
