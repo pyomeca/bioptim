@@ -16,6 +16,9 @@ class IpoptInterface(SolverInterface):
         self.options_common = {}
         self.opts = None
 
+        self.lam_g = None
+        self.lam_x = None
+
         self.ipopt_nlp = None
         self.ipopt_limits = None
         self.ocp_solver = None
@@ -69,6 +72,11 @@ class IpoptInterface(SolverInterface):
             "x0": self.ocp.V_init.init,
         }
 
+        if self.lam_g is not None:
+            self.ipopt_limits["lam_g0"] = self.lam_g
+        if self.lam_x is not None:
+            self.ipopt_limits["lam_x0"] = self.lam_x
+
         solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts)
 
         # Solve the problem
@@ -78,6 +86,10 @@ class IpoptInterface(SolverInterface):
         self.out["sol"]["status"] = int(not solver.stats()["success"])
 
         return self.out
+
+    def set_lagrange_multiplier(self, sol):
+        self.lam_g = sol["lam_g"]
+        self.lam_x = sol["lam_x"]
 
     def __dispatch_bounds(self):
         all_g = self.ocp.CX()
