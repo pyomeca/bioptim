@@ -15,7 +15,7 @@ from bioptim import (
     ShowResult,
     OdeSolver,
     StateTransitionList,
-    StateTransition,
+    StateTransitionFcn,
 )
 
 
@@ -59,9 +59,9 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, loop_from
     # as a soft penalty (objective) otherwise
     state_transitions = StateTransitionList()
     if loop_from_constraint:
-        state_transitions.add(StateTransition.CYCLIC, weight=0)
+        state_transitions.add(StateTransitionFcn.CYCLIC, weight=0)
     else:
-        state_transitions.add(StateTransition.CYCLIC, weight=10000)
+        state_transitions.add(StateTransitionFcn.CYCLIC, weight=10000)
 
     return OptimalControlProgram(
         biorbd_model,

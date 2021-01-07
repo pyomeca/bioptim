@@ -4,7 +4,7 @@ from .dynamics.dynamics_type import DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
 from .gui.plot import CustomPlot, ShowResult
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
-from .limits.continuity import StateTransition, StateTransitionList
+from .limits.continuity import StateTransitionFcn, StateTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ObjectivePrinter
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds, PathCondition
 from .misc.data import Data

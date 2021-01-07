@@ -12,7 +12,7 @@ from bioptim import (
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
-    StateTransition,
+    StateTransitionFcn,
     StateTransitionList,
     ShowResult,
     OdeSolver,
@@ -107,15 +107,15 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
     IMPACT will cause an impact related discontinuity when defining one or more contact points in the model.
     CUSTOM will allow to call the custom function previously presented in order to have its own state transition.
     Finally, if you want a state transition (continuous or not) between the last and the first phase (cyclicity)
-    you can use the dedicated StateTransition.Cyclic or use a continuous set at the lase phase_pre_idx.
+    you can use the dedicated StateTransitionFcn.Cyclic or use a continuous set at the lase phase_pre_idx.
 
     If for some reason, you don't want the state transition to be hard constraint, you can specify a weight higher than
     zero. It will thereafter be treated as a Mayer objective function with the specified weight.
     """
     state_transitions = StateTransitionList()
-    state_transitions.add(StateTransition.IMPACT, phase_pre_idx=1)
+    state_transitions.add(StateTransitionFcn.IMPACT, phase_pre_idx=1)
     state_transitions.add(custom_state_transition, phase_pre_idx=2, idx_1=1, idx_2=3)
-    state_transitions.add(StateTransition.CYCLIC)
+    state_transitions.add(StateTransitionFcn.CYCLIC)
 
     # ------------- #
 
