@@ -17,7 +17,7 @@ from bioptim import (
     Data,
     Solver,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     Bounds,
     QAndQDotBounds,
     OdeSolver,
@@ -66,7 +66,7 @@ def test_acados_one_mayer(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0], target=np.array([[1.0]]).T)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=np.array([[1.0]]).T)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -97,8 +97,8 @@ def test_acados_several_mayer(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[2], target=np.array([[3.0]]))
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[2], target=np.array([[3.0]]))
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -134,7 +134,7 @@ def test_acados_one_lagrange(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=10, index=[0], target=target)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, weight=10, index=[0], target=target)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -168,8 +168,8 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=10, index=[0], target=target)
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0], target=target[:, -1:])
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, weight=10, index=[0], target=target)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target[:, -1:])
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -203,9 +203,9 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     )
     objective_functions = ObjectiveList()
     objective_functions.add(
-        Objective.Lagrange.MINIMIZE_ALL_CONTROLS,
+        ObjectiveFcn.Lagrange.MINIMIZE_ALL_CONTROLS,
     )
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0], target=target)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -243,8 +243,8 @@ def test_acados_mhe(cost_type):
     model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
     for i in range(nbsample - nbs):
         objective_functions = ObjectiveList()
-        objective_functions.add(Objective.Lagrange.TRACK_STATE, weight=10, index=[0], target=target[:, i : i + nbs + 1])
-        objective_functions.add(Objective.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i + nbs : i + nbs + 1])
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, weight=10, index=[0], target=target[:, i: i + nbs + 1])
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i + nbs: i + nbs + 1])
         ocp.update_objectives(objective_functions)
         sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
 
@@ -391,10 +391,10 @@ def test_acados_one_parameter():
     )
     model = ocp.nlp[0].model
     objectives = ObjectiveList()
-    objectives.add(Objective.Mayer.TRACK_STATE, index=[0, 1], target=np.array([[0, 3.14]]).T, weight=100000)
-    objectives.add(Objective.Mayer.TRACK_STATE, index=[2, 3], target=np.array([[0, 0]]).T, weight=100)
-    objectives.add(Objective.Lagrange.MINIMIZE_TORQUE, index=1, weight=10)
-    objectives.add(Objective.Lagrange.MINIMIZE_STATE, index=[2, 3], weight=0.000000010)
+    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[0, 1], target=np.array([[0, 3.14]]).T, weight=100000)
+    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[2, 3], target=np.array([[0, 0]]).T, weight=100)
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, index=1, weight=10)
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=[2, 3], weight=0.000000010)
     ocp.update_objectives(objectives)
 
     # Path constraint
@@ -447,8 +447,8 @@ def test_acados_one_end_constraints():
 
     model = ocp.nlp[0].model
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.TRACK_STATE, index=0, weight=100, target=np.array([[1]]))
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions.add(ObjectiveFcn.Mayer.TRACK_STATE, index=0, weight=100, target=np.array([[1]]))
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
     ocp.update_objectives(objective_functions)
 
     # Path constraint

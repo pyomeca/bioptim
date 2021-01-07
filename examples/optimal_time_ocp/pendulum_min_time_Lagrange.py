@@ -6,7 +6,7 @@ from bioptim import (
     DynamicsTypeList,
     DynamicsType,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -27,7 +27,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
     # Add objective functions
     objective_functions = ObjectiveList()
     # A weight of -1 will maximize time
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weight=weight)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=weight)
 
     # Dynamics
     dynamics = DynamicsTypeList()

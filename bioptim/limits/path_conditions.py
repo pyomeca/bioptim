@@ -17,7 +17,7 @@ class PathCondition(np.ndarray):
         :param interpolation: Type of interpolation. (Instance of InterpolationType)
         (InterpolationType.CONSTANT, InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, InterpolationType.LINEAR_CONTINUOUS
         or InterpolationType.EACH_FRAME)
-        :return: obj -> Objective. (?)
+        :return: obj -> ObjectiveFcn. (?)
         """
         # Check and reinterpret input
         if interpolation == InterpolationType.CUSTOM:

@@ -7,7 +7,7 @@ from bioptim import (
     ConstraintList,
     Constraint,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     DynamicsTypeList,
     DynamicsType,
     BoundsList,
@@ -38,9 +38,9 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, index=hand_marker_idx)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT, index=hand_marker_idx)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
 
     # Dynamics
     dynamics = DynamicsTypeList()

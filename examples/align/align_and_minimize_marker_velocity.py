@@ -5,7 +5,7 @@ from bioptim import (
     DynamicsTypeList,
     DynamicsType,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -43,21 +43,21 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     if marker_velocity_or_displacement == "disp":
         objective_functions.add(
-            Objective.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT,
+            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT,
             coordinates_system_idx=coordinates_system_idx,
             index=6,
             weight=1000,
         )
     elif marker_velocity_or_displacement == "velo":
-        objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS_VELOCITY, index=6, weight=1000)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, index=6, weight=1000)
     else:
         raise RuntimeError(
             "Wrong choice of marker_velocity_or_displacement, actual value is "
             "{marker_velocity_or_displacement}, should be 'velo' or 'disp'."
         )
     # Make sure the segments actually moves (in order to test the relative speed objective)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, index=6, weight=-1)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, index=7, weight=-1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=6, weight=-1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=7, weight=-1)
 
     # Dynamics
     dynamics = DynamicsTypeList()

@@ -17,9 +17,9 @@ from bioptim import (
     InitialGuess,
     Node,
     InterpolationType,
-    Objective,
+    ObjectiveFcn,
     ObjectiveList,
-    ObjectiveOption,
+    Objective,
     OdeSolver,
     OptimalControlProgram,
     ParameterList,
@@ -48,9 +48,9 @@ def prepare_ocp(phase_time_constraint, use_parameter):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=1)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -116,8 +116,8 @@ def prepare_ocp(phase_time_constraint, use_parameter):
         target_g = -8
         bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
         initial_gravity = InitialGuess((min_g + max_g) / 2)
-        parameter_objective_functions = ObjectiveOption(
-            my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=target_g
+        parameter_objective_functions = Objective(
+            my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target_value=target_g
         )
         parameters.add(
             "gravity_z",

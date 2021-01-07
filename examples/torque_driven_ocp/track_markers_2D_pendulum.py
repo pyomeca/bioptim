@@ -15,7 +15,7 @@ from bioptim import (
     ShowResult,
     Data,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     Axe,
     PlotType,
     OdeSolver,
@@ -46,9 +46,9 @@ def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, t
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        Objective.Lagrange.TRACK_MARKERS, axis_to_track=[Axe.Y, Axe.Z], weight=100, target=markers_ref
+        ObjectiveFcn.Lagrange.TRACK_MARKERS, axis_to_track=[Axe.Y, Axe.Z], weight=100, target=markers_ref
     )
-    objective_functions.add(Objective.Lagrange.TRACK_TORQUE, target=tau_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_TORQUE, target=tau_ref)
 
     # Dynamics
     dynamics = DynamicsTypeList()

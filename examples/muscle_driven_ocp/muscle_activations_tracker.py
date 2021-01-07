@@ -14,7 +14,7 @@ from bioptim import (
     DynamicsType,
     DynamicsFunctions,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -109,16 +109,16 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_MUSCLES_CONTROL, target=activations_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL, target=activations_ref)
 
     if use_residual_torque:
-        objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
 
     if kin_data_to_track == "markers":
-        objective_functions.add(Objective.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)
     elif kin_data_to_track == "q":
         objective_functions.add(
-            Objective.Lagrange.TRACK_STATE, weight=100, target=q_ref, index=range(biorbd_model.nbQ())
+            ObjectiveFcn.Lagrange.TRACK_STATE, weight=100, target=q_ref, index=range(biorbd_model.nbQ())
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")

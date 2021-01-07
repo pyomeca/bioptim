@@ -8,7 +8,7 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsTypeOption,
     DynamicsType,
-    Objective,
+    ObjectiveFcn,
     ObjectiveList,
     Bounds,
     QAndQDotBounds,
@@ -67,10 +67,10 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.0]]))
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.0]]))
     objective_functions.add(
-        Objective.Lagrange.MINIMIZE_TORQUE,
+        ObjectiveFcn.Lagrange.MINIMIZE_TORQUE,
         weight=1,
     )
     ocp.update_objectives(objective_functions)
@@ -80,10 +80,10 @@ if __name__ == "__main__":
     result.graphs()
 
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=1, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
-    objective_functions.add(Objective.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.0]]))
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=1, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=10000, index=[2], target=np.array([[3.0]]))
     objective_functions.add(
-        Objective.Lagrange.MINIMIZE_TORQUE,
+        ObjectiveFcn.Lagrange.MINIMIZE_TORQUE,
         weight=10,
     )
     ocp.update_objectives(objective_functions)

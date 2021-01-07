@@ -12,8 +12,8 @@ from bioptim import (
     ParameterList,
     InterpolationType,
     InitialGuess,
-    ObjectiveOption,
     Objective,
+    ObjectiveFcn,
 )
 
 
@@ -91,8 +91,8 @@ def test_update_bounds_and_init_with_param():
     parameters = ParameterList()
     bounds_gravity = Bounds(g_min, g_max, interpolation=InterpolationType.CONSTANT)
     initial_gravity = InitialGuess(g_init)
-    parameter_objective_functions = ObjectiveOption(
-        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=-8
+    parameter_objective_functions = Objective(
+        my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target_value=-8
     )
     parameters.add(
         "gravity_z",
@@ -136,8 +136,8 @@ def test_add_wrong_param():
     parameters = ParameterList()
     initial_gravity = InitialGuess(g_init)
     bounds_gravity = Bounds(g_min, g_max, interpolation=InterpolationType.CONSTANT)
-    parameter_objective_functions = ObjectiveOption(
-        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target_value=-8
+    parameter_objective_functions = Objective(
+        my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target_value=-8
     )
 
     with pytest.raises(

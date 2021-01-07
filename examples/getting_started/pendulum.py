@@ -14,8 +14,8 @@ from bioptim import (
     ShowResult,
     Data,
     Simulate,
+    ObjectiveFcn,
     Objective,
-    ObjectiveOption,
     ObjectivePrinter,
     OdeSolver,
 )
@@ -32,7 +32,7 @@ def prepare_ocp(
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE_DERIVATIVE)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE_DERIVATIVE)
 
     # Dynamics
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)

@@ -3,7 +3,7 @@ import biorbd
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     DynamicsTypeList,
     DynamicsType,
     BidirectionalMapping,
@@ -30,8 +30,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=Fa
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=1 / 100)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=1 / 100)
 
     # Dynamics
     dynamics = DynamicsTypeList()

@@ -4,7 +4,7 @@ import numpy as np
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     DynamicsTypeList,
     DynamicsType,
     BoundsList,
@@ -28,12 +28,12 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_SX=Tr
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        Objective.Lagrange.MINIMIZE_TORQUE,
+        ObjectiveFcn.Lagrange.MINIMIZE_TORQUE,
         weight=100.0,
     )
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=1.0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=1.0)
     objective_functions.add(
-        Objective.Mayer.MINIMIZE_STATE,
+        ObjectiveFcn.Mayer.MINIMIZE_STATE,
         weight=50000.0,
         target=data_to_track[-1:, :].T,
         node=Node.END,

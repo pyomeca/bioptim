@@ -8,7 +8,7 @@ from bioptim import (
     ConstraintList,
     Constraint,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     DynamicsTypeList,
     DynamicsType,
     BidirectionalMapping,
@@ -33,7 +33,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_s
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
     dynamics = DynamicsTypeList()

@@ -10,7 +10,7 @@ from bioptim import (
     DynamicsTypeList,
     DynamicsType,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -36,10 +36,10 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.TRACK_MUSCLES_CONTROL, target=muscle_activations_ref)
-    objective_functions.add(Objective.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.001)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_ALL_CONTROLS, weight=0.001)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL, target=muscle_activations_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=0.001)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_ALL_CONTROLS, weight=0.001)
 
     # Dynamics
     dynamics = DynamicsTypeList()

@@ -7,7 +7,7 @@ from bioptim import (
     DynamicsTypeList,
     DynamicsType,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     ConstraintList,
     Constraint,
     BoundsList,
@@ -36,7 +36,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics
     dynamics = DynamicsTypeList()

@@ -4,8 +4,8 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsTypeOption,
     DynamicsType,
-    ObjectiveOption,
     Objective,
+    ObjectiveFcn,
     ConstraintOption,
     Constraint,
     Bounds,
@@ -27,7 +27,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min,
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
 
     # Dynamics
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)

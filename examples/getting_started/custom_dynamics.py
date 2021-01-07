@@ -11,8 +11,8 @@ from bioptim import (
     Problem,
     DynamicsType,
     DynamicsFunctions,
-    ObjectiveOption,
     Objective,
+    ObjectiveFcn,
     ConstraintList,
     Constraint,
     Bounds,
@@ -49,7 +49,7 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
 
     # Dynamics
     dynamics = DynamicsTypeList()

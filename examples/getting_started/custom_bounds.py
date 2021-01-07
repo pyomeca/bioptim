@@ -6,8 +6,8 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsTypeOption,
     DynamicsType,
-    ObjectiveOption,
     Objective,
+    ObjectiveFcn,
     ConstraintList,
     Constraint,
     Bounds,
@@ -56,7 +56,7 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
 
     # Dynamics
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)

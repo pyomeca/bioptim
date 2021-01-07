@@ -12,7 +12,7 @@ from bioptim import (
     DynamicsTypeList,
     DynamicsType,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     ConstraintList,
     BoundsList,
     QAndQDotBounds,
@@ -140,8 +140,8 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, target=target)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=100, target=X0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, target=target)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=100, target=X0)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -245,8 +245,8 @@ if __name__ == "__main__":
     for i in range(1, N - N_mhe):
         Y_i = Y_N_[:, :, i : i + N_mhe + 1]
         new_objectives = ObjectiveList()
-        new_objectives.add(Objective.Lagrange.MINIMIZE_MARKERS, weight=1000, target=Y_i, idx=0)
-        new_objectives.add(Objective.Lagrange.MINIMIZE_STATE, weight=100, target=X0, phase=0, idx=1)
+        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, target=Y_i, idx=0)
+        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=100, target=X0, phase=0, idx=1)
 
         ocp.update_objectives(new_objectives)
 

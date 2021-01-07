@@ -8,8 +8,8 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     ShowResult,
-    ObjectiveOption,
     Objective,
+    ObjectiveFcn,
     InterpolationType,
     Data,
     ParameterList,
@@ -46,7 +46,7 @@ def prepare_ocp(
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = ObjectiveOption(Objective.Lagrange.MINIMIZE_TORQUE, weight=10)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=10)
 
     # Dynamics
     dynamics = DynamicsTypeOption(DynamicsType.TORQUE_DRIVEN)
@@ -71,8 +71,8 @@ def prepare_ocp(
     bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
     # and an initial condition
     initial_gravity = InitialGuess((min_g + max_g) / 2)
-    parameter_objective_functions = ObjectiveOption(
-        my_target_function, weight=10, quadratic=True, custom_type=Objective.Parameter, target=target_g
+    parameter_objective_functions = Objective(
+        my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
     )
     parameters.add(
         "gravity_z",  # The name of the parameter
@@ -80,7 +80,7 @@ def prepare_ocp(
         initial_gravity,  # The initial guess
         bound_gravity,  # The bounds
         size=1,  # The number of elements this particular parameter vector has
-        penalty_list=parameter_objective_functions,  # Objective of constraint for this particular parameter
+        penalty_list=parameter_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
         extra_value=1,  # You can define as many extra arguments as you want
     )
 

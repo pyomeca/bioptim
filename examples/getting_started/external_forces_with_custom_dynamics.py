@@ -5,9 +5,9 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsTypeOption,
     Problem,
-    ObjectiveOption,
-    DynamicsFunctions,
     Objective,
+    DynamicsFunctions,
+    ObjectiveFcn,
     Bounds,
     QAndQDotBounds,
     InitialGuess,
@@ -43,7 +43,7 @@ m = biorbd.Model("mass_point.bioMod")
 m.setGravity(biorbd.Vector3d(0, 0, 0))
 
 # Add objective functions (high upward velocity at end point)
-objective_functions = ObjectiveOption(Objective.Mayer.MINIMIZE_STATE, index=1, weight=-1)
+objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=1, weight=-1)
 
 # Dynamics
 dynamics = DynamicsTypeOption(custom_configure, dynamic_function=custom_dynamic)

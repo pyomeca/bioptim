@@ -1,7 +1,7 @@
 from casadi import vertcat
 
 from .enums import Node
-from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveOption, ObjectiveList
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
 from .options_lists import OptionList, OptionGeneric
 
 
@@ -69,20 +69,20 @@ class Parameters:
             if ocp.state_transitions:
                 raise NotImplementedError("Updating parameters while having state_transition is not supported yet")
 
-            if isinstance(penalty_list, ObjectiveOption):
+            if isinstance(penalty_list, Objective):
                 penalty_list_tp = ObjectiveList()
                 penalty_list_tp.add(penalty_list)
                 penalty_list = penalty_list_tp
             elif not isinstance(penalty_list, ObjectiveList):
-                raise RuntimeError("penalty_list should be built from an ObjectiveOption or ObjectiveList")
+                raise RuntimeError("penalty_list should be built from an Objective or ObjectiveList")
 
             if len(penalty_list) > 1 or len(penalty_list[0]) > 1:
                 raise NotImplementedError("Parameters with more that one penalty is not implemented yet")
             penalty = penalty_list[0][0]
 
             # Sanity check
-            if not isinstance(penalty.type, Objective.Parameter):
-                raise RuntimeError("Parameters should be declared custom_type=Objective.Parameters")
+            if not isinstance(penalty.type, ObjectiveFcn.Parameter):
+                raise RuntimeError("Parameters should be declared custom_type=ObjectiveFcn.Parameters")
             if penalty.node != Node.DEFAULT:
                 raise RuntimeError("Parameters are timeless optimization, node=Node.DEFAULT should be declared")
 

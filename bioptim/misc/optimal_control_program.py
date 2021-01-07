@@ -22,7 +22,7 @@ from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.integrator import RK4, IRK
 from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList, ConstraintOption
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
-from ..limits.objective_functions import Objective, ObjectiveFunction, ObjectiveList, ObjectiveOption
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.path_conditions import InterpolationType
@@ -192,12 +192,12 @@ class OptimalControlProgram:
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
-        if isinstance(objective_functions, ObjectiveOption):
+        if isinstance(objective_functions, Objective):
             objective_functions_tp = ObjectiveList()
             objective_functions_tp.add(objective_functions)
             objective_functions = objective_functions_tp
         elif not isinstance(objective_functions, ObjectiveList):
-            raise RuntimeError("objective_functions should be built from an ObjectiveOption or ObjectiveList")
+            raise RuntimeError("objective_functions should be built from an Objective or ObjectiveList")
 
         if isinstance(constraints, ConstraintOption):
             constraints_tp = ConstraintList()
@@ -631,8 +631,8 @@ class OptimalControlProgram:
                 if not pen_fun:
                     continue
                 if (
-                    pen_fun.type == Objective.Mayer.MINIMIZE_TIME
-                    or pen_fun.type == Objective.Lagrange.MINIMIZE_TIME
+                    pen_fun.type == ObjectiveFcn.Mayer.MINIMIZE_TIME
+                    or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
                     or pen_fun.type == Constraint.TIME_CONSTRAINT
                 ):
                     if has_penalty[i]:
@@ -665,7 +665,7 @@ class OptimalControlProgram:
                 i += 1
 
     def update_objectives(self, new_objective_function):
-        if isinstance(new_objective_function, ObjectiveOption):
+        if isinstance(new_objective_function, Objective):
             self.__modify_penalty(new_objective_function, "objective_functions")
 
         elif isinstance(new_objective_function, ObjectiveList):
@@ -674,7 +674,7 @@ class OptimalControlProgram:
                     self.__modify_penalty(objective, "objective_functions")
 
         else:
-            raise RuntimeError("new_objective_function must be a ObjectiveOption or an ObjectiveList")
+            raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
 
     def update_constraints(self, new_constraint):
         if isinstance(new_constraint, ConstraintOption):

@@ -5,7 +5,7 @@ import numpy as np
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     ObjectivePrinter,
     DynamicsTypeList,
     DynamicsType,
@@ -28,10 +28,10 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=10)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=10)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10)
-    objective_functions.add(Objective.Mayer.ALIGN_MARKERS, weight=100000, first_marker_idx=0, second_marker_idx=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=10)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=10)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10)
+    objective_functions.add(ObjectiveFcn.Mayer.ALIGN_MARKERS, weight=100000, first_marker_idx=0, second_marker_idx=1)
 
     # Dynamics
     dynamics = DynamicsTypeList()

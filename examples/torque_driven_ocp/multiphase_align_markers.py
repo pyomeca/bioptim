@@ -6,7 +6,7 @@ from bioptim import (
     DynamicsTypeList,
     DynamicsType,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     ConstraintList,
     Constraint,
     BoundsList,
@@ -32,9 +32,9 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK, long_o
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=1)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
 
     # Dynamics
     dynamics = DynamicsTypeList()

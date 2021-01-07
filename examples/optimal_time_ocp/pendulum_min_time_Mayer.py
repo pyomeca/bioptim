@@ -6,7 +6,7 @@ from bioptim import (
     DynamicsTypeList,
     DynamicsType,
     ObjectiveList,
-    Objective,
+    ObjectiveFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -35,7 +35,7 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     # A weight of -1 will maximize time
-    objective_functions.add(Objective.Mayer.MINIMIZE_TIME, weight=weight, min_bound=min_time, max_bound=max_time)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=weight, min_bound=min_time, max_bound=max_time)
 
     # Dynamics
     dynamics = DynamicsTypeList()

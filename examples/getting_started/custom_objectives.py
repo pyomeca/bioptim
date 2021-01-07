@@ -10,7 +10,7 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsTypeOption,
     DynamicsType,
-    Objective,
+    ObjectiveFcn,
     ObjectiveList,
     Bounds,
     QAndQDotBounds,
@@ -45,10 +45,10 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TORQUE)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
     objective_functions.add(
         custom_func_align_markers,
-        custom_type=Objective.Mayer,
+        custom_type=ObjectiveFcn.Mayer,
         node=Node.START,
         quadratic=True,
         first_marker_idx=0,
@@ -57,7 +57,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
     )
     objective_functions.add(
         custom_func_align_markers,
-        custom_type=Objective.Mayer,
+        custom_type=ObjectiveFcn.Mayer,
         node=Node.END,
         quadratic=True,
         first_marker_idx=0,
