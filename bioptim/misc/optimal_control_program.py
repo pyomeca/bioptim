@@ -708,11 +708,25 @@ class OptimalControlProgram:
         if self.isdef_x_bounds and self.isdef_u_bounds:
             self.__define_bounds()
 
-    def update_initial_guess(self, x_init=InitialGuessList(), u_init=InitialGuessList()):
+    def update_initial_guess(self, x_init=InitialGuessList(), u_init=InitialGuessList(), param_init=InitialGuessList()):
         if x_init:
             self.__add_path_condition_to_nlp(x_init, "x_init", InitialGuess, InitialGuessList, "InitialGuess")
         if u_init:
             self.__add_path_condition_to_nlp(u_init, "u_init", InitialGuess, InitialGuessList, "InitialGuess")
+
+        if isinstance(param_init, InitialGuess):
+            param_init_list = InitialGuessList()
+            param_init_list.add(param_init)
+        else:
+            param_init_list = param_init
+
+        for param in param_init_list.options[0]:
+            if not param.name:
+                raise ValueError("update_initial_guess must specify a name for the parameters")
+            if param.name not in self.param_to_optimize:
+                raise ValueError("update_initial_guess cannot declare new parameters")
+            self.param_to_optimize[param.name]["initial_guess"] = param.initial_guess
+
         if self.isdef_x_init and self.isdef_u_init:
             self.__define_initial_guesss()
 
