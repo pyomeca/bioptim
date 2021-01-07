@@ -5,7 +5,7 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
     DynamicsTypeList,
@@ -49,10 +49,10 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        Constraint.ALIGN_MARKERS, first_marker_idx=hand_marker_idx, second_marker_idx=end_crank_idx, node=Node.ALL
+        ConstraintFcn.ALIGN_MARKERS, first_marker_idx=hand_marker_idx, second_marker_idx=end_crank_idx, node=Node.ALL
     )
     constraints.add(
-        Constraint.TRACK_STATE,
+        ConstraintFcn.TRACK_STATE,
         node=Node.ALL,
         index=0,
         target=np.linspace(0, 2 * np.pi, number_shooting_points + 1),

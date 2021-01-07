@@ -9,7 +9,7 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -45,10 +45,10 @@ def prepare_ocp(
     # Constraints
     if constr is True:
         constraints = ConstraintList()
-        constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=4)
-        constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
+        constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=4)
+        constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
         constraints.add(
-            Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X)
+            ConstraintFcn.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X)
         )
     else:
         constraints = ConstraintList()

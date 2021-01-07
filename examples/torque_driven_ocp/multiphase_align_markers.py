@@ -8,7 +8,7 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -44,10 +44,10 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK, long_o
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0)
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=0)
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=1, phase=1)
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=2)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=0)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=1, phase=1)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=2)
 
     # Path constraint
     x_bounds = BoundsList()

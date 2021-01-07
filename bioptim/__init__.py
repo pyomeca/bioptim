@@ -3,7 +3,7 @@ from .dynamics.problem import Problem
 from .dynamics.dynamics_type import DynamicsType, DynamicsTypeList, DynamicsTypeOption
 from .dynamics.dynamics_functions import DynamicsFunctions
 from .gui.plot import CustomPlot, ShowResult
-from .limits.constraints import Constraint, ConstraintList, ConstraintOption
+from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.continuity import StateTransition, StateTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ObjectivePrinter
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds, PathCondition

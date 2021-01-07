@@ -8,7 +8,7 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -36,7 +36,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment_idx=2, rt_idx=0)
+    constraints.add(ConstraintFcn.ALIGN_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment_idx=2, rt_idx=0)
 
     # Path constraint
     x_bounds = BoundsList()

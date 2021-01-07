@@ -8,7 +8,7 @@ import biorbd
 from bioptim import (
     BoundsList,
     Bounds,
-    Constraint,
+    ConstraintFcn,
     ConstraintList,
     Data,
     DynamicsType,
@@ -60,13 +60,13 @@ def prepare_ocp(phase_time_constraint, use_parameter):
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0)
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=0)
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=1, phase=1)
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=2)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=0)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=1, phase=1)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=2)
 
     constraints.add(
-        Constraint.TIME_CONSTRAINT,
+        ConstraintFcn.TIME_CONSTRAINT,
         node=Node.END,
         minimum=time_min[0],
         maximum=time_max[0],

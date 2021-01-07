@@ -6,7 +6,7 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
     DynamicsTypeList,
@@ -42,14 +42,14 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_s
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        Constraint.CONTACT_FORCE,
+        ConstraintFcn.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=np.inf,
         node=Node.ALL,
         contact_force_idx=1,
     )
     constraints.add(
-        Constraint.CONTACT_FORCE,
+        ConstraintFcn.CONTACT_FORCE,
         min_bound=min_bound,
         max_bound=np.inf,
         node=Node.ALL,

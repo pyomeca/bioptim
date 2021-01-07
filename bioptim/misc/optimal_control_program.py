@@ -20,7 +20,7 @@ from ..dynamics.dynamics_type import DynamicsTypeList, DynamicsTypeOption
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..interfaces.integrator import RK4, IRK
-from ..limits.constraints import ConstraintFunction, Constraint, ConstraintList, ConstraintOption
+from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
@@ -199,12 +199,12 @@ class OptimalControlProgram:
         elif not isinstance(objective_functions, ObjectiveList):
             raise RuntimeError("objective_functions should be built from an Objective or ObjectiveList")
 
-        if isinstance(constraints, ConstraintOption):
+        if isinstance(constraints, Constraint):
             constraints_tp = ConstraintList()
             constraints_tp.add(constraints)
             constraints = constraints_tp
         elif not isinstance(constraints, ConstraintList):
-            raise RuntimeError("constraints should be built from an ConstraintOption or ConstraintList")
+            raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
 
         if not isinstance(parameters, ParameterList):
             raise RuntimeError("parameters should be built from an ParameterList")
@@ -633,7 +633,7 @@ class OptimalControlProgram:
                 if (
                     pen_fun.type == ObjectiveFcn.Mayer.MINIMIZE_TIME
                     or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
-                    or pen_fun.type == Constraint.TIME_CONSTRAINT
+                    or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
                 ):
                     if has_penalty[i]:
                         raise RuntimeError("Time constraint/objective cannot declare more than once")
@@ -677,7 +677,7 @@ class OptimalControlProgram:
             raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
 
     def update_constraints(self, new_constraint):
-        if isinstance(new_constraint, ConstraintOption):
+        if isinstance(new_constraint, Constraint):
             self.__modify_penalty(new_constraint, "constraints")
 
         elif isinstance(new_constraint, ConstraintList):
@@ -686,7 +686,7 @@ class OptimalControlProgram:
                     self.__modify_penalty(constraint, "constraints")
 
         else:
-            raise RuntimeError("new_constraint must be a ConstraintOption or a ConstraintList")
+            raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
 
     def update_parameters(self, new_parameters):
         if isinstance(new_parameters, Parameter):

@@ -10,7 +10,7 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -39,8 +39,8 @@ def prepare_ocp(biorbd_model_path="cube_with_forces.bioMod", ode_solver=OdeSolve
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
     # External forces
     external_forces = [

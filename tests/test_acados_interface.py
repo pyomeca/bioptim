@@ -22,7 +22,7 @@ from bioptim import (
     QAndQDotBounds,
     OdeSolver,
     ConstraintList,
-    Constraint,
+    ConstraintFcn,
     Node,
 )
 
@@ -350,7 +350,7 @@ def test_acados_custom_dynamics(problem_type_custom):
         use_SX=True,
     )
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
     ocp.update_constraints(constraints)
     sol = ocp.solve(solver=Solver.ACADOS)
 
@@ -458,7 +458,7 @@ def test_acados_one_end_constraints():
     ocp.update_bounds(x_bounds=x_bounds)
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
     ocp.update_constraints(constraints)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
@@ -494,7 +494,7 @@ def test_acados_constraints_all():
     )
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X))
+    constraints.add(ConstraintFcn.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X))
     ocp.update_constraints(constraints)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
@@ -534,8 +534,8 @@ def test_acados_constraints_end_all():
     )
 
     constraints = ConstraintList()
-    constraints.add(Constraint.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
-    constraints.add(Constraint.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X))
+    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
+    constraints.add(ConstraintFcn.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axe.X))
     ocp.update_constraints(constraints)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
