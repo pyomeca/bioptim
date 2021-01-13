@@ -13,10 +13,18 @@ from bioptim import (
     InitialGuessList,
     ShowResult,
     OdeSolver,
+    Axe,
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=False, ode_solver=OdeSolver.RK):
+def prepare_ocp(
+    model_path,
+    phase_time,
+    number_shooting_points,
+    use_actuators=False,
+    ode_solver=OdeSolver.RK,
+    objective_name="MINIMIZE_PREDICTED_COM_HEIGHT",
+):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -30,7 +38,12 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_actuators=Fa
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
+    if objective_name == "MINIMIZE_PREDICTED_COM_HEIGHT":
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
+    elif objective_name == "MINIMIZE_COM_HEIGHT":
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_HEIGHT, weight=-1)
+    elif objective_name == "MINIMIZE_COM_VELOCITY":
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, axis=Axe.Z, weight=-1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=1 / 100)
 
     # Dynamics
@@ -81,7 +94,13 @@ if __name__ == "__main__":
     model_path = "2segments_4dof_2contacts.bioMod"
     t = 0.5
     ns = 20
-    ocp = prepare_ocp(model_path=model_path, phase_time=t, number_shooting_points=ns, use_actuators=False)
+    ocp = prepare_ocp(
+        model_path=model_path,
+        phase_time=t,
+        number_shooting_points=ns,
+        use_actuators=False,
+        objective_name="MINIMIZE_COM_VELOCITY",
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
