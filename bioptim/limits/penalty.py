@@ -583,6 +583,8 @@ class PenaltyFunctionAbstract:
                 or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
                 or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
                 or penalty_function == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
+                or penalty_function == PenaltyType.MINIMIZE_COM_POSITION
+                or penalty_function == PenaltyType.MINIMIZE_COM_VELOCITY
             ):
                 parameters.quadratic = True
             else:
