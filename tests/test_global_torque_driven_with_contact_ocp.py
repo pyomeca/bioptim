@@ -78,7 +78,7 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
         # final position
         np.testing.assert_almost_equal(q[:, -1], np.array((0.1189651, -0.0904378, -0.7999996, 0.7999996)))
         # final velocities
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.24525494, -1.28216182, -3.57468814,  3.57468814)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.24525494, -1.28216182, -3.57468814, 3.57468814)))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-21.96213697)))
         np.testing.assert_almost_equal(tau[:, -1], np.array(-0.22120207))
@@ -87,9 +87,9 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
         np.testing.assert_almost_equal(f[0, 0], 0.4709888694097001)
 
         # final position
-        np.testing.assert_almost_equal(q[:, -1], np.array((0.1189652 , -0.09043785, -0.79999979,  0.79999979)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.1189652, -0.09043785, -0.79999979, 0.79999979)))
         # final velocities
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.26103572, -1.29841047, -3.61998944,  3.61998944)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.26103572, -1.29841047, -3.61998944, 3.61998944)))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-22.18008227)))
         np.testing.assert_almost_equal(tau[:, -1], np.array(-0.02280469))
