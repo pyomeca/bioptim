@@ -10,7 +10,7 @@ from bioptim import Data, OdeSolver
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_muscle_driven_ocp(ode_solver):
     # Load static_arm
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -95,6 +95,65 @@ def test_muscle_driven_ocp(ode_solver):
             mus[:, -1],
             np.array([4.25940361e-03, 3.21754460e-05, 3.12984790e-05, 2.00725054e-03, 1.99993619e-03, 1.81725854e-03]),
         )
+
+    elif ode_solver == OdeSolver.RK8:
+        # Check return_objectives
+        np.testing.assert_almost_equal(
+            obj[0],
+            np.array(
+                [
+                    [
+                        5.86130950e-06,
+                        4.90858403e-06,
+                        4.11439824e-06,
+                        3.23202480e-06,
+                        2.31951020e-06,
+                        1.53065911e-06,
+                        9.51069088e-07,
+                        5.96999314e-07,
+                        4.49941576e-07,
+                        1.11561148e-07,
+                    ],
+                    [
+                        9.60779353e-03,
+                        7.74754706e-03,
+                        5.59910323e-03,
+                        2.97564968e-03,
+                        1.03602703e-03,
+                        2.17877317e-04,
+                        2.73703489e-05,
+                        1.21820523e-05,
+                        1.78251397e-05,
+                        5.90838337e-06,
+                    ],
+                    [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 1.16237781e-01],
+                ]
+            ),
+        )
+
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.14350914060136277)
+
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([-0.94510844, 3.07048231]))
+        # initial and final velocities
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([0.41151235, -0.55866253]))
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array([0.00147777, 0.00520795]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([-0.00027953, 0.00069258]))
+        np.testing.assert_almost_equal(
+            mus[:, 0],
+            np.array([2.28863414e-06, 1.65011897e-01, 1.00017224e-01, 4.01934660e-06, 4.12974244e-06, 1.03954780e-01]),
+        )
+        np.testing.assert_almost_equal(
+            mus[:, -1],
+            np.array([4.25990460e-03, 3.21893307e-05, 3.13077447e-05, 2.01209936e-03, 2.00481801e-03, 1.82353344e-03]),
+        )
+
     else:
         # Check return_objectives
         np.testing.assert_almost_equal(
@@ -160,7 +219,7 @@ def test_muscle_driven_ocp(ode_solver):
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_muscle_activations_with_contact_driven_ocp(ode_solver):
     # Load static_arm_with_contact
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -211,6 +270,39 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
             np.array([4.25988708e-03, 3.21882769e-05, 3.13076618e-05, 2.01160287e-03, 2.00431774e-03, 1.82289866e-03]),
         )
 
+    elif ode_solver == OdeSolver.RK8:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.14350699571954104)
+
+        # Check constraints
+        g = np.array(sol["g"])
+        np.testing.assert_equal(g.shape, (60, 1))
+        np.testing.assert_almost_equal(g, np.zeros((60, 1)), decimal=6)
+
+        # Check some of the results
+        states, controls = Data.get_data(ocp, sol["x"])
+        q, qdot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
+
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array([0, 0.07, 1.4]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.00816709, -0.94509077, 3.07046606]))
+        # initial and final velocities
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0.0, 0.0]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([0.00093983, 0.411599, -0.55874465]))
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array([-3.77284867e-07, 1.47710422e-03, 5.20766354e-03]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([-2.72484502e-06, -2.79525145e-04, 6.92616311e-04]))
+        np.testing.assert_almost_equal(
+            mus[:, 0],
+            np.array([2.28911678e-06, 1.64996819e-01, 1.00010798e-01, 4.01956674e-06, 4.12996816e-06, 1.03949142e-01]),
+        )
+        np.testing.assert_almost_equal(
+            mus[:, -1],
+            np.array([4.25994595e-03, 3.21879960e-05, 3.13075455e-05, 2.01165125e-03, 2.00436616e-03, 1.82298538e-03]),
+        )
+
     else:
         # Check objective function value
         f = np.array(sol["f"])
@@ -248,7 +340,7 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
     # Load contact_forces_inequality_constraint_muscle_excitations
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -335,6 +427,58 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
         np.testing.assert_almost_equal(tau[:, -1], np.array([-26.70209712]))
         np.testing.assert_almost_equal(mus_controls[:, 0], np.array([0.48071638]))
         np.testing.assert_almost_equal(mus_controls[:, -1], np.array([0.40159522]))
+
+    elif ode_solver == OdeSolver.RK8:
+        # Check constraints
+        g = np.array(sol["g"])
+        np.testing.assert_equal(g.shape, (110, 1))
+        np.testing.assert_almost_equal(g[:90], np.zeros((90, 1)), decimal=6)
+        np.testing.assert_array_less(-g[90:], -boundary)
+        expected_pos_g = np.array(
+            [
+                [51.54108548],
+                [52.77720093],
+                [57.5776414],
+                [62.62966321],
+                [65.16873337],
+                [66.33594321],
+                [65.82669791],
+                [63.06102595],
+                [57.23848183],
+                [50.47112677],
+                [156.35763657],
+                [136.13688244],
+                [89.86990489],
+                [63.41179686],
+                [57.49195628],
+                [55.09640086],
+                [53.77757475],
+                [52.9094631],
+                [52.19492485],
+                [50.56081268],
+            ]
+        )
+        np.testing.assert_almost_equal(g[90:], expected_pos_g)
+
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0, -0.75, 0.75]))
+        np.testing.assert_almost_equal(
+            q[:, -1], np.array([-3.40708085e-01, 1.34155553e-01, -2.22589697e-04, 2.22589697e-04])
+        )
+        # initial and final velocities
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0, 0.0, 0.0]))
+        np.testing.assert_almost_equal(
+            qdot[:, -1], np.array([-2.01866580e00, 4.49415846e-04, 4.03733171e00, -4.03733171e00])
+        )
+        # initial and final muscle state
+        np.testing.assert_almost_equal(mus_states[:, 0], np.array([0.5]))
+        np.testing.assert_almost_equal(mus_states[:, -1], np.array([0.5289569]))
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array([-54.0891972]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([-26.7018241]))
+        np.testing.assert_almost_equal(mus_controls[:, 0], np.array([0.4808524]))
+        np.testing.assert_almost_equal(mus_controls[:, -1], np.array([0.4007721]))
+
     else:
         # Check constraints
         g = np.array(sol["g"])
@@ -365,7 +509,7 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
                 [50.57048159],
             ]
         )
-        np.testing.assert_almost_equal(g[90:], expected_pos_g)
+        np.testing.assert_almost_equal(g[90:], expected_pos_g, decimal=6)
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0, -0.75, 0.75]))

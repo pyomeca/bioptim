@@ -11,7 +11,7 @@ from bioptim import Data, OdeSolver, ControlType
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_align_and_minimize_marker_displacement_global(ode_solver):
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -75,7 +75,7 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_align_and_minimize_marker_displacement_RT(ode_solver):
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -132,7 +132,7 @@ def test_align_and_minimize_marker_displacement_RT(ode_solver):
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_align_and_minimize_marker_velocity(ode_solver):
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -185,7 +185,7 @@ def test_align_and_minimize_marker_velocity(ode_solver):
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
     # Load align_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -197,7 +197,9 @@ def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
     spec.loader.exec_module(align_and_minimize_marker_velocity)
 
     if ode_solver == OdeSolver.IRK:
-        with pytest.raises(NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet"):
+        with pytest.raises(
+            NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with IRK"
+        ):
             align_and_minimize_marker_velocity.prepare_ocp(
                 biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
                 number_shooting_points=5,

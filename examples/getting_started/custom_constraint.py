@@ -33,7 +33,7 @@ def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_mar
     return val
 
 
-def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)

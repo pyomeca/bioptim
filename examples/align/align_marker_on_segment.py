@@ -23,7 +23,7 @@ def prepare_ocp(
     final_time,
     number_shooting_points,
     initialize_near_solution,
-    ode_solver=OdeSolver.RK,
+    ode_solver=OdeSolver.RK4,
     constr=True,
     use_SX=False,
 ):

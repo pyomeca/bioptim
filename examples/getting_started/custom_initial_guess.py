@@ -29,7 +29,7 @@ def prepare_ocp(
     number_shooting_points,
     final_time,
     initial_guess=InterpolationType.CONSTANT,
-    ode_solver=OdeSolver.RK,
+    ode_solver=OdeSolver.RK4,
 ):
     # --- Options --- #
     # Model path

@@ -20,13 +20,14 @@ class Solver(Enum):
 class OdeSolver(Enum):
     """
     Integration methods.
-    (RK is pretty much good balance)
+    (RK4 is pretty much good balance)
     """
 
-    RK = 0
-    IRK = 1
-    CVODES = 2
-    NO_SOLVER = 3
+    RK4 = 0
+    RK8 = 1
+    IRK = 2
+    CVODES = 3
+    NO_SOLVER = 4
 
 
 class Node(Enum):

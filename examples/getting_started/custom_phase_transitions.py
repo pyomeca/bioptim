@@ -29,7 +29,7 @@ def custom_state_transition(state_pre, state_post, idx_1, idx_2):
     return state_pre[idx_1:idx_2] - state_post[idx_1:idx_2]
 
 
-def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK4):
     # --- Options --- #
     # Model path
     biorbd_model = (
