@@ -364,7 +364,7 @@ class PenaltyFunctionAbstract:
                 CoM = nlp.casadi_func["biorbd_CoM"](q)
 
                 if axis == None:
-                    CoM_proj = CoM[0] ** 2 + CoM[1] ** 2 + CoM[2] ** 2
+                    CoM_proj = CoM
                 elif not isinstance(axis, Axe):
                     raise RuntimeError("axis must be a bioptim.Axe")
                 else:
