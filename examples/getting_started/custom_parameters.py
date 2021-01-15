@@ -36,7 +36,14 @@ def my_target_function(ocp, value):
 
 
 def prepare_ocp(
-    biorbd_model_path, final_time, number_shooting_points, min_g, max_g, target_g, ode_solver=OdeSolver.RK4, use_SX=False
+    biorbd_model_path,
+    final_time,
+    number_shooting_points,
+    min_g,
+    max_g,
+    target_g,
+    ode_solver=OdeSolver.RK4,
+    use_SX=False,
 ):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)

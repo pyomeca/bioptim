@@ -509,7 +509,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((0.98436218, -13.78113709)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15666471,  0.77420505)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15666471, 0.77420505)))
 
     else:
         # Check objective function value

@@ -197,7 +197,9 @@ def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
     spec.loader.exec_module(align_and_minimize_marker_velocity)
 
     if ode_solver == OdeSolver.IRK:
-        with pytest.raises(NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with IRK"):
+        with pytest.raises(
+            NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with IRK"
+        ):
             align_and_minimize_marker_velocity.prepare_ocp(
                 biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
                 number_shooting_points=5,

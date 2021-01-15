@@ -37,7 +37,11 @@ class Integrator:
 
     def _finish_init(self):
         self.function = Function(
-            "integrator", [self.x_sym, self.u_sym, self.param_sym], self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym), ["x0", "p", "params"], ["xf", "xall"]
+            "integrator",
+            [self.x_sym, self.u_sym, self.param_sym],
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym),
+            ["x0", "p", "params"],
+            ["xf", "xall"],
         )
 
 
@@ -50,6 +54,7 @@ class RK(Integrator):
     ode_opt["number_of_finite_elements"] -> Number of steps between nodes. ode_opt["idx"] -> Index of ??. (integer)
     :return: Integration function. (CasADi function)
     """
+
     def __init__(self, ode, ode_opt):
         super(RK, self).__init__(ode, ode_opt)
         self.n_step = ode_opt["number_of_finite_elements"]
@@ -113,11 +118,30 @@ class RK8(RK4):
         k3 = self.fun(x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t + self.h_norm * (2 / 9)), p)[:, self.idx]
         k4 = self.fun(x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t + self.h_norm * (1 / 3)), p)[:, self.idx]
         k5 = self.fun(x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t + self.h_norm * (1 / 2)), p)[:, self.idx]
-        k6 = self.fun(x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5), self.get_u(u, t + self.h_norm * (2 / 3)), p)[:, self.idx]
-        k7 = self.fun(x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6), self.get_u(u, t + self.h_norm * (1 / 6)), p)[:, self.idx]
-        k8 = self.fun(x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7), self.get_u(u, t + self.h_norm), p)[:, self.idx]
-        k9 = self.fun(x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8), self.get_u(u, t + self.h_norm * (5 / 6)), p)[:, self.idx]
-        k10 = self.fun(x_prev + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9), self.get_u(u, t + self.h_norm), p)[:, self.idx]
+        k6 = self.fun(
+            x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5), self.get_u(u, t + self.h_norm * (2 / 3)), p
+        )[:, self.idx]
+        k7 = self.fun(
+            x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
+            self.get_u(u, t + self.h_norm * (1 / 6)),
+            p,
+        )[:, self.idx]
+        k8 = self.fun(
+            x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
+            self.get_u(u, t + self.h_norm),
+            p,
+        )[:, self.idx]
+        k9 = self.fun(
+            x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
+            self.get_u(u, t + self.h_norm * (5 / 6)),
+            p,
+        )[:, self.idx]
+        k10 = self.fun(
+            x_prev
+            + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
+            self.get_u(u, t + self.h_norm),
+            p,
+        )[:, self.idx]
 
         return x_prev + h / 840 * (41 * k1 + 27 * k4 + 272 * k5 + 27 * k6 + 216 * k7 + 216 * k9 + 41 * k10)
 
@@ -215,4 +239,3 @@ class IRK(Integrator):
             xf[:, r] = xf[:, r - 1] + D[r] * x[r]
 
         return xf[:, -1], horzcat(x0, xf[:, -1])
-
