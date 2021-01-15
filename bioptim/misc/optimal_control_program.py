@@ -19,7 +19,7 @@ from ..dynamics.problem import Problem
 from ..dynamics.dynamics_type import DynamicsList, Dynamics
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..interfaces.integrator import RK4, IRK
+from ..interfaces.integrator import RK4, RK8, IRK
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, ObjectiveList, Objective
@@ -51,7 +51,7 @@ class OptimalControlProgram:
         constraints=ConstraintList(),
         parameters=ParameterList(),
         external_forces=(),
-        ode_solver=OdeSolver.RK,
+        ode_solver=OdeSolver.RK4,
         nb_integration_steps=5,
         irk_polynomial_interpolation_degree=4,
         control_type=ControlType.CONSTANT,
@@ -80,7 +80,7 @@ class OptimalControlProgram:
         :param objective_functions: Tuple of tuple of objectives functions handler's and weights.
         :param constraints: Tuple of constraints, node(s) and tuple of geometric structures used.
         :param external_forces: Tuple of external forces.
-        :param ode_solver: Name of chosen ode solver to use. (OdeSolver.RK, OdeSolver.CVODES or
+        :param ode_solver: Name of chosen ode solver to use. (OdeSolver.RK4, OdeSolver.CVODES or
         OdeSolver.NO_SOLVER)
         :param all_generalized_mapping: States and controls mapping. (Instance of class Mapping)
         :param q_mapping: Generalized coordinates position states mapping. (Instance of class Mapping)
@@ -424,7 +424,7 @@ class OptimalControlProgram:
         """
 
         ode_opt = {"t0": 0, "tf": nlp.dt}
-        if nlp.ode_solver == OdeSolver.RK:
+        if nlp.ode_solver == OdeSolver.RK4 or nlp.ode_solver == OdeSolver.RK8:
             ode_opt["number_of_finite_elements"] = nlp.nb_integration_steps
         elif nlp.ode_solver == OdeSolver.IRK:
             nlp.nb_integration_steps = 1
@@ -433,7 +433,7 @@ class OptimalControlProgram:
         ode = {"x": nlp.x, "p": nlp.u, "ode": dynamics(nlp.x, nlp.u, nlp.p)}
         nlp.dynamics = []
         nlp.par_dynamics = {}
-        if nlp.ode_solver == OdeSolver.RK or nlp.ode_solver == OdeSolver.IRK:
+        if nlp.ode_solver == OdeSolver.RK4 or nlp.ode_solver == OdeSolver.RK8 or nlp.ode_solver == OdeSolver.IRK:
             if nlp.ode_solver == OdeSolver.IRK:
                 if self.CX is SX:
                     raise NotImplementedError("use_SX and OdeSolver.IRK are not yet compatible")
@@ -453,16 +453,20 @@ class OptimalControlProgram:
             if nlp.external_forces:
                 for idx in range(len(nlp.external_forces)):
                     ode_opt["idx"] = idx
-                    if nlp.ode_solver == OdeSolver.RK:
+                    if nlp.ode_solver == OdeSolver.RK4:
                         nlp.dynamics.append(RK4(ode, ode_opt))
+                    elif nlp.ode_solver == OdeSolver.RK8:
+                        nlp.dynamics.append(RK8(ode, ode_opt))
                     elif nlp.ode_solver == OdeSolver.IRK:
                         ode_opt["irk_polynomial_interpolation_degree"] = nlp.irk_polynomial_interpolation_degree
                         nlp.dynamics.append(IRK(ode, ode_opt))
             else:
                 if self.nb_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
-                if nlp.ode_solver == OdeSolver.RK:
+                if nlp.ode_solver == OdeSolver.RK4:
                     nlp.dynamics.append(RK4(ode, ode_opt))
+                if nlp.ode_solver == OdeSolver.RK8:
+                    nlp.dynamics.append(RK8(ode, ode_opt))
                 elif nlp.ode_solver == OdeSolver.IRK:
                     ode_opt["irk_polynomial_interpolation_degree"] = nlp.irk_polynomial_interpolation_degree
                     nlp.dynamics.append(IRK(ode, ode_opt))

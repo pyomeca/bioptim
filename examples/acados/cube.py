@@ -19,7 +19,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK, use_SX=True):
+def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK4, use_SX=True):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)

@@ -35,7 +35,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     ns = (20, 30, 20)
     PROJECT_FOLDER = Path(__file__).parent / ".."
     biorbd_model_path = str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/cube.bioMod"
-    ode_solver = OdeSolver.RK
+    ode_solver = OdeSolver.RK4
 
     # --- Options --- #
     nb_phases = len(ns)

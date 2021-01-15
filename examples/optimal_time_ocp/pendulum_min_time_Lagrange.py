@@ -16,7 +16,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver=OdeSolver.RK, weight=1):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver=OdeSolver.RK4, weight=1):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     tau_min, tau_max, tau_init = -100, 100, 0

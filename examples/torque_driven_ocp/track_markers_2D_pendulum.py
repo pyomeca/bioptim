@@ -36,7 +36,7 @@ def get_markers_pos(x, idx_coord, fun):
     return marker_pos[:, idx_coord]
 
 
-def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, tau_ref, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model, final_time, number_shooting_points, markers_ref, tau_ref, ode_solver=OdeSolver.RK4):
     # --- Options --- #
     tau_min, tau_max, tau_init = -100, 100, 0
     n_q = biorbd_model.nbQ()

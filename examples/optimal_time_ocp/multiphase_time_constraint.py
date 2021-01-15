@@ -19,7 +19,7 @@ from bioptim import (
 
 
 def prepare_ocp(
-    final_time, time_min, time_max, number_shooting_points, biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK
+    final_time, time_min, time_max, number_shooting_points, biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK4
 ):
     # --- Options --- #
     nb_phases = len(number_shooting_points)

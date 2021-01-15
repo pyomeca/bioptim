@@ -14,7 +14,7 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("nb_threads", [1, 2])
 @pytest.mark.parametrize("use_SX", [False, True])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_pendulum(nb_threads, use_SX, ode_solver):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -91,7 +91,10 @@ def test_pendulum(nb_threads, use_SX, ode_solver):
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 6657.974502951726)
+        if ode_solver == OdeSolver.RK8:
+            np.testing.assert_almost_equal(f[0, 0], 6654.69715318338)
+        else:
+            np.testing.assert_almost_equal(f[0, 0], 6657.974502951726)
 
         # Check constraints
         g = np.array(sol["g"])
@@ -111,8 +114,12 @@ def test_pendulum(nb_threads, use_SX, ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((16.25734477, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-25.59944635, 0)))
+        if ode_solver == OdeSolver.RK8:
+            np.testing.assert_almost_equal(tau[:, 0], np.array((16.2560473, 0)))
+            np.testing.assert_almost_equal(tau[:, -1], np.array((-25.5991168, 0)))
+        else:
+            np.testing.assert_almost_equal(tau[:, 0], np.array((16.25734477, 0)))
+            np.testing.assert_almost_equal(tau[:, -1], np.array((-25.59944635, 0)))
 
         # save and load
         TestUtils.save_and_load(sol, ocp, True)
@@ -121,7 +128,7 @@ def test_pendulum(nb_threads, use_SX, ode_solver):
         TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_custom_constraint_align_markers(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -171,7 +178,7 @@ def test_custom_constraint_align_markers(ode_solver):
 
 
 @pytest.mark.parametrize("interpolation", InterpolationType)
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_initial_guesses(interpolation, ode_solver):
     #  Load initial_guess
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -223,7 +230,7 @@ def test_initial_guesses(interpolation, ode_solver):
         TestUtils.save_and_load(sol, ocp, True)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_cyclic_objective(ode_solver):
     #  Load initial_guess
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -274,7 +281,7 @@ def test_cyclic_objective(ode_solver):
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_cyclic_constraint(ode_solver):
     #  Load initial_guess
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -325,7 +332,7 @@ def test_cyclic_constraint(ode_solver):
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_state_transitions(ode_solver):
     # Load state_transitions
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -385,7 +392,7 @@ def test_state_transitions(ode_solver):
         TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_parameter_optimization(ode_solver):
     # Load phase_transitions
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -436,6 +443,20 @@ def test_parameter_optimization(ode_solver):
 
         # gravity parameter
         np.testing.assert_almost_equal(gravity, np.array([[-9.0988827]]))
+
+    elif ode_solver == OdeSolver.RK8:
+        # Check objective function value
+        f = np.array(sol["f"])
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 853.5348080507781, decimal=6)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((8.1317708, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-7.9180414, 0)))
+
+        # gravity parameter
+        np.testing.assert_almost_equal(gravity, np.array([[-9.0988849]]))
+
     else:
         # Check objective function value
         f = np.array(sol["f"])
@@ -459,7 +480,7 @@ def test_parameter_optimization(ode_solver):
 
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
