@@ -347,6 +347,61 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_height, penalty)
 
         @staticmethod
+        def minimize_com_position(penalty, ocp, nlp, t, x, u, p, axis=None):
+            """
+            Adds the objective that the position of the center of mass of the model should be minimized.
+            If no axis is specified, the squared-norm of the CoM's position is mimimized.
+            Otherwise, the projection of the CoM's position on the specified axis is minimized.
+            """
+
+            target = None
+            if penalty.target is not None:
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (1, len(x)))
+
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM", nlp.model.CoM, nlp.q)
+            for i, v in enumerate(x):
+                q = nlp.mapping["q"].expand.map(v[: nlp.shape["q"]])
+                CoM = nlp.casadi_func["biorbd_CoM"](q)
+
+                if axis == None:
+                    CoM_proj = CoM
+                elif not isinstance(axis, Axe):
+                    raise RuntimeError("axis must be a bioptim.Axe")
+                else:
+                    CoM_proj = CoM[axis]
+
+                penalty.sliced_target = target[:, i] if target is not None else None
+                penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_proj, penalty)
+
+        @staticmethod
+        def minimize_com_velocity(penalty, ocp, nlp, t, x, u, p, axis=None):
+            """
+            Adds the objective that the velocity of the center of mass of the model should be minimized.
+            If no axis is specified, the squared-norm of the CoM's velocity is mimimized.
+            Otherwise, the projection of the CoM's velocity on the specified axis is minimized.
+            """
+
+            target = None
+            if penalty.target is not None:
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (1, len(x)))
+
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
+            for i, v in enumerate(x):
+                q = nlp.mapping["q"].expand.map(v[: nlp.shape["q"]])
+                q_dot = nlp.mapping["q_dot"].expand.map(v[nlp.shape["q"] :])
+                CoM_dot = nlp.casadi_func["biorbd_CoMdot"](q, q_dot)
+
+                if axis == None:
+                    CoM_dot_proj = CoM_dot[0] ** 2 + CoM_dot[1] ** 2 + CoM_dot[2] ** 2
+                elif not isinstance(axis, Axe):
+                    raise RuntimeError("axis must be a bioptim.Axe")
+                else:
+                    CoM_dot_proj = CoM_dot[axis]
+
+                penalty.sliced_target = target[:, i] if target is not None else None
+                penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_dot_proj, penalty)
+
+        @staticmethod
         def minimize_contact_forces(penalty, ocp, nlp, t, x, u, p):
             """
             Adds the objective that the contact force should be minimized.
@@ -528,6 +583,8 @@ class PenaltyFunctionAbstract:
                 or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
                 or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
                 or penalty_function == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
+                or penalty_function == PenaltyType.MINIMIZE_COM_POSITION
+                or penalty_function == PenaltyType.MINIMIZE_COM_VELOCITY
             ):
                 parameters.quadratic = True
             else:
@@ -745,6 +802,8 @@ class PenaltyType(Enum):
     MINIMIZE_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
     TRACK_CONTACT_FORCES = MINIMIZE_CONTACT_FORCES
     MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height
+    MINIMIZE_COM_POSITION = PenaltyFunctionAbstract.Functions.minimize_com_position
+    MINIMIZE_COM_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_com_velocity
     ALIGN_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.align_segment_with_custom_rt
     ALIGN_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.align_marker_with_segment_axis
     CUSTOM = PenaltyFunctionAbstract.Functions.custom
