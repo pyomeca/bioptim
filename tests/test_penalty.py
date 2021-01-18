@@ -711,9 +711,9 @@ def test_penalty_minimize_com_position(value, penalty_origin):
     else:
         res = ocp.nlp[0].g[0][0]["val"]
 
-    expected = np.array(0.0075)
+    expected = np.array([[0.05], [0.05], [0.05]])
     if value == -10:
-        expected = np.array(50.0024995)
+        expected = np.array([[-5], [0.05], [-5]])
 
     np.testing.assert_almost_equal(res, expected)
 
