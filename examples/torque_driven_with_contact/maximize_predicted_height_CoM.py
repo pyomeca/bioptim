@@ -26,7 +26,7 @@ def prepare_ocp(
     phase_time,
     number_shooting_points,
     use_actuators=False,
-    ode_solver=OdeSolver.RK,
+    ode_solver=OdeSolver.RK4,
     objective_name="MINIMIZE_PREDICTED_COM_HEIGHT",
     com_constraints=False,
 ):

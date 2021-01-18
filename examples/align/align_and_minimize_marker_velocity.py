@@ -22,7 +22,7 @@ def prepare_ocp(
     marker_velocity_or_displacement,
     marker_in_first_coordinates_system,
     control_type,
-    ode_solver=OdeSolver.RK,
+    ode_solver=OdeSolver.RK4,
 ):
     # --- Options --- #
     # Model path

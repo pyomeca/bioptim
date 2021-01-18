@@ -35,7 +35,7 @@ class NonLinearProgram:
         ns=0,
         nu=0,
         nx=0,
-        ode_solver=OdeSolver.RK,
+        ode_solver=OdeSolver.RK4,
         p=None,
         par_dynamics={},
         parameters_to_optimize={},

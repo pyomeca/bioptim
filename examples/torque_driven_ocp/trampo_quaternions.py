@@ -34,7 +34,7 @@ def eul2quat(eul):
     return np.array([w, x, y, z])
 
 
-def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, ode_solver=OdeSolver.RK):
+def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, ode_solver=OdeSolver.RK4):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)

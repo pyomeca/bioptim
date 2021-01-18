@@ -27,7 +27,7 @@ spec.loader.exec_module(data_to_track)
 
 
 def prepare_ocp(
-    model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK
+    model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK4
 ):
     # Model path
     biorbd_model = biorbd.Model(model_path)

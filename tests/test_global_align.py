@@ -11,7 +11,7 @@ from bioptim import Data, OdeSolver
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_align_segment_on_rt(ode_solver):
     # Load align_segment_on_rt
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -60,7 +60,7 @@ def test_align_segment_on_rt(ode_solver):
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_align_marker_on_segment(ode_solver):
     # Load align_marker_on_segment
     PROJECT_FOLDER = Path(__file__).parent / ".."

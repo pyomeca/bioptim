@@ -15,7 +15,7 @@ from bioptim import Data, OdeSolver
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 @pytest.mark.parametrize(
     "objective_name", ["MINIMIZE_PREDICTED_COM_HEIGHT", "MINIMIZE_COM_POSITION", "MINIMIZE_COM_VELOCITY"]
 )
@@ -98,7 +98,7 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -143,6 +143,20 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-0.5509092)))
         np.testing.assert_almost_equal(tau[:, -1], np.array(-0.00506117))
+
+    elif ode_solver == OdeSolver.RK8:
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((-0.23937581, 0.06120861, -0.00067392, 0.00067392)))
+        # initial and final velocities
+        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
+        np.testing.assert_almost_equal(
+            qdot[:, -1], np.array((-4.87675528e-01, 3.28670915e-04, 9.75351279e-01, -9.75351279e-01))
+        )
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((-0.55090931)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array(-0.00506117))
+
     else:
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
@@ -160,7 +174,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
         TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -233,6 +247,51 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-54.17110048)))
         np.testing.assert_almost_equal(tau[:, -1], np.array((-15.69344349)))
+
+    elif ode_solver == OdeSolver.RK8:
+        # Check constraints
+        g = np.array(sol["g"])
+        np.testing.assert_equal(g.shape, (100, 1))
+        np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
+        np.testing.assert_array_less(-g[80:], -min_bound)
+        expected_pos_g = np.array(
+            [
+                [50.76332058],
+                [51.42161439],
+                [57.79492106],
+                [64.29699128],
+                [67.01987366],
+                [68.32304868],
+                [67.91820215],
+                [65.26710733],
+                [59.57311721],
+                [50.18478458],
+                [160.15615544],
+                [141.16646975],
+                [85.10634138],
+                [56.33416239],
+                [53.32764628],
+                [52.21768768],
+                [51.63001903],
+                [51.25794807],
+                [50.98769249],
+                [50.21989225],
+            ]
+        )
+        np.testing.assert_almost_equal(g[80:], expected_pos_g)
+
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((-0.34054772, 0.1341555, -0.00054332, 0.00054332)))
+        # initial and final velocities
+        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
+        np.testing.assert_almost_equal(
+            qdot[:, -1], np.array((-2.01096914e00, 1.09259198e-03, 4.02193881e00, -4.02193881e00))
+        )
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((-54.17113441)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-15.69344229)))
+
     else:
         # Check constraints
         g = np.array(sol["g"])
@@ -282,7 +341,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -357,6 +416,48 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-32.78911887)))
         np.testing.assert_almost_equal(tau[:, -1], np.array((-25.1705709)))
+
+    elif ode_solver == OdeSolver.RK8:
+        # Check constraints
+        g = np.array(sol["g"])
+        np.testing.assert_equal(g.shape, (100, 1))
+        np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
+        np.testing.assert_array_less(g[80:], max_bound)
+        expected_non_zero_g = np.array(
+            [
+                [63.27213612],
+                [63.02308136],
+                [62.13849861],
+                [60.38301138],
+                [57.31059542],
+                [52.19731543],
+                [43.96044403],
+                [31.14516578],
+                [12.45211],
+                [-6.22371884],
+                [99.06446547],
+                [98.87852555],
+                [98.64607279],
+                [98.34748387],
+                [97.94898697],
+                [97.38761773],
+                [96.53056621],
+                [95.0399696],
+                [91.72523713],
+                [77.32555225],
+            ]
+        )
+        np.testing.assert_almost_equal(g[80:], expected_non_zero_g)
+
+        # initial and final velocities
+        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
+        np.testing.assert_almost_equal(
+            qdot[:, -1], np.array((-2.86560719e00, 9.38625648e-04, 5.73121471e00, -5.73121471e00))
+        )
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((-32.78904291)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-25.18042329)))
+
     else:
         # Check objective function value
         f = np.array(sol["f"])
@@ -412,7 +513,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_non_slipping_constraint(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -500,8 +601,65 @@ def test_non_slipping_constraint(ode_solver):
         np.testing.assert_almost_equal(g[80:], expected_pos_g)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((-14.33813755)), decimal=6)
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-13.21317493)), decimal=6)
+        np.testing.assert_almost_equal(tau[:, 0], np.array((-14.33813755)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-13.21317457)))
+
+    elif ode_solver == OdeSolver.RK8:
+        # Check constraints
+        g = np.array(sol["g"])
+        np.testing.assert_equal(g.shape, (120, 1))
+        np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
+        np.testing.assert_array_less(-g[80:], 0)
+        expected_pos_g = np.array(
+            [
+                [8.74337995e01],
+                [8.74671258e01],
+                [8.75687834e01],
+                [8.77422815e01],
+                [8.79913159e01],
+                [8.83197846e01],
+                [8.87318042e01],
+                [8.92317303e01],
+                [8.98241983e01],
+                [9.05145021e01],
+                [4.63475930e01],
+                [4.63130361e01],
+                [4.62075073e01],
+                [4.60271956e01],
+                [4.57680917e01],
+                [4.54259739e01],
+                [4.49963906e01],
+                [4.44746352e01],
+                [4.38556795e01],
+                [4.31334132e01],
+                [1.33775343e00],
+                [6.04899707e-05],
+                [1.33773204e00],
+                [6.95785768e-05],
+                [1.33768173e00],
+                [8.11784366e-05],
+                [1.33759829e00],
+                [9.64764593e-05],
+                [1.33747653e00],
+                [1.17543270e-04],
+                [1.33730923e00],
+                [1.48352215e-04],
+                [1.33708435e00],
+                [1.97600321e-04],
+                [1.33677502e00],
+                [2.88636410e-04],
+                [1.33628619e00],
+                [5.12590375e-04],
+                [1.33466928e00],
+                [1.80987583e-03],
+            ]
+        )
+        np.testing.assert_almost_equal(g[80:], expected_pos_g)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((-14.33813755)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-13.2131746)))
+
     else:
         # Check constraints
         g = np.array(sol["g"])
@@ -553,10 +711,6 @@ def test_non_slipping_constraint(ode_solver):
             ]
         )
         np.testing.assert_almost_equal(g[80:], expected_pos_g)
-
-        # Check some of the results
-        states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-14.33813755)))

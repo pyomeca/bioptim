@@ -165,7 +165,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             else:
                 for k in range(nlp.ns):
                     # Create an evaluation node
-                    if nlp.ode_solver == OdeSolver.RK or nlp.ode_solver == OdeSolver.IRK:
+                    if (
+                        nlp.ode_solver == OdeSolver.RK4
+                        or nlp.ode_solver == OdeSolver.RK8
+                        or nlp.ode_solver == OdeSolver.IRK
+                    ):
                         if nlp.control_type == ControlType.CONSTANT:
                             u = nlp.U[k]
                         elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:

@@ -348,7 +348,7 @@ def test_acados_custom_dynamics(problem_type_custom):
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
         problem_type_custom=problem_type_custom,
-        ode_solver=OdeSolver.RK,
+        ode_solver=OdeSolver.RK4,
         use_SX=True,
     )
     constraints = ConstraintList()

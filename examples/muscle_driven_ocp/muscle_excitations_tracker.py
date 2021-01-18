@@ -99,7 +99,7 @@ def prepare_ocp(
     q_ref,
     use_residual_torque,
     kin_data_to_track="markers",
-    ode_solver=OdeSolver.RK,
+    ode_solver=OdeSolver.RK4,
 ):
     # Problem parameters
     tau_min, tau_max, tau_init = -100, 100, 0

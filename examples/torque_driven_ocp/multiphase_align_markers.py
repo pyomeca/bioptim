@@ -17,7 +17,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK, long_optim=False):
+def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK4, long_optim=False):
     # --- Options --- #
     # Model path
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
