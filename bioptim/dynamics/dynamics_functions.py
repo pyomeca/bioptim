@@ -1,27 +1,97 @@
 from casadi import vertcat, MX
 import biorbd
 
+from bioptim import NonLinearProgram
+
 
 class DynamicsFunctions:
     """
-    Different dynamics types
+    Implementation of all the (staticmethod) dynamic functions
+
+    Methods
+    -------
+    custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Interface to custom dynamic function provided by the user
+    forward_dynamics_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by joint torques, optional external forces can be declared.
+    forward_dynamics_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by joint torques with contact constraints.
+    forces_from_forward_dynamics_with_contact_for_torque_driven_problem(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Contact forces of a forward dynamics driven by joint torques with contact constraints.
+    forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Contact forces of a forward dynamics driven by muscle activation with contact constraints.
+    forward_dynamics_torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by joint torques activations.
+    forward_dynamics_torque_activations_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by joint torques activations with contact constraints.
+    forward_dynamics_muscle_activations_and_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by muscle activations and joint torques.
+    forward_dynamics_muscle_activations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by muscles activations and joint torques with contact constraints.
+    forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
+    forward_dynamics_muscle_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by muscle activations.
+    forward_dynamics_muscle_excitations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by muscle excitations.
+    forward_dynamics_muscle_excitations_and_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by muscle excitations and joint torques.
+    forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by muscle excitations and joint torques with contact constraints..
+    forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Contact forces of a forward dynamics driven by muscle excitations and joint torques with contact constraints.
+    dispatch_q_qdot_tau_data(states: MX.sym, controls: MX.sym, nlp: NonLinearProgram) -> tuple[MX.sym, MX.sym, MX.sym]
+        Extracting q, qdot and tau from states and controls, assuming state, state and control, respectively.
+    apply_parameters(parameters: MX.sym, nlp: NonLinearProgram)
+        Apply the parameter variables to the model. This should be called before calling the dynamics
     """
 
     @staticmethod
-    def custom(states, controls, parameters, nlp):
+    def custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+        """
+        Interface to custom dynamic function provided by the user.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
+        """
         qdot, qddot = nlp.problem_type["dynamic"](states, controls, parameters, nlp)
         return vertcat(qdot, qddot)
 
     @staticmethod
-    def forward_dynamics_torque_driven(states, controls, parameters, nlp):
+    def forward_dynamics_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
         """
-        Forward dynamics (q, qdot, qddot -> tau) with external forces driven by joint torques (controls).
-        :param states: States. (MX.sym from CasADi)
-        :param controls: Controls. (MX.sym from CasADi)
-        :param nlp: An OptimalControlProgram class.
-        :param parameters: The MX associated to the parameters
-        :return: Vertcat of derived states. (MX.sym from CasADi)
+        Forward dynamics driven by joint torques, optional external forces can be declared.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
         """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -42,14 +112,27 @@ class DynamicsFunctions:
         return dxdt
 
     @staticmethod
-    def forward_dynamics_torque_driven_with_contact(states, controls, parameters, nlp):
+    def forward_dynamics_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
         """
-        Forward dynamics (q, qdot, qddot -> tau) with contact force driven by joint torques (controls).
-        :param states: States. (MX.sym from CasADi)
-        :param controls: Controls. (MX.sym from CasADi)
-        :param nlp: An OptimalControlProgram class.
-        :return: Vertcat of derived states. (MX.sym from CasADi)
+        Forward dynamics driven by joint torques with contact constraints.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
         """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -61,15 +144,27 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forces_from_forward_dynamics_with_contact_for_torque_driven_problem(states, controls, parameters, nlp):
+    def forces_from_forward_dynamics_with_contact_for_torque_driven_problem(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
         """
-        Returns contact forces computed from forward dynamics with contact force
-        (forward_dynamics_torque_driven_with_contact)
-        :param states: States. (MX.sym from CasADi)
-        :param controls: Controls. (MX.sym from CasADi)
-        :param nlp: An OptimalControlProgram class.
-        :return: Contact forces. (MX.sym from CasADi)
+        Contact forces of a forward dynamics driven by joint torques with contact constraints.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The contact forces that ensure no acceleration at these contact points
         """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -80,16 +175,27 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem(
-        states, controls, parameters, nlp
-    ):
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
         """
-        Returns contact forces computed from forward dynamics with contact force
-        (forward_dynamics_torque_driven_with_contact)
-        :param states: States. (MX.sym from CasADi)
-        :param controls: Controls. (MX.sym from CasADi)
-        :param nlp: An OptimalControlProgram class.
-        :return: Contact forces. (MX.sym from CasADi)
+        Contact forces of a forward dynamics driven by muscle activation with contact constraints.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The contact forces that ensure no acceleration at these contact points
         """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, torque_act = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -101,7 +207,27 @@ class DynamicsFunctions:
         return cs.getForce().to_mx()
 
     @staticmethod
-    def forward_dynamics_torque_activations_driven(states, controls, parameters, nlp):
+    def forward_dynamics_torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+        """
+        Forward dynamics driven by joint torques activations.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
+        """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, torque_act = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -114,7 +240,27 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_torque_activations_driven_with_contact(states, controls, parameters, nlp):
+    def forward_dynamics_torque_activations_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+        """
+        Forward dynamics driven by joint torques activations with contact constraints.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
+        """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, torque_act = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -127,14 +273,27 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_torque_muscle_driven(states, controls, parameters, nlp):
+    def forward_dynamics_muscle_activations_and_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
         """
-        Forward dynamics (q, qdot, qddot -> tau) without external forces driven by joint torques and muscles (controls).
-        :param states: States. (MX.sym from CasADi)
-        :param controls: Controls. (MX.sym from CasADi)
-        :param nlp: An OptimalControlProgram class.
-        :return: Vertcat of derived states. (MX.sym from CasADi)
+        Forward dynamics driven by muscle activations and joint torques.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
         """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -154,14 +313,27 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_muscle_activations_and_torque_driven_with_contact(states, controls, parameters, nlp):
+    def forward_dynamics_muscle_activations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
         """
-        Forward dynamics (q, qdot, qddot -> tau) with contact force driven by joint torques and muscles (controls).
-        :param states: Sates. (MX.sym from CasADi)
-        :param controls: Controls. (MX.sym from CasADi)
-        :param nlp: An OptimalControlProgram class.
-        :return: Vertcat of derived states. (MX.sym from CasADi)
+        Forward dynamics driven by muscles activations and joint torques with contact constraints.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
         """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -182,17 +354,27 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(
-        states, controls, parameters, nlp
-    ):
+    def forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
         """
-        Returns contact forces computed from forward dynamics with contact force
-        (forward_dynamics_torque_muscle_driven_with_contact)
-        :param states: States. (MX.sym from CasADi)
-        :param controls: Controls. (MX.sym from CasADi)
-        :param nlp: An OptimalControlProgram class.
-        :return: Contact forces. (MX.sym from CasADi)
+        Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The contact forces that ensure no acceleration at these contact points
         """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -211,7 +393,27 @@ class DynamicsFunctions:
         return cs.getForce().to_mx()
 
     @staticmethod
-    def forward_dynamics_muscle_activations_driven(states, controls, parameters, nlp):
+    def forward_dynamics_muscle_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+        """
+        Forward dynamics driven by muscle activations.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
+        """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
 
         nq = nlp.mapping["q"].reduce.len
@@ -233,14 +435,27 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_muscle_excitations_driven(states, controls, parameters, nlp):
+    def forward_dynamics_muscle_excitations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
         """
-        Forward dynamics (q, qdot, qddot -> tau) without external forces driven by muscle excitation (controls).
-        :param states: States. (MX.sym from CasADi)
-        :param controls: Controls. (MX.sym from CasADi)
-        :param nlp: An OptimalControlProgram class.
-        :return: Vertcat of derived states. (MX.sym from CasADi)
+        Forward dynamics driven by muscle excitations.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
         """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
 
         nq = nlp.mapping["q"].reduce.len
@@ -265,15 +480,27 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
     @staticmethod
-    def forward_dynamics_muscle_excitations_and_torque_driven(states, controls, parameters, nlp):
+    def forward_dynamics_muscle_excitations_and_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
         """
-        Forward dynamics (q, qdot, qddot -> tau) without external forces driven by muscle excitation
-        and joint torques (controls).
-        :param states: States. (MX.sym from CasADi)
-        :param controls: Controls. (MX.sym from CasADi)
-        :param nlp: An OptimalControlProgram class.
-        :return: Vertcat of derived states. (MX.sym from CasADi)
+        Forward dynamics driven by muscle excitations and joint torques.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
         """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -296,15 +523,27 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
     @staticmethod
-    def forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states, controls, parameters, nlp):
+    def forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
         """
-        Forward dynamics (q, qdot, qddot -> tau) with contact force driven by muscle excitation and
-        joint torques (controls).
-        :param states: States. (MX.sym from CasADi)
-        :param controls: Controls. (MX.sym from CasADi)
-        :param nlp: An OptimalControlProgram class.
-        :return: Vertcat of derived states. (MX.sym from CasADi)
+        Forward dynamics driven by muscle excitations and joint torques with contact constraints..
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
         """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -327,17 +566,27 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
     @staticmethod
-    def forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
-        states, controls, parameters, nlp
-    ):
+    def forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
         """
-        Returns contact forces computed from forward dynamics with contact force
-        (forward_dynamics_muscle_excitations_and_torque_driven_with_contact)
-        :param states: States. (MX.sym from CasADi)
-        :param controls: Controls. (MX.sym from CasADi)
-        :param nlp: An OptimalControlProgram class.
-        :return: Contact forces. (MX.sym from CasADi)
+        Contact forces of a forward dynamics driven by muscle excitations and joint torques with contact constraints.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The contact forces that ensure no acceleration at these contact points
         """
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -356,7 +605,29 @@ class DynamicsFunctions:
         return cs.getForce().to_mx()
 
     @staticmethod
-    def dispatch_q_qdot_tau_data(states, controls, nlp):
+    def dispatch_q_qdot_tau_data(states: MX.sym, controls: MX.sym, nlp: NonLinearProgram) -> tuple[MX.sym, MX.sym, MX.sym]:
+        """
+        Extracting q, qdot and tau from states and controls, assuming state, state and control, respectively.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            q, the generalized coordinates
+        MX.sym
+            qdot, the generalized velocities
+        MX.sym
+            tau, the generalized torques
+        """
+
         """
         Returns q, qdot, tau (unreduced by a potential symmetry) and qdot_reduced
         from states, controls and mapping through nlp to condense this code.
@@ -375,10 +646,21 @@ class DynamicsFunctions:
         return q, qdot, tau
 
     @staticmethod
-    def apply_parameters(mx, nlp):
+    def apply_parameters(parameters: MX.sym, nlp: NonLinearProgram):
+        """
+        Apply the parameter variables to the model. This should be called before calling the dynamics
+
+        Parameters
+        ----------
+        parameters: MX.sym
+            The state of the system
+        nlp: NonLinearProgram
+            The definition of the system
+        """
+
         for key in nlp.parameters_to_optimize:
             param = nlp.parameters_to_optimize[key]
 
             # Call the pre dynamics function
             if param.function:
-                param.function(nlp.model, mx, **param.params)
+                param.function(nlp.model, parameters, **param.params)
