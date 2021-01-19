@@ -19,9 +19,6 @@ class NonLinearProgram:
         contact_forces_func=None,
         control_type=ControlType.CONSTANT,
         dt=0.0,
-        dynamics=[],
-        dynamics_func=None,
-        dynamics_type=DynamicsFcn.TORQUE_DRIVEN,
         external_forces=None,
         g=[],
         g_bounds=Bounds(),
@@ -65,9 +62,9 @@ class NonLinearProgram:
         self.contact_forces_func = contact_forces_func
         self.control_type = control_type
         self.dt = dt
-        self.dynamics = dynamics
-        self.dynamics_func = dynamics_func
-        self.dynamics_type = dynamics_type
+        # self.dynamics = dynamics
+        # self.dynamics_func = dynamics_func
+        # self.dynamics_type = dynamics_type
         self.external_forces = external_forces
         self.g = g
         self.g_bounds = g_bounds
