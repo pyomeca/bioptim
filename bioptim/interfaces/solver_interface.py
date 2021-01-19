@@ -131,6 +131,7 @@ class SolverInterface:
             -------
             A list of objective values
             """
+
             def __get_nodes(all_nodes: list, nlp: "NonLinearProgram") -> list:
                 """
                 Get the objective values of a specific nlp
@@ -193,7 +194,7 @@ class SolverInterface:
     def finalize_objective_value(j: dict) -> Union[MX, SX]:
         """
         Apply weight and dt to all objective values and convert them to scalar value
-        
+
         Parameters
         ----------
         j: dict
