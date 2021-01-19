@@ -40,8 +40,6 @@ class AcadosInterface(SolverInterface):
         The Mayer weights
     status: int
         The status of the optimization
-    out: dict
-        The solution in Ipopt style
     all_constr: SX
         All the Lagrange constraints
     end_constr: SX
@@ -659,9 +657,6 @@ class AcadosInterface(SolverInterface):
                     raise RuntimeError(
                         f"[ACADOS] Only editable solver options after solver creation are :\n {available_options}"
                     )
-
-    def get_iterations(self):
-        raise NotImplementedError("return_iterations is not implemented yet with ACADOS backend")
 
     def online_optim(self, ocp):
         raise NotImplementedError("online_optim is not implemented yet with ACADOS backend")

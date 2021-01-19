@@ -41,7 +41,7 @@ class IpoptInterface(SolverInterface):
     finish_get_iterations(self)
         Close the file where iterations are saved and remove temporary folders
     configure(self, solver_options: dict)
-        Set some ACADOS options
+        Set some Ipopt options
     solve(self) -> dict
         Solve the prepared ocp
     set_lagrange_multiplier(self, sol: dict)
@@ -112,7 +112,7 @@ class IpoptInterface(SolverInterface):
 
     def configure(self, solver_options: dict):
         """
-        Set some ACADOS options
+        Set some Ipopt options
 
         Parameters
         ----------
