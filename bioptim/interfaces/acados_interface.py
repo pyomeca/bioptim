@@ -24,8 +24,6 @@ class AcadosInterface(SolverInterface):
         The current AcadosOcp reference
     acados_model: AcadosModel
         The current AcadosModel reference
-    ocp_solver = AcadosOcpSolver
-        The current AcadosOcpSolver reference
     lagrange_costs: SX
         The lagrange cost function
     mayer_costs: SX
@@ -92,7 +90,7 @@ class AcadosInterface(SolverInterface):
         Parameters
         ----------
         ocp: OptimalControlProgram
-            A refenrence to the current OptimalControlProgram
+            A reference to the current OptimalControlProgram
         solver_options: dict
             The options to pass to the solver
         """
