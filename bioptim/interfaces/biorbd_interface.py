@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 from casadi import MX
 import biorbd
@@ -5,17 +7,30 @@ import biorbd
 
 class BiorbdInterface:
     """
-    Type conversions allowing to use Biorbd with numpy arrays
+    Type conversion allowing to use biorbd with numpy arrays
+
+    Methods
+    -------
+    convert_array_to_external_forces(all_f_ext: Union[list, tuple]) -> list[list[biorbd.VecBiorbdSpatialVector]]
+        Convert external forces np.ndarray lists of external forces to values understood by biorbd 
     """
 
     @staticmethod
-    def convert_array_to_external_forces(all_f_ext):
+    def convert_array_to_external_forces(all_f_ext: Union[list, tuple]) -> list[list[biorbd.VecBiorbdSpatialVector]]:
         """
-        Converts type of external forces from numpy array to biorbd.SpatialVector
-        :param all_f_ext: all external forces (numpy array of size : 6 x number of external forces x number of shooting
-        nodes or 6 x number of shooting nodes)
-        :return: sv_over_all_phases -> External phases. (biorbd.SpatialVector)
+        Convert external forces np.ndarray lists of external forces to values understood by biorbd
+
+        Parameters
+        ----------
+        all_f_ext: Union[list, tuple]
+            The external forces that acts on the model (the size of the matrix should be
+            6 x number of external forces x number of shooting nodes OR 6 x number of shooting nodes)
+
+        Returns
+        -------
+        The same forces in a biorbd-friendly format
         """
+
         if not isinstance(all_f_ext, (list, tuple)):
             raise RuntimeError(
                 "f_ext should be a list of (6 x nb_external_forces x nb_shooting) or (6 x nb_shooting) matrix"

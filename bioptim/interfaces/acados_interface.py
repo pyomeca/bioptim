@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Union
 from datetime import datetime
 
 import numpy as np
@@ -717,7 +717,7 @@ class AcadosInterface(SolverInterface):
         -------
         A reference to the solution
         """
-        
+
         # Populate costs and constrs vectors
         self.__set_costs(self.ocp)
         self.__set_constrs(self.ocp)
