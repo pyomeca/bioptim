@@ -71,7 +71,9 @@ class DynamicsFunctions:
         return vertcat(qdot, qddot)
 
     @staticmethod
-    def forward_dynamics_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forward_dynamics_torque_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
 
@@ -112,7 +114,9 @@ class DynamicsFunctions:
         return dxdt
 
     @staticmethod
-    def forward_dynamics_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forward_dynamics_torque_driven_with_contact(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Forward dynamics driven by joint torques with contact constraints.
 
@@ -144,7 +148,9 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forces_from_forward_dynamics_with_contact_for_torque_driven_problem(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forces_from_forward_dynamics_with_contact_for_torque_driven_problem(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
 
@@ -175,7 +181,8 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Contact forces of a forward dynamics driven by muscle activation with contact constraints.
 
@@ -207,7 +214,9 @@ class DynamicsFunctions:
         return cs.getForce().to_mx()
 
     @staticmethod
-    def forward_dynamics_torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forward_dynamics_torque_activations_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Forward dynamics driven by joint torques activations.
 
@@ -240,7 +249,9 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_torque_activations_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forward_dynamics_torque_activations_driven_with_contact(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Forward dynamics driven by joint torques activations with contact constraints.
 
@@ -273,7 +284,9 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_muscle_activations_and_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forward_dynamics_muscle_activations_and_torque_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Forward dynamics driven by muscle activations and joint torques.
 
@@ -313,7 +326,9 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_muscle_activations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forward_dynamics_muscle_activations_and_torque_driven_with_contact(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Forward dynamics driven by muscles activations and joint torques with contact constraints.
 
@@ -354,7 +369,9 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
 
@@ -393,7 +410,9 @@ class DynamicsFunctions:
         return cs.getForce().to_mx()
 
     @staticmethod
-    def forward_dynamics_muscle_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forward_dynamics_muscle_activations_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Forward dynamics driven by muscle activations.
 
@@ -435,7 +454,9 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_muscle_excitations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forward_dynamics_muscle_excitations_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Forward dynamics driven by muscle excitations.
 
@@ -480,7 +501,9 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
     @staticmethod
-    def forward_dynamics_muscle_excitations_and_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forward_dynamics_muscle_excitations_and_torque_driven(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Forward dynamics driven by muscle excitations and joint torques.
 
@@ -523,7 +546,9 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
     @staticmethod
-    def forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Forward dynamics driven by muscle excitations and joint torques with contact constraints..
 
@@ -566,7 +591,9 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
 
     @staticmethod
-    def forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX:
+    def forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram
+    ) -> MX:
         """
         Contact forces of a forward dynamics driven by muscle excitations and joint torques with contact constraints.
 
@@ -605,7 +632,9 @@ class DynamicsFunctions:
         return cs.getForce().to_mx()
 
     @staticmethod
-    def dispatch_q_qdot_tau_data(states: MX.sym, controls: MX.sym, nlp: NonLinearProgram) -> tuple[MX.sym, MX.sym, MX.sym]:
+    def dispatch_q_qdot_tau_data(
+        states: MX.sym, controls: MX.sym, nlp: NonLinearProgram
+    ) -> tuple[MX.sym, MX.sym, MX.sym]:
         """
         Extracting q, qdot and tau from states and controls, assuming state, state and control, respectively.
 
