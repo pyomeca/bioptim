@@ -22,7 +22,7 @@ class CustomPlot:
         self,
         update_function: Callable,
         plot_type: PlotType = PlotType.PLOT,
-        phase_idx: Union[Mapping, tuple[int], list[int]] = None,
+        axes_idx: Union[Mapping, tuple[int], list[int]] = None,
         legend: Union[tuple[str], list[str]] = (),
         combine_to: str = None,
         color: str = None,
@@ -39,7 +39,7 @@ class CustomPlot:
             The function to call to update the graph
         plot_type: PlotType
             Type of plot to use
-        phase_idx: Union[Mapping, tuple, list]
+        axes_idx: Union[Mapping, tuple, list]
             The index of the plot across the phases
         legend: Union[tuple[str], list[str]]
             The titles of the graphs
@@ -57,12 +57,12 @@ class CustomPlot:
 
         self.function = update_function
         self.type = plot_type
-        if phase_idx is None:
+        if axes_idx is None:
             self.phase_mappings = None  # Will be set later
-        elif isinstance(phase_idx, (tuple, list)):
-            self.phase_mappings = Mapping(phase_idx)
-        elif isinstance(phase_idx, Mapping):
-            self.phase_mappings = phase_idx
+        elif isinstance(axes_idx, (tuple, list)):
+            self.phase_mappings = Mapping(axes_idx)
+        elif isinstance(axes_idx, Mapping):
+            self.phase_mappings = axes_idx
         else:
             raise RuntimeError("phase_mapping must be a list or a Mapping")
         self.legend = legend
