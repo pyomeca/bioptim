@@ -1,10 +1,64 @@
-from casadi import Function, vertcat, horzcat, norm_fro, collocation_points, tangent, rootfinder
+from typing import Union
+
+from casadi import Function, vertcat, horzcat, norm_fro, collocation_points, tangent, rootfinder, MX, SX
+import numpy as np
 
 from ..misc.enums import ControlType
 
 
 class Integrator:
-    def __init__(self, ode, ode_opt):
+    """
+    Abstract class for CasADi-based integrator
+
+    Attributes
+    ----------
+    model: biorbd.Model
+        The biorbd model to integrate
+    t_span = tuple[float, float]
+        The initial and final time
+    idx: int
+        The index of the degrees of freedom to integrate
+    CX: Union[MX, SX]
+        The CasADi type the integration should be built from
+    x_sym: Union[MX, SX]
+        The state variables
+    u_sym: Union[MX, SX]
+        The control variables
+    param_sym: Union[MX, SX]
+        The parameters variables
+    fun: function
+        The dynamic function which provides the derivative of the states
+    control_type: ControlType
+        The type of the controls
+    step_time: float
+        The time of the full integration
+    h: float
+        The time of the an integration step
+    function = casadi.Function
+        The CasADi graph of the integration
+
+    Methods
+    -------
+    map(self, *args, **kwargs) -> Function
+        Get the multithreaded CasADi graph of the integration
+    get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
+        Get the control at a given time
+    dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple[SX, list[SX]]
+        The dynamics of the system
+    _finish_init(self)
+        Prepare the CasADi function from dxdt
+    """
+
+    # Todo change ode and ode_opt into class
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
         self.model = ode_opt["model"]
         self.t_span = ode_opt["t0"], ode_opt["tf"]
         self.idx = ode_opt["idx"]
@@ -21,10 +75,32 @@ class Integrator:
     def __call__(self, *args, **kwargs):
         return self.function(*args, **kwargs)
 
-    def map(self, *args, **kwargs):
+    def map(self, *args, **kwargs) -> Function:
+        """
+        Get the multithreaded CasADi graph of the integration
+
+        Returns
+        -------
+        The multithreaded CasADi graph of the integration
+        """
         return self.function.map(*args, **kwargs)
 
-    def get_u(self, u, dt_norm):
+    def get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray:
+        """
+        Get the control at a given time
+
+        Parameters
+        ----------
+        u: np.ndarray
+            The control matrix
+        dt_norm: float
+            The time a which control should be computed
+
+        Returns
+        -------
+        The control at a given time
+        """
+
         if self.control_type == ControlType.CONSTANT:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -32,10 +108,33 @@ class Integrator:
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def dxdt(self, h, states, controls, params):
+    def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple[SX, list[SX]]:
+        """
+        The dynamics of the system
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        states: Union[MX, SX]
+            The states of the system
+        controls: Union[MX, SX]
+            The controls of the system
+        params: Union[MX, SX]
+            The parameters of the system
+
+        Returns
+        -------
+        The derivative of the states
+        """
+
         raise RuntimeError("Integrator is abstract, please specify a proper one")
 
     def _finish_init(self):
+        """
+        Prepare the CasADi function from dxdt
+        """
+
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym],
@@ -47,24 +146,82 @@ class Integrator:
 
 class RK(Integrator):
     """
-    Numerical integration using fourth order Runge-Kutta method.
-    :param ode: ode["x"] -> States. ode["p"] -> Controls. ode["ode"] -> Ordinary differential equation function
-    (dynamics of the system).
-    :param ode_opt: ode_opt["t0"] -> Initial time of the integration. ode_opt["tf"] -> Final time of the integration.
-    ode_opt["number_of_finite_elements"] -> Number of steps between nodes. ode_opt["idx"] -> Index of ??. (integer)
-    :return: Integration function. (CasADi function)
+    Abstract class for Runge-Kutta integrators
+
+    Attributes
+    ----------
+    n_step: int
+        Number of finite element during the integration
+    h_norm: float
+        Normalized time step
+
+    Methods
+    -------
+    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+        Compute the next integrated state (abstract)
+    dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple[SX, list[SX]]
+        The dynamics of the system
     """
 
-    def __init__(self, ode, ode_opt):
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
         super(RK, self).__init__(ode, ode_opt)
         self.n_step = ode_opt["number_of_finite_elements"]
         self.h_norm = 1 / self.n_step
         self.h = self.step_time * self.h_norm  # Length of steps
 
-    def next_x(self, h, t, x_prev, u, p):
+    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+        """
+        Compute the next integrated state (abstract)
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        t: float
+            The initial time of the integration
+        x_prev: Union[MX, SX]
+            The current state of the system
+        u: Union[MX, SX]
+            The control of the system
+        p: Union[MX, SX]
+            The parameters of the system
+
+        Returns
+        -------
+        The next integrate states
+        """
+
         raise RuntimeError("RK is abstract, please select a specific RK")
 
-    def dxdt(self, h, states, controls, params):
+    def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple[SX, list[SX]]:
+        """
+        The dynamics of the system
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        states: Union[MX, SX]
+            The states of the system
+        controls: Union[MX, SX]
+            The controls of the system
+        params: Union[MX, SX]
+            The parameters of the system
+
+        Returns
+        -------
+        The derivative of the states
+        """
+
         u = controls
         x = self.CX(states.shape[0], self.n_step + 1)
         p = params
@@ -95,11 +252,50 @@ class RK(Integrator):
 
 
 class RK4(RK):
-    def __init__(self, ode, ode_opt):
+    """
+    Numerical integration using fourth order Runge-Kutta method.
+
+    Methods
+    -------
+    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+        Compute the next integrated state (abstract)
+    """
+
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
         super(RK4, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h, t, x_prev, u, p):
+    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+        """
+        Compute the next integrated state
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        t: float
+            The initial time of the integration
+        x_prev: Union[MX, SX]
+            The current state of the system
+        u: Union[MX, SX]
+            The control of the system
+        p: Union[MX, SX]
+            The parameters of the system
+
+        Returns
+        -------
+        The next integrate states
+        """
+
         k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
         k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
         k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
@@ -108,11 +304,50 @@ class RK4(RK):
 
 
 class RK8(RK4):
-    def __init__(self, ode, ode_opt):
+    """
+    Numerical integration using eighth order Runge-Kutta method.
+
+    Methods
+    -------
+    next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX])
+        Compute the next integrated state (abstract)
+    """
+
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
         super(RK8, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h, t, x_prev, u, p):
+    def next_x(self, h: float, t: float, x_prev: Union[MX, SX], u: Union[MX, SX], p: Union[MX, SX]):
+        """
+        Compute the next integrated state
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        t: float
+            The initial time of the integration
+        x_prev: Union[MX, SX]
+            The current state of the system
+        u: Union[MX, SX]
+            The control of the system
+        p: Union[MX, SX]
+            The parameters of the system
+
+        Returns
+        -------
+        The next integrate states
+        """
+
         k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
         k2 = self.fun(x_prev + (h * 4 / 27) * k1, self.get_u(u, t + self.h_norm * (4 / 27)), p)[:, self.idx]
         k3 = self.fun(x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t + self.h_norm * (2 / 9)), p)[:, self.idx]
@@ -149,25 +384,75 @@ class RK8(RK4):
 class IRK(Integrator):
     """
     Numerical integration using implicit Runge-Kutta method.
-    :param ode: ode["x"] -> States. ode["p"] -> Controls. ode["ode"] -> Ordinary differential equation function
-    (dynamics of the system).
-    :param ode_opt: ode_opt["t0"] -> Initial time of the integration. ode_opt["tf"] -> Final time of the integration.
-    ode_opt["number_of_finite_elements"] -> Number of steps between nodes. ode_opt["idx"] -> Index of ??. (integer)
-    :return: Integration function. (CasADi function)
+
+    Attributes
+    ----------
+    degree: int
+        The interpolation order of the polynomial approximation
+
+    Methods
+    -------
+    get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
+        Get the control at a given time
+    dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple[SX, list[SX]]
+        The dynamics of the system
     """
 
-    def __init__(self, ode, ode_opt):
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
         super(IRK, self).__init__(ode, ode_opt)
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
         self._finish_init()
 
-    def get_u(self, u, dt_norm):
+    def get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray:
+        """
+        Get the control at a given time
+
+        Parameters
+        ----------
+        u: np.ndarray
+            The control matrix
+        dt_norm: float
+            The time a which control should be computed
+
+        Returns
+        -------
+        The control at a given time
+        """
+
         if self.control_type == ControlType.CONSTANT:
             return super(IRK, self).get_u(u, dt_norm)
         else:
             raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with IRK")
 
-    def dxdt(self, h, states, controls, params):
+    def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple[SX, list[SX]]:
+        """
+        The dynamics of the system
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        states: Union[MX, SX]
+            The states of the system
+        controls: Union[MX, SX]
+            The controls of the system
+        params: Union[MX, SX]
+            The parameters of the system
+
+        Returns
+        -------
+        The derivative of the states
+        """
+
         nu = controls.shape[0]
         nx = states.shape[0]
 
