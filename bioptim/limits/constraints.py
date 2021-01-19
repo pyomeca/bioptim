@@ -286,6 +286,8 @@ class ConstraintFcn(Enum):
     TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
     ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
     ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
+    COM_POSITION = (PenaltyType.MINIMIZE_COM_POSITION,)
+    COM_VELOCITY = (PenaltyType.MINIMIZE_COM_VELOCITY,)
     CUSTOM = (PenaltyType.CUSTOM,)
     CONTACT_FORCE = (ConstraintFunction.Functions.contact_force,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)

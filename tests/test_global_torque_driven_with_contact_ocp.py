@@ -16,7 +16,11 @@ from .utils import TestUtils
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_maximize_predicted_height_CoM(ode_solver):
+@pytest.mark.parametrize(
+    "objective_name", ["MINIMIZE_PREDICTED_COM_HEIGHT", "MINIMIZE_COM_POSITION", "MINIMIZE_COM_VELOCITY"]
+)
+@pytest.mark.parametrize("com_constraints", [False, True])
+def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constraints):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "maximize_predicted_height_CoM",
@@ -31,32 +35,64 @@ def test_maximize_predicted_height_CoM(ode_solver):
         number_shooting_points=20,
         use_actuators=False,
         ode_solver=ode_solver,
+        objective_name=objective_name,
+        com_constraints=com_constraints,
     )
     sol = ocp.solve()
 
-    # Check objective function value
     f = np.array(sol["f"])
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.7592028279017864)
 
     # Check constraints
     g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (160, 1))
-    np.testing.assert_almost_equal(g, np.zeros((160, 1)))
+    if com_constraints:
+        np.testing.assert_equal(g.shape, (244, 1))
+    else:
+        np.testing.assert_equal(g.shape, (160, 1))
+        np.testing.assert_almost_equal(g, np.zeros((160, 1)))
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
     q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
 
-    # initial and final position
+    # initial position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((0.1189651, -0.0904378, -0.7999996, 0.7999996)))
-    # initial and final velocities
+    # initial velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2636414, -1.3010929, -3.6274687, 3.6274687)))
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-22.1218282)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array(0.2653957))
+
+    if objective_name == "MINIMIZE_PREDICTED_COM_HEIGHT":
+        # Check objective function value
+        np.testing.assert_almost_equal(f[0, 0], 0.7592028279017864)
+
+        # final position
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.1189651, -0.0904378, -0.7999996, 0.7999996)))
+        # final velocities
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2636414, -1.3010929, -3.6274687, 3.6274687)))
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((-22.1218282)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array(0.2653957))
+    elif objective_name == "MINIMIZE_COM_POSITION":
+        # Check objective function value
+        np.testing.assert_almost_equal(f[0, 0], 0.458575464873056)
+
+        # final position
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.1189651, -0.0904378, -0.7999996, 0.7999996)))
+        # final velocities
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.24525494, -1.28216182, -3.57468814, 3.57468814)))
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((-21.96213697)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array(-0.22120207))
+    elif objective_name == "MINIMIZE_COM_VELOCITY":
+        # Check objective function value
+        np.testing.assert_almost_equal(f[0, 0], 0.4709888694097001)
+
+        # final position
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.1189652, -0.09043785, -0.79999979, 0.79999979)))
+        # final velocities
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((1.26103572, -1.29841047, -3.61998944, 3.61998944)))
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((-22.18008227)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array(-0.02280469))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

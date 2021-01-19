@@ -691,6 +691,39 @@ def test_penalty_minimize_predicted_com_height(value):
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_com_position(value, penalty_origin):
+    ocp = prepare_test_ocp()
+    x = [DM.ones((12, 1)) * value]
+    if "COM_POSITION" in penalty_origin._member_names_:
+        penalty_type = penalty_origin.COM_POSITION
+    else:
+        penalty_type = penalty_origin.MINIMIZE_COM_POSITION
+
+    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        penalty = Objective(penalty_type)
+    else:
+        penalty = Constraint(penalty_type)
+
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [])
+
+    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]["val"]
+
+    expected = np.array([[0.05], [0.05], [0.05]])
+    if value == -10:
+        expected = np.array([[-5], [0.05], [-5]])
+
+    np.testing.assert_almost_equal(res, expected)
+
+    if isinstance(penalty_type, ConstraintFcn):
+        np.testing.assert_almost_equal(ocp.nlp[0].g[0][0]["bounds"].min, np.array(0))
+        np.testing.assert_almost_equal(ocp.nlp[0].g[0][0]["bounds"].max, np.array(0))
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_align_segment_with_custom_rt(penalty_origin, value):
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
