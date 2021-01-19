@@ -1,3 +1,4 @@
+from typing import Callable, Union
 from datetime import datetime
 
 import numpy as np
@@ -14,7 +15,88 @@ from ..limits.penalty import PenaltyType
 
 
 class AcadosInterface(SolverInterface):
-    def __init__(self, ocp, **solver_options):
+    """
+    The ACADOS solver interface
+
+    Attributes
+    ----------
+    acados_ocp: AcadosOcp
+        The current AcadosOcp reference
+    acados_model: AcadosModel
+        The current AcadosModel reference
+    ocp_solver = AcadosOcpSolver
+        The current AcadosOcpSolver reference
+    lagrange_costs: SX
+        The lagrange cost function
+    mayer_costs: SX
+        The mayer cost function
+    y_ref = list[np.ndarray]
+        The lagrange targets
+    y_ref_end = list[np.ndarray]
+        The mayer targets
+    params = dict
+        All the parameters to optimize
+    W: np.ndarray
+        The Lagrange weights
+    W_e: np.ndarray
+        The Mayer weights
+    status: int
+        The status of the optimization
+    out: dict
+        The solution in Ipopt style
+    all_constr: SX
+        All the Lagrange constraints
+    end_constr: SX
+        All the Mayer constraints
+    all_g_bounds = Bounds
+        All the Lagrange bounds on the variables
+    end_g_bounds = Bounds
+        All the Mayer bounds on the variables
+    x_bound_max = np.ndarray
+        All the bounds max
+    x_bound_min = np.ndarray
+        All the bounds min
+    Vu: np.ndarray
+        The control objective functions
+    Vx: np.ndarray
+        The Lagrange state objective functions
+    Vxe: np.ndarray
+        The Mayer state objective functions
+
+    Methods
+    -------
+    __acados_export_model(self, ocp: "OptimalControlProgram")
+        Creating a generic ACADOS model
+    __prepare_acados(self, ocp: "OptimalControlProgram")
+        Set somes important ACADOS variables
+    __set_constr_type(self, constr_type: str = "BGH")
+        Set the type of constraints
+    __set_constrs(self, ocp: "OptimalControlProgram")
+        Set the constraints from the ocp
+    __set_cost_type(self, cost_type: str = "NONLINEAR_LS")
+        Set the type of cost functions
+    __set_costs(self, ocp: "OptimalControlProgram")
+        Set the cost functions from ocp
+    __update_solver(self)
+        Update the ACADOS solver to new values
+    configure(self, options: dict)
+        Set some ACADOS options
+    get_optimized_value(self) -> Union[list[dict], dict]
+        Get the previously optimized solution
+    solve(self) -> "AcadosInterface"
+        Solve the prepared ocp
+    """
+
+    def __init__(self, ocp: "OptimalControlProgram", **solver_options):
+        """
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A refenrence to the current OptimalControlProgram
+        solver_options: dict
+            The options to pass to the solver
+        """
+
         if not isinstance(ocp.CX(), SX):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS. Please set use_SX to True in OCP")
 
@@ -41,6 +123,7 @@ class AcadosInterface(SolverInterface):
         self.mayer_costs = SX()
         self.y_ref = []
         self.y_ref_end = []
+        self.params = None
         self.__acados_export_model(ocp)
         self.__prepare_acados(ocp)
         self.ocp_solver = None
@@ -49,7 +132,27 @@ class AcadosInterface(SolverInterface):
         self.status = None
         self.out = {}
 
-    def __acados_export_model(self, ocp):
+        self.all_constr = None
+        self.end_constr = SX()
+        self.all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
+        self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
+        self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nu)
+        self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nx)
+        self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nx)
+
+    def __acados_export_model(self, ocp: "OptimalControlProgram"):
+        """
+        Creating a generic ACADOS model
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A refenrence to the current OptimalControlProgram
+
+        """
+
         if ocp.nb_phases > 1:
             raise NotImplementedError("More than 1 phase is not implemented yet with ACADOS backend")
 
@@ -81,7 +184,16 @@ class AcadosInterface(SolverInterface):
         now = datetime.now()  # current date and time
         self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S%f')[:-4]}"
 
-    def __prepare_acados(self, ocp):
+    def __prepare_acados(self, ocp: "OptimalControlProgram"):
+        """
+        Set somes important ACADOS variables
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A refenrence to the current OptimalControlProgram
+        """
+
         # set model
         self.acados_ocp.model = self.acados_model
 
@@ -93,11 +205,29 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.dims.nu = ocp.nlp[0].nu
         self.acados_ocp.dims.N = ocp.nlp[0].ns
 
-    def __set_constr_type(self, constr_type="BGH"):
+    def __set_constr_type(self, constr_type: str = "BGH"):
+        """
+        Set the type of constraints
+
+        Parameters
+        ----------
+        constr_type: str
+            The requested type of constraints
+        """
+
         self.acados_ocp.constraints.constr_type = constr_type
         self.acados_ocp.constraints.constr_type_e = constr_type
 
-    def __set_constrs(self, ocp):
+    def __set_constrs(self, ocp: "OptimalControlProgram"):
+        """
+        Set the constraints from the ocp
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A refenrence to the current OptimalControlProgram
+        """
+
         # constraints handling in self.acados_ocp
         u_min = np.array(ocp.nlp[0].u_bounds.min)
         u_max = np.array(ocp.nlp[0].u_bounds.max)
@@ -105,7 +235,7 @@ class AcadosInterface(SolverInterface):
         x_max = np.array(ocp.nlp[0].x_bounds.max)
         self.all_constr = SX()
         self.end_constr = SX()
-        ##TODO:change for more node flexibility on bounds
+        # TODO:change for more node flexibility on bounds
         self.all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(ocp.nb_phases):
@@ -197,11 +327,28 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.constraints.lh_e = np.array(self.end_g_bounds.min[:, 0])
         self.acados_ocp.constraints.uh_e = np.array(self.end_g_bounds.max[:, 0])
 
-    def __set_cost_type(self, cost_type="NONLINEAR_LS"):
+    def __set_cost_type(self, cost_type: str = "NONLINEAR_LS"):
+        """
+        Set the type of cost functions
+
+        Parameters
+        ----------
+        cost_type: str
+            The type of cost function
+        """
+
         self.acados_ocp.cost.cost_type = cost_type
         self.acados_ocp.cost.cost_type_e = cost_type
 
-    def __set_costs(self, ocp):
+    def __set_costs(self, ocp: "OptimalControlProgram"):
+        """
+        Set the cost functions from ocp
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A refenrence to the current OptimalControlProgram
+        """
 
         if ocp.nb_phases != 1:
             raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")
@@ -406,6 +553,10 @@ class AcadosInterface(SolverInterface):
             raise RuntimeError("Available acados cost type: 'LINEAR_LS', 'NONLINEAR_LS' and 'EXTERNAL'.")
 
     def __update_solver(self):
+        """
+        Update the ACADOS solver to new values
+        """
+
         param_init = []
         for n in range(self.acados_ocp.dims.N):
             if self.y_ref:
@@ -464,7 +615,16 @@ class AcadosInterface(SolverInterface):
             else:
                 self.ocp_solver.set(self.acados_ocp.dims.N, "x", self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N])
 
-    def configure(self, options):
+    def configure(self, options: dict):
+        """
+        Set some ACADOS options
+
+        Parameters
+        ----------
+        options: dict
+            The dictionary of options
+        """
+
         if "acados_dir" in options:
             del options["acados_dir"]
         if "cost_type" in options:
@@ -508,7 +668,15 @@ class AcadosInterface(SolverInterface):
     def online_optim(self, ocp):
         raise NotImplementedError("online_optim is not implemented yet with ACADOS backend")
 
-    def get_optimized_value(self):
+    def get_optimized_value(self) -> Union[list[dict], dict]:
+        """
+        Get the previously optimized solution
+
+        Returns
+        -------
+        A solution or a list of solution depending on the number of phases
+        """
+
         ns = self.acados_ocp.dims.N
         nx = self.acados_ocp.dims.nx
         nq = self.ocp.nlp[0].q.shape[0]
@@ -541,7 +709,15 @@ class AcadosInterface(SolverInterface):
             out.append(self.out[key])
         return out[0] if len(out) == 1 else out
 
-    def solve(self):
+    def solve(self) -> "AcadosInterface":
+        """
+        Solve the prepared ocp
+
+        Returns
+        -------
+        A reference to the solution
+        """
+        
         # Populate costs and constrs vectors
         self.__set_costs(self.ocp)
         self.__set_constrs(self.ocp)

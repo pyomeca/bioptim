@@ -144,7 +144,7 @@ class PlotOcp:
         Parse the data list to create a single list of all ydata that will fit the plots vector
     __update_axes(self)
         Update the plotted data from ydata
-    __compute_ylim(min_val: Union[np.array, DM], max_val: Union[np.array, DM], factor: float) -> tuple:
+    __compute_ylim(min_val: Union[np.ndarray, DM], max_val: Union[np.ndarray, DM], factor: float) -> tuple:
         Dynamically find the ylim
     _generate_windows_size(nb: int) -> tuple[int, int]
         Defines the number of column and rows of subplots from the number of variables to plot.
@@ -628,14 +628,14 @@ class PlotOcp:
             p.set_ydata((0, 1))
 
     @staticmethod
-    def __compute_ylim(min_val: Union[np.array, DM], max_val: Union[np.array, DM], factor: float) -> tuple:
+    def __compute_ylim(min_val: Union[np.ndarray, DM], max_val: Union[np.ndarray, DM], factor: float) -> tuple:
         """
         Dynamically find the ylim
         Parameters
         ----------
-        min_val: Union[np.array, DM]
+        min_val: Union[np.ndarray, DM]
             The minimal value of the y axis
-        max_val: Union[np.array, DM]
+        max_val: Union[np.ndarray, DM]
             The maximal value of the y axis
         factor: float
             The widening factor of the y range
@@ -1007,18 +1007,18 @@ class Iterations:
 
     Methods
     -------
-    save(V: np.array)
+    save(V: np.ndarray)
         Save the current iteration on the hard drive
     """
 
     @staticmethod
-    def save(V: np.array):
+    def save(V: np.ndarray):
         """
         Save the current iteration on the hard drive
 
         Parameters
         ----------
-        V: np.array
+        V: np.ndarray
             The vector of data to save
         """
 
