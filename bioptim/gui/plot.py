@@ -1,14 +1,16 @@
+from typing import Callable, Union
 import multiprocessing as mp
 from copy import copy
-import numpy as np
 import tkinter
 import pickle
 import os
 from itertools import accumulate
 
+import numpy as np
 from matplotlib import pyplot as plt, lines
-from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
+from ..limits.path_conditions import Bounds
 from ..misc.data import Data
 from ..misc.enums import PlotType, ControlType, InterpolationType
 from ..misc.mapping import Mapping
@@ -18,33 +20,49 @@ from ..misc.utils import check_version
 class CustomPlot:
     def __init__(
         self,
-        update_function,
-        plot_type=PlotType.PLOT,
-        axes_idx=None,
-        legend=(),
-        combine_to=None,
-        color=None,
-        linestyle=None,
-        ylim=None,
-        bounds=None,
+        update_function: Callable,
+        plot_type: PlotType = PlotType.PLOT,
+        phase_idx: Union[Mapping, tuple[int], list[int]] = None,
+        legend: Union[tuple[str], list[str]] = (),
+        combine_to: str = None,
+        color: str = None,
+        linestyle: str = None,
+        ylim: Union[tuple[float, float], list[float, float]] = None,
+        bounds: Bounds = None,
     ):
         """
-        Initializes the plot.
-        :param update_function: Function to plot.
-        :param plot_type: Type of plot. (PLOT = 0, INTEGRATED = 1 or STEP = 2)
-        :param axes_idx: Index of the axis to be mapped. (integer)
-        :param legend: Legend of the graphs. (?)
-        :param combine_to: Plot in which to add the graph. ??
-        :param color: Color of the graphs. (?)
+        Interface to create/add plots of the simulation
+
+        Parameters
+        ----------
+        update_function: function
+            The function to call to update the graph
+        plot_type: PlotType
+            Type of plot to use
+        phase_idx: Union[Mapping, tuple, list]
+            The index of the plot across the phases
+        legend: Union[tuple[str], list[str]]
+            The titles of the graphs
+        combine_to: str
+            The name of the variable to combine this one with
+        color: str
+            The color of the line as specified in matplotlib
+        linestyle: str
+            The style of the line as specified in matplotlib
+        ylim: Union[tuple[float, float], list[float, float]]
+            The ylim of the axes as specified in matplotlib
+        bounds:
+            The bounds to show on the graph
         """
+
         self.function = update_function
         self.type = plot_type
-        if axes_idx is None:
+        if phase_idx is None:
             self.phase_mappings = None  # Will be set later
-        elif isinstance(axes_idx, (tuple, list)):
-            self.phase_mappings = Mapping(axes_idx)
-        elif isinstance(axes_idx, Mapping):
-            self.phase_mappings = axes_idx
+        elif isinstance(phase_idx, (tuple, list)):
+            self.phase_mappings = Mapping(phase_idx)
+        elif isinstance(phase_idx, Mapping):
+            self.phase_mappings = phase_idx
         else:
             raise RuntimeError("phase_mapping must be a list or a Mapping")
         self.legend = legend
@@ -56,8 +74,100 @@ class CustomPlot:
 
 
 class PlotOcp:
-    def __init__(self, ocp, automatically_organize=True, adapt_graph_size_to_bounds=False):
-        """Prepares the figure"""
+    """
+    Attributes
+    ----------
+    ocp: OptimalControlProgram
+        A reference to the full ocp
+    plot_options: dict
+        matplotlib options template for specified PlotType
+    ydata: list
+        The actual current data to be plotted. It is update by update_data
+    ns: int
+        The total number of shooting points
+    t: list[float]
+        The time vector
+    t_integrated: list[float]
+        The time vector integrated
+    tf: list[float]
+        The times at the end of each phase
+    t_idx_to_optimize: list[int]
+        The index of the phases where time is a variable to optimize (non constant)
+    axes: dict
+        The dictionary of handlers to the matplotlib axes
+    plots: list
+        The list of handlers to the matplotlib plots for the ydata
+    plots_vertical_lines: list
+        The list of handlers to the matplotlib plots for the phase separators
+    plots_bounds: list
+        The list of handlers to the matplotlib plots for the bounds
+    all_figures: list
+        The list of handlers to the matplotlib figures
+    automatically_organize: bool
+        If the figure should be automatically organized on screen
+    self.plot_func: dict
+        The dictionary of all the CustomPlot
+    self.variable_sizes: list[int]
+        The size of all variables. This helps declaring all the plots in advance
+    self.adapt_graph_size_to_bounds: bool
+        If the plot should adapt to bounds or to ydata
+    nb_vertical_windows: int
+        The number of figure rows
+    nb_horizontal_windows: int
+        The number of figure columns
+    top_margin: float
+        The space between the top of the screen and the figure when automatically rearrange
+    height_step: float
+        The height of the figure
+    width_step: float
+        The width of the figure
+
+    Methods
+    -------
+    __update_time_vector(self)
+        Setup the time and time integrated vector, which is the x-axes of the graphs
+    __create_plots(self)
+        Setup the plots
+    __add_new_axis(self, variable: str, nb: int, nb_rows: int, nb_cols: int)
+        Add a new axis to the axes pool
+    _organize_windows(self, nb_windows: int)
+        Automatically organize the figure across the screen.
+    find_phases_intersections(self)
+        Finds the intersection between the phases
+    show()
+        Force the show of the graphs. This is a blocking function
+    update_data(self, V: dict)
+        Update ydata from the variable a solution structure
+    __update_xdata(self)
+        Update of the time axes in plots
+    __append_to_ydata(self, data: list)
+        Parse the data list to create a single list of all ydata that will fit the plots vector
+    __update_axes(self)
+        Update the plotted data from ydata
+    __compute_ylim(min_val: Union[np.array, DM], max_val: Union[np.array, DM], factor: float) -> tuple:
+        Dynamically find the ylim
+    _generate_windows_size(nb: int) -> tuple[int, int]
+        Defines the number of column and rows of subplots from the number of variables to plot.
+    """
+
+    def __init__(
+        self,
+        ocp: "OptimalControlProgram",
+        automatically_organize: bool = True,
+        adapt_graph_size_to_bounds: bool = False,
+    ):
+        """
+        Prepares the figures during the simulation
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp to show
+        automatically_organize: bool
+            If the figures should be spread on the screen automatically
+        adapt_graph_size_to_bounds: bool
+            If the axes should fit the bounds (True) or the data (False)
+        """
         for i in range(1, ocp.nb_phases):
             if ocp.nlp[0].shape["q"] != ocp.nlp[i].shape["q"]:
                 raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
@@ -94,6 +204,11 @@ class PlotOcp:
         self.all_figures = []
 
         self.automatically_organize = automatically_organize
+        self.nb_vertical_windows = None
+        self.nb_horizontal_windows = None
+        self.top_margin = None
+        self.height_step = None
+        self.width_step = None
         self._organize_windows(len(self.ocp.nlp[0].var_states) + len(self.ocp.nlp[0].var_controls))
 
         self.plot_func = {}
@@ -120,7 +235,11 @@ class PlotOcp:
                 fig.tight_layout()
 
     def __update_time_vector(self):
-        """Sets x-axis array"""
+        """
+        Setup the time and time integrated vector, which is the x-axes of the graphs
+
+        """
+
         self.t = []
         self.t_integrated = []
         last_t = 0
@@ -140,7 +259,10 @@ class PlotOcp:
             self.t.append(time_phase)
 
     def __create_plots(self):
-        """Actually plots"""
+        """
+        Setup the plots
+        """
+
         variable_sizes = []
         for i, nlp in enumerate(self.ocp.nlp):
             variable_sizes.append({})
@@ -270,15 +392,22 @@ class PlotOcp:
                             [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
                         )
 
-    def __add_new_axis(self, variable, nb, nb_rows, nb_cols):
+    def __add_new_axis(self, variable: str, nb: int, nb_rows: int, nb_cols: int):
         """
-        Sets the axis of the plots.
-        :param variable: Variable to plot (integer)
-        :param nb: Number of the figure. ?? (integer)
-        :param nb_rows: Number of rows of plots in subplots. (integer)
-        :param nb_cols: Number of columns of plots in subplots. (integer)
-        :return: axes: Axes of the plots. (instance of subplot class)
+        Add a new axis to the axes pool
+
+        Parameters
+        ----------
+        variable: str
+            The name of the graph
+        nb: int
+            The total number of axes to create
+        nb_rows: int
+            The number of rows for the subplots
+        nb_cols: int
+            The number of columns for the subplots
         """
+
         if self.automatically_organize:
             self.all_figures.append(plt.figure(variable, figsize=(self.width_step / 100, self.height_step / 131)))
         else:
@@ -301,11 +430,16 @@ class PlotOcp:
         self.all_figures[-1].tight_layout()
         return axes
 
-    def _organize_windows(self, nb_windows):
+    def _organize_windows(self, nb_windows: int):
         """
-        Organizes esthetically the figure.
-        :param nb_windows: Number of variables to plot. (integer)
+        Automatically organize the figure across the screen.
+
+        Parameters
+        ----------
+        nb_windows: int
+            The number of figures to show
         """
+
         self.nb_vertical_windows, self.nb_horizontal_windows = PlotOcp._generate_windows_size(nb_windows)
         if self.automatically_organize:
             height = tkinter.Tk().winfo_screenheight()
@@ -313,21 +447,32 @@ class PlotOcp:
             self.top_margin = height / 15
             self.height_step = (height - self.top_margin) / self.nb_horizontal_windows
             self.width_step = width / self.nb_vertical_windows
-        else:
-            self.top_margin = None
-            self.height_step = None
-            self.width_step = None
 
     def find_phases_intersections(self):
-        """Finds the intersection between phases"""
+        """
+        Finds the intersection between the phases
+        """
+
         return list(accumulate(self.tf))[:-1]
 
     @staticmethod
     def show():
+        """
+        Force the show of the graphs. This is a blocking function
+        """
+
         plt.show()
 
-    def update_data(self, V):
-        """Update of the variable V to plot (dependent axis)"""
+    def update_data(self, V: dict):
+        """
+        Update ydata from the variable a solution structure
+
+        Parameters
+        ----------
+        V: dict
+            The data to parse
+        """
+
         self.ydata = []
 
         data_states, data_controls, data_param = Data.get_data(
@@ -399,7 +544,10 @@ class PlotOcp:
         self.__update_axes()
 
     def __update_xdata(self):
-        """Update of the time in plots (independent axis)"""
+        """
+        Update of the time axes in plots
+        """
+
         self.__update_time_vector()
         for plot in self.plots:
             phase_idx = plot[1]
@@ -425,12 +573,24 @@ class PlotOcp:
                 for i, time in enumerate(intersections_time):
                     self.plots_vertical_lines[p * n + i].set_xdata([time, time])
 
-    def __append_to_ydata(self, data):
+    def __append_to_ydata(self, data: list):
+        """
+        Parse the data list to create a single list of all ydata that will fit the plots vector
+
+        Parameters
+        ----------
+        data: list
+            The data list to copy
+        """
+
         for y in data:
             self.ydata.append(y)
 
     def __update_axes(self):
-        """Updates axes ranges"""
+        """
+        Update the plotted data from ydata
+        """
+
         assert len(self.plots) == len(self.ydata)
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
@@ -468,7 +628,23 @@ class PlotOcp:
             p.set_ydata((0, 1))
 
     @staticmethod
-    def __compute_ylim(min_val, max_val, threshold):
+    def __compute_ylim(min_val: Union[np.array, DM], max_val: Union[np.array, DM], factor: float) -> tuple:
+        """
+        Dynamically find the ylim
+        Parameters
+        ----------
+        min_val: Union[np.array, DM]
+            The minimal value of the y axis
+        max_val: Union[np.array, DM]
+            The maximal value of the y axis
+        factor: float
+            The widening factor of the y range
+
+        Returns
+        -------
+        The ylim and actual range of ylim (before applying the threshold)
+        """
+
         if np.isnan(min_val) or np.isinf(min_val):
             min_val = 0
         if np.isnan(max_val) or np.isinf(max_val):
@@ -477,27 +653,81 @@ class PlotOcp:
         data_range = max_val - min_val
         if np.abs(data_range) < 0.8:
             data_range = 0.8
-        y_range = (threshold * data_range) / 2
+        y_range = (factor * data_range) / 2
         y_range = data_mean - y_range, data_mean + y_range
         return y_range, data_range
 
     @staticmethod
-    def _generate_windows_size(nb):
+    def _generate_windows_size(nb: int) -> tuple[int, int]:
         """
-        Defines the number of column and rows of subplots in function of the number of variables to plot.
-        :param nb: Number of variables to plot. (integer)
-        :return: nb_rows: Number of rows of subplot. (integer)
+        Defines the number of column and rows of subplots from the number of variables to plot.
+
+        Parameters
+        ----------
+        nb: int
+            Number of variables to plot
+
+        Returns
+        -------
+        The optimized number of rows and columns
         """
+
         nb_rows = int(round(np.sqrt(nb)))
         return nb_rows + 1 if nb_rows * nb_rows < nb else nb_rows, nb_rows
 
 
 class ShowResult:
-    def __init__(self, ocp, sol):
+    """
+    The main interface to bioptim GUI
+
+    Attributes
+    ----------
+    ocp: OptimalControlProgram
+        A reference to the ocp to show
+    sol: dict
+        The solution dictionary
+
+    Methods
+    -------
+    graphs(self, automatically_organize: bool=True, adapt_graph_size_to_bounds:bool=False, show_now:bool=True)
+        Prepare the graphs of the simulation
+    animate(self, nb_frames:int=80, show_now:bool=True, **kwargs) -> list
+        An interface to animate solution with bioviz
+    keep_matplotlib()
+        Allows for non-blocking show of the figure. This works only in Debug
+    """
+
+    def __init__(self, ocp: "OptimalControlProgram", sol: dict):
+        """
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+        A reference to the ocp to show
+        sol: dict
+            The solution dictionary
+        """
         self.ocp = ocp
         self.sol = sol
 
-    def graphs(self, automatically_organize=True, adapt_graph_size_to_bounds=False, show_now=True):
+    def graphs(
+        self, automatically_organize: bool = True, adapt_graph_size_to_bounds: bool = False, show_now: bool = True
+    ):
+        """
+        Prepare the graphs of the simulation
+
+        Parameters
+        ----------
+        automatically_organize: bool
+            If the figures should be spread on the screen automatically
+        adapt_graph_size_to_bounds: bool
+            If the plot should adapt to bounds (True) or to data (False)
+        show_now: bool
+            If the show method should be called. This is blocking
+
+        Returns
+        -------
+
+        """
         plot_ocp = PlotOcp(
             self.ocp,
             automatically_organize=automatically_organize,
@@ -507,12 +737,24 @@ class ShowResult:
         if show_now:
             plt.show()
 
-    def animate(self, nb_frames=80, show_now=True, **kwargs):
+    def animate(self, nb_frames: int = 80, show_now: bool = True, **kwargs) -> list:
         """
-        Animate solution with bioviz
-        :param nb_frames: Number of frames in the animation. (integer)
-        :param show_now: If updates must be automatically done (True) or not (False)
+        An interface to animate solution with bioviz
+
+        Parameters
+        ----------
+        nb_frames: int
+            The number of frames to interpolate to
+        show_now: bool
+            If the bioviz exec() function should be called. This is blocking
+        kwargs: dict
+            Any parameters to pass to bioviz
+
+        Returns
+        -------
+            A list of bioviz structures (one for each phase)
         """
+
         try:
             import bioviz
         except ModuleNotFoundError:
@@ -542,40 +784,135 @@ class ShowResult:
 
     @staticmethod
     def keep_matplotlib():
+        """
+        Allows for non-blocking show of the figure. This works only in Debug
+        """
         plt.figure(figsize=(0.01, 0.01)).canvas.manager.window.move(1000, 100)
         plt.show()
 
 
 class OnlineCallback(Callback):
-    def __init__(self, ocp, opts={}):
+    """
+    CasADi interface of Ipopt callbacks
+
+    Attributes
+    ----------
+    ocp: OptimalControlProgram
+        A reference to the ocp to show
+    nx: int
+        The number of optimization variables
+    ng: int
+        The number of constraints
+    queue: mp.Queue
+        The multiprocessing queue
+    plotter: ProcessPlotter
+        The callback for plotting for the multiprocessing
+    plot_process: mp.Process
+        The multiprocessing placeholder
+
+    Methods
+    -------
+    get_n_in() -> int
+        Get the number of variables in
+    get_n_out() -> int
+        Get the number of variables out
+    get_name_in(i: int) -> int
+        Get the name of a variable
+    get_name_out(_) -> str
+        Get the name of the output variable
+    get_sparsity_in(self, i: int) -> tuple[int]
+        Get the sparsity of a specific variable
+    eval(self, arg: Union[list, tuple]) -> list[int]
+        Send the current data to the plotter
+    """
+
+    def __init__(self, ocp: "OptimalControlProgram", opts: dict = {}):
+        """
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp to show
+        opts: dict
+            Option to AnimateCallback method of CasADi
+        """
         Callback.__init__(self)
-        self.nlp = ocp
-        self.nx = ocp.V.rows()
+        self.ocp = ocp
+        self.nx = self.ocp.V.rows()
         self.ng = 0
         self.construct("AnimateCallback", opts)
 
         self.queue = mp.Queue()
-        self.plotter = self.ProcessPlotter(ocp)
+        self.plotter = self.ProcessPlotter(self.ocp)
         self.plot_process = mp.Process(target=self.plotter, args=(self.queue,), daemon=True)
         self.plot_process.start()
 
     @staticmethod
-    def get_n_in():
+    def get_n_in() -> int:
+        """
+        Get the number of variables in
+
+        Returns
+        -------
+        The number of variables in
+        """
+
         return nlpsol_n_out()
 
     @staticmethod
-    def get_n_out():
+    def get_n_out() -> int:
+        """
+        Get the number of variables out
+
+        Returns
+        -------
+        The number of variables out
+        """
+
         return 1
 
     @staticmethod
-    def get_name_in(i):
+    def get_name_in(i: int) -> int:
+        """
+        Get the name of a variable
+
+        Parameters
+        ----------
+        i: int
+            The index of the variable
+
+        Returns
+        -------
+        The name of the variable
+        """
+
         return nlpsol_out(i)
 
     @staticmethod
-    def get_name_out(_):
+    def get_name_out(_) -> str:
+        """
+        Get the name of the output variable
+
+        Returns
+        -------
+        The name of the output variable
+        """
+
         return "ret"
 
-    def get_sparsity_in(self, i):
+    def get_sparsity_in(self, i: int) -> tuple[int]:
+        """
+        Get the sparsity of a specific variable
+
+        Parameters
+        ----------
+        i: int
+            The index of the variable
+
+        Returns
+        -------
+        The sparsity of the variable
+        """
+
         n = nlpsol_out(i)
         if n == "f":
             return Sparsity.scalar()
@@ -586,16 +923,60 @@ class OnlineCallback(Callback):
         else:
             return Sparsity(0, 0)
 
-    def eval(self, arg):
+    def eval(self, arg: Union[list, tuple]) -> list[int]:
+        """
+        Send the current data to the plotter
+
+        Parameters
+        ----------
+        arg: Union[list, tuple]
+            The data to send
+
+        Returns
+        -------
+        A list of error index
+        """
         send = self.queue.put
         send(arg[0])
         return [0]
 
     class ProcessPlotter(object):
-        def __init__(self, ocp):
+        """
+        The plotter that interface PlotOcp and the multiprocessing
+
+        Attributes
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp to show
+        pipe: mp.Queue
+            The multiprocessing queue to evaluate
+        plot: PlotOcp
+            The handler on all the figures
+
+        Methods
+        -------
+        callback(self) -> bool
+            The callback to update the graphs
+        """
+
+        def __init__(self, ocp: "OptimalControlProgram"):
+            """
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp to show
+            """
+
             self.ocp = ocp
 
-        def __call__(self, pipe):
+        def __call__(self, pipe: mp.Queue):
+            """
+            Parameters
+            ----------
+            pipe: mp.Queue
+                The multiprocessing queue to evaluate
+            """
+
             self.pipe = pipe
             self.plot = PlotOcp(self.ocp)
             timer = self.plot.all_figures[0].canvas.new_timer(interval=10)
@@ -603,7 +984,14 @@ class OnlineCallback(Callback):
             timer.start()
             plt.show()
 
-        def callback(self):
+        def callback(self) -> bool:
+            """
+            The callback to update the graphs
+
+            Returns
+            -------
+            True if everything went well
+            """
             while not self.pipe.empty():
                 V = self.pipe.get()
                 self.plot.update_data(V)
@@ -614,8 +1002,26 @@ class OnlineCallback(Callback):
 
 
 class Iterations:
+    """
+    Act of iterations
+
+    Methods
+    -------
+    save(V: np.array)
+        Save the current iteration on the hard drive
+    """
+
     @staticmethod
-    def save(V):
+    def save(V: np.array):
+        """
+        Save the current iteration on the hard drive
+
+        Parameters
+        ----------
+        V: np.array
+            The vector of data to save
+        """
+
         file_path = ".__tmp_bioptim/temp_save_iter.bobo"
         if os.path.isfile(file_path):
             with open(file_path, "rb") as file:
