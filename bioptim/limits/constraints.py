@@ -90,7 +90,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         Add the constraint to the constraint pool
     clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: Constraint)
         Resets a penalty. A negative penalty index creates a new empty penalty.
-    _parameter_modifier(constraint: "Constraint")
+    _parameter_modifier(constraint: Constraint)
         Apply some default parameters
     _span_checker(constraint, nlp)
         Check for any non sense in the requested times for the constraint. Raises an error if so
@@ -259,7 +259,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 ConstraintFunction.add_to_penalty(ocp, nlp, vertcat(*[u[i] + min_bound, u[i] - max_bound]), constraint)
 
         @staticmethod
-        def time_constraint(constraint: Constraint, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX]):
+        def time_constraint(constraint: Constraint, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], **unused_param):
             """
             The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
 
@@ -279,6 +279,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 References to the control variables
             p: Union[MX, SX]
                 References to the parameter variables
+            **unused_param: dict
+                Since the function does nothing, we can safely ignore any argument
             """
 
             pass
@@ -409,7 +411,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     @staticmethod
     def clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: Constraint):
         """
-        Resets a penalty. A negative penalty index creates a new empty penalty.
+        Resets a constraint. A negative penalty index creates a new empty constraint.
 
         Parameters
         ----------
@@ -440,7 +442,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             g_to_add_to[penalty.list_index] = []
 
     @staticmethod
-    def _parameter_modifier(constraint: "Constraint"):
+    def _parameter_modifier(constraint: Constraint):
         """
         Apply some default parameters
 
@@ -454,9 +456,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         super(ConstraintFunction, ConstraintFunction)._parameter_modifier(constraint)
 
     @staticmethod
-    def _span_checker(constraint, nlp):
+    def _span_checker(constraint: Constraint, nlp: "NonLinearProgram"):
         """
         Check for any non sense in the requested times for the constraint. Raises an error if so
+
+        Parameters
+        ----------
+        constraint: Constraint
+            The actual constraint to declare
+        nlp: "NonLinearProgram"
+            A reference to the current phase of the ocp
         """
 
         # Everything that is suspicious in terms of the span of the penalty function can be checked here
