@@ -22,12 +22,12 @@ class CustomPlot:
         self,
         update_function: Callable,
         plot_type: PlotType = PlotType.PLOT,
-        axes_idx: Union[Mapping, tuple[int], list[int]] = None,
-        legend: Union[tuple[str], list[str]] = (),
+        axes_idx: Union[Mapping, tuple, list] = None,
+        legend: Union[tuple, list] = (),
         combine_to: str = None,
         color: str = None,
         linestyle: str = None,
-        ylim: Union[tuple[float, float], list[float, float]] = None,
+        ylim: Union[tuple, list] = None,
         bounds: Bounds = None,
     ):
         """
@@ -658,7 +658,7 @@ class PlotOcp:
         return y_range, data_range
 
     @staticmethod
-    def _generate_windows_size(nb: int) -> tuple[int, int]:
+    def _generate_windows_size(nb: int) -> tuple:
         """
         Defines the number of column and rows of subplots from the number of variables to plot.
 
@@ -899,7 +899,7 @@ class OnlineCallback(Callback):
 
         return "ret"
 
-    def get_sparsity_in(self, i: int) -> tuple[int]:
+    def get_sparsity_in(self, i: int) -> tuple:
         """
         Get the sparsity of a specific variable
 
@@ -923,7 +923,7 @@ class OnlineCallback(Callback):
         else:
             return Sparsity(0, 0)
 
-    def eval(self, arg: Union[list, tuple]) -> list[int]:
+    def eval(self, arg: Union[list, tuple]) -> list:
         """
         Send the current data to the plotter
 
