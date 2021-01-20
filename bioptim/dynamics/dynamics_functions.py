@@ -4,7 +4,7 @@ import biorbd
 
 class DynamicsFunctions:
     """
-    Implementation of all the (staticmethod) dynamic functions
+    Implementation of all the dynamic functions
 
     Methods
     -------
@@ -632,7 +632,7 @@ class DynamicsFunctions:
     @staticmethod
     def dispatch_q_qdot_tau_data(
         states: MX.sym, controls: MX.sym, nlp: "NonLinearProgram"
-    ) -> tuple[MX.sym, MX.sym, MX.sym]:
+    ) -> tuple:
         """
         Extracting q, qdot and tau from states and controls, assuming state, state and control, respectively.
 

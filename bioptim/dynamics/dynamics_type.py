@@ -85,7 +85,6 @@ class DynamicsList(UniquePerPhaseOptionList):
             The chosen dynamic functions
         extra_parameters: dict
             Any parameters to pass to Dynamics
-
         """
 
         if isinstance(dynamics_type, Dynamics):
