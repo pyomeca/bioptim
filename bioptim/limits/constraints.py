@@ -65,7 +65,7 @@ class ConstraintList(OptionList):
 
         Parameters
         ----------
-        constraint: ConstraintFcn
+        constraint: Union[Callable, "ConstraintFcn"]
             The chosen constraint
         extra_arguments: dict
             Any parameters to pass to Constraint
@@ -80,7 +80,7 @@ class ConstraintList(OptionList):
 
 class ConstraintFunction(PenaltyFunctionAbstract):
     """
-    Reimplementation of some penalty functions
+    Internal (re)implementation of the penalty functions
 
     Methods
     -------

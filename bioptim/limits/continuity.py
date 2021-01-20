@@ -1,8 +1,9 @@
+from typing import Callable, Union
 from warnings import warn
 from enum import Enum
 
 import biorbd
-from casadi import vertcat
+from casadi import vertcat, MX
 
 from .constraints import ConstraintFunction
 from .objective_functions import ObjectiveFunction
@@ -10,33 +11,117 @@ from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
 
 
 class StateTransition(OptionGeneric):
-    def __init__(self, phase_pre_idx=None, weight=0, custom_function=None, **params):
+    """
+    A placeholder for a transition of state
+
+    Attributes
+    ----------
+    base: ConstraintFunction
+        The type of penalty the state transition is (Constraint if no weight, Mayer otherwise)
+    weight: float
+        The weight of the objective function. The transition is a constraint if weight is not specified
+    quadratic: bool
+        If the objective function is quadratic
+    phase_pre_idx: int
+        The index of the phase right before the transition
+    custom_function: function
+        The function to call if a custom transition function is provided
+
+    """
+    def __init__(self, phase_pre_idx: int = None, weight: float = None, custom_function: Callable = None, **params):
+        """
+        Parameters
+        ----------
+        phase_pre_idx: int
+            The index of the phase right before the transition
+        custom_function: function
+            The function to call if a custom transition function is provided
+        params:
+            Generic parameters for options
+        """
+
         super(StateTransition, self).__init__(**params)
         self.base = ConstraintFunction
-        self.phase_pre_idx = phase_pre_idx
-
         self.weight = weight
         self.quadratic = True
+        self.phase_pre_idx = phase_pre_idx
         self.custom_function = custom_function
 
 
 class StateTransitionList(UniquePerPhaseOptionList):
-    def add(self, transition, phase=-1, **extra_arguments):
+    """
+    A list of StateTransition if more than one is required
+
+    Methods
+    -------
+    add(self, transition: Union[Callable, "StateTransitionFcn"], phase: int = -1, **extra_arguments)
+        Add a new StateTransition to the list
+    """
+
+    def add(self, transition: Union[Callable, "StateTransitionFcn"], **extra_arguments):
+        """
+        Add a new StateTransition to the list
+
+        Parameters
+        ----------
+        transition: Union[Callable, "StateTransitionFcn"]
+            The chosen state transition
+        extra_arguments: dict
+            Any parameters to pass to Constraint
+        """
+
         if not isinstance(transition, StateTransitionFcn):
             extra_arguments["custom_function"] = transition
             transition = StateTransitionFcn.CUSTOM
         super(StateTransitionList, self)._add(
-            option_type=StateTransition, type=transition, phase=phase, **extra_arguments
+            option_type=StateTransition, type=transition, phase=-1, **extra_arguments
         )
 
 
 class StateTransitionFunctions:
+    """
+    Internal implementation of the state transitions
+
+    Methods
+    -------
+    prepare_state_transitions(ocp: "OptimalControlProgram", state_transitions: StateTransitionList) -> list
+        Configure all the state transitions and put them in a list
+    """
+
     class Functions:
+        """
+        Implementation of all the state transitions
+
+        Methods
+        -------
+        continuous(ocp: "OptimalControlProgram", transition: StateTransition)
+            The most common continuity function, that is state before equals state after
+        cyclic(ocp: "OptimalControlProgram", transition: StateTransition)
+            The continuity function applied to the last to first node
+        impact(ocp: "OptimalControlProgram", transition: StateTransition)
+            A discontinuous function that simulates an inelastic impact of a new contact point
+        custom(ocp: "OptimalControlProgram", transition: StateTransition)
+            Calls the custom transition function provided by the user
+        __get_nlp_pre_and_post(ocp: "OptimalControlProgram", phase_pre_idx: int)
+            Get two consecutive nlp. If the "pre" phase is the last, then the next one is the first (circular)
+        """
         @staticmethod
-        def continuous(ocp, transition):
+        def continuous(ocp: "OptimalControlProgram", transition: StateTransition) -> MX:
             """
-            TODO
+            The most common continuity function, that is state before equals state after
+
+            Parameters
+            ----------
+            ocp: "OptimalControlProgram"
+                A reference to the ocp
+            transition: StateTransition
+                A reference to the state transition
+
+            Returns
+            -------
+            The difference between the state after and before
             """
+
             if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.nb_phases].nx:
                 raise RuntimeError(
                     "Continuous state transitions without same nx is not possible, please provide a custom state transition"
@@ -45,17 +130,40 @@ class StateTransitionFunctions:
             return nlp_pre.X[-1] - nlp_post.X[0]
 
         @staticmethod
-        def cyclic(ocp, transition):
+        def cyclic(ocp: "OptimalControlProgram", transition: StateTransition) -> MX:
             """
-            TODO
+            The continuity function applied to the last to first node
+
+            Parameters
+            ----------
+            ocp: "OptimalControlProgram"
+                A reference to the ocp
+            transition: StateTransition
+                A reference to the state transition
+
+            Returns
+            -------
+            The difference between the last and first node
             """
             return StateTransitionFunctions.Functions.continuous(ocp, transition)
 
         @staticmethod
-        def impact(ocp, transition):
+        def impact(ocp: "OptimalControlProgram", transition: StateTransition) -> MX:
             """
-            TODO
+            A discontinuous function that simulates an inelastic impact of a new contact point
+
+            Parameters
+            ----------
+            ocp: "OptimalControlProgram"
+                A reference to the ocp
+            transition: StateTransition
+                A reference to the state transition
+
+            Returns
+            -------
+            The difference between the last and first node after applying the impulse equations
             """
+
             if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.nb_phases].nx:
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom state transition"
@@ -85,16 +193,61 @@ class StateTransitionFunctions:
             return val
 
         @staticmethod
-        def custom(ocp, transition):
+        def custom(ocp: "OptimalControlProgram", transition: StateTransition) -> MX:
+            """
+            Calls the custom transition function provided by the user
+
+            Parameters
+            ----------
+            ocp: "OptimalControlProgram"
+                A reference to the ocp
+            transition: StateTransition
+                A reference to the state transition
+
+            Returns
+            -------
+            The expected difference between the last and first node provided by the user
+            """
+
             nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
             return transition.custom_function(nlp_pre.X[-1], nlp_post.X[0], **transition.params)
 
         @staticmethod
-        def __get_nlp_pre_and_post(ocp, phase_pre_idx):
+        def __get_nlp_pre_and_post(ocp: "OptimalControlProgram", phase_pre_idx: int) -> tuple:
+            """
+            Get two consecutive nlp. If the "pre" phase is the last, then the next one is the first (circular)
+
+            Parameters
+            ----------
+            ocp: "OptimalControlProgram"
+                A reference to the ocp
+            phase_pre_idx: int
+                The index of the phase right before the transition
+
+            Returns
+            -------
+            The nlp before and after the transition
+            """
+
             return ocp.nlp[phase_pre_idx], ocp.nlp[(phase_pre_idx + 1) % ocp.nb_phases]
 
     @staticmethod
-    def prepare_state_transitions(ocp, state_transitions):
+    def prepare_state_transitions(ocp: "OptimalControlProgram", state_transitions: StateTransitionList) -> list:
+        """
+        Configure all the state transitions and put them in a list
+
+        Parameters
+        ----------
+        ocp: "OptimalControlProgram"
+            A reference to the ocp
+        state_transitions: StateTransitionList
+            The list of all the state transitions
+
+        Returns
+        -------
+        The list of all the transitions prepared
+        """
+
         # By default it assume Continuous. It can be change later
         full_state_transitions = [
             StateTransition(type=StateTransitionFcn.CONTINUOUS, phase_pre_idx=i) for i in range(ocp.nb_phases - 1)
@@ -124,8 +277,20 @@ class StateTransitionFunctions:
 
 
 class ContinuityFunctions:
+    """
+    Interface between continuity and constraint
+    """
     @staticmethod
-    def continuity(ocp):
+    def continuity(ocp: "OptimalControlProgram"):
+        """
+        The declaration of inner- and inter-phase continuity constraints
+
+        Parameters
+        ----------
+        ocp: "OptimalControlProgram"
+            A reference to the ocp
+        """
+
         ConstraintFunction.inner_phase_continuity(ocp)
 
         # Dynamics must be respected between phases
@@ -135,7 +300,7 @@ class ContinuityFunctions:
 
 class StateTransitionFcn(Enum):
     """
-    Different types of state transitions.
+    Selection of valid state transition functions
     """
 
     CONTINUOUS = (StateTransitionFunctions.Functions.continuous,)
