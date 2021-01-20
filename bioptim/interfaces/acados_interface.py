@@ -661,7 +661,7 @@ class AcadosInterface(SolverInterface):
     def online_optim(self, ocp):
         raise NotImplementedError("online_optim is not implemented yet with ACADOS backend")
 
-    def get_optimized_value(self) -> Union[list[dict], dict]:
+    def get_optimized_value(self) -> Union[list, dict]:
         """
         Get the previously optimized solution
 
