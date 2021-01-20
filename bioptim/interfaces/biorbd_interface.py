@@ -16,7 +16,7 @@ class BiorbdInterface:
     """
 
     @staticmethod
-    def convert_array_to_external_forces(all_f_ext: Union[list, tuple]) -> list[list[biorbd.VecBiorbdSpatialVector]]:
+    def convert_array_to_external_forces(all_f_ext: Union[list, tuple]) -> list:
         """
         Convert external forces np.ndarray lists of external forces to values understood by biorbd
 

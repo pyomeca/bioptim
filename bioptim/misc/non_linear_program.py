@@ -1,7 +1,7 @@
 from casadi import MX
 
 from ..limits.path_conditions import Bounds, InitialGuess
-from .. import ControlType, OdeSolver, DynamicsFcn
+from .. import ControlType, OdeSolver
 
 
 class NonLinearProgram:

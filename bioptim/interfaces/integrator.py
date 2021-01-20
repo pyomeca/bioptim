@@ -110,7 +110,7 @@ class Integrator:
 
     def dxdt(
         self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]
-    ) -> tuple[SX, list[SX]]:
+    ) -> tuple:
         """
         The dynamics of the system
 
@@ -206,7 +206,7 @@ class RK(Integrator):
 
     def dxdt(
         self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]
-    ) -> tuple[SX, list[SX]]:
+    ) -> tuple:
         """
         The dynamics of the system
 
@@ -439,7 +439,7 @@ class IRK(Integrator):
 
     def dxdt(
         self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]
-    ) -> tuple[SX, list[SX]]:
+    ) -> tuple:
         """
         The dynamics of the system
 
