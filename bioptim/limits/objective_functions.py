@@ -84,10 +84,12 @@ class ObjectiveFunction:
             return ObjectiveFunction.clear_penalty(ocp, nlp, penalty)
 
         @staticmethod
-        def _parameter_modifier(penalty_function, parameters):
+        def _parameter_modifier(parameters):
             """Modification of parameters"""
+
+            func = parameters.type.value[0]
             # Everything that should change the entry parameters depending on the penalty can be added here
-            if penalty_function == ObjectiveFcn.Lagrange.MINIMIZE_TIME.value[0]:
+            if func == ObjectiveFcn.Lagrange.MINIMIZE_TIME.value[0]:
                 # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
                 if "min_bound" in parameters.params:
                     raise RuntimeError(
@@ -101,13 +103,13 @@ class ObjectiveFunction:
                     )
                 if not parameters.quadratic:
                     parameters.quadratic = True
-            PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
+            PenaltyFunctionAbstract._parameter_modifier(parameters)
 
         @staticmethod
-        def _span_checker(objective_function, node, nlp):
+        def _span_checker(objective, nlp):
             """Raises errors on the span of penalty functions"""
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(objective_function, node, nlp)
+            PenaltyFunctionAbstract._span_checker(objective, nlp)
 
     class MayerFunction(PenaltyFunctionAbstract):
         """
@@ -156,23 +158,25 @@ class ObjectiveFunction:
             return ObjectiveFunction.clear_penalty(ocp, nlp, penalty_idx)
 
         @staticmethod
-        def _parameter_modifier(penalty_function, parameters):
+        def _parameter_modifier(parameters):
             """Modification of parameters"""
+
+            func = parameters.type.value[0]
             # Everything that should change the entry parameters depending on the penalty can be added here
-            if penalty_function == ObjectiveFcn.Mayer.MINIMIZE_TIME.value[0]:
+            if func == ObjectiveFcn.Mayer.MINIMIZE_TIME.value[0]:
                 # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
                 if "min_bound" in parameters.params:
                     del parameters.params["min_bound"]
                 if "max_bound" in parameters.params:
                     del parameters.params["max_bound"]
 
-            PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
+            PenaltyFunctionAbstract._parameter_modifier(parameters)
 
         @staticmethod
-        def _span_checker(penalty_function, node, nlp):
+        def _span_checker(objective, nlp):
             """Raises errors on the span of penalty functions"""
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(penalty_function, node, nlp)
+            PenaltyFunctionAbstract._span_checker(objective, nlp)
 
     class ParameterFunction(PenaltyFunctionAbstract):
         """
@@ -205,16 +209,16 @@ class ObjectiveFunction:
             return ObjectiveFunction.clear_penalty(ocp, None, penalty_idx)
 
         @staticmethod
-        def _parameter_modifier(penalty_function, parameters):
+        def _parameter_modifier(parameters):
             """Modification of parameters"""
             # Everything that should change the entry parameters depending on the penalty can be added here
-            PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
+            PenaltyFunctionAbstract._parameter_modifier(parameters)
 
         @staticmethod
-        def _span_checker(penalty_function, node, nlp):
+        def _span_checker(objective, nlp):
             """Raises errors on the span of penalty functions"""
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(penalty_function, node, nlp)
+            PenaltyFunctionAbstract._span_checker(objective, nlp)
 
     @staticmethod
     def add_or_replace(ocp, nlp, objective):

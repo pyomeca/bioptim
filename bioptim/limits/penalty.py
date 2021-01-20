@@ -541,15 +541,13 @@ class PenaltyFunctionAbstract:
         :param penalty: Penalty to be added. (instance of PenaltyFunctionAbstract class)
         """
         t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
-        penalty_function = penalty.type.value[0]
         penalty_type = penalty.type.get_type()
-        node = penalty.node
 
-        penalty_type._span_checker(penalty_function, node, nlp)
-        penalty_type._parameter_modifier(penalty_function, penalty)
+        penalty_type._span_checker(penalty, nlp)
+        penalty_type._parameter_modifier(penalty)
 
         penalty_type.clear_penalty(ocp, nlp, penalty)
-        penalty_function(penalty, ocp, nlp, t, x, u, nlp.p, **penalty.params)
+        penalty.type.value[0](penalty, ocp, nlp, t, x, u, nlp.p, **penalty.params)
 
     @staticmethod
     def _add_to_casadi_func(nlp, name, function, *all_param):
@@ -559,56 +557,60 @@ class PenaltyFunctionAbstract:
             nlp.casadi_func[name] = biorbd.to_casadi_func(name, function, *all_param)
 
     @staticmethod
-    def _parameter_modifier(penalty_function, parameters):
+    def _parameter_modifier(parameters):
         """
         Modifies parameters entries if needed.
-        :param penalty_function: Penalty function to be checked (instance of PenaltyType class)
         :param parameters: Parameters to be checked. If parameters.quadratic is not defined, it sets it to True.
         (bool)
         """
+
+        func = parameters.type.value[0]
         # Everything that should change the entry parameters depending on the penalty can be added here
         if parameters.quadratic is None:
             if (
-                penalty_function == PenaltyType.MINIMIZE_STATE
-                or penalty_function == PenaltyType.MINIMIZE_MARKERS
-                or penalty_function == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
-                or penalty_function == PenaltyType.MINIMIZE_MARKERS_VELOCITY
-                or penalty_function == PenaltyType.ALIGN_MARKERS
-                or penalty_function == PenaltyType.PROPORTIONAL_STATE
-                or penalty_function == PenaltyType.PROPORTIONAL_CONTROL
-                or penalty_function == PenaltyType.MINIMIZE_TORQUE
-                or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
-                or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
-                or penalty_function == PenaltyType.MINIMIZE_CONTACT_FORCES
-                or penalty_function == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
-                or penalty_function == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
-                or penalty_function == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
-                or penalty_function == PenaltyType.MINIMIZE_COM_POSITION
-                or penalty_function == PenaltyType.MINIMIZE_COM_VELOCITY
+                func == PenaltyType.MINIMIZE_STATE
+                or func == PenaltyType.MINIMIZE_MARKERS
+                or func == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
+                or func == PenaltyType.MINIMIZE_MARKERS_VELOCITY
+                or func == PenaltyType.ALIGN_MARKERS
+                or func == PenaltyType.PROPORTIONAL_STATE
+                or func == PenaltyType.PROPORTIONAL_CONTROL
+                or func == PenaltyType.MINIMIZE_TORQUE
+                or func == PenaltyType.MINIMIZE_MUSCLES_CONTROL
+                or func == PenaltyType.MINIMIZE_ALL_CONTROLS
+                or func == PenaltyType.MINIMIZE_CONTACT_FORCES
+                or func == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
+                or func == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
+                or func == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
+                or func == PenaltyType.MINIMIZE_COM_POSITION
+                or func == PenaltyType.MINIMIZE_COM_VELOCITY
             ):
                 parameters.quadratic = True
             else:
                 parameters.quadratic = False
 
-        if penalty_function == PenaltyType.PROPORTIONAL_STATE:
+        if func == PenaltyType.PROPORTIONAL_STATE:
             parameters.params["which_var"] = "states"
-        if penalty_function == PenaltyType.PROPORTIONAL_CONTROL:
+        if func == PenaltyType.PROPORTIONAL_CONTROL:
             parameters.params["which_var"] = "controls"
 
     @staticmethod
-    def _span_checker(penalty_function, node, nlp):
+    def _span_checker(penalty, nlp):
         """
         Raises errors if the time span is not consistent with the problem definition.
         (There can not be any control at the last time node)
         :param penalty_function: Penalty function. (instance of PenaltyType class)
         :param node: Node at which the penalty is applied. (instance of Node class)
         """
+
+        func = penalty.type.value[0]
+        node = penalty.node
         # Everything that is suspicious in terms of the span of the penalty function ca be checked here
         if (
-            penalty_function == PenaltyType.PROPORTIONAL_CONTROL
-            or penalty_function == PenaltyType.MINIMIZE_TORQUE
-            or penalty_function == PenaltyType.MINIMIZE_MUSCLES_CONTROL
-            or penalty_function == PenaltyType.MINIMIZE_ALL_CONTROLS
+            func == PenaltyType.PROPORTIONAL_CONTROL
+            or func == PenaltyType.MINIMIZE_TORQUE
+            or func == PenaltyType.MINIMIZE_MUSCLES_CONTROL
+            or func == PenaltyType.MINIMIZE_ALL_CONTROLS
         ):
             if node == Node.END or node == nlp.ns:
                 raise RuntimeError("No control u at last node")
