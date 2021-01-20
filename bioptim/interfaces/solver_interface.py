@@ -71,7 +71,7 @@ class SolverInterface:
 
         raise RuntimeError("SolverInterface is an abstract class")
 
-    def get_optimized_value(self) -> Union[list[dict], dict]:
+    def get_optimized_value(self) -> Union[list, dict]:
         """
         Get the previously optimized solution
 
