@@ -660,7 +660,7 @@ class ObjectiveFcn:
 
     class Mayer(Enum):
         """
-        Selection of valid Mayaer objective functions
+        Selection of valid Mayer objective functions
         """
 
         MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
