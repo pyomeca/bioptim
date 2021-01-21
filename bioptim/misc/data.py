@@ -1,15 +1,73 @@
+from typing import Union
+
 import numpy as np
 from scipy import interpolate
 from .enums import ControlType
 
 
 class Data:
+    """
+    Data manipulation and storage. Mostly for internal purpose
+
+    Attributes
+    ----------
+    phase: list[Phase]
+        A collection of phases.
+    nb_elements: int
+        The number of expected phases
+    has_same_nb_elements: bool
+        Variable that make sure the len(phase) and nb_elements are corresponding
+
+    Methods
+    -------
+    to_matrix(self, idx: Union[int, list, tuple] = (), phase_idx: Union[int, list, tuple] = (), node_idx: Union[int, list, tuple] = (), concatenate_phases: bool = True) -> np.ndarray
+        Parse the data into a np.ndarray
+    set_time_per_phase(self, new_t: list)
+        Set the time vector of the phase
+    get_time_per_phase(self, phases: Union[int, list, tuple] = (), concatenate: bool = False) -> np.ndarray
+        Get the time for each phase
+    get_data(ocp: "OptimalControlProgram", sol_x: dict, get_states: bool = True, get_controls: bool = True, get_parameters: bool = False, phase_idx: Union[int, list, tuple] = None, integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True,) -> tuple
+        Comprehensively parse the data from a solution
+    get_data_object(ocp: "OptimalControlProgram", V: np.ndarray, phase_idx: Union[int, list, tuple] = None, integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True) -> tuple
+        Parse an unstructured vector of data of data into their list of Phase format
+    _get_data_integrated_from_V(ocp: "OptimalControlProgram", data_states: dict, data_controls: dict, data_parameters: dict) -> dict
+        Integrates the states
+    _data_concatenated(data: dict) -> dict
+        Concatenate all the phases
+    _get_data_interpolated_from_V(data_states: dict, nb_frames: int) -> dict
+        Interpolate the states
+    _horzcat_node(self, dt: float, x_to_add: np.ndarray, idx_phase: int, idx_node: int)
+        Concatenate the nodes of a Phase into a np.ndarray
+    _get_phase(V_phase: np.ndarray, var_size: int, nb_nodes: int, offset: int, nb_variables: int, duplicate_last_column: bool) -> np.ndarray
+        Extract the data of a specific phase from an unstructured vector of data
+    _vertcat(data: np.ndarray, keys: str, phases: Union[int, list, tuple] = (), nodes: Union[int, list, tuple] = ())
+        Add new elements (rows) to the data
+    _append_phase(self, time: np.ndarray, phase: "Data.Phase")
+        Add a new phase to the phase list
+    """
+
     class Phase:
-        def __init__(self, time, phase):
+        """
+
+        Attributes
+        ----------
+        node: list[np.ndarray]
+            The actual values stored by nodes
+        nb_elements:
+            The number of expected nodes
+        t: np.array
+            The time vector
+        nb_t: int
+            The len of the time vector
+        """
+        def __init__(self, time: np.ndarray, phase: np.ndarray):
             """
-            Initializes phases with user provided information.
-            :param time: Duration of the movement optimized. (float)
-            :param phase: Phases information. (list of tuples)
+            Parameters
+            ----------
+            time: np.ndarray
+                The time vector
+            phase: np.ndarray
+                The values of the nodes
             """
             self.node = [node.reshape(node.shape[0], 1) for node in phase.T]
             self.nb_elements = phase.shape[0]
@@ -17,18 +75,33 @@ class Data:
             self.nb_t = self.t.shape[0]
 
     def __init__(self):
+        """
+        Parameters
+        ----------
+        """
         self.phase = []
         self.nb_elements = -1
         self.has_same_nb_elements = True
 
-    def to_matrix(self, idx=(), phase_idx=(), node_idx=(), concatenate_phases=True):
+    def to_matrix(self, idx: Union[int, list, tuple] = (), phase_idx: Union[int, list, tuple] = (), node_idx: Union[int, list, tuple] = (), concatenate_phases: bool = True) -> np.ndarray:
         """
-        Conversion of lists int matrix.
-        :param idx: Index of the target in the destination variable matrix. (integer)
-        :param phase_idx: Index of the phase targeted in the origin variable list. (integer)
-        :param node_idx: Index of the node targetedin the origin variable list. (integer)
-        :param concatenate_phases: If True, concatenates the phases into one big phase. (bool)
+        Parse the data into a np.ndarray
+
+        Parameters
+        ----------
+        idx: Union[int, list, tuple]
+            The indices of the rows to keep
+        phase_idx: Union[int, list, tuple]
+            The phases to keep
+        node_idx: Union[int, list, tuple]
+            The nodes in the phases to keep
+        concatenate_phases: bool
+            If the phases should be concatenated [True] or in a list [False]
+        Returns
+        -------
+        The data parsed into a np.ndarray
         """
+
         if not self.phase:
             return np.ndarray((0, 1))
 
@@ -57,21 +130,34 @@ class Data:
 
         return data
 
-    def set_time_per_phase(self, new_t):
+    def set_time_per_phase(self, new_t: list):
         """
-        Sets the new time vector in function of the duration of the movement.
-        :param new_t: Duration of the movement. (float)
+        Set the time vector of the phase
+
+        Parameters
+        ----------
+        new_t: list[list[int, int]]
+            The list of initial and final times for all the phases
         """
+
         for i, phase in enumerate(self.phase):
             phase.t = np.linspace(new_t[i][0], new_t[i][1], len(phase.node))
 
-    def get_time_per_phase(self, phases=(), concatenate=False):
+    def get_time_per_phase(self, phases: Union[int, list, tuple] = (), concatenate: bool = False) -> np.ndarray:
         """
-        Sets the new time vector for each phases.
-        :param phases: Phases. (list of tuple)
-        :param concatenate: If True, concatenates all the phases into one big phase. (bool)
-        :return t: Time vector.
+        Get the time for each phase
+
+        Parameters
+        ----------
+        phases: Union[int, list, tuple]
+            The phases to get the time from
+        concatenate: bool
+            If all the time should be concatenated [True] or in a list [False]
+        Returns
+        -------
+        The time for each phase
         """
+
         if not self.phase:
             return np.ndarray((0,))
 
@@ -91,28 +177,45 @@ class Data:
 
     @staticmethod
     def get_data(
-        ocp,
-        sol_x,
-        get_states=True,
-        get_controls=True,
-        get_parameters=False,
-        phase_idx=None,
-        integrate=False,
-        interpolate_nb_frames=-1,
-        concatenate=True,
-    ):
+        ocp: "OptimalControlProgram",
+        sol_x: dict,
+        get_states: bool = True,
+        get_controls: bool = True,
+        get_parameters: bool = False,
+        phase_idx: Union[int, list, tuple] = None,
+        integrate: bool = False,
+        interpolate_nb_frames: int = -1,
+        concatenate: bool = True,
+    ) -> tuple:
         """
-        Rearranges the solution states, controls and parameters of hte optimization into a list (out).
-        :param sol_x: Solution of the optimization. (dictionary)
-        :param get_states: If True, states are included in the out list. (bool)
-        :param get_controls: If True, controls are included in the out list. (bool)
-        :param get_parameters: If True, parameters are included in the out list. (bool)
-        :param phase_idx: Index of the phase. (integer)
-        :param integrate: If True, solution is integrated between nodes. (bool)
-        :param interpolate_nb_frames: Number of frames to interpolate the solution to. (integer)
-        :param concatenate: If True, concatenates all phases into one big phase. (bool)
-        :return out: Rearranged ist of the solution. (list)
+        Comprehensively parse the data from a solution
+
+        Parameters
+        ----------
+        ocp: "OptimalControlProgram"
+            A reference to the ocp
+        sol_x: dict
+            The dictionary of solution
+        get_states: bool
+            If the function should return the states
+        get_controls: bool
+            If the function should return the controls
+        get_parameters: bool
+            If the function should return the parameters
+        phase_idx: Union[int, list, tuple]
+            The index of the phase to get the data from
+        integrate: bool
+            If the data should be integrate (returns the points at each time step of the RK)
+        interpolate_nb_frames: int
+            If the data should be interpolated to change the frame rate
+        concatenate: bool
+            If the phases should be concatenated into one matrix [True] or returned in a list [False]
+
+        Returns
+        -------
+        The data comprehensively parsed
         """
+
         if isinstance(sol_x, dict) and "x" in sol_x:
             sol_x = sol_x["x"]
 
@@ -142,16 +245,28 @@ class Data:
             return out
 
     @staticmethod
-    def get_data_object(ocp, V, phase_idx=None, integrate=False, interpolate_nb_frames=-1, concatenate=True):
+    def get_data_object(ocp: "OptimalControlProgram", V: np.ndarray, phase_idx: Union[int, list, tuple] = None, integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True) -> tuple:
         """
+        Parse an unstructured vector of data of data into their list of Phase format
 
-        :param V:
-        :param phase_idx: Index of the phase. (integer)
-        :param integrate: If True V is integrated between nodes. (bool)
-        :param interpolate_nb_frames: Number of frames to interpolate the solution to. (integer)
-        :param concatenate: If True, concatenates all phases into one big phase. (bool)
-        :return: data_states -> Optimal states. (dictionary), data_controls -> Optimal controls. (dictionary)
-        and data_parameters -> Optimal parameters. (dictionary)
+        Parameters
+        ----------
+        ocp: "OptimalControlProgram"
+            A reference to the ocp
+        V: np.ndarray
+            The unstructured vector of data of data
+        phase_idx: Union[int, list, tuple]
+            Index of the phases to return
+        integrate: bool
+            If V should be integrated between nodes
+        interpolate_nb_frames: int
+            Number of frames to interpolate the solution
+        concatenate: bool
+            If the data should be return in one matrix [True] or in a list [False]
+
+        Returns
+        -------
+        The states, controls and parameters in list of Phase format
         """
         V_array = np.array(V).squeeze()
         data_states, data_controls, data_parameters = {}, {}, {}
@@ -237,13 +352,26 @@ class Data:
         return data_states, data_controls, data_parameters
 
     @staticmethod
-    def _get_data_integrated_from_V(ocp, data_states, data_controls, data_parameters):
+    def _get_data_integrated_from_V(ocp: "OptimalControlProgram", data_states: dict, data_controls: dict, data_parameters: dict) -> dict:
         """
-        Integrates data between nodes.
-        :param data_states: Optimal states. (dictionary)
-        :param data_controls: Optimal controls. (dictionary)
-        :return: data_states -> Integrated between node optimal states. (dictionary)
+        Integrates the states
+
+        Parameters
+        ----------
+        ocp: "OptimalControlProgram"
+            A reference to the ocp
+        data_states: dict
+            A dictionary of all the states
+        data_controls: dict
+            A dictionary of all the controls
+        data_parameters: dict
+            A dictionary of all the parameters
+
+        Returns
+        -------
+        The dictionary of states integrated
         """
+
         # Check if time is optimized
         for idx_phase in range(ocp.nb_phases):
             dt = ocp.nlp[idx_phase].dt
@@ -268,12 +396,20 @@ class Data:
         return data_states
 
     @staticmethod
-    def _data_concatenated(data):
+    def _data_concatenated(data: dict) -> dict:
         """
-        Concatenates phases into one big phase.
-        :param data: Variable to concatenate. (dictionary)
-        :return: data -> Variable concatenated. (dictionary)
+        Concatenate all the phases
+
+        Parameters
+        ----------
+        data: dict
+            The dictionary of data
+
+        Returns
+        -------
+        The new dictionary of data concatenated
         """
+
         for key in data:
             if data[key].has_same_nb_elements:
                 data[key].phase = [
@@ -284,13 +420,22 @@ class Data:
         return data
 
     @staticmethod
-    def _get_data_interpolated_from_V(data_states, nb_frames):
+    def _get_data_interpolated_from_V(data_states: dict, nb_frames: int) -> dict:
         """
-        Interpolates data between nodes.
-        :param data_states: Optimal states. (dictionary)
-        :param nb_frames: Number of frames to interpolate to. (integer)
-        :return: data_states -> Integrated between node optimal states. (dictionary)
+        Interpolate the states
+
+        Parameters
+        ----------
+        data_states: dict
+            A dictionary of all the states
+        nb_frames: int
+            The number of frames to interpolate the data
+
+        Returns
+        -------
+        The dictionary of states interpolated
         """
+
         for key in data_states:
             t = data_states[key].get_time_per_phase(concatenate=False)
             d = data_states[key].to_matrix(concatenate_phases=False)
@@ -311,7 +456,22 @@ class Data:
 
         return data_states
 
-    def _horzcat_node(self, dt, x_to_add, idx_phase, idx_node):
+    def _horzcat_node(self, dt: float, x_to_add: np.ndarray, idx_phase: int, idx_node: int):
+        """
+        Concatenate the nodes of a Phase into a np.ndarray
+
+        Parameters
+        ----------
+        dt: float
+            The delta time of the concatenated values
+        x_to_add: np.ndarray
+            The data to concatenate
+        idx_phase: int
+            The index of phase in which the node to add
+        idx_node
+            The index of the node before the concatation point
+        """
+
         self.phase[idx_phase].t = np.concatenate(
             (
                 self.phase[idx_phase].t[: idx_node + 1],
@@ -322,11 +482,30 @@ class Data:
         self.phase[idx_phase].node[idx_node] = np.concatenate((self.phase[idx_phase].node[idx_node], x_to_add), axis=1)
 
     @staticmethod
-    def _get_phase(V_phase, var_size, nb_nodes, offset, nb_variables, duplicate_last_column):
+    def _get_phase(V_phase: np.ndarray, var_size: int, nb_nodes: int, offset: int, nb_variables: int, duplicate_last_column: bool) -> np.ndarray:
         """
-        Extracts variables from V.
-        :param V_phase: numpy array : Extract of V for a phase.
+        Extract the data of a specific phase from an unstructured vector of data
+
+        Parameters
+        ----------
+        V_phase: np.ndarray
+            The unstructured vector of data
+        var_size: int
+            The size of the variable to extract
+        nb_nodes:
+            The number of node to extract
+        offset:
+            The index of the first element to extract
+        nb_variables:
+            The number of variable to skip
+        duplicate_last_column:
+            If the last column should be duplicated
+
+        Returns
+        -------
+        The data in the form of a np.ndarray
         """
+
         array = np.ndarray((var_size, nb_nodes))
         for dof in range(var_size):
             array[dof, :] = V_phase[offset + dof :: nb_variables]
@@ -337,8 +516,36 @@ class Data:
             return array
 
     @staticmethod
-    def _vertcat(data, keys, phases=(), nodes=()):
-        def get_matrix(elem):
+    def _vertcat(data: np.ndarray, keys: str, phases: Union[int, list, tuple] = (), nodes: Union[int, list, tuple] = ()):
+        """
+        Add new elements (rows) to the data
+
+        Parameters
+        ----------
+        data: np.ndarray
+            The rows to add to the data
+        keys: str
+            The name of the data to add
+        phases: Union[int, list, tuple]
+            The phases to add the data to
+        nodes: Union[int, list, tuple]
+            The nodes to add the data to
+        """
+
+        def get_matrix(elem: Union[Data.Phase, np.ndarray]):
+            """
+            Converts the data into matrix if needed
+
+            Parameters
+            ----------
+            elem: Union[Data.Phase, np.ndarray]
+                The data to convert
+
+            Returns
+            -------
+            The data in the matrix format
+            """
+
             if isinstance(elem, Data):
                 return elem.to_matrix(phase_idx=phases, node_idx=nodes)
             else:
@@ -352,7 +559,18 @@ class Data:
         else:
             return np.empty((0, 0))
 
-    def _append_phase(self, time, phase):
+    def _append_phase(self, time: np.ndarray, phase: "Data.Phase"):
+        """
+        Add a new phase to the phase list
+
+        Parameters
+        ----------
+        time: np.ndarray
+            The time vector
+        phase: "Data.Phase"
+            The phase to concatenate
+        """
+
         time = np.linspace(time[0], time[1], len(phase[0]))
         self.phase.append(Data.Phase(time, phase))
         if self.nb_elements < 0:
