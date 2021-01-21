@@ -3,7 +3,6 @@ from enum import Enum
 
 import numpy as np
 from casadi import MX, SX
-import casadi
 
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
 from ..misc.enums import Node
