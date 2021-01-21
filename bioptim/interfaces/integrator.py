@@ -108,9 +108,7 @@ class Integrator:
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def dxdt(
-        self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]
-    ) -> tuple:
+    def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple:
         """
         The dynamics of the system
 
@@ -204,9 +202,7 @@ class RK(Integrator):
 
         raise RuntimeError("RK is abstract, please select a specific RK")
 
-    def dxdt(
-        self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]
-    ) -> tuple:
+    def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple:
         """
         The dynamics of the system
 
@@ -437,9 +433,7 @@ class IRK(Integrator):
         else:
             raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with IRK")
 
-    def dxdt(
-        self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]
-    ) -> tuple:
+    def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple:
         """
         The dynamics of the system
 

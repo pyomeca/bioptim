@@ -630,9 +630,7 @@ class DynamicsFunctions:
         return cs.getForce().to_mx()
 
     @staticmethod
-    def dispatch_q_qdot_tau_data(
-        states: MX.sym, controls: MX.sym, nlp: "NonLinearProgram"
-    ) -> tuple:
+    def dispatch_q_qdot_tau_data(states: MX.sym, controls: MX.sym, nlp: "NonLinearProgram") -> tuple:
         """
         Extracting q, qdot and tau from states and controls, assuming state, state and control, respectively.
 

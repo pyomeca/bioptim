@@ -184,7 +184,15 @@ class PenaltyFunctionAbstract:
         """
 
         @staticmethod
-        def minimize_states(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX]):
+        def minimize_states(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+        ):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -236,7 +244,16 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def minimize_markers(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)):
+        def minimize_markers(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z),
+        ):
             """
             Minimize a marker set.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -279,7 +296,16 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def minimize_markers_displacement(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], coordinates_system_idx: int = -1):
+        def minimize_markers_displacement(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            coordinates_system_idx: int = -1,
+        ):
             """
             Minimize a marker set velocity by comparing the position at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -351,7 +377,15 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val[:3, :], penalty)
 
         @staticmethod
-        def minimize_markers_velocity(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX]):
+        def minimize_markers_velocity(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+        ):
             """
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -399,7 +433,17 @@ class PenaltyFunctionAbstract:
                     penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def track_markers(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], first_marker_idx: int, second_marker_idx: int):
+        def track_markers(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            first_marker_idx: int,
+            second_marker_idx: int,
+        ):
             """
             Minimize the distance between two markers
             By default this function is quadratic, meaning that it minimizes distance between them.
@@ -438,7 +482,19 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def proportional_variable(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], which_var: str, first_dof: int, second_dof: int, coef: float):
+        def proportional_variable(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            which_var: str,
+            first_dof: int,
+            second_dof: int,
+            coef: float,
+        ):
             """
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
             By default this function is quadratic, meaning that it minimizes the difference of this proportion.
@@ -497,7 +553,15 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def minimize_torque(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX]):
+        def minimize_torque(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+        ):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -539,7 +603,15 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def minimize_torque_derivative(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX]):
+        def minimize_torque_derivative(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+        ):
             """
             Minimize the joint torque velocity by comparing the torque at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -571,7 +643,15 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def minimize_muscles_control(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX]):
+        def minimize_muscles_control(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+        ):
             """
             Minimize the muscles part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -617,7 +697,15 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def minimize_all_controls(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX]):
+        def minimize_all_controls(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+        ):
             """
             Minimize the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -656,7 +744,15 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def minimize_predicted_com_height(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX]):
+        def minimize_predicted_com_height(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+        ):
             """
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
             assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]
@@ -685,14 +781,23 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
             for i, v in enumerate(x):
                 q = nlp.mapping["q"].to_second.map(v[: nlp.shape["q"]])
-                q_dot = nlp.mapping["q_dot"].to_second.map(v[nlp.shape["q"]:])
+                q_dot = nlp.mapping["q_dot"].to_second.map(v[nlp.shape["q"] :])
                 CoM = nlp.casadi_func["biorbd_CoM"](q)
                 CoM_dot = nlp.casadi_func["biorbd_CoMdot"](q, q_dot)
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
                 penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_height, penalty)
 
         @staticmethod
-        def minimize_com_position(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None):
+        def minimize_com_position(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            axis: Axis = None,
+        ):
             """
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's position is minimized.
@@ -739,7 +844,16 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_proj, penalty)
 
         @staticmethod
-        def minimize_com_velocity(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None):
+        def minimize_com_velocity(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            axis: Axis = None,
+        ):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's velocity is minimized.
@@ -773,7 +887,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
             for i, v in enumerate(x):
                 q = nlp.mapping["q"].to_second.map(v[: nlp.shape["q"]])
-                q_dot = nlp.mapping["q_dot"].to_second.map(v[nlp.shape["q"]:])
+                q_dot = nlp.mapping["q_dot"].to_second.map(v[nlp.shape["q"] :])
                 CoM_dot = nlp.casadi_func["biorbd_CoMdot"](q, q_dot)
 
                 if axis == None:
@@ -787,7 +901,15 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_dot_proj, penalty)
 
         @staticmethod
-        def minimize_contact_forces(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX]):
+        def minimize_contact_forces(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+        ):
             """
             Minimize the contact forces computed from dynamics with contact
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -831,7 +953,17 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def track_segment_with_custom_rt(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], segment_idx: int, rt_idx: int):
+        def track_segment_with_custom_rt(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            segment_idx: int,
+            rt_idx: int,
+        ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment and a RT (e.g. IMU)
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -893,7 +1025,18 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def track_marker_with_segment_axis(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], marker_idx: int, segment_idx: int, axis: Axis):
+        def track_marker_with_segment_axis(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            marker_idx: int,
+            segment_idx: int,
+            axis: Axis,
+        ):
             """
             Track a marker using a segment, that is aligning an axis toward the marker
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -950,7 +1093,16 @@ class PenaltyFunctionAbstract:
                         penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def custom(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], **parameters):
+        def custom(
+            penalty: PenaltyOption,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            **parameters,
+        ):
             """
             A user defined penalty function
 
@@ -1220,7 +1372,9 @@ class PenaltyFunctionAbstract:
                 )
 
     @staticmethod
-    def add_to_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: PenaltyOption):
+    def add_to_penalty(
+        ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: PenaltyOption
+    ):
         """
         Add the constraint to the penalty pool (abstract)
 
@@ -1330,7 +1484,13 @@ class PenaltyFunctionAbstract:
         return t, x, u
 
     @staticmethod
-    def _add_track_data_to_plot(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", data: np.ndarray, combine_to: str, axes_idx: Union[Mapping, tuple, list] = None):
+    def _add_track_data_to_plot(
+        ocp: "OptimalControlProgram",
+        nlp: "NonLinearProgram",
+        data: np.ndarray,
+        combine_to: str,
+        axes_idx: Union[Mapping, tuple, list] = None,
+    ):
         """
         Interface to the plot so it can be properly added to the proper plot
 

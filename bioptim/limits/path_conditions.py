@@ -43,7 +43,14 @@ class PathCondition(np.ndarray):
         Evaluate the interpolation at a specific shooting point
     """
 
-    def __new__(cls, input_array: np.ndarray, t: list = None, interpolation: InterpolationType = InterpolationType.CONSTANT, slice_list: slice = None, **extra_params):
+    def __new__(
+        cls,
+        input_array: np.ndarray,
+        t: list = None,
+        interpolation: InterpolationType = InterpolationType.CONSTANT,
+        slice_list: slice = None,
+        **extra_params,
+    ):
         """
         Parameters
         ----------
@@ -488,7 +495,13 @@ class BoundsList(UniquePerPhaseOptionList):
         Get the next bounds of the list
     """
 
-    def add(self, min_bound: Union[PathCondition, np.ndarray] = None, max_bound: Union[PathCondition, np.ndarray] = None, bounds: Bounds = None, **extra_arguments):
+    def add(
+        self,
+        min_bound: Union[PathCondition, np.ndarray] = None,
+        max_bound: Union[PathCondition, np.ndarray] = None,
+        bounds: Bounds = None,
+        **extra_arguments,
+    ):
         """
         Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
 
@@ -548,7 +561,12 @@ class QAndQDotBounds(Bounds):
     Specialized Bounds that reads a model to automatically extract q and qdot bounds
     """
 
-    def __init__(self, biorbd_model: "biorbd.Model", q_mapping: BidirectionalMapping = None, q_dot_mapping: BidirectionalMapping = None):
+    def __init__(
+        self,
+        biorbd_model: "biorbd.Model",
+        q_mapping: BidirectionalMapping = None,
+        q_dot_mapping: BidirectionalMapping = None,
+    ):
         """
         Parameters
         ----------
@@ -617,7 +635,12 @@ class InitialGuess(OptionGeneric):
         Get the size of the initial guess
     """
 
-    def __init__(self, initial_guess: np.ndarray = (), interpolation: InterpolationType = InterpolationType.CONSTANT, **parameters):
+    def __init__(
+        self,
+        initial_guess: np.ndarray = (),
+        interpolation: InterpolationType = InterpolationType.CONSTANT,
+        **parameters,
+    ):
         """
         Parameters
         ----------

@@ -60,6 +60,7 @@ class Data:
         nb_t: int
             The len of the time vector
         """
+
         def __init__(self, time: np.ndarray, phase: np.ndarray):
             """
             Parameters
@@ -83,7 +84,13 @@ class Data:
         self.nb_elements = -1
         self.has_same_nb_elements = True
 
-    def to_matrix(self, idx: Union[int, list, tuple] = (), phase_idx: Union[int, list, tuple] = (), node_idx: Union[int, list, tuple] = (), concatenate_phases: bool = True) -> np.ndarray:
+    def to_matrix(
+        self,
+        idx: Union[int, list, tuple] = (),
+        phase_idx: Union[int, list, tuple] = (),
+        node_idx: Union[int, list, tuple] = (),
+        concatenate_phases: bool = True,
+    ) -> np.ndarray:
         """
         Parse the data into a np.ndarray
 
@@ -245,7 +252,14 @@ class Data:
             return out
 
     @staticmethod
-    def get_data_object(ocp: "OptimalControlProgram", V: np.ndarray, phase_idx: Union[int, list, tuple] = None, integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True) -> tuple:
+    def get_data_object(
+        ocp: "OptimalControlProgram",
+        V: np.ndarray,
+        phase_idx: Union[int, list, tuple] = None,
+        integrate: bool = False,
+        interpolate_nb_frames: int = -1,
+        concatenate: bool = True,
+    ) -> tuple:
         """
         Parse an unstructured vector of data of data into their list of Phase format
 
@@ -352,7 +366,9 @@ class Data:
         return data_states, data_controls, data_parameters
 
     @staticmethod
-    def _get_data_integrated_from_V(ocp: "OptimalControlProgram", data_states: dict, data_controls: dict, data_parameters: dict) -> dict:
+    def _get_data_integrated_from_V(
+        ocp: "OptimalControlProgram", data_states: dict, data_controls: dict, data_parameters: dict
+    ) -> dict:
         """
         Integrates the states
 
@@ -482,7 +498,9 @@ class Data:
         self.phase[idx_phase].node[idx_node] = np.concatenate((self.phase[idx_phase].node[idx_node], x_to_add), axis=1)
 
     @staticmethod
-    def _get_phase(V_phase: np.ndarray, var_size: int, nb_nodes: int, offset: int, nb_variables: int, duplicate_last_column: bool) -> np.ndarray:
+    def _get_phase(
+        V_phase: np.ndarray, var_size: int, nb_nodes: int, offset: int, nb_variables: int, duplicate_last_column: bool
+    ) -> np.ndarray:
         """
         Extract the data of a specific phase from an unstructured vector of data
 
@@ -516,7 +534,9 @@ class Data:
             return array
 
     @staticmethod
-    def _vertcat(data: np.ndarray, keys: str, phases: Union[int, list, tuple] = (), nodes: Union[int, list, tuple] = ()):
+    def _vertcat(
+        data: np.ndarray, keys: str, phases: Union[int, list, tuple] = (), nodes: Union[int, list, tuple] = ()
+    ):
         """
         Add new elements (rows) to the data
 

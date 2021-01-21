@@ -5,6 +5,7 @@ class Axis(IntEnum):
     """
     Selection of valid axis (X, Y or Z)
     """
+
     X = 0
     Y = 1
     Z = 2

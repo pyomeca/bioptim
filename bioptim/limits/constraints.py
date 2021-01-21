@@ -24,7 +24,14 @@ class Constraint(PenaltyOption):
         The vector of maximal bound of the constraint. Default is 0
     """
 
-    def __init__(self, constraint: "ConstraintFcn", min_bound: np.ndarray=None, max_bound: np.ndarray=None, phase:int=0, **params):
+    def __init__(
+        self,
+        constraint: "ConstraintFcn",
+        min_bound: np.ndarray = None,
+        max_bound: np.ndarray = None,
+        phase: int = 0,
+        **params,
+    ):
         """
         Parameters
         ----------
@@ -116,7 +123,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def contact_force(constraint: Constraint, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], contact_force_idx: int):
+        def contact_force(
+            constraint: Constraint,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            contact_force_idx: int,
+        ):
             """
             Add a constraint of contact forces given by any forward dynamics with contact
 
@@ -149,9 +165,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
 
         @staticmethod
-        def non_slipping(constraint: Constraint, ocp: "OptimalControlProgram", nlp: "NonLinearProgram",
-                         t: list, x: list, u: list, p: Union[MX, SX], tangential_component_idx: int,
-                         normal_component_idx: int, static_friction_coefficient: float):
+        def non_slipping(
+            constraint: Constraint,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            tangential_component_idx: int,
+            normal_component_idx: int,
+            static_friction_coefficient: float,
+        ):
             """
             Add a constraint of static friction at contact points allowing for small tangential forces. This constraint
             assumes that the normal forces is positive
@@ -209,7 +234,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
 
         @staticmethod
-        def torque_max_from_actuators(constraint: Constraint, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], min_torque=None):
+        def torque_max_from_actuators(
+            constraint: Constraint,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            min_torque=None,
+        ):
             """
             Non linear maximal values of joint torques computed from the torque-position-velocity relationship
 
@@ -259,7 +293,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 ConstraintFunction.add_to_penalty(ocp, nlp, vertcat(*[u[i] + min_bound, u[i] - max_bound]), constraint)
 
         @staticmethod
-        def time_constraint(constraint: Constraint, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], **unused_param):
+        def time_constraint(
+            constraint: Constraint,
+            ocp: "OptimalControlProgram",
+            nlp: "NonLinearProgram",
+            t: list,
+            x: list,
+            u: list,
+            p: Union[MX, SX],
+            **unused_param,
+        ):
             """
             The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
 
@@ -472,10 +515,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         super(ConstraintFunction, ConstraintFunction)._span_checker(constraint, nlp)
         func = constraint.type.value[0]
         node = constraint.node
-        if (
-            func == ConstraintFcn.CONTACT_FORCE.value[0]
-            or func == ConstraintFcn.NON_SLIPPING.value[0]
-        ):
+        if func == ConstraintFcn.CONTACT_FORCE.value[0] or func == ConstraintFcn.NON_SLIPPING.value[0]:
             if node == Node.END or node == nlp.ns:
                 raise RuntimeError("No control u at last node")
 

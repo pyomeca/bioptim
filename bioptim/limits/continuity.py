@@ -26,8 +26,8 @@ class StateTransition(OptionGeneric):
         The index of the phase right before the transition
     custom_function: function
         The function to call if a custom transition function is provided
-
     """
+
     def __init__(self, phase_pre_idx: int = None, weight: float = None, custom_function: Callable = None, **params):
         """
         Parameters
@@ -73,9 +73,7 @@ class StateTransitionList(UniquePerPhaseOptionList):
         if not isinstance(transition, StateTransitionFcn):
             extra_arguments["custom_function"] = transition
             transition = StateTransitionFcn.CUSTOM
-        super(StateTransitionList, self)._add(
-            option_type=StateTransition, type=transition, phase=-1, **extra_arguments
-        )
+        super(StateTransitionList, self)._add(option_type=StateTransition, type=transition, phase=-1, **extra_arguments)
 
 
 class StateTransitionFunctions:
@@ -105,6 +103,7 @@ class StateTransitionFunctions:
         __get_nlp_pre_and_post(ocp: "OptimalControlProgram", phase_pre_idx: int)
             Get two consecutive nlp. If the "pre" phase is the last, then the next one is the first (circular)
         """
+
         @staticmethod
         def continuous(ocp: "OptimalControlProgram", transition: StateTransition) -> MX:
             """
@@ -174,7 +173,7 @@ class StateTransitionFunctions:
             nbQ = nlp_pre.shape["q"]
             nbQdot = nlp_pre.shape["q_dot"]
             q = nlp_pre.mapping["q"].to_second.map(nlp_pre.X[-1][:nbQ])
-            qdot_pre = nlp_pre.mapping["q_dot"].to_second.map(nlp_pre.X[-1][nbQ: nbQ + nbQdot])
+            qdot_pre = nlp_pre.mapping["q_dot"].to_second.map(nlp_pre.X[-1][nbQ : nbQ + nbQdot])
 
             if nlp_post.model.nbContacts() == 0:
                 warn("The chosen model does not have any contact")
@@ -280,6 +279,7 @@ class ContinuityFunctions:
     """
     Interface between continuity and constraint
     """
+
     @staticmethod
     def continuity(ocp: "OptimalControlProgram"):
         """
