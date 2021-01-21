@@ -7,7 +7,7 @@ import numpy as np
 import biorbd
 from casadi import vertcat, horzcat, MX, SX
 
-from ..misc.enums import Node, Axe, PlotType, ControlType
+from ..misc.enums import Node, Axis, PlotType, ControlType
 from ..misc.mapping import Mapping
 from ..misc.options_lists import OptionGeneric
 
@@ -121,7 +121,7 @@ class PenaltyFunctionAbstract:
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_markers(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis_to_track: Axe = (Axe.X, Axe.Y, Axe.Z))
+        minimize_markers(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z))
             Minimize a marker set.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
@@ -159,12 +159,12 @@ class PenaltyFunctionAbstract:
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
             assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]
             By default this function is not quadratic, meaning that it minimizes towards infinity.
-        minimize_com_position(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axe = None)
+        minimize_com_position(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None)
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's position is minimized.
             Otherwise, the projection of the CoM's position on the specified axis is minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
-        minimize_com_velocity(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axe = None)
+        minimize_com_velocity(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None)
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's velocity is minimized.
             Otherwise, the projection of the CoM's velocity on the specified axis is minimized.
@@ -176,7 +176,7 @@ class PenaltyFunctionAbstract:
         track_segment_with_custom_rt(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], segment_idx: int, rt_idx: int)
             Minimize the difference of the euler angles extracted from the coordinate system of a segment and a RT (e.g. IMU)
             By default this function is quadratic, meaning that it minimizes the difference.
-        track_marker_with_segment_axis(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], marker_idx: int, segment_idx: int, axis: Axe)
+        track_marker_with_segment_axis(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], marker_idx: int, segment_idx: int, axis: Axis)
             Track a marker using a segment, that is aligning an axis toward the marker
             By default this function is quadratic, meaning that it minimizes the difference.
         custom(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], **parameters)
@@ -236,7 +236,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def minimize_markers(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis_to_track: Axe = (Axe.X, Axe.Y, Axe.Z)):
+        def minimize_markers(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)):
             """
             Minimize a marker set.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -258,7 +258,7 @@ class PenaltyFunctionAbstract:
                 References to the control variables
             p: Union[MX, SX]
                 References to the parameter variables
-            axis_to_track: Axe
+            axis_to_track: Axis
                 The axis the penalty is acting on
             """
 
@@ -692,7 +692,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_height, penalty)
 
         @staticmethod
-        def minimize_com_position(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axe = None):
+        def minimize_com_position(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None):
             """
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's position is minimized.
@@ -715,7 +715,7 @@ class PenaltyFunctionAbstract:
                 References to the control variables
             p: Union[MX, SX]
                 References to the parameter variables
-            axis: Axe
+            axis: Axis
                 The axis to project on. Default is all axes
             """
 
@@ -730,8 +730,8 @@ class PenaltyFunctionAbstract:
 
                 if axis == None:
                     CoM_proj = CoM
-                elif not isinstance(axis, Axe):
-                    raise RuntimeError("axis must be a bioptim.Axe")
+                elif not isinstance(axis, Axis):
+                    raise RuntimeError("axis must be a bioptim.Axis")
                 else:
                     CoM_proj = CoM[axis]
 
@@ -739,7 +739,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_proj, penalty)
 
         @staticmethod
-        def minimize_com_velocity(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axe = None):
+        def minimize_com_velocity(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's velocity is minimized.
@@ -762,7 +762,7 @@ class PenaltyFunctionAbstract:
                 References to the control variables
             p: Union[MX, SX]
                 References to the parameter variables
-            axis: Axe
+            axis: Axis
                 The axis to project on. Default is all axes
             """
 
@@ -778,8 +778,8 @@ class PenaltyFunctionAbstract:
 
                 if axis == None:
                     CoM_dot_proj = CoM_dot[0] ** 2 + CoM_dot[1] ** 2 + CoM_dot[2] ** 2
-                elif not isinstance(axis, Axe):
-                    raise RuntimeError("axis must be a bioptim.Axe")
+                elif not isinstance(axis, Axis):
+                    raise RuntimeError("axis must be a bioptim.Axis")
                 else:
                     CoM_dot_proj = CoM_dot[axis]
 
@@ -893,7 +893,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def track_marker_with_segment_axis(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], marker_idx: int, segment_idx: int, axis: Axe):
+        def track_marker_with_segment_axis(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], marker_idx: int, segment_idx: int, axis: Axis):
             """
             Track a marker using a segment, that is aligning an axis toward the marker
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -918,12 +918,12 @@ class PenaltyFunctionAbstract:
                 Index of the marker to be tracked
             segment_idx: int
                 Index of the segment to align with the marker
-            axis: Axe
+            axis: Axis
                 The axis that should be tracking the marker
             """
 
-            if not isinstance(axis, Axe):
-                raise RuntimeError("axis must be a bioptim.Axe")
+            if not isinstance(axis, Axis):
+                raise RuntimeError("axis must be a bioptim.Axis")
 
             def biorbd_meta_func(q, segment_idx, marker_idx):
                 r_rt = nlp.model.globalJCS(q, segment_idx)
@@ -943,7 +943,7 @@ class PenaltyFunctionAbstract:
             for v in x:
                 q = nlp.mapping["q"].expand.map(v[:nq])
                 marker = nlp.casadi_func[f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
-                for axe in Axe:
+                for axe in Axis:
                     if axe != axis:
                         # To align an axis, the other must be equal to 0
                         val = marker[axe, 0]

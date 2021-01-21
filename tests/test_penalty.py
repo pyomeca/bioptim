@@ -12,7 +12,7 @@ from bioptim import (
     InitialGuess,
     Objective,
     ObjectiveFcn,
-    Axe,
+    Axis,
     ConstraintFcn,
     Constraint,
     Node,
@@ -767,7 +767,7 @@ def test_penalty_align_marker_with_segment_axis(penalty_origin, value):
     else:
         penalty = Constraint(penalty_type)
 
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], marker_idx=0, segment_idx=1, axis=Axe.X)
+    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], x, [], [], marker_idx=0, segment_idx=1, axis=Axis.X)
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         res = ocp.nlp[0].J[0][0]["val"]
