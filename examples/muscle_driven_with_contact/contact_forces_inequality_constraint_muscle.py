@@ -27,7 +27,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
     biorbd_model = biorbd.Model(model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
-    tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
+    tau_mapping = BidirectionalMapping([None, None, None, 0], [3])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -72,13 +72,13 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
     u_bounds = BoundsList()
     u_bounds.add(
         [
-            [tau_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(),
-            [tau_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal(),
+            [tau_min] * tau_mapping.to_first.len + [activation_min] * biorbd_model.nbMuscleTotal(),
+            [tau_max] * tau_mapping.to_first.len + [activation_max] * biorbd_model.nbMuscleTotal(),
         ]
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * tau_mapping.reduce.len + [activation_init] * biorbd_model.nbMuscleTotal())
+    u_init.add([tau_init] * tau_mapping.to_first.len + [activation_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
 
     return OptimalControlProgram(

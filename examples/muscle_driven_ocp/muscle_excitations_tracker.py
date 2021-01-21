@@ -47,9 +47,9 @@ def generate_data(biorbd_model, final_time, nb_shooting):
             "muscle": nb_mus,
         },
         mapping={
-            "q": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
-            "q_dot": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
-            "tau": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
+            "q": BidirectionalMapping(range(nb_q), range(nb_q)),
+            "q_dot": BidirectionalMapping(range(nb_qdot), range(nb_qdot)),
+            "tau": BidirectionalMapping(range(nb_tau), range(nb_tau)),
         },
     )
     markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_q)

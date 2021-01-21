@@ -76,5 +76,5 @@ class ControlType(Enum):
     The goto value is CONSTANT
     """
 
-    CONSTANT = 0  # Constant over the integration step
-    LINEAR_CONTINUOUS = 1  # Linear interpolation between integration steps
+    CONSTANT = 1  # Constant over the integration step (=1 column)
+    LINEAR_CONTINUOUS = 2  # Linear interpolation between integration steps (=2 columns)

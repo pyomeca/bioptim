@@ -769,7 +769,7 @@ class ShowResult:
         all_bioviz = []
         for idx_phase, data in enumerate(data_interpolate["q"]):
             all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
-            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].expand.map(data))
+            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].to_second.map(data))
 
         if show_now:
             b_is_visible = [True] * len(all_bioviz)

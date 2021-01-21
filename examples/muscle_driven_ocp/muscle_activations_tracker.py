@@ -47,13 +47,13 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
         model=biorbd_model,
         shape={"muscle": nb_mus},
         mapping={
-            "q": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
-            "q_dot": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
+            "q": BidirectionalMapping(range(nb_q), range(nb_q)),
+            "q_dot": BidirectionalMapping(range(nb_qdot), range(nb_qdot)),
         },
     )
     if use_residual_torque:
         nlp.shape["tau"] = nb_tau
-        nlp.mapping["tau"] = BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau)))
+        nlp.mapping["tau"] = BidirectionalMapping(range(nb_tau), range(nb_tau))
         dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_and_torque_driven
     else:
         dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_driven

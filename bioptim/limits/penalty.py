@@ -271,9 +271,9 @@ class PenaltyFunctionAbstract:
                     penalty.target, (3, len(markers_idx), len(x))
                 )
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_markers", nlp.model.markers, nlp.q)
-            nq = nlp.mapping["q"].reduce.len
+            nq = nlp.mapping["q"].to_first.len
             for i, v in enumerate(x):
-                q = nlp.mapping["q"].expand.map(v[:nq])
+                q = nlp.mapping["q"].to_second.map(v[:nq])
                 val = nlp.casadi_func["biorbd_markers"](q)[axis_to_track, markers_idx]
                 penalty.sliced_target = target[axis_to_track, :, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
@@ -305,7 +305,7 @@ class PenaltyFunctionAbstract:
                 The index of the segment to use as reference. Default [-1] is the global coordinate system
             """
 
-            nq = nlp.mapping["q"].reduce.len
+            nq = nlp.mapping["q"].to_first.len
             nb_rts = nlp.model.nbSegment()
 
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
@@ -323,8 +323,8 @@ class PenaltyFunctionAbstract:
                 )
 
             for i in range(len(x) - 1):
-                q_0 = nlp.mapping["q"].expand.map(x[i][:nq])
-                q_1 = nlp.mapping["q"].expand.map(x[i + 1][:nq])
+                q_0 = nlp.mapping["q"].to_second.map(x[i][:nq])
+                q_1 = nlp.mapping["q"].to_second.map(x[i + 1][:nq])
 
                 if coordinates_system_idx < 0:
                     jcs_0_T = nlp.CX.eye(4)
@@ -428,9 +428,9 @@ class PenaltyFunctionAbstract:
 
             PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nbMarkers())
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "markers", nlp.model.markers, nlp.q)
-            nq = nlp.mapping["q"].reduce.len
+            nq = nlp.mapping["q"].to_first.len
             for v in x:
-                q = nlp.mapping["q"].expand.map(v[:nq])
+                q = nlp.mapping["q"].to_second.map(v[:nq])
                 first_marker = nlp.casadi_func["markers"](q)[:, first_marker_idx]
                 second_marker = nlp.casadi_func["markers"](q)[:, second_marker_idx]
 
@@ -492,7 +492,7 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("coef must be an int or a float")
 
             for v in ux:
-                v = nlp.mapping["q"].expand.map(v)
+                v = nlp.mapping["q"].to_second.map(v)
                 val = v[first_dof] - coef * v[second_dof]
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
@@ -684,8 +684,8 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM", nlp.model.CoM, nlp.q)
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
             for i, v in enumerate(x):
-                q = nlp.mapping["q"].expand.map(v[: nlp.shape["q"]])
-                q_dot = nlp.mapping["q_dot"].expand.map(v[nlp.shape["q"] :])
+                q = nlp.mapping["q"].to_second.map(v[: nlp.shape["q"]])
+                q_dot = nlp.mapping["q_dot"].to_second.map(v[nlp.shape["q"]:])
                 CoM = nlp.casadi_func["biorbd_CoM"](q)
                 CoM_dot = nlp.casadi_func["biorbd_CoMdot"](q, q_dot)
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
@@ -725,7 +725,7 @@ class PenaltyFunctionAbstract:
 
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM", nlp.model.CoM, nlp.q)
             for i, v in enumerate(x):
-                q = nlp.mapping["q"].expand.map(v[: nlp.shape["q"]])
+                q = nlp.mapping["q"].to_second.map(v[: nlp.shape["q"]])
                 CoM = nlp.casadi_func["biorbd_CoM"](q)
 
                 if axis == None:
@@ -772,8 +772,8 @@ class PenaltyFunctionAbstract:
 
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
             for i, v in enumerate(x):
-                q = nlp.mapping["q"].expand.map(v[: nlp.shape["q"]])
-                q_dot = nlp.mapping["q_dot"].expand.map(v[nlp.shape["q"] :])
+                q = nlp.mapping["q"].to_second.map(v[: nlp.shape["q"]])
+                q_dot = nlp.mapping["q_dot"].to_second.map(v[nlp.shape["q"]:])
                 CoM_dot = nlp.casadi_func["biorbd_CoMdot"](q, q_dot)
 
                 if axis == None:
@@ -886,9 +886,9 @@ class PenaltyFunctionAbstract:
                 nlp, f"align_segment_with_custom_rt_{segment_idx}", biorbd_meta_func, nlp.q, segment_idx, rt_idx
             )
 
-            nq = nlp.mapping["q"].reduce.len
+            nq = nlp.mapping["q"].to_first.len
             for v in x:
-                q = nlp.mapping["q"].expand.map(v[:nq])
+                q = nlp.mapping["q"].to_second.map(v[:nq])
                 val = nlp.casadi_func[f"align_segment_with_custom_rt_{segment_idx}"](q)
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
@@ -939,9 +939,9 @@ class PenaltyFunctionAbstract:
                 segment_idx,
                 marker_idx,
             )
-            nq = nlp.mapping["q"].reduce.len
+            nq = nlp.mapping["q"].to_first.len
             for v in x:
-                q = nlp.mapping["q"].expand.map(v[:nq])
+                q = nlp.mapping["q"].to_second.map(v[:nq])
                 marker = nlp.casadi_func[f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
                 for axe in Axis:
                     if axe != axis:

@@ -200,20 +200,20 @@ class Problem:
         :param nlp: An OptimalControlProgram class.
         """
         if nlp.mapping["q"] is None:
-            nlp.mapping["q"] = BidirectionalMapping(Mapping(range(nlp.model.nbQ())), Mapping(range(nlp.model.nbQ())))
+            nlp.mapping["q"] = BidirectionalMapping(range(nlp.model.nbQ()), range(nlp.model.nbQ()))
 
         dof_names = nlp.model.nameDof()
         q_mx = MX()
         q = nlp.CX()
 
-        for i in nlp.mapping["q"].reduce.map_idx:
+        for i in nlp.mapping["q"].to_first.map_idx:
             q = vertcat(q, nlp.CX.sym("Q_" + dof_names[i].to_string(), 1, 1))
-        for i in nlp.mapping["q"].expand.map_idx:
+        for i, _ in enumerate(nlp.mapping["q"].to_second.map_idx):
             q_mx = vertcat(q_mx, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
 
-        nlp.shape["q"] = nlp.mapping["q"].reduce.len
+        nlp.shape["q"] = nlp.mapping["q"].to_first.len
 
-        legend_q = ["q_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q"].reduce.map_idx]
+        legend_q = ["q_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q"].to_first.map_idx]
 
         nlp.q = q_mx
         if as_states:
@@ -243,22 +243,20 @@ class Problem:
         :param nlp: An OptimalControlProgram class.
         """
         if nlp.mapping["q_dot"] is None:
-            nlp.mapping["q_dot"] = BidirectionalMapping(
-                Mapping(range(nlp.model.nbQdot())), Mapping(range(nlp.model.nbQdot()))
-            )
+            nlp.mapping["q_dot"] = BidirectionalMapping(range(nlp.model.nbQdot()), range(nlp.model.nbQdot()))
 
         dof_names = nlp.model.nameDof()
         q_dot_mx = MX()
         q_dot = nlp.CX()
 
-        for i in nlp.mapping["q_dot"].reduce.map_idx:
+        for i in nlp.mapping["q_dot"].to_first.map_idx:
             q_dot = vertcat(q_dot, nlp.CX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
-        for i in nlp.mapping["q_dot"].expand.map_idx:
+        for i, _ in enumerate(nlp.mapping["q_dot"].to_second.map_idx):
             q_dot_mx = vertcat(q_dot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
 
-        nlp.shape["q_dot"] = nlp.mapping["q_dot"].reduce.len
+        nlp.shape["q_dot"] = nlp.mapping["q_dot"].to_first.len
 
-        legend_qdot = ["qdot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q_dot"].reduce.map_idx]
+        legend_qdot = ["qdot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q_dot"].to_first.map_idx]
 
         nlp.q_dot = q_dot_mx
         if as_states:
@@ -298,11 +296,7 @@ class Problem:
         """
         if nlp.mapping["tau"] is None:
             nlp.mapping["tau"] = BidirectionalMapping(
-                # Mapping(range(nlp.model.nbGeneralizedTorque())), Mapping(range(nlp.model.nbGeneralizedTorque()))
-                Mapping(range(nlp.model.nbQdot())),
-                Mapping(
-                    range(nlp.model.nbQdot())
-                ),  # To change when nlp.model.nbGeneralizedTorque() will return the proper number
+                range(nlp.model.nbGeneralizedTorque()), range(nlp.model.nbGeneralizedTorque())
             )
 
         dof_names = nlp.model.nameDof()
@@ -311,14 +305,14 @@ class Problem:
         tau_mx = MX()
         all_tau = [nlp.CX() for _ in range(n_col)]
 
-        for i in nlp.mapping["tau"].reduce.map_idx:
+        for i in nlp.mapping["tau"].to_first.map_idx:
             for j in range(len(all_tau)):
                 all_tau[j] = vertcat(all_tau[j], nlp.CX.sym(f"Tau_{dof_names[i].to_string()}_{j}", 1, 1))
-        for i in nlp.mapping["q"].expand.map_idx:
+        for i, _ in enumerate(nlp.mapping["q"].to_second.map_idx):
             tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
-        nlp.shape["tau"] = nlp.mapping["tau"].reduce.len
-        legend_tau = ["tau_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["tau"].reduce.map_idx]
+        nlp.shape["tau"] = nlp.mapping["tau"].to_first.len
+        legend_tau = ["tau_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["tau"].to_first.map_idx]
         nlp.tau = tau_mx
 
         if as_states:

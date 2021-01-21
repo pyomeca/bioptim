@@ -234,9 +234,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
 
             # TODO: Add index to select the u (control_idx)
-            nq = nlp.mapping["q"].reduce.len
-            q = [nlp.mapping["q"].expand.map(mx[:nq]) for mx in x]
-            q_dot = [nlp.mapping["q_dot"].expand.map(mx[nq:]) for mx in x]
+            nq = nlp.mapping["q"].to_first.len
+            q = [nlp.mapping["q"].to_second.map(mx[:nq]) for mx in x]
+            q_dot = [nlp.mapping["q_dot"].to_second.map(mx[nq:]) for mx in x]
 
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
@@ -246,15 +246,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             for i in range(len(u)):
                 bound = func(q[i], q_dot[i])
                 if min_torque:
-                    min_bound = nlp.mapping["tau"].reduce.map(
+                    min_bound = nlp.mapping["tau"].to_first.map(
                         if_else(lt(bound[:, 1], min_torque), min_torque, bound[:, 1])
                     )
-                    max_bound = nlp.mapping["tau"].reduce.map(
+                    max_bound = nlp.mapping["tau"].to_first.map(
                         if_else(lt(bound[:, 0], min_torque), min_torque, bound[:, 0])
                     )
                 else:
-                    min_bound = nlp.mapping["tau"].reduce.map(bound[:, 1])
-                    max_bound = nlp.mapping["tau"].reduce.map(bound[:, 0])
+                    min_bound = nlp.mapping["tau"].to_first.map(bound[:, 1])
+                    max_bound = nlp.mapping["tau"].to_first.map(bound[:, 0])
 
                 ConstraintFunction.add_to_penalty(ocp, nlp, vertcat(*[u[i] + min_bound, u[i] - max_bound]), constraint)
 

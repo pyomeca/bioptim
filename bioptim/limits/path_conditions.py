@@ -559,11 +559,24 @@ class QAndQDotBounds(Bounds):
         q_dot_mapping: BidirectionalMapping
             The mapping of qdot. If q_dot_mapping is not provided, q_mapping is used
         """
+        if biorbd_model.nbQuat() > 0:
+            if q_mapping and not q_dot_mapping:
+                raise RuntimeError(
+                    "It is not possible to provide a q_mapping but not a q_dot_mapping if the model have quaternion"
+                )
+            elif q_dot_mapping and not q_mapping:
+                raise RuntimeError(
+                    "It is not possible to provide a q_dot_mapping but not a q_mapping if the model have quaternion"
+                )
+
         if not q_mapping:
-            q_mapping = BidirectionalMapping(Mapping(range(biorbd_model.nbQ())), Mapping(range(biorbd_model.nbQ())))
+            q_mapping = BidirectionalMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
 
         if not q_dot_mapping:
-            q_dot_mapping = q_mapping
+            if biorbd_model.nbQuat() > 0:
+                q_dot_mapping = BidirectionalMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+            else:
+                q_dot_mapping = q_mapping
 
         QRanges = []
         QDotRanges = []
@@ -572,11 +585,11 @@ class QAndQDotBounds(Bounds):
             QRanges += [q_range for q_range in segment.QRanges()]
             QDotRanges += [qdot_range for qdot_range in segment.QDotRanges()]
 
-        x_min = [QRanges[i].min() for i in q_mapping.reduce.map_idx] + [
-            QDotRanges[i].min() for i in q_dot_mapping.reduce.map_idx
+        x_min = [QRanges[i].min() for i in q_mapping.to_first.map_idx] + [
+            QDotRanges[i].min() for i in q_dot_mapping.to_first.map_idx
         ]
-        x_max = [QRanges[i].max() for i in q_mapping.reduce.map_idx] + [
-            QDotRanges[i].max() for i in q_dot_mapping.reduce.map_idx
+        x_max = [QRanges[i].max() for i in q_mapping.to_first.map_idx] + [
+            QDotRanges[i].max() for i in q_dot_mapping.to_first.map_idx
         ]
 
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)

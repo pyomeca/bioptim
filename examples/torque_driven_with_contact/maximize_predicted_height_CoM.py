@@ -39,7 +39,7 @@ def prepare_ocp(
     else:
         tau_min, tau_max, tau_init = -500, 500, 0
 
-    tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
+    tau_mapping = BidirectionalMapping([None, None, None, 0], [3])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -87,10 +87,10 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len)
+    u_bounds.add([tau_min] * tau_mapping.to_first.len, [tau_max] * tau_mapping.to_first.len)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * tau_mapping.reduce.len)
+    u_init.add([tau_init] * tau_mapping.to_first.len)
     # ------------- #
 
     return OptimalControlProgram(

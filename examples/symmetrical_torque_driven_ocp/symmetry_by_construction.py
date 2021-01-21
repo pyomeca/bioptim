@@ -28,7 +28,7 @@ def prepare_ocp(biorbd_model_path="cubeSym.bioMod", ode_solver=OdeSolver.RK4):
     number_shooting_points = 30
     final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
-    all_generalized_mapping = BidirectionalMapping(Mapping([0, 1, 2, 2], [3]), Mapping([0, 1, 2]))
+    all_generalized_mapping = BidirectionalMapping([0, 1, 2, -2], [0, 1, 2])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -50,14 +50,14 @@ def prepare_ocp(biorbd_model_path="cubeSym.bioMod", ode_solver=OdeSolver.RK4):
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * all_generalized_mapping.reduce.len * 2)
+    x_init.add([0] * all_generalized_mapping.to_first.len * 2)
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * all_generalized_mapping.reduce.len, [tau_max] * all_generalized_mapping.reduce.len)
+    u_bounds.add([tau_min] * all_generalized_mapping.to_first.len, [tau_max] * all_generalized_mapping.to_first.len)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * all_generalized_mapping.reduce.len)
+    u_init.add([tau_init] * all_generalized_mapping.to_first.len)
 
     # ------------- #
 
