@@ -38,20 +38,14 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     symbolic_mus = MX.sym("mus", nb_mus, 1)
     symbolic_controls = MX.sym("u", nb_tau + nb_mus, 1)
     symbolic_parameters = MX.sym("u", 0, 0)
-    nlp = NonLinearProgram(
-        model=biorbd_model,
-        shape={
-            "q": nb_q,
-            "q_dot": nb_qdot,
-            "tau": nb_tau,
-            "muscle": nb_mus,
-        },
-        mapping={
-            "q": BidirectionalMapping(range(nb_q), range(nb_q)),
-            "q_dot": BidirectionalMapping(range(nb_qdot), range(nb_qdot)),
-            "tau": BidirectionalMapping(range(nb_tau), range(nb_tau)),
-        },
-    )
+    nlp = NonLinearProgram()
+    nlp.model = biorbd_model
+    nlp.shape = {"q": nb_q, "q_dot": nb_qdot, "tau": nb_tau, "muscle": nb_mus}
+    nlp.mapping = {
+        "q": BidirectionalMapping(range(nb_q), range(nb_q)),
+        "q_dot": BidirectionalMapping(range(nb_qdot), range(nb_qdot)),
+        "tau": BidirectionalMapping(range(nb_tau), range(nb_tau)),
+    }
     markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_q)
 
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot, symbolic_mus))
