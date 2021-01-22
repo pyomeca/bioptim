@@ -1,9 +1,10 @@
 from typing import Union
 
+import casadi
 from casadi import Function, vertcat, horzcat, norm_fro, collocation_points, tangent, rootfinder, MX, SX
 import numpy as np
 
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, OdeSolver
 
 
 class Integrator:
@@ -47,6 +48,8 @@ class Integrator:
         The dynamics of the system
     _finish_init(self)
         Prepare the CasADi function from dxdt
+    prepare_dynamic_integrator(ocp: OptimalControlProgram, nlp: NonLinearProgram)
+        Properly set the integration in an nlp
     """
 
     # Todo change ode and ode_opt into class
@@ -142,6 +145,82 @@ class Integrator:
             ["x0", "p", "params"],
             ["xf", "xall"],
         )
+
+    @staticmethod
+    def prepare_dynamic_integrator(ocp, nlp):
+        """
+        Properly set the integration in an nlp
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the main program
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        """
+
+        ode_opt = {"t0": 0, "tf": nlp.dt}
+        if nlp.ode_solver == OdeSolver.RK4 or nlp.ode_solver == OdeSolver.RK8:
+            ode_opt["number_of_finite_elements"] = nlp.nb_integration_steps
+        elif nlp.ode_solver == OdeSolver.IRK:
+            nlp.nb_integration_steps = 1
+
+        dynamics = nlp.dynamics_func
+        ode = {"x": nlp.x, "p": nlp.u, "ode": dynamics(nlp.x, nlp.u, nlp.p)}
+        nlp.dynamics = []
+        nlp.par_dynamics = {}
+        if nlp.ode_solver == OdeSolver.RK4 or nlp.ode_solver == OdeSolver.RK8 or nlp.ode_solver == OdeSolver.IRK:
+            if nlp.ode_solver == OdeSolver.IRK:
+                if ocp.CX is SX:
+                    raise NotImplementedError("use_SX and OdeSolver.IRK are not yet compatible")
+
+                if nlp.model.nbQuat() > 0:
+                    raise NotImplementedError(
+                        "Quaternions can't be used with IRK yet. If you get this error, please notify the "
+                        "developers and ping EveCharbie"
+                    )
+
+            ode_opt["model"] = nlp.model
+            ode_opt["param"] = nlp.p
+            ode_opt["CX"] = nlp.CX
+            ode_opt["idx"] = 0
+            ode["ode"] = dynamics
+            ode_opt["control_type"] = nlp.control_type
+            if nlp.external_forces:
+                for idx in range(len(nlp.external_forces)):
+                    ode_opt["idx"] = idx
+                    if nlp.ode_solver == OdeSolver.RK4:
+                        nlp.dynamics.append(RK4(ode, ode_opt))
+                    elif nlp.ode_solver == OdeSolver.RK8:
+                        nlp.dynamics.append(RK8(ode, ode_opt))
+                    elif nlp.ode_solver == OdeSolver.IRK:
+                        ode_opt["irk_polynomial_interpolation_degree"] = nlp.irk_polynomial_interpolation_degree
+                        nlp.dynamics.append(IRK(ode, ode_opt))
+            else:
+                if ocp.nb_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
+                if nlp.ode_solver == OdeSolver.RK4:
+                    nlp.dynamics.append(RK4(ode, ode_opt))
+                if nlp.ode_solver == OdeSolver.RK8:
+                    nlp.dynamics.append(RK8(ode, ode_opt))
+                elif nlp.ode_solver == OdeSolver.IRK:
+                    ode_opt["irk_polynomial_interpolation_degree"] = nlp.irk_polynomial_interpolation_degree
+                    nlp.dynamics.append(IRK(ode, ode_opt))
+        elif nlp.ode_solver == OdeSolver.CVODES:
+            if not isinstance(ocp.CX(), MX):
+                raise RuntimeError("CVODES integrator can only be used with MX graphs")
+            if len(ocp.param_to_optimize) != 0:
+                raise RuntimeError("CVODES cannot be used while optimizing parameters")
+            if nlp.external_forces:
+                raise RuntimeError("CVODES cannot be used with external_forces")
+            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
+            nlp.dynamics.append(casadi.integrator("integrator", "cvodes", ode, ode_opt))
+
+        if len(nlp.dynamics) == 1:
+            if ocp.nb_threads > 1:
+                nlp.par_dynamics = nlp.dynamics[0].map(nlp.ns, "thread", ocp.nb_threads)
+            nlp.dynamics = nlp.dynamics * nlp.ns
 
 
 class RK(Integrator):

@@ -26,11 +26,11 @@ class Data:
         Set the time vector of the phase
     get_time_per_phase(self, phases: Union[int, list, tuple] = (), concatenate: bool = False) -> np.ndarray
         Get the time for each phase
-    get_data(ocp: "OptimalControlProgram", sol_x: dict, get_states: bool = True, get_controls: bool = True, get_parameters: bool = False, phase_idx: Union[int, list, tuple] = None, integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True,) -> tuple
+    get_data(ocp: OptimalControlProgram, sol_x: dict, get_states: bool = True, get_controls: bool = True, get_parameters: bool = False, phase_idx: Union[int, list, tuple] = None, integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True,) -> tuple
         Comprehensively parse the data from a solution
-    get_data_object(ocp: "OptimalControlProgram", V: np.ndarray, phase_idx: Union[int, list, tuple] = None, integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True) -> tuple
+    get_data_object(ocp: OptimalControlProgram, V: np.ndarray, phase_idx: Union[int, list, tuple] = None, integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True) -> tuple
         Parse an unstructured vector of data of data into their list of Phase format
-    _get_data_integrated_from_V(ocp: "OptimalControlProgram", data_states: dict, data_controls: dict, data_parameters: dict) -> dict
+    _get_data_integrated_from_V(ocp: OptimalControlProgram, data_states: dict, data_controls: dict, data_parameters: dict) -> dict
         Integrates the states
     _data_concatenated(data: dict) -> dict
         Concatenate all the phases
@@ -184,7 +184,7 @@ class Data:
 
     @staticmethod
     def get_data(
-        ocp: "OptimalControlProgram",
+        ocp,
         sol_x: dict,
         get_states: bool = True,
         get_controls: bool = True,
@@ -199,7 +199,7 @@ class Data:
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
         sol_x: dict
             The dictionary of solution
@@ -253,7 +253,7 @@ class Data:
 
     @staticmethod
     def get_data_object(
-        ocp: "OptimalControlProgram",
+        ocp,
         V: np.ndarray,
         phase_idx: Union[int, list, tuple] = None,
         integrate: bool = False,
@@ -265,7 +265,7 @@ class Data:
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
         V: np.ndarray
             The unstructured vector of data of data
@@ -367,14 +367,14 @@ class Data:
 
     @staticmethod
     def _get_data_integrated_from_V(
-        ocp: "OptimalControlProgram", data_states: dict, data_controls: dict, data_parameters: dict
+        ocp, data_states: dict, data_controls: dict, data_parameters: dict
     ) -> dict:
         """
         Integrates the states
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
         data_states: dict
             A dictionary of all the states

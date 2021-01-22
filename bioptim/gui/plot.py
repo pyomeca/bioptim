@@ -152,7 +152,7 @@ class PlotOcp:
 
     def __init__(
         self,
-        ocp: "OptimalControlProgram",
+        ocp,
         automatically_organize: bool = True,
         adapt_graph_size_to_bounds: bool = False,
     ):
@@ -187,10 +187,10 @@ class PlotOcp:
 
         self.t = []
         self.t_integrated = []
-        if isinstance(self.ocp.initial_phase_time, (int, float)):
-            self.tf = [self.ocp.initial_phase_time]
+        if isinstance(self.ocp.original_phase_time, (int, float)):
+            self.tf = [self.ocp.original_phase_time]
         else:
-            self.tf = list(self.ocp.initial_phase_time)
+            self.tf = list(self.ocp.original_phase_time)
         self.t_idx_to_optimize = []
         for i, nlp in enumerate(self.ocp.nlp):
             if isinstance(nlp.tf, self.ocp.CX):
@@ -697,7 +697,7 @@ class ShowResult:
         Allows for non-blocking show of the figure. This works only in Debug
     """
 
-    def __init__(self, ocp: "OptimalControlProgram", sol: dict):
+    def __init__(self, ocp, sol: dict):
         """
         Parameters
         ----------
@@ -826,7 +826,7 @@ class OnlineCallback(Callback):
         Send the current data to the plotter
     """
 
-    def __init__(self, ocp: "OptimalControlProgram", opts: dict = {}):
+    def __init__(self, ocp, opts: dict = {}):
         """
         Parameters
         ----------
@@ -959,7 +959,7 @@ class OnlineCallback(Callback):
             The callback to update the graphs
         """
 
-        def __init__(self, ocp: "OptimalControlProgram"):
+        def __init__(self, ocp):
             """
             Parameters
             ----------

@@ -58,7 +58,6 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds)
     ocp.nlp[0].J = [list()]
     ocp.nlp[0].g = [list()]
-    ocp.nlp[0].g_bounds = [list()]
     return ocp
 
 
@@ -892,9 +891,6 @@ def test_tau_max_from_actuators(value, threshold):
             np.testing.assert_almost_equal(res, np.repeat([value + threshold, value - threshold], 3)[:, np.newaxis])
         else:
             np.testing.assert_almost_equal(res, np.repeat([value + 5, value - 10], 3)[:, np.newaxis])
-    for res in ocp.nlp[0].g_bounds[0]:
-        np.testing.assert_almost_equal(res.min, np.repeat([0, -np.inf], 3)[:, np.newaxis])
-        np.testing.assert_almost_equal(res.max, np.repeat([np.inf, 0], 3)[:, np.newaxis])
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -909,7 +905,6 @@ def test_penalty_time_constraint(value):
         res,
         np.array([]),
     )
-    np.testing.assert_almost_equal(ocp.nlp[0].g_bounds[0], np.array([]))
 
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])

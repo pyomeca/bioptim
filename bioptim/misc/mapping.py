@@ -28,7 +28,7 @@ class Mapping:
         Get the len of the mapping
     """
 
-    def __init__(self, map_idx: Union[list, tuple, range]):
+    def __init__(self, map_idx: Union[list, tuple, range, np.ndarray]):
         """
         Parameters
         ----------

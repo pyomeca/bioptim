@@ -61,17 +61,17 @@ class AcadosInterface(SolverInterface):
 
     Methods
     -------
-    __acados_export_model(self, ocp: "OptimalControlProgram")
+    __acados_export_model(self, ocp: OptimalControlProgram)
         Creating a generic ACADOS model
-    __prepare_acados(self, ocp: "OptimalControlProgram")
+    __prepare_acados(self, ocp: OptimalControlProgram)
         Set somes important ACADOS variables
     __set_constr_type(self, constr_type: str = "BGH")
         Set the type of constraints
-    __set_constrs(self, ocp: "OptimalControlProgram")
+    __set_constrs(self, ocp: OptimalControlProgram)
         Set the constraints from the ocp
     __set_cost_type(self, cost_type: str = "NONLINEAR_LS")
         Set the type of cost functions
-    __set_costs(self, ocp: "OptimalControlProgram")
+    __set_costs(self, ocp: OptimalControlProgram)
         Set the cost functions from ocp
     __update_solver(self)
         Update the ACADOS solver to new values
@@ -83,7 +83,7 @@ class AcadosInterface(SolverInterface):
         Solve the prepared ocp
     """
 
-    def __init__(self, ocp: "OptimalControlProgram", **solver_options):
+    def __init__(self, ocp, **solver_options):
         """
         Parameters
         ----------
@@ -138,7 +138,7 @@ class AcadosInterface(SolverInterface):
         self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nx)
         self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nx)
 
-    def __acados_export_model(self, ocp: "OptimalControlProgram"):
+    def __acados_export_model(self, ocp):
         """
         Creating a generic ACADOS model
 
@@ -180,7 +180,7 @@ class AcadosInterface(SolverInterface):
         now = datetime.now()  # current date and time
         self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S%f')[:-4]}"
 
-    def __prepare_acados(self, ocp: "OptimalControlProgram"):
+    def __prepare_acados(self, ocp):
         """
         Set somes important ACADOS variables
 
@@ -214,7 +214,7 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.constraints.constr_type = constr_type
         self.acados_ocp.constraints.constr_type_e = constr_type
 
-    def __set_constrs(self, ocp: "OptimalControlProgram"):
+    def __set_constrs(self, ocp):
         """
         Set the constraints from the ocp
 
@@ -336,7 +336,7 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.cost.cost_type = cost_type
         self.acados_ocp.cost.cost_type_e = cost_type
 
-    def __set_costs(self, ocp: "OptimalControlProgram"):
+    def __set_costs(self, ocp):
         """
         Set the cost functions from ocp
 

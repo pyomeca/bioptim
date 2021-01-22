@@ -9,7 +9,7 @@ from casadi import vertcat, horzcat, MX, SX
 
 from ..misc.enums import Node, Axis, PlotType, ControlType
 from ..misc.mapping import Mapping
-from ..misc.options_lists import OptionGeneric
+from ..misc.options import OptionGeneric
 
 
 class PenaltyOption(OptionGeneric):
@@ -81,15 +81,15 @@ class PenaltyFunctionAbstract:
 
     Methods
     -------
-    add(ocp: "OptimalControlProgram", nlp: "NonLinearProgram")
+    add(ocp: OptimalControlProgram, nlp: NonLinearProgram)
         Add a new penalty to the list (abstract)
-    add_or_replace(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: PenaltyOption)
+    add_or_replace(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: PenaltyOption)
         Doing some configuration on the penalty
-    _add_to_casadi_func(nlp: "NonLinearProgram", name: str, function: Callable, *all_param)
+    _add_to_casadi_func(nlp: NonLinearProgram, name: str, function: Callable, *all_param)
         Add to the pool of declared casadi function. If the function already exists, it is skipped
     _parameter_modifier(penalty: PenaltyOption)
         Apply some default parameters
-    _span_checker(penalty: PenaltyOption, nlp: "NonLinearProgram")
+    _span_checker(penalty: PenaltyOption, nlp: NonLinearProgram)
         Check for any non sense in the requested times for the constraint. Raises an error if so
     _check_and_fill_index(var_idx: Union[list, int], target_size: int, var_name: str = "var")
         Checks if the variable index is consistent with the requested variable.
@@ -99,15 +99,15 @@ class PenaltyFunctionAbstract:
     _check_idx(name: str, elements: Union[list, tuple, int], max_nb_elements: int = inf, min_nb_elements: int = 0)
         Generic sanity check for requested dimensions.
         If the function returns, everything is okay
-    add_to_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: PenaltyOption)
+    add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: PenaltyOption)
         Add the constraint to the penalty pool (abstract)
-    clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: PenaltyOption)
+    clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: PenaltyOption)
         Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
     get_type()
         Returns the type of the penalty (abstract)
-    _get_node(nlp: "NonLinearProgram", penalty: PenaltyOption)
+    _get_node(nlp: NonLinearProgram, penalty: PenaltyOption)
         Get the actual node (time, X and U) specified in the penalty
-    _add_track_data_to_plot(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", data: np.ndarray, combine_to: str, axes_idx: Union[Mapping, tuple, list] = None)
+    _add_track_data_to_plot(ocp: OptimalControlProgram, nlp: NonLinearProgram, data: np.ndarray, combine_to: str, axes_idx: Union[Mapping, tuple, list] = None)
         Interface to the plot so it can be properly added to the proper plot
     """
 
@@ -117,77 +117,77 @@ class PenaltyFunctionAbstract:
 
         Methods
         -------
-        minimize_states(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_states(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_markers(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z))
+        minimize_markers(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z))
             Minimize a marker set.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_markers_displacement(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], coordinates_system_idx: int = -1)
+        minimize_markers_displacement(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], coordinates_system_idx: int = -1)
             Minimize a marker set velocity by comparing the position at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
             Indices (default=all_idx) can be specified.
-        minimize_markers_velocity(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_markers_velocity(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        track_markers(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], first_marker_idx: int, second_marker_idx: int):
+        track_markers(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], first_marker_idx: int, second_marker_idx: int):
             Minimize the distance between two markers
             By default this function is quadratic, meaning that it minimizes distance between them.
-        proportional_variable(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], which_var: str, first_dof: int, second_dof: int, coef: float)
+        proportional_variable(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], which_var: str, first_dof: int, second_dof: int, coef: float)
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
             By default this function is quadratic, meaning that it minimizes the difference of this proportion.
-        minimize_torque(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_torque(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_torque_derivative(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_torque_derivative(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the joint torque velocity by comparing the torque at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
             Indices (default=all_idx) can be specified.
-        minimize_muscles_control(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_muscles_control(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the muscles part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_all_controls(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_all_controls(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_predicted_com_height(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_predicted_com_height(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
             assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]
             By default this function is not quadratic, meaning that it minimizes towards infinity.
-        minimize_com_position(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None)
+        minimize_com_position(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None)
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's position is minimized.
             Otherwise, the projection of the CoM's position on the specified axis is minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
-        minimize_com_velocity(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None)
+        minimize_com_velocity(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None)
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's velocity is minimized.
             Otherwise, the projection of the CoM's velocity on the specified axis is minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
-        minimize_contact_forces(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_contact_forces(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the contact forces computed from dynamics with contact
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        track_segment_with_custom_rt(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], segment_idx: int, rt_idx: int)
+        track_segment_with_custom_rt(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], segment_idx: int, rt_idx: int)
             Minimize the difference of the euler angles extracted from the coordinate system of a segment and a RT (e.g. IMU)
             By default this function is quadratic, meaning that it minimizes the difference.
-        track_marker_with_segment_axis(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], marker_idx: int, segment_idx: int, axis: Axis)
+        track_marker_with_segment_axis(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], marker_idx: int, segment_idx: int, axis: Axis)
             Track a marker using a segment, that is aligning an axis toward the marker
             By default this function is quadratic, meaning that it minimizes the difference.
-        custom(penalty: PenaltyOption, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], **parameters)
+        custom(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], **parameters)
             A user defined penalty function
         """
 
         @staticmethod
         def minimize_states(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -202,9 +202,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -246,8 +246,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_markers(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -263,9 +263,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -298,8 +298,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_markers_displacement(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -315,9 +315,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -379,8 +379,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_markers_velocity(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -395,9 +395,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -435,8 +435,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def track_markers(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -452,9 +452,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -484,8 +484,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def proportional_variable(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -503,9 +503,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -555,8 +555,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_torque(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -571,9 +571,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -605,8 +605,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_torque_derivative(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -621,9 +621,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -645,8 +645,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_muscles_control(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -661,9 +661,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -699,8 +699,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_all_controls(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -715,9 +715,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -746,8 +746,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_predicted_com_height(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -762,9 +762,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -790,8 +790,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_com_position(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -808,9 +808,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -846,8 +846,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_com_velocity(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -864,9 +864,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -903,8 +903,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def minimize_contact_forces(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -919,9 +919,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -955,8 +955,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def track_segment_with_custom_rt(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -972,9 +972,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -1027,8 +1027,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def track_marker_with_segment_axis(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -1045,9 +1045,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -1095,8 +1095,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def custom(
             penalty: PenaltyOption,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -1110,9 +1110,9 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -1159,29 +1159,29 @@ class PenaltyFunctionAbstract:
             penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
     @staticmethod
-    def add(ocp: "OptimalControlProgram", nlp: "NonLinearProgram"):
+    def add(ocp, nlp):
         """
         Add a new penalty to the list (abstract)
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         """
         raise RuntimeError("add cannot be called from an abstract class")
 
     @staticmethod
-    def add_or_replace(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: PenaltyOption):
+    def add_or_replace(ocp, nlp, penalty: PenaltyOption):
         """
         Doing some configuration on the penalty
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         penalty: PenaltyOption
             The actual penalty to declare
@@ -1197,13 +1197,13 @@ class PenaltyFunctionAbstract:
         penalty.type.value[0](penalty, ocp, nlp, t, x, u, nlp.p, **penalty.params)
 
     @staticmethod
-    def _add_to_casadi_func(nlp: "NonLinearProgram", name: str, function: Callable, *all_param):
+    def _add_to_casadi_func(nlp, name: str, function: Callable, *all_param):
         """
         Add to the pool of declared casadi function. If the function already exists, it is skipped
 
         Parameters
         ----------
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         name: str
             The unique name of the function to add to the casadi functions pool
@@ -1259,7 +1259,7 @@ class PenaltyFunctionAbstract:
             penalty.params["which_var"] = "controls"
 
     @staticmethod
-    def _span_checker(penalty: PenaltyOption, nlp: "NonLinearProgram"):
+    def _span_checker(penalty: PenaltyOption, nlp):
         """
         Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -1267,7 +1267,7 @@ class PenaltyFunctionAbstract:
         ----------
         penalty: PenaltyOption
             The actual penalty to declare
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         """
 
@@ -1315,7 +1315,7 @@ class PenaltyFunctionAbstract:
         return out
 
     @staticmethod
-    def _check_and_fill_tracking_data_size(data_to_track: np.ndarray, target_size: int):
+    def _check_and_fill_tracking_data_size(data_to_track: np.ndarray, target_size: Union[list, tuple]):
         """
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
@@ -1324,8 +1324,8 @@ class PenaltyFunctionAbstract:
         ----------
         data_to_track: np.ndarray
             The data to track matrix
-        target_size: int
-            The expected size of the data to track
+        target_size: Union[list, tuple]
+            The expected shape (n, m) of the data to track
         """
 
         if data_to_track is not None:
@@ -1373,16 +1373,16 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def add_to_penalty(
-        ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: PenaltyOption
+        ocp, nlp, val: Union[MX, SX], penalty: PenaltyOption
     ):
         """
         Add the constraint to the penalty pool (abstract)
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         val: Union[MX, SX]
             The actual constraint to add
@@ -1393,15 +1393,15 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("_add_to_penalty cannot be called from an abstract class")
 
     @staticmethod
-    def clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: PenaltyOption):
+    def clear_penalty(ocp, nlp, penalty: PenaltyOption):
         """
         Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         penalty: PenaltyOption
             The actual penalty to declare
@@ -1418,13 +1418,13 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("_get_type cannot be called from an abstract class")
 
     @staticmethod
-    def _get_node(nlp: "NonLinearProgram", penalty: PenaltyOption):
+    def _get_node(nlp, penalty: PenaltyOption):
         """
         Get the actual node (time, X and U) specified in the penalty
 
         Parameters
         ----------
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         penalty: PenaltyOption
             The actual penalty to declare
@@ -1485,8 +1485,8 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def _add_track_data_to_plot(
-        ocp: "OptimalControlProgram",
-        nlp: "NonLinearProgram",
+        ocp,
+        nlp,
         data: np.ndarray,
         combine_to: str,
         axes_idx: Union[Mapping, tuple, list] = None,
@@ -1496,9 +1496,9 @@ class PenaltyFunctionAbstract:
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         data: np.ndarray
             The actual tracking data to plot

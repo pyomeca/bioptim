@@ -116,7 +116,7 @@ class SolverInterface:
         Retrieve the objective values and put them in the out dict
         """
 
-        def get_objective_values(ocp: "OptimalControlProgram", sol: dict) -> list:
+        def get_objective_values(ocp, sol: dict) -> list:
             """
             Get all the objective values
 
@@ -132,7 +132,7 @@ class SolverInterface:
             A list of objective values
             """
 
-            def __get_nodes(all_nodes: list, nlp: "NonLinearProgram") -> list:
+            def __get_nodes(all_nodes: list, nlp) -> list:
                 """
                 Get the objective values of a specific nlp
 

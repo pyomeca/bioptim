@@ -1,5 +1,8 @@
-from ..limits.path_conditions import Bounds, InitialGuess
+from typing import Callable, Any
+
+from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from .enums import ControlType, OdeSolver
+from .options import OptionList
 
 
 class NonLinearProgram:
@@ -28,8 +31,6 @@ class NonLinearProgram:
         The external forces acting at the center of mass of the designated segment
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase
-    g_bounds: list
-        All the constraint bounds of the constraints
     irk_polynomial_interpolation_degree: int
         The degree of the IRK  # TODO: these option should be from a special class
     J: list[list[Objective]]
@@ -98,6 +99,15 @@ class NonLinearProgram:
         The bounds for the states
     x_init = InitialGuess()
         The initial guess for the states
+
+    Methods
+    -------
+    initialize(self, cx: [MX, SX])
+        Reset an nlp to a sane initial state
+    add(ocp: OptimalControlProgram, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None)
+        Set a parameter to their respective nlp
+    add_path_condition(ocp: OptimalControlProgram, var: Any, path_name: str, type_option: Any, type_list: Any)
+        Interface to add for PathCondition classes
     """
 
     def __init__(self):
@@ -111,7 +121,6 @@ class NonLinearProgram:
         self.dynamics_type = None
         self.external_forces = []
         self.g = []
-        self.g_bounds = []
         self.irk_polynomial_interpolation_degree = None
         self.J = []
         self.mapping = {}
@@ -146,3 +155,139 @@ class NonLinearProgram:
         self.X = None
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
+
+    def initialize(self, cx: Callable = None):
+        """
+        Reset an nlp to a sane initial state
+
+        Parameters
+        ----------
+        cx: MX, SX
+            The type of casadi variable
+
+        """
+        self.shape = {"q": 0, "q_dot": 0, "tau": 0, "muscle": 0}
+        self.plot = {}
+        self.var_states = {}
+        self.var_controls = {}
+        self.CX = cx
+        self.x = self.CX()
+        self.u = self.CX()
+        self.J = []
+        self.g = []
+        self.casadi_func = {}
+
+    @staticmethod
+    def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):
+        """
+        Set a parameter to their respective nlp
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp where all the nlp are stored
+        param_name: str
+            The name of the parameter as it is named in the nlp structure, if name is not set.
+            Otherwise, the param_name is store in nlp.name[param_name]
+        param: Any
+            The value of the parameter
+        duplicate_singleton: bool
+            If the value is unique, should this value be spread to all nlp (or raises an error)
+        _type: Any
+            The type of the data
+        name: str
+            The name of the parameter if the param_name should be stored in a dictionary
+        """
+
+        if isinstance(param, (list, tuple)):
+            if len(param) != ocp.nb_phases:
+                raise RuntimeError(
+                    f"{param_name} size({len(param)}) does not correspond to the number of phases({ocp.nb_phases})."
+                )
+            else:
+                for i in range(ocp.nb_phases):
+                    if name is None:
+                        setattr(ocp.nlp[i], param_name, param[i])
+                    else:
+                        getattr(ocp.nlp[i], name)[param_name] = param[i]
+        elif isinstance(param, OptionList):
+            if len(param) == ocp.nb_phases:
+                for i in range(ocp.nb_phases):
+                    if name is None:
+                        setattr(ocp.nlp[i], param_name, param[i])
+                    else:
+                        getattr(ocp.nlp[i], name)[param_name] = param[i]
+            else:
+                if len(param) == 1 and duplicate_singleton:
+                    for i in range(ocp.nb_phases):
+                        if name is None:
+                            setattr(ocp.nlp[i], param_name, param[0])
+                        else:
+                            getattr(ocp.nlp[i], name)[param_name] = param[0]
+                else:
+                    raise RuntimeError(
+                        f"{param_name} size({len(param)}) does not correspond "
+                        f"to the number of phases({ocp.nb_phases})."
+                    )
+        else:
+            if ocp.nb_phases == 1:
+                if name is None:
+                    setattr(ocp.nlp[0], param_name, param)
+                else:
+                    getattr(ocp.nlp[0], name)[param_name] = param
+            else:
+                if duplicate_singleton:
+                    for i in range(ocp.nb_phases):
+                        if name is None:
+                            setattr(ocp.nlp[i], param_name, param)
+                        else:
+                            getattr(ocp.nlp[i], name)[param_name] = param
+                else:
+                    raise RuntimeError(f"{param_name} must be a list or tuple when number of phase is not equal to 1")
+
+        if _type is not None:
+            for nlp in ocp.nlp:
+                if (
+                    (
+                        (name is None and getattr(nlp, param_name) is not None)
+                        or (name is not None and param is not None)
+                    )
+                    and not isinstance(param, _type)
+                    and isinstance(param, (list, tuple))
+                    and False in [False for i in param if not isinstance(i, _type)]
+                ):
+                    raise RuntimeError(f"Parameter {param_name} must be a {str(_type)}")
+
+    @staticmethod
+    def add_path_condition(ocp, var: Any, path_name: str, type_option: Any, type_list: Any):
+        """
+        Interface to add for PathCondition classes
+
+        Parameters
+        ----------
+        var: Any
+            The actual data to store
+        path_name: str
+            The name of the condition ("x_init", "u_bounds", ...)
+        type_option: AnyOption
+            The type of PathCondition
+        type_list: AnyList
+            The type of PathConditionList (must be the same type of path_type_option)
+        """
+
+        setattr(ocp, f"isdef_{path_name}", True)
+        name = type_option.__name__
+        if isinstance(var, type_option):
+            var_tp = type_list()
+            try:
+                if isinstance(var_tp, BoundsList):
+                    var_tp.add(bounds=var)
+                else:
+                    var_tp.add(var)
+            except TypeError:
+                raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
+            var = var_tp
+        elif not isinstance(var, type_list):
+            raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
+        NonLinearProgram.add(ocp, path_name, var, False)
+

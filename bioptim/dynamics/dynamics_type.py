@@ -2,7 +2,7 @@ from typing import Callable
 
 from enum import Enum
 from .problem import Problem
-from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
+from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 
 
 class DynamicsFcn(Enum):
@@ -75,13 +75,13 @@ class DynamicsList(UniquePerPhaseOptionList):
         Add a new Dynamics to the list
     """
 
-    def add(self, dynamics_type: DynamicsFcn, **extra_parameters):
+    def add(self, dynamics_type: Dynamics, **extra_parameters):
         """
         Add a new Dynamics to the list
 
         Parameters
         ----------
-        dynamics_type: DynamicsFcn
+        dynamics_type: Dynamics
             The chosen dynamic functions
         extra_parameters: dict
             Any parameters to pass to Dynamics

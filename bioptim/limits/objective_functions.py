@@ -6,7 +6,7 @@ from casadi import MX, SX
 
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
 from ..misc.enums import Node
-from ..misc.options_lists import OptionList, OptionGeneric
+from ..misc.options import OptionList, OptionGeneric
 
 
 class Objective(PenaltyOption):
@@ -73,13 +73,13 @@ class ObjectiveList(OptionList):
         Add a new Constraint to the list
     """
 
-    def add(self, objective: Union[Callable, "ObjectiveFcn"], **extra_arguments):
+    def add(self, objective: Union[Callable, Objective], **extra_arguments):
         """
         Add a new objective function to the list
 
         Parameters
         ----------
-        objective: Union[Callable, "ObjectiveFcn"]
+        objective: Union[Callable, Objective]
             The chosen objective function
         extra_arguments: dict
             Any parameters to pass to ObjectiveFcn
@@ -97,11 +97,11 @@ class ObjectiveFunction:
 
     Methods
     -------
-    add_or_replace(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", objective: Objective)
+    add_or_replace(ocp: OptimalControlProgram, nlp: NonLinearProgram, objective: Objective)
         Add the objective function to the objective pool
-    add_to_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: Objective, dt:float=0)
+    add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: Objective, dt:float=0)
         Add the objective function to the objective pool
-    clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: Objective)
+    clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
         Resets a objective function. A negative penalty index creates a new empty objective function.
     """
 
@@ -111,13 +111,13 @@ class ObjectiveFunction:
 
         Methods
         -------
-        add_to_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: Objective)
+        add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: Objective)
             Add the objective function to the objective pool
-        clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: Objective)
+        clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, nlp: "NonLinearProgram")
+        _span_checker(objective: Objective, nlp: NonLinearProgram)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         """
 
@@ -127,15 +127,15 @@ class ObjectiveFunction:
 
             Methods
             -------
-            minimize_time(penalty: "ObjectiveFcn.Lagrange", ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX])
+            minimize_time(penalty: "ObjectiveFcn.Lagrange", ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
                 Minimizes the duration of the phase
             """
 
             @staticmethod
             def minimize_time(
                 penalty: Objective,
-                ocp: "OptimalControlProgram",
-                nlp: "NonLinearProgram",
+                ocp,
+                nlp,
                 t: list,
                 x: list,
                 u: list,
@@ -148,9 +148,9 @@ class ObjectiveFunction:
                 ----------
                 penalty: Objective,
                     The actual constraint to declare
-                ocp: "OptimalControlProgram"
+                ocp: OptimalControlProgram
                     A reference to the ocp
-                nlp: "NonLinearProgram"
+                nlp: NonLinearProgram
                     A reference to the current phase of the ocp
                 t: list
                     Time indices, maximum value being the number of shooting point + 1
@@ -167,16 +167,16 @@ class ObjectiveFunction:
 
         @staticmethod
         def add_to_penalty(
-            ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: Objective
+            ocp, nlp, val: Union[MX, SX], penalty: Objective
         ):
             """
             Add the objective function to the objective pool
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             val: Union[MX, SX]
                 The actual objective function to add
@@ -187,15 +187,15 @@ class ObjectiveFunction:
             ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=nlp.dt)
 
         @staticmethod
-        def clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: Objective):
+        def clear_penalty(ocp, nlp, penalty: Objective):
             """
             Resets a objective function. A negative penalty index creates a new empty objective function.
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             penalty: Objective
                 The actual objective function to declare
@@ -233,7 +233,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, nlp: "NonLinearProgram"):
+        def _span_checker(objective: Objective, nlp):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -241,7 +241,7 @@ class ObjectiveFunction:
             ----------
             objective: Objective
                 The actual objective function to declare
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             """
 
@@ -254,15 +254,15 @@ class ObjectiveFunction:
 
         Methods
         -------
-        inter_phase_continuity(ocp: "OptimalControlProgram", pt: "StateTransition")
+        inter_phase_continuity(ocp: OptimalControlProgram, pt: "StateTransition")
             Add phase transition objective between two phases.
-        add_to_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: Objective)
+        add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: Objective)
             Add the objective function to the objective pool
-        clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: Objective)
+        clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, nlp: "NonLinearProgram")
+        _span_checker(objective: Objective, nlp: NonLinearProgram)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         """
 
@@ -272,15 +272,15 @@ class ObjectiveFunction:
 
             Methods
             -------
-            minimize_time(penalty: "ObjectiveFcn.Lagrange", ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX])
+            minimize_time(penalty: "ObjectiveFcn.Lagrange", ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
                 Minimizes the duration of the phase
             """
 
             @staticmethod
             def minimize_time(
                 penalty: Objective,
-                ocp: "OptimalControlProgram",
-                nlp: "NonLinearProgram",
+                ocp,
+                nlp,
                 t: list,
                 x: list,
                 u: list,
@@ -293,9 +293,9 @@ class ObjectiveFunction:
                 ----------
                 penalty: Objective,
                     The actual constraint to declare
-                ocp: "OptimalControlProgram"
+                ocp: OptimalControlProgram
                     A reference to the ocp
-                nlp: "NonLinearProgram"
+                nlp: NonLinearProgram
                     A reference to the current phase of the ocp
                 t: list
                     Time indices, maximum value being the number of shooting point + 1
@@ -311,13 +311,13 @@ class ObjectiveFunction:
                 ObjectiveFunction.MayerFunction.add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def inter_phase_continuity(ocp: "OptimalControlProgram", pt: "StateTransition"):
+        def inter_phase_continuity(ocp, pt: "StateTransition"):
             """
             Add phase transition objective between two phases.
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
             pt: "StateTransition"
                 The state transition to add
@@ -335,16 +335,16 @@ class ObjectiveFunction:
 
         @staticmethod
         def add_to_penalty(
-            ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: Objective
+            ocp, nlp, val: Union[MX, SX], penalty: Objective
         ):
             """
             Add the objective function to the objective pool
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             val: Union[MX, SX]
                 The actual objective function to add
@@ -355,15 +355,15 @@ class ObjectiveFunction:
             ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=1)
 
         @staticmethod
-        def clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: Objective):
+        def clear_penalty(ocp, nlp, penalty: Objective):
             """
             Resets a objective function. A negative penalty index creates a new empty objective function.
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             penalty: Objective
                 The actual objective function to declare
@@ -394,7 +394,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, nlp: "NonLinearProgram"):
+        def _span_checker(objective: Objective, nlp):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -402,7 +402,7 @@ class ObjectiveFunction:
             ----------
             objective: Objective
                 The actual objective function to declare
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             """
 
@@ -413,13 +413,13 @@ class ObjectiveFunction:
         """
         Internal (re)implementation of the penalty functions
 
-        add_to_penalty(ocp: "OptimalControlProgram", _, val: Union[MX, SX], penalty: Objective)
+        add_to_penalty(ocp: OptimalControlProgram, _, val: Union[MX, SX], penalty: Objective)
             Add the objective function to the objective pool
-        clear_penalty(ocp: "OptimalControlProgram", _, penalty: Objective)
+        clear_penalty(ocp: OptimalControlProgram, _, penalty: Objective)
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, nlp: "NonLinearProgram")
+        _span_checker(objective: Objective, nlp: NonLinearProgram)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         """
 
@@ -431,13 +431,13 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def add_to_penalty(ocp: "OptimalControlProgram", _, val: Union[MX, SX], penalty: Objective):
+        def add_to_penalty(ocp, _, val: Union[MX, SX], penalty: Objective):
             """
             Add the objective function to the objective pool
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
             val: Union[MX, SX]
                 The actual objective function to add
@@ -447,13 +447,13 @@ class ObjectiveFunction:
             ObjectiveFunction.add_to_penalty(ocp, None, val, penalty, dt=1)
 
         @staticmethod
-        def clear_penalty(ocp: "OptimalControlProgram", _, penalty: Objective):
+        def clear_penalty(ocp, _, penalty: Objective):
             """
             Resets a objective function. A negative penalty index creates a new empty objective function.
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
             penalty: Objective
                 The actual objective function to declare
@@ -476,7 +476,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, nlp: "NonLinearProgram"):
+        def _span_checker(objective: Objective, nlp):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -484,7 +484,7 @@ class ObjectiveFunction:
             ----------
             objective: Objective
                 The actual objective function to declare
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             """
 
@@ -492,17 +492,17 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._span_checker(objective, nlp)
 
     @staticmethod
-    def add_or_replace(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", objective: Objective):
+    def add_or_replace(ocp, nlp, objective: PenaltyOption):
         """
         Add the objective function to the objective pool
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
-        objective: Objective
+        objective: PenaltyOption
             The actual objective function to declare
         """
 
@@ -520,16 +520,16 @@ class ObjectiveFunction:
 
     @staticmethod
     def add_to_penalty(
-        ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: Objective, dt: float = 0
+        ocp, nlp, val: Union[MX, SX], penalty: Objective, dt: float = 0
     ):
         """
         Add the objective function to the objective pool
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         val: Union[MX, SX]
             The actual objective function to add
@@ -547,15 +547,15 @@ class ObjectiveFunction:
             ocp.J[penalty.list_index].append(J)
 
     @staticmethod
-    def clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: Objective):
+    def clear_penalty(ocp, nlp, penalty: Objective):
         """
         Resets a objective function. A negative penalty index creates a new empty objective function.
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         penalty: Objective
             The actual objective function to declare
@@ -591,11 +591,11 @@ class ObjectivePrinter:
 
     """
 
-    def __init__(self, ocp: "OptimalControlProgram", sol_obj: dict):
+    def __init__(self, ocp, sol_obj: dict):
         """
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
         sol_obj: dict
             A reference to the solution structure

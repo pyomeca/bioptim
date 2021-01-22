@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 
 from ..misc.enums import InterpolationType
 from ..misc.mapping import BidirectionalMapping, Mapping
-from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
+from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 
 
 class PathCondition(np.ndarray):
@@ -727,13 +727,13 @@ class InitialGuessList(UniquePerPhaseOptionList):
         Get the next initial guess of the list
     """
 
-    def add(self, initial_guess: Union[PathCondition, np.ndarray], **extra_arguments):
+    def add(self, initial_guess: Union[InitialGuess, np.ndarray], **extra_arguments):
         """
         Add a new initial guess to the list
 
         Parameters
         ----------
-        initial_guess: Union[PathCondition, np.ndarray]
+        initial_guess: Union[InitialGuess, np.ndarray]
             The initial guess to add
         extra_arguments: dict
             Any parameters to pass to the Bounds

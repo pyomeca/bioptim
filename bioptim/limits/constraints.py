@@ -9,7 +9,7 @@ import biorbd
 from .path_conditions import Bounds
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
 from ..misc.enums import Node, InterpolationType, OdeSolver, ControlType
-from ..misc.options_lists import OptionList, OptionGeneric
+from ..misc.options import OptionList, OptionGeneric
 
 
 class Constraint(PenaltyOption):
@@ -66,7 +66,7 @@ class ConstraintList(OptionList):
         Add a new Constraint to the list
     """
 
-    def add(self, constraint: Union[Callable, "ConstraintFcn"], **extra_arguments):
+    def add(self, constraint: Union[Callable, Constraint], **extra_arguments):
         """
         Add a new constraint to the list
 
@@ -91,11 +91,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
     Methods
     -------
-    inter_phase_continuity(ocp: "OptimalControlProgram", pt: "StateTransition")
+    inter_phase_continuity(ocp: OptimalControlProgram, pt: "StateTransition")
         Add phase transition constraints between two phases.
-    add_to_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: Constraint)
+    add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: Constraint)
         Add the constraint to the constraint pool
-    clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: Constraint)
+    clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Constraint)
         Resets a penalty. A negative penalty index creates a new empty penalty.
     _parameter_modifier(constraint: Constraint)
         Apply some default parameters
@@ -109,24 +109,24 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         Methods
         -------
-        time_constraint(constraint: Constraint, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX])
+        time_constraint(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
             The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
-        torque_max_from_actuators(constraint: Constraint, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], min_torque=None)
+        torque_max_from_actuators(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], min_torque=None)
             Non linear maximal values of joint torques computed from the torque-position-velocity relationship
-        non_slipping(constraint: Constraint, ocp: "OptimalControlProgram", nlp: "NonLinearProgram",
+        non_slipping(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram,
                 t: list, x: list, u: list, p: Union[MX, SX],
                 tangential_component_idx: int, normal_component_idx: int, static_friction_coefficient: float)
             Add a constraint of static friction at contact points allowing for small tangential forces. This constraint
             assumes that the normal forces is positive
-        contact_force(constraint: Constraint, ocp: "OptimalControlProgram", nlp: "NonLinearProgram", t: list, x: list, u: list, p: Union[MX, SX], contact_force_idx: int)
+        contact_force(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], contact_force_idx: int)
             Add a constraint of contact forces given by any forward dynamics with contact
         """
 
         @staticmethod
         def contact_force(
             constraint: Constraint,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -140,9 +140,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -167,8 +167,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def non_slipping(
             constraint: Constraint,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -185,9 +185,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -236,8 +236,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def torque_max_from_actuators(
             constraint: Constraint,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -251,9 +251,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -295,8 +295,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def time_constraint(
             constraint: Constraint,
-            ocp: "OptimalControlProgram",
-            nlp: "NonLinearProgram",
+            ocp,
+            nlp,
             t: list,
             x: list,
             u: list,
@@ -310,9 +310,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
-            nlp: "NonLinearProgram"
+            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             t: list
                 Time indices, maximum value being the number of shooting point + 1
@@ -329,18 +329,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             pass
 
     @staticmethod
-    def add_or_replace(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: Constraint):
+    def add_or_replace(ocp, nlp, penalty: PenaltyOption):
         """
         Doing some configuration before calling the super.add_or_replace function that prepares the adding of the
         constraint to the constraint pool
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
-        penalty: Constraint
+        penalty: PenaltyOption
             The actual constraint to declare
         """
 
@@ -349,13 +349,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, penalty)
 
     @staticmethod
-    def inner_phase_continuity(ocp: "OptimalControlProgram"):
+    def inner_phase_continuity(ocp):
         """
         Add continuity constraints between each nodes of a phase.
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
         """
         # Dynamics must be sound within phases
@@ -391,13 +391,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     ConstraintFunction.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
-    def inter_phase_continuity(ocp: "OptimalControlProgram", pt: "StateTransition"):
+    def inter_phase_continuity(ocp, pt: "StateTransition"):
         """
         Add phase transition constraints between two phases.
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
         pt: "StateTransition"
             The state transition to add
@@ -413,15 +413,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         pt.base.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
-    def add_to_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", val: Union[MX, SX], penalty: Constraint):
+    def add_to_penalty(ocp, nlp, val: Union[MX, SX], penalty: Constraint):
         """
         Add the constraint to the constraint pool
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         val: Union[MX, SX]
             The actual constraint to add
@@ -452,15 +452,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ocp.g[penalty.list_index].append(g)
 
     @staticmethod
-    def clear_penalty(ocp: "OptimalControlProgram", nlp: "NonLinearProgram", penalty: Constraint):
+    def clear_penalty(ocp, nlp, penalty: Constraint):
         """
         Resets a constraint. A negative penalty index creates a new empty constraint.
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         penalty: Constraint
             The actual constraint to declare
@@ -499,7 +499,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         super(ConstraintFunction, ConstraintFunction)._parameter_modifier(constraint)
 
     @staticmethod
-    def _span_checker(constraint: Constraint, nlp: "NonLinearProgram"):
+    def _span_checker(constraint: Constraint, nlp):
         """
         Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -507,7 +507,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ----------
         constraint: Constraint
             The actual constraint to declare
-        nlp: "NonLinearProgram"
+        nlp: NonLinearProgram
             A reference to the current phase of the ocp
         """
 

@@ -34,7 +34,7 @@ class IpoptInterface(SolverInterface):
 
     Methods
     -------
-    online_optim(self, ocp: "OptimalControlProgram")
+    online_optim(self, ocp: OptimalControlProgram)
         Declare the online callback to update the graphs while optimizing
     start_get_iterations(self)
         Create the necessary folder and create the file to store the iterations while optimizing
@@ -52,7 +52,7 @@ class IpoptInterface(SolverInterface):
         Parse the objective functions of the full ocp to a Ipopt-friendly one
     """
 
-    def __init__(self, ocp: "OptimalControlProgram"):
+    def __init__(self, ocp):
         """
         Parameters
         ----------
@@ -75,7 +75,7 @@ class IpoptInterface(SolverInterface):
         self.bobo_directory = ".__tmp_biorbd_optim"
         self.bobo_file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
 
-    def online_optim(self, ocp: "OptimalControlProgram"):
+    def online_optim(self, ocp):
         """
         Declare the online callback to update the graphs while optimizing
 

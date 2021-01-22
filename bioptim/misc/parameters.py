@@ -2,7 +2,7 @@ from casadi import vertcat
 
 from .enums import Node
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
-from .options_lists import OptionList, OptionGeneric
+from .options import OptionList, OptionGeneric
 
 
 class Parameter(OptionGeneric):

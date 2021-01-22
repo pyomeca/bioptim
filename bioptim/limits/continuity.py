@@ -7,7 +7,7 @@ from casadi import vertcat, MX
 
 from .constraints import ConstraintFunction
 from .objective_functions import ObjectiveFunction
-from ..misc.options_lists import UniquePerPhaseOptionList, OptionGeneric
+from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 
 
 class StateTransition(OptionGeneric):
@@ -82,7 +82,7 @@ class StateTransitionFunctions:
 
     Methods
     -------
-    prepare_state_transitions(ocp: "OptimalControlProgram", state_transitions: StateTransitionList) -> list
+    prepare_state_transitions(ocp: OptimalControlProgram, state_transitions: StateTransitionList) -> list
         Configure all the state transitions and put them in a list
     """
 
@@ -92,26 +92,26 @@ class StateTransitionFunctions:
 
         Methods
         -------
-        continuous(ocp: "OptimalControlProgram", transition: StateTransition)
+        continuous(ocp: OptimalControlProgram, transition: StateTransition)
             The most common continuity function, that is state before equals state after
-        cyclic(ocp: "OptimalControlProgram", transition: StateTransition)
+        cyclic(ocp: OptimalControlProgram" transition: StateTransition)
             The continuity function applied to the last to first node
-        impact(ocp: "OptimalControlProgram", transition: StateTransition)
+        impact(ocp: OptimalControlProgram, transition: StateTransition)
             A discontinuous function that simulates an inelastic impact of a new contact point
-        custom(ocp: "OptimalControlProgram", transition: StateTransition)
+        custom(ocp: OptimalControlProgram, transition: StateTransition)
             Calls the custom transition function provided by the user
-        __get_nlp_pre_and_post(ocp: "OptimalControlProgram", phase_pre_idx: int)
+        __get_nlp_pre_and_post(ocp: OptimalControlProgram, phase_pre_idx: int)
             Get two consecutive nlp. If the "pre" phase is the last, then the next one is the first (circular)
         """
 
         @staticmethod
-        def continuous(ocp: "OptimalControlProgram", transition: StateTransition) -> MX:
+        def continuous(ocp, transition: StateTransition) -> MX:
             """
             The most common continuity function, that is state before equals state after
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
             transition: StateTransition
                 A reference to the state transition
@@ -129,13 +129,13 @@ class StateTransitionFunctions:
             return nlp_pre.X[-1] - nlp_post.X[0]
 
         @staticmethod
-        def cyclic(ocp: "OptimalControlProgram", transition: StateTransition) -> MX:
+        def cyclic(ocp, transition: StateTransition) -> MX:
             """
             The continuity function applied to the last to first node
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
             transition: StateTransition
                 A reference to the state transition
@@ -147,13 +147,13 @@ class StateTransitionFunctions:
             return StateTransitionFunctions.Functions.continuous(ocp, transition)
 
         @staticmethod
-        def impact(ocp: "OptimalControlProgram", transition: StateTransition) -> MX:
+        def impact(ocp, transition: StateTransition) -> MX:
             """
             A discontinuous function that simulates an inelastic impact of a new contact point
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
             transition: StateTransition
                 A reference to the state transition
@@ -192,13 +192,13 @@ class StateTransitionFunctions:
             return val
 
         @staticmethod
-        def custom(ocp: "OptimalControlProgram", transition: StateTransition) -> MX:
+        def custom(ocp, transition: StateTransition) -> MX:
             """
             Calls the custom transition function provided by the user
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
             transition: StateTransition
                 A reference to the state transition
@@ -212,13 +212,13 @@ class StateTransitionFunctions:
             return transition.custom_function(nlp_pre.X[-1], nlp_post.X[0], **transition.params)
 
         @staticmethod
-        def __get_nlp_pre_and_post(ocp: "OptimalControlProgram", phase_pre_idx: int) -> tuple:
+        def __get_nlp_pre_and_post(ocp, phase_pre_idx: int) -> tuple:
             """
             Get two consecutive nlp. If the "pre" phase is the last, then the next one is the first (circular)
 
             Parameters
             ----------
-            ocp: "OptimalControlProgram"
+            ocp: OptimalControlProgram
                 A reference to the ocp
             phase_pre_idx: int
                 The index of the phase right before the transition
@@ -231,13 +231,13 @@ class StateTransitionFunctions:
             return ocp.nlp[phase_pre_idx], ocp.nlp[(phase_pre_idx + 1) % ocp.nb_phases]
 
     @staticmethod
-    def prepare_state_transitions(ocp: "OptimalControlProgram", state_transitions: StateTransitionList) -> list:
+    def prepare_state_transitions(ocp, state_transitions: StateTransitionList) -> list:
         """
         Configure all the state transitions and put them in a list
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
         state_transitions: StateTransitionList
             The list of all the state transitions
@@ -281,13 +281,13 @@ class ContinuityFunctions:
     """
 
     @staticmethod
-    def continuity(ocp: "OptimalControlProgram"):
+    def continuity(ocp):
         """
         The declaration of inner- and inter-phase continuity constraints
 
         Parameters
         ----------
-        ocp: "OptimalControlProgram"
+        ocp: OptimalControlProgram
             A reference to the ocp
         """
 
