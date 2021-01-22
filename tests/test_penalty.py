@@ -310,7 +310,7 @@ def test_penalty_track_markers_velocity(penalty_origin, value):
 def test_penalty_align_markers(penalty_origin, value):
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
-    penalty_type = penalty_origin.ALIGN_MARKERS
+    penalty_type = penalty_origin.FOLLOW_MARKERS
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type)

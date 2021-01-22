@@ -177,7 +177,7 @@ def test_simulate_from_initial_multiple_shoot():
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
+        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum_save_and_load.py"
     )
     pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum)
@@ -215,7 +215,7 @@ def test_simulate_from_initial_single_shoot():
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
+        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum_save_and_load.py"
     )
     pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum)

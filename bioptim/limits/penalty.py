@@ -433,7 +433,7 @@ class PenaltyFunctionAbstract:
                     penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def track_markers(
+        def follow_markers(
             penalty: PenaltyOption,
             ocp,
             nlp,
@@ -1015,13 +1015,13 @@ class PenaltyFunctionAbstract:
                 return biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
             PenaltyFunctionAbstract._add_to_casadi_func(
-                nlp, f"align_segment_with_custom_rt_{segment_idx}", biorbd_meta_func, nlp.q, segment_idx, rt_idx
+                nlp, f"track_segment_with_custom_rt_{segment_idx}", biorbd_meta_func, nlp.q, segment_idx, rt_idx
             )
 
             nq = nlp.mapping["q"].to_first.len
             for v in x:
                 q = nlp.mapping["q"].to_second.map(v[:nq])
-                val = nlp.casadi_func[f"align_segment_with_custom_rt_{segment_idx}"](q)
+                val = nlp.casadi_func[f"track_segment_with_custom_rt_{segment_idx}"](q)
                 penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
@@ -1076,7 +1076,7 @@ class PenaltyFunctionAbstract:
 
             PenaltyFunctionAbstract._add_to_casadi_func(
                 nlp,
-                f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}",
+                f"track_marker_with_segment_axis_{segment_idx}_{marker_idx}",
                 biorbd_meta_func,
                 nlp.q,
                 segment_idx,
@@ -1085,7 +1085,7 @@ class PenaltyFunctionAbstract:
             nq = nlp.mapping["q"].to_first.len
             for v in x:
                 q = nlp.mapping["q"].to_second.map(v[:nq])
-                marker = nlp.casadi_func[f"align_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
+                marker = nlp.casadi_func[f"track_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
                 for axe in Axis:
                     if axe != axis:
                         # To align an axis, the other must be equal to 0
@@ -1236,7 +1236,7 @@ class PenaltyFunctionAbstract:
                 or func == PenaltyType.MINIMIZE_MARKERS
                 or func == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
                 or func == PenaltyType.MINIMIZE_MARKERS_VELOCITY
-                or func == PenaltyType.ALIGN_MARKERS
+                or func == PenaltyType.FOLLOW_MARKERS
                 or func == PenaltyType.PROPORTIONAL_STATE
                 or func == PenaltyType.PROPORTIONAL_CONTROL
                 or func == PenaltyType.MINIMIZE_TORQUE
@@ -1534,7 +1534,7 @@ class PenaltyType(Enum):
     MINIMIZE_MARKERS_DISPLACEMENT = PenaltyFunctionAbstract.Functions.minimize_markers_displacement
     MINIMIZE_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
     TRACK_MARKERS_VELOCITY = MINIMIZE_MARKERS_VELOCITY
-    ALIGN_MARKERS = PenaltyFunctionAbstract.Functions.track_markers
+    FOLLOW_MARKERS = PenaltyFunctionAbstract.Functions.follow_markers
     PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_variable
     PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_variable
     MINIMIZE_TORQUE = PenaltyFunctionAbstract.Functions.minimize_torque
