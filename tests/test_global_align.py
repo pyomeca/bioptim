@@ -12,16 +12,16 @@ from .utils import TestUtils
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_segment_on_rt(ode_solver):
-    # Load align_segment_on_rt
+def test_track_segment_on_rt(ode_solver):
+    # Load track_segment_on_rt
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_segment_on_rt", str(PROJECT_FOLDER) + "/examples/track/track_segment_on_rt.py"
+        "track_segment_on_rt", str(PROJECT_FOLDER) + "/examples/track/track_segment_on_rt.py"
     )
-    align_segment_on_rt = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_segment_on_rt)
+    track_segment_on_rt = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(track_segment_on_rt)
 
-    ocp = align_segment_on_rt.prepare_ocp(
+    ocp = track_segment_on_rt.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
         final_time=0.5,
         number_shooting_points=8,
@@ -61,16 +61,16 @@ def test_align_segment_on_rt(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_marker_on_segment(ode_solver):
-    # Load align_marker_on_segment
+def test_track_marker_on_segment(ode_solver):
+    # Load track_marker_on_segment
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_marker_on_segment", str(PROJECT_FOLDER) + "/examples/track/track_marker_on_segment.py"
+        "track_marker_on_segment", str(PROJECT_FOLDER) + "/examples/track/track_marker_on_segment.py"
     )
-    align_marker_on_segment = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_marker_on_segment)
+    track_marker_on_segment = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(track_marker_on_segment)
 
-    ocp = align_marker_on_segment.prepare_ocp(
+    ocp = track_marker_on_segment.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
         final_time=0.5,
         number_shooting_points=8,

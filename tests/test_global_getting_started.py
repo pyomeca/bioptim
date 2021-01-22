@@ -178,7 +178,7 @@ def test_pendulum_save_and_load(nb_threads, use_SX, ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_custom_constraint_align_markers(ode_solver):
+def test_custom_constraint_track_markers(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "custom_constraint", str(PROJECT_FOLDER) + "/examples/getting_started/custom_constraint.py"

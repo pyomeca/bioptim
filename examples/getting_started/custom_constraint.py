@@ -21,7 +21,7 @@ from bioptim import (
 )
 
 
-def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
+def custom_func_track_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
     nq = nlp.shape["q"]
     val = []
     markers = biorbd.to_casadi_func("markers", nlp.model.markers, nlp.q)
@@ -51,8 +51,8 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4):
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(custom_func_align_markers, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(custom_func_align_markers, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(custom_func_track_markers, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(custom_func_track_markers, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)

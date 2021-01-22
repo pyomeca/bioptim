@@ -18,7 +18,7 @@ from bioptim import (
     OdeSolver,
 )
 
-# Load align_segment_on_rt
+# Load track_segment_on_rt
 spec = importlib.util.spec_from_file_location(
     "data_to_track", str(Path(__file__).parent) + "/contact_forces_inequality_constraint_muscle.py"
 )

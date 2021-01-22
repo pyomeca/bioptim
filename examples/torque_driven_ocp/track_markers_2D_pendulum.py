@@ -21,7 +21,7 @@ from bioptim import (
     OdeSolver,
 )
 
-# Load align_segment_on_rt
+# Load track_segment_on_rt
 EXAMPLES_FOLDER = Path(__file__).parent / ".."
 spec = importlib.util.spec_from_file_location("data_to_track", str(EXAMPLES_FOLDER) + "/getting_started/pendulum.py")
 data_to_track = importlib.util.module_from_spec(spec)

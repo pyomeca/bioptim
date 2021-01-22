@@ -307,7 +307,7 @@ def test_penalty_track_markers_velocity(penalty_origin, value):
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_align_markers(penalty_origin, value):
+def test_penalty_track_markers(penalty_origin, value):
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
     penalty_type = penalty_origin.FOLLOW_MARKERS
@@ -723,7 +723,7 @@ def test_penalty_minimize_com_position(value, penalty_origin):
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_align_segment_with_custom_rt(penalty_origin, value):
+def test_penalty_track_segment_with_custom_rt(penalty_origin, value):
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
     penalty_type = penalty_origin.TRACK_SEGMENT_WITH_CUSTOM_RT
@@ -756,7 +756,7 @@ def test_penalty_align_segment_with_custom_rt(penalty_origin, value):
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_align_marker_with_segment_axis(penalty_origin, value):
+def test_penalty_track_marker_with_segment_axis(penalty_origin, value):
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
     penalty_type = penalty_origin.TRACK_MARKER_WITH_SEGMENT_AXIS

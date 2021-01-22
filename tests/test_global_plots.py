@@ -19,7 +19,7 @@ def test_plot_graphs_one_phase():
     # Load graphs_one_phase
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
     )
     graphs_one_phase = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(graphs_one_phase)
@@ -39,7 +39,7 @@ def test_plot_merged_graphs():
     # Load graphs_one_phase
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py"
     )
     merged_graphs = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(merged_graphs)
@@ -75,7 +75,7 @@ def test_plot_graphs_multi_phases():
     # Load graphs_one_phase
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/multiphase_align_markers.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/multiphase_track_markers.py"
     )
     graphs_multi_phases = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(graphs_multi_phases)
@@ -93,7 +93,7 @@ def test_add_new_plot():
     # Load graphs_one_phase
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
     )
     graphs_one_phase = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(graphs_one_phase)

@@ -14,16 +14,16 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 @pytest.mark.parametrize("actuator_type", [None, 2])
-def test_align_markers(ode_solver, actuator_type):
-    # Load align_markers
+def test_track_markers(ode_solver, actuator_type):
+    # Load track_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
     )
-    align_markers = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_markers)
+    track_markers = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(track_markers)
 
-    ocp = align_markers.prepare_ocp(
+    ocp = track_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
         final_time=2,
@@ -71,16 +71,16 @@ def test_align_markers(ode_solver, actuator_type):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_markers_changing_constraints(ode_solver):
-    # Load align_markers
+def test_track_markers_changing_constraints(ode_solver):
+    # Load track_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
     )
-    align_markers = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_markers)
+    track_markers = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(track_markers)
 
-    ocp = align_markers.prepare_ocp(
+    ocp = track_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
         final_time=2,
@@ -169,16 +169,16 @@ def test_align_markers_changing_constraints(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_markers_with_actuators(ode_solver):
-    # Load align_markers
+def test_track_markers_with_actuators(ode_solver):
+    # Load track_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
     )
-    align_markers = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_markers)
+    track_markers = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(track_markers)
 
-    ocp = align_markers.prepare_ocp(
+    ocp = track_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
         number_shooting_points=30,
         final_time=2,
@@ -219,16 +219,16 @@ def test_align_markers_with_actuators(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_multiphase_align_markers(ode_solver):
-    # Load multiphase_align_markers
+def test_multiphase_track_markers(ode_solver):
+    # Load multiphase_track_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "multiphase_align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/multiphase_align_markers.py"
+        "multiphase_track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/multiphase_track_markers.py"
     )
-    multiphase_align_markers = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(multiphase_align_markers)
+    multiphase_track_markers = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(multiphase_track_markers)
 
-    ocp = multiphase_align_markers.prepare_ocp(
+    ocp = multiphase_track_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod", ode_solver=ode_solver
     )
     sol, obj = ocp.solve(return_objectives=True)

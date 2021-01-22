@@ -20,7 +20,7 @@ from bioptim import (
 )
 
 
-def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
+def custom_func_track_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
     nq = nlp.shape["q"]
     val = []
     markers_func = biorbd.to_casadi_func("markers", nlp.model.markers, nlp.q)
@@ -47,7 +47,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4):
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
     objective_functions.add(
-        custom_func_align_markers,
+        custom_func_track_markers,
         custom_type=ObjectiveFcn.Mayer,
         node=Node.START,
         quadratic=True,
@@ -56,7 +56,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4):
         weight=1000,
     )
     objective_functions.add(
-        custom_func_align_markers,
+        custom_func_track_markers,
         custom_type=ObjectiveFcn.Mayer,
         node=Node.END,
         quadratic=True,
