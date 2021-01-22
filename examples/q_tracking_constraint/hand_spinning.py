@@ -49,7 +49,10 @@ def prepare_ocp(biorbd_model_path="HandSpinner.bioMod"):
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        ConstraintFcn.SUPERIMPOSE_MARKERS, first_marker_idx=hand_marker_idx, second_marker_idx=end_crank_idx, node=Node.ALL
+        ConstraintFcn.SUPERIMPOSE_MARKERS,
+        first_marker_idx=hand_marker_idx,
+        second_marker_idx=end_crank_idx,
+        node=Node.ALL,
     )
     constraints.add(
         ConstraintFcn.TRACK_STATE,

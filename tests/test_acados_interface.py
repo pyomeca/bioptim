@@ -330,7 +330,9 @@ def test_acados_fail_lls():
 
     solver_options = {"cost_type": "LINEAR_LS"}
 
-    with pytest.raises(RuntimeError, match="SUPERIMPOSE_MARKERS is an incompatible objective term with LINEAR_LS cost type"):
+    with pytest.raises(
+        RuntimeError, match="SUPERIMPOSE_MARKERS is an incompatible objective term with LINEAR_LS cost type"
+    ):
         sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
 
 

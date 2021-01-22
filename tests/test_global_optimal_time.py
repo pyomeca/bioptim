@@ -722,7 +722,9 @@ def test_mayer2_neg_multiphase_time_constraint():
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=2)
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(
+        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2
+    )
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
@@ -762,7 +764,9 @@ def test_mayer_multiphase_time_constraint():
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(
+        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2
+    )
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     OptimalControlProgram(
@@ -842,7 +846,9 @@ def test_lagrange1_neg_multiphase_time_constraint():
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=0)
 
         constraints = ConstraintList()
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0)
+        constraints.add(
+            ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0
+        )
         constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=0)
 
         OptimalControlProgram(
@@ -882,7 +888,9 @@ def test_lagrange2_neg_multiphase_time_constraint():
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=2)
 
         constraints = ConstraintList()
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+        constraints.add(
+            ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2
+        )
         constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
         OptimalControlProgram(
@@ -921,7 +929,9 @@ def test_lagrange_multiphase_time_constraint():
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2)
+    constraints.add(
+        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=2
+    )
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, minimum=time_min[0], maximum=time_max[0], phase=2)
 
     OptimalControlProgram(
