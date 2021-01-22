@@ -17,13 +17,13 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "align_and_minimize_marker_velocity",
-        str(PROJECT_FOLDER) + "/examples/align/align_and_minimize_marker_velocity.py",
+        str(PROJECT_FOLDER) + "/examples/track/track_and_minimize_marker_velocity.py",
     )
     align_and_minimize_marker_velocity = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(align_and_minimize_marker_velocity)
 
     ocp = align_and_minimize_marker_velocity.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
         number_shooting_points=5,
         final_time=1,
         marker_velocity_or_displacement="disp",
@@ -81,13 +81,13 @@ def test_align_and_minimize_marker_displacement_RT(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "align_and_minimize_marker_velocity",
-        str(PROJECT_FOLDER) + "/examples/align/align_and_minimize_marker_velocity.py",
+        str(PROJECT_FOLDER) + "/examples/track/track_and_minimize_marker_velocity.py",
     )
     align_and_minimize_marker_velocity = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(align_and_minimize_marker_velocity)
 
     ocp = align_and_minimize_marker_velocity.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
         number_shooting_points=5,
         final_time=1,
         marker_velocity_or_displacement="disp",
@@ -138,13 +138,13 @@ def test_align_and_minimize_marker_velocity(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "align_and_minimize_marker_velocity",
-        str(PROJECT_FOLDER) + "/examples/align/align_and_minimize_marker_velocity.py",
+        str(PROJECT_FOLDER) + "/examples/track/track_and_minimize_marker_velocity.py",
     )
     align_and_minimize_marker_velocity = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(align_and_minimize_marker_velocity)
 
     ocp = align_and_minimize_marker_velocity.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
         number_shooting_points=5,
         final_time=1,
         marker_velocity_or_displacement="velo",
@@ -191,7 +191,7 @@ def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "align_and_minimize_marker_velocity",
-        str(PROJECT_FOLDER) + "/examples/align/align_and_minimize_marker_velocity.py",
+        str(PROJECT_FOLDER) + "/examples/track/track_and_minimize_marker_velocity.py",
     )
     align_and_minimize_marker_velocity = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(align_and_minimize_marker_velocity)
@@ -201,7 +201,7 @@ def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
             NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with IRK"
         ):
             align_and_minimize_marker_velocity.prepare_ocp(
-                biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+                biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
                 number_shooting_points=5,
                 final_time=1,
                 marker_velocity_or_displacement="velo",
@@ -211,7 +211,7 @@ def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
             )
     else:
         ocp = align_and_minimize_marker_velocity.prepare_ocp(
-            biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+            biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
             number_shooting_points=5,
             final_time=1,
             marker_velocity_or_displacement="velo",

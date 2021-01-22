@@ -481,13 +481,13 @@ def test_acados_constraints_all():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "constraint",
-        str(PROJECT_FOLDER) + "/examples/align/align_marker_on_segment.py",
+        str(PROJECT_FOLDER) + "/examples/track/track_marker_on_segment.py",
     )
     constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(constraint)
 
     ocp = constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
         number_shooting_points=30,
         final_time=2,
         initialize_near_solution=True,
@@ -497,7 +497,7 @@ def test_acados_constraints_all():
 
     constraints = ConstraintList()
     constraints.add(
-        ConstraintFcn.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axis.X)
+        ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axis.X)
     )
     ocp.update_constraints(constraints)
 
@@ -523,13 +523,13 @@ def test_acados_constraints_end_all():
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "constraint",
-        str(PROJECT_FOLDER) + "/examples/align/align_marker_on_segment.py",
+        str(PROJECT_FOLDER) + "/examples/track/track_marker_on_segment.py",
     )
     constraint = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(constraint)
 
     ocp = constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
         number_shooting_points=30,
         final_time=2,
         initialize_near_solution=True,
@@ -540,7 +540,7 @@ def test_acados_constraints_end_all():
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.FOLLOW_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
     constraints.add(
-        ConstraintFcn.ALIGN_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axis.X)
+        ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axis.X)
     )
     ocp.update_constraints(constraints)
 

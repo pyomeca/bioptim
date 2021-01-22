@@ -46,7 +46,7 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     else:
-        biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod")
+        biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
@@ -726,7 +726,7 @@ def test_penalty_minimize_com_position(value, penalty_origin):
 def test_penalty_align_segment_with_custom_rt(penalty_origin, value):
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
-    penalty_type = penalty_origin.ALIGN_SEGMENT_WITH_CUSTOM_RT
+    penalty_type = penalty_origin.TRACK_SEGMENT_WITH_CUSTOM_RT
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type)
@@ -759,7 +759,7 @@ def test_penalty_align_segment_with_custom_rt(penalty_origin, value):
 def test_penalty_align_marker_with_segment_axis(penalty_origin, value):
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
-    penalty_type = penalty_origin.ALIGN_MARKER_WITH_SEGMENT_AXIS
+    penalty_type = penalty_origin.TRACK_MARKER_WITH_SEGMENT_AXIS
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type)

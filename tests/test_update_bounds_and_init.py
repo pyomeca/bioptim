@@ -19,7 +19,7 @@ from bioptim import (
 
 def test_double_update_bounds_and_init():
     PROJECT_FOLDER = Path(__file__).parent / ".."
-    biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod")
+    biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod")
     nq = biorbd_model.nbQ()
     ns = 10
 
@@ -80,7 +80,7 @@ def test_update_bounds_and_init_with_param():
         return value + target_value
 
     PROJECT_FOLDER = Path(__file__).parent / ".."
-    biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod")
+    biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod")
     nq = biorbd_model.nbQ()
     ns = 10
     g_min, g_max, g_init = -10, -6, -8

@@ -1243,8 +1243,8 @@ class PenaltyFunctionAbstract:
                 or func == PenaltyType.MINIMIZE_MUSCLES_CONTROL
                 or func == PenaltyType.MINIMIZE_ALL_CONTROLS
                 or func == PenaltyType.MINIMIZE_CONTACT_FORCES
-                or func == PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT
-                or func == PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS
+                or func == PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT
+                or func == PenaltyType.TRACK_MARKER_WITH_SEGMENT_AXIS
                 or func == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
                 or func == PenaltyType.MINIMIZE_COM_POSITION
                 or func == PenaltyType.MINIMIZE_COM_VELOCITY
@@ -1549,6 +1549,6 @@ class PenaltyType(Enum):
     MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height
     MINIMIZE_COM_POSITION = PenaltyFunctionAbstract.Functions.minimize_com_position
     MINIMIZE_COM_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_com_velocity
-    ALIGN_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt
-    ALIGN_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis
+    TRACK_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt
+    TRACK_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis
     CUSTOM = PenaltyFunctionAbstract.Functions.custom
