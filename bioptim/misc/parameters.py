@@ -71,7 +71,7 @@ class Parameter(OptionGeneric):
 
 class ParameterList(OptionList):
     """
-    A list of Parameter if more than one is required
+    A list of Parameter
 
     Methods
     -------

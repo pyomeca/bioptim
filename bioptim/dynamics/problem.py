@@ -8,7 +8,7 @@ from ..gui.plot import CustomPlot
 
 class Problem:
     """
-    Includes methods suitable for several situations
+    Dynamics configuration for the most common ocp
     """
 
     @staticmethod

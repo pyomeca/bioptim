@@ -12,14 +12,63 @@ from bioptim import Data, InterpolationType, OdeSolver
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("nb_threads", [1, 2])
-@pytest.mark.parametrize("use_SX", [False, True])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_pendulum(nb_threads, use_SX, ode_solver):
+def test_pendulum_save_and_load():
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
+    )
+    pendulum = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pendulum)
+
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        final_time=2,
+        number_shooting_points=10,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol["f"])
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 6657.974502951726)
+
+    # Check constraints
+    g = np.array(sol["g"])
+    np.testing.assert_equal(g.shape, (40, 1))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+
+    # Check some of the results
+    states, controls = Data.get_data(ocp, sol["x"])
+    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array((16.25734477, 0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-25.59944635, 0)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol, ocp)
+
+
+@pytest.mark.parametrize("nb_threads", [1, 2])
+@pytest.mark.parametrize("use_SX", [False, True])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+def test_pendulum_save_and_load(nb_threads, use_SX, ode_solver):
+    # Load pendulum
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum_save_and_load.py"
     )
     pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum)

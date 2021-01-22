@@ -19,7 +19,7 @@ class Objective(PenaltyOption):
         The weighting applied to this specific objective function
     """
 
-    def __init__(self, objective, weight: float = 1, custom_type: "ObjectiveFcn" = None, phase: int = 0, **params):
+    def __init__(self, objective, weight: float = 1, custom_type=None, phase: int = 0, **params):
         """
         Parameters
         ----------
@@ -27,7 +27,7 @@ class Objective(PenaltyOption):
             The chosen objective function
         weight: float
             The weighting applied to this specific objective function
-        custom_type: "Objective"
+        custom_type: Objective
             When objective is a custom defined function, one must specify if the custom_type is Mayer or Lagrange
         phase: int
             At which phase this objective function must be applied

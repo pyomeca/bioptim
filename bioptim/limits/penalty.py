@@ -34,7 +34,7 @@ class PenaltyOption(OptionGeneric):
 
     def __init__(
         self,
-        penalty: "PenaltyType",
+        penalty,
         phase: int = 0,
         node: Node = Node.DEFAULT,
         target: np.ndarray = None,

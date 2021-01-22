@@ -7,7 +7,7 @@ from .enums import ControlType
 
 class Data:
     """
-    Data manipulation and storage. Mostly for internal purpose
+    Data manipulation and storage
 
     Attributes
     ----------

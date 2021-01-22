@@ -48,7 +48,7 @@ class PathCondition(np.ndarray):
         input_array: np.ndarray,
         t: list = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
-        slice_list: slice = None,
+        slice_list: Union[slice, list, tuple] = None,
         **extra_params,
     ):
         """
@@ -60,7 +60,7 @@ class PathCondition(np.ndarray):
             The time stamps
         interpolation: InterpolationType
             The type of interpolation. It determines how many timestamps are required
-        slice_list: slice
+        slice_list: Union[slice, list, tuple]
             If the data should be sliced. It is more relevant for custom functions
         extra_params: dict
             Any parameters to pass to the path condition
@@ -325,7 +325,7 @@ class Bounds(OptionGeneric):
         min_bound: Union[PathCondition, np.ndarray] = (),
         max_bound: Union[PathCondition, np.ndarray] = (),
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        slice_list: slice = None,
+        slice_list: Union[slice, list, tuple] = None,
         **parameters,
     ):
         """
@@ -337,7 +337,7 @@ class Bounds(OptionGeneric):
             The maximal bound
         interpolation: InterpolationType
             The type of interpolation of the bound
-        slice_list: slice
+        slice_list: Union[slice, list, tuple]
             Slice of the array
         parameters: dict
             Any extra parameters that is associated to the path condition
@@ -400,13 +400,13 @@ class Bounds(OptionGeneric):
         self.extra_params = self.min.extra_params
         self.nb_shooting = self.min.nb_shooting
 
-    def __getitem__(self, slice_list: slice) -> "Bounds":
+    def __getitem__(self, slice_list: Union[slice, list, tuple]) -> "Bounds":
         """
         Allows to get from square brackets
 
         Parameters
         ----------
-        slice_list: slice
+        slice_list: Union[slice, list, tuple]
             The slice to get
 
         Returns
@@ -442,13 +442,13 @@ class Bounds(OptionGeneric):
                 "b is the stopping index and c is the step for slicing."
             )
 
-    def __setitem__(self, slice: slice, value: Union[np.ndarray, float]):
+    def __setitem__(self, slice: Union[slice, list, tuple], value: Union[np.ndarray, float]):
         """
         Allows to set from square brackets
 
         Parameters
         ----------
-        slice: slice
+        slice: Union[slice, list, tuple]
             The slice where to put the data
         value: Union[np.ndarray, float]
             The value to set

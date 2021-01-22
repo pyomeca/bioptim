@@ -18,6 +18,31 @@ from ..misc.utils import check_version
 
 
 class CustomPlot:
+    """
+    Interface to create/add plots of the simulation
+
+    Attributes
+    ----------
+    function: Callable[states, controls, parameters]
+        The function to call to update the graph
+    type: PlotType
+        Type of plot to use
+    phase_mappings: Mapping
+        The index of the plot across the phases
+    legend: Union[tuple[str], list[str]]
+        The titles of the graphs
+    combine_to: str
+        The name of the variable to combine this one with
+    color: str
+        The color of the line as specified in matplotlib
+    linestyle: str
+        The style of the line as specified in matplotlib
+    ylim: Union[tuple[float, float], list[float, float]]
+        The ylim of the axes as specified in matplotlib
+    bounds:
+        The bounds to show on the graph
+    """
+
     def __init__(
         self,
         update_function: Callable,
@@ -31,11 +56,9 @@ class CustomPlot:
         bounds: Bounds = None,
     ):
         """
-        Interface to create/add plots of the simulation
-
         Parameters
         ----------
-        update_function: function
+        update_function: Callable[states, controls, parameters]
             The function to call to update the graph
         plot_type: PlotType
             Type of plot to use

@@ -1,12 +1,50 @@
 from copy import copy
 
 import numpy as np
-from .enums import OdeSolver, ControlType
+from .enums import ControlType
+from ..limits.path_conditions import InitialGuess
 
 
 class Simulate:
+    """
+    Interface that allows to integrate a solution
+
+    Methods
+    -------
+    from_solve(ocp, sol: dict, single_shoot: bool = False) -> dict
+        Simulate the states using a solution structure. If single_shoot is True, the simulation is done in one go.
+        Otherwise, the simulation reset at each node
+    from_data(ocp, data: list, single_shoot: bool = True) -> dict
+        Simulate the states using a get_data structure. If single_shoot is True, the simulation is done in one go.
+        Otherwise, the simulation reset at each node
+    from_controls_and_initial_states(ocp, states: InitialGuess, controls: InitialGuess, single_shoot: bool = False) -> dict
+        Simulate the states from an initial guess set. If single_shoot is True, the simulation is done in one go.
+        Otherwise, the simulation reset at each node
+    from_controls_and_initial_states(ocp, states: InitialGuess, controls: InitialGuess, single_shoot: bool = False) -> dict
+        Simulate the states from an initial guess set. If single_shoot is True, the simulation is done in one go.
+        Otherwise, the simulation reset at each node
+    """
+
     @staticmethod
-    def from_solve(ocp, sol, single_shoot=False):
+    def from_solve(ocp, sol: dict, single_shoot: bool = False) -> dict:
+        """
+        Simulate the states using a solution structure. If single_shoot is True, the simulation is done in one go.
+        Otherwise, the simulation reset at each node
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        sol: dict
+            A solution structure
+        single_shoot: bool
+            If the simulation should reset [False] or not [True] at each node
+
+        Returns
+        -------
+        A solution structure integrated
+        """
+
         v_input = np.array(sol["x"]).squeeze()
         v_output = copy(v_input)
         offset = 0
@@ -36,7 +74,48 @@ class Simulate:
         return sol
 
     @staticmethod
-    def from_data(ocp, data, single_shoot=True):
+    def from_data(ocp, data: list, single_shoot: bool = True) -> dict:
+        """
+        Simulate the states using a get_data structure. If single_shoot is True, the simulation is done in one go.
+        Otherwise, the simulation reset at each node
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        data: list
+            The solution return from get_data
+        single_shoot: bool
+            If the simulation should reset [False] or not [True] at each node
+
+        Returns
+        -------
+        A solution structure integrated
+        """
+
+        def concat_variables(variables: dict, offset_phases: int, idx_nodes: int) -> np.ndarray:
+            """
+            Concatenate all the variables of a dict in one np.ndarray
+
+            Parameters
+            ----------
+            variables: dict
+                The states or controls dictionary data structure
+            offset_phases: int
+                The offset due to the phase
+            idx_nodes
+                The offset due to the nodes
+
+            Returns
+            -------
+            The matrix of data concatenated
+            """
+
+            var = np.ndarray(0)
+            for key in variables.keys():
+                var = np.append(var, variables[key][:, offset_phases + idx_nodes])
+            return var
+
         states = data[0]
         controls = data[1]
         v = np.ndarray(0)
@@ -51,21 +130,21 @@ class Simulate:
             else:
                 raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
-            v_phase[offset : offset + nlp.nx] = Simulate._concat_variables(states, offset_phases, 0)
+            v_phase[offset : offset + nlp.nx] = concat_variables(states, offset_phases, 0)
             for idx_nodes in range(nlp.ns):
                 x0 = (
                     v_phase[offset : offset + nlp.nx]
                     if single_shoot
-                    else Simulate._concat_variables(states, offset_phases, idx_nodes)
+                    else concat_variables(states, offset_phases, idx_nodes)
                 )
 
                 if nlp.control_type == ControlType.CONSTANT:
-                    p = Simulate._concat_variables(controls, offset_phases, idx_nodes)
+                    p = concat_variables(controls, offset_phases, idx_nodes)
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     p = np.vstack(
                         (
-                            Simulate._concat_variables(controls, offset_phases, idx_nodes),
-                            Simulate._concat_variables(controls, offset_phases, idx_nodes + 1),
+                            concat_variables(controls, offset_phases, idx_nodes),
+                            concat_variables(controls, offset_phases, idx_nodes + 1),
                         )
                     ).T
                 else:
@@ -84,7 +163,29 @@ class Simulate:
         return {"x": v}
 
     @staticmethod
-    def from_controls_and_initial_states(ocp, states, controls, single_shoot=False):
+    def from_controls_and_initial_states(
+        ocp, states: InitialGuess, controls: InitialGuess, single_shoot: bool = False
+    ) -> dict:
+        """
+        Simulate the states from an initial guess set. If single_shoot is True, the simulation is done in one go.
+        Otherwise, the simulation reset at each node
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        states: InitialGuess
+            The initial guess for the states
+        controls: InitialGuess
+            The initial guess for the controls
+        single_shoot: bool
+            If the simulation should reset [False] or not [True] at each node
+
+        Returns
+        -------
+        A solution structure integrated
+        """
+
         # todo flag single/multiple here and in from_solve (copy states)
         states.check_and_adjust_dimensions(ocp.nlp[0].nx, ocp.nlp[0].ns)
         v = states.init.evaluate_at(0)
@@ -99,10 +200,3 @@ class Simulate:
                 v = np.append(v, states.init.evaluate_at(0))
 
         return Simulate.from_solve(ocp, {"x": v}, single_shoot)
-
-    @staticmethod
-    def _concat_variables(variables, offset_phases, idx_nodes):
-        var = np.ndarray(0)
-        for key in variables.keys():
-            var = np.append(var, variables[key][:, offset_phases + idx_nodes])
-        return var

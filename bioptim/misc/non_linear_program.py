@@ -7,7 +7,7 @@ from .options import OptionList
 
 class NonLinearProgram:
     """
-    A nonlinear program that describe a phase in the ocp
+    A nonlinear program that describes a phase in the ocp
 
     Attributes
     ----------

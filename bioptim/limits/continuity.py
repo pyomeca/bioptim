@@ -50,7 +50,7 @@ class StateTransition(OptionGeneric):
 
 class StateTransitionList(UniquePerPhaseOptionList):
     """
-    A list of StateTransition if more than one is required
+    A list of StateTransition
 
     Methods
     -------
