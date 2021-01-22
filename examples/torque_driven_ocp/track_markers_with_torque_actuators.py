@@ -46,8 +46,8 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, actuator_
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.FOLLOW_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(ConstraintFcn.FOLLOW_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
     if actuator_type == 2:
         constraints.add(ConstraintFcn.TORQUE_MAX_FROM_ACTUATORS, node=Node.ALL, min_torque=7.5)
 

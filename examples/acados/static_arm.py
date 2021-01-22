@@ -31,7 +31,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=10)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=10)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10)
-    objective_functions.add(ObjectiveFcn.Mayer.FOLLOW_MARKERS, weight=100000, first_marker_idx=0, second_marker_idx=1)
+    objective_functions.add(ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, weight=100000, first_marker_idx=0, second_marker_idx=1)
 
     # Dynamics
     dynamics = DynamicsList()

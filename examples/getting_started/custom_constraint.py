@@ -1,6 +1,6 @@
 """
 File that shows an example of a custom constraint.
-As an example, this custom constraint reproduces exactly the behavior of the FOLLOW_MARKERS constraint.
+As an example, this custom constraint reproduces exactly the behavior of the SUPERIMPOSE_MARKERS constraint.
 """
 import biorbd
 from casadi import vertcat

@@ -433,7 +433,7 @@ class PenaltyFunctionAbstract:
                     penalty.type.get_type().add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def follow_markers(
+        def superimpose_markers(
             penalty: PenaltyOption,
             ocp,
             nlp,
@@ -1236,7 +1236,7 @@ class PenaltyFunctionAbstract:
                 or func == PenaltyType.MINIMIZE_MARKERS
                 or func == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
                 or func == PenaltyType.MINIMIZE_MARKERS_VELOCITY
-                or func == PenaltyType.FOLLOW_MARKERS
+                or func == PenaltyType.SUPERIMPOSE_MARKERS
                 or func == PenaltyType.PROPORTIONAL_STATE
                 or func == PenaltyType.PROPORTIONAL_CONTROL
                 or func == PenaltyType.MINIMIZE_TORQUE
@@ -1534,7 +1534,7 @@ class PenaltyType(Enum):
     MINIMIZE_MARKERS_DISPLACEMENT = PenaltyFunctionAbstract.Functions.minimize_markers_displacement
     MINIMIZE_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
     TRACK_MARKERS_VELOCITY = MINIMIZE_MARKERS_VELOCITY
-    FOLLOW_MARKERS = PenaltyFunctionAbstract.Functions.follow_markers
+    SUPERIMPOSE_MARKERS = PenaltyFunctionAbstract.Functions.superimpose_markers
     PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_variable
     PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_variable
     MINIMIZE_TORQUE = PenaltyFunctionAbstract.Functions.minimize_torque

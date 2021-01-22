@@ -330,7 +330,7 @@ def test_acados_fail_lls():
 
     solver_options = {"cost_type": "LINEAR_LS"}
 
-    with pytest.raises(RuntimeError, match="FOLLOW_MARKERS is an incompatible objective term with LINEAR_LS cost type"):
+    with pytest.raises(RuntimeError, match="SUPERIMPOSE_MARKERS is an incompatible objective term with LINEAR_LS cost type"):
         sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
 
 
@@ -352,7 +352,7 @@ def test_acados_custom_dynamics(problem_type_custom):
         use_SX=True,
     )
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.FOLLOW_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
     ocp.update_constraints(constraints)
     sol = ocp.solve(solver=Solver.ACADOS)
 
@@ -460,7 +460,7 @@ def test_acados_one_end_constraints():
     ocp.update_bounds(x_bounds=x_bounds)
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.FOLLOW_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
     ocp.update_constraints(constraints)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
@@ -538,7 +538,7 @@ def test_acados_constraints_end_all():
     )
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.FOLLOW_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
     constraints.add(
         ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axis.X)
     )

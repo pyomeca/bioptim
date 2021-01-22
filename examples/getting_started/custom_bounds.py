@@ -63,8 +63,8 @@ def prepare_ocp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.FOLLOW_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(ConstraintFcn.FOLLOW_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraints
     if interpolation_type == InterpolationType.CONSTANT:
