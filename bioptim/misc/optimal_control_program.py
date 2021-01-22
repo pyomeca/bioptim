@@ -618,12 +618,12 @@ class OptimalControlProgram:
         """
 
         if isinstance(new_objective_function, Objective):
-            self.__modify_penalty(new_objective_function, "objective_functions")
+            self.__modify_penalty(new_objective_function)
 
         elif isinstance(new_objective_function, ObjectiveList):
             for objective_in_phase in new_objective_function:
                 for objective in objective_in_phase:
-                    self.__modify_penalty(objective, "objective_functions")
+                    self.__modify_penalty(objective)
 
         else:
             raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
@@ -639,12 +639,12 @@ class OptimalControlProgram:
         """
 
         if isinstance(new_constraint, Constraint):
-            self.__modify_penalty(new_constraint, "constraints")
+            self.__modify_penalty(new_constraint)
 
         elif isinstance(new_constraint, ConstraintList):
             for constraints_in_phase in new_constraint:
                 for constraint in constraints_in_phase:
-                    self.__modify_penalty(constraint, "constraints")
+                    self.__modify_penalty(constraint)
 
         else:
             raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
@@ -660,12 +660,12 @@ class OptimalControlProgram:
         """
 
         if isinstance(new_parameters, Parameter):
-            self.__modify_penalty(new_parameters, "parameters")
+            self.__modify_penalty(new_parameters)
 
         elif isinstance(new_parameters, ParameterList):
             for parameters_in_phase in new_parameters:
                 for parameter in parameters_in_phase:
-                    self.__modify_penalty(parameter, "parameters")
+                    self.__modify_penalty(parameter)
 
         else:
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
@@ -729,7 +729,7 @@ class OptimalControlProgram:
         if self.isdef_x_init and self.isdef_u_init:
             self.__define_initial_guess()
 
-    def __modify_penalty(self, new_penalty: PenaltyOption, penalty_name: str):
+    def __modify_penalty(self, new_penalty: PenaltyOption):
         """
         The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
         overrides an objective only the latter is preserved when saved
@@ -747,16 +747,9 @@ class OptimalControlProgram:
         phase_idx = new_penalty.phase
 
         # Copy to self.original_values so it can be save/load
-        self.original_values[penalty_name].add(deepcopy(new_penalty))
-
-        if penalty_name == "objective_functions":
-            ObjectiveFunction.add_or_replace(self, self.nlp[phase_idx], new_penalty)
-        elif penalty_name == "constraints":
-            ConstraintFunction.add_or_replace(self, self.nlp[phase_idx], new_penalty)
-        elif penalty_name == "parameters":
-            Parameters.add_or_replace(self, new_penalty)
-        else:
-            raise RuntimeError("Unrecognized penalty")
+        pen = new_penalty.type.get_type()
+        self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
+        pen.add_or_replace(self, self.nlp[phase_idx], new_penalty)
 
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters):
         """

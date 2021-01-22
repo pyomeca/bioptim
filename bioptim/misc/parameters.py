@@ -1,44 +1,127 @@
+from typing import Callable, Union
+
 from casadi import vertcat
 
 from .enums import Node
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
+from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
 from .options import OptionList, OptionGeneric
 
 
 class Parameter(OptionGeneric):
+    """
+    A placeholder for a parameter
+    function: Callable[OptimalControlProgram, MX]
+            The user defined function that modify the model
+    initial_guess: Union[InitialGuess, InitialGuessList]
+        The list of initial guesses associated with this parameter
+    bounds: Union[Bounds, BoundsList]
+        The list of bounds associated with this parameter
+    quadratic: bool
+        If the objective is squared [True] or not [False]
+    size: int
+        The number of variables this parameter has
+    penalty_list: Union[Objective, ObjectiveList]
+        The list of objective associated with this parameter
+    cx: Union[MX, SX]
+        The type of casadi variable
+    """
+
     def __init__(
         self,
-        function=None,
-        initial_guess=None,
-        bounds=None,
-        quadratic=True,
-        size=None,
-        penalty_list=None,
-        cx=None,
+        function: Callable = None,
+        initial_guess: Union[InitialGuess, InitialGuessList] = None,
+        bounds: Union[Bounds, BoundsList] = None,
+        quadratic: bool = True,
+        size: int = None,
+        penalty_list: Union[Objective, ObjectiveList] = None,
+        cx: Callable = None,
         **params
     ):
-        super(Parameter, self).__init__(**params)
+        """
+        Parameters
+        ----------
+        function: Callable[OptimalControlProgram, MX]
+            The user defined function that modify the model
+        initial_guess: Union[InitialGuess, InitialGuessList]
+            The list of initial guesses associated with this parameter
+        bounds: Union[Bounds, BoundsList]
+            The list of bounds associated with this parameter
+        quadratic: bool
+            If the objective is squared [True] or not [False]
+        size: int
+            The number of variables this parameter has
+        penalty_list: Union[Objective, ObjectiveList]
+            The list of objective associated with this parameter
+        cx: Union[MX, SX]
+            The type of casadi variable
+        params: dict
+            Any parameters to pass to the function
+        """
+
+        super(Parameter, self).__init__(type=Parameters, **params)
         self.function = function
         self.initial_guess = initial_guess
         self.bounds = bounds
+        self.quadratic = quadratic
         self.size = size
         self.penalty_list = penalty_list
-        self.quadratic = quadratic
         self.cx = cx
 
 
 class ParameterList(OptionList):
+    """
+    A list of Parameter if more than one is required
+
+    Methods
+    -------
     def add(
         self,
-        parameter_name,
-        function=None,
-        initial_guess=None,
-        bounds=None,
-        size=None,
-        phase=0,
-        penalty_list=None,
+        parameter_name: str,
+        function: Callable = None,
+        initial_guess: Union[InitialGuess, InitialGuessList] = None,
+        bounds: Union[Bounds, BoundsList] = None,
+        size: int = None,
+        phase: int = 0,
+        penalty_list: Union[Objective, ObjectiveList] = None,
         **extra_arguments
     ):
+        Add a new Parameter to the list
+    """
+    def add(
+        self,
+        parameter_name: str,
+        function: Callable = None,
+        initial_guess: Union[InitialGuess, InitialGuessList] = None,
+        bounds: Union[Bounds, BoundsList] = None,
+        size: int = None,
+        phase: int = 0,
+        penalty_list: Union[Objective, ObjectiveList] = None,
+        **extra_arguments
+    ):
+        """
+        Add a new Parameter to the list
+
+        Parameters
+        ----------
+        parameter_name: str
+            The name of the parameter. This name will be used for plotting purpose. It must be unique
+        function: Callable[OptimalControlProgram, MX]
+            The user defined function that modify the model
+        initial_guess: Union[InitialGuess, InitialGuessList]
+            The list of initial guesses associated with this parameter
+        bounds: Union[Bounds, BoundsList]
+            The list of bounds associated with this parameter
+        size: int
+            The number of variables this parameter has
+        phase: int
+            The phase model the parameter should be associated with
+        penalty_list: Union[Objective, ObjectiveList]
+            The objective function associate with the parameter
+        extra_arguments: dict
+            Any argument that should be passed to the user defined functions
+        """
+
         if isinstance(parameter_name, Parameter):
             self.copy(parameter_name)
         else:
@@ -61,8 +144,38 @@ class ParameterList(OptionList):
 
 
 class Parameters:
+    """
+    Emulation of the base class PenaltyFunctionAbstract so Parameters can be used as Objective and Constraints
+
+    Methods
+    -------
+    add_or_replace(ocp, _, parameter: Parameter)
+        Doing some configuration on the parameter and add it to the list of parameter_to_optimize
+    _add_to_v(
+            ocp, name: str, size: int, function: Callable, bounds: Union[Bounds, BoundsList],
+            initial_guess: Union[InitialGuess, InitialGuessList], cx: Callable = None, **extra_params) -> Callable
+        Add a parameter the vector of all variables (V)
+    get_type()
+        Returns the type of the penalty
+    penalty_nature() -> str
+        Get the nature of the penalty
+    """
+
     @staticmethod
-    def add_or_replace(ocp, parameter):
+    def add_or_replace(ocp, _, parameter: Parameter):
+        """
+        Doing some configuration on the parameter and add it to the list of parameter_to_optimize
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        _: Any
+            The place holder for what is supposed to be nlp
+        parameter: PenaltyOption
+            The actual paraneter to declare
+        """
+
         param_name = parameter.name
         pre_dynamic_function = parameter.function
         initial_guess = parameter.initial_guess
@@ -103,7 +216,33 @@ class Parameters:
             ObjectiveFunction.ParameterFunction.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
-    def _add_to_v(ocp, name, size, function, bounds, initial_guess, cx=None, **extra_params):
+    def _add_to_v(ocp, name: str, size: int, function: Callable, bounds: Union[Bounds, BoundsList], initial_guess: Union[InitialGuess, InitialGuessList], cx: Callable = None, **extra_params) -> Callable:
+        """
+        Add a parameter the vector of all variables (V)
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        name: str
+            The name of the parameter
+        size: int
+            The number of variables this parameter has
+        function: Callable[OptimalControlProgram, MX]
+                The user defined function that modify the model
+        bounds: Union[Bounds, BoundsList]
+            The list of bounds associated with this parameter
+        initial_guess: Union[InitialGuess, InitialGuessList]
+            The list of initial guesses associated with this parameter
+        cx: Union[MX, SX]
+            The type of casadi variable
+        extra_params: dict
+            Any parameters to pass to the function
+
+        Returns
+        -------
+        The cx type
+        """
         if cx is None:
             cx = ocp.CX.sym(name, size, 1)
 
@@ -132,3 +271,23 @@ class Parameters:
         ocp.V_init.concatenate(initial_guess)
 
         return cx
+
+    @staticmethod
+    def get_type():
+        """
+        Returns the type of the penalty
+        """
+
+        return Parameters
+
+    @staticmethod
+    def penalty_nature() -> str:
+        """
+        Get the nature of the penalty
+
+        Returns
+        -------
+        The nature of the penalty
+        """
+
+        return "parameters"

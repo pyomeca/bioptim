@@ -20,12 +20,12 @@ class Objective(PenaltyOption):
     """
 
     def __init__(
-        self, objective: "ObjectiveFcn", weight: float = 1, custom_type: "ObjectiveFcn" = None, phase: int = 0, **params
+        self, objective, weight: float = 1, custom_type: "ObjectiveFcn" = None, phase: int = 0, **params
     ):
         """
         Parameters
         ----------
-        objective: "ObjectiveFcn"
+        objective: Union[ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, Callable[OptimalControlProgram, MX]]
             The chosen objective function
         weight: float
             The weighting applied to this specific objective function
@@ -119,6 +119,8 @@ class ObjectiveFunction:
             Apply some default parameters
         _span_checker(objective: Objective, nlp: NonLinearProgram)
             Check for any non sense in the requested times for the constraint. Raises an error if so
+        penalty_nature() -> str
+            Get the nature of the penalty
         """
 
         class Functions:
@@ -248,6 +250,34 @@ class ObjectiveFunction:
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
             PenaltyFunctionAbstract._span_checker(objective, nlp)
 
+        @staticmethod
+        def add_or_replace(ocp, nlp, objective: PenaltyOption):
+            """
+            Add the objective function to the objective pool
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the current phase of the ocp
+            objective: PenaltyOption
+                The actual objective function to declare
+            """
+            ObjectiveFunction.add_or_replace(ocp, nlp, objective)
+
+        @staticmethod
+        def penalty_nature() -> str:
+            """
+            Get the nature of the penalty
+
+            Returns
+            -------
+            The nature of the penalty
+            """
+
+            return "objective_functions"
+
     class MayerFunction(PenaltyFunctionAbstract):
         """
         Internal (re)implementation of the penalty functions
@@ -264,6 +294,8 @@ class ObjectiveFunction:
             Apply some default parameters
         _span_checker(objective: Objective, nlp: NonLinearProgram)
             Check for any non sense in the requested times for the constraint. Raises an error if so
+        penalty_nature() -> str
+            Get the nature of the penalty
         """
 
         class Functions:
@@ -409,6 +441,34 @@ class ObjectiveFunction:
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
             PenaltyFunctionAbstract._span_checker(objective, nlp)
 
+        @staticmethod
+        def add_or_replace(ocp, nlp, objective: PenaltyOption):
+            """
+            Add the objective function to the objective pool
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the current phase of the ocp
+            objective: PenaltyOption
+                The actual objective function to declare
+            """
+            ObjectiveFunction.add_or_replace(ocp, nlp, objective)
+
+        @staticmethod
+        def penalty_nature() -> str:
+            """
+            Get the nature of the penalty
+
+            Returns
+            -------
+            The nature of the penalty
+            """
+
+            return "objective_functions"
+
     class ParameterFunction(PenaltyFunctionAbstract):
         """
         Internal (re)implementation of the penalty functions
@@ -421,6 +481,8 @@ class ObjectiveFunction:
             Apply some default parameters
         _span_checker(objective: Objective, nlp: NonLinearProgram)
             Check for any non sense in the requested times for the constraint. Raises an error if so
+        penalty_nature() -> str
+            Get the nature of the penalty
         """
 
         class Functions:
@@ -490,6 +552,18 @@ class ObjectiveFunction:
 
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
             PenaltyFunctionAbstract._span_checker(objective, nlp)
+
+        @staticmethod
+        def penalty_nature() -> str:
+            """
+            Get the nature of the penalty
+
+            Returns
+            -------
+            The nature of the penalty
+            """
+
+            return "parameters"
 
     @staticmethod
     def add_or_replace(ocp, nlp, objective: PenaltyOption):
@@ -647,6 +721,11 @@ class ObjectiveFcn:
     class Lagrange(Enum):
         """
         Selection of valid Lagrange objective functions
+
+        Methods
+        -------
+        def get_type() -> Callable
+            Returns the type of the penalty
         """
 
         MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
@@ -676,16 +755,20 @@ class ObjectiveFcn:
         CUSTOM = (PenaltyType.CUSTOM,)
 
         @staticmethod
-        def get_type():
+        def get_type() -> Callable:
             """
             Returns the type of the penalty
             """
-
             return ObjectiveFunction.LagrangeFunction
 
     class Mayer(Enum):
         """
         Selection of valid Mayer objective functions
+
+        Methods
+        -------
+        def get_type() -> Callable
+            Returns the type of the penalty
         """
 
         MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
@@ -715,7 +798,7 @@ class ObjectiveFcn:
         CUSTOM = (PenaltyType.CUSTOM,)
 
         @staticmethod
-        def get_type():
+        def get_type() -> Callable:
             """
             Returns the type of the penalty
             """
@@ -724,12 +807,17 @@ class ObjectiveFcn:
     class Parameter(Enum):
         """
         Selection of valid Parameters objective functions
+
+        Methods
+        -------
+        def get_type() -> Callable
+            Returns the type of the penalty
         """
 
         CUSTOM = (PenaltyType.CUSTOM,)
 
         @staticmethod
-        def get_type():
+        def get_type() -> Callable:
             """
             Returns the type of the penalty
             """

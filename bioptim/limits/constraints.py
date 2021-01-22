@@ -101,6 +101,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         Apply some default parameters
     _span_checker(constraint, nlp)
         Check for any non sense in the requested times for the constraint. Raises an error if so
+    penalty_nature() -> str
+        Get the nature of the penalty
     """
 
     class Functions:
@@ -519,10 +521,27 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if node == Node.END or node == nlp.ns:
                 raise RuntimeError("No control u at last node")
 
+    @staticmethod
+    def penalty_nature() -> str:
+        """
+        Get the nature of the penalty
+
+        Returns
+        -------
+        The nature of the penalty
+        """
+
+        return "constraints"
+
 
 class ConstraintFcn(Enum):
     """
     Selection of valid constraint functions
+
+    Methods
+    -------
+    def get_type() -> Callable
+        Returns the type of the penalty
     """
 
     TRACK_STATE = (PenaltyType.TRACK_STATE,)

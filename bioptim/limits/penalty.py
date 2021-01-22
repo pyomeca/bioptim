@@ -84,7 +84,7 @@ class PenaltyFunctionAbstract:
     add(ocp: OptimalControlProgram, nlp: NonLinearProgram)
         Add a new penalty to the list (abstract)
     add_or_replace(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: PenaltyOption)
-        Doing some configuration on the penalty
+        Doing some configuration on the penalty and add it to the list of penalty
     _add_to_casadi_func(nlp: NonLinearProgram, name: str, function: Callable, *all_param)
         Add to the pool of declared casadi function. If the function already exists, it is skipped
     _parameter_modifier(penalty: PenaltyOption)
@@ -1175,7 +1175,7 @@ class PenaltyFunctionAbstract:
     @staticmethod
     def add_or_replace(ocp, nlp, penalty: PenaltyOption):
         """
-        Doing some configuration on the penalty
+        Doing some configuration on the penalty and add it to the list of penalty
 
         Parameters
         ----------

@@ -162,7 +162,7 @@ class NonLinearProgram:
 
         Parameters
         ----------
-        cx: MX, SX
+        cx: Union[MX, SX]
             The type of casadi variable
 
         """
