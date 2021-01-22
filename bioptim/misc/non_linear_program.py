@@ -290,4 +290,3 @@ class NonLinearProgram:
         elif not isinstance(var, type_list):
             raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
         NonLinearProgram.add(ocp, path_name, var, False)
-

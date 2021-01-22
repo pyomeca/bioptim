@@ -19,9 +19,7 @@ class Objective(PenaltyOption):
         The weighting applied to this specific objective function
     """
 
-    def __init__(
-        self, objective, weight: float = 1, custom_type: "ObjectiveFcn" = None, phase: int = 0, **params
-    ):
+    def __init__(self, objective, weight: float = 1, custom_type: "ObjectiveFcn" = None, phase: int = 0, **params):
         """
         Parameters
         ----------
@@ -168,9 +166,7 @@ class ObjectiveFunction:
                 ObjectiveFunction.LagrangeFunction.add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def add_to_penalty(
-            ocp, nlp, val: Union[MX, SX], penalty: Objective
-        ):
+        def add_to_penalty(ocp, nlp, val: Union[MX, SX], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -366,9 +362,7 @@ class ObjectiveFunction:
             pt.base.add_to_penalty(ocp, None, val, penalty)
 
         @staticmethod
-        def add_to_penalty(
-            ocp, nlp, val: Union[MX, SX], penalty: Objective
-        ):
+        def add_to_penalty(ocp, nlp, val: Union[MX, SX], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -593,9 +587,7 @@ class ObjectiveFunction:
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective)
 
     @staticmethod
-    def add_to_penalty(
-        ocp, nlp, val: Union[MX, SX], penalty: Objective, dt: float = 0
-    ):
+    def add_to_penalty(ocp, nlp, val: Union[MX, SX], penalty: Objective, dt: float = 0):
         """
         Add the objective function to the objective pool
 

@@ -1372,9 +1372,7 @@ class PenaltyFunctionAbstract:
                 )
 
     @staticmethod
-    def add_to_penalty(
-        ocp, nlp, val: Union[MX, SX], penalty: PenaltyOption
-    ):
+    def add_to_penalty(ocp, nlp, val: Union[MX, SX], penalty: PenaltyOption):
         """
         Add the constraint to the penalty pool (abstract)
 

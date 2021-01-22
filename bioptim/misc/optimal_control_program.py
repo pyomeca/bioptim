@@ -512,7 +512,12 @@ class OptimalControlProgram:
             V_bounds.check_and_adjust_dimensions(nV, 1)
             self.V_bounds.concatenate(V_bounds)
 
-    def __define_time(self, phase_time: Union[int, float, list, tuple], objective_functions: ObjectiveList, constraints: ConstraintList):
+    def __define_time(
+        self,
+        phase_time: Union[int, float, list, tuple],
+        objective_functions: ObjectiveList,
+        constraints: ConstraintList,
+    ):
         """
         Declare the phase_time vector in V. If objective_functions or constraints defined a time optimization,
         a sanity check is perform and the values of initial guess and bounds for these particular phases
@@ -527,8 +532,15 @@ class OptimalControlProgram:
             All the constraint functions. It is used to scan if any free time was defined
         """
 
-        def define_parameters_phase_time(ocp: OptimalControlProgram, penalty_functions: Union[ObjectiveList, ConstraintList],
-                                           initial_time_guess: list, phase_time: list, time_min: list, time_max: list, has_penalty: list = None) -> list:
+        def define_parameters_phase_time(
+            ocp: OptimalControlProgram,
+            penalty_functions: Union[ObjectiveList, ConstraintList],
+            initial_time_guess: list,
+            phase_time: list,
+            time_min: list,
+            time_max: list,
+            has_penalty: list = None,
+        ) -> list:
             """
             Sanity check to ensure that only one time optimization is defined per phase. It also creates the time vector
             for initial guesses and bounds
@@ -563,9 +575,9 @@ class OptimalControlProgram:
                     if not pen_fun:
                         continue
                     if (
-                            pen_fun.type == ObjectiveFcn.Mayer.MINIMIZE_TIME
-                            or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
-                            or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
+                        pen_fun.type == ObjectiveFcn.Mayer.MINIMIZE_TIME
+                        or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
+                        or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
                     ):
                         if has_penalty[i]:
                             raise RuntimeError("Time constraint/objective cannot declare more than once")
@@ -670,7 +682,9 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
-    def update_bounds(self, x_bounds: Union[Bounds, BoundsList] = BoundsList(), u_bounds: Union[Bounds, BoundsList] = BoundsList()):
+    def update_bounds(
+        self, x_bounds: Union[Bounds, BoundsList] = BoundsList(), u_bounds: Union[Bounds, BoundsList] = BoundsList()
+    ):
         """
         The main user interface to add bounds in the ocp
 
@@ -690,10 +704,10 @@ class OptimalControlProgram:
             self.__define_bounds()
 
     def update_initial_guess(
-            self,
-            x_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
-            u_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
-            param_init: Union[InitialGuess, InitialGuessList] = InitialGuessList()
+        self,
+        x_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
+        u_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
+        param_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
     ):
         """
         The main user interface to add initial guesses in the ocp

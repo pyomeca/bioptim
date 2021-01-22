@@ -366,9 +366,7 @@ class Data:
         return data_states, data_controls, data_parameters
 
     @staticmethod
-    def _get_data_integrated_from_V(
-        ocp, data_states: dict, data_controls: dict, data_parameters: dict
-    ) -> dict:
+    def _get_data_integrated_from_V(ocp, data_states: dict, data_controls: dict, data_parameters: dict) -> dict:
         """
         Integrates the states
 

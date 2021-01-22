@@ -88,6 +88,7 @@ class ParameterList(OptionList):
     ):
         Add a new Parameter to the list
     """
+
     def add(
         self,
         parameter_name: str,
@@ -216,7 +217,16 @@ class Parameters:
             ObjectiveFunction.ParameterFunction.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
-    def _add_to_v(ocp, name: str, size: int, function: Callable, bounds: Union[Bounds, BoundsList], initial_guess: Union[InitialGuess, InitialGuessList], cx: Callable = None, **extra_params) -> Callable:
+    def _add_to_v(
+        ocp,
+        name: str,
+        size: int,
+        function: Callable,
+        bounds: Union[Bounds, BoundsList],
+        initial_guess: Union[InitialGuess, InitialGuessList],
+        cx: Callable = None,
+        **extra_params
+    ) -> Callable:
         """
         Add a parameter the vector of all variables (V)
 
