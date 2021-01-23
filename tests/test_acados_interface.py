@@ -246,7 +246,9 @@ def test_acados_mhe(cost_type):
         objective_functions.add(
             ObjectiveFcn.Lagrange.TRACK_STATE, weight=10, index=[0], target=target[:, i : i + n_shooting + 1]
         )
-        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i + n_shooting : i + n_shooting + 1])
+        objective_functions.add(
+            ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i + n_shooting : i + n_shooting + 1]
+        )
         ocp.update_objectives(objective_functions)
         sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
 
