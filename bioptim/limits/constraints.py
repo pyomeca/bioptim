@@ -26,7 +26,7 @@ class Constraint(PenaltyOption):
 
     def __init__(
         self,
-        constraint: "ConstraintFcn",
+        constraint,
         min_bound: np.ndarray = None,
         max_bound: np.ndarray = None,
         phase: int = 0,
@@ -64,6 +64,8 @@ class ConstraintList(OptionList):
     -------
     add(self, constraint: Union[Callable, "ConstraintFcn"], **extra_arguments)
         Add a new Constraint to the list
+    print(self)
+        Print the ConstraintList to the console
     """
 
     def add(self, constraint: Union[Callable, Constraint], **extra_arguments):
@@ -83,6 +85,13 @@ class ConstraintList(OptionList):
 
         else:
             super(ConstraintList, self)._add(option_type=Constraint, constraint=constraint, **extra_arguments)
+
+    def print(self):
+        """
+        Print the ConstraintList to the console
+        """
+        # TODO: Print all elements in the console
+        raise NotImplementedError("Printing of ConstraintList is not ready yet")
 
 
 class ConstraintFunction(PenaltyFunctionAbstract):
@@ -111,16 +120,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         Methods
         -------
-        time_constraint(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
+        time_constraint(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX])
             The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
-        torque_max_from_actuators(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], min_torque=None)
+        torque_max_from_actuators(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX], min_torque=None)
             Non linear maximal values of joint torques computed from the torque-position-velocity relationship
         non_slipping(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram,
                 t: list, x: list, u: list, p: Union[MX, SX],
                 tangential_component_idx: int, normal_component_idx: int, static_friction_coefficient: float)
             Add a constraint of static friction at contact points allowing for small tangential forces. This constraint
             assumes that the normal forces is positive
-        contact_force(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], contact_force_idx: int)
+        contact_force(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX], contact_force_idx: int)
             Add a constraint of contact forces given by any forward dynamics with contact
         """
 
@@ -368,8 +380,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # Loop over shooting nodes or use parallelization
             if ocp.nb_threads > 1:
                 end_nodes = nlp.par_dynamics(horzcat(*nlp.X[:-1]), horzcat(*nlp.U), nlp.p)[0]
-                vals = horzcat(*nlp.X[1:]) - end_nodes
-                ConstraintFunction.add_to_penalty(ocp, None, vals.reshape((nlp.nx * nlp.ns, 1)), penalty)
+                val = horzcat(*nlp.X[1:]) - end_nodes
+                ConstraintFunction.add_to_penalty(ocp, None, val.reshape((nlp.nx * nlp.ns, 1)), penalty)
             else:
                 for k in range(nlp.ns):
                     # Create an evaluation node
@@ -393,7 +405,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     ConstraintFunction.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
-    def inter_phase_continuity(ocp, pt: "StateTransition"):
+    def inter_phase_continuity(ocp, pt):
         """
         Add phase transition constraints between two phases.
 
@@ -401,7 +413,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp
-        pt: "StateTransition"
+        pt: StateTransition
             The state transition to add
         """
 

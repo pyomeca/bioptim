@@ -22,7 +22,7 @@ from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint
 from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, ObjectiveList, Objective
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.path_conditions import InterpolationType
@@ -72,7 +72,7 @@ class OptimalControlProgram:
     isdef_x_init: bool
         If the initial condition of the states are set
     isdef_u_init: bool
-        If the initial condition of the constrols are set
+        If the initial condition of the controls are set
     isdef_x_bounds: bool
         If the bounds of the states are set
     isdef_u_bounds: bool
@@ -118,7 +118,7 @@ class OptimalControlProgram:
         dynamics_type: Union[Dynamics, DynamicsList]
             The dynamics of the phases
         number_shooting_points: Union[int, list[int]]
-            The number of shooting point of the pahses
+            The number of shooting point of the phases
         phase_time: Union[int, float, list, tuple]
             The phase time of the phases
         x_init: Union[InitialGuess, InitialGuessList]
@@ -224,8 +224,8 @@ class OptimalControlProgram:
                 raise RuntimeError(
                     "number_shooting_points should be a positive integer (or a list of) greater or equal than 2"
                 )
-        nstep = nb_integration_steps
-        if not isinstance(nstep, int) or isinstance(nstep, bool) or nstep < 1:
+        n_step = nb_integration_steps
+        if not isinstance(n_step, int) or isinstance(n_step, bool) or n_step < 1:
             raise RuntimeError("nb_integration_steps should be a positive integer greater or equal than 1")
 
         if not isinstance(phase_time, (int, float)):
@@ -743,7 +743,7 @@ class OptimalControlProgram:
         if self.isdef_x_init and self.isdef_u_init:
             self.__define_initial_guess()
 
-    def __modify_penalty(self, new_penalty: PenaltyOption):
+    def __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter]):
         """
         The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
         overrides an objective only the latter is preserved when saved
@@ -752,8 +752,6 @@ class OptimalControlProgram:
         ----------
         new_penalty: PenaltyOption
             Any valid option to add to the program
-        penalty_name: str
-            The name of the penalty type ("objective_functions", "constraints", "parameters")
         """
 
         if not new_penalty:
@@ -899,11 +897,11 @@ class OptimalControlProgram:
             file_path = file_path + ".bo"
         elif ext != ".bo":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
-        dico = {"ocp_initializer": self.original_values, "sol": sol, "versions": self.version}
+        data_to_save = {"ocp_initializer": self.original_values, "sol": sol, "versions": self.version}
         if sol_iterations is not None:
-            dico["sol_iterations"] = sol_iterations
+            data_to_save["sol_iterations"] = sol_iterations
 
-        OptimalControlProgram.__save_with_pickle(dico, file_path)
+        OptimalControlProgram.__save_with_pickle(data_to_save, file_path)
 
     def save_get_data(self, sol, file_path, sol_iterations=None, **parameters):
         """
@@ -926,14 +924,14 @@ class OptimalControlProgram:
         elif ext != ".bob":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
 
-        dico = {"data": Data.get_data(self, sol["x"], **parameters)}
+        data_to_save = {"data": Data.get_data(self, sol["x"], **parameters)}
         if sol_iterations is not None:
             get_data_sol_iterations = []
             for sol_iter in sol_iterations:
                 get_data_sol_iterations.append(Data.get_data(self, sol_iter, **parameters))
-            dico["sol_iterations"] = get_data_sol_iterations
+            data_to_save["sol_iterations"] = get_data_sol_iterations
 
-        OptimalControlProgram.__save_with_pickle(dico, file_path)
+        OptimalControlProgram.__save_with_pickle(data_to_save, file_path)
 
     @staticmethod
     def __save_with_pickle(data: dict, file_path: str):
@@ -998,7 +996,7 @@ class OptimalControlProgram:
         with open(file_path, "rb") as file:
             data = pickle.load(file)
             original_values = data["ocp_initializer"]
-            print("****************************** Informations ******************************")
+            print("****************************** Information ******************************")
             for key in original_values.keys():
                 if key not in ["x_init", "u_init", "x_bounds", "u_bounds"]:
                     print(f"{key} : ")

@@ -596,7 +596,7 @@ class PlotOcp:
                 for i, time in enumerate(intersections_time):
                     self.plots_vertical_lines[p * n + i].set_xdata([time, time])
 
-    def __append_to_ydata(self, data: list):
+    def __append_to_ydata(self, data: Union[list, np.ndarray]):
         """
         Parse the data list to create a single list of all ydata that will fit the plots vector
 

@@ -3,7 +3,7 @@ from datetime import datetime
 
 import numpy as np
 from scipy import linalg
-from casadi import SX, vertcat, Function, MX
+from casadi import SX, vertcat, Function
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from ..misc.enums import Node
@@ -64,10 +64,10 @@ class AcadosInterface(SolverInterface):
     __acados_export_model(self, ocp: OptimalControlProgram)
         Creating a generic ACADOS model
     __prepare_acados(self, ocp: OptimalControlProgram)
-        Set somes important ACADOS variables
+        Set some important ACADOS variables
     __set_constr_type(self, constr_type: str = "BGH")
         Set the type of constraints
-    __set_constrs(self, ocp: OptimalControlProgram)
+    __set_constraints(self, ocp: OptimalControlProgram)
         Set the constraints from the ocp
     __set_cost_type(self, cost_type: str = "NONLINEAR_LS")
         Set the type of cost functions
@@ -145,7 +145,7 @@ class AcadosInterface(SolverInterface):
         Parameters
         ----------
         ocp: OptimalControlProgram
-            A refenrence to the current OptimalControlProgram
+            A reference to the current OptimalControlProgram
 
         """
 
@@ -182,12 +182,12 @@ class AcadosInterface(SolverInterface):
 
     def __prepare_acados(self, ocp):
         """
-        Set somes important ACADOS variables
+        Set some important ACADOS variables
 
         Parameters
         ----------
         ocp: OptimalControlProgram
-            A refenrence to the current OptimalControlProgram
+            A reference to the current OptimalControlProgram
         """
 
         # set model
@@ -214,14 +214,14 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.constraints.constr_type = constr_type
         self.acados_ocp.constraints.constr_type_e = constr_type
 
-    def __set_constrs(self, ocp):
+    def __set_constraints(self, ocp):
         """
         Set the constraints from the ocp
 
         Parameters
         ----------
         ocp: OptimalControlProgram
-            A refenrence to the current OptimalControlProgram
+            A reference to the current OptimalControlProgram
         """
 
         # constraints handling in self.acados_ocp
@@ -343,7 +343,7 @@ class AcadosInterface(SolverInterface):
         Parameters
         ----------
         ocp: OptimalControlProgram
-            A refenrence to the current OptimalControlProgram
+            A reference to the current OptimalControlProgram
         """
 
         if ocp.nb_phases != 1:
@@ -388,7 +388,7 @@ class AcadosInterface(SolverInterface):
                                     y_ref_tp.append(y_tp)
                                 self.y_ref.append(y_ref_tp)
                             else:
-                                self.y_ref.append([np.zeros((ocp.nlp[0].nu, 1)) for J_tp in J])
+                                self.y_ref.append([np.zeros((ocp.nlp[0].nu, 1)) for _ in J])
                         elif J[0]["objective"].type.value[0] in state_objs:
                             index = (
                                 J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].nx))
@@ -406,7 +406,7 @@ class AcadosInterface(SolverInterface):
                                     y_ref_tp.append(y_tp)
                                 self.y_ref.append(y_ref_tp)
                             else:
-                                self.y_ref.append([np.zeros((ocp.nlp[0].nx, 1)) for J_tp in J])
+                                self.y_ref.append([np.zeros((ocp.nlp[0].nx, 1)) for _ in J])
                         else:
                             raise RuntimeError(
                                 f"{J[0]['objective'].type.name} is an incompatible objective term with "
@@ -673,11 +673,11 @@ class AcadosInterface(SolverInterface):
         ns = self.acados_ocp.dims.N
         nx = self.acados_ocp.dims.nx
         nq = self.ocp.nlp[0].q.shape[0]
-        nparams = self.ocp.nlp[0].np
+        n_params = self.ocp.nlp[0].np
         acados_x = np.array([self.ocp_solver.get(i, "x") for i in range(ns + 1)]).T
-        acados_p = acados_x[:nparams, :]
-        acados_q = acados_x[nparams : nq + nparams, :]
-        acados_qdot = acados_x[nq + nparams : nx, :]
+        acados_p = acados_x[:n_params, :]
+        acados_q = acados_x[n_params : nq + n_params, :]
+        acados_qdot = acados_x[nq + n_params : nx, :]
         acados_u = np.array([self.ocp_solver.get(i, "u") for i in range(ns)]).T
 
         out = {
@@ -711,9 +711,9 @@ class AcadosInterface(SolverInterface):
         A reference to the solution
         """
 
-        # Populate costs and constrs vectors
+        # Populate costs and constraints vectors
         self.__set_costs(self.ocp)
-        self.__set_constrs(self.ocp)
+        self.__set_constraints(self.ocp)
         if self.ocp_solver is None:
             self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
         self.__update_solver()

@@ -104,7 +104,8 @@ class NonLinearProgram:
     -------
     initialize(self, cx: [MX, SX])
         Reset an nlp to a sane initial state
-    add(ocp: OptimalControlProgram, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None)
+    add(ocp: OptimalControlProgram, param_name: str, param: Any, duplicate_singleton: bool,
+            _type: Any = None, name: str = None)
         Set a parameter to their respective nlp
     add_path_condition(ocp: OptimalControlProgram, var: Any, path_name: str, type_option: Any, type_list: Any)
         Interface to add for PathCondition classes
@@ -265,6 +266,8 @@ class NonLinearProgram:
 
         Parameters
         ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
         var: Any
             The actual data to store
         path_name: str

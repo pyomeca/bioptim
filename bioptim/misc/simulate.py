@@ -17,10 +17,12 @@ class Simulate:
     from_data(ocp, data: list, single_shoot: bool = True) -> dict
         Simulate the states using a get_data structure. If single_shoot is True, the simulation is done in one go.
         Otherwise, the simulation reset at each node
-    from_controls_and_initial_states(ocp, states: InitialGuess, controls: InitialGuess, single_shoot: bool = False) -> dict
+    from_controls_and_initial_states(ocp, states: InitialGuess, controls: InitialGuess,
+            single_shoot: bool = False) -> dict
         Simulate the states from an initial guess set. If single_shoot is True, the simulation is done in one go.
         Otherwise, the simulation reset at each node
-    from_controls_and_initial_states(ocp, states: InitialGuess, controls: InitialGuess, single_shoot: bool = False) -> dict
+    from_controls_and_initial_states(ocp, states: InitialGuess, controls: InitialGuess,
+            single_shoot: bool = False) -> dict
         Simulate the states from an initial guess set. If single_shoot is True, the simulation is done in one go.
         Otherwise, the simulation reset at each node
     """

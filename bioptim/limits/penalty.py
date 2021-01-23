@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, Union, Any
 from enum import Enum
 from math import inf
 import inspect
@@ -107,7 +107,8 @@ class PenaltyFunctionAbstract:
         Returns the type of the penalty (abstract)
     _get_node(nlp: NonLinearProgram, penalty: PenaltyOption)
         Get the actual node (time, X and U) specified in the penalty
-    _add_track_data_to_plot(ocp: OptimalControlProgram, nlp: NonLinearProgram, data: np.ndarray, combine_to: str, axes_idx: Union[Mapping, tuple, list] = None)
+    _add_track_data_to_plot(ocp: OptimalControlProgram, nlp: NonLinearProgram, data: np.ndarray, combine_to: str,
+            axes_idx: Union[Mapping, tuple, list] = None)
         Interface to the plot so it can be properly added to the proper plot
     """
 
@@ -117,69 +118,95 @@ class PenaltyFunctionAbstract:
 
         Methods
         -------
-        minimize_states(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_states(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_markers(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z))
+        minimize_markers(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX],
+                axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z))
             Minimize a marker set.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_markers_displacement(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], coordinates_system_idx: int = -1)
+        minimize_markers_displacement(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX],
+                coordinates_system_idx: int = -1)
             Minimize a marker set velocity by comparing the position at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
             Indices (default=all_idx) can be specified.
-        minimize_markers_velocity(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_markers_velocity(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX])
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        track_markers(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], first_marker_idx: int, second_marker_idx: int):
+        track_markers(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX],
+                first_marker_idx: int, second_marker_idx: int):
             Minimize the distance between two markers
             By default this function is quadratic, meaning that it minimizes distance between them.
-        proportional_variable(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], which_var: str, first_dof: int, second_dof: int, coef: float)
+        proportional_variable(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX],
+                which_var: str, first_dof: int, second_dof: int, coef: float)
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
             By default this function is quadratic, meaning that it minimizes the difference of this proportion.
-        minimize_torque(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_torque(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_torque_derivative(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_torque_derivative(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the joint torque velocity by comparing the torque at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
             Indices (default=all_idx) can be specified.
-        minimize_muscles_control(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_muscles_control(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the muscles part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_all_controls(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_all_controls(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_predicted_com_height(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_predicted_com_height(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
             assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]
             By default this function is not quadratic, meaning that it minimizes towards infinity.
-        minimize_com_position(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None)
+        minimize_com_position(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX],
+                axis: Axis = None)
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's position is minimized.
             Otherwise, the projection of the CoM's position on the specified axis is minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
-        minimize_com_velocity(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], axis: Axis = None)
+        minimize_com_velocity(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX],
+                axis: Axis = None)
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's velocity is minimized.
             Otherwise, the projection of the CoM's velocity on the specified axis is minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
-        minimize_contact_forces(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
+        minimize_contact_forces(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX])
             Minimize the contact forces computed from dynamics with contact
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        track_segment_with_custom_rt(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], segment_idx: int, rt_idx: int)
-            Minimize the difference of the euler angles extracted from the coordinate system of a segment and a RT (e.g. IMU)
-            By default this function is quadratic, meaning that it minimizes the difference.
-        track_marker_with_segment_axis(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], marker_idx: int, segment_idx: int, axis: Axis)
+        track_segment_with_custom_rt(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX],
+                segment_idx: int, rt_idx: int)
+            Minimize the difference of the euler angles extracted from the coordinate system of a segment
+            and a RT (e.g. IMU). By default this function is quadratic, meaning that it minimizes the difference.
+        track_marker_with_segment_axis(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX],
+                marker_idx: int, segment_idx: int, axis: Axis)
             Track a marker using a segment, that is aligning an axis toward the marker
             By default this function is quadratic, meaning that it minimizes the difference.
-        custom(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX], **parameters)
+        custom(penalty: PenaltyOption, ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                t: list, x: list, u: list, p: Union[MX, SX],
+                **parameters)
             A user defined penalty function
         """
 
@@ -778,12 +805,12 @@ class PenaltyFunctionAbstract:
 
             g = -9.81  # Todo: Get the gravity from biorbd
             PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM", nlp.model.CoM, nlp.q)
-            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM_dot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
             for i, v in enumerate(x):
                 q = nlp.mapping["q"].to_second.map(v[: nlp.shape["q"]])
                 q_dot = nlp.mapping["q_dot"].to_second.map(v[nlp.shape["q"] :])
                 CoM = nlp.casadi_func["biorbd_CoM"](q)
-                CoM_dot = nlp.casadi_func["biorbd_CoMdot"](q, q_dot)
+                CoM_dot = nlp.casadi_func["biorbd_CoM_dot"](q, q_dot)
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
                 penalty.type.get_type().add_to_penalty(ocp, nlp, CoM_height, penalty)
 
@@ -833,7 +860,7 @@ class PenaltyFunctionAbstract:
                 q = nlp.mapping["q"].to_second.map(v[: nlp.shape["q"]])
                 CoM = nlp.casadi_func["biorbd_CoM"](q)
 
-                if axis == None:
+                if axis is None:
                     CoM_proj = CoM
                 elif not isinstance(axis, Axis):
                     raise RuntimeError("axis must be a bioptim.Axis")
@@ -884,13 +911,13 @@ class PenaltyFunctionAbstract:
             if penalty.target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (1, len(x)))
 
-            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoMdot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
+            PenaltyFunctionAbstract._add_to_casadi_func(nlp, "biorbd_CoM_dot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
             for i, v in enumerate(x):
                 q = nlp.mapping["q"].to_second.map(v[: nlp.shape["q"]])
                 q_dot = nlp.mapping["q_dot"].to_second.map(v[nlp.shape["q"] :])
-                CoM_dot = nlp.casadi_func["biorbd_CoMdot"](q, q_dot)
+                CoM_dot = nlp.casadi_func["biorbd_CoM_dot"](q, q_dot)
 
-                if axis == None:
+                if axis is None:
                     CoM_dot_proj = CoM_dot[0] ** 2 + CoM_dot[1] ** 2 + CoM_dot[2] ** 2
                 elif not isinstance(axis, Axis):
                     raise RuntimeError("axis must be a bioptim.Axis")
@@ -965,8 +992,8 @@ class PenaltyFunctionAbstract:
             rt_idx: int,
         ):
             """
-            Minimize the difference of the euler angles extracted from the coordinate system of a segment and a RT (e.g. IMU)
-            By default this function is quadratic, meaning that it minimizes the difference.
+            Minimize the difference of the euler angles extracted from the coordinate system of a segment
+            and a RT (e.g. IMU). By default this function is quadratic, meaning that it minimizes the difference.
 
             Parameters
             ----------
@@ -1197,7 +1224,7 @@ class PenaltyFunctionAbstract:
         penalty.type.value[0](penalty, ocp, nlp, t, x, u, nlp.p, **penalty.params)
 
     @staticmethod
-    def _add_to_casadi_func(nlp, name: str, function: Callable, *all_param):
+    def _add_to_casadi_func(nlp, name: str, function: Callable, *all_param: Any):
         """
         Add to the pool of declared casadi function. If the function already exists, it is skipped
 
@@ -1368,7 +1395,8 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError(f"{element} is not a valid index for {name}, it must be an integer")
             if element < min_nb_elements or element >= max_nb_elements:
                 raise RuntimeError(
-                    f"{element} is not a valid index for {name}, it must be between {min_nb_elements} and {max_nb_elements - 1}."
+                    f"{element} is not a valid index for {name}, it must be between "
+                    f"{min_nb_elements} and {max_nb_elements - 1}."
                 )
 
     @staticmethod

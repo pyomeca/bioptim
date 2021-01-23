@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, Union, Any
 from warnings import warn
 from enum import Enum
 
@@ -28,7 +28,9 @@ class StateTransition(OptionGeneric):
         The function to call if a custom transition function is provided
     """
 
-    def __init__(self, phase_pre_idx: int = None, weight: float = None, custom_function: Callable = None, **params):
+    def __init__(
+        self, phase_pre_idx: int = None, weight: float = None, custom_function: Callable = None, **params: Any
+    ):
         """
         Parameters
         ----------
@@ -54,17 +56,19 @@ class StateTransitionList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(self, transition: Union[Callable, "StateTransitionFcn"], phase: int = -1, **extra_arguments)
+    add(self, transition: Union[Callable, StateTransitionFcn], phase: int = -1, **extra_arguments)
         Add a new StateTransition to the list
+    print(self)
+        Print the StateTransitionList to the console
     """
 
-    def add(self, transition: Union[Callable, "StateTransitionFcn"], **extra_arguments):
+    def add(self, transition, **extra_arguments):
         """
         Add a new StateTransition to the list
 
         Parameters
         ----------
-        transition: Union[Callable, "StateTransitionFcn"]
+        transition: Union[Callable, StateTransitionFcn]
             The chosen state transition
         extra_arguments: dict
             Any parameters to pass to Constraint
@@ -74,6 +78,12 @@ class StateTransitionList(UniquePerPhaseOptionList):
             extra_arguments["custom_function"] = transition
             transition = StateTransitionFcn.CUSTOM
         super(StateTransitionList, self)._add(option_type=StateTransition, type=transition, phase=-1, **extra_arguments)
+
+    def print(self):
+        """
+        Print the StateTransitionList to the console
+        """
+        raise NotImplementedError("Printing of StateTransitionList is not ready yet")
 
 
 class StateTransitionFunctions:
@@ -123,7 +133,8 @@ class StateTransitionFunctions:
 
             if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.nb_phases].nx:
                 raise RuntimeError(
-                    "Continuous state transitions without same nx is not possible, please provide a custom state transition"
+                    "Continuous state transitions without same nx is not possible, "
+                    "please provide a custom state transition"
                 )
             nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
             return nlp_pre.X[-1] - nlp_post.X[0]
@@ -170,10 +181,10 @@ class StateTransitionFunctions:
 
             # Aliases
             nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
-            nbQ = nlp_pre.shape["q"]
-            nbQdot = nlp_pre.shape["q_dot"]
-            q = nlp_pre.mapping["q"].to_second.map(nlp_pre.X[-1][:nbQ])
-            qdot_pre = nlp_pre.mapping["q_dot"].to_second.map(nlp_pre.X[-1][nbQ : nbQ + nbQdot])
+            nb_q = nlp_pre.shape["q"]
+            nb_qdot = nlp_pre.shape["q_dot"]
+            q = nlp_pre.mapping["q"].to_second.map(nlp_pre.X[-1][:nb_q])
+            qdot_pre = nlp_pre.mapping["q_dot"].to_second.map(nlp_pre.X[-1][nb_q : nb_q + nb_qdot])
 
             if nlp_post.model.nbContacts() == 0:
                 warn("The chosen model does not have any contact")
@@ -187,8 +198,8 @@ class StateTransitionFunctions:
             qdot_post = func(q, qdot_pre)
             qdot_post = nlp_post.mapping["q_dot"].to_first.map(qdot_post)
 
-            val = nlp_pre.X[-1][:nbQ] - nlp_post.X[0][:nbQ]
-            val = vertcat(val, qdot_post - nlp_post.X[0][nbQ : nbQ + nbQdot])
+            val = nlp_pre.X[-1][:nb_q] - nlp_post.X[0][:nb_q]
+            val = vertcat(val, qdot_post - nlp_post.X[0][nb_q : nb_q + nb_qdot])
             return val
 
         @staticmethod

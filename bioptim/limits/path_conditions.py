@@ -1,11 +1,11 @@
-from typing import Union
+from typing import Union, Callable
 
 import numpy as np
 from casadi import MX, SX, vertcat
 from scipy.interpolate import interp1d
 
 from ..misc.enums import InterpolationType
-from ..misc.mapping import BidirectionalMapping, Mapping
+from ..misc.mapping import BidirectionalMapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 
 
@@ -45,7 +45,7 @@ class PathCondition(np.ndarray):
 
     def __new__(
         cls,
-        input_array: np.ndarray,
+        input_array: Union[np.ndarray, Callable],
         t: list = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         slice_list: Union[slice, list, tuple] = None,
@@ -54,7 +54,7 @@ class PathCondition(np.ndarray):
         """
         Parameters
         ----------
-        input_array: np.ndarray
+        input_array: Union[np.ndarray, Callable]
             The matrix of interpolation, rows are the components, columns are the time
         t: list[float]
             The time stamps
@@ -67,6 +67,7 @@ class PathCondition(np.ndarray):
         """
 
         # Check and reinterpret input
+        custom_function = None
         if interpolation == InterpolationType.CUSTOM:
             if not callable(input_array):
                 raise TypeError("The input when using InterpolationType.CUSTOM should be a callable function")
@@ -100,8 +101,8 @@ class PathCondition(np.ndarray):
         elif interpolation == InterpolationType.LINEAR:
             if input_array.shape[1] != 2:
                 raise RuntimeError(
-                    f"Invalid number of column for InterpolationType.LINEAR_CONTINUOUS (ncols = {input_array.shape[1]}), "
-                    f"the expected number of column is 2"
+                    f"Invalid number of column for InterpolationType.LINEAR_CONTINUOUS "
+                    f"(ncols = {input_array.shape[1]}), the expected number of column is 2"
                 )
         elif interpolation == InterpolationType.EACH_FRAME:
             # This will be verified when the expected number of columns is set
@@ -136,7 +137,7 @@ class PathCondition(np.ndarray):
 
         return obj
 
-    def __array_finalize__(self, obj: "PathCondition"):
+    def __array_finalize__(self, obj):
         """
         Finalize the array. This is required since PathCondition inherits from np.ndarray
 
@@ -166,7 +167,7 @@ class PathCondition(np.ndarray):
 
         pickled_state = super(PathCondition, self).__reduce__()
         new_state = pickled_state[2] + (self.nb_shooting, self.type, self.t, self.extra_params, self.slice_list)
-        return (pickled_state[0], pickled_state[1], new_state)
+        return pickled_state[0], pickled_state[1], new_state
 
     def __setstate__(self, state: tuple, *args, **kwargs):
         """
@@ -175,7 +176,7 @@ class PathCondition(np.ndarray):
         Parameters
         ----------
         state: tuple
-            The state as decribed by __reduce__
+            The state as described by __reduce__
         """
 
         self.nb_shooting = state[-5]
@@ -322,8 +323,8 @@ class Bounds(OptionGeneric):
 
     def __init__(
         self,
-        min_bound: Union[PathCondition, np.ndarray] = (),
-        max_bound: Union[PathCondition, np.ndarray] = (),
+        min_bound: Union[PathCondition, np.ndarray, list, tuple] = (),
+        max_bound: Union[PathCondition, np.ndarray, list, tuple] = (),
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         slice_list: Union[slice, list, tuple] = None,
         **parameters,
@@ -331,9 +332,9 @@ class Bounds(OptionGeneric):
         """
         Parameters
         ----------
-        min_bound: PathCondition
+        min_bound: Union[PathCondition, np.ndarray, list, tuple]
             The minimal bound
-        max_bound: PathCondition
+        max_bound: Union[PathCondition, np.ndarray, list, tuple]
             The maximal bound
         interpolation: InterpolationType
             The type of interpolation of the bound
@@ -442,20 +443,20 @@ class Bounds(OptionGeneric):
                 "b is the stopping index and c is the step for slicing."
             )
 
-    def __setitem__(self, slice: Union[slice, list, tuple], value: Union[np.ndarray, float]):
+    def __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, float]):
         """
         Allows to set from square brackets
 
         Parameters
         ----------
-        slice: Union[slice, list, tuple]
+        _slice: Union[slice, list, tuple]
             The slice where to put the data
         value: Union[np.ndarray, float]
             The value to set
         """
 
-        self.min[slice] = value
-        self.max[slice] = value
+        self.min[_slice] = value
+        self.max[_slice] = value
 
     def __bool__(self) -> bool:
         """
@@ -487,12 +488,15 @@ class BoundsList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(self, min_bound: Union[PathCondition, np.ndarray] = None, max_bound: Union[PathCondition, np.ndarray] = None, bounds: Bounds = None, **extra_arguments)
+    add(self, min_bound: Union[PathCondition, np.ndarray] = None, max_bound: Union[PathCondition, np.ndarray] = None,
+            bounds: Bounds = None, **extra_arguments)
         Add a new constraint to the list, either [min_bound AND max_bound] OR [bounds] should be defined
     __getitem__(self, i: int)
         Get the ith bounds of the list
     __next__(self)
         Get the next bounds of the list
+    print(self)
+        Print the BoundsList to the console
     """
 
     def add(
@@ -555,6 +559,13 @@ class BoundsList(UniquePerPhaseOptionList):
 
         return super(BoundsList, self).__next__()
 
+    def print(self):
+        """
+        Print the BoundsList to the console
+        """
+
+        raise NotImplementedError("Printing of BoundsList is not ready yet")
+
 
 class QAndQDotBounds(Bounds):
     """
@@ -563,7 +574,7 @@ class QAndQDotBounds(Bounds):
 
     def __init__(
         self,
-        biorbd_model: "biorbd.Model",
+        biorbd_model,
         q_mapping: BidirectionalMapping = None,
         q_dot_mapping: BidirectionalMapping = None,
     ):
@@ -596,18 +607,18 @@ class QAndQDotBounds(Bounds):
             else:
                 q_dot_mapping = q_mapping
 
-        QRanges = []
-        QDotRanges = []
+        q_ranges = []
+        q_dot_ranges = []
         for i in range(biorbd_model.nbSegment()):
             segment = biorbd_model.segment(i)
-            QRanges += [q_range for q_range in segment.QRanges()]
-            QDotRanges += [qdot_range for qdot_range in segment.QDotRanges()]
+            q_ranges += [q_range for q_range in segment.QRanges()]
+            q_dot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
 
-        x_min = [QRanges[i].min() for i in q_mapping.to_first.map_idx] + [
-            QDotRanges[i].min() for i in q_dot_mapping.to_first.map_idx
+        x_min = [q_ranges[i].min() for i in q_mapping.to_first.map_idx] + [
+            q_dot_ranges[i].min() for i in q_dot_mapping.to_first.map_idx
         ]
-        x_max = [QRanges[i].max() for i in q_mapping.to_first.map_idx] + [
-            QDotRanges[i].max() for i in q_dot_mapping.to_first.map_idx
+        x_max = [q_ranges[i].max() for i in q_mapping.to_first.map_idx] + [
+            q_dot_ranges[i].max() for i in q_dot_mapping.to_first.map_idx
         ]
 
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
@@ -725,6 +736,8 @@ class InitialGuessList(UniquePerPhaseOptionList):
         Get the ith initial guess of the list
     __next__(self)
         Get the next initial guess of the list
+    print(self)
+        Print the InitialGuessList to the console
     """
 
     def add(self, initial_guess: Union[InitialGuess, np.ndarray], **extra_arguments):
@@ -770,3 +783,9 @@ class InitialGuessList(UniquePerPhaseOptionList):
         """
 
         return super(InitialGuessList, self).__next__()
+
+    def print(self):
+        """
+        Print the InitialGuessList to the console
+        """
+        raise NotImplementedError("Printing of InitialGuessList is not ready yet")

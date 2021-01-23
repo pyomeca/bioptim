@@ -20,17 +20,22 @@ class Data:
 
     Methods
     -------
-    to_matrix(self, idx: Union[int, list, tuple] = (), phase_idx: Union[int, list, tuple] = (), node_idx: Union[int, list, tuple] = (), concatenate_phases: bool = True) -> np.ndarray
+    to_matrix(self, idx: Union[int, list, tuple] = (), phase_idx: Union[int, list, tuple] = (),
+            node_idx: Union[int, list, tuple] = (), concatenate_phases: bool = True) -> np.ndarray
         Parse the data into a np.ndarray
     set_time_per_phase(self, new_t: list)
         Set the time vector of the phase
     get_time_per_phase(self, phases: Union[int, list, tuple] = (), concatenate: bool = False) -> np.ndarray
         Get the time for each phase
-    get_data(ocp: OptimalControlProgram, sol_x: dict, get_states: bool = True, get_controls: bool = True, get_parameters: bool = False, phase_idx: Union[int, list, tuple] = None, integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True,) -> tuple
+    get_data(ocp: OptimalControlProgram, sol_x: dict, get_states: bool = True, get_controls: bool = True,
+            get_parameters: bool = False, phase_idx: Union[int, list, tuple] = None, integrate: bool = False,
+            interpolate_nb_frames: int = -1, concatenate: bool = True,) -> tuple
         Comprehensively parse the data from a solution
-    get_data_object(ocp: OptimalControlProgram, V: np.ndarray, phase_idx: Union[int, list, tuple] = None, integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True) -> tuple
+    get_data_object(ocp: OptimalControlProgram, V: np.ndarray, phase_idx: Union[int, list, tuple] = None,
+            integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True) -> tuple
         Parse an unstructured vector of data of data into their list of Phase format
-    _get_data_integrated_from_V(ocp: OptimalControlProgram, data_states: dict, data_controls: dict, data_parameters: dict) -> dict
+    _get_data_integrated_from_V(ocp: OptimalControlProgram, data_states: dict,
+            data_controls: dict, data_parameters: dict) -> dict
         Integrates the states
     _data_concatenated(data: dict) -> dict
         Concatenate all the phases
@@ -38,7 +43,8 @@ class Data:
         Interpolate the states
     _horzcat_node(self, dt: float, x_to_add: np.ndarray, idx_phase: int, idx_node: int)
         Concatenate the nodes of a Phase into a np.ndarray
-    _get_phase(V_phase: np.ndarray, var_size: int, nb_nodes: int, offset: int, nb_variables: int, duplicate_last_column: bool) -> np.ndarray
+    _get_phase(V_phase: np.ndarray, var_size: int, nb_nodes: int, offset: int, nb_variables: int,
+            duplicate_last_column: bool) -> np.ndarray
         Extract the data of a specific phase from an unstructured vector of data
     _vertcat(data: np.ndarray, keys: str, phases: Union[int, list, tuple] = (), nodes: Union[int, list, tuple] = ())
         Add new elements (rows) to the data
@@ -193,7 +199,7 @@ class Data:
         integrate: bool = False,
         interpolate_nb_frames: int = -1,
         concatenate: bool = True,
-    ) -> tuple:
+    ) -> list:
         """
         Comprehensively parse the data from a solution
 
@@ -308,7 +314,7 @@ class Data:
         offsets = [offset]
         for i, nlp in enumerate(ocp.nlp):
             if nlp.control_type == ControlType.CONSTANT:
-                offsets.append(offsets[i] + nlp.nx * (nlp.ns + 1) + nlp.nu * (nlp.ns))
+                offsets.append(offsets[i] + nlp.nx * (nlp.ns + 1) + nlp.nu * nlp.ns)
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 offsets.append(offsets[i] + (nlp.nx + nlp.nu) * (nlp.ns + 1))
             else:
@@ -483,7 +489,7 @@ class Data:
         idx_phase: int
             The index of phase in which the node to add
         idx_node
-            The index of the node before the concatation point
+            The index of the node before the concatenation point
         """
 
         self.phase[idx_phase].t = np.concatenate(
@@ -532,17 +538,15 @@ class Data:
             return array
 
     @staticmethod
-    def _vertcat(
-        data: np.ndarray, keys: str, phases: Union[int, list, tuple] = (), nodes: Union[int, list, tuple] = ()
-    ):
+    def _vertcat(data: dict, keys: list, phases: Union[int, list, tuple] = (), nodes: Union[int, list, tuple] = ()):
         """
         Add new elements (rows) to the data
 
         Parameters
         ----------
-        data: np.ndarray
-            The rows to add to the data
-        keys: str
+        data: dict
+            The data to vertcat
+        keys: list[str]
             The name of the data to add
         phases: Union[int, list, tuple]
             The phases to add the data to
@@ -577,15 +581,15 @@ class Data:
         else:
             return np.empty((0, 0))
 
-    def _append_phase(self, time: np.ndarray, phase: "Data.Phase"):
+    def _append_phase(self, time: Union[np.ndarray, list, tuple], phase: np.array):
         """
         Add a new phase to the phase list
 
         Parameters
         ----------
-        time: np.ndarray
+        time: Union[np.ndarray, list, tuple]
             The time vector
-        phase: "Data.Phase"
+        phase: np.array
             The phase to concatenate
         """
 

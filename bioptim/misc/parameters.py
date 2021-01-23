@@ -87,6 +87,8 @@ class ParameterList(OptionList):
         **extra_arguments
     ):
         Add a new Parameter to the list
+    print(self)
+        Print the ParameterList to the console
     """
 
     def add(
@@ -143,6 +145,13 @@ class ParameterList(OptionList):
                 **extra_arguments
             )
 
+    def print(self):
+        """
+        Print the ParameterList to the console
+        """
+        # TODO: Print all elements in the console
+        raise NotImplementedError("Printing of ParameterList is not ready yet")
+
 
 class Parameters:
     """
@@ -174,7 +183,7 @@ class Parameters:
         _: Any
             The place holder for what is supposed to be nlp
         parameter: PenaltyOption
-            The actual paraneter to declare
+            The actual parameter to declare
         """
 
         param_name = parameter.name
@@ -221,7 +230,7 @@ class Parameters:
         ocp,
         name: str,
         size: int,
-        function: Callable,
+        function: Union[Callable, None],
         bounds: Union[Bounds, BoundsList],
         initial_guess: Union[InitialGuess, InitialGuessList],
         cx: Callable = None,
