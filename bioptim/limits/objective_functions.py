@@ -19,7 +19,7 @@ class Objective(PenaltyOption):
         The weighting applied to this specific objective function
     """
 
-    def __init__(self, objective, weight: float = 1, custom_type: Callable = None, phase: int = 0, **params):
+    def __init__(self, objective: Any, weight: float = 1, custom_type: Callable = None, phase: int = 0, **params: Any):
         """
         Parameters
         ----------
@@ -73,13 +73,13 @@ class ObjectiveList(OptionList):
         Print the ObjectiveList to the console
     """
 
-    def add(self, objective: Union[Callable, Any], **extra_arguments: Any):
+    def add(self, objective: Union[Callable, Objective, Any], **extra_arguments: Any):
         """
         Add a new objective function to the list
 
         Parameters
         ----------
-        objective: Union[Callable, Objective]
+        objective: Union[Callable, Objective, ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer]
             The chosen objective function
         extra_arguments: dict
             Any parameters to pass to ObjectiveFcn

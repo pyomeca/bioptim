@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Any, Union
 
 from enum import Enum
 from .problem import Problem
@@ -77,13 +77,13 @@ class DynamicsList(UniquePerPhaseOptionList):
         Print the DynamicsList to the console
     """
 
-    def add(self, dynamics_type: Dynamics, **extra_parameters):
+    def add(self, dynamics_type: Union[Callable, Dynamics, DynamicsFcn], **extra_parameters: Any):
         """
         Add a new Dynamics to the list
 
         Parameters
         ----------
-        dynamics_type: Dynamics
+        dynamics_type: Union[Callable, Dynamics, DynamicsFcn]
             The chosen dynamic functions
         extra_parameters: dict
             Any parameters to pass to Dynamics

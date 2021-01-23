@@ -325,7 +325,7 @@ def test_acados_fail_lls():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/arm26.bioMod",
         final_time=1,
         number_shooting_points=2,
-        use_SX=True,
+        use_sx=True,
     )
 
     solver_options = {"cost_type": "LINEAR_LS"}
@@ -351,7 +351,7 @@ def test_acados_custom_dynamics(problem_type_custom):
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
         problem_type_custom=problem_type_custom,
         ode_solver=OdeSolver.RK4,
-        use_SX=True,
+        use_sx=True,
     )
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
@@ -391,7 +391,7 @@ def test_acados_one_parameter():
         min_g=-10,
         max_g=-6,
         target_g=-8,
-        use_SX=True,
+        use_sx=True,
     )
     model = ocp.nlp[0].model
     objectives = ObjectiveList()
@@ -494,7 +494,7 @@ def test_acados_constraints_all():
         final_time=2,
         initialize_near_solution=True,
         constr=False,
-        use_SX=True,
+        use_sx=True,
     )
 
     constraints = ConstraintList()
@@ -536,7 +536,7 @@ def test_acados_constraints_end_all():
         final_time=2,
         initialize_near_solution=True,
         constr=False,
-        use_SX=True,
+        use_sx=True,
     )
 
     constraints = ConstraintList()

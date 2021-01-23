@@ -25,7 +25,7 @@ def prepare_ocp(
     initialize_near_solution,
     ode_solver=OdeSolver.RK4,
     constr=True,
-    use_SX=False,
+    use_sx=False,
 ):
     # --- Options --- #
     # Model path
@@ -94,7 +94,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        use_sx=use_SX,
+        use_sx=use_sx,
     )
 
 

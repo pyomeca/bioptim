@@ -87,7 +87,7 @@ class OptimalControlProgram:
         self,
         biorbd_model: Union[str, biorbd.Model, list, tuple],
         dynamics_type: Union[Dynamics, DynamicsList],
-        number_shooting_points: int,
+        n_shooting: int,
         phase_time: Union[int, float, list, tuple],
         x_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
         u_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
@@ -117,7 +117,7 @@ class OptimalControlProgram:
             The biorbd model. If biorbd_model is an str, a new model is loaded. Otherwise, the references are used
         dynamics_type: Union[Dynamics, DynamicsList]
             The dynamics of the phases
-        number_shooting_points: Union[int, list[int]]
+        n_shooting: Union[int, list[int]]
             The number of shooting point of the phases
         phase_time: Union[int, float, list, tuple]
             The phase time of the phases
@@ -178,7 +178,7 @@ class OptimalControlProgram:
         self.original_values = {
             "biorbd_model": biorbd_model_path,
             "dynamics_type": dynamics_type,
-            "number_shooting_points": number_shooting_points,
+            "n_shooting": n_shooting,
             "phase_time": phase_time,
             "x_init": x_init,
             "u_init": u_init,
@@ -213,17 +213,13 @@ class OptimalControlProgram:
         elif not isinstance(dynamics_type, DynamicsList):
             raise RuntimeError("dynamics_type should be a Dynamics or a DynamicsList")
 
-        ns = number_shooting_points
+        ns = n_shooting
         if not isinstance(ns, int) or ns < 2:
             if isinstance(ns, (tuple, list)):
                 if sum([True for i in ns if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
-                    raise RuntimeError(
-                        "number_shooting_points should be a positive integer (or a list of) greater or equal than 2"
-                    )
+                    raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
             else:
-                raise RuntimeError(
-                    "number_shooting_points should be a positive integer (or a list of) greater or equal than 2"
-                )
+                raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
         n_step = nb_integration_steps
         if not isinstance(n_step, int) or isinstance(n_step, bool) or n_step < 1:
             raise RuntimeError("nb_integration_steps should be a positive integer greater or equal than 1")
@@ -309,7 +305,7 @@ class OptimalControlProgram:
             self.CX = MX
 
         # Define some aliases
-        NLP.add(self, "ns", number_shooting_points, False)
+        NLP.add(self, "ns", n_shooting, False)
         for nlp in self.nlp:
             if nlp.ns < 1:
                 raise RuntimeError("Number of shooting points must be at least 1")

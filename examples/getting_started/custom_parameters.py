@@ -43,7 +43,7 @@ def prepare_ocp(
     max_g,
     target_g,
     ode_solver=OdeSolver.RK4,
-    use_SX=False,
+    use_sx=False,
 ):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -103,7 +103,7 @@ def prepare_ocp(
         objective_functions,
         parameters=parameters,
         ode_solver=ode_solver,
-        use_sx=use_SX,
+        use_sx=use_sx,
     )
 
 

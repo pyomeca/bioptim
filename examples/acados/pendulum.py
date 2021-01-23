@@ -16,15 +16,15 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_SX=True):
+def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_sx=True):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
-    torque_min, torque_max, torque_init = -100, 100, 0
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
-    n_tau = biorbd_model.nbGeneralizedTorque()
+
     data_to_track = np.zeros((number_shooting_points + 1, n_q + n_qdot))
     data_to_track[:, 1] = 3.14
+
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
@@ -53,6 +53,8 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_SX=Tr
     x_init.add([0] * (n_q + n_qdot))
 
     # Define control path constraint
+    n_tau = biorbd_model.nbGeneralizedTorque()
+    torque_min, torque_max, torque_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds.add([torque_min] * n_tau, [torque_max] * n_tau)
     u_bounds[0][n_tau - 1, :] = 0
@@ -72,7 +74,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_SX=Tr
         x_bounds,
         u_bounds,
         objective_functions,
-        use_sx=use_SX,
+        use_sx=use_sx,
     )
 
 

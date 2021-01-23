@@ -66,7 +66,7 @@ u_init = InitialGuess([0] * m.nbGeneralizedTorque())
 ocp = OptimalControlProgram(
         m,
         dynamics,
-        number_shooting_points=30,
+        n_shooting=30,
         phase_time=0.5,
         x_init=x_init,
         u_init=u_init,

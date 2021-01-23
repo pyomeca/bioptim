@@ -64,7 +64,7 @@ def test_pendulum_save_and_load():
 @pytest.mark.parametrize("nb_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_pendulum_save_and_load(nb_threads, use_SX, ode_solver):
+def test_pendulum_save_and_load(nb_threads, use_sx, ode_solver):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -74,14 +74,14 @@ def test_pendulum_save_and_load(nb_threads, use_SX, ode_solver):
     spec.loader.exec_module(pendulum)
 
     if ode_solver == OdeSolver.IRK:
-        if use_SX:
+        if use_sx:
             with pytest.raises(NotImplementedError, match="use_sx and OdeSolver.IRK are not yet compatible"):
                 pendulum.prepare_ocp(
                     biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
                     final_time=2,
                     number_shooting_points=10,
                     nb_threads=nb_threads,
-                    use_SX=use_SX,
+                    use_sx=use_sx,
                     ode_solver=ode_solver,
                 )
         else:
@@ -90,7 +90,7 @@ def test_pendulum_save_and_load(nb_threads, use_SX, ode_solver):
                 final_time=2,
                 number_shooting_points=10,
                 nb_threads=nb_threads,
-                use_SX=use_SX,
+                use_sx=use_sx,
                 ode_solver=ode_solver,
             )
             sol = ocp.solve()
@@ -132,7 +132,7 @@ def test_pendulum_save_and_load(nb_threads, use_SX, ode_solver):
             final_time=2,
             number_shooting_points=10,
             nb_threads=nb_threads,
-            use_SX=use_SX,
+            use_sx=use_sx,
             ode_solver=ode_solver,
         )
         sol = ocp.solve()

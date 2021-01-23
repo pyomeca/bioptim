@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, Union, Any
 
 from casadi import vertcat
 
@@ -100,7 +100,7 @@ class ParameterList(OptionList):
         size: int = None,
         phase: int = 0,
         penalty_list: Union[Objective, ObjectiveList] = None,
-        **extra_arguments
+        **extra_arguments: Any
     ):
         """
         Add a new Parameter to the list

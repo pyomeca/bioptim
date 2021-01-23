@@ -22,7 +22,7 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path, final_time, number_shooting_points, nb_threads, use_SX=False, ode_solver=OdeSolver.RK4
+    biorbd_model_path, final_time, number_shooting_points, nb_threads, use_sx=False, ode_solver=OdeSolver.RK4
 ):
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -64,7 +64,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions=objective_functions,
         nb_threads=nb_threads,
-        use_sx=use_SX,
+        use_sx=use_sx,
         ode_solver=ode_solver,
     )
 

@@ -20,7 +20,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK4, use_sx=True):
+def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4, use_sx=True):
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
@@ -39,7 +39,7 @@ def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK4, use_sx=Tru
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        nbs,
+        n_shooting,
         tf,
         x_init,
         u_init,
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     model_path = "cube.bioMod"
     nbs = 30
     tf = 2
-    ocp = prepare_ocp(biorbd_model_path=model_path, nbs=nbs, tf=tf)
+    ocp = prepare_ocp(biorbd_model_path=model_path, n_shooting=nbs, tf=tf)
 
     # --- Add objective functions --- #
     objective_functions = ObjectiveList()
