@@ -39,7 +39,7 @@ def test_acados_no_obj(cost_type):
 
     ocp = cube.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
-        nbs=10,
+        n_shooting=10,
         tf=2,
     )
 
@@ -62,7 +62,7 @@ def test_acados_one_mayer(cost_type):
 
     ocp = cube.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
-        nbs=10,
+        n_shooting=10,
         tf=2,
     )
     objective_functions = ObjectiveList()
@@ -93,7 +93,7 @@ def test_acados_several_mayer(cost_type):
 
     ocp = cube.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
-        nbs=10,
+        n_shooting=10,
         tf=2,
     )
     objective_functions = ObjectiveList()
@@ -125,12 +125,12 @@ def test_acados_one_lagrange(cost_type):
     cube = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cube)
 
-    nbs = 10
-    target = np.expand_dims(np.arange(0, nbs + 1), axis=0)
-    target[0, -1] = nbs - 2
+    n_shooting = 10
+    target = np.expand_dims(np.arange(0, n_shooting + 1), axis=0)
+    target[0, -1] = n_shooting - 2
     ocp = cube.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
-        nbs=nbs,
+        n_shooting=n_shooting,
         tf=2,
     )
     objective_functions = ObjectiveList()
@@ -159,12 +159,12 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     cube = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cube)
 
-    nbs = 10
-    target = np.expand_dims(np.arange(0, nbs + 1), axis=0)
-    target[0, -1] = nbs - 2
+    n_shooting = 10
+    target = np.expand_dims(np.arange(0, n_shooting + 1), axis=0)
+    target[0, -1] = n_shooting - 2
     ocp = cube.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
-        nbs=nbs,
+        n_shooting=n_shooting,
         tf=2,
     )
     objective_functions = ObjectiveList()
@@ -194,11 +194,11 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     cube = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cube)
 
-    nbs = 10
+    n_shooting = 10
     target = np.array([[2]])
     ocp = cube.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
-        nbs=nbs,
+        n_shooting=n_shooting,
         tf=2,
     )
     objective_functions = ObjectiveList()
@@ -230,29 +230,29 @@ def test_acados_mhe(cost_type):
     cube = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cube)
 
-    nbs = 5
-    nbsample = 20
-    target = np.expand_dims(np.cos(np.arange(0, nbsample + 1)), axis=0)
+    n_shooting = 5
+    n_shootingample = 20
+    target = np.expand_dims(np.cos(np.arange(0, n_shootingample + 1)), axis=0)
 
     ocp = cube.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
-        nbs=nbs,
+        n_shooting=n_shooting,
         tf=2,
     )
 
     model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
-    for i in range(nbsample - nbs):
+    for i in range(n_shootingample - n_shooting):
         objective_functions = ObjectiveList()
         objective_functions.add(
-            ObjectiveFcn.Lagrange.TRACK_STATE, weight=10, index=[0], target=target[:, i : i + nbs + 1]
+            ObjectiveFcn.Lagrange.TRACK_STATE, weight=10, index=[0], target=target[:, i : i + n_shooting + 1]
         )
-        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i + nbs : i + nbs + 1])
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i + n_shooting : i + n_shooting + 1])
         ocp.update_objectives(objective_functions)
         sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
 
         # Check end state value
         q = np.array(sol["qqdot"])[: model.nbQ()]
-        np.testing.assert_almost_equal(q[0, :], target[0, i : i + nbs + 1].squeeze())
+        np.testing.assert_almost_equal(q[0, :], target[0, i : i + n_shooting + 1].squeeze())
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -445,7 +445,7 @@ def test_acados_one_end_constraints():
 
     ocp = constraint.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
-        nbs=10,
+        n_shooting=10,
         tf=2,
     )
 
