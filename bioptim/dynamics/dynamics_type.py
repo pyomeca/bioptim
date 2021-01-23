@@ -73,6 +73,8 @@ class DynamicsList(UniquePerPhaseOptionList):
     -------
     add(dynamics_type: DynamicsFcn, **extra_parameters)
         Add a new Dynamics to the list
+    print(self)
+        Print the DynamicsList to the console
     """
 
     def add(self, dynamics_type: Dynamics, **extra_parameters):
@@ -92,3 +94,9 @@ class DynamicsList(UniquePerPhaseOptionList):
 
         else:
             super(DynamicsList, self)._add(dynamics_type=dynamics_type, option_type=Dynamics, **extra_parameters)
+
+    def print(self):
+        """
+        Print the DynamicsList to the console
+        """
+        raise NotImplementedError("Printing of DynamicsList is not ready yet")

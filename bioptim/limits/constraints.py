@@ -415,7 +415,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         pt.base.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
-    def add_to_penalty(ocp, nlp, val: Union[MX, SX], penalty: Constraint):
+    def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Constraint):
         """
         Add the constraint to the constraint pool
 
@@ -425,7 +425,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the current phase of the ocp
-        val: Union[MX, SX]
+        val: Union[MX, SX, float, int]
             The actual constraint to add
         penalty: Constraint
             The actual constraint to declare

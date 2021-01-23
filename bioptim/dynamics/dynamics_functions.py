@@ -12,31 +12,44 @@ class DynamicsFunctions:
         Interface to custom dynamic function provided by the user
     forward_dynamics_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by joint torques, optional external forces can be declared.
-    forward_dynamics_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forward_dynamics_torque_driven_with_contact(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by joint torques with contact constraints.
-    forces_from_forward_dynamics_with_contact_for_torque_driven_problem(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forces_from_forward_dynamics_with_contact_for_torque_driven_problem(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
-    forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Contact forces of a forward dynamics driven by muscle activation with contact constraints.
-    forward_dynamics_torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forward_dynamics_torque_activations_driven(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by joint torques activations.
-    forward_dynamics_torque_activations_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forward_dynamics_torque_activations_driven_with_contact(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by joint torques activations with contact constraints.
-    forward_dynamics_muscle_activations_and_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forward_dynamics_muscle_activations_and_torque_driven(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by muscle activations and joint torques.
-    forward_dynamics_muscle_activations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forward_dynamics_muscle_activations_and_torque_driven_with_contact(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by muscles activations and joint torques with contact constraints.
-    forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
-    forward_dynamics_muscle_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forward_dynamics_muscle_activations_driven(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by muscle activations.
-    forward_dynamics_muscle_excitations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forward_dynamics_muscle_excitations_driven(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by muscle excitations.
-    forward_dynamics_muscle_excitations_and_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forward_dynamics_muscle_excitations_and_torque_driven(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by muscle excitations and joint torques.
-    forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by muscle excitations and joint torques with contact constraints..
-    forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Contact forces of a forward dynamics driven by muscle excitations and joint torques with contact constraints.
     dispatch_q_qdot_tau_data(states: MX.sym, controls: MX.sym, nlp: NonLinearProgram) -> tuple[MX.sym, MX.sym, MX.sym]
         Extracting q, qdot and tau from states and controls, assuming state, state and control, respectively.
@@ -65,6 +78,7 @@ class DynamicsFunctions:
         MX.sym
             The derivative of the states
         """
+
         qdot, qddot = nlp.dynamics_type.dynamic_function(states, controls, parameters, nlp)
         return vertcat(qdot, qddot)
 

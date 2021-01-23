@@ -180,7 +180,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         nb_threads=4,
-        use_SX=True,
+        use_sx=True,
     )
 
 

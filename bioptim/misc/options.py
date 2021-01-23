@@ -153,7 +153,7 @@ class OptionList:
 
         return self.options[i]
 
-    def _add(self, option_type: Callable = OptionGeneric, phase: int = 0, list_index: int = -1, **extra_arguments):
+    def _add(self, option_type: Callable = OptionGeneric, phase: int = 0, list_index: int = -1, **extra_arguments: Any):
         """
         Add a new option to the list
 
@@ -247,9 +247,11 @@ class UniquePerPhaseOptionList(OptionList):
         Get the ith option of the list
     __next__(self)
         Get the next option of the list
+    print(self):
+        Print the UniquePerPhaseOptionList to the console
     """
 
-    def _add(self, phase: int = -1, **extra_arguments):
+    def _add(self, phase: int = -1, **extra_arguments: Any):
         """
         Add a new option to the list
 
@@ -293,3 +295,9 @@ class UniquePerPhaseOptionList(OptionList):
         if self._iter_idx > len(self):
             raise StopIteration
         return self.options[self._iter_idx - 1][0]
+
+    def print(self):
+        """
+        Print the UniquePerPhaseOptionList to the console
+        """
+        raise NotImplementedError("Printing of UniquePerPhaseOptionList is not ready yet")

@@ -62,7 +62,7 @@ def test_pendulum_save_and_load():
 
 
 @pytest.mark.parametrize("nb_threads", [1, 2])
-@pytest.mark.parametrize("use_SX", [False, True])
+@pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_pendulum_save_and_load(nb_threads, use_SX, ode_solver):
     # Load pendulum
@@ -75,7 +75,7 @@ def test_pendulum_save_and_load(nb_threads, use_SX, ode_solver):
 
     if ode_solver == OdeSolver.IRK:
         if use_SX:
-            with pytest.raises(NotImplementedError, match="use_SX and OdeSolver.IRK are not yet compatible"):
+            with pytest.raises(NotImplementedError, match="use_sx and OdeSolver.IRK are not yet compatible"):
                 pendulum.prepare_ocp(
                     biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
                     final_time=2,

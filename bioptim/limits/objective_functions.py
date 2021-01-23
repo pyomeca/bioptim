@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, Union, Any
 from enum import Enum
 
 import numpy as np
@@ -19,7 +19,7 @@ class Objective(PenaltyOption):
         The weighting applied to this specific objective function
     """
 
-    def __init__(self, objective, weight: float = 1, custom_type=None, phase: int = 0, **params):
+    def __init__(self, objective, weight: float = 1, custom_type: Callable = None, phase: int = 0, **params):
         """
         Parameters
         ----------
@@ -27,7 +27,7 @@ class Objective(PenaltyOption):
             The chosen objective function
         weight: float
             The weighting applied to this specific objective function
-        custom_type: Objective
+        custom_type: Union[ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer]
             When objective is a custom defined function, one must specify if the custom_type is Mayer or Lagrange
         phase: int
             At which phase this objective function must be applied
@@ -69,9 +69,11 @@ class ObjectiveList(OptionList):
     -------
     add(self, constraint: Union[Callable, "ConstraintFcn"], **extra_arguments)
         Add a new Constraint to the list
+    print(self):
+        Print the ObjectiveList to the console
     """
 
-    def add(self, objective: Union[Callable, Objective], **extra_arguments):
+    def add(self, objective: Union[Callable, Any], **extra_arguments: Any):
         """
         Add a new objective function to the list
 
@@ -88,6 +90,12 @@ class ObjectiveList(OptionList):
         else:
             super(ObjectiveList, self)._add(option_type=Objective, objective=objective, **extra_arguments)
 
+    def print(self):
+        """
+        Print the ObjectiveList to the console
+        """
+        raise NotImplementedError("Printing of ObjectiveList is not ready yet")
+
 
 class ObjectiveFunction:
     """
@@ -97,7 +105,8 @@ class ObjectiveFunction:
     -------
     add_or_replace(ocp: OptimalControlProgram, nlp: NonLinearProgram, objective: Objective)
         Add the objective function to the objective pool
-    add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: Objective, dt:float=0)
+    add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram,
+            val: Union[MX, SX], penalty: Objective, dt:float=0)
         Add the objective function to the objective pool
     clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
         Resets a objective function. A negative penalty index creates a new empty objective function.
@@ -127,7 +136,8 @@ class ObjectiveFunction:
 
             Methods
             -------
-            minimize_time(penalty: "ObjectiveFcn.Lagrange", ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
+            minimize_time(penalty: "ObjectiveFcn.Lagrange", ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                    t: list, x: list, u: list, p: Union[MX, SX])
                 Minimizes the duration of the phase
             """
 
@@ -166,7 +176,7 @@ class ObjectiveFunction:
                 ObjectiveFunction.LagrangeFunction.add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def add_to_penalty(ocp, nlp, val: Union[MX, SX], penalty: Objective):
+        def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -176,7 +186,7 @@ class ObjectiveFunction:
                 A reference to the ocp
             nlp: NonLinearProgram
                 A reference to the current phase of the ocp
-            val: Union[MX, SX]
+            val: Union[MX, SX, float, int]
                 The actual objective function to add
             penalty: Objective
                 The actual objective function to declare
@@ -300,7 +310,8 @@ class ObjectiveFunction:
 
             Methods
             -------
-            minimize_time(penalty: "ObjectiveFcn.Lagrange", ocp: OptimalControlProgram, nlp: NonLinearProgram, t: list, x: list, u: list, p: Union[MX, SX])
+            minimize_time(penalty: "ObjectiveFcn.Lagrange", ocp: OptimalControlProgram, nlp: NonLinearProgram,
+                    t: list, x: list, u: list, p: Union[MX, SX])
                 Minimizes the duration of the phase
             """
 
@@ -339,7 +350,7 @@ class ObjectiveFunction:
                 ObjectiveFunction.MayerFunction.add_to_penalty(ocp, nlp, val, penalty)
 
         @staticmethod
-        def inter_phase_continuity(ocp, pt: "StateTransition"):
+        def inter_phase_continuity(ocp, pt):
             """
             Add phase transition objective between two phases.
 
@@ -347,7 +358,7 @@ class ObjectiveFunction:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
-            pt: "StateTransition"
+            pt: StateTransition
                 The state transition to add
             """
 
@@ -362,7 +373,7 @@ class ObjectiveFunction:
             pt.base.add_to_penalty(ocp, None, val, penalty)
 
         @staticmethod
-        def add_to_penalty(ocp, nlp, val: Union[MX, SX], penalty: Objective):
+        def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -372,7 +383,7 @@ class ObjectiveFunction:
                 A reference to the ocp
             nlp: NonLinearProgram
                 A reference to the current phase of the ocp
-            val: Union[MX, SX]
+            val: Union[MX, SX, float, int]
                 The actual objective function to add
             penalty: Objective
                 The actual objective function to declare
@@ -487,7 +498,7 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def add_to_penalty(ocp, _, val: Union[MX, SX], penalty: Objective):
+        def add_to_penalty(ocp, _, val: Union[MX, SX, float, int], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -495,7 +506,9 @@ class ObjectiveFunction:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
-            val: Union[MX, SX]
+            _: Any
+                The ignored nlp
+            val: Union[MX, SX, float, int]
                 The actual objective function to add
             penalty: Objective
                 The actual objective function to declare
@@ -511,6 +524,8 @@ class ObjectiveFunction:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
+            _: Any
+                The ignored nlp
             penalty: Objective
                 The actual objective function to declare
             """
@@ -587,7 +602,7 @@ class ObjectiveFunction:
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective)
 
     @staticmethod
-    def add_to_penalty(ocp, nlp, val: Union[MX, SX], penalty: Objective, dt: float = 0):
+    def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Objective, dt: float = 0):
         """
         Add the objective function to the objective pool
 
@@ -597,7 +612,7 @@ class ObjectiveFunction:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the current phase of the ocp
-        val: Union[MX, SX]
+        val: Union[MX, SX, float, int]
             The actual objective function to add
         penalty: Objective
             The actual objective function to declare
@@ -679,7 +694,8 @@ class ObjectivePrinter:
             print(f"********** Phase {idx_phase} **********")
             for idx_obj in range(phase.shape[0]):
                 print(
-                    f"{self.ocp.original_values['objective_functions'][idx_phase][idx_phase + idx_obj].type.name} : {np.nansum(phase[idx_obj])}"
+                    f"{self.ocp.original_values['objective_functions'][idx_phase][idx_phase + idx_obj].type.name} "
+                    f": {np.nansum(phase[idx_obj])}"
                 )
 
     def by_nodes(self):

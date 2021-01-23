@@ -71,7 +71,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
         x_bounds,
         u_bounds,
         objective_functions,
-        use_SX=use_SX,
+        use_sx=use_SX,
         nb_threads=nb_threads,
     )
 

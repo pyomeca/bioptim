@@ -108,7 +108,7 @@ class OptimalControlProgram:
         plot_mappings: Mapping = None,
         state_transitions: StateTransitionList = StateTransitionList(),
         nb_threads: int = 1,
-        use_SX: bool = False,
+        use_sx: bool = False,
     ):
         """
         Parameters
@@ -159,7 +159,7 @@ class OptimalControlProgram:
             The transition types between the phases
         nb_threads: int
             The number of thread to use while solving (multi-threading if > 1)
-        use_SX: bool
+        use_sx: bool
             The nature of the casadi variables. MX are used if False.
         """
 
@@ -199,7 +199,7 @@ class OptimalControlProgram:
             "plot_mappings": plot_mappings,
             "state_transitions": state_transitions,
             "nb_threads": nb_threads,
-            "use_SX": use_SX,
+            "use_sx": use_sx,
         }
 
         # Check integrity of arguments
@@ -286,8 +286,8 @@ class OptimalControlProgram:
         if not isinstance(ode_solver, OdeSolver):
             raise RuntimeError("ode_solver should be built an instance of OdeSolver")
 
-        if not isinstance(use_SX, bool):
-            raise RuntimeError("use_SX should be a bool")
+        if not isinstance(use_sx, bool):
+            raise RuntimeError("use_sx should be a bool")
 
         # Declare optimization variables
         self.J = []
@@ -303,7 +303,7 @@ class OptimalControlProgram:
         NLP.add(self, "phase_idx", [i for i in range(self.nb_phases)], False)
 
         # Type of CasADi graph
-        if use_SX:
+        if use_sx:
             self.CX = SX
         else:
             self.CX = MX

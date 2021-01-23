@@ -90,7 +90,7 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        use_SX=use_SX,
+        use_sx=use_SX,
     )
 
 

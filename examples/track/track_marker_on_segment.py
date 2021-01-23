@@ -94,7 +94,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        use_SX=use_SX,
+        use_sx=use_SX,
     )
 
 

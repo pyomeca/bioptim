@@ -1,3 +1,5 @@
+from typing import Callable
+
 from casadi import MX, vertcat, horzcat, Function
 
 from .dynamics_functions import DynamicsFunctions
@@ -9,23 +11,55 @@ from ..gui.plot import CustomPlot
 class Problem:
     """
     Dynamics configuration for the most common ocp
+
+    Methods
+    -------
+
     """
 
     @staticmethod
     def initialize(ocp, nlp):
+        """
+        Call the dynamics a first time
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+
         nlp.dynamics_type.type.value[0](ocp, nlp)
 
     @staticmethod
     def custom(ocp, nlp):
+        """
+        Call the user-defined dynamics configuration function
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+
         nlp.dynamics_type.configure(ocp, nlp)
 
     @staticmethod
     def torque_driven(ocp, nlp):
         """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Works with torques but without muscles, must be used with dynamics without contacts.
-        :param nlp: An instance of the OptimalControlProgram class.
+        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
         """
+
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         if nlp.dynamics_type.dynamic_function:
@@ -36,10 +70,16 @@ class Problem:
     @staticmethod
     def torque_driven_with_contact(ocp, nlp):
         """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Works with torques, without muscles, must be used with dynamics with contacts.
-        :param nlp: An OptimalControlProgram class.
+        Configure the dynamics for a torque driven with contact program (states are q and qdot, controls are tau)
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
         """
+
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         if nlp.dynamics_type.dynamic_function:
@@ -53,13 +93,21 @@ class Problem:
     @staticmethod
     def torque_activations_driven(ocp, nlp):
         """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Controls u are torques and torques activations.
-        :param nlp: An OptimalControlProgram class.
+        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
+        The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
+        relationship
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
         """
+
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
-        nlp.shape["actuactors"] = nlp.shape["tau"]
+        nlp.shape["actuators"] = nlp.shape["tau"]
         if nlp.dynamics_type.dynamic_function:
             Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -68,13 +116,21 @@ class Problem:
     @staticmethod
     def torque_activations_driven_with_contact(ocp, nlp):
         """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Controls u are torques and torques activations.
-        :param nlp: An OptimalControlProgram class.
+        Configure the dynamics for a torque with contact driven program (states are q and qdot,
+        controls are tau activations). The tau activations are bounded between -1 and 1 and actual tau is computed
+        from torque-position-velocity relationship
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
         """
+
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
-        nlp.shape["actuactors"] = nlp.shape["tau"]
+        nlp.shape["actuators"] = nlp.shape["tau"]
         if nlp.dynamics_type.dynamic_function:
             Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -88,10 +144,18 @@ class Problem:
     @staticmethod
     def muscle_activations_driven(ocp, nlp):
         """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Works with torques and muscles.
-        :param nlp: An OptimalControlProgram class.
+        Configure the dynamics for a muscle driven program (states are q and qdot, controls are the muscle activations).
+        The muscle activations are bounded between 0 and 1 and actual tau is computed from muscle force resulting from
+        the activations
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
         """
+
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_muscles(nlp, False, True)
 
@@ -103,10 +167,19 @@ class Problem:
     @staticmethod
     def muscle_activations_and_torque_driven(ocp, nlp):
         """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Works with torques and muscles.
-        :param nlp: An OptimalControlProgram class.
+        Configure the dynamics for a muscle and torque driven program (states are q and qdot, controls are tau and the
+        muscle activations). The tau are used as supplementary force in the case muscles are too weak. The muscle
+        activations are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the
+        activations and added to the tau control
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
         """
+
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, False, True)
@@ -119,45 +192,21 @@ class Problem:
             )
 
     @staticmethod
-    def muscle_excitations_driven(ocp, nlp):
-        """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Works with torques and muscles.
-        :param nlp: An OptimalControlProgram class.
-        """
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_muscles(nlp, True, True)
-
-        if nlp.dynamics_type.dynamic_function:
-            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
-        else:
-            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_driven)
-
-    @staticmethod
-    def muscle_excitations_and_torque_driven(ocp, nlp):
-        """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Works with torques and muscles.
-        :param nlp: An OptimalControlProgram class.
-        """
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
-        Problem.configure_muscles(nlp, True, True)
-
-        if nlp.dynamics_type.dynamic_function:
-            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
-        else:
-            Problem.configure_forward_dyn_func(
-                ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven
-            )
-
-    @staticmethod
     def muscle_activations_and_torque_driven_with_contact(ocp, nlp):
         """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Works with torques and muscles.
-        :param nlp: An OptimalControlProgram class.
+        Configure the dynamics for a muscle and torque driven with contact program (states are q and qdot, controls are
+        tau and the muscle activations). The tau are used as supplementary force in the case muscles are too weak. The
+        muscle activations are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the
+        activations and added to the tau control
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
         """
+
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, False, True)
@@ -173,12 +222,73 @@ class Problem:
         )
 
     @staticmethod
+    def muscle_excitations_driven(ocp, nlp):
+        """
+        Configure the dynamics for a muscle driven program (states are q, qdot and muscle activations, controls are the
+        muscle excitations (EMG)). The muscle activations are computed from the muscle dynamics. The muscle excitations
+        are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the activations
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_muscles(nlp, True, True)
+
+        if nlp.dynamics_type.dynamic_function:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
+        else:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_driven)
+
+    @staticmethod
+    def muscle_excitations_and_torque_driven(ocp, nlp):
+        """
+        Configure the dynamics for a muscle and torque driven program (states are q, qdot and muscle activations,
+        controls are tau and the muscle excitations (EMG)). The tau are used as supplementary force in the case muscles
+        are too weak. The muscle activations are computed from the muscle dynamics. The muscle excitations
+        are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the activations added
+        to the tau control
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, False, True)
+        Problem.configure_muscles(nlp, True, True)
+
+        if nlp.dynamics_type.dynamic_function:
+            Problem.configure_forward_dyn_func(ocp, nlp, DynamicsFunctions.custom)
+        else:
+            Problem.configure_forward_dyn_func(
+                ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven
+            )
+
+    @staticmethod
     def muscle_excitations_and_torque_driven_with_contact(ocp, nlp):
         """
-        Names states (nlp.x) and controls (nlp.u) and gives size to (nlp.nx) and (nlp.nu).
-        Works with torques and muscles.
-        :param nlp: An OptimalControlProgram class.
+        Configure the dynamics for a muscle and torque driven with contact program (states are q, qdot and muscle
+        activations, controls are tau and the muscle excitations (EMG)). The tau are used as supplementary force in the
+        case muscles are too weak. The muscle activations are computed from the muscle dynamics. The muscle excitations
+        are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the activations added
+        to the tau control
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
         """
+
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
         Problem.configure_muscles(nlp, True, True)
@@ -194,11 +304,20 @@ class Problem:
         )
 
     @staticmethod
-    def configure_q(nlp, as_states, as_controls):
+    def configure_q(nlp, as_states: bool, as_controls: bool):
         """
-        Configures common settings for torque driven problems with and without contacts.
-        :param nlp: An OptimalControlProgram class.
+        Configure the generalized coordinates
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized coordinates should be a state
+        as_controls: bool
+            If the generalized coordinates should be a control
         """
+
         if nlp.mapping["q"] is None:
             nlp.mapping["q"] = BidirectionalMapping(range(nlp.model.nbQ()), range(nlp.model.nbQ()))
 
@@ -237,11 +356,20 @@ class Problem:
         nlp.nu = nlp.u.rows()
 
     @staticmethod
-    def configure_qdot(nlp, as_states, as_controls):
+    def configure_qdot(nlp, as_states: bool, as_controls: bool):
         """
-        Configures common settings for torque driven problems with and without contacts.
-        :param nlp: An OptimalControlProgram class.
+        Configure the generalized velocities
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized velocities should be a state
+        as_controls: bool
+            If the generalized velocities should be a control
         """
+
         if nlp.mapping["q_dot"] is None:
             nlp.mapping["q_dot"] = BidirectionalMapping(range(nlp.model.nbQdot()), range(nlp.model.nbQdot()))
 
@@ -280,20 +408,38 @@ class Problem:
         nlp.nu = nlp.u.rows()
 
     @staticmethod
-    def configure_q_qdot(nlp, as_states, as_controls):
+    def configure_q_qdot(nlp, as_states: bool, as_controls: bool):
         """
-        Configures common settings for torque driven problems with and without contacts.
-        :param nlp: An OptimalControlProgram class.
+        Configure the generalized coordinates and generalized velocities
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized coordinates and generalized velocities should be states
+        as_controls: bool
+            If the generalized coordinates and generalized velocities should be controls
         """
+
         Problem.configure_q(nlp, as_states, as_controls)
         Problem.configure_qdot(nlp, as_states, as_controls)
 
     @staticmethod
-    def configure_tau(nlp, as_states, as_controls):
+    def configure_tau(nlp, as_states: bool, as_controls: bool):
         """
-        Configures common settings for torque driven problems with and without contacts.
-        :param nlp: An OptimalControlProgram class.
+        Configure the generalized forces
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized forces should be a state
+        as_controls: bool
+            If the generalized forces should be a control
         """
+
         if nlp.mapping["tau"] is None:
             nlp.mapping["tau"] = BidirectionalMapping(
                 range(nlp.model.nbGeneralizedTorque()), range(nlp.model.nbGeneralizedTorque())
@@ -339,36 +485,20 @@ class Problem:
         nlp.nu = nlp.u.rows()
 
     @staticmethod
-    def configure_contact(ocp, nlp, dyn_func):
-        symbolic_states = MX.sym("x", nlp.nx, 1)
-        symbolic_controls = MX.sym("u", nlp.nu, 1)
-        symbolic_param = MX.sym("p", nlp.np, 1)
-        nlp.contact_forces_func = Function(
-            "contact_forces_func",
-            [symbolic_states, symbolic_controls, symbolic_param],
-            [dyn_func(symbolic_states, symbolic_controls, symbolic_param, nlp)],
-            ["x", "u", "p"],
-            ["contact_forces"],
-        ).expand()
+    def configure_muscles(nlp, as_states: bool, as_controls: bool):
+        """
+        Configure the muscles
 
-        all_contact_names = []
-        for elt in ocp.nlp:
-            all_contact_names.extend(
-                [name.to_string() for name in elt.model.contactNames() if name.to_string() not in all_contact_names]
-            )
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the muscles should be a state
+        as_controls: bool
+            If the muscles should be a control
+        """
 
-        if "contact_forces" in nlp.mapping["plot"]:
-            phase_mappings = nlp.mapping["plot"]["contact_forces"]
-        else:
-            contact_names_in_phase = [name.to_string() for name in nlp.model.contactNames()]
-            phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
-
-        nlp.plot["contact_forces"] = CustomPlot(
-            nlp.contact_forces_func, axes_idx=phase_mappings, legend=all_contact_names
-        )
-
-    @staticmethod
-    def configure_muscles(nlp, as_states, as_controls):
         nlp.shape["muscle"] = nlp.model.nbMuscles()
         nlp.muscleNames = [names.to_string() for names in nlp.model.muscleNames()]
 
@@ -428,10 +558,23 @@ class Problem:
 
     @staticmethod
     def configure_forward_dyn_func(ocp, nlp, dyn_func):
+        """
+        Configure the forward dynamics
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        dyn_func: Callable[states, controls, param]
+            The function to get the derivative of the states
+        """
+
         nlp.nx = nlp.x.rows()
         nlp.nu = nlp.u.rows()
-        MX_symbolic_states = MX.sym("x", nlp.nx, 1)
-        MX_symbolic_controls = MX.sym("u", nlp.nu, 1)
+        mx_symbolic_states = MX.sym("x", nlp.nx, 1)
+        mx_symbolic_controls = MX.sym("u", nlp.nu, 1)
 
         symbolic_params = nlp.CX()
         nlp.parameters_to_optimize = ocp.param_to_optimize
@@ -439,15 +582,57 @@ class Problem:
             symbolic_params = vertcat(symbolic_params, nlp.parameters_to_optimize[key].cx)
         nlp.p = symbolic_params
         nlp.np = symbolic_params.rows()
-        MX_symbolic_params = MX.sym("p", nlp.np, 1)
+        mx_symbolic_params = MX.sym("p", nlp.np, 1)
 
-        dynamics = dyn_func(MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params, nlp)
+        dynamics = dyn_func(mx_symbolic_states, mx_symbolic_controls, mx_symbolic_params, nlp)
         if isinstance(dynamics, (list, tuple)):
             dynamics = vertcat(*dynamics)
         nlp.dynamics_func = Function(
             "ForwardDyn",
-            [MX_symbolic_states, MX_symbolic_controls, MX_symbolic_params],
+            [mx_symbolic_states, mx_symbolic_controls, mx_symbolic_params],
             [dynamics],
             ["x", "u", "p"],
             ["xdot"],
         ).expand()
+
+    @staticmethod
+    def configure_contact(ocp, nlp, dyn_func: Callable):
+        """
+        Configure the contact points
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        dyn_func: Callable[states, controls, param]
+            The function to get the values of contact forces from the dynamics
+        """
+
+        symbolic_states = MX.sym("x", nlp.nx, 1)
+        symbolic_controls = MX.sym("u", nlp.nu, 1)
+        symbolic_param = MX.sym("p", nlp.np, 1)
+        nlp.contact_forces_func = Function(
+            "contact_forces_func",
+            [symbolic_states, symbolic_controls, symbolic_param],
+            [dyn_func(symbolic_states, symbolic_controls, symbolic_param, nlp)],
+            ["x", "u", "p"],
+            ["contact_forces"],
+        ).expand()
+
+        all_contact_names = []
+        for elt in ocp.nlp:
+            all_contact_names.extend(
+                [name.to_string() for name in elt.model.contactNames() if name.to_string() not in all_contact_names]
+            )
+
+        if "contact_forces" in nlp.mapping["plot"]:
+            phase_mappings = nlp.mapping["plot"]["contact_forces"]
+        else:
+            contact_names_in_phase = [name.to_string() for name in nlp.model.contactNames()]
+            phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
+
+        nlp.plot["contact_forces"] = CustomPlot(
+            nlp.contact_forces_func, axes_idx=phase_mappings, legend=all_contact_names
+        )

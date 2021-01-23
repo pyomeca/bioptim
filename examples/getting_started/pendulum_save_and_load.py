@@ -64,7 +64,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions=objective_functions,
         nb_threads=nb_threads,
-        use_SX=use_SX,
+        use_sx=use_SX,
         ode_solver=ode_solver,
     )
 

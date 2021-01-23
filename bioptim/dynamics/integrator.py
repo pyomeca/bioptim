@@ -172,7 +172,7 @@ class Integrator:
         if nlp.ode_solver == OdeSolver.RK4 or nlp.ode_solver == OdeSolver.RK8 or nlp.ode_solver == OdeSolver.IRK:
             if nlp.ode_solver == OdeSolver.IRK:
                 if ocp.CX is SX:
-                    raise NotImplementedError("use_SX and OdeSolver.IRK are not yet compatible")
+                    raise NotImplementedError("use_sx and OdeSolver.IRK are not yet compatible")
 
                 if nlp.model.nbQuat() > 0:
                     raise NotImplementedError(

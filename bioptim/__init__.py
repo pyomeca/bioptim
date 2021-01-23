@@ -99,7 +99,7 @@ Bounds
 BoundsList
     A list of Bounds if more than one is required
 QAndQDotBounds
-    Specialized Bounds that reads a model to automatically extract q and qdot bounds
+    Specialized Bounds that reads a model to automatically extract q and q_dot bounds
 
 
 # --- Managing the initial guesses of the variables --- #
@@ -134,11 +134,11 @@ Requirements and Installation
 bioptim requires minimally CasADi, [Ipopt, ACADOS], biorbd and bioviz. To install ACADOS, one is invited to have a look
 at the installation script at 'external/acados_install.sh'. All the other requirements can be installed from conda
 on the conda-forge channel using the following command:
-`conda install -cconda-forge biorbd=*=*casadi bioviz=*=*casadi`
+`conda install -c conda-forge biorbd=*=*casadi* bioviz=*=*casadi*`
 
 If one is interested in the conda-forge version of bioptim, they can install every requirements and bioptim using the
 following command
-`conda install -cconda-forge bioptim`
+`conda install -c conda-forge bioptim`
 
 
 Examples
