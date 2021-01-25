@@ -1,6 +1,7 @@
 version 3
 gravity 0 -9.81 0
 
+// SEGMENT DEFINITION
 
 segment base
     // meshfile vtp/ground_ribs.vtp

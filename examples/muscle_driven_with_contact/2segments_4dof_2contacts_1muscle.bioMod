@@ -1,6 +1,6 @@
 version 4
 
-// Seg0
+
 segment Seg0
     translations	yz
     rotations	x
@@ -17,7 +17,7 @@ segment Seg0
 	mesh  0 0 -0.5
 endsegment
 
-// Seg1
+
 segment Seg1
     parent Seg0
     RT 0 0 0 xyz 0 0 -0.5
@@ -33,31 +33,30 @@ segment Seg1
 	mesh  0 0.35 0
 endsegment
 
-// Contact
-contact    Seg1_contact1
-    parent    Seg1
-    position    0 0 0
-    axis    yz
-endcontact
+    // Contact
+    contact    Seg1_contact1
+        parent    Seg1
+        position    0 0 0
+        axis    yz
+    endcontact
+    contact    Seg1_contact2
+        parent    Seg1
+        position    0 0.35 0
+        axis    z
+    endcontact
 
-contact    Seg1_contact2
-    parent    Seg1
-    position    0 0.35 0
-    axis    z
-endcontact
+    // Markers
+    marker    Seg1_contact_marker1
+        parent    Seg1
+        position    0 0 0
+    endmarker
+    marker    Seg1_contact_marker2
+        parent    Seg1
+        position    0 0.35 0
+    endmarker
 
-// Markers
-marker    Seg1_contact_marker1
-    parent    Seg1
-    position    0 0 0
-endmarker
 
-marker    Seg1_contact_marker2
-    parent    Seg1
-    position    0 0.35 0
-endmarker
-
-// MUSCLE DEFINTION
+// MUSCLE DEFINITION
 
 // segment 0 > segment 1
 musclegroup musclegroup1

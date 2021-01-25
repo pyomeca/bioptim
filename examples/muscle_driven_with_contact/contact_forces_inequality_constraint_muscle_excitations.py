@@ -1,3 +1,9 @@
+"""
+# TODO: Remove all the examples/muscle_driven_with_contact and make sure everything is properly tested
+All the examples in muscle_driven_with_contact are merely to show some dynamics and prepare some OCP for the tests.
+It is not really relevant and will be removed when unitary tests for the dynamics will be implemented
+"""
+
 from matplotlib import pyplot as plt
 import numpy as np
 import biorbd
@@ -11,7 +17,6 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     BidirectionalMapping,
-    Mapping,
     BoundsList,
     Bounds,
     QAndQDotBounds,
@@ -23,8 +28,6 @@ from bioptim import (
 
 
 def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_solver=OdeSolver.RK4):
-    # --- Options --- #
-    # Model path
     biorbd_model = biorbd.Model(model_path)
     torque_min, torque_max, torque_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5

@@ -1,3 +1,9 @@
+"""
+# TODO: Remove all the examples/muscle_driven_with_contact and make sure everything is properly tested
+All the examples in muscle_driven_with_contact are merely to show some dynamics and prepare some OCP for the tests.
+It is not really relevant and will be removed when unitary tests for the dynamics will be implemented
+"""
+
 from matplotlib import pyplot as plt
 import numpy as np
 import biorbd
@@ -11,7 +17,6 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     BidirectionalMapping,
-    Mapping,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -60,7 +65,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
@@ -70,10 +75,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [
-            [tau_min] * tau_mapping.to_first.len + [activation_min] * biorbd_model.nbMuscleTotal(),
-            [tau_max] * tau_mapping.to_first.len + [activation_max] * biorbd_model.nbMuscleTotal(),
-        ]
+        [tau_min] * tau_mapping.to_first.len + [activation_min] * biorbd_model.nbMuscleTotal(),
+        [tau_max] * tau_mapping.to_first.len + [activation_max] * biorbd_model.nbMuscleTotal(),
     )
 
     u_init = InitialGuessList()

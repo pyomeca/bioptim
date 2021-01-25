@@ -1,3 +1,10 @@
+"""
+# TODO: Remove all the examples/muscle_driven_with_contact and make sure everything is properly tested
+All the examples in muscle_driven_with_contact are merely to show some dynamics and prepare some OCP for the tests.
+It is not really relevant and will be removed when unitary tests for the dynamics will be implemented
+"""
+
+
 import importlib.util
 from pathlib import Path
 

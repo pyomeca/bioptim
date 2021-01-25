@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, Union, Any
 import multiprocessing as mp
 from copy import copy
 import tkinter
@@ -760,7 +760,7 @@ class ShowResult:
         if show_now:
             plt.show()
 
-    def animate(self, nb_frames: int = 80, show_now: bool = True, **kwargs) -> list:
+    def animate(self, nb_frames: int = 80, show_now: bool = True, **kwargs: Any) -> list:
         """
         An interface to animate solution with bioviz
 
