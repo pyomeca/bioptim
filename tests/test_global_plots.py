@@ -11,7 +11,6 @@ import matplotlib
 matplotlib.use("Agg")
 import numpy as np
 import biorbd
-
 from bioptim import ShowResult, OptimalControlProgram
 
 

@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 import numpy as np
 import biorbd
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,

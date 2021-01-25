@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-
 from bioptim import Data, InterpolationType, OdeSolver
+
 from .utils import TestUtils
 
 

@@ -1,6 +1,5 @@
 import biorbd
 import numpy as np
-
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,

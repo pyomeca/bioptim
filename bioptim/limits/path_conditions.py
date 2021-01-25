@@ -1,4 +1,4 @@
-from typing import Union, Callable
+from typing import Union, Callable, Any
 
 import numpy as np
 from casadi import MX, SX, vertcat
@@ -323,18 +323,18 @@ class Bounds(OptionGeneric):
 
     def __init__(
         self,
-        min_bound: Union[PathCondition, np.ndarray, list, tuple] = (),
-        max_bound: Union[PathCondition, np.ndarray, list, tuple] = (),
+        min_bound: Union[Callable, PathCondition, np.ndarray, list, tuple] = (),
+        max_bound: Union[Callable, PathCondition, np.ndarray, list, tuple] = (),
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         slice_list: Union[slice, list, tuple] = None,
-        **parameters,
+        **parameters: Any,
     ):
         """
         Parameters
         ----------
-        min_bound: Union[PathCondition, np.ndarray, list, tuple]
+        min_bound: Union[Callable, PathCondition, np.ndarray, list, tuple]
             The minimal bound
-        max_bound: Union[PathCondition, np.ndarray, list, tuple]
+        max_bound: Union[Callable, PathCondition, np.ndarray, list, tuple]
             The maximal bound
         interpolation: InterpolationType
             The type of interpolation of the bound

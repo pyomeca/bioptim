@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-
 from bioptim import Data, OdeSolver
+
 from .utils import TestUtils
 
 

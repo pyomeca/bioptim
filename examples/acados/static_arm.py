@@ -1,7 +1,6 @@
 import biorbd
 from time import time
 import numpy as np
-
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,

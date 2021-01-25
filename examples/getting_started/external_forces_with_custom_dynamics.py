@@ -1,6 +1,5 @@
 import biorbd
 import casadi as cas
-
 from bioptim import (
     OptimalControlProgram,
     Dynamics,

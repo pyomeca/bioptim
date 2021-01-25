@@ -10,7 +10,6 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 """
 
 import biorbd
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,

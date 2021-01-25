@@ -1,6 +1,5 @@
 import numpy as np
 import biorbd
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,

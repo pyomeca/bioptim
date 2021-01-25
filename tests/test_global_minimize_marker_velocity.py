@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-
 from bioptim import Data, OdeSolver, ControlType
+
 from .utils import TestUtils
 
 

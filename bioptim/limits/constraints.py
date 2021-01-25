@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, Union, Any
 from math import inf
 from enum import Enum
 
@@ -7,7 +7,7 @@ from casadi import sum1, horzcat, if_else, vertcat, lt, MX, SX
 import biorbd
 
 from .path_conditions import Bounds
-from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
+from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption, PenaltyNode
 from ..misc.enums import Node, InterpolationType, OdeSolver, ControlType
 from ..misc.options import OptionList, OptionGeneric
 
@@ -68,13 +68,13 @@ class ConstraintList(OptionList):
         Print the ConstraintList to the console
     """
 
-    def add(self, constraint: Union[Callable, Constraint], **extra_arguments):
+    def add(self, constraint: Union[Callable, Constraint, Any], **extra_arguments: Any):
         """
         Add a new constraint to the list
 
         Parameters
         ----------
-        constraint: Union[Callable, "ConstraintFcn"]
+        constraint: Union[Callable, Constraint, ConstraintFcn]
             The chosen constraint
         extra_arguments: dict
             Any parameters to pass to Constraint
@@ -120,31 +120,22 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         Methods
         -------
-        time_constraint(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram,
-                t: list, x: list, u: list, p: Union[MX, SX])
+        time_constraint(constraint: Constraint, pn: PenaltyNode)
             The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
-        torque_max_from_actuators(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram,
-                t: list, x: list, u: list, p: Union[MX, SX], min_torque=None)
+        torque_max_from_actuators(constraint: Constraint, pn: PenaltyNode, min_torque=None)
             Non linear maximal values of joint torques computed from the torque-position-velocity relationship
-        non_slipping(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram,
-                t: list, x: list, u: list, p: Union[MX, SX],
+        non_slipping(constraint: Constraint, pn: PenaltyNode,
                 tangential_component_idx: int, normal_component_idx: int, static_friction_coefficient: float)
             Add a constraint of static friction at contact points allowing for small tangential forces. This constraint
             assumes that the normal forces is positive
-        contact_force(constraint: Constraint, ocp: OptimalControlProgram, nlp: NonLinearProgram,
-                t: list, x: list, u: list, p: Union[MX, SX], contact_force_idx: int)
+        contact_force(constraint: Constraint, pn: PenaltyNode, contact_force_idx: int)
             Add a constraint of contact forces given by any forward dynamics with contact
         """
 
         @staticmethod
         def contact_force(
             constraint: Constraint,
-            ocp,
-            nlp,
-            t: list,
-            x: list,
-            u: list,
-            p: Union[MX, SX],
+            pn: PenaltyNode,
             contact_force_idx: int,
         ):
             """
@@ -154,39 +145,24 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the current phase of the ocp
-            t: list
-                Time indices, maximum value being the number of shooting point + 1
-            x: list
-                References to the state variables
-            u: list
-                References to the control variables
-            p: Union[MX, SX]
-                References to the parameter variables
+            pn: PenaltyNode
+                The penalty node elements
             contact_force_idx: int
                 The index of the contact force to add to the constraint set
             """
 
-            for i in range(len(u)):
+            for i in range(len(pn.u)):
                 ConstraintFunction.add_to_penalty(
-                    ocp,
-                    nlp,
-                    nlp.contact_forces_func(x[i], u[i], p)[contact_force_idx, 0],
+                    pn.ocp,
+                    pn.nlp,
+                    pn.nlp.contact_forces_func(pn.x[i], pn.u[i], pn.p)[contact_force_idx, 0],
                     constraint,
                 )
 
         @staticmethod
         def non_slipping(
             constraint: Constraint,
-            ocp,
-            nlp,
-            t: list,
-            x: list,
-            u: list,
-            p: Union[MX, SX],
+            pn: PenaltyNode,
             tangential_component_idx: int,
             normal_component_idx: int,
             static_friction_coefficient: float,
@@ -199,18 +175,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the current phase of the ocp
-            t: list
-                Time indices, maximum value being the number of shooting point + 1
-            x: list
-                References to the state variables
-            u: list
-                References to the control variables
-            p: Union[MX, SX]
-                References to the parameter variables
+            pn: PenaltyNode
+                The penalty node elements
             tangential_component_idx: int
                 Index of the tangential component of the contact force
             normal_component_idx: int
@@ -228,21 +194,21 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             mu = static_friction_coefficient
             constraint.min_bound = 0
             constraint.max_bound = inf
-            for i in range(len(u)):
-                contact = nlp.contact_forces_func(x[i], u[i], p)
+            for i in range(len(pn.u)):
+                contact = pn.nlp.contact_forces_func(pn.x[i], pn.u[i], pn.p)
                 normal_contact_force = sum1(contact[normal_component_idx, 0])
                 tangential_contact_force = contact[tangential_component_idx, 0]
 
                 # Since it is non-slipping normal forces are supposed to be greater than zero
                 ConstraintFunction.add_to_penalty(
-                    ocp,
-                    nlp,
+                    pn.ocp,
+                    pn.nlp,
                     mu * normal_contact_force - tangential_contact_force,
                     constraint,
                 )
                 ConstraintFunction.add_to_penalty(
-                    ocp,
-                    nlp,
+                    pn.ocp,
+                    pn.nlp,
                     mu * normal_contact_force + tangential_contact_force,
                     constraint,
                 )
@@ -250,12 +216,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def torque_max_from_actuators(
             constraint: Constraint,
-            ocp,
-            nlp,
-            t: list,
-            x: list,
-            u: list,
-            p: Union[MX, SX],
+            pn: PenaltyNode,
             min_torque=None,
         ):
             """
@@ -265,33 +226,24 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the current phase of the ocp
-            t: list
-                Time indices, maximum value being the number of shooting point + 1
-            x: list
-                References to the state variables
-            u: list
-                References to the control variables
-            p: Union[MX, SX]
-                References to the parameter variables
+            pn: PenaltyNode
+                The penalty node elements
             min_torque: float
                 Minimum joint torques. This prevent from having too small torques, but introduces an if statement
             """
 
             # TODO: Add index to select the u (control_idx)
+            nlp = pn.nlp
             nq = nlp.mapping["q"].to_first.len
-            q = [nlp.mapping["q"].to_second.map(mx[:nq]) for mx in x]
-            q_dot = [nlp.mapping["q_dot"].to_second.map(mx[nq:]) for mx in x]
+            q = [nlp.mapping["q"].to_second.map(mx[:nq]) for mx in pn.x]
+            q_dot = [nlp.mapping["q_dot"].to_second.map(mx[nq:]) for mx in pn.x]
 
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
             func = biorbd.to_casadi_func("torqueMax", nlp.model.torqueMax, nlp.q, nlp.q_dot)
             constraint.min_bound = np.repeat([0, -np.inf], nlp.nu)
             constraint.max_bound = np.repeat([np.inf, 0], nlp.nu)
-            for i in range(len(u)):
+            for i in range(len(pn.u)):
                 bound = func(q[i], q_dot[i])
                 if min_torque:
                     min_bound = nlp.mapping["tau"].to_first.map(
@@ -304,17 +256,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     min_bound = nlp.mapping["tau"].to_first.map(bound[:, 1])
                     max_bound = nlp.mapping["tau"].to_first.map(bound[:, 0])
 
-                ConstraintFunction.add_to_penalty(ocp, nlp, vertcat(*[u[i] + min_bound, u[i] - max_bound]), constraint)
+                ConstraintFunction.add_to_penalty(
+                    pn.ocp, nlp, vertcat(*[pn.u[i] + min_bound, pn.u[i] - max_bound]), constraint
+                )
 
         @staticmethod
         def time_constraint(
             constraint: Constraint,
-            ocp,
-            nlp,
-            t: list,
-            x: list,
-            u: list,
-            p: Union[MX, SX],
+            pn: PenaltyNode,
             **unused_param,
         ):
             """
@@ -324,18 +273,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the current phase of the ocp
-            t: list
-                Time indices, maximum value being the number of shooting point + 1
-            x: list
-                References to the state variables
-            u: list
-                References to the control variables
-            p: Union[MX, SX]
-                References to the parameter variables
+            pn: PenaltyNode
+                The penalty node elements
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
             """
@@ -513,7 +452,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         super(ConstraintFunction, ConstraintFunction)._parameter_modifier(constraint)
 
     @staticmethod
-    def _span_checker(constraint: Constraint, nlp):
+    def _span_checker(constraint: Constraint, pn: PenaltyNode):
         """
         Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -521,16 +460,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ----------
         constraint: Constraint
             The actual constraint to declare
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
+        pn: PenaltyNode
+            The penalty node elements
         """
 
         # Everything that is suspicious in terms of the span of the penalty function can be checked here
-        super(ConstraintFunction, ConstraintFunction)._span_checker(constraint, nlp)
+        super(ConstraintFunction, ConstraintFunction)._span_checker(constraint, pn)
         func = constraint.type.value[0]
         node = constraint.node
         if func == ConstraintFcn.CONTACT_FORCE.value[0] or func == ConstraintFcn.NON_SLIPPING.value[0]:
-            if node == Node.END or node == nlp.ns:
+            if node == Node.END or node == pn.nlp.ns:
                 raise RuntimeError("No control u at last node")
 
     @staticmethod

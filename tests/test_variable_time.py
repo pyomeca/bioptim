@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import biorbd
-
 from bioptim import (
     BoundsList,
     Bounds,

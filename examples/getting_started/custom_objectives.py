@@ -4,7 +4,6 @@ As an example, this custom constraint reproduces exactly the behavior of the SUP
 """
 import biorbd
 from casadi import vertcat
-
 from bioptim import (
     Node,
     OptimalControlProgram,

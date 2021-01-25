@@ -162,6 +162,7 @@ from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.continuity import StateTransitionFcn, StateTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ObjectivePrinter
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
+from .limits.penalty import PenaltyNode
 from .misc.data import Data
 from .misc.enums import Axis, Node, InterpolationType, OdeSolver, PlotType, Solver, ControlType
 from .misc.mapping import BidirectionalMapping, Mapping

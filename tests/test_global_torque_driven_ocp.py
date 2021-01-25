@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 import numpy as np
 import biorbd
-
 from bioptim import Data, OdeSolver, ConstraintList, ConstraintFcn, Node
+
 from .utils import TestUtils
 
 

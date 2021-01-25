@@ -4,7 +4,6 @@ from pathlib import Path
 import biorbd
 import numpy as np
 from casadi import MX, horzcat
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,

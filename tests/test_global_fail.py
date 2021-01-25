@@ -4,7 +4,6 @@ from pathlib import Path
 
 import biorbd
 from casadi import vertcat, MX
-
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -15,8 +14,8 @@ from bioptim import (
 
 
 def test_custom_constraint_mx_fail():
-    def custom_mx_fail(ocp, nlp, t, x, u, p):
-        return MX(0), vertcat(*u), MX(0)
+    def custom_mx_fail(pn):
+        return MX(0), vertcat(*pn.u), MX(0)
 
     PROJECT_FOLDER = Path(__file__).parent / ".."
     model_path = str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod"

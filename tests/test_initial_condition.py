@@ -3,7 +3,6 @@ import importlib.util
 from pathlib import Path
 
 import numpy as np
-
 from bioptim import Data, InterpolationType, Simulate, InitialGuess
 
 # TODO: Add negative test for sizes

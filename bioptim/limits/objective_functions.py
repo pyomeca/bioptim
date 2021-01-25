@@ -4,7 +4,7 @@ from enum import Enum
 import numpy as np
 from casadi import MX, SX
 
-from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
+from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption, PenaltyNode
 from ..misc.enums import Node
 from ..misc.options import OptionList, OptionGeneric
 
@@ -124,7 +124,7 @@ class ObjectiveFunction:
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, nlp: NonLinearProgram)
+        _span_checker(objective: Objective, pn: PenaltyNode)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         penalty_nature() -> str
             Get the nature of the penalty
@@ -136,21 +136,12 @@ class ObjectiveFunction:
 
             Methods
             -------
-            minimize_time(penalty: "ObjectiveFcn.Lagrange", ocp: OptimalControlProgram, nlp: NonLinearProgram,
-                    t: list, x: list, u: list, p: Union[MX, SX])
+            minimize_time(penalty: ObjectiveFcn.Lagrange, pn: PenaltyNode)
                 Minimizes the duration of the phase
             """
 
             @staticmethod
-            def minimize_time(
-                penalty: Objective,
-                ocp,
-                nlp,
-                t: list,
-                x: list,
-                u: list,
-                p: Union[MX, SX],
-            ):
+            def minimize_time(penalty: Objective, pn: PenaltyNode):
                 """
                 Minimizes the duration of the phase
 
@@ -158,22 +149,12 @@ class ObjectiveFunction:
                 ----------
                 penalty: Objective,
                     The actual constraint to declare
-                ocp: OptimalControlProgram
-                    A reference to the ocp
-                nlp: NonLinearProgram
-                    A reference to the current phase of the ocp
-                t: list
-                    Time indices, maximum value being the number of shooting point + 1
-                x: list
-                    References to the state variables
-                u: list
-                    References to the control variables
-                p: Union[MX, SX]
-                    References to the parameter variables
+                pn: PenaltyNode
+                    The penalty node elements
                 """
 
                 val = 1
-                ObjectiveFunction.LagrangeFunction.add_to_penalty(ocp, nlp, val, penalty)
+                ObjectiveFunction.LagrangeFunction.add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
         def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Objective):
@@ -241,7 +222,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, nlp):
+        def _span_checker(objective: Objective, pn: PenaltyNode):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -249,12 +230,12 @@ class ObjectiveFunction:
             ----------
             objective: Objective
                 The actual objective function to declare
-            nlp: NonLinearProgram
-                A reference to the current phase of the ocp
+            pn: PenaltyNode
+                The penalty node elements
             """
 
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(objective, nlp)
+            PenaltyFunctionAbstract._span_checker(objective, pn)
 
         @staticmethod
         def add_or_replace(ocp, nlp, objective: PenaltyOption):
@@ -298,7 +279,7 @@ class ObjectiveFunction:
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, nlp: NonLinearProgram)
+        _span_checker(objective: Objective, pn: PenaltyNode)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         penalty_nature() -> str
             Get the nature of the penalty
@@ -310,20 +291,14 @@ class ObjectiveFunction:
 
             Methods
             -------
-            minimize_time(penalty: "ObjectiveFcn.Lagrange", ocp: OptimalControlProgram, nlp: NonLinearProgram,
-                    t: list, x: list, u: list, p: Union[MX, SX])
+            minimize_time(penalty: "ObjectiveFcn.Lagrange", pn: PenaltyNode)
                 Minimizes the duration of the phase
             """
 
             @staticmethod
             def minimize_time(
                 penalty: Objective,
-                ocp,
-                nlp,
-                t: list,
-                x: list,
-                u: list,
-                p: Union[MX, SX],
+                pn: PenaltyNode,
             ):
                 """
                 Minimizes the duration of the phase
@@ -332,22 +307,12 @@ class ObjectiveFunction:
                 ----------
                 penalty: Objective,
                     The actual constraint to declare
-                ocp: OptimalControlProgram
-                    A reference to the ocp
-                nlp: NonLinearProgram
-                    A reference to the current phase of the ocp
-                t: list
-                    Time indices, maximum value being the number of shooting point + 1
-                x: list
-                    References to the state variables
-                u: list
-                    References to the control variables
-                p: Union[MX, SX]
-                    References to the parameter variables
+                pn: PenaltyNode
+                    The penalty node elements
                 """
 
-                val = nlp.tf
-                ObjectiveFunction.MayerFunction.add_to_penalty(ocp, nlp, val, penalty)
+                val = pn.nlp.tf
+                ObjectiveFunction.MayerFunction.add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
         def inter_phase_continuity(ocp, pt):
@@ -431,7 +396,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, nlp):
+        def _span_checker(objective: Objective, pn: PenaltyNode):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -439,12 +404,13 @@ class ObjectiveFunction:
             ----------
             objective: Objective
                 The actual objective function to declare
-            nlp: NonLinearProgram
                 A reference to the current phase of the ocp
+            pn: PenaltyNode
+                The penalty node elements
             """
 
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(objective, nlp)
+            PenaltyFunctionAbstract._span_checker(objective, pn)
 
         @staticmethod
         def add_or_replace(ocp, nlp, objective: PenaltyOption):
@@ -484,7 +450,7 @@ class ObjectiveFunction:
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, nlp: NonLinearProgram)
+        _span_checker(objective: Objective, pn: PenaltyNode)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         penalty_nature() -> str
             Get the nature of the penalty
@@ -547,7 +513,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, nlp):
+        def _span_checker(objective: Objective, pn: PenaltyNode):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -555,12 +521,12 @@ class ObjectiveFunction:
             ----------
             objective: Objective
                 The actual objective function to declare
-            nlp: NonLinearProgram
-                A reference to the current phase of the ocp
+            pn: PenaltyNode
+                The penalty node elements
             """
 
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(objective, nlp)
+            PenaltyFunctionAbstract._span_checker(objective, pn)
 
         @staticmethod
         def penalty_nature() -> str:

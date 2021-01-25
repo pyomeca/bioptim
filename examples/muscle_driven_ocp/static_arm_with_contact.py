@@ -1,5 +1,4 @@
 import biorbd
-
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,

@@ -3,7 +3,6 @@ import numpy as np
 import biorbd
 from casadi import MX, vertcat
 from matplotlib import pyplot as plt
-
 from bioptim import (
     OptimalControlProgram,
     NonLinearProgram,

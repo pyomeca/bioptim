@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 import numpy as np
 import biorbd
-
 from bioptim import (
     Data,
     ConstraintList,
@@ -23,6 +22,7 @@ from bioptim import (
     OptimalControlProgram,
     OdeSolver,
 )
+
 from .utils import TestUtils
 
 

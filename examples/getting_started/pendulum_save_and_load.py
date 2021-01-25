@@ -3,7 +3,6 @@ from time import time
 
 import numpy as np
 import biorbd
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,

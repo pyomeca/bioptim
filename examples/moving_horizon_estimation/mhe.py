@@ -5,7 +5,6 @@ from scipy.integrate import solve_ivp
 import casadi as cas
 import numpy as np
 import biorbd
-
 from bioptim import (
     Node,
     OptimalControlProgram,
