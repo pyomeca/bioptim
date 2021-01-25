@@ -57,19 +57,73 @@ def custom_x_bounds_min(current_shooting_point: int, n_elements: int, nb_shootin
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting
 
 
-def custom_x_bounds_max(current_shooting_point, n_elements, nb_shooting):
+def custom_x_bounds_max(current_shooting_point: int, n_elements: int, nb_shooting: int) -> np.ndarray:
+    """
+    The custom function for the x bound (this particular one mimics linear interpolation)
+
+    Parameters
+    ----------
+    current_shooting_point: int
+        The current point to return the value, it is defined between [0; nb_shooting] for the states
+        and [0; nb_shooting[ for the controls
+    n_elements: int
+        The number of rows of the matrix
+    nb_shooting: int
+        The number of shooting point
+
+    Returns
+    -------
+    The vector value of the bounds at current_shooting_point
+    """
+
     my_values = np.array([[10, 5]] * n_elements)
     # Linear interpolation created with custom function
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting
 
 
-def custom_u_bounds_min(current_shooting_point, n_elements, nb_shooting):
+def custom_u_bounds_min(current_shooting_point: int, n_elements: int, nb_shooting: int) -> np.ndarray:
+    """
+    The custom function for the x bound (this particular one mimics linear interpolation)
+
+    Parameters
+    ----------
+    current_shooting_point: int
+        The current point to return the value, it is defined between [0; nb_shooting] for the states
+        and [0; nb_shooting[ for the controls
+    n_elements: int
+        The number of rows of the matrix
+    nb_shooting: int
+        The number of shooting point
+
+    Returns
+    -------
+    The vector value of the bounds at current_shooting_point
+    """
+
     my_values = np.array([[-20, -10]] * n_elements)
     # Linear interpolation created with custom function
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting
 
 
-def custom_u_bounds_max(current_shooting_point, n_elements, nb_shooting):
+def custom_u_bounds_max(current_shooting_point: int, n_elements: int, nb_shooting: int) -> np.ndarray:
+    """
+    The custom function for the x bound (this particular one mimics linear interpolation)
+
+    Parameters
+    ----------
+    current_shooting_point: int
+        The current point to return the value, it is defined between [0; nb_shooting] for the states
+        and [0; nb_shooting[ for the controls
+    n_elements: int
+        The number of rows of the matrix
+    nb_shooting: int
+        The number of shooting point
+
+    Returns
+    -------
+    The vector value of the bounds at current_shooting_point
+    """
+
     my_values = np.array([[20, 10]] * n_elements)
     # Linear interpolation created with custom function
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting

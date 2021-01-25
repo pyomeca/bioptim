@@ -1,3 +1,19 @@
+"""
+This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
+and superimpose the same corner to a different marker at the end.
+It is designed to investigate the different way to define the initial guesses at each node sent to the solver
+
+All the types of interpolation are shown:
+InterpolationType.CONSTANT: All the values are the same at each node
+InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT: Same as constant, but have the first
+    and last nodes different. This is particularly useful when you want to fix the initial and
+    final position and leave the rest of the movement free.
+InterpolationType.LINEAR: The values are linearly interpolated between the first and last nodes.
+InterpolationType.EACH_FRAME: Each node values are specified
+InterpolationType.SPLINE: The values are interpolated from the first to last node using a cubic spline
+InterpolationType.CUSTOM: Provide a user-defined interpolation function
+"""
+
 import numpy as np
 import biorbd
 from bioptim import (
@@ -18,18 +34,57 @@ from bioptim import (
 )
 
 
-def custom_init_func(current_shooting_point, my_values, nb_shooting):
+def custom_init_func(current_shooting_point: int, my_values: np.ndarray, nb_shooting: int) -> np.ndarray:
+    """
+    The custom function for the x bound (this particular one mimics linear interpolation)
+
+    Parameters
+    ----------
+    current_shooting_point: int
+        The current point to return the value, it is defined between [0; nb_shooting] for the states
+        and [0; nb_shooting[ for the controls
+    my_values: np.ndarray
+        The values provided by the user
+    nb_shooting: int
+        The number of shooting point
+
+    Returns
+    -------
+    The vector value of the initial guess at current_shooting_point
+    """
+
     # Linear interpolation created with custom function
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting
 
 
 def prepare_ocp(
-    biorbd_model_path,
-    number_shooting_points,
-    final_time,
-    initial_guess=InterpolationType.CONSTANT,
+    biorbd_model_path: str,
+    number_shooting_points: int,
+    final_time: float,
+    initial_guess: InterpolationType = InterpolationType.CONSTANT,
     ode_solver=OdeSolver.RK4,
-):
+) -> OptimalControlProgram:
+    """
+    Prepare the program
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path of the biorbd model
+    number_shooting_points: int
+        The number of shooting points
+    final_time: float
+        The time at the final node
+    initial_guess: InterpolationType
+        The type of interpolation to use for the initial guesses
+    ode_solver: OdeSolver
+        The type of ode solver used
+
+    Returns
+    -------
+    The ocp ready to be solved
+    """
+
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -105,6 +160,10 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
+    """
+    Solve the program for all the InterpolationType available
+    """
+
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
         ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, initial_guess=initial_guess)
@@ -113,4 +172,4 @@ if __name__ == "__main__":
 
     # Print the last solution
     result_plot = ShowResult(ocp, sol)
-    result_plot.graphs()
+    result_plot.animate()

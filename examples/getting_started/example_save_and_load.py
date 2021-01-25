@@ -1,3 +1,8 @@
+"""
+This is a clone of the getting_started/pendulum.py example. It is designed to show how to create and solve a problem,
+and afterward, save it to the hard drive and reload it. It shows an example of both *.bo and *.bob method
+"""
+
 import pickle
 from time import time
 
@@ -11,8 +16,6 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     ShowResult,
-    Data,
-    Simulate,
     ObjectiveFcn,
     Objective,
     ObjectivePrinter,
@@ -21,14 +24,37 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path, final_time, number_shooting_points, nb_threads, use_sx=False, ode_solver=OdeSolver.RK4
-):
-    # --- Options --- #
+    biorbd_model_path: str,
+    final_time: float,
+    number_shooting_points: int,
+    nb_threads: int,
+    use_sx: bool = False,
+    ode_solver: OdeSolver = OdeSolver.RK4,
+) -> OptimalControlProgram:
+    """
+    Prepare the program
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path of the biorbd model
+    final_time: float
+        The time at the final node
+    number_shooting_points: int
+        The number of shooting points
+    nb_threads: int
+        The number of threads to use while using multithreading
+    ode_solver: OdeSolver
+        The type of ode solver used
+    use_sx: bool
+        If the program should be constructed using SX instead of MX (longer to create the CasADi graph, faster to solve)
+
+    Returns
+    -------
+    The ocp ready to be solved
+    """
+
     biorbd_model = biorbd.Model(biorbd_model_path)
-    tau_min, tau_max, tau_init = -100, 100, 0
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
-    n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE_DERIVATIVE)
@@ -42,15 +68,17 @@ def prepare_ocp(
     x_bounds[1, -1] = 3.14
 
     # Initial guess
+    n_q = biorbd_model.nbQ()
+    n_qdot = biorbd_model.nbQdot()
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
+    n_tau = biorbd_model.nbGeneralizedTorque()
+    tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[n_tau - 1, :] = 0
 
     u_init = InitialGuess([tau_init] * n_tau)
-
-    # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
@@ -69,6 +97,10 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
+    """
+    Create and solve a program. Then it saves it using the .bob and .bo method
+    """
+
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100, nb_threads=4)
 
     # --- Solve the program --- #
@@ -76,11 +108,6 @@ if __name__ == "__main__":
     sol, sol_iterations, sol_obj = ocp.solve(show_online_optim=True, return_iterations=True, return_objectives=True)
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
-
-    # --- Simulation --- #
-    # It is not an optimal control, it only apply a Runge Kutta at each nodes
-    Simulate.from_solve(ocp, sol, single_shoot=True)
-    Simulate.from_data(ocp, Data.get_data(ocp, sol), single_shoot=False)
 
     # --- Access to all iterations  --- #
     if sol_iterations:  # If the processor is too fast, this will be empty since it is attached to the update function

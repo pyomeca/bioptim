@@ -68,7 +68,7 @@ def test_pendulum_save_and_load(nb_threads, use_sx, ode_solver):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum_save_and_load.py"
+        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/example_save_and_load.py"
     )
     pendulum = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pendulum)

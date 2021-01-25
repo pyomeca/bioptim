@@ -40,7 +40,7 @@ class OptimalControlProgram:
     ----------
     version: dict
         The version of all the underlying software. This is important when loading a previous ocp
-    nb_phases: int
+    nb_phases: Union[int, list, tuple]
         The number of phases of the ocp
     original_values: A copy of the ocp as it is after defining everything
     J: MX
@@ -87,7 +87,7 @@ class OptimalControlProgram:
         self,
         biorbd_model: Union[str, biorbd.Model, list, tuple],
         dynamics_type: Union[Dynamics, DynamicsList],
-        n_shooting: int,
+        n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
         x_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
         u_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
@@ -759,7 +759,7 @@ class OptimalControlProgram:
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
         pen.add_or_replace(self, self.nlp[phase_idx], new_penalty)
 
-    def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters):
+    def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
         """
         The main user interface to add a new plot to the ocp
 

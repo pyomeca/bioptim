@@ -40,12 +40,16 @@ class Dynamics(OptionGeneric):
     """
 
     def __init__(
-        self, dynamics_type: DynamicsFcn, configure: Callable = None, dynamic_function: Callable = None, **params
+        self,
+        dynamics_type: Union[Callable, DynamicsFcn],
+        configure: Callable = None,
+        dynamic_function: Callable = None,
+        **params
     ):
         """
         Parameters
         ----------
-        dynamics_type: DynamicsFcn
+        dynamics_type: Union[Callable, DynamicsFcn]
             The chosen dynamic functions
         configure: function
             The configuration function provided by the user that declares the NLP (states and controls),

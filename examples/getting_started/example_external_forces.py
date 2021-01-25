@@ -1,5 +1,11 @@
+"""
+This trivial spring example targets to have the highest upward velocity. It is however only able to load a spring by
+pulling downward and afterward to let it go so it gains velocity. It is designed to show how one can use the external
+forces to interact with the body. External force can also be a np.array and added to the model.
+"""
+
+from casadi import MX
 import biorbd
-import casadi as cas
 from bioptim import (
     OptimalControlProgram,
     Dynamics,
@@ -11,17 +17,33 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     ShowResult,
+    NonLinearProgram
 )
 
-# This example load a mass on an upward spring and must have the greatest upward velocity at end point
-# while only being able to pull on the system (the upward velocity being created by the spring).
-# This example illustrates how you can use external forces that depends on the state of the system
 
+def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram) -> tuple:
+    """
+    The dynamics of the system using an external force (see custom_dynamics for more explanation)
 
-def custom_dynamic(states, controls, parameters, nlp):
+    Parameters
+    ----------
+    states: MX
+        The current states of the system
+    controls: MX
+        The current controls of the system
+    parameters: MX
+        The current parameters of the system
+    nlp: NonLinearProgram
+        A reference to the phase of the ocp
+
+    Returns
+    -------
+    The state derivative
+    """
+
     q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-    force_vector = cas.MX.zeros(6)
+    force_vector = MX.zeros(6)
     force_vector[5] = 100 * q[0] ** 2
 
     f_ext = biorbd.VecBiorbdSpatialVector()
@@ -31,7 +53,17 @@ def custom_dynamic(states, controls, parameters, nlp):
     return qdot, qddot
 
 
-def custom_configure(ocp, nlp):
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+    """
+    The configuration of the dynamics (see custom_dynamics for more explanation)
+
+    Parameters
+    ----------
+    ocp: OptimalControlProgram
+        A reference to the ocp
+    nlp: NonLinearProgram
+        A reference to the phase of the ocp
+    """
     Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
     Problem.configure_tau(nlp, as_states=False, as_controls=True)
     Problem.configure_forward_dyn_func(ocp, nlp, custom_dynamic)

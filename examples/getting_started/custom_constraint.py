@@ -1,5 +1,5 @@
 """
-This example is a trivial box that must superimpose one of its corner at a marker at the beginning of the movement
+This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
 and superimpose the same corner to a different marker at the end.
 It is designed to show how one can define its own custom constraints function if the provided ones are not
 sufficient.
@@ -8,11 +8,10 @@ More specifically this example reproduces the behavior of the SUPERIMPOSE_MARKER
 """
 
 import biorbd
-from casadi import vertcat
+from casadi import vertcat, MX
 from bioptim import (
     Node,
     OptimalControlProgram,
-    NonLinearProgram,
     Dynamics,
     DynamicsFcn,
     Objective,
@@ -27,7 +26,7 @@ from bioptim import (
 )
 
 
-def custom_func_track_markers(pn: PenaltyNode, first_marker_idx: int, second_marker_idx: int):
+def custom_func_track_markers(pn: PenaltyNode, first_marker_idx: int, second_marker_idx: int) -> MX:
     """
     The used-defined constraint function (This particular one mimics the ConstraintFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
@@ -36,13 +35,16 @@ def custom_func_track_markers(pn: PenaltyNode, first_marker_idx: int, second_mar
     ----------
     pn: PenaltyNode
         The penalty node elements
-    first_marker_idx
-    second_marker_idx
+    first_marker_idx: int
+        The index of the first marker in the bioMod
+    second_marker_idx: int
+        The index of the second marker in the bioMod
 
     Returns
     -------
-
+    The value that should be constrained in the MX format
     """
+
     nq = pn.nlp.shape["q"]
     val = []
     markers = biorbd.to_casadi_func("markers", pn.nlp.model.markers, pn.nlp.q)
@@ -54,7 +56,22 @@ def custom_func_track_markers(pn: PenaltyNode, first_marker_idx: int, second_mar
     return val
 
 
-def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4):
+def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.RK4) -> OptimalControlProgram:
+    """
+    Prepare the program
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path of the biorbd model
+    ode_solver: OdeSolver
+        The type of ode solver used
+
+    Returns
+    -------
+    The ocp ready to be solved
+    """
+
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -106,6 +123,10 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4):
 
 
 if __name__ == "__main__":
+    """
+    Solve and animate the solution
+    """
+
     model_path = "cube.bioMod"
     ocp = prepare_ocp(biorbd_model_path=model_path)
 

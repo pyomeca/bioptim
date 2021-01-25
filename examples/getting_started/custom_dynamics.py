@@ -1,7 +1,15 @@
 """
-File that shows an example of a custom dynamic.
-As an example, this custom constraint reproduces exactly the behavior of the TORQUE_DRIVEN problem_type and dynamic.
+This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
+and superimpose the same corner to a different marker at the end.
+It is designed to show how one can define its own custom dynamics function if the provided ones are not
+sufficient.
+
+More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE_DRIVEN using a custom dynamics
 """
+
+from typing import Union
+
+from casadi import MX, SX
 import biorbd
 from bioptim import (
     Node,
@@ -19,10 +27,32 @@ from bioptim import (
     InitialGuess,
     ShowResult,
     OdeSolver,
+    NonLinearProgram,
 )
 
 
-def custom_dynamic(states, controls, parameters, nlp):
+def custom_dynamic(
+    states: Union[MX, SX], controls: Union[MX, SX], parameters: Union[MX, SX], nlp: NonLinearProgram
+) -> tuple:
+    """
+    The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
+
+    Parameters
+    ----------
+    states: Union[MX, SX]
+        The state of the system
+    controls: Union[MX, SX]
+        The controls of the system
+    parameters: Union[MX, SX]
+        The parameters acting on the system
+    nlp: NonLinearProgram
+        A reference to the phase
+
+    Returns
+    -------
+    The derivative of the states in the tuple[Union[MX, SX]] format
+    """
+
     DynamicsFunctions.apply_parameters(parameters, nlp)
     q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
@@ -31,13 +61,50 @@ def custom_dynamic(states, controls, parameters, nlp):
     return qdot, qddot
 
 
-def custom_configure(ocp, nlp):
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+    """
+    Tell the program which variables are states and controls.
+    The user is expected to use the Problem.configure_xxx functions.
+
+    Parameters
+    ----------
+    ocp: OptimalControlProgram
+        A reference to the ocp
+    nlp: NonLinearProgram
+        A reference to the phase
+    """
+
     Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
     Problem.configure_tau(nlp, as_states=False, as_controls=True)
     Problem.configure_forward_dyn_func(ocp, nlp, custom_dynamic)
 
 
-def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolver.RK4, use_sx=False):
+def prepare_ocp(
+    biorbd_model_path: str,
+    problem_type_custom: bool = True,
+    ode_solver: OdeSolver = OdeSolver.RK4,
+    use_sx: bool = False,
+) -> OptimalControlProgram:
+    """
+    Prepare the program
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path of the biorbd model
+    problem_type_custom: bool
+        If the preparation should be done using the user-defined dynamic function or the normal TORQUE_DRIVEN.
+        They should return the same results
+    ode_solver: OdeSolver
+        The type of ode solver used
+    use_sx: bool
+        If the program should be constructed using SX instead of MX (longer to create the CasADi graph, faster to solve)
+
+    Returns
+    -------
+    The ocp ready to be solved
+    """
+
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -45,7 +112,6 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
     # Problem parameters
     number_shooting_points = 30
     final_time = 2
-    tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
@@ -71,6 +137,7 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
     x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
+    tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
 
     u_init = InitialGuess([tau_init] * biorbd_model.nbGeneralizedTorque())
@@ -94,6 +161,10 @@ def prepare_ocp(biorbd_model_path, problem_type_custom=True, ode_solver=OdeSolve
 
 
 if __name__ == "__main__":
+    """
+    Runs the optimization and animates it
+    """
+
     model_path = "cube.bioMod"
     ocp = prepare_ocp(biorbd_model_path=model_path)
 

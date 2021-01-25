@@ -62,7 +62,7 @@ class StateTransitionList(UniquePerPhaseOptionList):
         Print the StateTransitionList to the console
     """
 
-    def add(self, transition, **extra_arguments):
+    def add(self, transition: Any, **extra_arguments: Any):
         """
         Add a new StateTransition to the list
 

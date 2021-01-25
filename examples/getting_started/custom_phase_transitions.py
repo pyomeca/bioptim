@@ -1,3 +1,12 @@
+"""
+This example is a trivial multiphase box that must superimpose different markers at beginning and end of each
+phase with one of its corner
+It is designed to show how one can define its phase transition constraints if the provided ones are not sufficient.
+
+More specifically, this example mimics the behaviour of the most common StateTransitionFcn.CONTINUOUS
+"""
+
+from casadi import MX
 import biorbd
 from bioptim import (
     Node,
@@ -18,18 +27,44 @@ from bioptim import (
 )
 
 
-def custom_state_transition(state_pre, state_post, idx_1, idx_2):
+def custom_state_transition(state_pre: MX, state_post: MX, idx_1: int, idx_2: int) -> MX:
     """
-    Custom function returning the value to be added in the constraint or objective vector (if there is a weight higher
-    than zero) and whose value we want to be 0.
-    In this example of custom function for state transition, this custom function ensures continuity between states
-    whose index is between idx_1 and idx_2 (idx_2 not included).
+    The constraint of the transition. if idx_1 is the first state and idx_2 is the last, this function mimics the
+    StateTransitionFcn.CONTINUOUS. idx_1 and idx_2 are user defined extra variables and can be anything
+
+    Parameters
+    ----------
+    state_pre: MX
+        The states at the end of a phase
+    state_post: MX
+        The state at the beginning of the next phase
+    idx_1: int
+        The state first index of the slicing of the states
+    idx_2: int
+        The state last index of the slicing of the states
+
+    Returns
+    -------
+    The constraint such that: c(x) = 0
     """
+
     return state_pre[idx_1:idx_2] - state_post[idx_1:idx_2]
 
 
-def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK4):
-    # --- Options --- #
+def prepare_ocp(biorbd_model_path: str = "cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4) -> OptimalControlProgram:
+    """
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the bioMod
+    ode_solver: OdeSolver
+        The type of ode solver used
+
+    Returns
+    -------
+    The ocp ready to be solved
+    """
+
     # Model path
     biorbd_model = (
         biorbd.Model(biorbd_model_path),
@@ -117,8 +152,6 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK4):
     state_transitions.add(StateTransitionFcn.IMPACT, phase_pre_idx=1)
     state_transitions.add(custom_state_transition, phase_pre_idx=2, idx_1=1, idx_2=3)
     state_transitions.add(StateTransitionFcn.CYCLIC)
-
-    # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
