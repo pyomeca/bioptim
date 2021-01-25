@@ -16,7 +16,7 @@ def test_symmetry_by_construction(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "symmetry_by_construction",
-        str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_construction.py",
+        str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py",
     )
     symmetry_by_construction = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(symmetry_by_construction)

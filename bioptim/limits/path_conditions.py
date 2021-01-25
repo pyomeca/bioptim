@@ -488,8 +488,8 @@ class BoundsList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(self, min_bound: Union[PathCondition, np.ndarray] = None, max_bound: Union[PathCondition, np.ndarray] = None,
-            bounds: Bounds = None, **extra_arguments)
+    add(self, min_bound: Union[PathCondition, np.ndarray, list, tuple] = None,
+            max_bound: Union[PathCondition, np.ndarray, list, tuple] = None, bounds: Bounds = None, **extra_arguments)
         Add a new constraint to the list, either [min_bound AND max_bound] OR [bounds] should be defined
     __getitem__(self, i: int)
         Get the ith bounds of the list
@@ -501,8 +501,8 @@ class BoundsList(UniquePerPhaseOptionList):
 
     def add(
         self,
-        min_bound: Union[PathCondition, np.ndarray] = None,
-        max_bound: Union[PathCondition, np.ndarray] = None,
+        min_bound: Union[PathCondition, np.ndarray, list, tuple] = None,
+        max_bound: Union[PathCondition, np.ndarray, list, tuple] = None,
         bounds: Bounds = None,
         **extra_arguments,
     ):
@@ -511,9 +511,9 @@ class BoundsList(UniquePerPhaseOptionList):
 
         Parameters
         ----------
-        min_bound: Union[PathCondition, np.ndarray]
+        min_bound: Union[PathCondition, np.ndarray, list, tuple]
             The minimum path condition. If min_bound if defined, then max_bound must be so and bound should be None
-        max_bound: [PathCondition, np.ndarray]
+        max_bound: [PathCondition, np.ndarray, list, tuple]
             The maximum path condition. If max_bound if defined, then min_bound must be so and bound should be None
         bounds: Bounds
             Copy a Bounds. If bounds is defined, min_bound and max_bound should be None
@@ -730,7 +730,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(self, initial_guess: Union[PathCondition, np.ndarray], **extra_arguments)
+    add(self, initial_guess: Union[PathCondition, np.ndarray, list, tuple], **extra_arguments)
         Add a new initial guess to the list
     __getitem__(self, i)
         Get the ith initial guess of the list
@@ -740,13 +740,13 @@ class InitialGuessList(UniquePerPhaseOptionList):
         Print the InitialGuessList to the console
     """
 
-    def add(self, initial_guess: Union[InitialGuess, np.ndarray], **extra_arguments):
+    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple], **extra_arguments):
         """
         Add a new initial guess to the list
 
         Parameters
         ----------
-        initial_guess: Union[InitialGuess, np.ndarray]
+        initial_guess: Union[InitialGuess, np.ndarray, list, tuple]
             The initial guess to add
         extra_arguments: dict
             Any parameters to pass to the Bounds
