@@ -1,17 +1,24 @@
 """
-File that shows an example of a custom constraint.
-As an example, this custom constraint reproduces exactly the behavior of the SUPERIMPOSE_MARKERS constraint.
+This example is a trivial box that must superimpose one of its corner at a marker at the beginning of the movement
+and superimpose the same corner to a different marker at the end.
+It is designed to show how one can define its own custom constraints function if the provided ones are not
+sufficient.
+
+More specifically this example reproduces the behavior of the SUPERIMPOSE_MARKERS constraint.
 """
+
 import biorbd
 from casadi import vertcat
 from bioptim import (
     Node,
     OptimalControlProgram,
+    NonLinearProgram,
     Dynamics,
     DynamicsFcn,
     Objective,
     ObjectiveFcn,
     ConstraintList,
+    PenaltyNode,
     Bounds,
     QAndQDotBounds,
     InitialGuess,
@@ -20,11 +27,26 @@ from bioptim import (
 )
 
 
-def custom_func_track_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
-    nq = nlp.shape["q"]
+def custom_func_track_markers(pn: PenaltyNode, first_marker_idx: int, second_marker_idx: int):
+    """
+    The used-defined constraint function (This particular one mimics the ConstraintFcn.SUPERIMPOSE_MARKERS)
+    Except for the last two
+
+    Parameters
+    ----------
+    pn: PenaltyNode
+        The penalty node elements
+    first_marker_idx
+    second_marker_idx
+
+    Returns
+    -------
+
+    """
+    nq = pn.nlp.shape["q"]
     val = []
-    markers = biorbd.to_casadi_func("markers", nlp.model.markers, nlp.q)
-    for v in x:
+    markers = biorbd.to_casadi_func("markers", pn.nlp.model.markers, pn.nlp.q)
+    for v in pn.x:
         q = v[:nq]
         first_marker = markers(q)[:, first_marker_idx]
         second_marker = markers(q)[:, second_marker_idx]

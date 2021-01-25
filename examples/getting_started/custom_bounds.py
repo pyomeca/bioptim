@@ -1,3 +1,20 @@
+"""
+This example is a trivial box sent upward. It is designed to investigate the different
+bounds one can define in bioptim.
+Therefore, it shows how one can define the bounds, that is the minimal and maximal values
+of the state and control variables.
+
+All the types of interpolation are shown:
+InterpolationType.CONSTANT: All the values are the same at each node
+InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT: Same as constant, but have the first
+    and last nodes different. This is particularly useful when you want to fix the initial and
+    final position and leave the rest of the movement free.
+InterpolationType.LINEAR: The values are linearly interpolated between the first and last nodes.
+InterpolationType.EACH_FRAME: Each node values are specified
+InterpolationType.SPLINE: The values are interpolated from the first to last node using a cubic spline
+InterpolationType.CUSTOM: Provide a user-defined interpolation function
+"""
+
 import numpy as np
 import biorbd
 from bioptim import (
@@ -16,7 +33,25 @@ from bioptim import (
 )
 
 
-def custom_x_bounds_min(current_shooting_point, n_elements, nb_shooting):
+def custom_x_bounds_min(current_shooting_point: int, n_elements: int, nb_shooting: int) -> np.ndarray:
+    """
+    The custom function for the x bound (this particular one mimics linear interpolation)
+
+    Parameters
+    ----------
+    current_shooting_point: int
+        The current point to return the value, it is defined between [0; nb_shooting] for the states
+        and [0; nb_shooting[ for the controls
+    n_elements: int
+        The number of rows of the matrix
+    nb_shooting: int
+        The number of shooting point
+
+    Returns
+    -------
+    The vector value of the bounds at current_shooting_point
+    """
+
     my_values = np.array([[-10, -5]] * n_elements)
     # Linear interpolation created with custom function
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting
@@ -41,12 +76,30 @@ def custom_u_bounds_max(current_shooting_point, n_elements, nb_shooting):
 
 
 def prepare_ocp(
-    biorbd_model_path,
-    number_shooting_points,
-    final_time,
-    interpolation_type=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-):
-    # --- Options --- #
+    biorbd_model_path: str,
+    number_shooting_points: int,
+    final_time: float,
+    interpolation_type: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+) -> OptimalControlProgram:
+    """
+    Prepare the ocp for the specified interpolation type
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the biorbd model
+    number_shooting_points: int
+        The number of shooting point
+    final_time: float
+        The movement time
+    interpolation_type: InterpolationType
+        The requested InterpolationType
+
+    Returns
+    -------
+    The OCP fully prepared and ready to be solved
+    """
+
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
     nq = biorbd_model.nbQ()
@@ -119,7 +172,6 @@ def prepare_ocp(
     # Initial guess
     x_init = InitialGuess([0] * (nq + nqdot))
     u_init = InitialGuess([tau_init] * ntau)
-    # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
@@ -136,6 +188,10 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
+    """
+    Show all the InterpolationType implemented in bioptim
+    """
+
     print(f"Show the bounds")
     for interpolation_type in InterpolationType:
         print(f"Solving problem using {interpolation_type} bounds")
