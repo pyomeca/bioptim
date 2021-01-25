@@ -67,7 +67,7 @@ def test_penalty_minimize_time(penalty_origin, value):
     ocp = prepare_test_ocp()
     penalty_type = penalty_origin.MINIMIZE_TIME
     penalty = Objective(penalty_type)
-    penalty_type.value[0](penalty, ocp, ocp.nlp[0], [], [], [], [])
+    penalty_type.value[0](penalty, PenaltyNode(ocp, ocp.nlp[0], [], [], [], []))
 
     np.testing.assert_almost_equal(
         ocp.nlp[0].J[0][0]["val"],

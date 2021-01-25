@@ -274,7 +274,7 @@ def test_acados_options(cost_type):
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/pendulum.bioMod",
         final_time=3,
-        number_shooting_points=12,
+        n_shooting=12,
     )
 
     tol = [1e-1, 1e-0, 1e1]
@@ -305,7 +305,7 @@ def test_acados_fail_external():
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/pendulum.bioMod",
         final_time=1,
-        number_shooting_points=2,
+        n_shooting=2,
     )
 
     solver_options = {"cost_type": "EXTERNAL"}
