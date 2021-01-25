@@ -1,3 +1,13 @@
+"""
+This is an example of muscle activation/skin marker OR state tracking.
+Random data are created by generating a random set of muscle activations and then by generating the kinematics
+associated with these data. The solution is trivial since no noise is applied to the data. Still, it is a relevant
+example to show how to track data using a musculoskeletal model. In real situation, the muscle activation
+and kinematics would indeed be acquired via data acquisition devices
+
+The difference between muscle activation and excitation is that the latter is the derivative of the former
+"""
+
 from scipy.integrate import solve_ivp
 import numpy as np
 import biorbd
@@ -7,7 +17,6 @@ from bioptim import (
     OptimalControlProgram,
     NonLinearProgram,
     BidirectionalMapping,
-    Mapping,
     Data,
     DynamicsList,
     DynamicsFcn,
@@ -21,13 +30,31 @@ from bioptim import (
 )
 
 
-def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=True):
+def generate_data(biorbd_model: biorbd.Model, final_time: float, nb_shooting: int, use_residual_torque: bool = True) -> tuple:
+    """
+    Generate random data. If np.random.seed is defined before, it will always return the same results
+
+    Parameters
+    ----------
+    biorbd_model: biorbd.Model
+        The loaded biorbd model
+    final_time: float
+        The time at final node
+    nb_shooting: int
+        The number of shooting points
+    use_residual_torque: bool
+        If residual torque are present or not in the dynamics
+
+    Returns
+    -------
+    The time, marker, states and controls of the program. The ocp will try to track these
+    """
+
     # Aliases
     nb_q = biorbd_model.nbQ()
     nb_qdot = biorbd_model.nbQdot()
     nb_tau = biorbd_model.nbGeneralizedTorque()
     nb_mus = biorbd_model.nbMuscleTotal()
-    nb_markers = biorbd_model.nbMarkers()
     dt = final_time / nb_shooting
 
     if use_residual_torque:
@@ -91,20 +118,44 @@ def generate_data(biorbd_model, final_time, nb_shooting, use_residual_torque=Tru
 
 
 def prepare_ocp(
-    biorbd_model,
-    final_time,
-    nb_shooting,
-    markers_ref,
-    activations_ref,
-    q_ref,
-    kin_data_to_track="markers",
-    use_residual_torque=True,
-    ode_solver=OdeSolver.RK4,
-):
-    # Problem parameters
-    tau_min, tau_max, tau_init = -100, 100, 0
-    activation_min, activation_max, activation_init = 0, 1, 0.5
-    nq = biorbd_model.nbQ()
+    biorbd_model: biorbd.Model,
+    final_time: float,
+    nb_shooting: int,
+    markers_ref: np.ndarray,
+    activations_ref: np.ndarray,
+    q_ref: np.ndarray,
+    kin_data_to_track: str = "markers",
+    use_residual_torque: bool = True,
+    ode_solver: OdeSolver = OdeSolver.RK4,
+) -> OptimalControlProgram:
+    """
+    Prepare the ocp to solve
+
+    Parameters
+    ----------
+    biorbd_model: biorbd.Model
+        The loaded biorbd model
+    final_time: float
+        The time at final node
+    nb_shooting: int
+        The number of shooting points
+    markers_ref: np.ndarray
+        The marker to track if 'markers' is chosen in kin_data_to_track
+    activations_ref: np.ndarray
+        The muscle activation to track
+    q_ref: np.ndarray
+        The state to track if 'q' is chosen in kin_data_to_track
+    kin_data_to_track: str
+        The type of kin data to track ('markers' or 'q')
+    use_residual_torque: bool
+        If residual torque are present or not in the dynamics
+    ode_solver: OdeSolver
+        The ode solver to use
+
+    Returns
+    -------
+    The OptimalControlProgram ready to solve
+    """
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -133,6 +184,7 @@ def prepare_ocp(
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     # Due to unpredictable movement of the forward dynamics that generated the movement, the bound must be larger
+    nq = biorbd_model.nbQ()
     x_bounds[0].min[:nq, :] = -2 * np.pi
     x_bounds[0].max[:nq, :] = 2 * np.pi
 
@@ -141,9 +193,11 @@ def prepare_ocp(
     x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
+    activation_min, activation_max, activation_init = 0, 1, 0.5
     u_bounds = BoundsList()
     u_init = InitialGuessList()
     if use_residual_torque:
+        tau_min, tau_max, tau_init = -100, 100, 0
         u_bounds.add(
             [tau_min] * biorbd_model.nbGeneralizedTorque() + [activation_min] * biorbd_model.nbMuscleTotal(),
             [tau_max] * biorbd_model.nbGeneralizedTorque() + [activation_max] * biorbd_model.nbMuscleTotal(),
@@ -169,6 +223,10 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
+    """
+    Generate random data, then create a tracking problem, and finally solve it and plot some relevant information
+    """
+
     # Define the problem
     biorbd_model = biorbd.Model("arm26.bioMod")
     final_time = 2
