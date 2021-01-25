@@ -74,13 +74,13 @@ def test_plot_graphs_multi_phases():
     # Load graphs_one_phase
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/multiphase_track_markers.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/getting_started/example_multiphase.py"
     )
     graphs_multi_phases = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(graphs_multi_phases)
 
     ocp = graphs_multi_phases.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod"
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod"
     )
     sol = ocp.solve()
 

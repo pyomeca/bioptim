@@ -1,3 +1,10 @@
+"""
+This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement and
+a the at different marker at the end of each phase. Moreover a constraint on the rotation is imposed on the cube.
+It is designed to show how one can define a multiphase optimal control program
+"""
+
+
 import biorbd
 from bioptim import (
     Node,
@@ -16,9 +23,24 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK4, long_optim=False):
-    # --- Options --- #
-    # Model path
+def prepare_ocp(biorbd_model_path: str = "cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4, long_optim: bool = False) -> OptimalControlProgram:
+    """
+    Prepare the ocp
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the bioMod
+    ode_solver: OdeSolver
+        The ode solve to use
+    long_optim: bool
+        If the solver should solve the precise optimization (500 shooting points) or the approximate (50 points)
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
 
     # Problem parameters
@@ -95,7 +117,11 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK4, long_
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(long_optim=False)
+    """
+    Defines a multiphase ocp and animate the results
+    """
+
+    ocp = prepare_ocp(long_optim=True)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
