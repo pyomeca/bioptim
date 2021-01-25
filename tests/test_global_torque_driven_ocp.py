@@ -379,68 +379,6 @@ def test_multiphase_track_markers(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_external_forces(ode_solver):
-    # Load external_forces
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "external_forces", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/external_forces.py"
-    )
-    external_forces = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(external_forces)
-
-    ocp = external_forces.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube_with_forces.bioMod",
-        ode_solver=ode_solver,
-    )
-    sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 9875.88768746912)
-
-    # Check constraints
-    g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (246, 1))
-    np.testing.assert_almost_equal(g, np.zeros((246, 1)))
-
-    # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.71322593, 0, 0)))
-    np.testing.assert_almost_equal(tau[:, 10], np.array((0, 7.71100122, 0, 0)))
-    np.testing.assert_almost_equal(tau[:, 20], np.array((0, 5.70877651, 0, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((0, 3.90677425, 0, 0)))
-
-    if ode_solver == OdeSolver.IRK:
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)), decimal=5)
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 2, 0, 0)), decimal=5)
-
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)), decimal=5)
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)), decimal=5)
-    else:
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 2, 0, 0)))
-
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, True)
-
-    # simulate
-    TestUtils.simulate(sol, ocp)
-
-
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_marker_2D_pendulum(ode_solver):
     # Load muscle_activations_contact_tracker
     PROJECT_FOLDER = Path(__file__).parent / ".."

@@ -1,8 +1,6 @@
 version	3
 
-//__________________________________
-// Informations about Spring segment
-// Segment
+
 segment	Spring
     RT 0 0 0 xyz 0 0 0
     mass	0.000001
@@ -26,8 +24,7 @@ endsegment
 		position	0	0	-1
 	endmarker	
 
-//_________________________________
-// Informations about Point segment
+
 segment	Point
     RT 0 0 0 xyz 0 0 0
     translations	z

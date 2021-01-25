@@ -1,6 +1,5 @@
 version 4
 
-// DEFINITION DU SEGMENTS
 
 // Seg1
     segment Seg1
@@ -33,49 +32,14 @@ version 4
     mesh 1 -1 -1
 endsegment
 
-// Marker on Seg1
+    // Marker on Seg1
     marker m0
         parent Seg1
         position 0 0 0
     endmarker
 
-// Ground
-    segment ground
-    endsegment
 
-// Markers on ground
-    marker m1
-        parent ground
-        position 1 0 0
-    endmarker
-
-    marker m2
-        parent ground
-        position 2 0 0
-    endmarker
-
-    marker m3
-        parent ground
-        position 1 0 2
-    endmarker
-
-// Markers on ground
-    marker m1
-        parent ground
-        position 1 0 0
-    endmarker
-
-    marker m2
-        parent ground
-        position 2 0 0
-    endmarker
-
-    marker m3
-        parent ground
-        position 1 0 2
-    endmarker
-
-// Actuators Seg1
+    // Actuators Seg1
     actuator    Seg1
         type    Constant
         dof    TransX
@@ -88,6 +52,7 @@ endsegment
         direction    negative
         Tmax    5.000000
     endactuator
+
     actuator    Seg1
         type    Constant
         dof    TransZ
@@ -100,6 +65,7 @@ endsegment
         direction    negative
         Tmax    5.000000
     endactuator
+
     actuator    Seg1
         type    Constant
         dof    RotY
@@ -112,3 +78,21 @@ endsegment
         direction    negative
         Tmax    5.000000
     endactuator
+
+
+segment ground
+endsegment
+
+    // Markers on ground
+    marker m1
+        parent ground
+        position 1 0 0
+    endmarker
+    marker m2
+        parent ground
+        position 2 0 0
+    endmarker
+    marker m3
+        parent ground
+        position 1 0 2
+    endmarker

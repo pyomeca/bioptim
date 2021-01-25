@@ -1,114 +1,123 @@
 """
-This trivial spring example targets to have the highest upward velocity. It is however only able to load a spring by
-pulling downward and afterward to let it go so it gains velocity. It is designed to show how one can use the external
-forces to interact with the body. External force can also be a np.array and added to the model.
+This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
+and superimpose the same corner to a different marker at the end. While doing so, a force pushes the box upward.
+The solver must minimize the force needed to lift the box while reaching the marker in time.
+It is designed to show how to user external forces. An example of external forces that depends on the state (for
+example a spring) can be found at 'examples/torque_driven_ocp/spring_load.py'
+
+Please note that the point of application of the external forces are defined in the bioMod file by the
+externalforceindex tag in segment and is acting at the center of mass the this particular segment. Please note that
+this segment MUST have at least one degree of freedom defined (translations and/or rotations). Otherwise, the
+external_force is silently ignore. Bioptim expect external_forces to be a list (one element for each phase) of
+np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform
+(defined by the externalforceindex) for each node n
 """
 
-from casadi import MX
+import numpy as np
 import biorbd
 from bioptim import (
+    Node,
     OptimalControlProgram,
-    Dynamics,
-    Problem,
-    Objective,
-    DynamicsFunctions,
+    DynamicsList,
+    DynamicsFcn,
+    ObjectiveList,
     ObjectiveFcn,
-    Bounds,
+    ConstraintList,
+    ConstraintFcn,
+    BoundsList,
     QAndQDotBounds,
-    InitialGuess,
+    InitialGuessList,
     ShowResult,
-    NonLinearProgram
+    OdeSolver,
 )
 
 
-def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram) -> tuple:
+def prepare_ocp(biorbd_model_path: str = "cube_with_forces.bioMod", ode_solver: OdeSolver = OdeSolver.RK4) -> OptimalControlProgram:
     """
-    The dynamics of the system using an external force (see custom_dynamics for more explanation)
+    Prepare the ocp
 
     Parameters
     ----------
-    states: MX
-        The current states of the system
-    controls: MX
-        The current controls of the system
-    parameters: MX
-        The current parameters of the system
-    nlp: NonLinearProgram
-        A reference to the phase of the ocp
+    biorbd_model_path: str
+        The path to the bioMod
+    ode_solver: OdeSolver
+        The ode solver to use
 
     Returns
     -------
-    The state derivative
+    The OptimalControlProgram ready to be solved
     """
 
-    q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
+    biorbd_model = biorbd.Model(biorbd_model_path)
 
-    force_vector = MX.zeros(6)
-    force_vector[5] = 100 * q[0] ** 2
+    # Problem parameters
+    number_shooting_points = 30
+    final_time = 2
 
-    f_ext = biorbd.VecBiorbdSpatialVector()
-    f_ext.append(biorbd.SpatialVector(force_vector))
-    qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
+    # Add objective functions
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
 
-    return qdot, qddot
+    # Dynamics
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
+    # Constraints
+    constraints = ConstraintList()
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
-    """
-    The configuration of the dynamics (see custom_dynamics for more explanation)
+    # External forces. external_forces is of len 1 because there is only one phase.
+    # The array inside it is 6x2x30 since there is [Mx, My, Mz, Fx, Fy, Fz] for the two externalforceindex for each node
+    external_forces = [
+        np.repeat(
+            np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T[:, :, np.newaxis], number_shooting_points, axis=2
+        )
+    ]
 
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase of the ocp
-    """
-    Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
-    Problem.configure_tau(nlp, as_states=False, as_controls=True)
-    Problem.configure_forward_dyn_func(ocp, nlp, custom_dynamic)
+    # Path constraint
+    x_bounds = BoundsList()
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds[0][3:6, [0, -1]] = 0
 
+    # Initial guess
+    x_init = InitialGuessList()
+    x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
-# Model path
-m = biorbd.Model("mass_point.bioMod")
-m.setGravity(biorbd.Vector3d(0, 0, 0))
+    # Define control path constraint
+    u_bounds = BoundsList()
+    tau_min, tau_max, tau_init = -100, 100, 0
+    u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
 
-# Add objective functions (high upward velocity at end point)
-objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=1, weight=-1)
+    u_init = InitialGuessList()
+    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
 
-# Dynamics
-dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic)
-
-# Path constraint
-x_bounds = QAndQDotBounds(m)
-x_bounds[:, 0] = [0] * m.nbQ() + [0] * m.nbQdot()
-x_bounds.min[:, 1] = [-1] * m.nbQ() + [-100] * m.nbQdot()
-x_bounds.max[:, 1] = [1] * m.nbQ() + [100] * m.nbQdot()
-x_bounds.min[:, 2] = [-1] * m.nbQ() + [-100] * m.nbQdot()
-x_bounds.max[:, 2] = [1] * m.nbQ() + [100] * m.nbQdot()
-
-# Initial guess
-x_init = InitialGuess([0] * (m.nbQ() + m.nbQdot()))
-
-# Define control path constraint
-u_bounds = Bounds([-100] * m.nbGeneralizedTorque(), [0] * m.nbGeneralizedTorque())
-
-u_init = InitialGuess([0] * m.nbGeneralizedTorque())
-ocp = OptimalControlProgram(
-        m,
+    return OptimalControlProgram(
+        biorbd_model,
         dynamics,
-        n_shooting=30,
-        phase_time=0.5,
-        x_init=x_init,
-        u_init=u_init,
-        x_bounds=x_bounds,
-        u_bounds=u_bounds,
+        number_shooting_points,
+        final_time,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
         objective_functions=objective_functions,
+        constraints=constraints,
+        external_forces=external_forces,
+        ode_solver=ode_solver,
     )
 
-# --- Solve the program --- #
-sol = ocp.solve(show_online_optim=True)
 
-# --- Show results --- #
-result = ShowResult(ocp, sol)
-result.animate()
+if __name__ == "__main__":
+    """
+    Solve an ocp with external forces and animates the solution
+    """
+
+    ocp = prepare_ocp()
+
+    # --- Solve the program --- #
+    sol = ocp.solve(show_online_optim=True)
+
+    # --- Show results --- #
+    result = ShowResult(ocp, sol)
+    result.animate()

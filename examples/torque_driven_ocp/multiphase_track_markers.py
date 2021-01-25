@@ -79,8 +79,6 @@ def prepare_ocp(biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK4, long_
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
 
-    # ------------- #
-
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
