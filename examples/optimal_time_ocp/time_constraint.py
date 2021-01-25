@@ -1,3 +1,9 @@
+"""
+This is a clone of the example/getting_started/pendulum.py where a pendulum must be balance. The difference is that
+the time to perform the task is now free for the solver to change. This example shows how to define such an optimal
+control program
+"""
+
 import biorbd
 from bioptim import (
     OptimalControlProgram,
@@ -17,13 +23,31 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min, time_max, ode_solver=OdeSolver.RK4):
-    # --- Options --- #
+def prepare_ocp(biorbd_model_path: str, final_time: float, number_shooting_points: int, time_min: float, time_max: float, ode_solver: OdeSolver = OdeSolver.RK4) -> OptimalControlProgram:
+    """
+    Prepare the optimal control program
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the bioMod
+    final_time: float
+        The initial guess for the final time
+    number_shooting_points: int
+        The number of shooting points
+    time_min: float
+        The minimal time the phase can have
+    time_max: float
+        The maximal time the phase can have
+    ode_solver: OdeSolver
+        The ode solver to use
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
     biorbd_model = biorbd.Model(biorbd_model_path)
-    tau_min, tau_max, tau_init = -100, 100, 0
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
-    n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
@@ -35,6 +59,8 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min,
     constraints = Constraint(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min, max_bound=time_max)
 
     # Path constraint
+    n_q = biorbd_model.nbQ()
+    n_qdot = biorbd_model.nbQdot()
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, [0, -1]] = 0
     x_bounds[n_q - 1, -1] = 3.14
@@ -43,6 +69,8 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min,
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
+    n_tau = biorbd_model.nbGeneralizedTorque()
+    tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[n_tau - 1, :] = 0
 
@@ -66,6 +94,10 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, time_min,
 
 
 if __name__ == "__main__":
+    """
+    Prepare, solve and animate a free time ocp
+    """
+
     time_min = 0.6
     time_max = 1
     ocp = prepare_ocp(

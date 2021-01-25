@@ -27,10 +27,10 @@ class Constraint(PenaltyOption):
     def __init__(
         self,
         constraint,
-        min_bound: np.ndarray = None,
-        max_bound: np.ndarray = None,
+        min_bound: Union[np.ndarray, float] = None,
+        max_bound: Union[np.ndarray, float] = None,
         phase: int = 0,
-        **params,
+        **params: Any,
     ):
         """
         Parameters

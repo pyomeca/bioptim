@@ -65,14 +65,14 @@ class PenaltyOption(OptionGeneric):
 
     def __init__(
         self,
-        penalty,
+        penalty: Any,
         phase: int = 0,
         node: Node = Node.DEFAULT,
         target: np.ndarray = None,
         quadratic: bool = None,
         index: int = None,
         custom_function: Callable = None,
-        **params,
+        **params: Any,
     ):
         """
         Parameters

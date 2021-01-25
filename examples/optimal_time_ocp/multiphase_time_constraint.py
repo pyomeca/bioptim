@@ -1,3 +1,9 @@
+"""
+This example is a trivial multiphase box that must superimpose different markers at beginning and end of each
+phase with one of its corner. The time is free for each phase
+It is designed to show how one can define a multi-phase ocp problem with free time.
+"""
+
 import biorbd
 from bioptim import (
     Node,
@@ -18,8 +24,32 @@ from bioptim import (
 
 
 def prepare_ocp(
-    final_time, time_min, time_max, number_shooting_points, biorbd_model_path="cube.bioMod", ode_solver=OdeSolver.RK4
-):
+    final_time: list, time_min: list, time_max: list, number_shooting_points: list, biorbd_model_path: str = "cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4
+) -> OptimalControlProgram:
+    """
+    Prepare the optimal control program. This example can be called as a normal single phase (all list len equals to 1)
+    or as a three phases (all list len equals to 3)
+
+    Parameters
+    ----------
+    final_time: list
+        The initial guess for the final time of each phase
+    time_min: list
+        The minimal time for each phase
+    time_max: list
+        The maximal time for each phase
+    number_shooting_points: list
+        The number of shooting points for each phase
+    biorbd_model_path: str
+        The path to the bioMod
+    ode_solver: OdeSolver
+        The ode solver to use
+
+    Returns
+    -------
+    The multiphase OptimalControlProgram ready to be solved
+    """
+
     # --- Options --- #
     nb_phases = len(number_shooting_points)
     if nb_phases != 1 and nb_phases != 3:
@@ -122,10 +152,14 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
-    final_time = (2, 5, 4)
+    """
+    Run a multiphase problem with free time phases and animate the results
+    """
+
+    final_time = [2, 5, 4]
     time_min = [1, 3, 0.1]
     time_max = [2, 4, 0.8]
-    ns = (20, 30, 20)
+    ns = [20, 30, 20]
     ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, number_shooting_points=ns)
 
     # --- Solve the program --- #

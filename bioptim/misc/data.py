@@ -199,7 +199,7 @@ class Data:
         integrate: bool = False,
         interpolate_nb_frames: int = -1,
         concatenate: bool = True,
-    ) -> list:
+    ) -> dict:
         """
         Comprehensively parse the data from a solution
 
