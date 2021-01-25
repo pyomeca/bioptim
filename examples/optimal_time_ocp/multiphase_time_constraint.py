@@ -24,7 +24,12 @@ from bioptim import (
 
 
 def prepare_ocp(
-    final_time: list, time_min: list, time_max: list, number_shooting_points: list, biorbd_model_path: str = "cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4
+    final_time: list,
+    time_min: list,
+    time_max: list,
+    number_shooting_points: list,
+    biorbd_model_path: str = "cube.bioMod",
+    ode_solver: OdeSolver = OdeSolver.RK4,
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program. This example can be called as a normal single phase (all list len equals to 1)

@@ -30,7 +30,9 @@ from bioptim import (
 )
 
 
-def generate_data(biorbd_model: biorbd.Model, final_time: float, nb_shooting: int, use_residual_torque: bool = True) -> tuple:
+def generate_data(
+    biorbd_model: biorbd.Model, final_time: float, nb_shooting: int, use_residual_torque: bool = True
+) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
 

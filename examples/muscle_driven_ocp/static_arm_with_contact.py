@@ -22,7 +22,13 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path: str, final_time: float, number_shooting_points: int, weight: float, ode_solver: OdeSolver = OdeSolver.RK4) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path: str,
+    final_time: float,
+    number_shooting_points: int,
+    weight: float,
+    ode_solver: OdeSolver = OdeSolver.RK4,
+) -> OptimalControlProgram:
     """
     Prepare the ocp
 
@@ -100,7 +106,9 @@ if __name__ == "__main__":
     Prepare and solve and animate a reaching task ocp
     """
 
-    ocp = prepare_ocp(biorbd_model_path="arm26_with_contact.bioMod", final_time=3, number_shooting_points=50, weight=1000)
+    ocp = prepare_ocp(
+        biorbd_model_path="arm26_with_contact.bioMod", final_time=3, number_shooting_points=50, weight=1000
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

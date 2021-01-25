@@ -1081,9 +1081,7 @@ class PenaltyFunctionAbstract:
                 data_to_track = np.repeat(data_to_track, target_size[1], axis=1)
 
             if data_to_track.shape != target_size:
-                raise RuntimeError(
-                    f"target {data_to_track.shape} does not correspond to expected size {target_size}"
-                )
+                raise RuntimeError(f"target {data_to_track.shape} does not correspond to expected size {target_size}")
         else:
             raise RuntimeError("target is None and that should not happen, please contact a developer")
         return data_to_track

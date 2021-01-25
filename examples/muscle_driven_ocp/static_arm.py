@@ -21,7 +21,13 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path: str, final_time: float, number_shooting_points: int, weight: float, ode_solver: OdeSolver = OdeSolver.RK4) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path: str,
+    final_time: float,
+    number_shooting_points: int,
+    weight: float,
+    ode_solver: OdeSolver = OdeSolver.RK4,
+) -> OptimalControlProgram:
     """
     Prepare the ocp
 

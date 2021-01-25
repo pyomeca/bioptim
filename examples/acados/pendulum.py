@@ -24,7 +24,9 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int, use_sx: bool =True) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path: str, final_time: float, n_shooting: int, use_sx: bool = True
+) -> OptimalControlProgram:
     """
     The initialization of an ocp
 
