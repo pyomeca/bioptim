@@ -1,3 +1,12 @@
+"""
+TODO: Please confirm this example
+A very simple yet meaningful optimal control program consisting in a pendulum starting downward and ending upward
+while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
+
+This simple example is a good place to start investigating bioptim using ACADOS as it describes the most common
+dynamics out there (the joint torque driven), it defines an objective function and some boundaries and initial guesses
+"""
+
 import biorbd
 import numpy as np
 from bioptim import (
@@ -15,13 +24,31 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_sx=True):
-    # --- Options --- #
+def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int, use_sx: bool =True) -> OptimalControlProgram:
+    """
+    The initialization of an ocp
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the biorbd model
+    final_time: float
+        The time in second required to perform the task
+    n_shooting: int
+        The number of shooting points to define int the direct multiple shooting program
+    use_sx: bool
+        If the ocp should be built with SX. Please note that ACADOS requires SX
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
     biorbd_model = biorbd.Model(biorbd_model_path)
     n_q = biorbd_model.nbQ()
     n_qdot = biorbd_model.nbQdot()
 
-    data_to_track = np.zeros((number_shooting_points + 1, n_q + n_qdot))
+    data_to_track = np.zeros((n_shooting + 1, n_q + n_qdot))
     data_to_track[:, 1] = 3.14
 
     # Add objective functions
@@ -66,7 +93,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_sx=Tr
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -78,7 +105,11 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, use_sx=Tr
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=41)
+    """
+    If pendulum is run as a script, it will perform the optimization using ACADOS and animates it
+    """
+
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=41)
 
     # --- Solve the program --- #
     sol = ocp.solve(solver=Solver.ACADOS)

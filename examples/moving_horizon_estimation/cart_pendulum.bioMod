@@ -18,7 +18,7 @@ segment    Char
     mesh   -0.1000   0    0.1
 endsegment
 
-// Markers
+    // Markers
     marker  root1
         parent  Char
         position    -0.1  0  0.1
@@ -29,10 +29,6 @@ endsegment
     endmarker
 
 
-
-
-
-// Segment #2
 segment    Arm
         parent    Char
         RTinMatrix    1
@@ -57,7 +53,7 @@ segment    Arm
         mesh    -0.05   0 0.05
 endsegment
 
-// Markers
+    // Markers
     marker  armRoot
         parent Arm
         position    -0.0   0 0.0
@@ -66,16 +62,7 @@ endsegment
         parent Arm
         position    0.05   0   0.05
     endmarker
-
     marker  arm2
         parent Arm
         position    0.05   0   -1
     endmarker
-
-
-
-
-
-
-
-

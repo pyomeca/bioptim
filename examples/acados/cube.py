@@ -1,6 +1,5 @@
 """
-TODO: Describe what this file does
-
+TODO: Cleaning and documentation
 """
 
 import biorbd

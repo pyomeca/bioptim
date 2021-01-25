@@ -1,3 +1,8 @@
+"""
+TODO: Cleaning and documentation
+"""
+
+
 import biorbd
 from time import time
 import numpy as np

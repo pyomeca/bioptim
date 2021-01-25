@@ -1,3 +1,7 @@
+"""
+TODO: Cleaning and documentation
+"""
+
 import time
 
 import matplotlib.pyplot as plt
