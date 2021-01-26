@@ -72,10 +72,10 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
         dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
         objective_functions=objective_functions,
     )
 
