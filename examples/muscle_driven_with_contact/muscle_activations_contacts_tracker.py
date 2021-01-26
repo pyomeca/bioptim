@@ -33,7 +33,7 @@ spec.loader.exec_module(data_to_track)
 
 
 def prepare_ocp(
-    model_path, phase_time, number_shooting_points, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK4
+    model_path, phase_time, n_shooting, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK4
 ):
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -52,18 +52,18 @@ def prepare_ocp(
     dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT)
 
     # Path constraint
-    nb_q = biorbd_model.nbQ()
-    nb_qdot = nb_q
+    n_q = biorbd_model.nbQ()
+    n_qdot = n_q
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize x_bounds
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
+    x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add(pose_at_first_node + [0] * nb_qdot)
+    x_init.add(pose_at_first_node + [0] * n_qdot)
 
     # Define control path constraint
     u_bounds = BoundsList()
@@ -80,7 +80,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         phase_time,
         x_init,
         u_init,
@@ -101,14 +101,14 @@ if __name__ == "__main__":
     ocp_to_track = data_to_track.prepare_ocp(
         model_path=model_path,
         phase_time=final_time,
-        number_shooting_points=ns,
+        n_shooting=ns,
         min_bound=50,
         max_bound=np.inf,
     )
     sol_to_track = ocp_to_track.solve()
     states, controls = Data.get_data(ocp_to_track, sol_to_track)
-    q, q_dot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
-    x = np.concatenate((q, q_dot))
+    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
+    x = np.concatenate((q, qdot))
     u = np.concatenate((tau, mus))
     contact_forces_ref = np.array(ocp_to_track.nlp[0].contact_forces_func(x[:, :-1], u[:, :-1], []))
     muscle_activations_ref = mus
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     ocp = prepare_ocp(
         model_path=model_path,
         phase_time=final_time,
-        number_shooting_points=ns,
+        n_shooting=ns,
         muscle_activations_ref=muscle_activations_ref[:, :-1],
         contact_forces_ref=contact_forces_ref,
     )

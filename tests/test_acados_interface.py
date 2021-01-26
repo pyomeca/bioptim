@@ -326,7 +326,7 @@ def test_acados_fail_lls():
     ocp = arm.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/arm26.bioMod",
         final_time=1,
-        number_shooting_points=2,
+        n_shooting=2,
         use_sx=True,
     )
 
@@ -362,7 +362,7 @@ def test_acados_custom_dynamics(problem_type_custom):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((2, 0, 0)), decimal=6)
@@ -389,7 +389,7 @@ def test_acados_one_parameter():
     ocp = parameters.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
-        number_shooting_points=100,
+        n_shooting=100,
         min_g=-10,
         max_g=-6,
         target_g=-8,
@@ -413,7 +413,7 @@ def test_acados_one_parameter():
 
     # Check some of the results
     states, controls, params = Data.get_data(ocp, sol["x"], concatenate=False, get_parameters=True)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     gravity = params["gravity_z"]
 
     # initial and final position
@@ -471,7 +471,7 @@ def test_acados_one_end_constraints():
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # final position
     np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)), decimal=6)
@@ -492,7 +492,7 @@ def test_acados_constraints_all():
 
     ocp = constraint.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
-        number_shooting_points=30,
+        n_shooting=30,
         final_time=2,
         initialize_near_solution=True,
         constr=False,
@@ -509,7 +509,7 @@ def test_acados_constraints_all():
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.8385190835, 0, 0, -0.212027938]), decimal=6)
@@ -534,7 +534,7 @@ def test_acados_constraints_end_all():
 
     ocp = constraint.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
-        number_shooting_points=30,
+        n_shooting=30,
         final_time=2,
         initialize_near_solution=True,
         constr=False,
@@ -552,7 +552,7 @@ def test_acados_constraints_end_all():
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # final position
     np.testing.assert_almost_equal(q[:, 0], np.array([2, 0, 0, -0.139146705]), decimal=6)

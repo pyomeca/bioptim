@@ -20,7 +20,7 @@ from bioptim import (
 def prepare_ocp(
     biorbd_model_path,
     final_time,
-    number_shooting_points,
+    n_shooting,
     initialize_near_solution,
     ode_solver=OdeSolver.RK4,
     constr=True,
@@ -84,7 +84,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -100,7 +100,7 @@ def prepare_ocp(
 if __name__ == "__main__":
     ocp = prepare_ocp(
         biorbd_model_path="cube_and_line.bioMod",
-        number_shooting_points=30,
+        n_shooting=30,
         final_time=2,
         initialize_near_solution=True,
     )

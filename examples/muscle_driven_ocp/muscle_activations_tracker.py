@@ -31,7 +31,7 @@ from bioptim import (
 
 
 def generate_data(
-    biorbd_model: biorbd.Model, final_time: float, nb_shooting: int, use_residual_torque: bool = True
+    biorbd_model: biorbd.Model, final_time: float, n_shooting: int, use_residual_torque: bool = True
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
@@ -42,7 +42,7 @@ def generate_data(
         The loaded biorbd model
     final_time: float
         The time at final node
-    nb_shooting: int
+    n_shooting: int
         The number of shooting points
     use_residual_torque: bool
         If residual torque are present or not in the dynamics
@@ -53,35 +53,35 @@ def generate_data(
     """
 
     # Aliases
-    nb_q = biorbd_model.nbQ()
-    nb_qdot = biorbd_model.nbQdot()
-    nb_tau = biorbd_model.nbGeneralizedTorque()
-    nb_mus = biorbd_model.nbMuscleTotal()
-    dt = final_time / nb_shooting
+    n_q = biorbd_model.nbQ()
+    n_qdot = biorbd_model.nbQdot()
+    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_mus = biorbd_model.nbMuscleTotal()
+    dt = final_time / n_shooting
 
     if use_residual_torque:
-        nu = nb_tau + nb_mus
+        nu = n_tau + n_mus
     else:
-        nu = nb_mus
+        nu = n_mus
 
     # Casadi related stuff
-    symbolic_q = MX.sym("q", nb_q, 1)
-    symbolic_qdot = MX.sym("q_dot", nb_qdot, 1)
+    symbolic_q = MX.sym("q", n_q, 1)
+    symbolic_qdot = MX.sym("qdot", n_qdot, 1)
     symbolic_controls = MX.sym("u", nu, 1)
     symbolic_parameters = MX.sym("params", 0, 0)
     markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_q)
 
     nlp = NonLinearProgram()
     nlp.model = biorbd_model
-    nlp.shape = {"muscle": nb_mus}
+    nlp.shape = {"muscle": n_mus}
     nlp.mapping = {
-        "q": BidirectionalMapping(range(nb_q), range(nb_q)),
-        "q_dot": BidirectionalMapping(range(nb_qdot), range(nb_qdot)),
+        "q": BidirectionalMapping(range(n_q), range(n_q)),
+        "qdot": BidirectionalMapping(range(n_qdot), range(n_qdot)),
     }
 
     if use_residual_torque:
-        nlp.shape["tau"] = nb_tau
-        nlp.mapping["tau"] = BidirectionalMapping(range(nb_tau), range(nb_tau))
+        nlp.shape["tau"] = n_tau
+        nlp.mapping["tau"] = BidirectionalMapping(range(n_tau), range(n_tau))
         dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_and_torque_driven
     else:
         dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_driven
@@ -93,21 +93,21 @@ def generate_data(
 
     def dyn_interface(t, x, u):
         if use_residual_torque:
-            u = np.concatenate([np.zeros(nb_tau), u])
+            u = np.concatenate([np.zeros(n_tau), u])
         return np.array(dynamics_func(x, u, np.empty((0, 0)))).squeeze()
 
     # Generate some muscle activation
-    U = np.random.rand(nb_shooting, nb_mus).T
+    U = np.random.rand(n_shooting, n_mus).T
 
     # Integrate and collect the position of the markers accordingly
-    X = np.ndarray((nb_q + nb_qdot, nb_shooting + 1))
-    markers = np.ndarray((3, biorbd_model.nbMarkers(), nb_shooting + 1))
+    X = np.ndarray((n_q + n_qdot, n_shooting + 1))
+    markers = np.ndarray((3, biorbd_model.nbMarkers(), n_shooting + 1))
 
     def add_to_data(i, q):
         X[:, i] = q
-        markers[:, :, i] = markers_func(q[0:nb_q])
+        markers[:, :, i] = markers_func(q[0:n_q])
 
-    x_init = np.array([0] * nb_q + [0] * nb_qdot)
+    x_init = np.array([0] * n_q + [0] * n_qdot)
     add_to_data(0, x_init)
     for i, u in enumerate(U.T):
         sol = solve_ivp(dyn_interface, (0, dt), x_init, method="RK45", args=(u,))
@@ -115,14 +115,14 @@ def generate_data(
         x_init = sol["y"][:, -1]
         add_to_data(i + 1, x_init)
 
-    time_interp = np.linspace(0, final_time, nb_shooting + 1)
+    time_interp = np.linspace(0, final_time, n_shooting + 1)
     return time_interp, markers, X, U
 
 
 def prepare_ocp(
     biorbd_model: biorbd.Model,
     final_time: float,
-    nb_shooting: int,
+    n_shooting: int,
     markers_ref: np.ndarray,
     activations_ref: np.ndarray,
     q_ref: np.ndarray,
@@ -139,7 +139,7 @@ def prepare_ocp(
         The loaded biorbd model
     final_time: float
         The time at final node
-    nb_shooting: int
+    n_shooting: int
         The number of shooting points
     markers_ref: np.ndarray
         The marker to track if 'markers' is chosen in kin_data_to_track
@@ -213,7 +213,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        nb_shooting,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -261,7 +261,7 @@ if __name__ == "__main__":
 
     states, controls = Data.get_data(ocp, sol["x"])
     q = states["q"]
-    qdot = states["q_dot"]
+    qdot = states["qdot"]
     mus = controls["muscles"]
 
     if use_residual_torque:

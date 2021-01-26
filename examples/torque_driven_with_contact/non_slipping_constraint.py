@@ -19,7 +19,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, mu, ode_solver=OdeSolver.RK4):
+def prepare_ocp(model_path, phase_time, n_shooting, mu, ode_solver=OdeSolver.RK4):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
@@ -57,18 +57,18 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, mu, ode_solver=O
     )
 
     # Path constraint
-    nb_q = biorbd_model.nbQ()
-    nb_qdot = nb_q
+    n_q = biorbd_model.nbQ()
+    n_qdot = n_q
     pose_at_first_node = [0, 0, -0.5, 0.5]
 
     # Initialize x_bounds
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
+    x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add(pose_at_first_node + [0] * nb_qdot)
+    x_init.add(pose_at_first_node + [0] * n_qdot)
 
     # Define control path constraint
     u_bounds = BoundsList()
@@ -81,7 +81,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, mu, ode_solver=O
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         phase_time,
         x_init,
         u_init,
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     t = 0.6
     ns = 10
     mu = 0.2
-    ocp = prepare_ocp(model_path=model_path, phase_time=t, number_shooting_points=ns, mu=mu)
+    ocp = prepare_ocp(model_path=model_path, phase_time=t, n_shooting=ns, mu=mu)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

@@ -134,9 +134,9 @@ class PlotOcp:
         The size of all variables. This helps declaring all the plots in advance
     self.adapt_graph_size_to_bounds: bool
         If the plot should adapt to bounds or to ydata
-    nb_vertical_windows: int
+    n_vertical_windows: int
         The number of figure rows
-    nb_horizontal_windows: int
+    n_horizontal_windows: int
         The number of figure columns
     top_margin: float
         The space between the top of the screen and the figure when automatically rearrange
@@ -151,9 +151,9 @@ class PlotOcp:
         Setup the time and time integrated vector, which is the x-axes of the graphs
     __create_plots(self)
         Setup the plots
-    __add_new_axis(self, variable: str, nb: int, nb_rows: int, nb_cols: int)
+    __add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int)
         Add a new axis to the axes pool
-    _organize_windows(self, nb_windows: int)
+    _organize_windows(self, n_windows: int)
         Automatically organize the figure across the screen.
     find_phases_intersections(self)
         Finds the intersection between the phases
@@ -191,7 +191,7 @@ class PlotOcp:
         adapt_graph_size_to_bounds: bool
             If the axes should fit the bounds (True) or the data (False)
         """
-        for i in range(1, ocp.nb_phases):
+        for i in range(1, ocp.n_phases):
             if ocp.nlp[0].shape["q"] != ocp.nlp[i].shape["q"]:
                 raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
 
@@ -227,8 +227,8 @@ class PlotOcp:
         self.all_figures = []
 
         self.automatically_organize = automatically_organize
-        self.nb_vertical_windows = None
-        self.nb_horizontal_windows = None
+        self.n_vertical_windows = None
+        self.n_horizontal_windows = None
         self.top_margin = None
         self.height_step = None
         self.width_step = None
@@ -240,7 +240,7 @@ class PlotOcp:
         self.__create_plots()
 
         horz = 0
-        vert = 1 if len(self.all_figures) < self.nb_vertical_windows * self.nb_horizontal_windows else 0
+        vert = 1 if len(self.all_figures) < self.n_vertical_windows * self.n_horizontal_windows else 0
         for i, fig in enumerate(self.all_figures):
             if self.automatically_organize:
                 try:
@@ -248,7 +248,7 @@ class PlotOcp:
                         int(vert * self.width_step), int(self.top_margin + horz * self.height_step)
                     )
                     vert += 1
-                    if vert >= self.nb_vertical_windows:
+                    if vert >= self.n_vertical_windows:
                         horz += 1
                         vert = 0
                 except AttributeError:
@@ -267,12 +267,12 @@ class PlotOcp:
         self.t_integrated = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
-            nb_int_steps = nlp.nb_integration_steps
+            n_int_steps = nlp.n_integration_steps
             dt_ns = self.tf[phase_idx] / nlp.ns
             time_phase_integrated = []
             last_t_int = copy(last_t)
             for _ in range(nlp.ns):
-                time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, nb_int_steps + 1))
+                time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
                 last_t_int += dt_ns
             self.t_integrated.append(time_phase_integrated)
 
@@ -326,13 +326,13 @@ class PlotOcp:
                             for nlp in self.ocp.nlp
                         ]
                     )
-                    nb_cols, nb_rows = PlotOcp._generate_windows_size(nb)
-                    axes = self.__add_new_axis(variable, nb, nb_rows, nb_cols)
+                    n_cols, n_rows = PlotOcp._generate_windows_size(nb)
+                    axes = self.__add_new_axis(variable, nb, n_rows, n_cols)
                     self.axes[variable] = [nlp.plot[variable], axes]
 
                 t = self.t[i]
                 if variable not in self.plot_func:
-                    self.plot_func[variable] = [None] * self.ocp.nb_phases
+                    self.plot_func[variable] = [None] * self.ocp.n_phases
                 self.plot_func[variable][i] = nlp.plot[variable]
 
                 mapping = self.plot_func[variable][i].phase_mappings.map_idx
@@ -368,12 +368,12 @@ class PlotOcp:
                     elif plot_type == PlotType.INTEGRATED:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         plots_integrated = []
-                        nb_int_steps = nlp.nb_integration_steps
+                        n_int_steps = nlp.n_integration_steps
                         for cmp in range(nlp.ns):
                             plots_integrated.append(
                                 ax.plot(
                                     self.t_integrated[i][cmp],
-                                    np.zeros(nb_int_steps + 1),
+                                    np.zeros(n_int_steps + 1),
                                     color=color,
                                     **self.plot_options["integrated_plots"],
                                 )[0]
@@ -401,7 +401,7 @@ class PlotOcp:
                             ns = nlp.plot[variable].bounds.min.shape[1] - 1
                         else:
                             ns = nlp.ns
-                        nlp.plot[variable].bounds.check_and_adjust_dimensions(nb_elements=len(mapping), nb_shooting=ns)
+                        nlp.plot[variable].bounds.check_and_adjust_dimensions(n_elements=len(mapping), n_shooting=ns)
                         bounds_min = np.array([nlp.plot[variable].bounds.min.evaluate_at(k)[j] for k in range(ns + 1)])
                         bounds_max = np.array([nlp.plot[variable].bounds.max.evaluate_at(k)[j] for k in range(ns + 1)])
                         if bounds_min.shape[0] == nlp.ns:
@@ -415,7 +415,7 @@ class PlotOcp:
                             [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
                         )
 
-    def __add_new_axis(self, variable: str, nb: int, nb_rows: int, nb_cols: int):
+    def __add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
         """
         Add a new axis to the axes pool
 
@@ -425,9 +425,9 @@ class PlotOcp:
             The name of the graph
         nb: int
             The total number of axes to create
-        nb_rows: int
+        n_rows: int
             The number of rows for the subplots
-        nb_cols: int
+        n_cols: int
             The number of columns for the subplots
         """
 
@@ -435,7 +435,7 @@ class PlotOcp:
             self.all_figures.append(plt.figure(variable, figsize=(self.width_step / 100, self.height_step / 131)))
         else:
             self.all_figures.append(plt.figure(variable))
-        axes = self.all_figures[-1].subplots(nb_rows, nb_cols)
+        axes = self.all_figures[-1].subplots(n_rows, n_cols)
         if isinstance(axes, np.ndarray):
             axes = axes.flatten()
         else:
@@ -445,7 +445,7 @@ class PlotOcp:
             axes[i].remove()
         axes = axes[:nb]
 
-        idx_center = nb_rows * nb_cols - int(nb_cols / 2) - 1
+        idx_center = n_rows * n_cols - int(n_cols / 2) - 1
         if idx_center >= len(axes):
             idx_center = len(axes) - 1
         axes[idx_center].set_xlabel("time (s)")
@@ -453,23 +453,23 @@ class PlotOcp:
         self.all_figures[-1].tight_layout()
         return axes
 
-    def _organize_windows(self, nb_windows: int):
+    def _organize_windows(self, n_windows: int):
         """
         Automatically organize the figure across the screen.
 
         Parameters
         ----------
-        nb_windows: int
+        n_windows: int
             The number of figures to show
         """
 
-        self.nb_vertical_windows, self.nb_horizontal_windows = PlotOcp._generate_windows_size(nb_windows)
+        self.n_vertical_windows, self.n_horizontal_windows = PlotOcp._generate_windows_size(n_windows)
         if self.automatically_organize:
             height = tkinter.Tk().winfo_screenheight()
             width = tkinter.Tk().winfo_screenwidth()
             self.top_margin = height / 15
-            self.height_step = (height - self.top_margin) / self.nb_horizontal_windows
-            self.width_step = width / self.nb_vertical_windows
+            self.height_step = (height - self.top_margin) / self.n_horizontal_windows
+            self.width_step = width / self.n_vertical_windows
 
     def find_phases_intersections(self):
         """
@@ -511,10 +511,10 @@ class PlotOcp:
 
         data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, integrate=True, concatenate=False)
         for i, nlp in enumerate(self.ocp.nlp):
-            step_size = nlp.nb_integration_steps + 1
-            nb_elements = nlp.ns * step_size + 1
+            step_size = nlp.n_integration_steps + 1
+            n_elements = nlp.ns * step_size + 1
 
-            state = np.ndarray((0, nb_elements))
+            state = np.ndarray((0, n_elements))
             for s in nlp.var_states:
                 if isinstance(data_states_per_phase[s], (list, tuple)):
                     state = np.concatenate((state, data_states_per_phase[s][i]))
@@ -695,8 +695,8 @@ class PlotOcp:
         The optimized number of rows and columns
         """
 
-        nb_rows = int(round(np.sqrt(nb)))
-        return nb_rows + 1 if nb_rows * nb_rows < nb else nb_rows, nb_rows
+        n_rows = int(round(np.sqrt(nb)))
+        return n_rows + 1 if n_rows * n_rows < nb else n_rows, n_rows
 
 
 class ShowResult:
@@ -714,7 +714,7 @@ class ShowResult:
     -------
     graphs(self, automatically_organize: bool=True, adapt_graph_size_to_bounds:bool=False, show_now:bool=True)
         Prepare the graphs of the simulation
-    animate(self, nb_frames:int=80, show_now:bool=True, **kwargs) -> list
+    animate(self, n_frames:int=80, show_now:bool=True, **kwargs) -> list
         An interface to animate solution with bioviz
     keep_matplotlib()
         Allows for non-blocking show of the figure. This works only in Debug
@@ -760,13 +760,13 @@ class ShowResult:
         if show_now:
             plt.show()
 
-    def animate(self, nb_frames: int = 80, show_now: bool = True, **kwargs: Any) -> list:
+    def animate(self, n_frames: int = 80, show_now: bool = True, **kwargs: Any) -> list:
         """
         An interface to animate solution with bioviz
 
         Parameters
         ----------
-        nb_frames: int
+        n_frames: int
             The number of frames to interpolate to
         show_now: bool
             If the bioviz exec() function should be called. This is blocking
@@ -784,7 +784,7 @@ class ShowResult:
             raise RuntimeError("bioviz must be install to animate the model")
         check_version(bioviz, "2.0.1", "2.1.0")
         data_interpolate, data_control = Data.get_data(
-            self.ocp, self.sol["x"], integrate=False, interpolate_nb_frames=nb_frames
+            self.ocp, self.sol["x"], integrate=False, interpolate_n_frames=n_frames
         )
         if not isinstance(data_interpolate["q"], (list, tuple)):
             data_interpolate["q"] = [data_interpolate["q"]]

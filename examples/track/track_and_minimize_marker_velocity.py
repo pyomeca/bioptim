@@ -17,7 +17,7 @@ from bioptim import (
 def prepare_ocp(
     biorbd_model_path,
     final_time,
-    number_shooting_points,
+    n_shooting,
     marker_velocity_or_displacement,
     marker_in_first_coordinates_system,
     control_type,
@@ -86,14 +86,14 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
         x_bounds,
         u_bounds,
         objective_functions,
-        nb_integration_steps=5,
+        n_integration_steps=5,
         control_type=control_type,
         ode_solver=ode_solver,
     )
@@ -102,7 +102,7 @@ def prepare_ocp(
 if __name__ == "__main__":
     ocp = prepare_ocp(
         biorbd_model_path="cube_and_line.bioMod",
-        number_shooting_points=30,
+        n_shooting=30,
         final_time=2,
         marker_velocity_or_displacement="disp",  # "velo"
         marker_in_first_coordinates_system=True,
@@ -114,4 +114,4 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    result.animate(nb_frames=200)
+    result.animate(n_frames=200)

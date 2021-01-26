@@ -24,7 +24,7 @@ def test_track_segment_on_rt(ode_solver):
     ocp = track_segment_on_rt.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
         final_time=0.5,
-        number_shooting_points=8,
+        n_shooting=8,
         ode_solver=ode_solver,
     )
     sol = ocp.solve()
@@ -41,7 +41,7 @@ def test_track_segment_on_rt(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.30543155, 0, -1.57, -1.57]))
@@ -73,7 +73,7 @@ def test_track_marker_on_segment(ode_solver):
     ocp = track_marker_on_segment.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
         final_time=0.5,
-        number_shooting_points=8,
+        n_shooting=8,
         initialize_near_solution=True,
         ode_solver=ode_solver,
     )
@@ -91,7 +91,7 @@ def test_track_marker_on_segment(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0, 0.46364761]))

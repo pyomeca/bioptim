@@ -23,7 +23,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=None, use_sx=False, nb_threads=1):
+def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=False, n_threads=1):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -68,7 +68,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -76,7 +76,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
         u_bounds,
         objective_functions,
         use_sx=use_sx,
-        nb_threads=nb_threads,
+        n_threads=n_threads,
     )
 
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     warm_start_ipopt_from_acados_solution = False
 
     # --- Solve the program using ACADOS --- #
-    ocp_acados = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, number_shooting_points=51, use_sx=True)
+    ocp_acados = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
 
     tic = time()
     sol_acados, sol_obj_acados = ocp_acados.solve(
@@ -106,9 +106,9 @@ if __name__ == "__main__":
         biorbd_model_path="arm26.bioMod",
         final_time=2,
         x_warm=x_warm,
-        number_shooting_points=51,
+        n_shooting=51,
         use_sx=False,
-        nb_threads=6,
+        n_threads=6,
     )
 
     tic = time()

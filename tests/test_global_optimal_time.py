@@ -39,7 +39,7 @@ def test_pendulum_min_time_mayer(ode_solver):
     ocp = pendulum_min_time_Mayer.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
-        number_shooting_points=10,
+        n_shooting=10,
         ode_solver=ode_solver,
     )
     sol = ocp.solve()
@@ -51,7 +51,7 @@ def test_pendulum_min_time_mayer(ode_solver):
 
     # Check some of the results
     states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     tf = param["time"][0, 0]
 
     # initial and final position
@@ -118,7 +118,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
     ocp = pendulum_min_time_Mayer.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
-        number_shooting_points=10,
+        n_shooting=10,
         ode_solver=ode_solver,
         min_time=1,
     )
@@ -131,7 +131,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
 
     # Check some of the results
     states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     tf = param["time"][0, 0]
 
     # initial and final position
@@ -182,7 +182,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
     ocp = pendulum_min_time_Mayer.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
-        number_shooting_points=10,
+        n_shooting=10,
         ode_solver=ode_solver,
         max_time=1,
         weight=-1,
@@ -196,7 +196,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
 
     # Check some of the results
     states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     tf = param["time"][0, 0]
 
     # initial and final position
@@ -242,7 +242,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
     ocp = pendulum_min_time_Lagrange.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
-        number_shooting_points=10,
+        n_shooting=10,
         ode_solver=ode_solver,
     )
     sol = ocp.solve()
@@ -254,7 +254,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
 
     # Check some of the results
     states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     tf = param["time"][0, 0]
 
     # initial and final position
@@ -371,7 +371,7 @@ def test_time_constraint(ode_solver):
     ocp = time_constraint.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
-        number_shooting_points=10,
+        n_shooting=10,
         time_min=0.6,
         time_max=1,
         ode_solver=ode_solver,
@@ -385,7 +385,7 @@ def test_time_constraint(ode_solver):
 
     # Check some of the results
     states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     tf = param["time"][0, 0]
 
     # initial and final position
@@ -448,7 +448,7 @@ def test_monophase_time_constraint(ode_solver):
         final_time=(2, 5, 4),
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
-        number_shooting_points=(20,),
+        n_shooting=(20,),
         ode_solver=ode_solver,
     )
     sol = ocp.solve()
@@ -465,7 +465,7 @@ def test_monophase_time_constraint(ode_solver):
 
     # Check some of the results
     states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     tf = param["time"][0, 0]
 
     # initial and final position
@@ -502,7 +502,7 @@ def test_multiphase_time_constraint(ode_solver):
         final_time=(2, 5, 4),
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
-        number_shooting_points=(20, 30, 20),
+        n_shooting=(20, 30, 20),
         ode_solver=ode_solver,
     )
     sol = ocp.solve()
@@ -519,7 +519,7 @@ def test_multiphase_time_constraint(ode_solver):
 
     # Check some of the results
     states, controls, param = Data.get_data(ocp, sol["x"], get_parameters=True)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     tf = param["time"][0, 0]
 
     # initial and final position
@@ -541,26 +541,26 @@ def test_multiphase_time_constraint(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
 
-def partial_ocp_parameters(nb_phases):
-    if nb_phases != 1 and nb_phases != 3:
-        raise RuntimeError("nb_phases should be 1 or 3")
+def partial_ocp_parameters(n_phases):
+    if n_phases != 1 and n_phases != 3:
+        raise RuntimeError("n_phases should be 1 or 3")
 
     biorbd_model_path = str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/cube.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path)
-    number_shooting_points = (2, 2, 2)
+    n_shooting = (2, 2, 2)
     final_time = (2, 5, 4)
     time_min = [1, 3, 0.1]
     time_max = [2, 4, 0.8]
     tau_min, tau_max, tau_init = -100, 100, 0
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    if nb_phases > 1:
+    if n_phases > 1:
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
-    if nb_phases > 1:
+    if n_phases > 1:
         x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
         x_bounds.add(bounds=QAndQDotBounds(biorbd_model[0]))
     for bounds in x_bounds:
@@ -569,19 +569,19 @@ def partial_ocp_parameters(nb_phases):
             bounds.max[i, [0, -1]] = 0
     x_bounds[0].min[2, 0] = 0.0
     x_bounds[0].max[2, 0] = 0.0
-    if nb_phases > 1:
+    if n_phases > 1:
         x_bounds[2].min[2, [0, -1]] = [0.0, 1.57]
         x_bounds[2].max[2, [0, -1]] = [0.0, 1.57]
 
     x_init = InitialGuessList()
     x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
-    if nb_phases > 1:
+    if n_phases > 1:
         x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
         x_init.add([0] * (biorbd_model[0].nbQ() + biorbd_model[0].nbQdot()))
 
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque())
-    if nb_phases > 1:
+    if n_phases > 1:
         u_bounds.add(
             [tau_min] * biorbd_model[0].nbGeneralizedTorque(), [tau_max] * biorbd_model[0].nbGeneralizedTorque()
         )
@@ -591,16 +591,16 @@ def partial_ocp_parameters(nb_phases):
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
-    if nb_phases > 1:
+    if n_phases > 1:
         u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
         u_init.add([tau_init] * biorbd_model[0].nbGeneralizedTorque())
 
     return (
-        biorbd_model[:nb_phases],
-        number_shooting_points[:nb_phases],
-        final_time[:nb_phases],
-        time_min[:nb_phases],
-        time_max[:nb_phases],
+        biorbd_model[:n_phases],
+        n_shooting[:n_phases],
+        final_time[:n_phases],
+        time_min[:n_phases],
+        time_max[:n_phases],
         tau_min,
         tau_max,
         tau_init,
@@ -624,7 +624,7 @@ spec.loader.exec_module(test_mayer_neg_monophase_time_constraint)
 def test_mayer_neg_monophase_time_constraint():
     (
         biorbd_model,
-        number_shooting_points,
+        n_shooting,
         final_time,
         time_min,
         time_max,
@@ -636,7 +636,7 @@ def test_mayer_neg_monophase_time_constraint():
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(nb_phases=1)
+    ) = partial_ocp_parameters(n_phases=1)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
@@ -649,7 +649,7 @@ def test_mayer_neg_monophase_time_constraint():
         OptimalControlProgram(
             biorbd_model,
             dynamics,
-            number_shooting_points,
+            n_shooting,
             final_time,
             x_init,
             u_init,
@@ -663,7 +663,7 @@ def test_mayer_neg_monophase_time_constraint():
 def test_mayer1_neg_multiphase_time_constraint():
     (
         biorbd_model,
-        number_shooting_points,
+        n_shooting,
         final_time,
         time_min,
         time_max,
@@ -675,7 +675,7 @@ def test_mayer1_neg_multiphase_time_constraint():
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(nb_phases=3)
+    ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
@@ -689,7 +689,7 @@ def test_mayer1_neg_multiphase_time_constraint():
         OptimalControlProgram(
             biorbd_model,
             dynamics,
-            number_shooting_points,
+            n_shooting,
             final_time,
             x_init,
             u_init,
@@ -703,7 +703,7 @@ def test_mayer1_neg_multiphase_time_constraint():
 def test_mayer2_neg_multiphase_time_constraint():
     (
         biorbd_model,
-        number_shooting_points,
+        n_shooting,
         final_time,
         time_min,
         time_max,
@@ -715,7 +715,7 @@ def test_mayer2_neg_multiphase_time_constraint():
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(nb_phases=3)
+    ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
@@ -731,7 +731,7 @@ def test_mayer2_neg_multiphase_time_constraint():
         OptimalControlProgram(
             biorbd_model,
             dynamics,
-            number_shooting_points,
+            n_shooting,
             final_time,
             x_init,
             u_init,
@@ -745,7 +745,7 @@ def test_mayer2_neg_multiphase_time_constraint():
 def test_mayer_multiphase_time_constraint():
     (
         biorbd_model,
-        number_shooting_points,
+        n_shooting,
         final_time,
         time_min,
         time_max,
@@ -757,7 +757,7 @@ def test_mayer_multiphase_time_constraint():
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(nb_phases=3)
+    ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
@@ -772,7 +772,7 @@ def test_mayer_multiphase_time_constraint():
     OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -786,7 +786,7 @@ def test_mayer_multiphase_time_constraint():
 def test_lagrange_neg_monophase_time_constraint():
     (
         biorbd_model,
-        number_shooting_points,
+        n_shooting,
         final_time,
         time_min,
         time_max,
@@ -798,7 +798,7 @@ def test_lagrange_neg_monophase_time_constraint():
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(nb_phases=1)
+    ) = partial_ocp_parameters(n_phases=1)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
@@ -812,7 +812,7 @@ def test_lagrange_neg_monophase_time_constraint():
         OptimalControlProgram(
             biorbd_model,
             dynamics,
-            number_shooting_points,
+            n_shooting,
             final_time,
             x_init,
             u_init,
@@ -827,7 +827,7 @@ def test_lagrange1_neg_multiphase_time_constraint():
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         (
             biorbd_model,
-            number_shooting_points,
+            n_shooting,
             final_time,
             time_min,
             time_max,
@@ -839,7 +839,7 @@ def test_lagrange1_neg_multiphase_time_constraint():
             x_init,
             u_bounds,
             u_init,
-        ) = partial_ocp_parameters(nb_phases=3)
+        ) = partial_ocp_parameters(n_phases=3)
 
         objective_functions = ObjectiveList()
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
@@ -854,7 +854,7 @@ def test_lagrange1_neg_multiphase_time_constraint():
         OptimalControlProgram(
             biorbd_model,
             dynamics,
-            number_shooting_points,
+            n_shooting,
             final_time,
             x_init,
             u_init,
@@ -869,7 +869,7 @@ def test_lagrange2_neg_multiphase_time_constraint():
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot declare more than once"):
         (
             biorbd_model,
-            number_shooting_points,
+            n_shooting,
             final_time,
             time_min,
             time_max,
@@ -881,7 +881,7 @@ def test_lagrange2_neg_multiphase_time_constraint():
             x_init,
             u_bounds,
             u_init,
-        ) = partial_ocp_parameters(nb_phases=3)
+        ) = partial_ocp_parameters(n_phases=3)
 
         objective_functions = ObjectiveList()
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
@@ -896,7 +896,7 @@ def test_lagrange2_neg_multiphase_time_constraint():
         OptimalControlProgram(
             biorbd_model,
             dynamics,
-            number_shooting_points,
+            n_shooting,
             final_time,
             x_init,
             u_init,
@@ -910,7 +910,7 @@ def test_lagrange2_neg_multiphase_time_constraint():
 def test_lagrange_multiphase_time_constraint():
     (
         biorbd_model,
-        number_shooting_points,
+        n_shooting,
         final_time,
         time_min,
         time_max,
@@ -922,7 +922,7 @@ def test_lagrange_multiphase_time_constraint():
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(nb_phases=3)
+    ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
@@ -937,7 +937,7 @@ def test_lagrange_multiphase_time_constraint():
     OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -951,7 +951,7 @@ def test_lagrange_multiphase_time_constraint():
 def test_mayer_neg_two_objectives():
     (
         biorbd_model,
-        number_shooting_points,
+        n_shooting,
         final_time,
         time_min,
         time_max,
@@ -963,7 +963,7 @@ def test_mayer_neg_two_objectives():
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(nb_phases=1)
+    ) = partial_ocp_parameters(n_phases=1)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
@@ -973,7 +973,7 @@ def test_mayer_neg_two_objectives():
         OptimalControlProgram(
             biorbd_model,
             dynamics,
-            number_shooting_points,
+            n_shooting,
             final_time,
             x_init,
             u_init,

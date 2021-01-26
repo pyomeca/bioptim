@@ -31,7 +31,7 @@ from bioptim import (
 
 def prepare_ocp(
     biorbd_model_path: str,
-    number_shooting_points: int,
+    n_shooting: int,
     final_time: float,
     loop_from_constraint: bool,
     ode_solver: OdeSolver = OdeSolver.RK4,
@@ -45,7 +45,7 @@ def prepare_ocp(
         The path of the biorbd model
     final_time: float
         The time at the final node
-    number_shooting_points: int
+    n_shooting: int
         The number of shooting points
     loop_from_constraint: bool
         If the looping cost should be a constraint [True] or an objective [False]
@@ -99,7 +99,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     Runs and animate the program
     """
 
-    ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, loop_from_constraint=True)
+    ocp = prepare_ocp("cube.bioMod", n_shooting=30, final_time=2, loop_from_constraint=True)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

@@ -149,7 +149,7 @@ class AcadosInterface(SolverInterface):
 
         """
 
-        if ocp.nb_phases > 1:
+        if ocp.n_phases > 1:
             raise NotImplementedError("More than 1 phase is not implemented yet with ACADOS backend")
 
         # Declare model variables
@@ -157,7 +157,7 @@ class AcadosInterface(SolverInterface):
         u = ocp.nlp[0].U[0]
         p = ocp.nlp[0].p
         if ocp.nlp[0].parameters_to_optimize:
-            for n in range(ocp.nb_phases):
+            for n in range(ocp.n_phases):
                 for i in range(len(ocp.nlp[0].parameters_to_optimize)):
                     if str(ocp.nlp[0].p[i]) == f"time_phase_{n}":
                         raise RuntimeError("Time constraint not implemented yet with Acados.")
@@ -234,7 +234,7 @@ class AcadosInterface(SolverInterface):
         # TODO:change for more node flexibility on bounds
         self.all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        for i in range(ocp.nb_phases):
+        for i in range(ocp.n_phases):
             for g, G in enumerate(ocp.nlp[i].g):
                 if not G:
                     continue
@@ -346,7 +346,7 @@ class AcadosInterface(SolverInterface):
             A reference to the current OptimalControlProgram
         """
 
-        if ocp.nb_phases != 1:
+        if ocp.n_phases != 1:
             raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")
         # costs handling in self.acados_ocp
         self.y_ref = []
@@ -368,7 +368,7 @@ class AcadosInterface(SolverInterface):
             self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nu)
             self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nx)
             self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].nx)
-            for i in range(ocp.nb_phases):
+            for i in range(ocp.n_phases):
                 for j, J in enumerate(ocp.nlp[i].J):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
                         if J[0]["objective"].type.value[0] in ctrl_objs:
@@ -474,7 +474,7 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.yref_e = np.zeros((self.acados_ocp.cost.W_e.shape[0],))
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
-            for i in range(ocp.nb_phases):
+            for i in range(ocp.n_phases):
                 for j, J in enumerate(ocp.nlp[i].J):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
                         self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"].reshape((-1, 1)))

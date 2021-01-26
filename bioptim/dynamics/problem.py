@@ -370,38 +370,38 @@ class Problem:
             If the generalized velocities should be a control
         """
 
-        if nlp.mapping["q_dot"] is None:
-            nlp.mapping["q_dot"] = BidirectionalMapping(range(nlp.model.nbQdot()), range(nlp.model.nbQdot()))
+        if nlp.mapping["qdot"] is None:
+            nlp.mapping["qdot"] = BidirectionalMapping(range(nlp.model.nbQdot()), range(nlp.model.nbQdot()))
 
         dof_names = nlp.model.nameDof()
-        q_dot_mx = MX()
-        q_dot = nlp.CX()
+        qdot_mx = MX()
+        qdot = nlp.CX()
 
-        for i in nlp.mapping["q_dot"].to_first.map_idx:
-            q_dot = vertcat(q_dot, nlp.CX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
-        for i, _ in enumerate(nlp.mapping["q_dot"].to_second.map_idx):
-            q_dot_mx = vertcat(q_dot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+        for i in nlp.mapping["qdot"].to_first.map_idx:
+            qdot = vertcat(qdot, nlp.CX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+        for i, _ in enumerate(nlp.mapping["qdot"].to_second.map_idx):
+            qdot_mx = vertcat(qdot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
 
-        nlp.shape["q_dot"] = nlp.mapping["q_dot"].to_first.len
+        nlp.shape["qdot"] = nlp.mapping["qdot"].to_first.len
 
-        legend_qdot = ["qdot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q_dot"].to_first.map_idx]
+        legend_qdot = ["qdot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["qdot"].to_first.map_idx]
 
-        nlp.q_dot = q_dot_mx
+        nlp.qdot = qdot_mx
         if as_states:
-            nlp.x = vertcat(nlp.x, q_dot)
-            nlp.var_states["q_dot"] = nlp.shape["q_dot"]
+            nlp.x = vertcat(nlp.x, qdot)
+            nlp.var_states["qdot"] = nlp.shape["qdot"]
             qdot_bounds = nlp.x_bounds[nlp.shape["q"] :]
 
-            nlp.plot["q_dot"] = CustomPlot(
-                lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["q_dot"]],
+            nlp.plot["qdot"] = CustomPlot(
+                lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["qdot"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
                 bounds=qdot_bounds,
             )
 
         if as_controls:
-            nlp.u = vertcat(nlp.u, q_dot)
-            nlp.var_controls["q_dot"] = nlp.shape["q_dot"]
+            nlp.u = vertcat(nlp.u, qdot)
+            nlp.var_controls["qdot"] = nlp.shape["qdot"]
             # Add plot (and retrieving bounds if plots of bounds) if this problem is ever added
 
         nlp.nx = nlp.x.rows()
@@ -516,7 +516,7 @@ class Problem:
             nlp.x = vertcat(nlp.x, muscles)
             nlp.var_states["muscles"] = nlp.shape["muscle"]
 
-            nx_q = nlp.shape["q"] + nlp.shape["q_dot"]
+            nx_q = nlp.shape["q"] + nlp.shape["qdot"]
             muscles_bounds = nlp.x_bounds[nx_q : nx_q + nlp.shape["muscle"]]
             nlp.plot["muscles_states"] = CustomPlot(
                 lambda x, u, p: x[nx_q : nx_q + nlp.shape["muscle"]],

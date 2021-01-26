@@ -32,7 +32,7 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
     ocp = maximize_predicted_height_CoM.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
-        number_shooting_points=20,
+        n_shooting=20,
         use_actuators=False,
         ode_solver=ode_solver,
         objective_name=objective_name,
@@ -53,7 +53,7 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
@@ -111,7 +111,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     ocp = maximize_predicted_height_CoM.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
-        number_shooting_points=20,
+        n_shooting=20,
         use_actuators=True,
         ode_solver=ode_solver,
     )
@@ -129,7 +129,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     if ode_solver == OdeSolver.IRK:
         # initial and final position
@@ -188,7 +188,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     ocp = contact_forces_inequality_GREATER_THAN_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
-        number_shooting_points=10,
+        n_shooting=10,
         min_bound=min_bound,
         max_bound=np.inf,
         ode_solver=ode_solver,
@@ -202,7 +202,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     if ode_solver == OdeSolver.IRK:
         # Check constraints
@@ -355,7 +355,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     ocp = contact_forces_inequality_LESSER_THAN_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
-        number_shooting_points=10,
+        n_shooting=10,
         min_bound=-np.inf,
         max_bound=max_bound,
         ode_solver=ode_solver,
@@ -369,7 +369,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
     np.testing.assert_almost_equal(
@@ -497,7 +497,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
 
         # Check some of the results
         states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+        q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
@@ -526,7 +526,7 @@ def test_non_slipping_constraint(ode_solver):
     ocp = non_slipping_constraint.prepare_ocp(
         model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_with_contact/2segments_4dof_2contacts.bioMod",
         phase_time=0.6,
-        number_shooting_points=10,
+        n_shooting=10,
         mu=0.005,
         ode_solver=ode_solver,
     )
@@ -539,7 +539,7 @@ def test_non_slipping_constraint(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))

@@ -33,7 +33,7 @@ def eul2quat(eul):
     return np.array([w, x, y, z])
 
 
-def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, ode_solver=OdeSolver.RK4):
+def prepare_ocp(biorbd_model_path, n_shooting, final_time, ode_solver=OdeSolver.RK4):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -85,7 +85,7 @@ def prepare_ocp(biorbd_model_path, number_shooting_points, final_time, ode_solve
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     # changer le path quand ce sera pret
     ocp = prepare_ocp(
         "TruncAnd2Arm_Quaternion.bioMod",
-        number_shooting_points=5,
+        n_shooting=5,
         final_time=0.25,
     )
     sol = ocp.solve()

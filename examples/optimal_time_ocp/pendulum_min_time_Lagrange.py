@@ -26,7 +26,7 @@ from bioptim import (
 def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
-    number_shooting_points: int,
+    n_shooting: int,
     ode_solver: OdeSolver = OdeSolver.RK4,
     weight: float = 1,
 ) -> OptimalControlProgram:
@@ -39,7 +39,7 @@ def prepare_ocp(
         The path to the bioMod
     final_time: float
         The initial guess for the final time
-    number_shooting_points: int
+    n_shooting: int
         The number of shooting points
     ode_solver: OdeSolver
         The ode solver to use
@@ -89,7 +89,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     Prepare, solve and animate a time minimizer ocp using a Lagrange criteria
     """
 
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50)
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

@@ -40,7 +40,7 @@ class OptimalControlProgram:
     ----------
     version: dict
         The version of all the underlying software. This is important when loading a previous ocp
-    nb_phases: Union[int, list, tuple]
+    n_phases: Union[int, list, tuple]
         The number of phases of the ocp
     original_values: A copy of the ocp as it is after defining everything
     J: MX
@@ -61,7 +61,7 @@ class OptimalControlProgram:
         The base type for the symbolic casadi variables
     original_phase_time: list[float]
         The time vector as sent by the user
-    nb_threads: int
+    n_threads: int
         The number of thread to use if using multithreading
     solver_type: Solver
         The designated solver to solve the ocp
@@ -98,16 +98,16 @@ class OptimalControlProgram:
         parameters: Union[Parameter, ParameterList] = ParameterList(),
         external_forces: Union[list, tuple] = (),
         ode_solver: OdeSolver = OdeSolver.RK4,
-        nb_integration_steps: int = 5,
+        n_integration_steps: int = 5,
         irk_polynomial_interpolation_degree: int = 4,
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
         all_generalized_mapping: BidirectionalMapping = None,
         q_mapping: BidirectionalMapping = None,
-        q_dot_mapping: BidirectionalMapping = None,
+        qdot_mapping: BidirectionalMapping = None,
         tau_mapping: BidirectionalMapping = None,
         plot_mappings: Mapping = None,
         state_transitions: StateTransitionList = StateTransitionList(),
-        nb_threads: int = 1,
+        n_threads: int = 1,
         use_sx: bool = False,
     ):
         """
@@ -139,25 +139,25 @@ class OptimalControlProgram:
             The external forces acting on the center of mass of the segments specified in the bioMod
         ode_solver: OdeSolver
             The solver for the ordinary differential equations
-        nb_integration_steps: int
+        n_integration_steps: int
             The number of steps for the RK
         irk_polynomial_interpolation_degree: int
             The degrees for the IRK
         control_type: ControlType
             The type of controls for each phase
         all_generalized_mapping: BidirectionalMapping
-            The mapping to apply on q, q_dot and tau at the same time
+            The mapping to apply on q, qdot and tau at the same time
         q_mapping: BidirectionalMapping
             The mapping to apply on q
-        q_dot_mapping: BidirectionalMapping
-            The mapping to apply on q_dot
+        qdot_mapping: BidirectionalMapping
+            The mapping to apply on qdot
         tau_mapping: BidirectionalMapping
             The mapping to apply on tau
         plot_mappings: Mapping
             The mapping to apply on the plots
         state_transitions: StateTransitionList
             The transition types between the phases
-        nb_threads: int
+        n_threads: int
             The number of thread to use while solving (multi-threading if > 1)
         use_sx: bool
             The nature of the casadi variables. MX are used if False.
@@ -172,7 +172,7 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("biorbd_model must either be a string or an instance of biorbd.Model()")
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
-        self.nb_phases = len(biorbd_model)
+        self.n_phases = len(biorbd_model)
 
         biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
         self.original_values = {
@@ -189,22 +189,22 @@ class OptimalControlProgram:
             "parameters": ParameterList(),
             "external_forces": external_forces,
             "ode_solver": ode_solver,
-            "nb_integration_steps": nb_integration_steps,
+            "n_integration_steps": n_integration_steps,
             "irk_polynomial_interpolation_degree": irk_polynomial_interpolation_degree,
             "control_type": control_type,
             "all_generalized_mapping": all_generalized_mapping,
             "q_mapping": q_mapping,
-            "q_dot_mapping": q_dot_mapping,
+            "qdot_mapping": qdot_mapping,
             "tau_mapping": tau_mapping,
             "plot_mappings": plot_mappings,
             "state_transitions": state_transitions,
-            "nb_threads": nb_threads,
+            "n_threads": n_threads,
             "use_sx": use_sx,
         }
 
         # Check integrity of arguments
-        if not isinstance(nb_threads, int) or isinstance(nb_threads, bool) or nb_threads < 1:
-            raise RuntimeError("nb_threads should be a positive integer greater or equal than 1")
+        if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
+            raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
 
         if isinstance(dynamics_type, Dynamics):
             dynamics_type_tp = DynamicsList()
@@ -220,9 +220,9 @@ class OptimalControlProgram:
                     raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
             else:
                 raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
-        n_step = nb_integration_steps
+        n_step = n_integration_steps
         if not isinstance(n_step, int) or isinstance(n_step, bool) or n_step < 1:
-            raise RuntimeError("nb_integration_steps should be a positive integer greater or equal than 1")
+            raise RuntimeError("n_integration_steps should be a positive integer greater or equal than 1")
 
         if not isinstance(phase_time, (int, float)):
             if isinstance(phase_time, (tuple, list)):
@@ -294,9 +294,9 @@ class OptimalControlProgram:
         self.param_to_optimize = {}
 
         # nlp is the core of a phase
-        self.nlp = [NLP() for _ in range(self.nb_phases)]
+        self.nlp = [NLP() for _ in range(self.n_phases)]
         NLP.add(self, "model", biorbd_model, False)
-        NLP.add(self, "phase_idx", [i for i in range(self.nb_phases)], False)
+        NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
         # Type of CasADi graph
         if use_sx:
@@ -310,8 +310,8 @@ class OptimalControlProgram:
             if nlp.ns < 1:
                 raise RuntimeError("Number of shooting points must be at least 1")
 
-        self.nb_threads = nb_threads
-        NLP.add(self, "nb_threads", nb_threads, True)
+        self.n_threads = n_threads
+        NLP.add(self, "n_threads", n_threads, True)
         self.solver_type = Solver.NONE
         self.solver = None
 
@@ -322,15 +322,15 @@ class OptimalControlProgram:
 
         # Compute problem size
         if all_generalized_mapping is not None:
-            if q_mapping is not None or q_dot_mapping is not None or tau_mapping is not None:
+            if q_mapping is not None or qdot_mapping is not None or tau_mapping is not None:
                 raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used alongside")
-            q_mapping = q_dot_mapping = tau_mapping = all_generalized_mapping
+            q_mapping = qdot_mapping = tau_mapping = all_generalized_mapping
         NLP.add(self, "q", q_mapping, q_mapping is None, BidirectionalMapping, name="mapping")
-        NLP.add(self, "q_dot", q_dot_mapping, q_dot_mapping is None, BidirectionalMapping, name="mapping")
+        NLP.add(self, "qdot", qdot_mapping, qdot_mapping is None, BidirectionalMapping, name="mapping")
         NLP.add(self, "tau", tau_mapping, tau_mapping is None, BidirectionalMapping, name="mapping")
         plot_mappings = plot_mappings if plot_mappings is not None else {}
         reshaped_plot_mappings = []
-        for i in range(self.nb_phases):
+        for i in range(self.n_phases):
             reshaped_plot_mappings.append({})
             for key in plot_mappings:
                 reshaped_plot_mappings[i][key] = plot_mappings[key][i]
@@ -348,11 +348,11 @@ class OptimalControlProgram:
         NLP.add(self, "dynamics_type", dynamics_type, False)
         NLP.add(self, "ode_solver", ode_solver, True)
         NLP.add(self, "control_type", control_type, True)
-        NLP.add(self, "nb_integration_steps", nb_integration_steps, True)
+        NLP.add(self, "n_integration_steps", n_integration_steps, True)
         NLP.add(self, "irk_polynomial_interpolation_degree", irk_polynomial_interpolation_degree, True)
 
         # Prepare the dynamics
-        for i in range(self.nb_phases):
+        for i in range(self.n_phases):
             self.nlp[i].initialize(self.CX)
             Problem.initialize(self, self.nlp[i])
             if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
@@ -360,7 +360,7 @@ class OptimalControlProgram:
             Integrator.prepare_dynamic_integrator(self, self.nlp[i])
 
         # Define the actual NLP problem
-        for i in range(self.nb_phases):
+        for i in range(self.n_phases):
             self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
 
         # Define continuity constraints
@@ -426,7 +426,7 @@ class OptimalControlProgram:
         Declare and parse the initial guesses for all the variables (V vector)
         """
 
-        for i in range(self.nb_phases):
+        for i in range(self.n_phases):
             self.nlp[i].x_init.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
             if self.nlp[i].control_type == ControlType.CONSTANT:
                 self.nlp[i].u_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
@@ -469,7 +469,7 @@ class OptimalControlProgram:
         Declare and parse the bounds for all the variables (V vector)
         """
 
-        for i in range(self.nb_phases):
+        for i in range(self.n_phases):
             self.nlp[i].x_bounds.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
             if self.nlp[i].control_type == ControlType.CONSTANT:
                 self.nlp[i].u_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
@@ -564,7 +564,7 @@ class OptimalControlProgram:
             """
 
             if has_penalty is None:
-                has_penalty = [False] * ocp.nb_phases
+                has_penalty = [False] * ocp.n_phases
 
             for i, penalty_functions_phase in enumerate(penalty_functions):
                 for pen_fun in penalty_functions_phase:
@@ -604,7 +604,7 @@ class OptimalControlProgram:
         # Add to the nlp
         NLP.add(self, "tf", phase_time, False)
         NLP.add(self, "t0", [0] + [nlp.tf for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
-        NLP.add(self, "dt", [self.nlp[i].tf / max(self.nlp[i].ns, 1) for i in range(self.nb_phases)], False)
+        NLP.add(self, "dt", [self.nlp[i].tf / max(self.nlp[i].ns, 1) for i in range(self.n_phases)], False)
 
         # Add to the V vector
         i = 0

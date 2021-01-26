@@ -190,11 +190,11 @@ class Parameters:
         pre_dynamic_function = parameter.function
         initial_guess = parameter.initial_guess
         bounds = parameter.bounds
-        nb_elements = parameter.size
+        n_elements = parameter.size
         penalty_list = parameter.penalty_list
 
         cx = Parameters._add_to_v(
-            ocp, param_name, nb_elements, pre_dynamic_function, bounds, initial_guess, **parameter.params
+            ocp, param_name, n_elements, pre_dynamic_function, bounds, initial_guess, **parameter.params
         )
 
         if penalty_list:

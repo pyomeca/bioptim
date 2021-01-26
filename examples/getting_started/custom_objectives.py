@@ -21,18 +21,18 @@ from bioptim import (
     InitialGuess,
     ShowResult,
     OdeSolver,
-    PenaltyNode,
+    PenaltyNodes,
 )
 
 
-def custom_func_track_markers(pn: PenaltyNode, first_marker_idx, int, second_marker_idx: int) -> MX:
+def custom_func_track_markers(pn: PenaltyNodes, first_marker_idx, int, second_marker_idx: int) -> MX:
     """
     The used-defined constraint function (This particular one mimics the ConstraintFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
 
     Parameters
     ----------
-    pn: PenaltyNode
+    pn: PenaltyNodes
         The penalty node elements
     first_marker_idx: int
         The index of the first marker in the bioMod
@@ -78,7 +78,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4) -> OptimalControlPr
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    number_shooting_points = 30
+    n_shooting = 30
     final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
 
@@ -125,7 +125,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4) -> OptimalControlPr
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,

@@ -74,7 +74,7 @@ def prepare_ocp(biorbd_model_path: str = "cube.bioMod", ode_solver: OdeSolver = 
     )
 
     # Problem parameters
-    number_shooting_points = (20, 20, 20, 20)
+    n_shooting = (20, 20, 20, 20)
     final_time = (2, 5, 4, 2)
     tau_min, tau_max, tau_init = -100, 100, 0
 
@@ -156,7 +156,7 @@ def prepare_ocp(biorbd_model_path: str = "cube.bioMod", ode_solver: OdeSolver = 
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,

@@ -24,7 +24,7 @@ def test_pendulum_save_and_load():
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
-        number_shooting_points=10,
+        n_shooting=10,
     )
     sol = ocp.solve()
 
@@ -40,7 +40,7 @@ def test_pendulum_save_and_load():
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -61,10 +61,10 @@ def test_pendulum_save_and_load():
     TestUtils.simulate(sol, ocp)
 
 
-@pytest.mark.parametrize("nb_threads", [1, 2])
+@pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_pendulum_save_and_load(nb_threads, use_sx, ode_solver):
+def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
@@ -79,8 +79,8 @@ def test_pendulum_save_and_load(nb_threads, use_sx, ode_solver):
                 pendulum.prepare_ocp(
                     biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
                     final_time=2,
-                    number_shooting_points=10,
-                    nb_threads=nb_threads,
+                    n_shooting=10,
+                    n_threads=n_threads,
                     use_sx=use_sx,
                     ode_solver=ode_solver,
                 )
@@ -88,8 +88,8 @@ def test_pendulum_save_and_load(nb_threads, use_sx, ode_solver):
             ocp = pendulum.prepare_ocp(
                 biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
                 final_time=2,
-                number_shooting_points=10,
-                nb_threads=nb_threads,
+                n_shooting=10,
+                n_threads=n_threads,
                 use_sx=use_sx,
                 ode_solver=ode_solver,
             )
@@ -107,7 +107,7 @@ def test_pendulum_save_and_load(nb_threads, use_sx, ode_solver):
 
             # Check some of the results
             states, controls = Data.get_data(ocp, sol["x"])
-            q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+            q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
             # initial and final position
             np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -130,8 +130,8 @@ def test_pendulum_save_and_load(nb_threads, use_sx, ode_solver):
         ocp = pendulum.prepare_ocp(
             biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
             final_time=2,
-            number_shooting_points=10,
-            nb_threads=nb_threads,
+            n_shooting=10,
+            n_threads=n_threads,
             use_sx=use_sx,
             ode_solver=ode_solver,
         )
@@ -152,7 +152,7 @@ def test_pendulum_save_and_load(nb_threads, use_sx, ode_solver):
 
         # Check some of the results
         states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+        q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -198,7 +198,7 @@ def test_custom_constraint_track_markers(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -241,7 +241,7 @@ def test_initial_guesses(interpolation, ode_solver):
     ocp = initial_guess.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
         final_time=1,
-        number_shooting_points=5,
+        n_shooting=5,
         initial_guess=interpolation,
         ode_solver=ode_solver,
     )
@@ -259,7 +259,7 @@ def test_initial_guesses(interpolation, ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0]))
@@ -293,7 +293,7 @@ def test_cyclic_objective(ode_solver):
     ocp = cyclic_movement.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
         final_time=1,
-        number_shooting_points=10,
+        n_shooting=10,
         loop_from_constraint=False,
         ode_solver=ode_solver,
     )
@@ -311,7 +311,7 @@ def test_cyclic_objective(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1.60205103, -0.01069317, 0.62477988]))
@@ -344,7 +344,7 @@ def test_cyclic_constraint(ode_solver):
     ocp = cyclic_movement.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
         final_time=1,
-        number_shooting_points=10,
+        n_shooting=10,
         loop_from_constraint=True,
         ode_solver=ode_solver,
     )
@@ -362,7 +362,7 @@ def test_cyclic_constraint(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 1.57]))
@@ -408,7 +408,7 @@ def test_state_transitions(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"], concatenate=False)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[0][:, 0], np.array((1, 0, 0)))
@@ -454,7 +454,7 @@ def test_parameter_optimization(ode_solver):
     ocp = parameter_optimization.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
         final_time=3,
-        number_shooting_points=20,
+        n_shooting=20,
         min_g=-10,
         max_g=-6,
         target_g=-8,
@@ -469,7 +469,7 @@ def test_parameter_optimization(ode_solver):
 
     # Check some of the results
     states, controls, params = Data.get_data(ocp, sol["x"], concatenate=False, get_parameters=True)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     gravity = params["gravity_z"]
 
     # initial and final position
@@ -559,7 +559,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -602,7 +602,7 @@ def test_example_external_forces(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.71322593, 0, 0)))
@@ -762,7 +762,7 @@ def test_example_multiphase(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"], concatenate=False)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[0][:, 0], np.array((1, 0, 0)))

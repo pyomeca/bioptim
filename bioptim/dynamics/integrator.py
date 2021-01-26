@@ -161,9 +161,9 @@ class Integrator:
 
         ode_opt = {"t0": 0, "tf": nlp.dt}
         if nlp.ode_solver == OdeSolver.RK4 or nlp.ode_solver == OdeSolver.RK8:
-            ode_opt["number_of_finite_elements"] = nlp.nb_integration_steps
+            ode_opt["number_of_finite_elements"] = nlp.n_integration_steps
         elif nlp.ode_solver == OdeSolver.IRK:
-            nlp.nb_integration_steps = 1
+            nlp.n_integration_steps = 1
 
         dynamics = nlp.dynamics_func
         ode = {"x": nlp.x, "p": nlp.u, "ode": dynamics(nlp.x, nlp.u, nlp.p)}
@@ -197,7 +197,7 @@ class Integrator:
                         ode_opt["irk_polynomial_interpolation_degree"] = nlp.irk_polynomial_interpolation_degree
                         nlp.dynamics.append(IRK(ode, ode_opt))
             else:
-                if ocp.nb_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
                 if nlp.ode_solver == OdeSolver.RK4:
                     nlp.dynamics.append(RK4(ode, ode_opt))
@@ -218,8 +218,8 @@ class Integrator:
             nlp.dynamics.append(casadi.integrator("integrator", "cvodes", ode, ode_opt))
 
         if len(nlp.dynamics) == 1:
-            if ocp.nb_threads > 1:
-                nlp.par_dynamics = nlp.dynamics[0].map(nlp.ns, "thread", ocp.nb_threads)
+            if ocp.n_threads > 1:
+                nlp.par_dynamics = nlp.dynamics[0].map(nlp.ns, "thread", ocp.n_threads)
             nlp.dynamics = nlp.dynamics * nlp.ns
 
 
@@ -306,14 +306,14 @@ class RK(Integrator):
         p = params
         x[:, 0] = states
 
-        nb_dof = 0
+        n_dof = 0
         quat_idx = []
         quat_number = 0
         for j in range(self.model.nbSegment()):
             if self.model.segment(j).isRotationAQuaternion():
-                quat_idx.append([nb_dof, nb_dof + 1, nb_dof + 2, self.model.nbDof() + quat_number])
+                quat_idx.append([n_dof, n_dof + 1, n_dof + 2, self.model.nbDof() + quat_number])
                 quat_number += 1
-            nb_dof += self.model.segment(j).nbDof()
+            n_dof += self.model.segment(j).nbDof()
 
         for i in range(1, self.n_step + 1):
             t_norm_init = (i - 1) / self.n_step  # normalized time

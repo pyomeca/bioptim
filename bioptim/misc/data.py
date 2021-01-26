@@ -13,10 +13,10 @@ class Data:
     ----------
     phase: list[Phase]
         A collection of phases.
-    nb_elements: int
+    n_elements: int
         The number of expected phases
-    has_same_nb_elements: bool
-        Variable that make sure the len(phase) and nb_elements are corresponding
+    has_same_n_elements: bool
+        Variable that make sure the len(phase) and n_elements are corresponding
 
     Methods
     -------
@@ -29,21 +29,21 @@ class Data:
         Get the time for each phase
     get_data(ocp: OptimalControlProgram, sol_x: dict, get_states: bool = True, get_controls: bool = True,
             get_parameters: bool = False, phase_idx: Union[int, list, tuple] = None, integrate: bool = False,
-            interpolate_nb_frames: int = -1, concatenate: bool = True,) -> tuple
+            interpolate_n_frames: int = -1, concatenate: bool = True,) -> tuple
         Comprehensively parse the data from a solution
     get_data_object(ocp: OptimalControlProgram, V: np.ndarray, phase_idx: Union[int, list, tuple] = None,
-            integrate: bool = False, interpolate_nb_frames: int = -1, concatenate: bool = True) -> tuple
+            integrate: bool = False, interpolate_n_frames: int = -1, concatenate: bool = True) -> tuple
         Parse an unstructured vector of data of data into their list of Phase format
     _get_data_integrated_from_V(ocp: OptimalControlProgram, data_states: dict,
             data_controls: dict, data_parameters: dict) -> dict
         Integrates the states
     _data_concatenated(data: dict) -> dict
         Concatenate all the phases
-    _get_data_interpolated_from_V(data_states: dict, nb_frames: int) -> dict
+    _get_data_interpolated_from_V(data_states: dict, n_frames: int) -> dict
         Interpolate the states
     _horzcat_node(self, dt: float, x_to_add: np.ndarray, idx_phase: int, idx_node: int)
         Concatenate the nodes of a Phase into a np.ndarray
-    _get_phase(V_phase: np.ndarray, var_size: int, nb_nodes: int, offset: int, nb_variables: int,
+    _get_phase(V_phase: np.ndarray, var_size: int, n_nodes: int, offset: int, n_variables: int,
             duplicate_last_column: bool) -> np.ndarray
         Extract the data of a specific phase from an unstructured vector of data
     _vertcat(data: np.ndarray, keys: str, phases: Union[int, list, tuple] = (), nodes: Union[int, list, tuple] = ())
@@ -59,11 +59,11 @@ class Data:
         ----------
         node: list[np.ndarray]
             The actual values stored by nodes
-        nb_elements:
+        n_elements:
             The number of expected nodes
         t: np.array
             The time vector
-        nb_t: int
+        n_t: int
             The len of the time vector
         """
 
@@ -77,9 +77,9 @@ class Data:
                 The values of the nodes
             """
             self.node = [node.reshape(node.shape[0], 1) for node in phase.T]
-            self.nb_elements = phase.shape[0]
+            self.n_elements = phase.shape[0]
             self.t = time
-            self.nb_t = self.t.shape[0]
+            self.n_t = self.t.shape[0]
 
     def __init__(self):
         """
@@ -87,8 +87,8 @@ class Data:
         ----------
         """
         self.phase = []
-        self.nb_elements = -1
-        self.has_same_nb_elements = True
+        self.n_elements = -1
+        self.has_same_n_elements = True
 
     def to_matrix(
         self,
@@ -120,18 +120,18 @@ class Data:
 
         phase_idx = phase_idx if isinstance(phase_idx, (list, tuple)) else [phase_idx]
         range_phases = range(len(self.phase)) if phase_idx == () else phase_idx
-        if (self.has_same_nb_elements and concatenate_phases) or len(range_phases) == 1:
+        if (self.has_same_n_elements and concatenate_phases) or len(range_phases) == 1:
             node_idx = node_idx if isinstance(node_idx, (list, tuple)) else [node_idx]
             idx = idx if isinstance(idx, (list, tuple)) else [idx]
 
-            range_idx = range(self.nb_elements) if idx == () else idx
+            range_idx = range(self.n_elements) if idx == () else idx
 
             data = np.ndarray((len(range_idx), 0))
             for idx_phase in range_phases:
                 if idx_phase < range_phases[-1]:
-                    range_nodes = range(self.phase[idx_phase].nb_t - 1) if node_idx == () else node_idx
+                    range_nodes = range(self.phase[idx_phase].n_t - 1) if node_idx == () else node_idx
                 else:
-                    range_nodes = range(self.phase[idx_phase].nb_t) if node_idx == () else node_idx
+                    range_nodes = range(self.phase[idx_phase].n_t) if node_idx == () else node_idx
                 for idx_node in range_nodes:
                     node = self.phase[idx_phase].node[idx_node][range_idx, :]
                     data = np.concatenate((data, node), axis=1)
@@ -197,7 +197,7 @@ class Data:
         get_parameters: bool = False,
         phase_idx: Union[int, list, tuple] = None,
         integrate: bool = False,
-        interpolate_nb_frames: int = -1,
+        interpolate_n_frames: int = -1,
         concatenate: bool = True,
     ) -> dict:
         """
@@ -219,7 +219,7 @@ class Data:
             The index of the phase to get the data from
         integrate: bool
             If the data should be integrate (returns the points at each time step of the RK)
-        interpolate_nb_frames: int
+        interpolate_n_frames: int
             If the data should be interpolated to change the frame rate
         concatenate: bool
             If the phases should be concatenated into one matrix [True] or returned in a list [False]
@@ -233,7 +233,7 @@ class Data:
             sol_x = sol_x["x"]
 
         data_states, data_controls, data_parameters = Data.get_data_object(
-            ocp, sol_x, phase_idx, integrate, interpolate_nb_frames, concatenate
+            ocp, sol_x, phase_idx, integrate, interpolate_n_frames, concatenate
         )
 
         out = []
@@ -263,7 +263,7 @@ class Data:
         V: np.ndarray,
         phase_idx: Union[int, list, tuple] = None,
         integrate: bool = False,
-        interpolate_nb_frames: int = -1,
+        interpolate_n_frames: int = -1,
         concatenate: bool = True,
     ) -> tuple:
         """
@@ -279,7 +279,7 @@ class Data:
             Index of the phases to return
         integrate: bool
             If V should be integrated between nodes
-        interpolate_nb_frames: int
+        interpolate_n_frames: int
             Number of frames to interpolate the solution
         concatenate: bool
             If the data should be return in one matrix [True] or in a list [False]
@@ -300,9 +300,9 @@ class Data:
         offset = 0
         for key in ocp.param_to_optimize:
             if ocp.param_to_optimize[key]:
-                nb_param = ocp.param_to_optimize[key].size
-                data_parameters[key] = np.array(V[offset : offset + nb_param])
-                offset += nb_param
+                n_param = ocp.param_to_optimize[key].size
+                data_parameters[key] = np.array(V[offset : offset + n_param])
+                offset += n_param
 
                 if key == "time":
                     cmp = 0
@@ -331,13 +331,13 @@ class Data:
                     data_controls[key] = Data()
 
             V_phase = np.array(V_array[offsets[i] : offsets[i + 1]])
-            nb_var = nlp.nx + nlp.nu
+            n_var = nlp.nx + nlp.nu
             offset = 0
 
             for key in nlp.var_states:
                 data_states[key]._append_phase(
                     (0, phase_time[i]),
-                    Data._get_phase(V_phase, nlp.var_states[key], nlp.ns + 1, offset, nb_var, False),
+                    Data._get_phase(V_phase, nlp.var_states[key], nlp.ns + 1, offset, n_var, False),
                 )
                 offset += nlp.var_states[key]
 
@@ -345,12 +345,12 @@ class Data:
                 if nlp.control_type == ControlType.CONSTANT:
                     data_controls[key]._append_phase(
                         (0, phase_time[i]),
-                        Data._get_phase(V_phase, nlp.var_controls[key], nlp.ns, offset, nb_var, True),
+                        Data._get_phase(V_phase, nlp.var_controls[key], nlp.ns, offset, n_var, True),
                     )
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                     data_controls[key]._append_phase(
                         (0, phase_time[i]),
-                        Data._get_phase(V_phase, nlp.var_controls[key], nlp.ns + 1, offset, nb_var, False),
+                        Data._get_phase(V_phase, nlp.var_controls[key], nlp.ns + 1, offset, n_var, False),
                     )
                 else:
                     raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
@@ -363,11 +363,11 @@ class Data:
             data_states = Data._data_concatenated(data_states)
             data_controls = Data._data_concatenated(data_controls)
 
-        if interpolate_nb_frames > 0:
+        if interpolate_n_frames > 0:
             if integrate:
                 raise RuntimeError("interpolate values are not compatible yet with integrated values")
-            data_states = Data._get_data_interpolated_from_V(data_states, interpolate_nb_frames)
-            data_controls = Data._get_data_interpolated_from_V(data_controls, interpolate_nb_frames)
+            data_states = Data._get_data_interpolated_from_V(data_states, interpolate_n_frames)
+            data_controls = Data._get_data_interpolated_from_V(data_controls, interpolate_n_frames)
 
         return data_states, data_controls, data_parameters
 
@@ -393,7 +393,7 @@ class Data:
         """
 
         # Check if time is optimized
-        for idx_phase in range(ocp.nb_phases):
+        for idx_phase in range(ocp.n_phases):
             dt = ocp.nlp[idx_phase].dt
             nlp = ocp.nlp[idx_phase]
             for idx_node in reversed(range(ocp.nlp[idx_phase].ns)):
@@ -431,7 +431,7 @@ class Data:
         """
 
         for key in data:
-            if data[key].has_same_nb_elements:
+            if data[key].has_same_n_elements:
                 data[key].phase = [
                     Data.Phase(
                         data[key].get_time_per_phase(concatenate=True), data[key].to_matrix(concatenate_phases=True)
@@ -440,7 +440,7 @@ class Data:
         return data
 
     @staticmethod
-    def _get_data_interpolated_from_V(data_states: dict, nb_frames: int) -> dict:
+    def _get_data_interpolated_from_V(data_states: dict, n_frames: int) -> dict:
         """
         Interpolate the states
 
@@ -448,7 +448,7 @@ class Data:
         ----------
         data_states: dict
             A dictionary of all the states
-        nb_frames: int
+        n_frames: int
             The number of frames to interpolate the data
 
         Returns
@@ -465,11 +465,11 @@ class Data:
 
             for idx_phase in range(len(d)):
                 t_phase = t[idx_phase]
-                t_int = np.linspace(t_phase[0], t_phase[-1], nb_frames)
+                t_int = np.linspace(t_phase[0], t_phase[-1], n_frames)
                 x_phase = d[idx_phase]
 
-                x_interpolate = np.ndarray((data_states[key].nb_elements, nb_frames))
-                for j in range(data_states[key].nb_elements):
+                x_interpolate = np.ndarray((data_states[key].n_elements, n_frames))
+                for j in range(data_states[key].n_elements):
                     s = interpolate.splrep(t_phase, x_phase[j, :])
                     x_interpolate[j, :] = interpolate.splev(t_int, s)
                 data_states[key].phase[idx_phase] = Data.Phase(t_int, x_interpolate)
@@ -503,7 +503,7 @@ class Data:
 
     @staticmethod
     def _get_phase(
-        V_phase: np.ndarray, var_size: int, nb_nodes: int, offset: int, nb_variables: int, duplicate_last_column: bool
+        V_phase: np.ndarray, var_size: int, n_nodes: int, offset: int, n_variables: int, duplicate_last_column: bool
     ) -> np.ndarray:
         """
         Extract the data of a specific phase from an unstructured vector of data
@@ -514,11 +514,11 @@ class Data:
             The unstructured vector of data
         var_size: int
             The size of the variable to extract
-        nb_nodes:
+        n_nodes:
             The number of node to extract
         offset:
             The index of the first element to extract
-        nb_variables:
+        n_variables:
             The number of variable to skip
         duplicate_last_column:
             If the last column should be duplicated
@@ -528,9 +528,9 @@ class Data:
         The data in the form of a np.ndarray
         """
 
-        array = np.ndarray((var_size, nb_nodes))
+        array = np.ndarray((var_size, n_nodes))
         for dof in range(var_size):
-            array[dof, :] = V_phase[offset + dof :: nb_variables]
+            array[dof, :] = V_phase[offset + dof :: n_variables]
 
         if duplicate_last_column:
             return np.c_[array, array[:, -1]]
@@ -595,8 +595,8 @@ class Data:
 
         time = np.linspace(time[0], time[1], len(phase[0]))
         self.phase.append(Data.Phase(time, phase))
-        if self.nb_elements < 0:
-            self.nb_elements = self.phase[-1].nb_elements
+        if self.n_elements < 0:
+            self.n_elements = self.phase[-1].n_elements
 
-        if self.nb_elements != self.phase[-1].nb_elements:
-            self.has_same_nb_elements = False
+        if self.n_elements != self.phase[-1].n_elements:
+            self.has_same_n_elements = False

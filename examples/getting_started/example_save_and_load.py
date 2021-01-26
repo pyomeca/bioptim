@@ -26,8 +26,8 @@ from bioptim import (
 def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
-    number_shooting_points: int,
-    nb_threads: int,
+    n_shooting: int,
+    n_threads: int,
     use_sx: bool = False,
     ode_solver: OdeSolver = OdeSolver.RK4,
 ) -> OptimalControlProgram:
@@ -40,9 +40,9 @@ def prepare_ocp(
         The path of the biorbd model
     final_time: float
         The time at the final node
-    number_shooting_points: int
+    n_shooting: int
         The number of shooting points
-    nb_threads: int
+    n_threads: int
         The number of threads to use while using multithreading
     ode_solver: OdeSolver
         The type of ode solver used
@@ -83,14 +83,14 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
         x_bounds,
         u_bounds,
         objective_functions=objective_functions,
-        nb_threads=nb_threads,
+        n_threads=n_threads,
         use_sx=use_sx,
         ode_solver=ode_solver,
     )
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     Create and solve a program. Then it saves it using the .bob and .bo method
     """
 
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100, nb_threads=4)
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, n_threads=4)
 
     # --- Solve the program --- #
     tic = time()
@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
     # --- Access to all iterations  --- #
     if sol_iterations:  # If the processor is too fast, this will be empty since it is attached to the update function
-        nb_iter = len(sol_iterations)
+        n_iter = len(sol_iterations)
         third_iteration = sol_iterations[2]
 
     # --- Print objective cost  --- #

@@ -4,7 +4,7 @@ from enum import Enum
 import numpy as np
 from casadi import MX, SX
 
-from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption, PenaltyNode
+from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption, PenaltyNodes
 from ..misc.enums import Node
 from ..misc.options import OptionList, OptionGeneric
 
@@ -124,7 +124,7 @@ class ObjectiveFunction:
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, pn: PenaltyNode)
+        _span_checker(objective: Objective, pn: PenaltyNodes)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         penalty_nature() -> str
             Get the nature of the penalty
@@ -136,12 +136,12 @@ class ObjectiveFunction:
 
             Methods
             -------
-            minimize_time(penalty: ObjectiveFcn.Lagrange, pn: PenaltyNode)
+            minimize_time(penalty: ObjectiveFcn.Lagrange, pn: PenaltyNodes)
                 Minimizes the duration of the phase
             """
 
             @staticmethod
-            def minimize_time(penalty: Objective, pn: PenaltyNode):
+            def minimize_time(penalty: Objective, pn: PenaltyNodes):
                 """
                 Minimizes the duration of the phase
 
@@ -149,7 +149,7 @@ class ObjectiveFunction:
                 ----------
                 penalty: Objective,
                     The actual constraint to declare
-                pn: PenaltyNode
+                pn: PenaltyNodes
                     The penalty node elements
                 """
 
@@ -222,7 +222,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, pn: PenaltyNode):
+        def _span_checker(objective: Objective, pn: PenaltyNodes):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -230,7 +230,7 @@ class ObjectiveFunction:
             ----------
             objective: Objective
                 The actual objective function to declare
-            pn: PenaltyNode
+            pn: PenaltyNodes
                 The penalty node elements
             """
 
@@ -279,7 +279,7 @@ class ObjectiveFunction:
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, pn: PenaltyNode)
+        _span_checker(objective: Objective, pn: PenaltyNodes)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         penalty_nature() -> str
             Get the nature of the penalty
@@ -291,14 +291,14 @@ class ObjectiveFunction:
 
             Methods
             -------
-            minimize_time(penalty: "ObjectiveFcn.Lagrange", pn: PenaltyNode)
+            minimize_time(penalty: "ObjectiveFcn.Lagrange", pn: PenaltyNodes)
                 Minimizes the duration of the phase
             """
 
             @staticmethod
             def minimize_time(
                 penalty: Objective,
-                pn: PenaltyNode,
+                pn: PenaltyNodes,
             ):
                 """
                 Minimizes the duration of the phase
@@ -307,7 +307,7 @@ class ObjectiveFunction:
                 ----------
                 penalty: Objective,
                     The actual constraint to declare
-                pn: PenaltyNode
+                pn: PenaltyNodes
                     The penalty node elements
                 """
 
@@ -396,7 +396,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, pn: PenaltyNode):
+        def _span_checker(objective: Objective, pn: PenaltyNodes):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -405,7 +405,7 @@ class ObjectiveFunction:
             objective: Objective
                 The actual objective function to declare
                 A reference to the current phase of the ocp
-            pn: PenaltyNode
+            pn: PenaltyNodes
                 The penalty node elements
             """
 
@@ -450,7 +450,7 @@ class ObjectiveFunction:
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, pn: PenaltyNode)
+        _span_checker(objective: Objective, pn: PenaltyNodes)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         penalty_nature() -> str
             Get the nature of the penalty
@@ -513,7 +513,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, pn: PenaltyNode):
+        def _span_checker(objective: Objective, pn: PenaltyNodes):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -521,7 +521,7 @@ class ObjectiveFunction:
             ----------
             objective: Objective
                 The actual objective function to declare
-            pn: PenaltyNode
+            pn: PenaltyNodes
                 The penalty node elements
             """
 

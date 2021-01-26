@@ -43,9 +43,9 @@ class NonLinearProgram:
         List of all the muscle names
     muscles: MX
         The casadi variables for the muscles
-    nb_integration_steps: int
+    n_integration_steps: int
         The number of finite element of the RK  # TODO: these option should be from a special class
-    nb_threads: int
+    n_threads: int
         The number of thread to use
     np: int
         The number of parameters
@@ -69,7 +69,7 @@ class NonLinearProgram:
         The collection of plot for each of the variables
     q: MX
         The casadi variables for the generalized coordinates
-    q_dot: MX
+    qdot: MX
         The casadi variables for the generalized velocities
     shape: dict
         A collection of the dimension of each of the variables
@@ -128,8 +128,8 @@ class NonLinearProgram:
         self.model = None
         self.muscleNames = None
         self.muscles = None
-        self.nb_integration_steps = None
-        self.nb_threads = None
+        self.n_integration_steps = None
+        self.n_threads = None
         self.np = None
         self.ns = None
         self.nu = None
@@ -141,7 +141,7 @@ class NonLinearProgram:
         self.phase_idx = None
         self.plot = {}
         self.q = None
-        self.q_dot = None
+        self.qdot = None
         self.shape = {}
         self.tau = None
         self.t0 = None
@@ -167,7 +167,7 @@ class NonLinearProgram:
             The type of casadi variable
 
         """
-        self.shape = {"q": 0, "q_dot": 0, "tau": 0, "muscle": 0}
+        self.shape = {"q": 0, "qdot": 0, "tau": 0, "muscle": 0}
         self.plot = {}
         self.var_states = {}
         self.var_controls = {}
@@ -201,26 +201,26 @@ class NonLinearProgram:
         """
 
         if isinstance(param, (list, tuple)):
-            if len(param) != ocp.nb_phases:
+            if len(param) != ocp.n_phases:
                 raise RuntimeError(
-                    f"{param_name} size({len(param)}) does not correspond to the number of phases({ocp.nb_phases})."
+                    f"{param_name} size({len(param)}) does not correspond to the number of phases({ocp.n_phases})."
                 )
             else:
-                for i in range(ocp.nb_phases):
+                for i in range(ocp.n_phases):
                     if name is None:
                         setattr(ocp.nlp[i], param_name, param[i])
                     else:
                         getattr(ocp.nlp[i], name)[param_name] = param[i]
         elif isinstance(param, OptionList):
-            if len(param) == ocp.nb_phases:
-                for i in range(ocp.nb_phases):
+            if len(param) == ocp.n_phases:
+                for i in range(ocp.n_phases):
                     if name is None:
                         setattr(ocp.nlp[i], param_name, param[i])
                     else:
                         getattr(ocp.nlp[i], name)[param_name] = param[i]
             else:
                 if len(param) == 1 and duplicate_singleton:
-                    for i in range(ocp.nb_phases):
+                    for i in range(ocp.n_phases):
                         if name is None:
                             setattr(ocp.nlp[i], param_name, param[0])
                         else:
@@ -228,17 +228,17 @@ class NonLinearProgram:
                 else:
                     raise RuntimeError(
                         f"{param_name} size({len(param)}) does not correspond "
-                        f"to the number of phases({ocp.nb_phases})."
+                        f"to the number of phases({ocp.n_phases})."
                     )
         else:
-            if ocp.nb_phases == 1:
+            if ocp.n_phases == 1:
                 if name is None:
                     setattr(ocp.nlp[0], param_name, param)
                 else:
                     getattr(ocp.nlp[0], name)[param_name] = param
             else:
                 if duplicate_singleton:
-                    for i in range(ocp.nb_phases):
+                    for i in range(ocp.n_phases):
                         if name is None:
                             setattr(ocp.nlp[i], param_name, param)
                         else:

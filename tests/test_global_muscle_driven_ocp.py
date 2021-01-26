@@ -23,7 +23,7 @@ def test_muscle_driven_ocp(ode_solver):
     ocp = static_arm.prepare_ocp(
         str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod",
         final_time=2,
-        number_shooting_points=10,
+        n_shooting=10,
         weight=1,
         ode_solver=ode_solver,
     )
@@ -36,7 +36,7 @@ def test_muscle_driven_ocp(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
+    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         # Check return_objectives
@@ -235,7 +235,7 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
     ocp = static_arm_with_contact.prepare_ocp(
         str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26_with_contact.bioMod",
         final_time=2,
-        number_shooting_points=10,
+        n_shooting=10,
         weight=1,
         ode_solver=ode_solver,
     )
@@ -254,7 +254,7 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
 
         # Check some of the results
         states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
+        q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([0, 0.07, 1.4]))
@@ -287,7 +287,7 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
 
         # Check some of the results
         states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
+        q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([0, 0.07, 1.4]))
@@ -320,7 +320,7 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
 
         # Check some of the results
         states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
+        q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([0, 0.07, 1.4]))
@@ -360,7 +360,7 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
     ocp = contact_forces_inequality_constraint_muscle_excitations.prepare_ocp(
         str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod",
         phase_time=0.3,
-        number_shooting_points=10,
+        n_shooting=10,
         min_bound=boundary,
         ode_solver=ode_solver,
     )
@@ -375,7 +375,7 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
     states, controls = Data.get_data(ocp, sol["x"])
     q, qdot, mus_states, tau, mus_controls = (
         states["q"],
-        states["q_dot"],
+        states["qdot"],
         states["muscles"],
         controls["tau"],
         controls["muscles"],

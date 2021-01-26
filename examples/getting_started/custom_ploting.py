@@ -36,7 +36,7 @@ def custom_plot_callback(x: MX, q_to_plot: list) -> MX:
     return x[q_to_plot, :]
 
 
-def prepare_ocp(biorbd_model_path: str, final_time: float, number_shooting_points: int) -> OptimalControlProgram:
+def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> OptimalControlProgram:
     """
     Prepare the program
 
@@ -46,7 +46,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, number_shooting_point
         The path of the biorbd model
     final_time: float
         The time at the final node
-    number_shooting_points: int
+    n_shooting: int
         The number of shooting points
     """
 
@@ -76,7 +76,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, number_shooting_point
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     """
 
     # Prepare the Optimal Control Program
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50)
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50)
 
     # Add my lovely new plot
     ocp.add_plot("My New Extra Plot", lambda x, u, p: custom_plot_callback(x, [0, 1, 3]), plot_type=PlotType.PLOT)

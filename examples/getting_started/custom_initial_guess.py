@@ -34,18 +34,18 @@ from bioptim import (
 )
 
 
-def custom_init_func(current_shooting_point: int, my_values: np.ndarray, nb_shooting: int) -> np.ndarray:
+def custom_init_func(current_shooting_point: int, my_values: np.ndarray, n_shooting: int) -> np.ndarray:
     """
     The custom function for the x bound (this particular one mimics linear interpolation)
 
     Parameters
     ----------
     current_shooting_point: int
-        The current point to return the value, it is defined between [0; nb_shooting] for the states
-        and [0; nb_shooting[ for the controls
+        The current point to return the value, it is defined between [0; n_shooting] for the states
+        and [0; n_shooting[ for the controls
     my_values: np.ndarray
         The values provided by the user
-    nb_shooting: int
+    n_shooting: int
         The number of shooting point
 
     Returns
@@ -54,12 +54,12 @@ def custom_init_func(current_shooting_point: int, my_values: np.ndarray, nb_shoo
     """
 
     # Linear interpolation created with custom function
-    return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / nb_shooting
+    return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / n_shooting
 
 
 def prepare_ocp(
     biorbd_model_path: str,
-    number_shooting_points: int,
+    n_shooting: int,
     final_time: float,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
     ode_solver=OdeSolver.RK4,
@@ -71,7 +71,7 @@ def prepare_ocp(
     ----------
     biorbd_model_path: str
         The path of the biorbd model
-    number_shooting_points: int
+    n_shooting: int
         The number of shooting points
     final_time: float
         The time at the final node
@@ -124,8 +124,8 @@ def prepare_ocp(
         x = np.array([[1.0, 0.0, 0.0, 0, 0, 0], [2.0, 0.0, 1.57, 0, 0, 0]]).T
         u = np.array([[1.45, 9.81, 2.28], [-1.45, 9.81, -2.28]]).T
     elif initial_guess == InterpolationType.EACH_FRAME:
-        x = np.random.random((nq + nqdot, number_shooting_points + 1))
-        u = np.random.random((ntau, number_shooting_points))
+        x = np.random.random((nq + nqdot, n_shooting + 1))
+        u = np.random.random((ntau, n_shooting))
     elif initial_guess == InterpolationType.SPLINE:
         # Bound spline assume the first and last point are 0 and final respectively
         t = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
@@ -135,8 +135,8 @@ def prepare_ocp(
         # The custom function refers to the one at the beginning of the file. It emulates a Linear interpolation
         x = custom_init_func
         u = custom_init_func
-        extra_params_x = {"my_values": np.random.random((nq + nqdot, 2)), "nb_shooting": number_shooting_points}
-        extra_params_u = {"my_values": np.random.random((ntau, 2)), "nb_shooting": number_shooting_points}
+        extra_params_x = {"my_values": np.random.random((nq + nqdot, 2)), "n_shooting": n_shooting}
+        extra_params_u = {"my_values": np.random.random((ntau, 2)), "n_shooting": n_shooting}
     else:
         raise RuntimeError("Initial guess not implemented yet")
     x_init = InitialGuess(x, t=t, interpolation=initial_guess, **extra_params_x)
@@ -147,7 +147,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
-        ocp = prepare_ocp("cube.bioMod", number_shooting_points=30, final_time=2, initial_guess=initial_guess)
+        ocp = prepare_ocp("cube.bioMod", n_shooting=30, final_time=2, initial_guess=initial_guess)
         sol = ocp.solve()
         print("\n")
 

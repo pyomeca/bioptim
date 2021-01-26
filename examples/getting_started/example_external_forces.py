@@ -51,7 +51,7 @@ def prepare_ocp(biorbd_model_path: str = "cube_with_forces.bioMod", ode_solver: 
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    number_shooting_points = 30
+    n_shooting = 30
     final_time = 2
 
     # Add objective functions
@@ -71,7 +71,7 @@ def prepare_ocp(biorbd_model_path: str = "cube_with_forces.bioMod", ode_solver: 
     # The array inside it is 6x2x30 since there is [Mx, My, Mz, Fx, Fy, Fz] for the two externalforceindex for each node
     external_forces = [
         np.repeat(
-            np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T[:, :, np.newaxis], number_shooting_points, axis=2
+            np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T[:, :, np.newaxis], n_shooting, axis=2
         )
     ]
 
@@ -95,7 +95,7 @@ def prepare_ocp(biorbd_model_path: str = "cube_with_forces.bioMod", ode_solver: 
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,

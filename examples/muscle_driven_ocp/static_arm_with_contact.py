@@ -25,7 +25,7 @@ from bioptim import (
 def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
-    number_shooting_points: int,
+    n_shooting: int,
     weight: float,
     ode_solver: OdeSolver = OdeSolver.RK4,
 ) -> OptimalControlProgram:
@@ -38,7 +38,7 @@ def prepare_ocp(
         The path to the bioMod
     final_time: float
         The time at the final node
-    number_shooting_points: int
+    n_shooting: int
         The number of shooting points
     weight: float
         The weight applied to the SUPERIMPOSE_MARKERS final objective function. The bigger this number is, the greater
@@ -90,7 +90,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path="arm26_with_contact.bioMod", final_time=3, number_shooting_points=50, weight=1000
+        biorbd_model_path="arm26_with_contact.bioMod", final_time=3, n_shooting=50, weight=1000
     )
 
     # --- Solve the program --- #

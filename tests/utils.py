@@ -35,8 +35,8 @@ class TestUtils:
         os.remove(file_path)
 
         file_path_bob = "test.bob"
-        ocp.save_get_data(sol, file_path_bob, interpolate_nb_frames=-1, concatenate=True)
-        data = Data.get_data(ocp, sol, file_path_bob, interpolate_nb_frames=-1, concatenate=True)
+        ocp.save_get_data(sol, file_path_bob, interpolate_n_frames=-1, concatenate=True)
+        data = Data.get_data(ocp, sol, file_path_bob, interpolate_n_frames=-1, concatenate=True)
 
         with open(file_path_bob, "rb") as file:
             data_load = pickle.load(file)["data"]

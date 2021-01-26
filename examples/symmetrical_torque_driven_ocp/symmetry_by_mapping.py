@@ -59,7 +59,7 @@ def prepare_ocp(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    number_shooting_points = 30
+    n_shooting = 30
     final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
     all_generalized_mapping = BidirectionalMapping([0, 1, 2, -2], [0, 1, 2])
@@ -98,7 +98,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,

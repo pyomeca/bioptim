@@ -99,7 +99,7 @@ Bounds
 BoundsList
     A list of Bounds if more than one is required
 QAndQDotBounds
-    Specialized Bounds that reads a model to automatically extract q and q_dot bounds
+    Specialized Bounds that reads a model to automatically extract q and qdot bounds
 
 
 # --- Managing the initial guesses of the variables --- #
@@ -162,7 +162,7 @@ from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.continuity import StateTransitionFcn, StateTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ObjectivePrinter
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
-from .limits.penalty import PenaltyNode
+from .limits.penalty import PenaltyNodes
 from .misc.data import Data
 from .misc.enums import Axis, Node, InterpolationType, OdeSolver, PlotType, Solver, ControlType
 from .misc.mapping import BidirectionalMapping, Mapping

@@ -26,7 +26,7 @@ from bioptim import (
 def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
-    number_shooting_points: int,
+    n_shooting: int,
     time_min: float,
     time_max: float,
     ode_solver: OdeSolver = OdeSolver.RK4,
@@ -40,7 +40,7 @@ def prepare_ocp(
         The path to the bioMod
     final_time: float
         The initial guess for the final time
-    number_shooting_points: int
+    n_shooting: int
         The number of shooting points
     time_min: float
         The minimal time the phase can have
@@ -88,7 +88,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     ocp = prepare_ocp(
         biorbd_model_path="pendulum.bioMod",
         final_time=2,
-        number_shooting_points=50,
+        n_shooting=50,
         time_min=time_min,
         time_max=time_max,
     )

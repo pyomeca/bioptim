@@ -37,7 +37,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     ode_solver = OdeSolver.RK4
 
     # --- Options --- #
-    nb_phases = len(ns)
+    n_phases = len(ns)
 
     # Model path
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
@@ -133,10 +133,10 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model[:nb_phases],
+        biorbd_model[:n_phases],
         dynamics,
         ns,
-        final_time[:nb_phases],
+        final_time[:n_phases],
         x_init,
         u_init,
         x_bounds,

@@ -114,7 +114,7 @@ def plot_true_U(q_to_plot):
 def warm_start_mhe(data_sol_prev):
     # TODO: This should be moved in a MHE module
     q = data_sol_prev[0]["q"]
-    dq = data_sol_prev[0]["q_dot"]
+    dq = data_sol_prev[0]["qdot"]
     u = data_sol_prev[1]["tau"]
     x = np.vstack([q, dq])
     X0 = np.hstack((x[:, 1:], np.tile(x[:, [-1]], 1)))  # discard oldest estimate of the window, duplicates youngest
@@ -125,7 +125,7 @@ def warm_start_mhe(data_sol_prev):
 
 def prepare_ocp(
     biorbd_model_path,
-    number_shooting_points,
+    n_shooting,
     final_time,
     max_torque,
     X0,
@@ -175,14 +175,14 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
         x_bounds,
         u_bounds,
         objective_functions,
-        nb_threads=4,
+        n_threads=4,
         use_sx=True,
     )
 
@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
     ocp = prepare_ocp(
         biorbd_model_path,
-        number_shooting_points=N_mhe,
+        n_shooting=N_mhe,
         final_time=Tf_mhe,
         max_torque=T_max,
         X0=X0,

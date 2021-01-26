@@ -15,7 +15,7 @@ class PathCondition(np.ndarray):
 
     Attributes
     ----------
-    nb_shooting: int
+    n_shooting: int
         Number of shooting points
     type: InterpolationType
         Type of interpolation
@@ -36,7 +36,7 @@ class PathCondition(np.ndarray):
         Adding some attributes to the reduced state
     __setstate__(self, state: tuple, *args, **kwargs)
         Adding some attributes to the expanded state
-    check_and_adjust_dimensions(self, nb_elements: int, nb_shooting: int, element_type: InterpolationType)
+    check_and_adjust_dimensions(self, n_elements: int, n_shooting: int, element_type: InterpolationType)
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
     evaluate_at(self, shooting_point: int)
@@ -127,7 +127,7 @@ class PathCondition(np.ndarray):
             obj = input_array
 
         # Additional information (do not forget to update __reduce__ and __setstate__)
-        obj.nb_shooting = None
+        obj.n_shooting = None
         obj.type = interpolation
         obj.t = t
         obj.extra_params = extra_params
@@ -150,7 +150,7 @@ class PathCondition(np.ndarray):
         # see InfoArray.__array_finalize__ for comments
         if obj is None:
             return
-        self.nb_shooting = getattr(obj, "nb_shooting", None)
+        self.n_shooting = getattr(obj, "n_shooting", None)
         self.type = getattr(obj, "type", None)
         self.t = getattr(obj, "t", None)
         self.extra_params = getattr(obj, "extra_params", None)
@@ -166,7 +166,7 @@ class PathCondition(np.ndarray):
         """
 
         pickled_state = super(PathCondition, self).__reduce__()
-        new_state = pickled_state[2] + (self.nb_shooting, self.type, self.t, self.extra_params, self.slice_list)
+        new_state = pickled_state[2] + (self.n_shooting, self.type, self.t, self.extra_params, self.slice_list)
         return pickled_state[0], pickled_state[1], new_state
 
     def __setstate__(self, state: tuple, *args, **kwargs):
@@ -179,7 +179,7 @@ class PathCondition(np.ndarray):
             The state as described by __reduce__
         """
 
-        self.nb_shooting = state[-5]
+        self.n_shooting = state[-5]
         self.type = state[-4]
         self.t = state[-3]
         self.extra_params = state[-2]
@@ -187,16 +187,16 @@ class PathCondition(np.ndarray):
         # Call the parent's __setstate__ with the other tuple elements.
         super(PathCondition, self).__setstate__(state[0:-5], *args, **kwargs)
 
-    def check_and_adjust_dimensions(self, nb_elements: int, nb_shooting: int, element_type: InterpolationType):
+    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int, element_type: InterpolationType):
         """
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
 
         Parameters
         ----------
-        nb_elements: int
+        n_elements: int
             The expected number of rows
-        nb_shooting: int
+        n_shooting: int
             The number of shooting points in the ocp
         element_type: InterpolationType
             The type of the interpolation
@@ -209,13 +209,13 @@ class PathCondition(np.ndarray):
             or self.type == InterpolationType.SPLINE
             or self.type == InterpolationType.CUSTOM
         ):
-            self.nb_shooting = nb_shooting
+            self.n_shooting = n_shooting
         elif self.type == InterpolationType.EACH_FRAME:
-            self.nb_shooting = nb_shooting + 1
+            self.n_shooting = n_shooting + 1
         else:
-            if self.nb_shooting != nb_shooting:
+            if self.n_shooting != n_shooting:
                 raise RuntimeError(
-                    f"Invalid number of shooting ({self.nb_shooting}), the expected number is {nb_shooting}"
+                    f"Invalid number of shooting ({self.n_shooting}), the expected number is {n_shooting}"
                 )
 
         if self.type == InterpolationType.CUSTOM:
@@ -228,14 +228,14 @@ class PathCondition(np.ndarray):
                 val_size = self.custom_function(0, **self.extra_params).shape[0]
         else:
             val_size = self.shape[0]
-        if val_size != nb_elements:
-            raise RuntimeError(f"Invalid number of {element_type} ({val_size}), the expected size is {nb_elements}")
+        if val_size != n_elements:
+            raise RuntimeError(f"Invalid number of {element_type} ({val_size}), the expected size is {n_elements}")
 
         if self.type == InterpolationType.EACH_FRAME:
-            if self.shape[1] != self.nb_shooting:
+            if self.shape[1] != self.n_shooting:
                 raise RuntimeError(
                     f"Invalid number of column for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
-                    f"the expected number of column is {self.nb_shooting}"
+                    f"the expected number of column is {self.n_shooting}"
                 )
 
     def evaluate_at(self, shooting_point: int):
@@ -252,7 +252,7 @@ class PathCondition(np.ndarray):
         The values of the components at a specific time index
         """
 
-        if self.nb_shooting is None:
+        if self.n_shooting is None:
             raise RuntimeError(f"check_and_adjust_dimensions must be called at least once before evaluating at")
 
         if self.type == InterpolationType.CONSTANT:
@@ -260,19 +260,19 @@ class PathCondition(np.ndarray):
         elif self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             if shooting_point == 0:
                 return self[:, 0]
-            elif shooting_point == self.nb_shooting:
+            elif shooting_point == self.n_shooting:
                 return self[:, 2]
-            elif shooting_point > self.nb_shooting:
+            elif shooting_point > self.n_shooting:
                 raise RuntimeError("shooting point too high")
             else:
                 return self[:, 1]
         elif self.type == InterpolationType.LINEAR:
-            return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / self.nb_shooting
+            return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / self.n_shooting
         elif self.type == InterpolationType.EACH_FRAME:
             return self[:, shooting_point]
         elif self.type == InterpolationType.SPLINE:
             spline = interp1d(self.t, self)
-            return spline(shooting_point / self.nb_shooting * (self.t[-1] - self.t[0]))
+            return spline(shooting_point / self.n_shooting * (self.t[-1] - self.t[0]))
         elif self.type == InterpolationType.CUSTOM:
             if self.slice_list is not None:
                 slice_list = self.slice_list
@@ -291,7 +291,7 @@ class Bounds(OptionGeneric):
 
     Attributes
     ----------
-    nb_shooting: int
+    n_shooting: int
         The number of shooting of the ocp
     min: PathCondition
         The minimal bound
@@ -306,7 +306,7 @@ class Bounds(OptionGeneric):
 
     Methods
     -------
-    check_and_adjust_dimensions(self, nb_elements: int, nb_shooting: int)
+    check_and_adjust_dimensions(self, n_elements: int, n_shooting: int)
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
     concatenate(self, other: "Bounds")
@@ -357,25 +357,25 @@ class Bounds(OptionGeneric):
         self.type = interpolation
         self.t = None
         self.extra_params = self.min.extra_params
-        self.nb_shooting = self.min.nb_shooting
+        self.n_shooting = self.min.n_shooting
 
-    def check_and_adjust_dimensions(self, nb_elements: int, nb_shooting: int):
+    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int):
         """
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
 
         Parameters
         ----------
-        nb_elements: int
+        n_elements: int
             The expected number of rows
-        nb_shooting: int
+        n_shooting: int
             The number of shooting points in the ocp
         """
 
-        self.min.check_and_adjust_dimensions(nb_elements, nb_shooting, "Bound min")
-        self.max.check_and_adjust_dimensions(nb_elements, nb_shooting, "Bound max")
+        self.min.check_and_adjust_dimensions(n_elements, n_shooting, "Bound min")
+        self.max.check_and_adjust_dimensions(n_elements, n_shooting, "Bound max")
         self.t = self.min.t
-        self.nb_shooting = self.min.nb_shooting
+        self.n_shooting = self.min.n_shooting
 
     def concatenate(self, other: "Bounds"):
         """
@@ -399,7 +399,7 @@ class Bounds(OptionGeneric):
         self.type = self.min.type
         self.t = self.min.t
         self.extra_params = self.min.extra_params
-        self.nb_shooting = self.min.nb_shooting
+        self.n_shooting = self.min.n_shooting
 
     def __getitem__(self, slice_list: Union[slice, list, tuple]) -> "Bounds":
         """
@@ -576,7 +576,7 @@ class QAndQDotBounds(Bounds):
         self,
         biorbd_model,
         q_mapping: BidirectionalMapping = None,
-        q_dot_mapping: BidirectionalMapping = None,
+        qdot_mapping: BidirectionalMapping = None,
     ):
         """
         Parameters
@@ -585,40 +585,40 @@ class QAndQDotBounds(Bounds):
             A reference to the model
         q_mapping: BidirectionalMapping
             The mapping of q
-        q_dot_mapping: BidirectionalMapping
-            The mapping of qdot. If q_dot_mapping is not provided, q_mapping is used
+        qdot_mapping: BidirectionalMapping
+            The mapping of qdot. If qdot_mapping is not provided, q_mapping is used
         """
         if biorbd_model.nbQuat() > 0:
-            if q_mapping and not q_dot_mapping:
+            if q_mapping and not qdot_mapping:
                 raise RuntimeError(
-                    "It is not possible to provide a q_mapping but not a q_dot_mapping if the model have quaternion"
+                    "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
                 )
-            elif q_dot_mapping and not q_mapping:
+            elif qdot_mapping and not q_mapping:
                 raise RuntimeError(
-                    "It is not possible to provide a q_dot_mapping but not a q_mapping if the model have quaternion"
+                    "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
                 )
 
         if not q_mapping:
             q_mapping = BidirectionalMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
 
-        if not q_dot_mapping:
+        if not qdot_mapping:
             if biorbd_model.nbQuat() > 0:
-                q_dot_mapping = BidirectionalMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+                qdot_mapping = BidirectionalMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
             else:
-                q_dot_mapping = q_mapping
+                qdot_mapping = q_mapping
 
         q_ranges = []
-        q_dot_ranges = []
+        qdot_ranges = []
         for i in range(biorbd_model.nbSegment()):
             segment = biorbd_model.segment(i)
             q_ranges += [q_range for q_range in segment.QRanges()]
-            q_dot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
+            qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
 
         x_min = [q_ranges[i].min() for i in q_mapping.to_first.map_idx] + [
-            q_dot_ranges[i].min() for i in q_dot_mapping.to_first.map_idx
+            qdot_ranges[i].min() for i in qdot_mapping.to_first.map_idx
         ]
         x_max = [q_ranges[i].max() for i in q_mapping.to_first.map_idx] + [
-            q_dot_ranges[i].max() for i in q_dot_mapping.to_first.map_idx
+            qdot_ranges[i].max() for i in qdot_mapping.to_first.map_idx
         ]
 
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
@@ -635,7 +635,7 @@ class InitialGuess(OptionGeneric):
 
     Methods
     -------
-    check_and_adjust_dimensions(self, nb_elements: int, nb_shooting: int)
+    check_and_adjust_dimensions(self, n_elements: int, n_shooting: int)
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
     concatenate(self, other: "InitialGuess")
@@ -670,20 +670,20 @@ class InitialGuess(OptionGeneric):
 
         super(InitialGuess, self).__init__(**parameters)
 
-    def check_and_adjust_dimensions(self, nb_elements: int, nb_shooting: int):
+    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int):
         """
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
 
         Parameters
         ----------
-        nb_elements: int
+        n_elements: int
             The expected number of rows
-        nb_shooting: int
+        n_shooting: int
             The number of shooting points in the ocp
         """
 
-        self.init.check_and_adjust_dimensions(nb_elements, nb_shooting, "InitialGuess")
+        self.init.check_and_adjust_dimensions(n_elements, n_shooting, "InitialGuess")
 
     def concatenate(self, other: "InitialGuess"):
         """
@@ -740,7 +740,7 @@ class InitialGuessList(UniquePerPhaseOptionList):
         Print the InitialGuessList to the console
     """
 
-    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple], **extra_arguments):
+    def add(self, initial_guess: Union[InitialGuess, np.ndarray, list, tuple], **extra_arguments: Any):
         """
         Add a new initial guess to the list
 

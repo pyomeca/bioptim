@@ -131,7 +131,7 @@ class StateTransitionFunctions:
             The difference between the state after and before
             """
 
-            if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.nb_phases].nx:
+            if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].nx:
                 raise RuntimeError(
                     "Continuous state transitions without same nx is not possible, "
                     "please provide a custom state transition"
@@ -174,17 +174,17 @@ class StateTransitionFunctions:
             The difference between the last and first node after applying the impulse equations
             """
 
-            if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.nb_phases].nx:
+            if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].nx:
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom state transition"
                 )
 
             # Aliases
             nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
-            nb_q = nlp_pre.shape["q"]
-            nb_qdot = nlp_pre.shape["q_dot"]
-            q = nlp_pre.mapping["q"].to_second.map(nlp_pre.X[-1][:nb_q])
-            qdot_pre = nlp_pre.mapping["q_dot"].to_second.map(nlp_pre.X[-1][nb_q : nb_q + nb_qdot])
+            n_q = nlp_pre.shape["q"]
+            n_qdot = nlp_pre.shape["qdot"]
+            q = nlp_pre.mapping["q"].to_second.map(nlp_pre.X[-1][:n_q])
+            qdot_pre = nlp_pre.mapping["qdot"].to_second.map(nlp_pre.X[-1][n_q : n_q + n_qdot])
 
             if nlp_post.model.nbContacts() == 0:
                 warn("The chosen model does not have any contact")
@@ -193,13 +193,13 @@ class StateTransitionFunctions:
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
             model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
             func = biorbd.to_casadi_func(
-                "impulse_direct", model.ComputeConstraintImpulsesDirect, nlp_pre.q, nlp_pre.q_dot
+                "impulse_direct", model.ComputeConstraintImpulsesDirect, nlp_pre.q, nlp_pre.qdot
             )
             qdot_post = func(q, qdot_pre)
-            qdot_post = nlp_post.mapping["q_dot"].to_first.map(qdot_post)
+            qdot_post = nlp_post.mapping["qdot"].to_first.map(qdot_post)
 
-            val = nlp_pre.X[-1][:nb_q] - nlp_post.X[0][:nb_q]
-            val = vertcat(val, qdot_post - nlp_post.X[0][nb_q : nb_q + nb_qdot])
+            val = nlp_pre.X[-1][:n_q] - nlp_post.X[0][:n_q]
+            val = vertcat(val, qdot_post - nlp_post.X[0][n_q : n_q + n_qdot])
             return val
 
         @staticmethod
@@ -239,7 +239,7 @@ class StateTransitionFunctions:
             The nlp before and after the transition
             """
 
-            return ocp.nlp[phase_pre_idx], ocp.nlp[(phase_pre_idx + 1) % ocp.nb_phases]
+            return ocp.nlp[phase_pre_idx], ocp.nlp[(phase_pre_idx + 1) % ocp.n_phases]
 
     @staticmethod
     def prepare_state_transitions(ocp, state_transitions: StateTransitionList) -> list:
@@ -260,25 +260,25 @@ class StateTransitionFunctions:
 
         # By default it assume Continuous. It can be change later
         full_state_transitions = [
-            StateTransition(type=StateTransitionFcn.CONTINUOUS, phase_pre_idx=i) for i in range(ocp.nb_phases - 1)
+            StateTransition(type=StateTransitionFcn.CONTINUOUS, phase_pre_idx=i) for i in range(ocp.n_phases - 1)
         ]
 
         existing_phases = []
         for pt in state_transitions:
             if pt.phase_pre_idx is None and pt.type == StateTransitionFcn.CYCLIC:
-                pt.phase_pre_idx = ocp.nb_phases - 1
+                pt.phase_pre_idx = ocp.n_phases - 1
 
             idx_phase = pt.phase_pre_idx
             if idx_phase in existing_phases:
                 raise RuntimeError("It is not possible to define two state transitions for the same phase")
-            if idx_phase >= ocp.nb_phases:
+            if idx_phase >= ocp.n_phases:
                 raise RuntimeError("Phase index of the state transition is higher than the number of phases")
             existing_phases.append(idx_phase)
 
             if pt.weight:
                 pt.base = ObjectiveFunction.MayerFunction
 
-            if idx_phase == ocp.nb_phases - 1:
+            if idx_phase == ocp.n_phases - 1:
                 # Add a cyclic constraint or objective
                 full_state_transitions.append(pt)
             else:

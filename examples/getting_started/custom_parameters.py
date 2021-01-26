@@ -68,7 +68,7 @@ def my_target_function(ocp: OptimalControlProgram, value: MX) -> MX:
 def prepare_ocp(
     biorbd_model_path,
     final_time,
-    number_shooting_points,
+    n_shooting,
     min_g,
     max_g,
     target_g,
@@ -84,7 +84,7 @@ def prepare_ocp(
         The path of the biorbd model
     final_time: float
         The time at the final node
-    number_shooting_points: int
+    n_shooting: int
         The number of shooting points
     min_g: float
         The minimal value for the gravity
@@ -151,7 +151,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100, min_g=-10, max_g=-6, target_g=-8
+        biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, min_g=-10, max_g=-6, target_g=-8
     )
 
     # --- Solve the program --- #
@@ -182,4 +182,4 @@ if __name__ == "__main__":
     print(length)
 
     # --- Show results --- #
-    ShowResult(ocp, sol).animate(nb_frames=200)
+    ShowResult(ocp, sol).animate(n_frames=200)

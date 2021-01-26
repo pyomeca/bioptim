@@ -24,7 +24,7 @@ def test_track_and_minimize_marker_displacement_global(ode_solver):
 
     ocp = track_and_minimize_marker_velocity.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
-        number_shooting_points=5,
+        n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=False,
@@ -45,7 +45,7 @@ def test_track_and_minimize_marker_displacement_global(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final velocities
     if ode_solver == OdeSolver.IRK:
@@ -88,7 +88,7 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver):
 
     ocp = track_and_minimize_marker_velocity.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
-        number_shooting_points=5,
+        n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=True,
@@ -109,7 +109,7 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.02595694, -0.57073004, -1.00000001, 1.57079633]))
@@ -145,7 +145,7 @@ def test_track_and_minimize_marker_velocity(ode_solver):
 
     ocp = track_and_minimize_marker_velocity.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
-        number_shooting_points=5,
+        n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="velo",
         marker_in_first_coordinates_system=True,
@@ -166,7 +166,7 @@ def test_track_and_minimize_marker_velocity(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([7.18708669e-01, -4.45703930e-01, -3.14159262e00, 0]))
@@ -202,7 +202,7 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
         ):
             track_and_minimize_marker_velocity.prepare_ocp(
                 biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
-                number_shooting_points=5,
+                n_shooting=5,
                 final_time=1,
                 marker_velocity_or_displacement="velo",
                 marker_in_first_coordinates_system=True,
@@ -212,7 +212,7 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
     else:
         ocp = track_and_minimize_marker_velocity.prepare_ocp(
             biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
-            number_shooting_points=5,
+            n_shooting=5,
             final_time=1,
             marker_velocity_or_displacement="velo",
             marker_in_first_coordinates_system=True,
@@ -228,7 +228,7 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
 
         # Check some of the results
         states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+        q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[2:, 0], np.array([-3.14159264, 0]))

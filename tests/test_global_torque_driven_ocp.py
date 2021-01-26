@@ -25,7 +25,7 @@ def test_track_markers(ode_solver, actuator_type):
 
     ocp = track_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
-        number_shooting_points=30,
+        n_shooting=30,
         final_time=2,
         actuator_type=actuator_type,
         ode_solver=ode_solver,
@@ -47,7 +47,7 @@ def test_track_markers(ode_solver, actuator_type):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -82,7 +82,7 @@ def test_track_markers_changing_constraints(ode_solver):
 
     ocp = track_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
-        number_shooting_points=30,
+        n_shooting=30,
         final_time=2,
         ode_solver=ode_solver,
     )
@@ -108,7 +108,7 @@ def test_track_markers_changing_constraints(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -149,7 +149,7 @@ def test_track_markers_changing_constraints(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((2, 0, 0)))
@@ -180,7 +180,7 @@ def test_track_markers_with_actuators(ode_solver):
 
     ocp = track_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
-        number_shooting_points=30,
+        n_shooting=30,
         final_time=2,
         actuator_type=1,
         ode_solver=ode_solver,
@@ -199,7 +199,7 @@ def test_track_markers_with_actuators(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -232,15 +232,15 @@ def test_track_marker_2D_pendulum(ode_solver):
     model_path = str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 3
-    nb_shooting = 20
+    n_shooting = 20
 
     # Generate data to fit
     np.random.seed(42)
-    markers_ref = np.random.rand(3, 2, nb_shooting + 1)
-    tau_ref = np.random.rand(2, nb_shooting)
+    markers_ref = np.random.rand(3, 2, n_shooting + 1)
+    tau_ref = np.random.rand(2, n_shooting)
 
     ocp = track_markers_2D_pendulum.prepare_ocp(
-        biorbd_model, final_time, nb_shooting, markers_ref, tau_ref, ode_solver=ode_solver
+        biorbd_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver
     )
     sol = ocp.solve()
 
@@ -251,7 +251,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
@@ -327,9 +327,9 @@ def test_trampo_quaternions():
     # Define the problem
     model_path = str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/TruncAnd2Arm_Quaternion.bioMod"
     final_time = 0.25
-    nb_shooting = 5
+    n_shooting = 5
 
-    ocp = trampo_quaternions.prepare_ocp(model_path, nb_shooting, final_time)
+    ocp = trampo_quaternions.prepare_ocp(model_path, n_shooting, final_time)
     sol = ocp.solve()
 
     # Check objective function value
@@ -480,7 +480,7 @@ def test_trampo_quaternions():
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(
