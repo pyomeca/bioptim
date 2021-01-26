@@ -1,3 +1,10 @@
+"""
+TODO: Create a more meaningful example (make sure to translate all the variables [they should correspond to the model])
+This example uses a representation of a human body by a trunk_leg segment and two arms and has the objective to...
+It is designed to show how to use a model that has quaternions in their degrees of freedom.
+"""
+
+
 import numpy as np
 import biorbd
 from bioptim import (
@@ -15,8 +22,20 @@ from bioptim import (
 )
 
 
-def eul2quat(eul):
-    # xyz convention
+def eul2quat(eul: np.ndarray) -> np.ndarray:
+    """
+    Converts Euler angles to quaternion. It assumes a sequence angle of XYZ
+
+    Parameters
+    ----------
+    eul: np.ndarray
+        The 3 angles of sequence XYZ
+
+    Returns
+    -------
+    The quaternion associated to the Euler angles in the format [W, X, Y, Z]
+    """
+
     ph = eul[0]
     th = eul[1]
     ps = eul[2]
@@ -33,14 +52,27 @@ def eul2quat(eul):
     return np.array([w, x, y, z])
 
 
-def prepare_ocp(biorbd_model_path, n_shooting, final_time, ode_solver=OdeSolver.RK4):
-    # --- Options --- #
-    # Model path
+def prepare_ocp(biorbd_model_path: str, n_shooting: int, final_time: float, ode_solver: OdeSolver = OdeSolver.RK4) -> OptimalControlProgram:
+    """
+    Prepare the ocp
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the bioMod file
+    n_shooting: int
+        The number of shooting points
+    final_time: float
+        The time at the final node
+    ode_solver: OdeSolver
+        The ode solver to use
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
     biorbd_model = biorbd.Model(biorbd_model_path)
-    nq = biorbd_model.nbQ()
-    nqdot = biorbd_model.nbQdot()
-    ntau = nqdot  # biorbd_model.nbGeneralizedTorque()
-    tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -56,10 +88,13 @@ def prepare_ocp(biorbd_model_path, n_shooting, final_time, ode_solver=OdeSolver.
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
 
     # Define control path constraint
+    n_tau = biorbd_model.nbGeneralizedTorque()  # biorbd_model.nbGeneralizedTorque()
+    tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * ntau, [tau_max] * ntau)
+    u_bounds.add([tau_min] * n_tau, [tau_max] * n_tau)
 
     # Initial guesses
+    # TODO put this in a function defined before and explain what it does, and what are the variables
     x = np.vstack((np.zeros((biorbd_model.nbQ(), 2)), np.ones((biorbd_model.nbQdot(), 2))))
     Arm_init_D = np.zeros((3, 2))
     Arm_init_D[1, 0] = 0
@@ -78,9 +113,7 @@ def prepare_ocp(biorbd_model_path, n_shooting, final_time, ode_solver=OdeSolver.
     x_init.add(x, interpolation=InterpolationType.LINEAR)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * ntau)
-
-    # ------------- #
+    u_init.add([tau_init] * n_tau)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -97,16 +130,18 @@ def prepare_ocp(biorbd_model_path, n_shooting, final_time, ode_solver=OdeSolver.
 
 
 if __name__ == "__main__":
+    """
+    Prepares and solves an ocp that has quaternion in it. Animates the results
+    """
 
-    # changer le path quand ce sera pret
     ocp = prepare_ocp(
         "TruncAnd2Arm_Quaternion.bioMod",
         n_shooting=5,
         final_time=0.25,
     )
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=True)
     print("\n")
 
     # Print the last solution
     result_plot = ShowResult(ocp, sol)
-    result_plot.graphs()
+    result_plot.animate()
