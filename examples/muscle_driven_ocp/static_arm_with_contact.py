@@ -106,9 +106,7 @@ if __name__ == "__main__":
     Prepare and solve and animate a reaching task ocp
     """
 
-    ocp = prepare_ocp(
-        biorbd_model_path="arm26_with_contact.bioMod", final_time=3, n_shooting=50, weight=1000
-    )
+    ocp = prepare_ocp(biorbd_model_path="arm26_with_contact.bioMod", final_time=3, n_shooting=50, weight=1000)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

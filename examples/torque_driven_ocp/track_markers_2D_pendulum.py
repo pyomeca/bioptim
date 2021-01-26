@@ -61,7 +61,14 @@ def get_markers_pos(x: Union[DM, np.ndarray], idx_marker: int, fun: Callable) ->
     return marker_pos
 
 
-def prepare_ocp(biorbd_model: biorbd.Model, final_time: float, n_shooting: int, markers_ref: np.ndarray, tau_ref: np.ndarray, ode_solver: OdeSolver=OdeSolver.RK4) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model: biorbd.Model,
+    final_time: float,
+    n_shooting: int,
+    markers_ref: np.ndarray,
+    tau_ref: np.ndarray,
+    ode_solver: OdeSolver = OdeSolver.RK4,
+) -> OptimalControlProgram:
     """
     Prepare the ocp
 
@@ -135,7 +142,7 @@ def prepare_ocp(biorbd_model: biorbd.Model, final_time: float, n_shooting: int, 
 if __name__ == "__main__":
     """
     Firstly, it solves the getting_started/pendulum.py example. Afterward, it gets the marker positions and joint
-    torque from the solution and uses them to track. It then creates and solves this ocp and show the results   
+    torque from the solution and uses them to track. It then creates and solves this ocp and show the results
     """
 
     biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/pendulum.bioMod"

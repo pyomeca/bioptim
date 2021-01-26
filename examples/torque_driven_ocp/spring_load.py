@@ -17,7 +17,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     ShowResult,
-    NonLinearProgram
+    NonLinearProgram,
 )
 
 
@@ -95,16 +95,16 @@ u_bounds = Bounds([-100] * m.nbGeneralizedTorque(), [0] * m.nbGeneralizedTorque(
 
 u_init = InitialGuess([0] * m.nbGeneralizedTorque())
 ocp = OptimalControlProgram(
-        m,
-        dynamics,
-        n_shooting=30,
-        phase_time=0.5,
-        x_init=x_init,
-        u_init=u_init,
-        x_bounds=x_bounds,
-        u_bounds=u_bounds,
-        objective_functions=objective_functions,
-    )
+    m,
+    dynamics,
+    n_shooting=30,
+    phase_time=0.5,
+    x_init=x_init,
+    u_init=u_init,
+    x_bounds=x_bounds,
+    u_bounds=u_bounds,
+    objective_functions=objective_functions,
+)
 
 # --- Solve the program --- #
 sol = ocp.solve(show_online_optim=True)

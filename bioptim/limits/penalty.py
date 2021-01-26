@@ -404,7 +404,9 @@ class PenaltyFunctionAbstract:
                     penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
-        def superimpose_markers(penalty: PenaltyOption, pn: PenaltyNodes, first_marker_idx: int, second_marker_idx: int):
+        def superimpose_markers(
+            penalty: PenaltyOption, pn: PenaltyNodes, first_marker_idx: int, second_marker_idx: int
+        ):
             """
             Minimize the distance between two markers
             By default this function is quadratic, meaning that it minimizes distance between them.
