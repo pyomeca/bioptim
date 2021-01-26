@@ -1,3 +1,10 @@
+"""
+This example is a trivial example where a stick must keep its coordinate system of axes aligned with the one
+from a box during the whole duration of the movement. The initial and final position of the box are dictated,
+the rest is fully optimized. It is designed to show how one can use the tracking RT function to track a
+any RT (for instance Inertial Measurement Unit [IMU]) with a body segment
+"""
+
 import biorbd
 from bioptim import (
     Node,
@@ -16,14 +23,29 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, n_shooting, ode_solver=OdeSolver.RK4):
-    # --- Options --- #nq
-    # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
-    nq = biorbd_model.nbQ()
+def prepare_ocp(
+    biorbd_model_path: str, final_time: float, n_shooting: int, ode_solver: OdeSolver = OdeSolver.RK4
+) -> OptimalControlProgram:
+    """
+    Prepare the ocp
 
-    # Problem parameters
-    tau_min, tau_max, tau_init = -100, 100, 0
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the model
+    final_time: float
+        The time of the final node
+    n_shooting: int
+        The number of shooting points
+    ode_solver:
+        The ode solver to use
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
+    biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -38,6 +60,7 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, ode_solver=OdeSolver.
     constraints.add(ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment_idx=2, rt_idx=0)
 
     # Path constraint
+    nq = biorbd_model.nbQ()
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][2, [0, -1]] = [-1.57, 1.57]
@@ -48,6 +71,7 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, ode_solver=OdeSolver.
     x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
+    tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
 
@@ -72,6 +96,10 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, ode_solver=OdeSolver.
 
 
 if __name__ == "__main__":
+    """
+    Prepares, solves and animates the program
+    """
+
     ocp = prepare_ocp(
         biorbd_model_path="cube_and_line.bioMod",
         n_shooting=30,

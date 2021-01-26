@@ -1,3 +1,9 @@
+"""
+This example is a trivial example where a stick must keep a corner of a box in line for the whole duration of the
+movement. The initial and final position of the box are dictated, the rest is fully optimized. It is designed
+to show how one can use the tracking function to track a marker with a body segment
+"""
+
 import biorbd
 from bioptim import (
     Node,
@@ -18,20 +24,40 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path,
-    final_time,
-    n_shooting,
-    initialize_near_solution,
-    ode_solver=OdeSolver.RK4,
-    constr=True,
-    use_sx=False,
-):
-    # --- Options --- #
-    # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    initialize_near_solution: bool,
+    ode_solver: OdeSolver = OdeSolver.RK4,
+    constr: bool = True,
+    use_sx: bool = False,
+) -> OptimalControlProgram:
+    """
+    Prepare the ocp
 
-    # Problem parameters
-    tau_min, tau_max, tau_init = -100, 100, 0
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the bioMod file
+    final_time: float
+        The time at the final node
+    n_shooting: int
+        The number of shooting points
+    initialize_near_solution: bool
+        If the initial guess should be almost the solution (this is merely to reduce the time of the tests)
+    ode_solver: OdeSolver
+        The ode solver to use
+    constr: bool
+        If the constraint should be applied (this is merely to reduce the time of the tests)
+    use_sx: bool
+        If SX CasADi variables should be used
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
+    biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -42,12 +68,12 @@ def prepare_ocp(
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Constraints
-    if constr is True:
+    if constr:
         constraints = ConstraintList()
         constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=4)
         constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
         constraints.add(
-            ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axis.X)
+            ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=Axis.X
         )
     else:
         constraints = ConstraintList()
@@ -73,6 +99,7 @@ def prepare_ocp(
             x_init[0].init[i] = 0.6
 
     # Define control path constraint
+    tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
 
@@ -98,6 +125,10 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
+    """
+    Prepares, solves and animate the program
+    """
+
     ocp = prepare_ocp(
         biorbd_model_path="cube_and_line.bioMod",
         n_shooting=30,
