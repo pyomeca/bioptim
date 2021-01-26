@@ -22,12 +22,12 @@ install:
 script:
   - black . -l120 --exclude "external/*" --check
   - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
-  - python setup.py install
-  - cd
-  - python -c "import bioptim"
 
 after_success:
   - codecov
+  - python setup.py install
+  - cd
+  - python -c "import bioptim"
 
 notifications:
   email:
