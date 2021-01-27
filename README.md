@@ -467,23 +467,73 @@ You can have a look at Dynamics and DynamicsList sections for more information a
 
 
 ## The Bounds
+The bounds provide a class that has minimal and maximal values for a variable.
+It is, for instance, use for the inequality constraints that limits the maximal and minimal values the states (x) and the controls (u) can have.
+In that sense, it is what is expected by the `OptimalControlProgram` for its `u_bounds` and `x_bounds` parameters. 
+It can however be used for much more.
 
 ### Class: Bounds
+The Bounds class is the main class to define bounds.
+The constructor can be call by sending two boundary matrices (min, max) as such: `bounds = Bounds(min_bounds, max_bounds)`. 
+Or by providing a previously declared bounds: `bounds = Bounds(bounds=another_bounds)`.
+The `min_bounds` and `max_bounds` matrices must have the dimensions that fits the chosen `InterpolationType`, the default type being `InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT`, which is 3 columns.
+If the interpolation type is CUSTOM, then the bounds are function handlers of signature: 
+```python
+custom_bound(current_shooting_point: int, n_elements: int, n_shooting: int)
+```
+where current_shooting_point is the current point to return, n_elements is the number of expected lines and n_shooting is the number of total shooting point (that is if current_shooting_point == n_shooting, this is the end of the phase)
+
+The main methods the user will be interested in is the `min` property that returns the minimal bounds and the `max` property that returns the maximal bounds. 
+Unless it is a custom function, `min` and `max` are numpy.ndarray and can be directly modified to change the boundaries. 
+It is also possible to change `min` and `max` simultaneously by directly slicing the bounds as if it was a numpy.array, effectively defining an equality constraint: for instance `bounds[:, 0] = 0`. 
+Finally, the `concatenate(another_bounds: Bounds)` method can be called to vertically concatenate multiple bounds.
 
 ### Class: BoundsList
+A BoundsList is by essence simply a list of Bounds. 
+The `add()` method can be called exacly as if one was calling the `Bounds` constructor. 
+If the `add()` method is used more than one, the `phase` parameter is automatically incremented. 
+
+So a minimal use is as follow:
+```python
+bounds_list = BoundsList
+bounds_list.add(min_bounds, max_bounds)
+```
 
 ### Class: QAndQDotBounds 
-
-### Enum: InterpolationType
-
+The QAndQDotBounds is simply a Bounds that uses a biorbd_model to define the miminal and maximal bounds for the generalized coordinates (*q*) and velocities (*qdot*). 
+It is particularly useful when declaring the states bounds for *q* and *qdot*. 
+Anything that was presented for Bounds, also apply to QAndQDotBounds
 
 
 ## The Initial conditions
+The initial conditions the solver should start from, that is initial values of the states (x) and the controls (u).
+In that sense, it is what is expected by the `OptimalControlProgram` for its `u_init` and `x_init` parameters. 
 
 ### Class InitialGuess
 
-### Class InitialGuessList
+The InitialGuess class is the main class to define initial guesses.
+The constructor can be call by sending one initial guess matrix (init) as such: `bounds = InitialGuess(init)`. 
+The `init` matrix must have the dimensions that fits the chosen `InterpolationType`, the default type being `InterpolationType.CONSTANT`, which is 1 column.
+If the interpolation type is CUSTOM, then the InitialGuess is a function handler of signature: 
+```python
+custom_bound(current_shooting_point: int, n_elements: int, n_shooting: int)
+```
+where current_shooting_point is the current point to return, n_elements is the number of expected lines and n_shooting is the number of total shooting point (that is if current_shooting_point == n_shooting, this is the end of the phase)
 
+The main methods the user will be interested in is the `init` property that returns the initial guess. 
+Unless it is a custom function, `init` is a numpy.ndarray and can be directly modified to change the initial guess. 
+Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be called to vertically concatenate multiple initial guesses.
+
+### Class InitialGuessList
+A InitialGuessList is by essence simply a list of InitialGuess. 
+The `add()` method can be called exacly as if one was calling the `InitialGuess` constructor. 
+If the `add()` method is used more than one, the `phase` parameter is automatically incremented. 
+
+So a minimal use is as follow:
+```python
+init_list = InitialGuessList
+init_list.add(init)
+```
 
 
 ## The Constraints
@@ -528,6 +578,15 @@ TODO + Lagrange objective functions are integrated using rectangle method.
 ### Enum: OdeSolver
 ### Enum: Solver
 ### Enum: ControlType
+
+### Enum: InterpolationType
+The type of interpolation something is. 
+- CONSTANT needs only one column, since it does not change over time
+- CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT needs three columns. The first and last columns correspond to the first and last node, while the remaining interdiate node are treated as CONSTANT from the middle column
+- LINEAR, needs two columns. It corresponds to the first and last node and is linearly interpolated in between.
+- EACH_FRAME, needs as many as nodes. It is not an interpolation per se, but it allows the user to specify all the nodes individually.
+- SPLINE, needs five columns. It performs a cubic spline to interpolate
+- CUSTOM, user defined interpolation function
 
 
 
