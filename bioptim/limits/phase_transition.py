@@ -10,14 +10,14 @@ from .objective_functions import ObjectiveFunction
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 
 
-class StateTransition(OptionGeneric):
+class PhaseTransition(OptionGeneric):
     """
     A placeholder for a transition of state
 
     Attributes
     ----------
     base: ConstraintFunction
-        The type of penalty the state transition is (Constraint if no weight, Mayer otherwise)
+        The type of penalty the phase transition is (Constraint if no weight, Mayer otherwise)
     weight: float
         The weight of the objective function. The transition is a constraint if weight is not specified
     quadratic: bool
@@ -42,7 +42,7 @@ class StateTransition(OptionGeneric):
             Generic parameters for options
         """
 
-        super(StateTransition, self).__init__(**params)
+        super(PhaseTransition, self).__init__(**params)
         self.base = ConstraintFunction
         self.weight = weight
         self.quadratic = True
@@ -50,72 +50,72 @@ class StateTransition(OptionGeneric):
         self.custom_function = custom_function
 
 
-class StateTransitionList(UniquePerPhaseOptionList):
+class PhaseTransitionList(UniquePerPhaseOptionList):
     """
-    A list of StateTransition
+    A list of PhaseTransition
 
     Methods
     -------
-    add(self, transition: Union[Callable, StateTransitionFcn], phase: int = -1, **extra_arguments)
-        Add a new StateTransition to the list
+    add(self, transition: Union[Callable, PhaseTransitionFcn], phase: int = -1, **extra_arguments)
+        Add a new PhaseTransition to the list
     print(self)
-        Print the StateTransitionList to the console
+        Print the PhaseTransitionList to the console
     """
 
     def add(self, transition: Any, **extra_arguments: Any):
         """
-        Add a new StateTransition to the list
+        Add a new PhaseTransition to the list
 
         Parameters
         ----------
-        transition: Union[Callable, StateTransitionFcn]
-            The chosen state transition
+        transition: Union[Callable, PhaseTransitionFcn]
+            The chosen phase transition
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
 
-        if not isinstance(transition, StateTransitionFcn):
+        if not isinstance(transition, PhaseTransitionFcn):
             extra_arguments["custom_function"] = transition
-            transition = StateTransitionFcn.CUSTOM
-        super(StateTransitionList, self)._add(option_type=StateTransition, type=transition, phase=-1, **extra_arguments)
+            transition = PhaseTransitionFcn.CUSTOM
+        super(PhaseTransitionList, self)._add(option_type=PhaseTransition, type=transition, phase=-1, **extra_arguments)
 
     def print(self):
         """
-        Print the StateTransitionList to the console
+        Print the PhaseTransitionList to the console
         """
-        raise NotImplementedError("Printing of StateTransitionList is not ready yet")
+        raise NotImplementedError("Printing of PhaseTransitionList is not ready yet")
 
 
-class StateTransitionFunctions:
+class PhaseTransitionFunctions:
     """
-    Internal implementation of the state transitions
+    Internal implementation of the phase transitions
 
     Methods
     -------
-    prepare_state_transitions(ocp: OptimalControlProgram, state_transitions: StateTransitionList) -> list
-        Configure all the state transitions and put them in a list
+    prepare_phase_transitions(ocp: OptimalControlProgram, phase_transitions: PhaseTransitionList) -> list
+        Configure all the phase transitions and put them in a list
     """
 
     class Functions:
         """
-        Implementation of all the state transitions
+        Implementation of all the phase transitions
 
         Methods
         -------
-        continuous(ocp: OptimalControlProgram, transition: StateTransition)
+        continuous(ocp: OptimalControlProgram, transition: PhaseTransition)
             The most common continuity function, that is state before equals state after
-        cyclic(ocp: OptimalControlProgram" transition: StateTransition)
+        cyclic(ocp: OptimalControlProgram" transition: PhaseTransition)
             The continuity function applied to the last to first node
-        impact(ocp: OptimalControlProgram, transition: StateTransition)
+        impact(ocp: OptimalControlProgram, transition: PhaseTransition)
             A discontinuous function that simulates an inelastic impact of a new contact point
-        custom(ocp: OptimalControlProgram, transition: StateTransition)
+        custom(ocp: OptimalControlProgram, transition: PhaseTransition)
             Calls the custom transition function provided by the user
         __get_nlp_pre_and_post(ocp: OptimalControlProgram, phase_pre_idx: int)
             Get two consecutive nlp. If the "pre" phase is the last, then the next one is the first (circular)
         """
 
         @staticmethod
-        def continuous(ocp, transition: StateTransition) -> MX:
+        def continuous(ocp, transition: PhaseTransition) -> MX:
             """
             The most common continuity function, that is state before equals state after
 
@@ -123,8 +123,8 @@ class StateTransitionFunctions:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
-            transition: StateTransition
-                A reference to the state transition
+            transition: PhaseTransition
+                A reference to the phase transition
 
             Returns
             -------
@@ -133,14 +133,14 @@ class StateTransitionFunctions:
 
             if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].nx:
                 raise RuntimeError(
-                    "Continuous state transitions without same nx is not possible, "
-                    "please provide a custom state transition"
+                    "Continuous phase transition without same number of states is not possible, "
+                    "please provide a custom phase transition"
                 )
-            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
+            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
             return nlp_pre.X[-1] - nlp_post.X[0]
 
         @staticmethod
-        def cyclic(ocp, transition: StateTransition) -> MX:
+        def cyclic(ocp, transition: PhaseTransition) -> MX:
             """
             The continuity function applied to the last to first node
 
@@ -148,17 +148,17 @@ class StateTransitionFunctions:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
-            transition: StateTransition
-                A reference to the state transition
+            transition: PhaseTransition
+                A reference to the phase transition
 
             Returns
             -------
             The difference between the last and first node
             """
-            return StateTransitionFunctions.Functions.continuous(ocp, transition)
+            return PhaseTransitionFunctions.Functions.continuous(ocp, transition)
 
         @staticmethod
-        def impact(ocp, transition: StateTransition) -> MX:
+        def impact(ocp, transition: PhaseTransition) -> MX:
             """
             A discontinuous function that simulates an inelastic impact of a new contact point
 
@@ -166,8 +166,8 @@ class StateTransitionFunctions:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
-            transition: StateTransition
-                A reference to the state transition
+            transition: PhaseTransition
+                A reference to the phase transition
 
             Returns
             -------
@@ -176,11 +176,11 @@ class StateTransitionFunctions:
 
             if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].nx:
                 raise RuntimeError(
-                    "Impact transition without same nx is not possible, please provide a custom state transition"
+                    "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
 
             # Aliases
-            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
+            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
             n_q = nlp_pre.shape["q"]
             n_qdot = nlp_pre.shape["qdot"]
             q = nlp_pre.mapping["q"].to_second.map(nlp_pre.X[-1][:n_q])
@@ -203,7 +203,7 @@ class StateTransitionFunctions:
             return val
 
         @staticmethod
-        def custom(ocp, transition: StateTransition) -> MX:
+        def custom(ocp, transition: PhaseTransition) -> MX:
             """
             Calls the custom transition function provided by the user
 
@@ -211,15 +211,15 @@ class StateTransitionFunctions:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
-            transition: StateTransition
-                A reference to the state transition
+            transition: PhaseTransition
+                A reference to the phase transition
 
             Returns
             -------
             The expected difference between the last and first node provided by the user
             """
 
-            nlp_pre, nlp_post = StateTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
+            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
             return transition.custom_function(nlp_pre.X[-1], nlp_post.X[0], **transition.params)
 
         @staticmethod
@@ -242,16 +242,16 @@ class StateTransitionFunctions:
             return ocp.nlp[phase_pre_idx], ocp.nlp[(phase_pre_idx + 1) % ocp.n_phases]
 
     @staticmethod
-    def prepare_state_transitions(ocp, state_transitions: StateTransitionList) -> list:
+    def prepare_phase_transitions(ocp, phase_transitions: PhaseTransitionList) -> list:
         """
-        Configure all the state transitions and put them in a list
+        Configure all the phase transitions and put them in a list
 
         Parameters
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp
-        state_transitions: StateTransitionList
-            The list of all the state transitions
+        phase_transitions: PhaseTransitionList
+            The list of all the phase transitions
 
         Returns
         -------
@@ -259,20 +259,20 @@ class StateTransitionFunctions:
         """
 
         # By default it assume Continuous. It can be change later
-        full_state_transitions = [
-            StateTransition(type=StateTransitionFcn.CONTINUOUS, phase_pre_idx=i) for i in range(ocp.n_phases - 1)
+        full_phase_transitions = [
+            PhaseTransition(type=PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=i) for i in range(ocp.n_phases - 1)
         ]
 
         existing_phases = []
-        for pt in state_transitions:
-            if pt.phase_pre_idx is None and pt.type == StateTransitionFcn.CYCLIC:
+        for pt in phase_transitions:
+            if pt.phase_pre_idx is None and pt.type == PhaseTransitionFcn.CYCLIC:
                 pt.phase_pre_idx = ocp.n_phases - 1
 
             idx_phase = pt.phase_pre_idx
             if idx_phase in existing_phases:
-                raise RuntimeError("It is not possible to define two state transitions for the same phase")
+                raise RuntimeError("It is not possible to define two phase transitions for the same phase")
             if idx_phase >= ocp.n_phases:
-                raise RuntimeError("Phase index of the state transition is higher than the number of phases")
+                raise RuntimeError("Phase index of the phase transition is higher than the number of phases")
             existing_phases.append(idx_phase)
 
             if pt.weight:
@@ -280,41 +280,18 @@ class StateTransitionFunctions:
 
             if idx_phase == ocp.n_phases - 1:
                 # Add a cyclic constraint or objective
-                full_state_transitions.append(pt)
+                full_phase_transitions.append(pt)
             else:
-                full_state_transitions[idx_phase] = pt
-        return full_state_transitions
+                full_phase_transitions[idx_phase] = pt
+        return full_phase_transitions
 
 
-class ContinuityFunctions:
+class PhaseTransitionFcn(Enum):
     """
-    Interface between continuity and constraint
-    """
-
-    @staticmethod
-    def continuity(ocp):
-        """
-        The declaration of inner- and inter-phase continuity constraints
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        """
-
-        ConstraintFunction.inner_phase_continuity(ocp)
-
-        # Dynamics must be respected between phases
-        for pt in ocp.state_transitions:
-            pt.base.inter_phase_continuity(ocp, pt)
-
-
-class StateTransitionFcn(Enum):
-    """
-    Selection of valid state transition functions
+    Selection of valid phase transition functions
     """
 
-    CONTINUOUS = (StateTransitionFunctions.Functions.continuous,)
-    IMPACT = (StateTransitionFunctions.Functions.impact,)
-    CYCLIC = (StateTransitionFunctions.Functions.cyclic,)
-    CUSTOM = (StateTransitionFunctions.Functions.custom,)
+    CONTINUOUS = (PhaseTransitionFunctions.Functions.continuous,)
+    IMPACT = (PhaseTransitionFunctions.Functions.impact,)
+    CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
+    CUSTOM = (PhaseTransitionFunctions.Functions.custom,)

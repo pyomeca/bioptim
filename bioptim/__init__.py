@@ -110,10 +110,10 @@ InitialGuessList
 
 
 # --- Managing the transitions between phases for multiphase programs --- #
-StateTransitionList
-    A list of StateTransition
-StateTransitionFcn
-    Selection of valid state transition functions
+PhaseTransitionList
+    A list of PhaseTransition
+PhaseTransitionFcn
+    Selection of valid phase transition functions
 
 
 # --- Mapping indices between vector --- #
@@ -159,7 +159,7 @@ from .dynamics.dynamics_type import DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
 from .gui.plot import CustomPlot, ShowResult
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
-from .limits.continuity import StateTransitionFcn, StateTransitionList
+from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ObjectivePrinter
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
 from .limits.penalty import PenaltyNodes

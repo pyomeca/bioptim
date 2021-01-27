@@ -4,7 +4,7 @@ and superimpose the same corner to a different marker at the end. Moreover, the 
 that the states at the end and at the beginning are equal. It is designed to provide a comprehensible example of the way
 to declare a cyclic constraint or objective function
 
-A state transition loop constraint is treated as hard penalty (constraint)
+A phase transition loop constraint is treated as hard penalty (constraint)
 if weight is <= 0 [or if no weight is provided], or as a soft penalty (objective) otherwise
 """
 
@@ -24,8 +24,8 @@ from bioptim import (
     InitialGuess,
     ShowResult,
     OdeSolver,
-    StateTransitionList,
-    StateTransitionFcn,
+    PhaseTransitionList,
+    PhaseTransitionFcn,
 )
 
 
@@ -87,14 +87,14 @@ def prepare_ocp(
     u_init = InitialGuess([tau_init] * biorbd_model.nbGeneralizedTorque())
 
     # ------------- #
-    # A state transition loop constraint is treated as
+    # A phase transition loop constraint is treated as
     # hard penalty (constraint) if weight is <= 0 [or if no weight is provided], or
     # as a soft penalty (objective) otherwise
-    state_transitions = StateTransitionList()
+    phase_transitions = PhaseTransitionList()
     if loop_from_constraint:
-        state_transitions.add(StateTransitionFcn.CYCLIC, weight=0)
+        phase_transitions.add(PhaseTransitionFcn.CYCLIC, weight=0)
     else:
-        state_transitions.add(StateTransitionFcn.CYCLIC, weight=10000)
+        phase_transitions.add(PhaseTransitionFcn.CYCLIC, weight=10000)
 
     return OptimalControlProgram(
         biorbd_model,
@@ -108,7 +108,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        state_transitions=state_transitions,
+        phase_transitions=phase_transitions,
     )
 
 

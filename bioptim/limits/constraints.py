@@ -100,7 +100,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
     Methods
     -------
-    inter_phase_continuity(ocp: OptimalControlProgram, pt: "StateTransition")
+    inter_phase_continuity(ocp: OptimalControlProgram, pt: "PhaseTransition")
         Add phase transition constraints between two phases.
     add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: Constraint)
         Add the constraint to the constraint pool
@@ -352,8 +352,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp
-        pt: StateTransition
-            The state transition to add
+        pt: PhaseTransition
+            The phase transition to add
         """
 
         # Dynamics must be respected between phases
@@ -522,3 +522,26 @@ class ConstraintFcn(Enum):
         """
 
         return ConstraintFunction
+
+
+class ContinuityFunctions:
+    """
+    Interface between continuity and constraint
+    """
+
+    @staticmethod
+    def continuity(ocp):
+        """
+        The declaration of inner- and inter-phase continuity constraints
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+
+        ConstraintFunction.inner_phase_continuity(ocp)
+
+        # Dynamics must be respected between phases
+        for pt in ocp.phase_transitions:
+            pt.base.inter_phase_continuity(ocp, pt)

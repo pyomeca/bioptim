@@ -20,8 +20,8 @@ from ..dynamics.problem import Problem
 from ..dynamics.dynamics_type import DynamicsList, Dynamics
 from ..gui.plot import CustomPlot
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint
-from ..limits.continuity import ContinuityFunctions, StateTransitionFunctions, StateTransitionList
+from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
+from ..limits.phase_transition import PhaseTransitionFunctions, PhaseTransitionList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -67,7 +67,7 @@ class OptimalControlProgram:
         The designated solver to solve the ocp
     solver: SolverInterface
         A reference to the ocp solver
-    state_transitions: list[StateTransition]
+    phase_transitions: list[PhaseTransition]
         The list of transition constraint between phases
     isdef_x_init: bool
         If the initial condition of the states are set
@@ -106,7 +106,7 @@ class OptimalControlProgram:
         qdot_mapping: BidirectionalMapping = None,
         tau_mapping: BidirectionalMapping = None,
         plot_mappings: Mapping = None,
-        state_transitions: StateTransitionList = StateTransitionList(),
+        phase_transitions: PhaseTransitionList = PhaseTransitionList(),
         n_threads: int = 1,
         use_sx: bool = False,
     ):
@@ -155,7 +155,7 @@ class OptimalControlProgram:
             The mapping to apply on tau
         plot_mappings: Mapping
             The mapping to apply on the plots
-        state_transitions: StateTransitionList
+        phase_transitions: PhaseTransitionList
             The transition types between the phases
         n_threads: int
             The number of thread to use while solving (multi-threading if > 1)
@@ -197,7 +197,7 @@ class OptimalControlProgram:
             "qdot_mapping": qdot_mapping,
             "tau_mapping": tau_mapping,
             "plot_mappings": plot_mappings,
-            "state_transitions": state_transitions,
+            "phase_transitions": phase_transitions,
             "n_threads": n_threads,
             "use_sx": use_sx,
         }
@@ -276,8 +276,8 @@ class OptimalControlProgram:
         if not isinstance(parameters, ParameterList):
             raise RuntimeError("parameters should be built from an ParameterList")
 
-        if not isinstance(state_transitions, StateTransitionList):
-            raise RuntimeError("state_transitions should be built from an StateTransitionList")
+        if not isinstance(phase_transitions, PhaseTransitionList):
+            raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
 
         if not isinstance(ode_solver, OdeSolver):
             raise RuntimeError("ode_solver should be built an instance of OdeSolver")
@@ -337,7 +337,7 @@ class OptimalControlProgram:
         NLP.add(self, "plot", reshaped_plot_mappings, False, name="mapping")
 
         # Prepare the parameters to optimize
-        self.state_transitions = []
+        self.phase_transitions = []
         if len(parameters) > 0:
             self.update_parameters(parameters)
 
@@ -365,8 +365,8 @@ class OptimalControlProgram:
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
-        # otherwise they will erase the state_transitions)
-        self.state_transitions = StateTransitionFunctions.prepare_state_transitions(self, state_transitions)
+        # otherwise they will erase the phase_transitions)
+        self.phase_transitions = PhaseTransitionFunctions.prepare_phase_transitions(self, phase_transitions)
 
         # Inner- and inter-phase continuity
         ContinuityFunctions.continuity(self)

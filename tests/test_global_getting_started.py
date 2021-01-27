@@ -382,16 +382,16 @@ def test_cyclic_constraint(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_state_transitions(ode_solver):
-    # Load state_transitions
+def test_phase_transitions(ode_solver):
+    # Load phase_transitions
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "state_transitions", str(PROJECT_FOLDER) + "/examples/getting_started/custom_phase_transitions.py"
+        "phase_transitions", str(PROJECT_FOLDER) + "/examples/getting_started/custom_phase_transitions.py"
     )
-    state_transitions = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(state_transitions)
+    phase_transition = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(phase_transition)
 
-    ocp = state_transitions.prepare_ocp(
+    ocp = phase_transition.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver
     )
     sol = ocp.solve()
@@ -433,7 +433,7 @@ def test_state_transitions(ode_solver):
         np.testing.assert_almost_equal(tau[-1][:, -1], np.array((0, 1.2717052e01, 1.1487805e00)))
 
     # save and load
-    with pytest.raises(PicklingError, match="import of module 'state_transitions' failed"):
+    with pytest.raises(PicklingError, match="import of module 'phase_transitions' failed"):
         TestUtils.save_and_load(sol, ocp, True)
 
     # simulate

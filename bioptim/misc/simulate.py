@@ -51,7 +51,7 @@ class Simulate:
         v_output = copy(v_input)
         offset = 0
         for nlp in ocp.nlp:
-            # TODO adds StateTransitionFunctions between phases
+            # TODO adds PhaseTransitionFunctions between phases
             for idx_nodes in range(nlp.ns):
                 x0 = v_output[offset : offset + nlp.nx] if single_shoot else v_input[offset : offset + nlp.nx]
 

@@ -198,8 +198,8 @@ class Parameters:
         )
 
         if penalty_list:
-            if ocp.state_transitions:
-                raise NotImplementedError("Updating parameters while having state_transition is not supported yet")
+            if ocp.phase_transitions:
+                raise NotImplementedError("Updating parameters while having phase_transition is not supported yet")
 
             if isinstance(penalty_list, Objective):
                 penalty_list_tp = ObjectiveList()

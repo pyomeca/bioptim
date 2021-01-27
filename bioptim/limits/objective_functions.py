@@ -271,7 +271,7 @@ class ObjectiveFunction:
 
         Methods
         -------
-        inter_phase_continuity(ocp: OptimalControlProgram, pt: "StateTransition")
+        inter_phase_continuity(ocp: OptimalControlProgram, pt: "PhaseTransition")
             Add phase transition objective between two phases.
         add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: Objective)
             Add the objective function to the objective pool
@@ -323,8 +323,8 @@ class ObjectiveFunction:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
-            pt: StateTransition
-                The state transition to add
+            pt: PhaseTransition
+                The phase transition to add
             """
 
             # Dynamics must be respected between phases
