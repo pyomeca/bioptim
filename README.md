@@ -12,9 +12,9 @@ It interfaces the robust [Ipopt](https://github.com/coin-or/Ipopt) and fast [ACA
 | Code coverage | [![codecov](https://codecov.io/gh/pyomeca/bioptim/branch/master/graph/badge.svg?token=NK1V6QE2CK)](https://codecov.io/gh/pyomeca/bioptim) |
 
 # How to install 
-The prefered way to install for the lay user is using anaconda. 
+The preferred way to install for the lay user is using anaconda. 
 Another way, more designed for the core programmers is from the sources. 
-When it is theoritically possible to use `bioptim` from Windows, it is highly discouraged since it will required to manually compile all the dependecies. 
+When it is theoretically possible to use `bioptim` from Windows, it is highly discouraged since it will require to manually compile all the dependencies. 
 A great alternative for the Windows users is *Ubuntu on Windows*.
 
 ## Installing from Anaconda (For Linux and Mac)
@@ -52,7 +52,7 @@ This is therefore highly discouraged.
 ## Dependencies
 `bioptim` relies on several libraries. 
 The most obvious one is `biorbd` suite (including indeed `biorbd` and `bioviz`), but some extra more are required.
-Due to the amount of different dependencies, it would be tedecious to show how to install them all here. 
+Due to the amount of different dependencies, it would be tedious to show how to install them all here. 
 The user is therefore invited to read the relevant documentation. 
 
 Here is a list of all direct dependencies (meaning that some dependencies may require other libraries themselves):
@@ -74,7 +74,7 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 - [Ipopt](https://github.com/coin-or/Ipopt)
 - [ACADOS](https://github.com/acados/acados)
 
-All these (except for ACADOS) can manually be installed using (assuming the anaconda environment is loaded if needed) `pip3` command or the Anaconda's following command.
+All these (except for ACADOS) can manually be installed using (assuming the anaconda environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
 ```bash
 conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* [bioviz=*=*casadi*] -cconda-forge
 ```
@@ -118,11 +118,11 @@ biorbd_model = biorbd.Model("pendulum.bioMod")
 ```
 It is convenient since it will provide interesting functions such as the number of degrees of freedom (`biorbd_model.nbQ()`). 
 Please note that a copy of `pendulum.bioMod` is available at the end of the *Getting started* section.
-In brief, the pendulum consists of two degrees of freedom (sideway movement and rotation) with the center of mass near the head.
+In brief, the pendulum consists of two degrees of freedom (sideways movement and rotation) with the center of mass near the head.
 
 The dynamics of the pendulum, as for a lot of biomechanics one as well, is to drive it by the generalized forces. 
 That is forces and moments directly applied to the degrees of freedom as if virtual motors were to power them.
-This dynamics is called in `bioptim` torque driven. 
+This dynamic is called in `bioptim` torque driven. 
 In a torque driven dynamics, the states are the positions (also called generalized coordinates, *q*) and the velocities (also called the generalized velocities, *qdot*) and the controls are the joint torques (also called generalized forces, *tau*). 
 Let's define such a dynamics:
 ```python
@@ -131,31 +131,31 @@ dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
 The pendulum is required to start in a downward position (0 rad) and finish in upward position (3.14 rad) with no velocity at start and end nodes.
 To define that, it would be nice to first define boundary constraints on the position (*q*) and velocities (*qdot*) that match those in the bioMod file and to apply them at the very beginning, the very end and all the intermediate nodes as well.
-QAndQDotBounds waits for a biorbd model and returns a structure with the minimal and maximal bounds for all the deegres of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final nodes, respectively.
+QAndQDotBounds waits for a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final nodes, respectively.
 How convenient!
 ```python
 x_bounds = QAndQDotBounds(biorbd_model)
 ```
-Then, override the first and last column to be 0, that is the sideway and rotation to be null for both the position and the velocities
+Then, override the first and last column to be 0, that is the sideways and rotation to be null for both the position and the velocities
 ```python
 x_bounds[:, [0, -1]] = 0
 ```
-Finally, override once again the final node for the rotation so it is upside down.
+Finally, override once again the final node for the rotation, so it is upside down.
 ```python
 x_bounds[1, -1] = 3.14
 ```
-At that point, you may want to have a look at the `x_bounds.min` and `x_bounds.max` matrice to convince yourself that the initial and final position and velocities are prescribed and that all the intermediate points are free up to a certain minimal and maximal values. 
+At that point, you may want to have a look at the `x_bounds.min` and `x_bounds.max` matrices to convince yourself that the initial and final position and velocities are prescribed and that all the intermediate points are free up to a certain minimal and maximal values. 
 
 Up to that point, there is nothing preventing the solver to simply use the virtual motor of the rotation to rotate the pendulum upward (like clock hands) to get to the upside down rotation. 
 What makes this example interesting is that we can prevent this by defining minimal and maximal bounds on the control (the maximal forces that these motors have)
 ```
 u_bounds = Bounds([-100, 0], [100, 0])
 ```
-Like this, the sideway force ranges from -100 Newton to 100 Newton, but the rotation force ranges from 0 N/m to 0 N/m.
+Like this, the sideways force ranges from -100 Newton to 100 Newton, but the rotation force ranges from 0 N/m to 0 N/m.
 Again, `u_bound` is defined for the first, the intermediate and the final nodes, but this time, we don't want to specify anything particular for the first and final nodes, so we can leave them as is. 
 
-You says optimization says cost function.
-Even though, it is possible to define an OCP without objective, it is not so much recommanded, and let's face it... much less fun!
+Who says optimization, says cost function.
+Even though, it is possible to define an OCP without objective, it is not so much recommended, and let's face it... much less fun!
 So the goal (or the cost function) of the pendulum is to perform its task while using the minimum forces as possible. 
 Therefore, an objective function that minimizes the generalized forces is defined:
 ```python
@@ -175,7 +175,7 @@ Please note that `x_init` is twice the size of `u_init` because it contains the 
 We now have everything to create the ocp!
 For that we have to decide how much time the pendulum has to get up there (`phase_time`) and how many shooting point are defined for the multishoot (`n_shooting`).
 Thereafter, you just have to send everything to the `OptimalControlProgram` class and let `bioptim` prepares everything for you.
-For simplicity sake, I copy all the piece of code previously visited in the building the ocp section here:
+For simplicity's sake, I copy all the piece of code previously visited in the building the ocp section here:
 ```python
 ocp = OptimalControlProgram(
         biorbd_model,
@@ -196,12 +196,12 @@ To solve the ocp, you simply have to call the `solve()` method of the `ocp` clas
 ```python
 sol = ocp.solve(show_online_optim=True)
 ```
-If you feel fancy, you can even activate the only opimization graphs!
-However, for such easy problem, `Ipopt` won't leave you the time to appreciate the update realtime updates of the graph...
+If you feel fancy, you can even activate the only optimization graphs!
+However, for such an easy problem, `Ipopt` won't leave you the time to appreciate the update realtime updates of the graph...
 That's it!
 
 ## Show the results
-If you want to have a look at the animated data, `bioptim` has an interface to `bioviz` which is designed to vizualize bioMod files.
+If you want to have a look at the animated data, `bioptim` has an interface to `bioviz` which is designed to visualize bioMod files.
 For that, simple call the `animate()` method of a `ShowData` class as such:
 ```python
 ShowResult(ocp, sol).animate()
@@ -329,7 +329,7 @@ from bioptim import ClassName
 ## The Dynamics
 By essence, an optimal control program (ocp) links two types of variables: the states (x) and the controls (u). 
 Conceptually, the controls could be seen as the driving forces of the system, what makes the system do something, while the states are the consequences of these driving forces. 
-In the case of the biomechanics, the states are usually the generalized coordinates (*q*) and velocities (*qdot*), that is the pose of the musculoskelatal model and the speed the joint moves. 
+In the case of the biomechanics, the states are usually the generalized coordinates (*q*) and velocities (*qdot*), that is the pose of the musculoskeletal model and the speed the joint moves. 
 On the other hand, the controls can be the generalized forces, that is the joint torques, but can also be the muscle excitations, for instance.
 The key is there are dynamic equations that link them such that: dx/dt = f(x, u, p), where p can be additional parameters that act on the system, but are not time dependent.
 
@@ -341,16 +341,16 @@ This class is the main class to define a dynamics.
 It therefore contains all the information necessary to configure (that is determining which variables are states or controls) and performs the dynamics. 
 It is what is expected by the `OptimalControlProgram` for its `dynamics_type` parameter. 
 
-The user can minimally define a Dynamics as follow: `dyn = Dynamics(DynamicsFcn)`.
+The user can minimally define a Dynamics as follows: `dyn = Dynamics(DynamicsFcn)`.
 The `DynamicsFcn` are the one presented in the corresponding section below. 
 
 #### The options
-The full signature of Dynamics is as follow:
+The full signature of Dynamics is as follows:
 ```python
 Dynamics(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int)
 ```
 The `dynamics_type` is the selected `DynamicsFcn`. 
-It automatically define both `configure` and `dynamic_function`. 
+It automatically defines both `configure` and `dynamic_function`. 
 If a function is sent instead, this function is interpreted as `configure` and the DynamicsFcn is assumed to be `DynamicsFcn.CUSTOM`
 If one is interested in changing the behaviour of a particular `DynamicsFcn`, they can refer to the Custom dynamics functions right below. 
 
@@ -358,7 +358,7 @@ The `phase` is the index of the phase the dynamics apply to.
 This is usually taken care by the `add()` method of `DynamicsList`, but it can be useful when declaring the dynamics out of order.
 
 #### Custom dynamic functions
-If an advanced user wants to defined their own dynamic function, they can define the configuration and/or the dynamics. 
+If an advanced user wants to define their own dynamic function, they can define the configuration and/or the dynamics. 
 
 The configuration is what tells `bioptim` which variables are states and which are control.
 The user is expected to provide a function handler with the follow signature: `custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram)`.
@@ -373,7 +373,7 @@ Please note that this is not necessary mutually exclusive.
 Finally, the user is expected to configure the dynamic by calling `Problem.configure_dynamics_function(ocp, nlp, custom_dynamics)`
 
 Defining the dynamic function must be done when one provides a custom configuration, but can also be defined by providing a function handler to the `dynamic_function` parameter for `Dynamics`. 
-The signature of this custom dynamic function is as follow: `custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram`.
+The signature of this custom dynamic function is as follows: `custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram`.
 This function is expected to return a tuple[MX] of the derivative of the states. 
 Some method defined in the class `DynamicsFunctions` can be useful, but will not be covered here since it is initially designed for internal use.
 Please note that MX type is a CasADi type.
@@ -382,17 +382,17 @@ Anyone who wants to define custom dynamics should be at least familiar with this
 
 ### Class: DynamicsList
 A DynamicsList is by essence simply a list of Dynamics. 
-The `add()` method can be called exacly as if one was calling the `Dynamics` constructor. 
+The `add()` method can be called exactly as if one was calling the `Dynamics` constructor. 
 If the `add()` method is used more than one, the `phase` parameter is automatically incremented. 
 
-So a minimal use is as follow:
+So a minimal use is as follows:
 ```python
-dyn_list = DynamicsList
+dyn_list = DynamicsList()
 dyn_list.add(DynamicsFcn)
 ```
 
 ### Enum: DynamicsFcn
-The DynamicsFcn Enum is the configuration and declaration of all the already available dynamics in `bioptim`. 
+The `DynamicsFcn` enum is the configuration and declaration of all the already available dynamics in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 
 Please note that one can change the dynamic function associated to any of the configuration by providing a custom dynamics_function. 
@@ -415,11 +415,19 @@ The derivative of *q* is trivially *qdot*.
 The actual *tau* is computed from the activation by the `biorbd` function: `tau = biorbd_model.torque(torque_act, q, qdot)`.
 Then, the derivative of *qdot* is given by the `biorbd` function: `qddot = biorbd_model.ForwardDynamics(q, qdot, tau)`. 
 
+Please note, this dynamics is expected to be very slow to converge, if it ever does. 
+One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint.
+This has been shown to be more efficient and allows defining minimum torque.
+
 #### TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. 
 The derivative of *q* is trivially *qdot*.
 The actual *tau* is computed from the activation by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `tau = biorbd_model.torque(torque_act, q, qdot)`.
 Then, the derivative of *qdot* is given by the `biorbd` function: `qddot = biorbd_model.ForwardDynamics(q, qdot, tau)`. 
+
+Please note, this dynamics is expected to be very slow to converge, if it ever does. 
+One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint.
+This has been shown to be more efficient and allows defining minimum torque.
 
 #### MUSCLE_ACTIVATIONS_DRIVEN
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the muscle activations. 
@@ -477,6 +485,15 @@ The Bounds class is the main class to define bounds.
 The constructor can be call by sending two boundary matrices (min, max) as such: `bounds = Bounds(min_bounds, max_bounds)`. 
 Or by providing a previously declared bounds: `bounds = Bounds(bounds=another_bounds)`.
 The `min_bounds` and `max_bounds` matrices must have the dimensions that fits the chosen `InterpolationType`, the default type being `InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT`, which is 3 columns.
+
+The full signature of Bounds is as follows:
+```python
+Bounds(min_bounds, max_bound, interpolation: InterpolationType, phase: int)
+```
+The first parameters are presented before.
+The `phase` is the index of the phase the bounds apply to.
+This is usually taken care by the `add()` method of `BoundsList`, but it can be useful when declaring the bounds out of order.
+
 If the interpolation type is CUSTOM, then the bounds are function handlers of signature: 
 ```python
 custom_bound(current_shooting_point: int, n_elements: int, n_shooting: int)
@@ -488,19 +505,20 @@ Unless it is a custom function, `min` and `max` are numpy.ndarray and can be dir
 It is also possible to change `min` and `max` simultaneously by directly slicing the bounds as if it was a numpy.array, effectively defining an equality constraint: for instance `bounds[:, 0] = 0`. 
 Finally, the `concatenate(another_bounds: Bounds)` method can be called to vertically concatenate multiple bounds.
 
+
 ### Class: BoundsList
 A BoundsList is by essence simply a list of Bounds. 
-The `add()` method can be called exacly as if one was calling the `Bounds` constructor. 
+The `add()` method can be called exactly as if one was calling the `Bounds` constructor. 
 If the `add()` method is used more than one, the `phase` parameter is automatically incremented. 
 
-So a minimal use is as follow:
+So a minimal use is as follows:
 ```python
-bounds_list = BoundsList
+bounds_list = BoundsList()
 bounds_list.add(min_bounds, max_bounds)
 ```
 
 ### Class: QAndQDotBounds 
-The QAndQDotBounds is simply a Bounds that uses a biorbd_model to define the miminal and maximal bounds for the generalized coordinates (*q*) and velocities (*qdot*). 
+The QAndQDotBounds is simply a Bounds that uses a biorbd_model to define the minimal and maximal bounds for the generalized coordinates (*q*) and velocities (*qdot*). 
 It is particularly useful when declaring the states bounds for *q* and *qdot*. 
 Anything that was presented for Bounds, also apply to QAndQDotBounds
 
@@ -514,11 +532,21 @@ In that sense, it is what is expected by the `OptimalControlProgram` for its `u_
 The InitialGuess class is the main class to define initial guesses.
 The constructor can be call by sending one initial guess matrix (init) as such: `bounds = InitialGuess(init)`. 
 The `init` matrix must have the dimensions that fits the chosen `InterpolationType`, the default type being `InterpolationType.CONSTANT`, which is 1 column.
+
+The full signature of Bounds is as follows:
+```python
+Bounds(initial_guess, interpolation: InterpolationType, phase: int)
+```
+The first parameters are presented before.
+The `phase` is the index of the phase the initial guess apply to.
+This is usually taken care by the `add()` method of `InitialGuessList`, but it can be useful when declaring the initial guess out of order.
+
 If the interpolation type is CUSTOM, then the InitialGuess is a function handler of signature: 
 ```python
 custom_bound(current_shooting_point: int, n_elements: int, n_shooting: int)
 ```
 where current_shooting_point is the current point to return, n_elements is the number of expected lines and n_shooting is the number of total shooting point (that is if current_shooting_point == n_shooting, this is the end of the phase)
+
 
 The main methods the user will be interested in is the `init` property that returns the initial guess. 
 Unless it is a custom function, `init` is a numpy.ndarray and can be directly modified to change the initial guess. 
@@ -526,47 +554,345 @@ Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be ca
 
 ### Class InitialGuessList
 A InitialGuessList is by essence simply a list of InitialGuess. 
-The `add()` method can be called exacly as if one was calling the `InitialGuess` constructor. 
+The `add()` method can be called exactly as if one was calling the `InitialGuess` constructor. 
 If the `add()` method is used more than one, the `phase` parameter is automatically incremented. 
 
-So a minimal use is as follow:
+So a minimal use is as follows:
 ```python
-init_list = InitialGuessList
+init_list = InitialGuessList()
 init_list.add(init)
 ```
 
 
 ## The Constraints
-
-### Class: ConstraintFcn
+The constraints are hard penalties of the optimization program.
+That means the solution won't be considered optimal unless all the constraint set is fully respected.
+The constraints come in two format: equality and inequality. 
 
 ### Class: Constraint
+The Constraint provides a class that prepares a constraint, so it can be added to the constraint set by `bioptim`.
+In that sense, it is what is expected by the `OptimalControlProgram` for its `constraints` parameter. 
+It is also possible to later change the constraint by calling the method `update_constraints(the_constraint)` of the `OptimalControlProgram`
+
+The Constraint class is the main class to define constraints.
+The constructor can be call with the type of the constraint and the node to apply it to, as such: `constraint = Constraint(ConstraintFcn, node=Node.END)`. 
+By default, the constraint will be an equality constraint equals to 0. 
+To change this behaviour, one can add the parameters `min_bound` and `max_bound` to change the bounds to their desired values. 
+
+The full signature of Constraint is as follows:
+```python
+Constraint(ConstraintFcn, node: node, index: list, phase: int, list_index: int, target: np.ndarray **extra_param)
+```
+The first parameters are presented before.
+The `list` is the list of elements to keep. 
+For instance, if one defines a TRACK_STATE constraint with `index=0`, then only the first state is tracked.
+The default value is all the elements.
+The `phase` is the index of the phase the constraint should apply to.
+If it is not sent, phase=0 is assumed.
+The `list_index` is the ith element of a list for a particular phase
+This is usually taken care by the `add()` method of `ConstraintList`, but it can be useful when declaring the constraints out of order, or when overriding previously declared constraints using `update_constraints`.
+The `target` is a value subtracted to the constraint value. 
+It is useful to define tracking problems.
+The dimensions of the target must be of [index, node]
+
+The `ConstraintFcn` enum provides a list of some predefined constraint functions. 
+It is possible however to define a custom constraint by sending a function handler in place of the `ConstraintFcn`.
+The signature of this custom function is: `custom_function(pn: PenaltyNodes, **extra_params)`
+The PenaltyNodes contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Constraint` constructor. 
+The function is expected to return an MX vector of the constraint to be inside `min_bound` and `max_bound`. 
+Please note that MX type is a CasADi type.
+Anyone who wants to define custom constraint should be at least familiar with this type beforehand. 
 
 ### Class: ConstraintList
+A ConstraintList is by essence simply a list of Constraint. 
+The `add()` method can be called exactly as if one was calling the `Constraint` constructor. 
+If the `add()` method is used more than one, the `list_index` parameter is automatically incremented for the prescribed `phase`.
+If no `phase` are prescribed by the user, the first phase is assumed. 
+
+So a minimal use is as follows:
+```python
+constraint_list = ConstraintList()
+constraint_list.add(constraint)
+```
+
+### Class: ConstraintFcn
+The `ConstraintFcn` enum is the declaration of all the already available constraints in `bioptim`. 
+Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
+
+#### TRACK_STATE
+Track the states variable towards a target
+
+#### TRACK_MARKERS
+Track the skin markers towards a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+
+#### TRACK_MARKERS_VELOCITY
+Track the skin marker velocities towards a target.
+
+#### SUPERIMPOSE_MARKERS
+Track one marker with another one.
+The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
+
+#### PROPORTIONAL_STATE
+Link one state to another, such that `x[first_dof] = coef * x[second_dof]`
+The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor
+
+#### PROPORTIONAL_CONTROL
+Link one control to another, such that `u[first_dof] = coef * u[second_dof]`
+The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor
+
+#### TRACK_TORQUE
+Track the generalized forces part of the controls variable towards a target
+
+#### TRACK_MUSCLES_CONTROL
+Track the muscles part of the controls variable towards a target
+
+#### TRACK_ALL_CONTROLS
+Track all the controls variable towards a target
+
+#### TRACK_CONTACT_FORCES
+Track the non-acceleration points reaction forces towards a target
+
+#### TRACK_SEGMENT_WITH_CUSTOM_RT
+Link a segment with an RT (for instance, an Inertial Measurement Unit). 
+It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles.
+The extra parameters `segment_idx: int` and `rt_idx: int` must be passed to the `Constraint` constructor
+
+#### TRACK_MARKER_WITH_SEGMENT_AXIS
+Track a marker using a segment, that is aligning an axis toward the marker.
+The extra parameters `marker_idx: int`, `segment_idx: int` and `axis: Axis` must be passed to the `Constraint` constructor
+
+#### TRACK_COM_POSITION
+Constraint the center of mass towards a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+
+#### TRACK_COM_VELOCITY
+Constraint the center of mass velocity towards a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+
+#### CONTACT_FORCE
+Add a constraint to the non-acceleration points reaction forces.
+It is usually used in conjunction with changing the bounds, so it creates an inequality constraint on this contact force.
+The extra parameter `contact_force_idx: int` must be passed to the `Constraint` constructor
+
+#### NON_SLIPPING
+Add a constraint of static friction at contact points constraining for small tangential forces. 
+This constraint assumes that the normal forces is positive (that is having an additional CONTACT_FORCE with `max_bound=np.inf`).
+The extra parameters `tangential_component_idx: int`, `normal_component_idx: int` and `static_friction_coefficient: float` must be passed to the `Constraint` constructor
+
+#### TORQUE_MAX_FROM_ACTUATORS
+Add a constraint of maximal torque to the generalized forces controls such that the maximal *tau* are computed from the `biorbd` method `biorbd_model.torqueMax(q, qdot).
+This is an efficient alternative to the torque activation dynamics. 
+The extra parameter `min_torque` can be passed to ensure that the model is never too weak
+
+#### TIME_CONSTRAINT
+Add the time to the optimization variable set. 
+It will leave the time free, within the given boundaries
+
+#### CUSTOM
+CUSTOM should not be directly sent by the user, but the user should pass the custom_constraint function directly. 
+You can have a look at Constraint and ConstraintList sections for more information about how to define custom constraints.
+
+
+## The objective functions
+The objective functions are soft penalties of the optimization program.
+That means the solution tries to minimize the value as much as possible but won't complaint if it does a bad job at it.
+The objective functions come in two format: Lagrange and Mayer. 
+
+The Lagrange objective functions are integrated over the whole phase (actually over the selected nodes, which are usually Node.ALL). 
+One should note that integration is not given by the dynamics function but by the rectangle approximation over a node.
+
+The Mayer objective functions are values at a single node, usually the Node.LAST. 
+
+### Class: Objective
+The Objective provide a class that prepares an objective function, so it can be added to the objective set by `bioptim`.
+In that sense, it is what is expected by the `OptimalControlProgram` for its `objective_functions` parameter. 
+It is also possible to later change the objective functions by calling the method `update_objectives(the_objective_function)` of the `OptimalControlProgram`
+
+The Objective class is the main class to define objectives.
+The constructor can be call with the type of the objective and the node to apply it to, as such: `objective = Objective(ObjectiveFcn, node=Node.END)`. 
+Please note that `ObjectiveFcn` should either be a `ObjectiveFcn.Lagrange` or `ObjectiveFcn.Mayer`.
+
+The full signature of Objective is as follows:
+```python
+Objective(ObjectiveFcn, node: Node, index: list, phase: int, list_index: int, quadratic: bool, target: np.ndarray, weight: float, **extra_param)
+```
+The first parameters are presented before.
+The `list` is the list of elements to keep. 
+For instance, if one defines a MINIMIZE_STATE objective_function with `index=0`, then only the first state is minimized.
+The default value is all the elements.
+The `phase` is the index of the phase the objective function should apply to.
+If it is not sent, phase=0 is assumed.
+The `list_index` is the ith element of a list for a particular phase
+This is usually taken care by the `add()` method of `ObjectiveList`, but it can be useful when declaring the objectives out of order, or when overriding previously declared objectives using `update_objectives`.
+`quadratic` is used to defined if the objective function should be squared. 
+This is particularly useful when one wants to minimize toward 0 instead of minus infinity
+The `target` is a value subtracted to the objective value. 
+It is useful to define tracking problems.
+The dimensions of the target must be of [index, node].
+Finally, `weight` is the weighting that should be applied to the objective. 
+The higher the weight is, the more important the objective is compared to the other objective functions.
+
+The `ObjectiveFcn` enum provides a list of some predefined objective functions. 
+It is possible however to define a custom objective function by sending a function handler in place of the `ObjectiveFcn`.
+If one do so, an additional parameter must be sent to the `Objective` constructor which is `custom_type` and must be either `ObjectiveFcn.Lagrange` or `ObjectiveFcn.Mayer`.
+The signature of the custom function is: `custom_function(pn: PenaltyNodes, **extra_params)`
+The PenaltyNodes contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Objective` constructor. 
+The function is expected to return an MX vector of the objective function. 
+Please note that MX type is a CasADi type.
+Anyone who wants to define custom objective functions should be at least familiar with this type beforehand. 
+
+### ObjectiveList
+An ObjectiveList is by essence simply a list of Objective. 
+The `add()` method can be called exactly as if one was calling the `Objective` constructor. 
+If the `add()` method is used more than one, the `list_index` parameter is automatically incremented for the prescribed `phase`.
+If no `phase` are prescribed by the user, the first phase is assumed. 
+
+So a minimal use is as follows:
+```python
+objective_list = ObjectiveList()
+objective_list.add(objective)
+```
+
+### Class: ObjectiveFcn
+
+#### MINIMIZE_TIME (Lagrange and Mayer)
+Add the time to the optimization variable set. 
+It will try to minimize the time towards -infinity or towards a target.
+If the Mayer term is used, `min_bound` and `max_bound` can also be defined.
+
+#### MINIMIZE_STATE (Lagrange and Mayer)
+Minimize the states variable towards zero (or a target)
+
+#### TRACK_STATE (Lagrange and Mayer)
+Track the states variable towards a target
+
+#### MINIMIZE_MARKERS (Lagrange and Mayer)
+Minimize the position of the markers towards zero (or a target)
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+
+#### TRACK_MARKERS (Lagrange and Mayer)
+Track the skin markers towards a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+
+#### MINIMIZE_MARKERS_DISPLACEMENT (Lagrange)
+Minimize the difference between a state at a node and the same state at the next node, effectively minimizing the velocity
+The extra parameter `coordinates_system_idx` can be specified to compute the marker position in that coordinate system. 
+Otherwise, it is computed in the global reference frame. 
+
+#### MINIMIZE_MARKERS_VELOCITY (Lagrange and Mayer)
+Minimize the skin marker velocities towards zero (or a target)
+
+#### TRACK_MARKERS_VELOCITY (Lagrange and Mayer)
+Track the skin marker velocities towards a target.
+
+#### SUPERIMPOSE_MARKERS (Lagrange and Mayer)
+Track one marker with another one.
+The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
+
+#### PROPORTIONAL_STATE (Lagrange and Mayer)
+Minimize the difference between one state and another, such that `x[first_dof] ~= coef * x[second_dof]`
+The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor
+
+#### PROPORTIONAL_CONTROL (Lagrange)
+Minimize the difference between one control and another, such that `u[first_dof] ~= coef * u[second_dof]`
+The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor
+
+#### MINIMIZE_TORQUE (Lagrange)
+Minimize the generalized forces part of the controls variable towards zero (or a target)
+
+#### TRACK_TORQUE (Lagrange)
+Track the generalized forces part of the controls variable towards a target
+
+#### MINIMIZE_TORQUE_DERIVATIVE (Lagrange)
+Minimize the difference between a *tau* at a node and the same *tau* at the next node, effectively minimizing the generalized forces derivative
+
+#### MINIMIZE_MUSCLES_CONTROL (Lagrange)
+Minimize the muscles part of the controls variable towards zero (or a target)
+
+#### TRACK_MUSCLES_CONTROL (Lagrange)
+Track the muscles part of the controls variable towards a target
+
+#### MINIMIZE_ALL_CONTROLS (Lagrange)
+Minimize all the controls variable towards zero (or a target)
+
+#### TRACK_ALL_CONTROLS (Lagrange)
+Track all the controls variable towards a target
+
+#### MINIMIZE_CONTACT_FORCES (Lagrange)
+Minimize the non-acceleration points reaction forces towards zero (or a target)
+
+#### TRACK_CONTACT_FORCES (Lagrange)
+Track the non-acceleration points reaction forces towards a target
+
+#### MINIMIZE_COM_POSITION (Lagrange and Mayer)
+Minimize the center of mass position towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+
+#### MINIMIZE_COM_VELOCITY (Lagrange and Mayer)
+Minimize the center of mass velocity towards zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+
+#### MINIMIZE_PREDICTED_COM_HEIGHT (Mayer)
+Minimize the prediction of the center of mass maximal height from the parabolic equation, assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2].
+To maximize a jump, one can use this function at the end of the push-off phase and declare a weight of -1.
+
+#### TRACK_SEGMENT_WITH_CUSTOM_RT (Lagrange and Mayer)
+Minimize the distance between a segment and an RT (for instance, an Inertial Measurement Unit). 
+It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles.
+The extra parameters `segment_idx: int` and `rt_idx: int` must be passed to the `Objective` constructor
+
+#### TRACK_MARKER_WITH_SEGMENT_AXIS (Lagrange and Mayer)
+Minimize the distance between a marker and an axis of a segment, that is aligning an axis toward the marker.
+The extra parameters `marker_idx: int`, `segment_idx: int` and `axis: Axis` must be passed to the `Objective` constructor
+
+#### CUSTOM (Lagrange and Mayer)
+CUSTOM should not be directly sent by the user, but the user should pass the custom_objective function directly. 
+You can have a look at Objective and ObjectiveList sections for more information about how to define custom objective function.
+
+
+## The Parameters
+Parameters are time independent variables. 
+It can be, for instance, the maximal value of the strength of a muscle, or even the value of gravity.
+If affects the dynamics of the whole system. 
+Due to the variety of parameters, it was impossible to provided predefined parameters, apart from time. 
+Therefore, all the parameters are custom made.
+
+### Class: ParameterList
+The ParameterList provide a class that prepares the parameters, so it can be added to the parameter set to optimize by `bioptim`.
+In that sense, it is what is expected by the `OptimalControlProgram` for its `parameters` parameter. 
+It is also possible to later change the parameters by calling the method `update_parameters(the_parameter_list)` of the `OptimalControlProgram`
+
+The ParameterList class is the main class to define parameters.
+Please note that unlike other lists, `Parameter` is not accessible, this is for simplicity reasons as it would complicate the API quite a bit to allow for it.
+Therefore, one should not call the Parameter constructor directly. 
+
+Here is the full signature of the `add()` method of the `ParameterList`:
+```python
+ParameterList.add(parameter_name: str, function: Callable, initial_guess: InitialGuess, bounds: Bounds, size: int, phase: int, penalty_list: Objective, **extra_parameters)
+```
+The `parameter_name` is the name of the parameter. 
+This is how it will be referred to in the output data as well.
+The `function` is the function that modifies the biorbd model, it will be called just prior to applying the dynamics
+The signature of the custom function is: `custom_function(biorbd.Model, MX, **extra_params)`, where biorbd.Model is the model to apply the parameter to, the MX is the value the parameter will take, and the **extra_parameters are those sent to the add() method.
+This function is expected to modify the biorbd_model, and not return anything.
+Please note that MX type is a CasADi type.
+Anyone who wants to define custom parameters should be at least familiar with this type beforehand.
+The `initial_guess` is the initial values of the parameter.
+The `bounds` are the maximal and minimal values of the parameter.
+The `size` is the number of element of this parameter.
+If an objective function is provided, the return of the objective function should match the size.
+The `phase` that the parameter applies to.
+Even though a parameter is time independent, one biorbd_model is loaded per phase. 
+Since parameters are associate to a specific biorbd_model, one must define a parameter per phase.
+The `penalty_list` is the index in the list the penalty is. 
+If one adds multiple parameters, the list is automatically incremented. 
+It is useful however to define this value by hand if one wants to declare the parameters out of order or to override a previously declared parameter using `update_parameters`.
+
 
 ### Class: StateTransitionFcn
 
 ### Class: StateTransitionList
-
-### Enum: Node
-
-
-
-## The objective functions
-TODO + Lagrange objective functions are integrated using rectangle method.
-
-### Class: ObjectiveFcn
-
-### Class: Objective, ObjectiveList
-
-### Enum: Node
-
-
-
-## The Parameters
-
-### Class: ParameterList
-
 
 
 ## The OCP
@@ -575,6 +901,8 @@ TODO + Lagrange objective functions are integrated using rectangle method.
 
 ### Class: NonLinearProgram
 
+
+### Enum: Node
 ### Enum: OdeSolver
 ### Enum: Solver
 ### Enum: ControlType
@@ -582,7 +910,7 @@ TODO + Lagrange objective functions are integrated using rectangle method.
 ### Enum: InterpolationType
 The type of interpolation something is. 
 - CONSTANT needs only one column, since it does not change over time
-- CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT needs three columns. The first and last columns correspond to the first and last node, while the remaining interdiate node are treated as CONSTANT from the middle column
+- CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT needs three columns. The first and last columns correspond to the first and last node, while the remaining intermediate nodes are treated as CONSTANT from the middle column
 - LINEAR, needs two columns. It corresponds to the first and last node and is linearly interpolated in between.
 - EACH_FRAME, needs as many as nodes. It is not an interpolation per se, but it allows the user to specify all the nodes individually.
 - SPLINE, needs five columns. It performs a cubic spline to interpolate
@@ -606,9 +934,6 @@ TODO + It is expected to slow down the optimization by about 15%
 ### Enum: Mapping
 
 ### Enum: PlotType
-
-
-
 
 
 

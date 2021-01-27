@@ -168,7 +168,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             static_friction_coefficient: float,
         ):
             """
-            Add a constraint of static friction at contact points allowing for small tangential forces. This constraint
+            Add a constraint of static friction at contact points constraining for small tangential forces. This constraint
             assumes that the normal forces is positive
 
             Parameters
@@ -507,8 +507,8 @@ class ConstraintFcn(Enum):
     TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
     TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT,)
     TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.TRACK_MARKER_WITH_SEGMENT_AXIS,)
-    COM_POSITION = (PenaltyType.MINIMIZE_COM_POSITION,)
-    COM_VELOCITY = (PenaltyType.MINIMIZE_COM_VELOCITY,)
+    TRACK_COM_POSITION = (PenaltyType.MINIMIZE_COM_POSITION,)
+    TRACK_COM_VELOCITY = (PenaltyType.MINIMIZE_COM_VELOCITY,)
     CUSTOM = (PenaltyType.CUSTOM,)
     CONTACT_FORCE = (ConstraintFunction.Functions.contact_force,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)

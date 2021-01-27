@@ -700,8 +700,8 @@ def test_penalty_minimize_predicted_com_height(value):
 def test_penalty_minimize_com_position(value, penalty_origin):
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
-    if "COM_POSITION" in penalty_origin._member_names_:
-        penalty_type = penalty_origin.COM_POSITION
+    if "TRACK_COM_POSITION" in penalty_origin._member_names_:
+        penalty_type = penalty_origin.TRACK_COM_POSITION
     else:
         penalty_type = penalty_origin.MINIMIZE_COM_POSITION
 
