@@ -86,7 +86,7 @@ class OptimalControlProgram:
     def __init__(
         self,
         biorbd_model: Union[str, biorbd.Model, list, tuple],
-        dynamics_type: Union[Dynamics, DynamicsList],
+        dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
         x_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
@@ -115,7 +115,7 @@ class OptimalControlProgram:
         ----------
         biorbd_model: Union[str, biorbd.Model, list, tuple]
             The biorbd model. If biorbd_model is an str, a new model is loaded. Otherwise, the references are used
-        dynamics_type: Union[Dynamics, DynamicsList]
+        dynamics: Union[Dynamics, DynamicsList]
             The dynamics of the phases
         n_shooting: Union[int, list[int]]
             The number of shooting point of the phases
@@ -177,7 +177,7 @@ class OptimalControlProgram:
         biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
         self.original_values = {
             "biorbd_model": biorbd_model_path,
-            "dynamics_type": dynamics_type,
+            "dynamics": dynamics,
             "n_shooting": n_shooting,
             "phase_time": phase_time,
             "x_init": x_init,
@@ -206,12 +206,12 @@ class OptimalControlProgram:
         if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
             raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
 
-        if isinstance(dynamics_type, Dynamics):
+        if isinstance(dynamics, Dynamics):
             dynamics_type_tp = DynamicsList()
-            dynamics_type_tp.add(dynamics_type)
-            dynamics_type = dynamics_type_tp
-        elif not isinstance(dynamics_type, DynamicsList):
-            raise RuntimeError("dynamics_type should be a Dynamics or a DynamicsList")
+            dynamics_type_tp.add(dynamics)
+            dynamics = dynamics_type_tp
+        elif not isinstance(dynamics, DynamicsList):
+            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
 
         ns = n_shooting
         if not isinstance(ns, int) or ns < 2:
@@ -345,7 +345,7 @@ class OptimalControlProgram:
         self.__define_time(phase_time, objective_functions, constraints)
 
         # Prepare path constraints and dynamics of the program
-        NLP.add(self, "dynamics_type", dynamics_type, False)
+        NLP.add(self, "dynamics_type", dynamics, False)
         NLP.add(self, "ode_solver", ode_solver, True)
         NLP.add(self, "control_type", control_type, True)
         NLP.add(self, "n_integration_steps", n_integration_steps, True)

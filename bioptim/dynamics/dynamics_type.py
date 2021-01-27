@@ -76,7 +76,7 @@ class DynamicsList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(dynamics_type: DynamicsFcn, **extra_parameters)
+    add(dynamics: DynamicsFcn, **extra_parameters)
         Add a new Dynamics to the list
     print(self)
         Print the DynamicsList to the console
