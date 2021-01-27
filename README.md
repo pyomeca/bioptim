@@ -326,7 +326,135 @@ All the classes covered here, can be imported using the command:
 from bioptim import ClassName
 ```
 
-## The Dynamics
+## The OCP
+An optimal control program is an optimization that uses control variables in order to drive some state variables.
+There are mainly two different type of ocp, which is the `direct collocation` and the `direct multiple shooting`.
+`Bioptim` is based on the latter. 
+To summarize, it defines a large optimization problem by discrediting the controls and the state variables into a predetermined number of intervals, the beginning of which called the shooting points.
+By defining strict constraints between the end of an interval and the beginning of the next, it can ensure a proper dynamics of the system, while have good insight to solve the problem using gradient decending algorithms.
+
+### Class: OptimalControlProgram
+This is the main class that holds an ocp. 
+Most of the attributes and methods are for internal use, therefore the API user should not care much about them.
+Once an OptimalControlProgram is constructed, it is usually ready to be solved.
+
+The full signature of the `OptimalControlProgram` can be scary at first, but should becomes clear soon.
+Here it is:
+```python
+OptimalControlProgram(
+    biorbd_model: [str, biorbd.Model, list],
+    dynamics: [Dynamics, DynamicsList],
+    n_shooting: [int, list],
+    phase_time: [float, list],
+    x_init: [InitialGuess, InitialGuess]
+    u_init: [InitialGuess, InitialGuessList], 
+    x_bounds: [Bounds, BoundsList],
+    u_bounds: [Bounds, BoundsList],
+    objective_functions: [Objective, ObjectiveList],
+    constraints: [Constraint, ConstraintList],
+    parameters: ParameterList,
+    external_forces: list,
+    ode_solver: OdeSolver,
+    n_integration_steps: int,
+    irk_polynomial_interpolation_degree: int,
+    control_type: [ControlType, list],
+    all_generalized_mapping: BidirectionalMapping,
+    q_mapping: BidirectionalMapping,
+    qdot_mapping: BidirectionalMapping,
+    tau_mapping: BidirectionalMapping,
+    plot_mappings: Mapping,
+    phase_transitions: PhaseTransitionList,
+    n_threads: int,
+    use_sx: bool,
+)
+```
+Of these, only the first 4 are mandatory.
+`biorbd_model` is the `biorbd` model to use. If the model is not loaded, a string can be passed. 
+In the case of a multiphase optimization, one model per phase should be passed in a list.
+`dynamics` is the dynamics of the system during each phase (see The dynamics section).
+`n_shooting` is the number of shooting point of the direct multiple shooting for each phase.
+`phase_time` is the final time of each phase. If the time is free, this is the initial guess.
+`x_init` is the initial guess for the states variables (see The initial conditions section)
+`u_init` is the initial guess for the controls variables (see The initial conditions section)
+`x_bounds` is the minimal and maximal value the states can have (see The bounds section)
+`u_bounds` is the minimal and maximal value the controls can have (see The bounds section)
+`objective_functions` is the objective function set of the ocp (see The objective functions section)
+`constraints` is the constraint set of the ocp (see The constraints section)
+`parameters` is the parameter set of the ocp (see The parameters section)
+`external_forces` are the external forces acting on the center of mass of the bodies. 
+It is list (one element for each phase) of np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n
+`ode_solver` is the ode solver used to solve the dynamic equations
+`n_integration_steps` is the number of elements when solving with a explicit Runge Kutta ode solver
+`irk_polynomial_interpolation_degree` is the degree of the implicit Runge Kutta ode solver
+`control_type` is the type of discretization of the controls (usually CONSTANT) (see ControlType section)
+`all_generalized_mapping` is used to reduce the number of degrees of freedom by linking them (see The mappings section).
+This ones applies the same mapping to the generalized coordinates (*q*), velocities (*qdot*) and forces (*tau*).
+`q_mapping` the mapping applied to *q*.
+`qdot_mapping` the mapping applied to *q_dot*.
+`tau_mapping` the mapping applied to *tau*.
+`plot_mappings` is to force some plot to be linked together. 
+`n_threads` is to solve the optimization using multiple thread. 
+This number is the number of thread to use.
+`use_sx` is if the CasADi graph should be constructed in SX. 
+SX will tend to solve much faster than MX graphs, however they can necessitate a huge amount of RAM.
+
+Please note that a common ocp will usually define only these parameters:
+```python
+ocp = OptimalControlProgram(
+    biorbd_model: [str, biorbd.Model, list],
+    dynamics: [Dynamics, DynamicsList],
+    n_shooting: [int, list],
+    phase_time: [float, list],
+    x_init: [InitialGuess, InitialGuess]
+    u_init: [InitialGuess, InitialGuessList], 
+    x_bounds: [Bounds, BoundsList],
+    u_bounds: [Bounds, BoundsList],
+    objective_functions: [Objective, ObjectiveList],
+    constraints: [Constraint, ConstraintList],
+    n_threads: int,
+)
+```
+
+The main methods one will be interested in are:
+```python
+ocp.update_objectives()
+ocp.update_constraints()
+ocp.update_parameters()
+ocp.update_bounds()
+ocp.update_initial_guess()
+```
+These allows to modify the ocp after being defined. 
+It is particularly useful when solving the ocp for a first time, and then adjusting some parameters and reoptimizing afterwards.
+
+Moreover, the method 
+```python
+solution = ocp.solve(Solver, solver_options:{})
+```
+is called to actually solves the ocp. 
+Note that options can be passed to the solver via the `solver_options` parameter.
+One can refer to the documentation of their respective chosen solver to know which options exist.
+The `show_online_optim` parameter can be set to `True` so the graphs nicely update during the optimization.
+It is expected to slow down the optimization a bit though.
+
+Finally, one can save and load previously optimized values by using
+```python
+ocp.save(solution, file_path)
+ocp, solution = OptimalControlProgram.load(file_path)
+```
+Please note that this is `bioptim` version dependent, which means that an optimized solution from a previous version will not probably load on a newer `bioptim` version.
+To save the solution in a version independent manner, one can use the following method
+```python
+ocp.save_get_data(solution, file_path)
+```
+which will save the results in a numpy array format. 
+
+Finally, the `add_plot(name, update_function)` method can be used to create new dynamics plots.
+The interested user can have a look at the `examples/getting_started/custom_plotting.py` example.
+
+### Class: NonLinearProgram
+
+
+## The dynamics
 By essence, an optimal control program (ocp) links two types of variables: the states (x) and the controls (u). 
 Conceptually, the controls could be seen as the driving forces of the system, what makes the system do something, while the states are the consequences of these driving forces. 
 In the case of the biomechanics, the states are usually the generalized coordinates (*q*) and velocities (*qdot*), that is the pose of the musculoskeletal model and the speed the joint moves. 
@@ -474,7 +602,7 @@ CUSTOM should not be called by the user, but the user should pass the configure_
 You can have a look at Dynamics and DynamicsList sections for more information about how to configure and define custom dynamics.
 
 
-## The Bounds
+## The bounds
 The bounds provide a class that has minimal and maximal values for a variable.
 It is, for instance, use for the inequality constraints that limits the maximal and minimal values the states (x) and the controls (u) can have.
 In that sense, it is what is expected by the `OptimalControlProgram` for its `u_bounds` and `x_bounds` parameters. 
@@ -523,7 +651,7 @@ It is particularly useful when declaring the states bounds for *q* and *qdot*.
 Anything that was presented for Bounds, also apply to QAndQDotBounds
 
 
-## The Initial conditions
+## The initial conditions
 The initial conditions the solver should start from, that is initial values of the states (x) and the controls (u).
 In that sense, it is what is expected by the `OptimalControlProgram` for its `u_init` and `x_init` parameters. 
 
@@ -547,7 +675,6 @@ custom_bound(current_shooting_point: int, n_elements: int, n_shooting: int)
 ```
 where current_shooting_point is the current point to return, n_elements is the number of expected lines and n_shooting is the number of total shooting point (that is if current_shooting_point == n_shooting, this is the end of the phase)
 
-
 The main methods the user will be interested in is the `init` property that returns the initial guess. 
 Unless it is a custom function, `init` is a numpy.ndarray and can be directly modified to change the initial guess. 
 Finally, the `concatenate(another_initial_guess: InitialGuess)` method can be called to vertically concatenate multiple initial guesses.
@@ -564,7 +691,7 @@ init_list.add(init)
 ```
 
 
-## The Constraints
+## The constraints
 The constraints are hard penalties of the optimization program.
 That means the solution won't be considered optimal unless all the constraint set is fully respected.
 The constraints come in two format: equality and inequality. 
@@ -851,7 +978,7 @@ CUSTOM should not be directly sent by the user, but the user should pass the cus
 You can have a look at Objective and ObjectiveList sections for more information about how to define custom objective function.
 
 
-## The Parameters
+## The parameters
 Parameters are time independent variables. 
 It can be, for instance, the maximal value of the strength of a muscle, or even the value of gravity.
 If affects the dynamics of the whole system. 
@@ -889,17 +1016,54 @@ The `penalty_list` is the index in the list the penalty is.
 If one adds multiple parameters, the list is automatically incremented. 
 It is useful however to define this value by hand if one wants to declare the parameters out of order or to override a previously declared parameter using `update_parameters`.
 
+## The phase transitions
+`Bioptim` can declare multiphase optimisation program. 
+The goal of a multiphase ocp is usually to declare dynamics that changes. 
+The user must understand that each phase is therefore a full ocp by itself, with constraints that links the end of which with the beginning of the following.
+Due to some limitations created by the use of MX variables, some things can be done and some cannot during a phase transition. 
 
-### Class: StateTransitionFcn
+### Class: PhaseTransitionList
+The PhaseTransitionList provide a class that prepares the phase transitions.
+In that sense, it is what is expected by the `OptimalControlProgram` for its `phase_transitions` parameter. 
 
-### Class: StateTransitionList
+The PhaseTransitionList class is the main class to define parameters.
+Please note that unlike other lists, `PhaseTransition` is not accessible since phase transition don't make sense for single phase ocp.
+Therefore, one should not call the PhaseTransition constructor directly. 
+
+Here is the full signature of the `add()` method of the `PhaseTransitionList`:
+```python
+PhaseTransitionList.add(PhaseTransitionFcn, phase_pre_idx, **extra_parameters)
+```
+The `PhaseTransitionFcn` is transition phase function to use.
+The default is CONTINUOUS.
+If one wants to declare a custom transition phase, then PhaseTransitionFcn is the function handler to the custom function.
+The signature of the custom function is: `custom_function(state_pre: MX, state_post: MX, **extra_parameters)`, where `state_pre` is the states variable at the end of the phase before the transition, `state_post` is those at the beginning of the phase after the transition, and the **extra_parameters are those sent to the add() method.
+This function is expected to return the cost of the phase transition computed from the states pre and post in the form of an MX.
+Please note that MX type is a CasADi type.
+Anyone who wants to define phase transitions should be at least familiar with this type beforehand.
+The `phase_pre_idx` is the index of the phase before the transition.
+
+### Class: PhaseTransitionFcn
+The `PhaseTransitionFcn` enum is the already available phase transitions in `bioptim`. 
+Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
+
+#### CONTINUOUS
+The states at the end of the phase_pre equals the states at the beginning of the phase_post
+
+#### IMPACT
+The impulse function of `biorbd`: `qdot_post = biorbd_model.ComputeConstraintImpulsesDirect, q_pre, qdot_pre)` is apply to compute the velocities of the joint post impact.
+These computed states at the end of the phase_pre equals the states at the beginning of the phase_post.
+
+If a bioMod with more contact points than the phase before is used, then the IMPACT transition phase should be used as well
+
+#### CYCLIC
+Apply the CONTINUOUS phase transition to the end of the last phase and the begininning the of first, effectively creating a cyclic movement
+
+#### CUSTOM
+CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
+You can have a look at the PhaseTransitionList section for more information about how to define custom transition function.
 
 
-## The OCP
-
-### Class: OptimalControlProgram
-
-### Class: NonLinearProgram
 
 
 ### Enum: Node
@@ -931,6 +1095,8 @@ TODO + It is expected to slow down the optimization by about 15%
 
 ### Class: Simulate
 
+
+## The mappings 
 ### Enum: Mapping
 
 ### Enum: PlotType
