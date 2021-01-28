@@ -67,7 +67,8 @@ def test_track_markers(ode_solver, actuator_type):
         # I have no idea why this very test fails...
         pass
     else:
-        TestUtils.simulate(sol, ocp, decimal_value=6)
+        if ode_solver != OdeSolver.RK8:
+            TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
