@@ -1221,7 +1221,7 @@ The accepted values are:
 - LINEAR: Requires two columns. It corresponds to the first and last node. The middle nodes are linearly interpolated to get their values.
 - EACH_FRAME: Requires as many columns as there are nodes. It is not an interpolation per se, but it allows the user to specify all the nodes individually.
 - SPLINE: Requires five columns. It performs a cubic spline to interpolate between the nodes.
-- CUSTOM, user defined interpolation function
+- CUSTOM: User defined interpolation function
 
 
 # Citing
