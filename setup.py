@@ -8,8 +8,7 @@ setup(
     version="1.0.0",
     author="Pariterre",
     author_email="pariterre@hotmail.com",
-    description="bioptim is a Python optimization framework that links CasADi, "
-    "ipopt and biorbd for human Optimal Control Programming",
+    description="An optimization framework for Optimal Control Programming in biomechanics",
     long_description=long_description,
     url="https://github.com/bioptim/bioptim",
     packages=["bioptim", "bioptim/dynamics", "bioptim/gui", "bioptim/interfaces", "bioptim/limits", "bioptim/misc"],
