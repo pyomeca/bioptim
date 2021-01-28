@@ -6,25 +6,136 @@ from pathlib import Path
 
 import pytest
 import numpy as np
+import biorbd
+from bioptim import (
+    Data,
+    OptimalControlProgram,
+    DynamicsList,
+    DynamicsFcn,
+    ObjectiveList,
+    ObjectiveFcn,
+    BoundsList,
+    QAndQDotBounds,
+    InitialGuessList,
+    ControlType,
+    OdeSolver,
+)
 
-from bioptim import Data, OdeSolver, ControlType
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_and_minimize_marker_displacement_global(ode_solver):
-    # Load align_and_minimize_marker_velocity
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "align_and_minimize_marker_velocity",
-        str(PROJECT_FOLDER) + "/examples/align/align_and_minimize_marker_velocity.py",
-    )
-    align_and_minimize_marker_velocity = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_and_minimize_marker_velocity)
+def prepare_ocp(
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    marker_velocity_or_displacement: str,
+    marker_in_first_coordinates_system: bool,
+    control_type: ControlType,
+    ode_solver: OdeSolver = OdeSolver.RK4,
+) -> OptimalControlProgram:
+    """
+    Prepare an ocp that targets some marker velocities, either by finite differences or by jacobian
 
-    ocp = align_and_minimize_marker_velocity.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
-        number_shooting_points=5,
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the bioMod file
+    final_time: float
+        The time of the final node
+    n_shooting: int
+        The number of shooting points
+    marker_velocity_or_displacement: str
+        which type of tracking: finite difference ('disp') or by jacobian ('velo')
+    marker_in_first_coordinates_system: bool
+        If the marker to track should be expressed in the global or local reference frame
+    control_type: ControlType
+        The type of controls
+    ode_solver: OdeSolver
+        The ode solver to use
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
+    biorbd_model = biorbd.Model(biorbd_model_path)
+
+    # Add objective functions
+    if marker_in_first_coordinates_system:
+        # Marker should follow this segment (0 velocity when compare to this one)
+        coordinates_system_idx = 0
+    else:
+        # Marker should be static in global reference frame
+        coordinates_system_idx = -1
+
+    objective_functions = ObjectiveList()
+    if marker_velocity_or_displacement == "disp":
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT,
+            coordinates_system_idx=coordinates_system_idx,
+            index=6,
+            weight=1000,
+        )
+    elif marker_velocity_or_displacement == "velo":
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, index=6, weight=1000)
+    else:
+        raise RuntimeError(
+            f"Wrong choice of marker_velocity_or_displacement, actual value is "
+            f"{marker_velocity_or_displacement}, should be 'velo' or 'disp'."
+        )
+    # Make sure the segments actually moves (in order to test the relative speed objective)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=6, weight=-1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=7, weight=-1)
+
+    # Dynamics
+    dynamics = DynamicsList()
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+
+    # Path constraint
+    nq = biorbd_model.nbQ()
+    x_bounds = BoundsList()
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+
+    for i in range(nq, 2 * nq):
+        x_bounds[0].min[i, :] = -10
+        x_bounds[0].max[i, :] = 10
+
+    # Initial guess
+    x_init = InitialGuessList()
+    x_init.add([1.5, 1.5, 0.0, 0.0, 0.7, 0.7, 0.6, 0.6])
+
+    # Define control path constraint
+    tau_min, tau_max, tau_init = -100, 100, 0
+    u_bounds = BoundsList()
+    u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+
+    u_init = InitialGuessList()
+    u_init.add([tau_init] * biorbd_model.nbGeneralizedTorque())
+
+    return OptimalControlProgram(
+        biorbd_model,
+        dynamics,
+        n_shooting,
+        final_time,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
+        objective_functions,
+        n_integration_steps=5,
+        control_type=control_type,
+        ode_solver=ode_solver,
+    )
+
+
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+def test_track_and_minimize_marker_displacement_global(ode_solver):
+    # Load track_and_minimize_marker_velocity
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+
+    ocp = prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
+        n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=False,
@@ -45,7 +156,7 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final velocities
     if ode_solver == OdeSolver.IRK:
@@ -76,19 +187,12 @@ def test_align_and_minimize_marker_displacement_global(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_and_minimize_marker_displacement_RT(ode_solver):
-    # Load align_and_minimize_marker_velocity
+def test_track_and_minimize_marker_displacement_RT(ode_solver):
+    # Load track_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "align_and_minimize_marker_velocity",
-        str(PROJECT_FOLDER) + "/examples/align/align_and_minimize_marker_velocity.py",
-    )
-    align_and_minimize_marker_velocity = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_and_minimize_marker_velocity)
-
-    ocp = align_and_minimize_marker_velocity.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
-        number_shooting_points=5,
+    ocp = prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
+        n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="disp",
         marker_in_first_coordinates_system=True,
@@ -109,7 +213,7 @@ def test_align_and_minimize_marker_displacement_RT(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.02595694, -0.57073004, -1.00000001, 1.57079633]))
@@ -133,19 +237,13 @@ def test_align_and_minimize_marker_displacement_RT(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_and_minimize_marker_velocity(ode_solver):
-    # Load align_and_minimize_marker_velocity
+def test_track_and_minimize_marker_velocity(ode_solver):
+    # Load track_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "align_and_minimize_marker_velocity",
-        str(PROJECT_FOLDER) + "/examples/align/align_and_minimize_marker_velocity.py",
-    )
-    align_and_minimize_marker_velocity = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_and_minimize_marker_velocity)
 
-    ocp = align_and_minimize_marker_velocity.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
-        number_shooting_points=5,
+    ocp = prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
+        n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="velo",
         marker_in_first_coordinates_system=True,
@@ -166,7 +264,7 @@ def test_align_and_minimize_marker_velocity(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([7.18708669e-01, -4.45703930e-01, -3.14159262e00, 0]))
@@ -186,23 +284,17 @@ def test_align_and_minimize_marker_velocity(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
-    # Load align_and_minimize_marker_velocity
+def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
+    # Load track_and_minimize_marker_velocity
     PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "align_and_minimize_marker_velocity",
-        str(PROJECT_FOLDER) + "/examples/align/align_and_minimize_marker_velocity.py",
-    )
-    align_and_minimize_marker_velocity = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_and_minimize_marker_velocity)
 
     if ode_solver == OdeSolver.IRK:
         with pytest.raises(
             NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with IRK"
         ):
-            align_and_minimize_marker_velocity.prepare_ocp(
-                biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
-                number_shooting_points=5,
+            prepare_ocp(
+                biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
+                n_shooting=5,
                 final_time=1,
                 marker_velocity_or_displacement="velo",
                 marker_in_first_coordinates_system=True,
@@ -210,9 +302,9 @@ def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
                 ode_solver=ode_solver,
             )
     else:
-        ocp = align_and_minimize_marker_velocity.prepare_ocp(
-            biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
-            number_shooting_points=5,
+        ocp = prepare_ocp(
+            biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
+            n_shooting=5,
             final_time=1,
             marker_velocity_or_displacement="velo",
             marker_in_first_coordinates_system=True,
@@ -228,7 +320,7 @@ def test_align_and_minimize_marker_velocity_linear_controls(ode_solver):
 
         # Check some of the results
         states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+        q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[2:, 0], np.array([-3.14159264, 0]))

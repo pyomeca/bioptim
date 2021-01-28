@@ -7,25 +7,25 @@ from pathlib import Path
 import pytest
 import numpy as np
 import biorbd
-
 from bioptim import Data, OdeSolver, ConstraintList, ConstraintFcn, Node
+
 from .utils import TestUtils
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 @pytest.mark.parametrize("actuator_type", [None, 2])
-def test_align_markers(ode_solver, actuator_type):
-    # Load align_markers
+def test_track_markers(ode_solver, actuator_type):
+    # Load track_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
     )
-    align_markers = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_markers)
+    track_markers = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(track_markers)
 
-    ocp = align_markers.prepare_ocp(
+    ocp = track_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
-        number_shooting_points=30,
+        n_shooting=30,
         final_time=2,
         actuator_type=actuator_type,
         ode_solver=ode_solver,
@@ -47,7 +47,7 @@ def test_align_markers(ode_solver, actuator_type):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -67,22 +67,23 @@ def test_align_markers(ode_solver, actuator_type):
         # I have no idea why this very test fails...
         pass
     else:
-        TestUtils.simulate(sol, ocp, decimal_value=6)
+        if ode_solver != OdeSolver.RK8:
+            TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_markers_changing_constraints(ode_solver):
-    # Load align_markers
+def test_track_markers_changing_constraints(ode_solver):
+    # Load track_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
     )
-    align_markers = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_markers)
+    track_markers = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(track_markers)
 
-    ocp = align_markers.prepare_ocp(
+    ocp = track_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
-        number_shooting_points=30,
+        n_shooting=30,
         final_time=2,
         ode_solver=ode_solver,
     )
@@ -91,7 +92,7 @@ def test_align_markers_changing_constraints(ode_solver):
     # Add a new constraint and reoptimize
     new_constraints = ConstraintList()
     new_constraints.add(
-        ConstraintFcn.ALIGN_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=2, list_index=2
+        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=2, list_index=2
     )
     ocp.update_constraints(new_constraints)
     sol = ocp.solve()
@@ -108,7 +109,7 @@ def test_align_markers_changing_constraints(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -129,10 +130,10 @@ def test_align_markers_changing_constraints(ode_solver):
     # Replace constraints and reoptimize
     new_constraints = ConstraintList()
     new_constraints.add(
-        ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=2, list_index=0
+        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=2, list_index=0
     )
     new_constraints.add(
-        ConstraintFcn.ALIGN_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=3, list_index=2
+        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=3, list_index=2
     )
     ocp.update_constraints(new_constraints)
     sol = ocp.solve()
@@ -149,7 +150,7 @@ def test_align_markers_changing_constraints(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((2, 0, 0)))
@@ -169,18 +170,18 @@ def test_align_markers_changing_constraints(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_markers_with_actuators(ode_solver):
-    # Load align_markers
+def test_track_markers_with_actuators(ode_solver):
+    # Load track_markers
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
     )
-    align_markers = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_markers)
+    track_markers = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(track_markers)
 
-    ocp = align_markers.prepare_ocp(
+    ocp = track_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
-        number_shooting_points=30,
+        n_shooting=30,
         final_time=2,
         actuator_type=1,
         ode_solver=ode_solver,
@@ -199,7 +200,7 @@ def test_align_markers_with_actuators(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -215,229 +216,7 @@ def test_align_markers_with_actuators(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
-
-
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_multiphase_align_markers(ode_solver):
-    # Load multiphase_align_markers
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "multiphase_align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/multiphase_align_markers.py"
-    )
-    multiphase_align_markers = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(multiphase_align_markers)
-
-    ocp = multiphase_align_markers.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod", ode_solver=ode_solver
-    )
-    sol, obj = ocp.solve(return_objectives=True)
-
-    # Check return_objectives
-    np.testing.assert_almost_equal(
-        obj[0],
-        np.array(
-            [
-                [
-                    982.76916324,
-                    978.69883706,
-                    975.08076934,
-                    971.91496008,
-                    969.20140929,
-                    966.94011697,
-                    965.13108311,
-                    963.77430771,
-                    962.86979078,
-                    962.41753231,
-                    962.41753231,
-                    962.86979077,
-                    963.7743077,
-                    965.1310831,
-                    966.94011696,
-                    969.20140929,
-                    971.91496009,
-                    975.08076936,
-                    978.6988371,
-                    982.76916331,
-                ]
-            ]
-        ),
-    )
-    np.testing.assert_almost_equal(
-        obj[1],
-        np.array(
-            [
-                [
-                    1604.83406353,
-                    1604.71433092,
-                    1604.60315064,
-                    1604.5005227,
-                    1604.40644708,
-                    1604.3209238,
-                    1604.24395284,
-                    1604.17553422,
-                    1604.11566792,
-                    1604.06435395,
-                    1604.02159231,
-                    1603.987383,
-                    1603.96172602,
-                    1603.94462137,
-                    1603.93606904,
-                    1603.93606904,
-                    1603.94462137,
-                    1603.96172603,
-                    1603.98738301,
-                    1604.02159232,
-                    1604.06435396,
-                    1604.11566793,
-                    1604.17553422,
-                    1604.24395285,
-                    1604.32092379,
-                    1604.40644707,
-                    1604.50052267,
-                    1604.6031506,
-                    1604.71433086,
-                    1604.83406345,
-                ]
-            ]
-        ),
-    )
-    np.testing.assert_almost_equal(
-        obj[2],
-        np.array(
-            [
-                [
-                    1933.56103058,
-                    1931.79812144,
-                    1930.23109109,
-                    1928.85993953,
-                    1927.68466677,
-                    1926.7052728,
-                    1925.92175762,
-                    1925.33412124,
-                    1924.94236365,
-                    1924.74648485,
-                    1924.74648485,
-                    1924.94236364,
-                    1925.33412123,
-                    1925.92175761,
-                    1926.70527279,
-                    1927.68466676,
-                    1928.85993954,
-                    1930.23109111,
-                    1931.79812149,
-                    1933.56103067,
-                ]
-            ]
-        ),
-    )
-
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 106084.82631762947)
-
-    # Check constraints
-    g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (444, 1))
-    np.testing.assert_almost_equal(g, np.zeros((444, 1)))
-
-    # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"], concatenate=False)
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-
-    # initial and final position
-    np.testing.assert_almost_equal(q[0][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(q[0][:, -1], np.array((2, 0, 0)))
-    np.testing.assert_almost_equal(q[1][:, 0], np.array((2, 0, 0)))
-    np.testing.assert_almost_equal(q[1][:, -1], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(q[2][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(q[2][:, -1], np.array((2, 0, 1.57)))
-
-    # initial and final velocities
-    np.testing.assert_almost_equal(qdot[0][:, 0], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[0][:, -1], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[1][:, 0], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[1][:, -1], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[2][:, 0], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[2][:, -1], np.array((0, 0, 0)))
-
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[0][:, 0], np.array((1.42857142, 9.81, 0)))
-    np.testing.assert_almost_equal(tau[0][:, -1], np.array((-1.42857144, 9.81, 0)))
-    np.testing.assert_almost_equal(tau[1][:, 0], np.array((-0.2322581, 9.81, 0.0)))
-    np.testing.assert_almost_equal(tau[1][:, -1], np.array((0.2322581, 9.81, -0.0)))
-    np.testing.assert_almost_equal(tau[2][:, 0], np.array((0.35714285, 9.81, 0.56071428)))
-    np.testing.assert_almost_equal(tau[2][:, -1], np.array((-0.35714285, 9.81, -0.56071428)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
-    # simulate
-    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
-        TestUtils.simulate(sol, ocp)
-
-
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_external_forces(ode_solver):
-    # Load external_forces
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "external_forces", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/external_forces.py"
-    )
-    external_forces = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(external_forces)
-
-    ocp = external_forces.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube_with_forces.bioMod",
-        ode_solver=ode_solver,
-    )
-    sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol["f"])
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 9875.88768746912)
-
-    # Check constraints
-    g = np.array(sol["g"])
-    np.testing.assert_equal(g.shape, (246, 1))
-    np.testing.assert_almost_equal(g, np.zeros((246, 1)))
-
-    # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
-
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.71322593, 0, 0)))
-    np.testing.assert_almost_equal(tau[:, 10], np.array((0, 7.71100122, 0, 0)))
-    np.testing.assert_almost_equal(tau[:, 20], np.array((0, 5.70877651, 0, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((0, 3.90677425, 0, 0)))
-
-    if ode_solver == OdeSolver.IRK:
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)), decimal=5)
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 2, 0, 0)), decimal=5)
-
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)), decimal=5)
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)), decimal=5)
-    else:
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 2, 0, 0)))
-
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, True)
-
-    # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol, ocp, decimal_value=5)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -454,15 +233,15 @@ def test_track_marker_2D_pendulum(ode_solver):
     model_path = str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 3
-    nb_shooting = 20
+    n_shooting = 20
 
     # Generate data to fit
     np.random.seed(42)
-    markers_ref = np.random.rand(3, 2, nb_shooting + 1)
-    tau_ref = np.random.rand(2, nb_shooting)
+    markers_ref = np.random.rand(3, 2, n_shooting + 1)
+    tau_ref = np.random.rand(2, n_shooting)
 
     ocp = track_markers_2D_pendulum.prepare_ocp(
-        biorbd_model, final_time, nb_shooting, markers_ref, tau_ref, ode_solver=ode_solver
+        biorbd_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver
     )
     sol = ocp.solve()
 
@@ -473,7 +252,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
@@ -549,9 +328,9 @@ def test_trampo_quaternions():
     # Define the problem
     model_path = str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/TruncAnd2Arm_Quaternion.bioMod"
     final_time = 0.25
-    nb_shooting = 5
+    n_shooting = 5
 
-    ocp = trampo_quaternions.prepare_ocp(model_path, nb_shooting, final_time)
+    ocp = trampo_quaternions.prepare_ocp(model_path, n_shooting, final_time)
     sol = ocp.solve()
 
     # Check objective function value
@@ -702,7 +481,7 @@ def test_trampo_quaternions():
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(

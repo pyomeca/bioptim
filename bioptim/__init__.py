@@ -1,14 +1,168 @@
+"""
+Bioptim is a direct multiple shooting optimal control program (ocp) framework for biomechanics based on biorbd.
+It provides all the necessary tools to declare, modify, augment and solve an ocp.
+
+Depending on the solver requested, normal and multiphase program, moving horizon estimator (MHE),
+nonlinear model predictive control (NMPC), free time and parameter optimization, tracking, minimizing and maximizing
+programs, from different joint torques and muscle driven dynamics can be solved.
+
+Thanks to the CasADi backend of biorbd that allows to algorithmically differentiate the code, the descending gradient
+algorithms are solving these highly nonlinear optimization program super efficiently. The Ipopt and ACADOS solvers
+provide fast and robust solution for the optimal control program.
+
+The examples provided cover a large spectrum of what bioptim is capable of, but is definitely not limited to. You will
+find trivial example such balancing a pendulum upward up to arm movements controlled by the muscle EMG. The framework
+has also been used gait tracking, hand prosthetic simulations, jumping simulation and violin movement optimization.
+The latter being especially challenging because of the closed-loop involved in the kinematics.
+
+So don't wait any further challenge biorbd to find you the best movement!
+-------------------------------------------------------------------------
+
+
+# --- The main interface --- #
+OptimalControlProgram
+    The main class to define an ocp. This class prepares the full program and gives all the needed interface to
+    modify and solve the program
+NonLinearProgram
+    A nonlinear program that describes a phase in the ocp
+Simulate
+    Interface that allows to integrate a solution
+
+
+# --- Managing the results --- #
+ShowResult
+    The main interface to bioptim GUI
+Data
+    Data manipulation and storage
+ObjectivePrinter
+    Interface to print the values of the objectives to the console
+
+
+# --- Some useful options --- #
+Axis
+    Selection of valid axis (X, Y or Z)
+Node
+    Selection of valid node
+InterpolationType
+    Selection of valid type of interpolation
+OdeSolver
+    Selection of valid integrator
+PlotType
+    Selection of valid plots
+Solver
+    Selection of valid nonlinear solvers
+ControlType
+    Selection of valid controls
+
+
+# --- Managing the dynamics --- #
+Problem
+    Dynamics configuration for the most common ocp
+Dynamics
+    A placeholder for the chosen dynamics by the user
+DynamicsList
+    A list of Dynamics if more than one is required, typically when more than one phases are declared
+DynamicsFcn
+    Selection of valid dynamics functions
+DynamicsFunctions
+    Implementation of all the dynamic functions
+
+
+# --- Managing the constraints --- #
+Constraint
+    A placeholder for a constraint
+ConstraintList
+    A list of Constraint if more than one is required
+ConstraintFcn
+    Selection of valid constraint functions
+
+
+# --- Managing the objective functions --- #
+Objective
+    A placeholder for an objective function
+ObjectiveFcn
+    Selection of valid objective functions
+ObjectiveList
+    A list of Constraint if more than one is required
+
+
+# --- Managing the parameters --- #
+ParameterList
+    A list of Parameter
+
+
+# --- Managing the boundaries of the variables --- #
+Bounds
+    A placeholder for bounds constraints
+BoundsList
+    A list of Bounds if more than one is required
+QAndQDotBounds
+    Specialized Bounds that reads a model to automatically extract q and qdot bounds
+
+
+# --- Managing the initial guesses of the variables --- #
+InitialGuess
+    A placeholder for the initial guess
+InitialGuessList
+    A list of InitialGuess if more than one is required
+
+
+# --- Managing the transitions between phases for multiphase programs --- #
+PhaseTransitionList
+    A list of PhaseTransition
+PhaseTransitionFcn
+    Selection of valid phase transition functions
+
+
+# --- Mapping indices between vector --- #
+Mapping
+    Mapping of index set to a different index set
+BidirectionalMapping
+    Mapping of two index sets between each other
+
+
+# --- Version of bioptim --- #
+__version__
+    The current version of bioptim
+----------------------------------
+
+
+Requirements and Installation
+-----------------------------
+bioptim requires minimally CasADi, [Ipopt, ACADOS], biorbd and bioviz. To install ACADOS, one is invited to have a look
+at the installation script at 'external/acados_install.sh'. All the other requirements can be installed from conda
+on the conda-forge channel using the following command:
+`conda install -c conda-forge biorbd=*=*casadi* bioviz=*=*casadi*`
+
+If one is interested in the conda-forge version of bioptim, they can install every requirements and bioptim using the
+following command
+`conda install -c conda-forge bioptim`
+
+
+Examples
+--------
+Examples of all sort can be found in the 'examples' folder.
+The first example one should have a look at is the example/getting_started/pendulum.py. This is a trivial yet
+challenging optimal control problem. Once one is familiar with the bioptim nomenclature, it is suggested to have a look
+at all the examples in 'examples/getting_started' which should tackle most of the questioning one could have when using
+the bioptim API. For time optimization, one should have a look at the 'example/optimal_time_ocp' and some examples of
+multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific examples, you can have a look at
+'example/acados'. Please note that ACADOS needs to be installed.
+
+"""
+
 from .misc.__version__ import __version__
 from .dynamics.problem import Problem
 from .dynamics.dynamics_type import DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
-from .gui.plot import CustomPlot, ShowResult
+from .gui.plot import ShowResult
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
-from .limits.continuity import StateTransitionFcn, StateTransitionList
+from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ObjectivePrinter
-from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds, PathCondition
+from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
+from .limits.penalty import PenaltyNodes
 from .misc.data import Data
-from .misc.enums import Axe, Node, InterpolationType, OdeSolver, PlotType, Solver, ControlType
+from .misc.enums import Axis, Node, InterpolationType, OdeSolver, PlotType, Solver, ControlType
 from .misc.mapping import BidirectionalMapping, Mapping
 from .misc.non_linear_program import NonLinearProgram
 from .misc.optimal_control_program import OptimalControlProgram

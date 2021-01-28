@@ -1,7 +1,12 @@
+"""
+# TODO: Remove all the examples/muscle_driven_with_contact and make sure everything is properly tested
+All the examples in muscle_driven_with_contact are merely to show some dynamics and prepare some OCP for the tests.
+It is not really relevant and will be removed when unitary tests for the dynamics will be implemented
+"""
+
 from matplotlib import pyplot as plt
 import numpy as np
 import biorbd
-
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -12,7 +17,6 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     BidirectionalMapping,
-    Mapping,
     BoundsList,
     Bounds,
     QAndQDotBounds,
@@ -23,13 +27,11 @@ from bioptim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_solver=OdeSolver.RK4):
-    # --- Options --- #
-    # Model path
+def prepare_ocp(model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4):
     biorbd_model = biorbd.Model(model_path)
     torque_min, torque_max, torque_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
-    tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
+    tau_mapping = BidirectionalMapping([None, None, None, 0], [3])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -57,36 +59,36 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, ode_s
     )
 
     # Path constraint
-    nb_q = biorbd_model.nbQ()
-    nb_qdot = nb_q
-    nb_mus = biorbd_model.nbMuscleTotal()
+    n_q = biorbd_model.nbQ()
+    n_qdot = n_q
+    n_mus = biorbd_model.nbMuscleTotal()
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize x_bounds
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds[0].concatenate(Bounds([activation_min] * nb_mus, [activation_max] * nb_mus))
-    x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus
+    x_bounds[0].concatenate(Bounds([activation_min] * n_mus, [activation_max] * n_mus))
+    x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot + [0.5] * n_mus
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add(pose_at_first_node + [0] * nb_qdot + [0.5] * nb_mus)
+    x_init.add(pose_at_first_node + [0] * n_qdot + [0.5] * n_mus)
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [torque_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(),
-        [torque_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal(),
+        [torque_min] * tau_mapping.to_first.len + [activation_min] * biorbd_model.nbMuscleTotal(),
+        [torque_max] * tau_mapping.to_first.len + [activation_max] * biorbd_model.nbMuscleTotal(),
     )
 
     u_init = InitialGuessList()
-    u_init.add([torque_init] * tau_mapping.reduce.len + [activation_init] * biorbd_model.nbMuscleTotal())
+    u_init.add([torque_init] * tau_mapping.to_first.len + [activation_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         phase_time,
         x_init,
         u_init,
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     model_path = "2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.3
     ns = 10
-    ocp = prepare_ocp(model_path=model_path, phase_time=t, number_shooting_points=ns, min_bound=50)
+    ocp = prepare_ocp(model_path=model_path, phase_time=t, n_shooting=ns, min_bound=50)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
@@ -113,12 +115,12 @@ if __name__ == "__main__":
 
     states_sol, controls_sol = Data.get_data(ocp, sol["x"])
     q = states_sol["q"]
-    q_dot = states_sol["q_dot"]
+    qdot = states_sol["qdot"]
     activations = states_sol["muscles"]
     tau = controls_sol["tau"]
     excitations = controls_sol["muscles"]
 
-    x = np.concatenate((q, q_dot, activations))
+    x = np.concatenate((q, qdot, activations))
     u = np.concatenate((tau, excitations))
     contact_forces = np.array(nlp.contact_forces_func(x[:, :-1], u[:, :-1], []))
 

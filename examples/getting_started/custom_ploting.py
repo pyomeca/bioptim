@@ -1,5 +1,10 @@
-import biorbd
+"""
+This example is a trivial example using the pendulum without any objective. It is designed to show how to create new
+plots and how to expand pre-existing one with new information
+"""
 
+from casadi import MX
+import biorbd
 from bioptim import (
     OptimalControlProgram,
     Dynamics,
@@ -12,13 +17,40 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
-    # --- Options --- #
+def custom_plot_callback(x: MX, q_to_plot: list) -> MX:
+    """
+    Create a used defined plot function with extra_parameters
+
+    Parameters
+    ----------
+    x: MX
+        The current states of the optimization
+    q_to_plot: list
+        The slice indices to plot
+
+    Returns
+    -------
+    The value to plot
+    """
+
+    return x[q_to_plot, :]
+
+
+def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> OptimalControlProgram:
+    """
+    Prepare the program
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path of the biorbd model
+    final_time: float
+        The time at the final node
+    n_shooting: int
+        The number of shooting points
+    """
+
     biorbd_model = biorbd.Model(biorbd_model_path)
-    torque_min, torque_max, torque_init = -100, 100, 0
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
-    n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -29,20 +61,22 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     x_bounds[1, -1] = 3.14
 
     # Initial guess
+    n_q = biorbd_model.nbQ()
+    n_qdot = biorbd_model.nbQdot()
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
+    torque_min, torque_max, torque_init = -100, 100, 0
+    n_tau = biorbd_model.nbGeneralizedTorque()
     u_bounds = Bounds([torque_min] * n_tau, [torque_max] * n_tau)
     u_bounds[n_tau - 1, :] = 0
 
     u_init = InitialGuess([torque_init] * n_tau)
 
-    # ------------- #
-
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -51,22 +85,22 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points):
     )
 
 
-def plot_callback(x, q_to_plot):
-    return x[q_to_plot, :]
-
-
 if __name__ == "__main__":
+    """
+    Create multiple new plot and add new stuff to them using a custom defined function
+    """
+
     # Prepare the Optimal Control Program
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50)
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50)
 
     # Add my lovely new plot
-    ocp.add_plot("My New Extra Plot", lambda x, u, p: plot_callback(x, [0, 1, 3]), PlotType.PLOT)
+    ocp.add_plot("My New Extra Plot", lambda x, u, p: custom_plot_callback(x, [0, 1, 3]), plot_type=PlotType.PLOT)
     ocp.add_plot(
-        "My New Extra Plot", lambda x, u, p: plot_callback(x, [1, 3]), plot_type=PlotType.STEP, axes_idx=[1, 2]
+        "My New Extra Plot", lambda x, u, p: custom_plot_callback(x, [1, 3]), plot_type=PlotType.STEP, axes_idx=[1, 2]
     )
     ocp.add_plot(
         "My Second New Extra Plot",
-        lambda x, u, p: plot_callback(x, [1, 3]),
+        lambda x, u, p: custom_plot_callback(x, [1, 3]),
         plot_type=PlotType.INTEGRATED,
         axes_idx=[1, 2],
     )
@@ -77,4 +111,3 @@ if __name__ == "__main__":
     # --- Show results --- #
     result = ShowResult(ocp, sol)
     result.graphs()
-    result.animate()

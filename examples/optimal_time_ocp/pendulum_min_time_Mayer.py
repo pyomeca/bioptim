@@ -1,6 +1,14 @@
+"""
+This is a clone of the example/getting_started/pendulum.py where a pendulum must be balance. The difference is that
+the time to perform the task is now free and minimized by the solver. This example shows how to define such an optimal
+control program with a Mayer criteria (value of final_time)
+
+The difference between Mayer and Lagrange minimization time is that the former can define bounds to
+the values, while the latter is the most common way to define optimal time
+"""
+
 import numpy as np
 import biorbd
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,
@@ -17,14 +25,39 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path,
-    final_time,
-    number_shooting_points,
-    ode_solver=OdeSolver.RK4,
-    weight=1,
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    ode_solver: OdeSolver = OdeSolver.RK4,
+    weight: float = 1,
     min_time=0,
     max_time=np.inf,
-):
+) -> OptimalControlProgram:
+    """
+    Prepare the optimal control program
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the bioMod
+    final_time: float
+        The initial guess for the final time
+    n_shooting: int
+        The number of shooting points
+    ode_solver: OdeSolver
+        The ode solver to use
+    weight: float
+        The weighting of the minimize time objective function
+    min_time: float
+        The minimum time allowed for the final node
+    max_time: float
+        The maximum time allowed for the final node
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path)
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -64,7 +97,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -76,7 +109,11 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, number_shooting_points=50)
+    """
+    Prepare, solve and animate a time minimizer ocp using a Mayer criteria
+    """
+
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

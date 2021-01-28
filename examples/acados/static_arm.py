@@ -1,7 +1,11 @@
+"""
+TODO: Cleaning and documentation
+"""
+
+
 import biorbd
 from time import time
 import numpy as np
-
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
@@ -19,7 +23,7 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=None, use_SX=False, nb_threads=1):
+def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=False, n_threads=1):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -31,7 +35,9 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=10)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=10)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10)
-    objective_functions.add(ObjectiveFcn.Mayer.ALIGN_MARKERS, weight=100000, first_marker_idx=0, second_marker_idx=1)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, weight=100000, first_marker_idx=0, second_marker_idx=1
+    )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -62,15 +68,15 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, x_warm=No
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
         x_bounds,
         u_bounds,
         objective_functions,
-        use_SX=use_SX,
-        nb_threads=nb_threads,
+        use_sx=use_sx,
+        n_threads=n_threads,
     )
 
 
@@ -79,7 +85,7 @@ if __name__ == "__main__":
     warm_start_ipopt_from_acados_solution = False
 
     # --- Solve the program using ACADOS --- #
-    ocp_acados = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, number_shooting_points=51, use_SX=True)
+    ocp_acados = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
 
     tic = time()
     sol_acados, sol_obj_acados = ocp_acados.solve(
@@ -100,9 +106,9 @@ if __name__ == "__main__":
         biorbd_model_path="arm26.bioMod",
         final_time=2,
         x_warm=x_warm,
-        number_shooting_points=51,
-        use_SX=False,
-        nb_threads=6,
+        n_shooting=51,
+        use_sx=False,
+        n_threads=6,
     )
 
     tic = time()

@@ -1,5 +1,13 @@
-import biorbd
+"""
+This is a basic example on how to use biorbd model driven by muscle to perform an optimal reaching task with a
+contact dynamics.
+The arms must reach a marker placed upward in front while minimizing the muscles activity
 
+Please note that using show_meshes=True in the animator may be long due to the creation of a huge CasADi graph of the
+mesh points.
+"""
+
+import biorbd
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
@@ -14,18 +22,44 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solver=OdeSolver.RK4):
-    # --- Options --- #
-    # Model path
+def prepare_ocp(
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    weight: float,
+    ode_solver: OdeSolver = OdeSolver.RK4,
+) -> OptimalControlProgram:
+    """
+    Prepare the ocp
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the bioMod
+    final_time: float
+        The time at the final node
+    n_shooting: int
+        The number of shooting points
+    weight: float
+        The weight applied to the SUPERIMPOSE_MARKERS final objective function. The bigger this number is, the greater
+        the model will try to reach the marker. This is in relation with the other objective functions
+    ode_solver: OdeSolver
+        The ode solver to use
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
     biorbd_model = biorbd.Model(biorbd_model_path)
-    tau_min, tau_max, tau_init = -1, 1, 0
-    muscle_min, muscle_max, muscle_init = 0, 1, 0.5
 
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL)
-    objective_functions.add(ObjectiveFcn.Mayer.ALIGN_MARKERS, first_marker_idx=0, second_marker_idx=5)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, first_marker_idx=0, second_marker_idx=5, weight=weight
+    )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -41,6 +75,8 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
     x_init.add([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
 
     # Define control path constraint
+    muscle_min, muscle_max, muscle_init = 0, 1, 0.5
+    tau_min, tau_max, tau_init = -1, 1, 0
     u_bounds = BoundsList()
     u_bounds.add(
         [tau_min] * biorbd_model.nbGeneralizedTorque() + [muscle_min] * biorbd_model.nbMuscleTotal(),
@@ -54,7 +90,7 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -66,7 +102,11 @@ def prepare_ocp(biorbd_model_path, final_time, number_shooting_points, ode_solve
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="arm26_with_contact.bioMod", final_time=2, number_shooting_points=20)
+    """
+    Prepare and solve and animate a reaching task ocp
+    """
+
+    ocp = prepare_ocp(biorbd_model_path="arm26_with_contact.bioMod", final_time=3, n_shooting=50, weight=1000)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

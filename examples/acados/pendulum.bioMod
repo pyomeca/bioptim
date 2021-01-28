@@ -1,6 +1,5 @@
 version 4
 
-// Seg1
 segment Seg1
     translations	y
     rotations	x
@@ -13,7 +12,6 @@ segment Seg1
         0 1 0
         0 0 0.1
     com 0.1 0.1 -1
-
     mesh 0.0   0.0   0.0
     mesh 0.0  -0.0  -0.9
     mesh 0.0   0.0   0.0
@@ -41,13 +39,13 @@ segment Seg1
     mesh 0.2  -0.0  -1.1
 endsegment
 
-// Marker 1
+    // Marker 1
     marker marker_1
         parent Seg1
         position 0 0 0
     endmarker
 
-// Marker 2
+    // Marker 2
     marker marker_2
         parent Seg1
         position 0.1 0.1 -1

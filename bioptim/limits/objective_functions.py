@@ -1,15 +1,40 @@
+from typing import Callable, Union, Any
 from enum import Enum
 
 import numpy as np
-import casadi
+from casadi import MX, SX
 
-from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
+from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption, PenaltyNodes
 from ..misc.enums import Node
-from ..misc.options_lists import OptionList, OptionGeneric
+from ..misc.options import OptionList, OptionGeneric
 
 
 class Objective(PenaltyOption):
-    def __init__(self, objective, weight=1, custom_type=None, phase=0, **params):
+    """
+    A placeholder for an objective function
+
+    Attributes
+    ----------
+    weight: float
+        The weighting applied to this specific objective function
+    """
+
+    def __init__(self, objective: Any, weight: float = 1, custom_type: Callable = None, phase: int = 0, **params: Any):
+        """
+        Parameters
+        ----------
+        objective: Union[ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, Callable[OptimalControlProgram, MX]]
+            The chosen objective function
+        weight: float
+            The weighting applied to this specific objective function
+        custom_type: Union[ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer]
+            When objective is a custom defined function, one must specify if the custom_type is Mayer or Lagrange
+        phase: int
+            At which phase this objective function must be applied
+        params: dict
+            Generic parameters for options
+        """
+
         custom_function = None
         if not isinstance(objective, ObjectiveFcn.Lagrange) and not isinstance(objective, ObjectiveFcn.Mayer):
             custom_function = objective
@@ -37,96 +62,271 @@ class Objective(PenaltyOption):
 
 
 class ObjectiveList(OptionList):
-    def add(self, objective, **extra_arguments):
+    """
+    A list of Constraint if more than one is required
+
+    Methods
+    -------
+    add(self, constraint: Union[Callable, "ConstraintFcn"], **extra_arguments)
+        Add a new Constraint to the list
+    print(self):
+        Print the ObjectiveList to the console
+    """
+
+    def add(self, objective: Union[Callable, Objective, Any], **extra_arguments: Any):
+        """
+        Add a new objective function to the list
+
+        Parameters
+        ----------
+        objective: Union[Callable, Objective, ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer]
+            The chosen objective function
+        extra_arguments: dict
+            Any parameters to pass to ObjectiveFcn
+        """
+
         if isinstance(objective, Objective):
             self.copy(objective)
         else:
             super(ObjectiveList, self)._add(option_type=Objective, objective=objective, **extra_arguments)
 
+    def print(self):
+        """
+        Print the ObjectiveList to the console
+        """
+        raise NotImplementedError("Printing of ObjectiveList is not ready yet")
+
 
 class ObjectiveFunction:
     """
-    Different conditions between biorbd geometric structures.
+    Internal (re)implementation of the penalty functions
+
+    Methods
+    -------
+    add_or_replace(ocp: OptimalControlProgram, nlp: NonLinearProgram, objective: Objective)
+        Add the objective function to the objective pool
+    add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram,
+            val: Union[MX, SX], penalty: Objective, dt:float=0)
+        Add the objective function to the objective pool
+    clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
+        Resets a objective function. A negative penalty index creates a new empty objective function.
     """
 
     class LagrangeFunction(PenaltyFunctionAbstract):
         """
-        Lagrange type objectives. (integral of the objective over the optimized movement duration)
+        Internal (re)implementation of the penalty functions
+
+        Methods
+        -------
+        add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: Objective)
+            Add the objective function to the objective pool
+        clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
+            Resets a objective function. A negative penalty index creates a new empty objective function.
+        _parameter_modifier(objective: Objective)
+            Apply some default parameters
+        _span_checker(objective: Objective, pn: PenaltyNodes)
+            Check for any non sense in the requested times for the constraint. Raises an error if so
+        penalty_nature() -> str
+            Get the nature of the penalty
         """
 
         class Functions:
             """
-            Biomechanical objectives
+            Implementation of all the Lagrange objective functions
+
+            Methods
+            -------
+            minimize_time(penalty: ObjectiveFcn.Lagrange, pn: PenaltyNodes)
+                Minimizes the duration of the phase
             """
 
             @staticmethod
-            def minimize_time(penalty, ocp, nlp, t, x, u, p):
-                """Minimizes the duration of the movement (Lagrange)."""
+            def minimize_time(penalty: Objective, pn: PenaltyNodes):
+                """
+                Minimizes the duration of the phase
+
+                Parameters
+                ----------
+                penalty: Objective,
+                    The actual constraint to declare
+                pn: PenaltyNodes
+                    The penalty node elements
+                """
+
                 val = 1
-                ObjectiveFunction.LagrangeFunction.add_to_penalty(ocp, nlp, val, penalty)
+                ObjectiveFunction.LagrangeFunction.add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
-        def add_to_penalty(ocp, nlp, val, penalty):
+        def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Objective):
             """
-            Adds an objective.
-            :param val: Value to be optimized. (MX.sym from CasADi)
-            :param penalty: Index of the objective. (integer)
-            :param weight: Weight of the objective. (float)
-            :param quadratic: If True, value is squared. (bool)
+            Add the objective function to the objective pool
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the current phase of the ocp
+            val: Union[MX, SX, float, int]
+                The actual objective function to add
+            penalty: Objective
+                The actual objective function to declare
             """
+
             ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=nlp.dt)
 
         @staticmethod
-        def clear_penalty(ocp, nlp, penalty):
+        def clear_penalty(ocp, nlp, penalty: Objective):
             """
-            Resets specified penalty.
+            Resets a objective function. A negative penalty index creates a new empty objective function.
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the current phase of the ocp
+            penalty: Objective
+                The actual objective function to declare
             """
+
             return ObjectiveFunction.clear_penalty(ocp, nlp, penalty)
 
         @staticmethod
-        def _parameter_modifier(penalty_function, parameters):
-            """Modification of parameters"""
+        def _parameter_modifier(objective: Objective):
+            """
+            Apply some default parameters
+
+            Parameters
+            ----------
+            objective: Objective
+                The actual objective function to declare
+            """
+
+            func = objective.type.value[0]
             # Everything that should change the entry parameters depending on the penalty can be added here
-            if penalty_function == ObjectiveFcn.Lagrange.MINIMIZE_TIME.value[0]:
+            if func == ObjectiveFcn.Lagrange.MINIMIZE_TIME.value[0]:
                 # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
-                if "min_bound" in parameters.params:
+                if "min_bound" in objective.params:
                     raise RuntimeError(
                         "ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have min_bound. "
                         "Please either use MAYER or constraint"
                     )
-                if "max_bound" in parameters.params:
+                if "max_bound" in objective.params:
                     raise RuntimeError(
                         "ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have max_bound. "
                         "Please either use MAYER or constraint"
                     )
-                if not parameters.quadratic:
-                    parameters.quadratic = True
-            PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
+                if not objective.quadratic:
+                    objective.quadratic = True
+            PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective_function, node, nlp):
-            """Raises errors on the span of penalty functions"""
+        def _span_checker(objective: Objective, pn: PenaltyNodes):
+            """
+            Check for any non sense in the requested times for the constraint. Raises an error if so
+
+            Parameters
+            ----------
+            objective: Objective
+                The actual objective function to declare
+            pn: PenaltyNodes
+                The penalty node elements
+            """
+
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(objective_function, node, nlp)
+            PenaltyFunctionAbstract._span_checker(objective, pn)
+
+        @staticmethod
+        def add_or_replace(ocp, nlp, objective: PenaltyOption):
+            """
+            Add the objective function to the objective pool
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the current phase of the ocp
+            objective: PenaltyOption
+                The actual objective function to declare
+            """
+            ObjectiveFunction.add_or_replace(ocp, nlp, objective)
+
+        @staticmethod
+        def penalty_nature() -> str:
+            """
+            Get the nature of the penalty
+
+            Returns
+            -------
+            The nature of the penalty
+            """
+
+            return "objective_functions"
 
     class MayerFunction(PenaltyFunctionAbstract):
         """
-        Mayer type objectives. (value of the objective at one time point, usually the end)
+        Internal (re)implementation of the penalty functions
+
+        Methods
+        -------
+        inter_phase_continuity(ocp: OptimalControlProgram, pt: "PhaseTransition")
+            Add phase transition objective between two phases.
+        add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: Objective)
+            Add the objective function to the objective pool
+        clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
+            Resets a objective function. A negative penalty index creates a new empty objective function.
+        _parameter_modifier(objective: Objective)
+            Apply some default parameters
+        _span_checker(objective: Objective, pn: PenaltyNodes)
+            Check for any non sense in the requested times for the constraint. Raises an error if so
+        penalty_nature() -> str
+            Get the nature of the penalty
         """
 
         class Functions:
             """
-            Biomechanical objectives
+            Implementation of all the Mayer objective functions
+
+            Methods
+            -------
+            minimize_time(penalty: "ObjectiveFcn.Lagrange", pn: PenaltyNodes)
+                Minimizes the duration of the phase
             """
 
             @staticmethod
-            def minimize_time(penalty, ocp, nlp, t, x, u, p):
-                """Minimizes the duration of the movement (Mayer)."""
-                val = nlp.tf
-                ObjectiveFunction.MayerFunction.add_to_penalty(ocp, nlp, val, penalty)
+            def minimize_time(
+                penalty: Objective,
+                pn: PenaltyNodes,
+            ):
+                """
+                Minimizes the duration of the phase
+
+                Parameters
+                ----------
+                penalty: Objective,
+                    The actual constraint to declare
+                pn: PenaltyNodes
+                    The penalty node elements
+                """
+
+                val = pn.nlp.tf
+                ObjectiveFunction.MayerFunction.add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
         def inter_phase_continuity(ocp, pt):
+            """
+            Add phase transition objective between two phases.
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            pt: PhaseTransition
+                The phase transition to add
+            """
+
             # Dynamics must be respected between phases
             penalty = OptionGeneric()
             penalty.list_index = -1
@@ -138,90 +338,223 @@ class ObjectiveFunction:
             pt.base.add_to_penalty(ocp, None, val, penalty)
 
         @staticmethod
-        def add_to_penalty(ocp, nlp, val, penalty):
+        def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Objective):
             """
-            Adds an objective.
-            :param val: Value to be optimized. (MX.sym from CasADi)
-            :param penalty: Index of the objective. (integer)
-            :param weight: Weight of the objective. (float)
-            :param quadratic: If True, value is squared (bool)
+            Add the objective function to the objective pool
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the current phase of the ocp
+            val: Union[MX, SX, float, int]
+                The actual objective function to add
+            penalty: Objective
+                The actual objective function to declare
             """
+
             ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=1)
 
         @staticmethod
-        def clear_penalty(ocp, nlp, penalty_idx):
+        def clear_penalty(ocp, nlp, penalty: Objective):
             """
-            Resets specified penalty.
+            Resets a objective function. A negative penalty index creates a new empty objective function.
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the current phase of the ocp
+            penalty: Objective
+                The actual objective function to declare
             """
-            return ObjectiveFunction.clear_penalty(ocp, nlp, penalty_idx)
+
+            return ObjectiveFunction.clear_penalty(ocp, nlp, penalty)
 
         @staticmethod
-        def _parameter_modifier(penalty_function, parameters):
-            """Modification of parameters"""
+        def _parameter_modifier(objective: Objective):
+            """
+            Apply some default parameters
+
+            Parameters
+            ----------
+            objective: Objective
+                The actual objective function to declare
+            """
+
+            func = objective.type.value[0]
             # Everything that should change the entry parameters depending on the penalty can be added here
-            if penalty_function == ObjectiveFcn.Mayer.MINIMIZE_TIME.value[0]:
+            if func == ObjectiveFcn.Mayer.MINIMIZE_TIME.value[0]:
                 # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
-                if "min_bound" in parameters.params:
-                    del parameters.params["min_bound"]
-                if "max_bound" in parameters.params:
-                    del parameters.params["max_bound"]
+                if "min_bound" in objective.params:
+                    del objective.params["min_bound"]
+                if "max_bound" in objective.params:
+                    del objective.params["max_bound"]
 
-            PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
+            PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(penalty_function, node, nlp):
-            """Raises errors on the span of penalty functions"""
+        def _span_checker(objective: Objective, pn: PenaltyNodes):
+            """
+            Check for any non sense in the requested times for the constraint. Raises an error if so
+
+            Parameters
+            ----------
+            objective: Objective
+                The actual objective function to declare
+                A reference to the current phase of the ocp
+            pn: PenaltyNodes
+                The penalty node elements
+            """
+
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(penalty_function, node, nlp)
+            PenaltyFunctionAbstract._span_checker(objective, pn)
+
+        @staticmethod
+        def add_or_replace(ocp, nlp, objective: PenaltyOption):
+            """
+            Add the objective function to the objective pool
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the current phase of the ocp
+            objective: PenaltyOption
+                The actual objective function to declare
+            """
+            ObjectiveFunction.add_or_replace(ocp, nlp, objective)
+
+        @staticmethod
+        def penalty_nature() -> str:
+            """
+            Get the nature of the penalty
+
+            Returns
+            -------
+            The nature of the penalty
+            """
+
+            return "objective_functions"
 
     class ParameterFunction(PenaltyFunctionAbstract):
         """
-        Mayer type objectives. (value of the objective at one time point, usually the end)
+        Internal (re)implementation of the penalty functions
+
+        add_to_penalty(ocp: OptimalControlProgram, _, val: Union[MX, SX], penalty: Objective)
+            Add the objective function to the objective pool
+        clear_penalty(ocp: OptimalControlProgram, _, penalty: Objective)
+            Resets a objective function. A negative penalty index creates a new empty objective function.
+        _parameter_modifier(objective: Objective)
+            Apply some default parameters
+        _span_checker(objective: Objective, pn: PenaltyNodes)
+            Check for any non sense in the requested times for the constraint. Raises an error if so
+        penalty_nature() -> str
+            Get the nature of the penalty
         """
 
         class Functions:
             """
-            Biomechanical objectives
+            Implementation of all the parameters objective functions
             """
 
             pass
 
         @staticmethod
-        def add_to_penalty(ocp, _, val, penalty):
+        def add_to_penalty(ocp, _, val: Union[MX, SX, float, int], penalty: Objective):
             """
-            Adds an objective.
-            :param val: Value to be optimized. (MX.sym from CasADi)
-            :param penalty: Index of the objective. (integer)
-            :param weight: Weight of the objective. (float)
-            :param quadratic: If True, value is squared (bool)
+            Add the objective function to the objective pool
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            _: Any
+                The ignored nlp
+            val: Union[MX, SX, float, int]
+                The actual objective function to add
+            penalty: Objective
+                The actual objective function to declare
             """
             ObjectiveFunction.add_to_penalty(ocp, None, val, penalty, dt=1)
 
         @staticmethod
-        def clear_penalty(ocp, _, penalty_idx):
+        def clear_penalty(ocp, _, penalty: Objective):
             """
-            Resets specified penalty.
+            Resets a objective function. A negative penalty index creates a new empty objective function.
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            _: Any
+                The ignored nlp
+            penalty: Objective
+                The actual objective function to declare
             """
-            return ObjectiveFunction.clear_penalty(ocp, None, penalty_idx)
+
+            return ObjectiveFunction.clear_penalty(ocp, None, penalty)
 
         @staticmethod
-        def _parameter_modifier(penalty_function, parameters):
-            """Modification of parameters"""
+        def _parameter_modifier(objective: Objective):
+            """
+            Apply some default parameters
+
+            Parameters
+            ----------
+            objective: Objective
+                The actual objective function to declare
+            """
+
             # Everything that should change the entry parameters depending on the penalty can be added here
-            PenaltyFunctionAbstract._parameter_modifier(penalty_function, parameters)
+            PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(penalty_function, node, nlp):
-            """Raises errors on the span of penalty functions"""
+        def _span_checker(objective: Objective, pn: PenaltyNodes):
+            """
+            Check for any non sense in the requested times for the constraint. Raises an error if so
+
+            Parameters
+            ----------
+            objective: Objective
+                The actual objective function to declare
+            pn: PenaltyNodes
+                The penalty node elements
+            """
+
             # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(penalty_function, node, nlp)
+            PenaltyFunctionAbstract._span_checker(objective, pn)
+
+        @staticmethod
+        def penalty_nature() -> str:
+            """
+            Get the nature of the penalty
+
+            Returns
+            -------
+            The nature of the penalty
+            """
+
+            return "parameters"
 
     @staticmethod
-    def add_or_replace(ocp, nlp, objective):
+    def add_or_replace(ocp, nlp, objective: PenaltyOption):
         """
-        Modifies or raises errors if user provided Node does not match the objective type.
-        :param objective: New objective to replace with. (dictionary)
+        Add the objective function to the objective pool
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        objective: PenaltyOption
+            The actual objective function to declare
         """
+
         if objective.type.get_type() == ObjectiveFunction.LagrangeFunction:
             if objective.node != Node.ALL and objective.node != Node.DEFAULT:
                 raise RuntimeError("Lagrange objective are for Node.ALL, did you mean Mayer?")
@@ -235,20 +568,24 @@ class ObjectiveFunction:
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective)
 
     @staticmethod
-    def cyclic(ocp, weight=1):
-
-        if ocp.nlp[0].nx != ocp.nlp[-1].nx:
-            raise RuntimeError("Cyclic constraint without same nx is not supported yet")
-
-        ocp.J += casadi.dot(ocp.nlp[-1].X[-1] - ocp.nlp[0].X[0], ocp.nlp[-1].X[-1] - ocp.nlp[0].X[0]) * weight
-
-    @staticmethod
-    def add_to_penalty(ocp, nlp, val, penalty, dt=0):
+    def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Objective, dt: float = 0):
         """
-        Adds objective J to objective array nlp.J[penalty] or ocp.J[penalty] at index penalty.
-        :param J: ObjectiveFcn. (dict of [val, target, weight, is_quadratic])
-        :param penalty: Index of the objective. (integer)
+        Add the objective function to the objective pool
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        val: Union[MX, SX, float, int]
+            The actual objective function to add
+        penalty: Objective
+            The actual objective function to declare
+        dt: float
+            The time between two nodes for the current phase. If the objective is Mayer, dt should be 1
         """
+
         J = {"objective": penalty, "val": val, "target": penalty.sliced_target, "dt": dt}
 
         if nlp:
@@ -257,11 +594,20 @@ class ObjectiveFunction:
             ocp.J[penalty.list_index].append(J)
 
     @staticmethod
-    def clear_penalty(ocp, nlp, penalty):
+    def clear_penalty(ocp, nlp, penalty: Objective):
         """
-        Resets specified objective.
-        Negative penalty index leads to enlargement of the array by one empty space.
+        Resets a objective function. A negative penalty index creates a new empty objective function.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        penalty: Objective
+            The actual objective function to declare
         """
+
         if nlp:
             J_to_add_to = nlp.J
         else:
@@ -283,25 +629,58 @@ class ObjectiveFunction:
 
 
 class ObjectivePrinter:
-    def __init__(self, ocp, sol_obj):
+    """
+    Interface to print the values of the objectives to the console
+
+    Methods
+    -------
+
+
+    """
+
+    def __init__(self, ocp, sol_obj: dict):
+        """
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        sol_obj: dict
+            A reference to the solution structure
+        """
+
         self.ocp = ocp
         self.sol_obj = sol_obj
 
     def by_function(self):
+        """
+        Print the values of the objectives sorted by function
+        """
+
         for idx_phase, phase in enumerate(self.sol_obj):
             print(f"********** Phase {idx_phase} **********")
             for idx_obj in range(phase.shape[0]):
                 print(
-                    f"{self.ocp.original_values['objective_functions'][idx_phase][idx_phase + idx_obj].type.name} : {np.nansum(phase[idx_obj])}"
+                    f"{self.ocp.original_values['objective_functions'][idx_phase][idx_phase + idx_obj].type.name} "
+                    f": {np.nansum(phase[idx_obj])}"
                 )
 
     def by_nodes(self):
+        """
+        Print the values of the objectives sorted by time node
+        """
+
         for idx_phase, phase in enumerate(self.sol_obj):
             print(f"********** Phase {idx_phase} **********")
             for idx_node in range(phase.shape[1]):
                 print(f"Node {idx_node} : {np.nansum(phase[:, idx_node])}")
 
     def mean(self):
+        """
+        Get the mean of the objective functions
+
+        Returns
+        """
+
         m = 0
         for idx_phase, phase in enumerate(self.sol_obj):
             m += np.nansum(phase)
@@ -309,9 +688,18 @@ class ObjectivePrinter:
 
 
 class ObjectiveFcn:
+    """
+    Selection of valid objective functions
+    """
+
     class Lagrange(Enum):
         """
-        Different conditions between biorbd geometric structures.
+        Selection of valid Lagrange objective functions
+
+        Methods
+        -------
+        def get_type() -> Callable
+            Returns the type of the penalty
         """
 
         MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
@@ -322,7 +710,7 @@ class ObjectiveFcn:
         MINIMIZE_MARKERS_DISPLACEMENT = (PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT,)
         MINIMIZE_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
         TRACK_MARKERS_VELOCITY = (PenaltyType.TRACK_MARKERS_VELOCITY,)
-        ALIGN_MARKERS = (PenaltyType.ALIGN_MARKERS,)
+        SUPERIMPOSE_MARKERS = (PenaltyType.SUPERIMPOSE_MARKERS,)
         PROPORTIONAL_STATE = (PenaltyType.PROPORTIONAL_STATE,)
         PROPORTIONAL_CONTROL = (PenaltyType.PROPORTIONAL_CONTROL,)
         MINIMIZE_TORQUE = (PenaltyType.MINIMIZE_TORQUE,)
@@ -336,18 +724,25 @@ class ObjectiveFcn:
         TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
         MINIMIZE_COM_POSITION = (PenaltyType.MINIMIZE_COM_POSITION,)
         MINIMIZE_COM_VELOCITY = (PenaltyType.MINIMIZE_COM_VELOCITY,)
-        ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
-        ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
+        TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT,)
+        TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.TRACK_MARKER_WITH_SEGMENT_AXIS,)
         CUSTOM = (PenaltyType.CUSTOM,)
 
         @staticmethod
-        def get_type():
-            """Returns the type of the objective function"""
+        def get_type() -> Callable:
+            """
+            Returns the type of the penalty
+            """
             return ObjectiveFunction.LagrangeFunction
 
     class Mayer(Enum):
         """
-        Different conditions between biorbd geometric structures.
+        Selection of valid Mayer objective functions
+
+        Methods
+        -------
+        def get_type() -> Callable
+            Returns the type of the penalty
         """
 
         MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
@@ -355,36 +750,39 @@ class ObjectiveFcn:
         TRACK_STATE = (PenaltyType.TRACK_STATE,)
         MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
         TRACK_MARKERS = (PenaltyType.TRACK_MARKERS,)
-        MINIMIZE_MARKERS_DISPLACEMENT = (PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT,)
         MINIMIZE_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
         TRACK_MARKERS_VELOCITY = (PenaltyType.TRACK_MARKERS_VELOCITY,)
-        ALIGN_MARKERS = (PenaltyType.ALIGN_MARKERS,)
+        SUPERIMPOSE_MARKERS = (PenaltyType.SUPERIMPOSE_MARKERS,)
         PROPORTIONAL_STATE = (PenaltyType.PROPORTIONAL_STATE,)
-        PROPORTIONAL_CONTROL = (PenaltyType.PROPORTIONAL_CONTROL,)
-        MINIMIZE_TORQUE = (PenaltyType.MINIMIZE_TORQUE,)
-        TRACK_TORQUE = (PenaltyType.TRACK_TORQUE,)
-        MINIMIZE_MUSCLES_CONTROL = (PenaltyType.MINIMIZE_MUSCLES_CONTROL,)
-        TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
-        MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
-        TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
-        MINIMIZE_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
-        TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
         MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyType.MINIMIZE_PREDICTED_COM_HEIGHT,)
         MINIMIZE_COM_POSITION = (PenaltyType.MINIMIZE_COM_POSITION,)
         MINIMIZE_COM_VELOCITY = (PenaltyType.MINIMIZE_COM_VELOCITY,)
-        ALIGN_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.ALIGN_SEGMENT_WITH_CUSTOM_RT,)
-        ALIGN_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.ALIGN_MARKER_WITH_SEGMENT_AXIS,)
+        TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT,)
+        TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.TRACK_MARKER_WITH_SEGMENT_AXIS,)
         CUSTOM = (PenaltyType.CUSTOM,)
 
         @staticmethod
-        def get_type():
-            """Returns the type of the objective function"""
+        def get_type() -> Callable:
+            """
+            Returns the type of the penalty
+            """
             return ObjectiveFunction.MayerFunction
 
     class Parameter(Enum):
+        """
+        Selection of valid Parameters objective functions
+
+        Methods
+        -------
+        def get_type() -> Callable
+            Returns the type of the penalty
+        """
+
         CUSTOM = (PenaltyType.CUSTOM,)
 
         @staticmethod
-        def get_type():
-            """Returns the type of the objective function"""
+        def get_type() -> Callable:
+            """
+            Returns the type of the penalty
+            """
             return ObjectiveFunction.ParameterFunction

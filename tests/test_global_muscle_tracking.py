@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 import numpy as np
 import biorbd
-
 from bioptim import Data, OdeSolver
+
 from .utils import TestUtils
 
 
@@ -26,20 +26,20 @@ def test_muscle_activations_and_states_tracking(ode_solver):
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 2
-    nb_shooting = 9
+    n_shooting = 9
     use_residual_torque = True
 
     # Generate random data to fit
     np.random.seed(42)
     t, markers_ref, x_ref, muscle_activations_ref = muscle_activations_tracker.generate_data(
-        biorbd_model, final_time, nb_shooting, use_residual_torque=use_residual_torque
+        biorbd_model, final_time, n_shooting, use_residual_torque=use_residual_torque
     )
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = muscle_activations_tracker.prepare_ocp(
         biorbd_model,
         final_time,
-        nb_shooting,
+        n_shooting,
         markers_ref,
         muscle_activations_ref,
         x_ref[: biorbd_model.nbQ(), :],
@@ -64,7 +64,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
+    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         # initial and final position
@@ -138,20 +138,20 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 2
-    nb_shooting = 9
+    n_shooting = 9
     use_residual_torque = False
 
     # Generate random data to fit
     np.random.seed(42)
     t, markers_ref, x_ref, muscle_activations_ref = muscle_activations_tracker.generate_data(
-        biorbd_model, final_time, nb_shooting, use_residual_torque=use_residual_torque
+        biorbd_model, final_time, n_shooting, use_residual_torque=use_residual_torque
     )
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = muscle_activations_tracker.prepare_ocp(
         biorbd_model,
         final_time,
-        nb_shooting,
+        n_shooting,
         markers_ref,
         muscle_activations_ref,
         x_ref[: biorbd_model.nbQ(), :],
@@ -176,7 +176,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, mus = states["q"], states["q_dot"], controls["muscles"]
+    q, qdot, mus = states["q"], states["qdot"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         # initial and final position
@@ -244,19 +244,19 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.5
-    nb_shooting = 9
+    n_shooting = 9
 
     # Generate random data to fit
     np.random.seed(42)
     t, markers_ref, x_ref, muscle_excitations_ref = muscle_excitations_tracker.generate_data(
-        biorbd_model, final_time, nb_shooting
+        biorbd_model, final_time, n_shooting
     )
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = muscle_excitations_tracker.prepare_ocp(
         biorbd_model,
         final_time,
-        nb_shooting,
+        n_shooting,
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
@@ -275,7 +275,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
     states, controls = Data.get_data(ocp, sol["x"])
     q, qdot, mus_states, tau, mus_controls = (
         states["q"],
-        states["q_dot"],
+        states["qdot"],
         states["muscles"],
         controls["tau"],
         controls["muscles"],
@@ -389,19 +389,19 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.5
-    nb_shooting = 9
+    n_shooting = 9
 
     # Generate random data to fit
     np.random.seed(42)
     t, markers_ref, x_ref, muscle_excitations_ref = muscle_excitations_tracker.generate_data(
-        biorbd_model, final_time, nb_shooting
+        biorbd_model, final_time, n_shooting
     )
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = muscle_excitations_tracker.prepare_ocp(
         biorbd_model,
         final_time,
-        nb_shooting,
+        n_shooting,
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
@@ -418,7 +418,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, mus_states, mus_controls = (states["q"], states["q_dot"], states["muscles"], controls["muscles"])
+    q, qdot, mus_states, mus_controls = (states["q"], states["qdot"], states["muscles"], controls["muscles"])
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
@@ -525,17 +525,17 @@ def test_muscle_activation_and_contacts_tracking(ode_solver):
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.1
-    nb_shooting = 5
+    n_shooting = 5
 
     # Generate random data to fit
     np.random.seed(42)
-    contact_forces_ref = np.random.rand(biorbd_model.nbContacts(), nb_shooting)
-    muscle_activations_ref = np.random.rand(biorbd_model.nbMuscles(), nb_shooting + 1)
+    contact_forces_ref = np.random.rand(biorbd_model.nbContacts(), n_shooting)
+    muscle_activations_ref = np.random.rand(biorbd_model.nbMuscles(), n_shooting + 1)
 
     ocp = muscle_activations_contact_tracker.prepare_ocp(
         model_path,
         final_time,
-        nb_shooting,
+        n_shooting,
         muscle_activations_ref[:, :-1],
         contact_forces_ref,
         ode_solver=ode_solver,
@@ -554,7 +554,7 @@ def test_muscle_activation_and_contacts_tracking(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau, mus_controls = (states["q"], states["q_dot"], controls["tau"], controls["muscles"])
+    q, qdot, tau, mus_controls = (states["q"], states["qdot"], controls["tau"], controls["muscles"])
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0, -0.75, 0.75]))

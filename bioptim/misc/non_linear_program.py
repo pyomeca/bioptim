@@ -1,100 +1,295 @@
-from casadi import MX
+from typing import Callable, Any
 
-from ..limits.path_conditions import Bounds, InitialGuess
-from .. import ControlType, OdeSolver, DynamicsFcn
+from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
+from .enums import ControlType, OdeSolver
+from .options import OptionList
 
 
 class NonLinearProgram:
-    def __init__(
-        self,
-        CX=MX,
-        J=[],
-        U=[],
-        u_bounds=Bounds(),
-        u_init=InitialGuess(),
-        X=[],
-        x_bounds=Bounds(),
-        x_init=InitialGuess(),
-        casadi_func={},
-        contact_forces_func=None,
-        control_type=ControlType.CONSTANT,
-        dt=0.0,
-        dynamics=[],
-        dynamics_func=None,
-        dynamics_type=DynamicsFcn.TORQUE_DRIVEN,
-        external_forces=None,
-        g=[],
-        g_bounds=Bounds(),
-        mapping={},
-        model=None,
-        muscleNames=[],
-        muscles=None,
-        nb_integration_steps=0,
-        nb_threads=1,
-        np=None,
-        ns=0,
-        nu=0,
-        nx=0,
-        ode_solver=OdeSolver.RK4,
-        p=None,
-        par_dynamics={},
-        parameters_to_optimize={},
-        phase_idx=0,
-        plot={},
-        problem_type={},
-        q=None,
-        q_dot=None,
-        shape={},
-        tau=None,
-        t0=0.0,
-        tf=0.0,
-        u=MX(),
-        var_controls={},
-        var_states={},
-        x=MX(),
-    ):
-        self.CX = CX
-        self.J = J
-        self.U = U
-        self.u_bounds = u_bounds
-        self.u_init = u_init
-        self.X = X
-        self.x_bounds = x_bounds
-        self.x_init = x_init
-        self.casadi_func = casadi_func
-        self.contact_forces_func = contact_forces_func
-        self.control_type = control_type
-        self.dt = dt
-        self.dynamics = dynamics
-        self.dynamics_func = dynamics_func
-        self.dynamics_type = dynamics_type
-        self.external_forces = external_forces
-        self.g = g
-        self.g_bounds = g_bounds
-        self.mapping = mapping
-        self.model = model
-        self.muscleNames = muscleNames
-        self.muscles = muscles
-        self.nb_integration_steps = nb_integration_steps
-        self.nb_threads = nb_threads
-        self.np = np
-        self.ns = ns
-        self.nu = nu
-        self.nx = nx
-        self.ode_solver = ode_solver
-        self.p = p
-        self.par_dynamics = par_dynamics
-        self.parameters_to_optimize = parameters_to_optimize
-        self.phase_idx = phase_idx
-        self.plot = plot
-        self.problem_type = problem_type
-        self.q = q
-        self.q_dot = q_dot
-        self.shape = shape
-        self.tau = tau
-        self.t0 = t0
-        self.tf = tf
-        self.u = u
-        self.var_controls = var_controls
-        self.var_states = var_states
-        self.x = x
+    """
+    A nonlinear program that describes a phase in the ocp
+
+    Attributes
+    ----------
+    casadi_func: dict
+        All the declared casadi function
+    contact_forces_func = function
+        The contact force function if exists for the current nlp
+    control_type: ControlType
+        The control type for the current nlp
+    CX: Union[MX, SX]
+        The type of symbolic variable that is used
+    dt: float
+        The delta time of the current phase
+    dynamics: list[ODE_SOLVER]
+        All the dynamics for each of the node of the phase
+    dynamics_func: function
+        The dynamic function used during the current phase
+    dynamics_type: Dynamics
+        The dynamic option declared by the user for the current phase
+    external_forces: list
+        The external forces acting at the center of mass of the designated segment
+    g: list[list[Constraint]]
+        All the constraints at each of the node of the phase
+    irk_polynomial_interpolation_degree: int
+        The degree of the IRK  # TODO: these option should be from a special class
+    J: list[list[Objective]]
+        All the objectives at each of the node of the phase
+    mapping: dict
+        All the BidirectionalMapping of the states and controls
+    model: biorbd.Model
+        The biorbd model associated with the phase
+    muscleNames: list[str]
+        List of all the muscle names
+    muscles: MX
+        The casadi variables for the muscles
+    n_integration_steps: int
+        The number of finite element of the RK  # TODO: these option should be from a special class
+    n_threads: int
+        The number of thread to use
+    np: int
+        The number of parameters
+    ns: int
+        The number of shooting points
+    nu: int
+        The number of controls
+    nx: int
+        The number of states
+    ode_solver: OdeSolver
+        The chosen ode solver
+    p: MX
+        The casadi variables for the parameters
+    par_dynamics: casadi.Function
+        The casadi function of the threaded dynamics
+    parameters_to_optimize: dict
+        The collection of parameters to optimize
+    phase_idx: int
+        The index of the current nlp in the ocp.nlp structure
+    plot: dict
+        The collection of plot for each of the variables
+    q: MX
+        The casadi variables for the generalized coordinates
+    qdot: MX
+        The casadi variables for the generalized velocities
+    shape: dict
+        A collection of the dimension of each of the variables
+    tau: MX
+        The casadi variables for the generalized torques
+    t0: float
+        The time stamp of the beginning of the phase
+    tf: float
+        The time stamp of the end of the phase
+    u: MX
+        The casadi variables for the controls
+    U: list[Union[MX, SX]]
+        The casadi variables for the integration at each node of the phase
+    u_bounds = Bounds()
+        The bounds for the controls
+    u_init = InitialGuess()
+        The initial guess for the controls
+    var_controls: dict
+        The number of elements for each control the key is the name of the control
+    var_states: dict
+        The number of elements for each state the key is the name of the state
+    x: MX
+        The casadi variables for the states
+    X: list[Union[MX, SX]]
+        The casadi variables for the integration at each node of the phase
+    x_bounds = Bounds()
+        The bounds for the states
+    x_init = InitialGuess()
+        The initial guess for the states
+
+    Methods
+    -------
+    initialize(self, cx: [MX, SX])
+        Reset an nlp to a sane initial state
+    add(ocp: OptimalControlProgram, param_name: str, param: Any, duplicate_singleton: bool,
+            _type: Any = None, name: str = None)
+        Set a parameter to their respective nlp
+    add_path_condition(ocp: OptimalControlProgram, var: Any, path_name: str, type_option: Any, type_list: Any)
+        Interface to add for PathCondition classes
+    """
+
+    def __init__(self):
+        self.casadi_func = {}
+        self.contact_forces_func = None
+        self.control_type = ControlType.NONE
+        self.CX = None
+        self.dt = None
+        self.dynamics = []
+        self.dynamics_func = None
+        self.dynamics_type = None
+        self.external_forces = []
+        self.g = []
+        self.irk_polynomial_interpolation_degree = None
+        self.J = []
+        self.mapping = {}
+        self.model = None
+        self.muscleNames = None
+        self.muscles = None
+        self.n_integration_steps = None
+        self.n_threads = None
+        self.np = None
+        self.ns = None
+        self.nu = None
+        self.nx = None
+        self.ode_solver = OdeSolver.NO_SOLVER
+        self.p = None
+        self.par_dynamics = None
+        self.parameters_to_optimize = {}
+        self.phase_idx = None
+        self.plot = {}
+        self.q = None
+        self.qdot = None
+        self.shape = {}
+        self.tau = None
+        self.t0 = None
+        self.tf = None
+        self.u = None
+        self.U = None
+        self.u_bounds = Bounds()
+        self.u_init = InitialGuess()
+        self.var_controls = {}
+        self.var_states = {}
+        self.x = None
+        self.X = None
+        self.x_bounds = Bounds()
+        self.x_init = InitialGuess()
+
+    def initialize(self, cx: Callable = None):
+        """
+        Reset an nlp to a sane initial state
+
+        Parameters
+        ----------
+        cx: Union[MX, SX]
+            The type of casadi variable
+
+        """
+        self.shape = {"q": 0, "qdot": 0, "tau": 0, "muscle": 0}
+        self.plot = {}
+        self.var_states = {}
+        self.var_controls = {}
+        self.CX = cx
+        self.x = self.CX()
+        self.u = self.CX()
+        self.J = []
+        self.g = []
+        self.casadi_func = {}
+
+    @staticmethod
+    def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):
+        """
+        Set a parameter to their respective nlp
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp where all the nlp are stored
+        param_name: str
+            The name of the parameter as it is named in the nlp structure, if name is not set.
+            Otherwise, the param_name is store in nlp.name[param_name]
+        param: Any
+            The value of the parameter
+        duplicate_singleton: bool
+            If the value is unique, should this value be spread to all nlp (or raises an error)
+        _type: Any
+            The type of the data
+        name: str
+            The name of the parameter if the param_name should be stored in a dictionary
+        """
+
+        if isinstance(param, (list, tuple)):
+            if len(param) != ocp.n_phases:
+                raise RuntimeError(
+                    f"{param_name} size({len(param)}) does not correspond to the number of phases({ocp.n_phases})."
+                )
+            else:
+                for i in range(ocp.n_phases):
+                    if name is None:
+                        setattr(ocp.nlp[i], param_name, param[i])
+                    else:
+                        getattr(ocp.nlp[i], name)[param_name] = param[i]
+        elif isinstance(param, OptionList):
+            if len(param) == ocp.n_phases:
+                for i in range(ocp.n_phases):
+                    if name is None:
+                        setattr(ocp.nlp[i], param_name, param[i])
+                    else:
+                        getattr(ocp.nlp[i], name)[param_name] = param[i]
+            else:
+                if len(param) == 1 and duplicate_singleton:
+                    for i in range(ocp.n_phases):
+                        if name is None:
+                            setattr(ocp.nlp[i], param_name, param[0])
+                        else:
+                            getattr(ocp.nlp[i], name)[param_name] = param[0]
+                else:
+                    raise RuntimeError(
+                        f"{param_name} size({len(param)}) does not correspond "
+                        f"to the number of phases({ocp.n_phases})."
+                    )
+        else:
+            if ocp.n_phases == 1:
+                if name is None:
+                    setattr(ocp.nlp[0], param_name, param)
+                else:
+                    getattr(ocp.nlp[0], name)[param_name] = param
+            else:
+                if duplicate_singleton:
+                    for i in range(ocp.n_phases):
+                        if name is None:
+                            setattr(ocp.nlp[i], param_name, param)
+                        else:
+                            getattr(ocp.nlp[i], name)[param_name] = param
+                else:
+                    raise RuntimeError(f"{param_name} must be a list or tuple when number of phase is not equal to 1")
+
+        if _type is not None:
+            for nlp in ocp.nlp:
+                if (
+                    (
+                        (name is None and getattr(nlp, param_name) is not None)
+                        or (name is not None and param is not None)
+                    )
+                    and not isinstance(param, _type)
+                    and isinstance(param, (list, tuple))
+                    and False in [False for i in param if not isinstance(i, _type)]
+                ):
+                    raise RuntimeError(f"Parameter {param_name} must be a {str(_type)}")
+
+    @staticmethod
+    def add_path_condition(ocp, var: Any, path_name: str, type_option: Any, type_list: Any):
+        """
+        Interface to add for PathCondition classes
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        var: Any
+            The actual data to store
+        path_name: str
+            The name of the condition ("x_init", "u_bounds", ...)
+        type_option: AnyOption
+            The type of PathCondition
+        type_list: AnyList
+            The type of PathConditionList (must be the same type of path_type_option)
+        """
+
+        setattr(ocp, f"isdef_{path_name}", True)
+        name = type_option.__name__
+        if isinstance(var, type_option):
+            var_tp = type_list()
+            try:
+                if isinstance(var_tp, BoundsList):
+                    var_tp.add(bounds=var)
+                else:
+                    var_tp.add(var)
+            except TypeError:
+                raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
+            var = var_tp
+        elif not isinstance(var, type_list):
+            raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
+        NonLinearProgram.add(ocp, path_name, var, False)

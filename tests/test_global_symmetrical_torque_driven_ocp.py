@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-
 from bioptim import Data, OdeSolver
+
 from .utils import TestUtils
 
 
@@ -16,7 +16,7 @@ def test_symmetry_by_construction(ode_solver):
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
         "symmetry_by_construction",
-        str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_construction.py",
+        str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py",
     )
     symmetry_by_construction = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(symmetry_by_construction)
@@ -39,7 +39,7 @@ def test_symmetry_by_construction(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-0.2, -1.1797959, 0.20135792)))
@@ -86,7 +86,7 @@ def test_symmetry_by_constraint(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-0.2, -1.1797959, 0.20135792, -0.20135792)))

@@ -1,9 +1,9 @@
 """
-File that shows a TORQUE_DRIVEN problem_type and dynamic.
+TODO: Cleaning and documentation
 """
+
 import biorbd
 import numpy as np
-
 from bioptim import (
     OptimalControlProgram,
     Dynamics,
@@ -19,41 +19,33 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, nbs, tf, ode_solver=OdeSolver.RK4, use_SX=True):
-    # --- Options --- #
+def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4, use_sx=True):
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
-
-    # Problem parameters
-    tau_min, tau_max, tau_init = -100, 100, 0
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)
-
-    # Initial guess
     x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
+    tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
-
     u_init = InitialGuess([tau_init] * biorbd_model.nbGeneralizedTorque())
-
-    # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        nbs,
+        n_shooting,
         tf,
         x_init,
         u_init,
         x_bounds,
         u_bounds,
         ode_solver=ode_solver,
-        use_SX=use_SX,
+        use_sx=use_sx,
     )
 
 
@@ -61,9 +53,9 @@ if __name__ == "__main__":
     model_path = "cube.bioMod"
     nbs = 30
     tf = 2
-    ocp = prepare_ocp(biorbd_model_path=model_path, nbs=nbs, tf=tf, use_SX=True)
+    ocp = prepare_ocp(biorbd_model_path=model_path, n_shooting=nbs, tf=tf)
 
-    # --- Solve the program --- #
+    # --- Add objective functions --- #
     objective_functions = ObjectiveList()
     objective_functions.add(
         ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=1000, index=[0, 1], target=np.array([[1.0, 2.0]]).T
@@ -75,6 +67,7 @@ if __name__ == "__main__":
     )
     ocp.update_objectives(objective_functions)
 
+    # --- Solve the program --- #
     sol = ocp.solve(solver=Solver.ACADOS, show_online_optim=False)
     result = ShowResult(ocp, sol)
     result.graphs()

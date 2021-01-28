@@ -1,9 +1,15 @@
-import pickle
-from time import time
+"""
+A very simple yet meaningful optimal control program consisting in a pendulum starting downward and ending upward
+while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
 
-import numpy as np
+This simple example is a good place to start investigating bioptim as it describes the most common dynamics out there
+(the joint torque driven), it defines an objective function and some boundaries and initial guesses
+
+During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
+appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
+"""
+
 import biorbd
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
@@ -12,27 +18,33 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     ShowResult,
-    Data,
-    Simulate,
     ObjectiveFcn,
     Objective,
-    ObjectivePrinter,
-    OdeSolver,
 )
 
 
-def prepare_ocp(
-    biorbd_model_path, final_time, number_shooting_points, nb_threads, use_SX=False, ode_solver=OdeSolver.RK4
-):
-    # --- Options --- #
+def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> OptimalControlProgram:
+    """
+    The initialization of an ocp
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the biorbd model
+    final_time: float
+        The time in second required to perform the task
+    n_shooting: int
+        The number of shooting points to define int the direct multiple shooting program
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
     biorbd_model = biorbd.Model(biorbd_model_path)
-    tau_min, tau_max, tau_init = -100, 100, 0
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
-    n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE_DERIVATIVE)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -43,70 +55,42 @@ def prepare_ocp(
     x_bounds[1, -1] = 3.14
 
     # Initial guess
+    n_q = biorbd_model.nbQ()
+    n_qdot = biorbd_model.nbQdot()
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
+    n_tau = biorbd_model.nbGeneralizedTorque()
+    tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[n_tau - 1, :] = 0
 
     u_init = InitialGuess([tau_init] * n_tau)
 
-    # ------------- #
-
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
         objective_functions=objective_functions,
-        nb_threads=nb_threads,
-        use_SX=use_SX,
-        ode_solver=ode_solver,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, number_shooting_points=100, nb_threads=4)
+    """
+    If pendulum is run as a script, it will perform the optimization and animates it
+    """
 
-    # --- Solve the program --- #
-    tic = time()
-    sol, sol_iterations, sol_obj = ocp.solve(show_online_optim=True, return_iterations=True, return_objectives=True)
-    toc = time() - tic
-    print(f"Time to solve : {toc}sec")
+    # --- Prepare the ocp --- #
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100)
 
-    # --- Simulation --- #
-    # It is not an optimal control, it only apply a Runge Kutta at each nodes
-    Simulate.from_solve(ocp, sol, single_shoot=True)
-    Simulate.from_data(ocp, Data.get_data(ocp, sol), single_shoot=False)
+    # --- Solve the ocp --- #
+    sol = ocp.solve(show_online_optim=True)
 
-    # --- Access to all iterations  --- #
-    if sol_iterations:  # If the processor is too fast, this will be empty since it is attached to the update function
-        nb_iter = len(sol_iterations)
-        third_iteration = sol_iterations[2]
-
-    # --- Print objective cost  --- #
-    print(f"Final objective value : {np.nansum(sol_obj)} \n")
-    analyse = ObjectivePrinter(ocp, sol_obj)
-    analyse.by_function()
-    analyse.by_nodes()
-
-    # --- Save result of get_data --- #
-    ocp.save_get_data(sol, "pendulum.bob", sol_iterations)  # you don't have to specify the extension ".bob"
-
-    # --- Load result of get_data --- #
-    with open("pendulum.bob", "rb") as file:
-        data = pickle.load(file)
-
-    # --- Save the optimal control program and the solution --- #
-    ocp.save(sol, "pendulum.bo")  # you don't have to specify the extension ".bo"
-
-    # --- Load the optimal control program and the solution --- #
-    ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")
-
-    # --- Show results --- #
-    result = ShowResult(ocp_load, sol_load)
+    # --- Show the results in a bioviz animation --- #
+    result = ShowResult(ocp, sol)
     result.animate()

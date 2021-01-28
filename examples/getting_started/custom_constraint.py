@@ -1,10 +1,14 @@
 """
-File that shows an example of a custom constraint.
-As an example, this custom constraint reproduces exactly the behavior of the ALIGN_MARKERS constraint.
-"""
-import biorbd
-from casadi import vertcat
+This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
+and superimpose the same corner to a different marker at the end.
+It is designed to show how one can define its own custom constraints function if the provided ones are not
+sufficient.
 
+More specifically this example reproduces the behavior of the SUPERIMPOSE_MARKERS constraint.
+"""
+
+import biorbd
+from casadi import vertcat, MX
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -13,6 +17,7 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     ConstraintList,
+    PenaltyNodes,
     Bounds,
     QAndQDotBounds,
     InitialGuess,
@@ -21,11 +26,29 @@ from bioptim import (
 )
 
 
-def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_marker_idx):
-    nq = nlp.shape["q"]
+def custom_func_track_markers(pn: PenaltyNodes, first_marker_idx: int, second_marker_idx: int) -> MX:
+    """
+    The used-defined constraint function (This particular one mimics the ConstraintFcn.SUPERIMPOSE_MARKERS)
+    Except for the last two
+
+    Parameters
+    ----------
+    pn: PenaltyNodes
+        The penalty node elements
+    first_marker_idx: int
+        The index of the first marker in the bioMod
+    second_marker_idx: int
+        The index of the second marker in the bioMod
+
+    Returns
+    -------
+    The value that should be constrained in the MX format
+    """
+
+    nq = pn.nlp.shape["q"]
     val = []
-    markers = biorbd.to_casadi_func("markers", nlp.model.markers, nlp.q)
-    for v in x:
+    markers = biorbd.to_casadi_func("markers", pn.nlp.model.markers, pn.nlp.q)
+    for v in pn.x:
         q = v[:nq]
         first_marker = markers(q)[:, first_marker_idx]
         second_marker = markers(q)[:, second_marker_idx]
@@ -33,13 +56,28 @@ def custom_func_align_markers(ocp, nlp, t, x, u, p, first_marker_idx, second_mar
     return val
 
 
-def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4):
+def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.RK4) -> OptimalControlProgram:
+    """
+    Prepare the program
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path of the biorbd model
+    ode_solver: OdeSolver
+        The type of ode solver used
+
+    Returns
+    -------
+    The ocp ready to be solved
+    """
+
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Problem parameters
-    number_shooting_points = 30
+    n_shooting = 30
     final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
 
@@ -51,8 +89,8 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4):
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(custom_func_align_markers, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(custom_func_align_markers, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(custom_func_track_markers, node=Node.START, first_marker_idx=0, second_marker_idx=1)
+    constraints.add(custom_func_track_markers, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)
@@ -72,7 +110,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4):
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -85,6 +123,10 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4):
 
 
 if __name__ == "__main__":
+    """
+    Solve and animate the solution
+    """
+
     model_path = "cube.bioMod"
     ocp = prepare_ocp(biorbd_model_path=model_path)
 

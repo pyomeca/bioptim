@@ -6,25 +6,25 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-
 from bioptim import Data, OdeSolver
+
 from .utils import TestUtils
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_segment_on_rt(ode_solver):
-    # Load align_segment_on_rt
+def test_track_segment_on_rt(ode_solver):
+    # Load track_segment_on_rt
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_segment_on_rt", str(PROJECT_FOLDER) + "/examples/align/align_segment_on_rt.py"
+        "track_segment_on_rt", str(PROJECT_FOLDER) + "/examples/track/track_segment_on_rt.py"
     )
-    align_segment_on_rt = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_segment_on_rt)
+    track_segment_on_rt = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(track_segment_on_rt)
 
-    ocp = align_segment_on_rt.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+    ocp = track_segment_on_rt.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
         final_time=0.5,
-        number_shooting_points=8,
+        n_shooting=8,
         ode_solver=ode_solver,
     )
     sol = ocp.solve()
@@ -41,7 +41,7 @@ def test_align_segment_on_rt(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.30543155, 0, -1.57, -1.57]))
@@ -61,19 +61,19 @@ def test_align_segment_on_rt(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_align_marker_on_segment(ode_solver):
-    # Load align_marker_on_segment
+def test_track_marker_on_segment(ode_solver):
+    # Load track_marker_on_segment
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_marker_on_segment", str(PROJECT_FOLDER) + "/examples/align/align_marker_on_segment.py"
+        "track_marker_on_segment", str(PROJECT_FOLDER) + "/examples/track/track_marker_on_segment.py"
     )
-    align_marker_on_segment = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(align_marker_on_segment)
+    track_marker_on_segment = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(track_marker_on_segment)
 
-    ocp = align_marker_on_segment.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/align/cube_and_line.bioMod",
+    ocp = track_marker_on_segment.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
         final_time=0.5,
-        number_shooting_points=8,
+        n_shooting=8,
         initialize_near_solution=True,
         ode_solver=ode_solver,
     )
@@ -91,7 +91,7 @@ def test_align_marker_on_segment(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["q_dot"], controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0, 0.46364761]))

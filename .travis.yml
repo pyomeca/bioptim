@@ -18,13 +18,16 @@ install:
   - cd external
   - ./acados_install.sh /home/travis/miniconda
   - cd ..
+  
 
 script:
+  - bioptim_folder=`pwd`
   - black . -l120 --exclude "external/*" --check
   - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
   - python setup.py install
   - cd
   - python -c "import bioptim"
+  - cd $bioptim_folder
 
 after_success:
   - codecov

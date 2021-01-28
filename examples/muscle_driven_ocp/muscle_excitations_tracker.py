@@ -1,14 +1,22 @@
+"""
+This is an example of muscle excitation(EMG)/skin marker OR state tracking.
+Random data are created by generating a random set of EMG and then by generating the kinematics associated with these
+data. The solution is trivial since no noise is applied to the data. Still, it is a relevant example to show how to
+track data using a musculoskeletal model. In real situation, the EMG and kinematics would indeed be acquired via
+data acquisition devices
+
+The difference between muscle activation and excitation is that the latter is the derivative of the former
+"""
+
 from scipy.integrate import solve_ivp
 import numpy as np
 import biorbd
 from casadi import MX, vertcat
 from matplotlib import pyplot as plt
-
 from bioptim import (
     OptimalControlProgram,
     NonLinearProgram,
     BidirectionalMapping,
-    Mapping,
     DynamicsList,
     DynamicsFcn,
     DynamicsFunctions,
@@ -23,35 +31,50 @@ from bioptim import (
 )
 
 
-def generate_data(biorbd_model, final_time, nb_shooting):
+def generate_data(
+    biorbd_model: biorbd.Model, final_time: float, n_shooting: int, use_residual_torque: bool = True
+) -> tuple:
+    """
+    Generate random data. If np.random.seed is defined before, it will always return the same results
+
+    Parameters
+    ----------
+    biorbd_model: biorbd.Model
+        The loaded biorbd model
+    final_time: float
+        The time at final node
+    n_shooting: int
+        The number of shooting points
+    use_residual_torque: bool
+        If residual torque are present or not in the dynamics
+
+    Returns
+    -------
+    The time, marker, states and controls of the program. The ocp will try to track these
+    """
+
     # Aliases
-    nb_q = biorbd_model.nbQ()
-    nb_qdot = biorbd_model.nbQdot()
-    nb_tau = biorbd_model.nbGeneralizedTorque()
-    nb_mus = biorbd_model.nbMuscleTotal()
-    nb_markers = biorbd_model.nbMarkers()
-    dt = final_time / nb_shooting
+    n_q = biorbd_model.nbQ()
+    n_qdot = biorbd_model.nbQdot()
+    n_tau = biorbd_model.nbGeneralizedTorque()
+    n_mus = biorbd_model.nbMuscleTotal()
+    n_markers = biorbd_model.nbMarkers()
+    dt = final_time / n_shooting
 
     # Casadi related stuff
-    symbolic_q = MX.sym("q", nb_q, 1)
-    symbolic_qdot = MX.sym("qdot", nb_qdot, 1)
-    symbolic_mus = MX.sym("mus", nb_mus, 1)
-    symbolic_controls = MX.sym("u", nb_tau + nb_mus, 1)
+    symbolic_q = MX.sym("q", n_q, 1)
+    symbolic_qdot = MX.sym("qdot", n_qdot, 1)
+    symbolic_mus = MX.sym("mus", n_mus, 1)
+    symbolic_controls = MX.sym("u", n_tau + n_mus, 1)
     symbolic_parameters = MX.sym("u", 0, 0)
-    nlp = NonLinearProgram(
-        model=biorbd_model,
-        shape={
-            "q": nb_q,
-            "q_dot": nb_qdot,
-            "tau": nb_tau,
-            "muscle": nb_mus,
-        },
-        mapping={
-            "q": BidirectionalMapping(Mapping(range(nb_q)), Mapping(range(nb_q))),
-            "q_dot": BidirectionalMapping(Mapping(range(nb_qdot)), Mapping(range(nb_qdot))),
-            "tau": BidirectionalMapping(Mapping(range(nb_tau)), Mapping(range(nb_tau))),
-        },
-    )
+    nlp = NonLinearProgram()
+    nlp.model = biorbd_model
+    nlp.shape = {"q": n_q, "qdot": n_qdot, "tau": n_tau, "muscle": n_mus}
+    nlp.mapping = {
+        "q": BidirectionalMapping(range(n_q), range(n_q)),
+        "qdot": BidirectionalMapping(range(n_qdot), range(n_qdot)),
+        "tau": BidirectionalMapping(range(n_tau), range(n_tau)),
+    }
     markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_q)
 
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot, symbolic_mus))
@@ -65,46 +88,70 @@ def generate_data(biorbd_model, final_time, nb_shooting):
     )
 
     def dyn_interface(t, x, u):
-        u = np.concatenate([np.zeros(nb_tau), u])
+        u = np.concatenate([np.zeros(n_tau), u])
         return np.array(dynamics_func(x, u, np.empty((0, 0)))).squeeze()
 
     # Generate some muscle excitations
-    U = np.random.rand(nb_shooting, nb_mus).T
+    U = np.random.rand(n_shooting, n_mus).T
 
     # Integrate and collect the position of the markers accordingly
-    X = np.ndarray((nb_q + nb_qdot + nb_mus, nb_shooting + 1))
-    markers = np.ndarray((3, biorbd_model.nbMarkers(), nb_shooting + 1))
+    X = np.ndarray((n_q + n_qdot + n_mus, n_shooting + 1))
+    markers = np.ndarray((3, biorbd_model.nbMarkers(), n_shooting + 1))
 
     def add_to_data(i, q):
         X[:, i] = q
-        markers[:, :, i] = markers_func(q[:nb_q])
+        markers[:, :, i] = markers_func(q[:n_q])
 
-    x_init = np.array([0] * nb_q + [0] * nb_qdot + [0.5] * nb_mus)
+    x_init = np.array([0] * n_q + [0] * n_qdot + [0.5] * n_mus)
     add_to_data(0, x_init)
     for i, u in enumerate(U.T):
         sol = solve_ivp(dyn_interface, (0, dt), x_init, method="RK45", args=(u,))
         x_init = sol["y"][:, -1]
         add_to_data(i + 1, x_init)
 
-    time_interp = np.linspace(0, final_time, nb_shooting + 1)
+    time_interp = np.linspace(0, final_time, n_shooting + 1)
     return time_interp, markers, X, U
 
 
 def prepare_ocp(
-    biorbd_model,
-    final_time,
-    nb_shooting,
-    markers_ref,
-    excitations_ref,
-    q_ref,
-    use_residual_torque,
-    kin_data_to_track="markers",
-    ode_solver=OdeSolver.RK4,
-):
-    # Problem parameters
-    tau_min, tau_max, tau_init = -100, 100, 0
-    activation_min, activation_max, activation_init = 0, 1, 0.5
-    excitation_min, excitation_max, excitation_init = 0, 1, 0.5
+    biorbd_model: biorbd.Model,
+    final_time: float,
+    n_shooting: int,
+    markers_ref: np.ndarray,
+    excitations_ref: np.ndarray,
+    q_ref: np.ndarray,
+    use_residual_torque: bool,
+    kin_data_to_track: str = "markers",
+    ode_solver: OdeSolver = OdeSolver.RK4,
+) -> OptimalControlProgram:
+    """
+    Prepare the ocp to solve
+
+    Parameters
+    ----------
+    biorbd_model: biorbd.Model
+        The loaded biorbd model
+    final_time: float
+        The time at final node
+    n_shooting: int
+        The number of shooting points
+    markers_ref: np.ndarray
+        The marker to track if 'markers' is chosen in kin_data_to_track
+    excitations_ref: np.ndarray
+        The muscle excitation (EMG) to track
+    q_ref: np.ndarray
+        The state to track if 'q' is chosen in kin_data_to_track
+    kin_data_to_track: str
+        The type of kin data to track ('markers' or 'q')
+    use_residual_torque: bool
+        If residual torque are present or not in the dynamics
+    ode_solver: OdeSolver
+        The ode solver to use
+
+    Returns
+    -------
+    The OptimalControlProgram ready to solve
+    """
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -135,6 +182,7 @@ def prepare_ocp(
     x_bounds[0].max[[0, 1], :] = 2 * np.pi
 
     # Add muscle to the bounds
+    activation_min, activation_max, activation_init = 0, 1, 0.5
     x_bounds[0].concatenate(
         Bounds([activation_min] * biorbd_model.nbMuscles(), [activation_max] * biorbd_model.nbMuscles())
     )
@@ -145,9 +193,11 @@ def prepare_ocp(
     x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()) + [0] * biorbd_model.nbMuscles())
 
     # Define control path constraint
+    excitation_min, excitation_max, excitation_init = 0, 1, 0.5
     u_bounds = BoundsList()
     u_init = InitialGuessList()
     if use_residual_torque:
+        tau_min, tau_max, tau_init = -100, 100, 0
         u_bounds.add(
             [tau_min] * biorbd_model.nbGeneralizedTorque() + [excitation_min] * biorbd_model.nbMuscles(),
             [tau_max] * biorbd_model.nbGeneralizedTorque() + [excitation_max] * biorbd_model.nbMuscles(),
@@ -161,7 +211,7 @@ def prepare_ocp(
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        nb_shooting,
+        n_shooting,
         final_time,
         x_init,
         u_init,
@@ -173,6 +223,10 @@ def prepare_ocp(
 
 
 if __name__ == "__main__":
+    """
+    Generate random data, then create a tracking problem, and finally solve it and plot some relevant information
+    """
+
     # Define the problem
     biorbd_model = biorbd.Model("arm26.bioMod")
     final_time = 1.5
@@ -204,7 +258,7 @@ if __name__ == "__main__":
 
     states_sol, controls_sol = Data.get_data(ocp, sol["x"])
     q = states_sol["q"]
-    q_dot = states_sol["q_dot"]
+    qdot = states_sol["qdot"]
     activations = states_sol["muscles"]
     if use_residual_torque:
         tau = controls_sol["tau"]

@@ -11,7 +11,6 @@ import matplotlib
 matplotlib.use("Agg")
 import numpy as np
 import biorbd
-
 from bioptim import ShowResult, OptimalControlProgram
 
 
@@ -19,14 +18,14 @@ def test_plot_graphs_one_phase():
     # Load graphs_one_phase
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
     )
     graphs_one_phase = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(graphs_one_phase)
 
     ocp = graphs_one_phase.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
-        number_shooting_points=30,
+        n_shooting=30,
         final_time=2,
     )
     sol = ocp.solve()
@@ -39,7 +38,7 @@ def test_plot_merged_graphs():
     # Load graphs_one_phase
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py"
     )
     merged_graphs = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(merged_graphs)
@@ -48,17 +47,17 @@ def test_plot_merged_graphs():
     model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.5
-    nb_shooting = 9
+    n_shooting = 9
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_excitations_ref = merged_graphs.generate_data(biorbd_model, final_time, nb_shooting)
+    t, markers_ref, x_ref, muscle_excitations_ref = merged_graphs.generate_data(biorbd_model, final_time, n_shooting)
 
     biorbd_model = biorbd.Model(model_path)  # To prevent from non free variable, the model must be reloaded
     ocp = merged_graphs.prepare_ocp(
         biorbd_model,
         final_time,
-        nb_shooting,
+        n_shooting,
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
@@ -75,13 +74,13 @@ def test_plot_graphs_multi_phases():
     # Load graphs_one_phase
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/multiphase_align_markers.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/getting_started/example_multiphase.py"
     )
     graphs_multi_phases = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(graphs_multi_phases)
 
     ocp = graphs_multi_phases.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod"
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod"
     )
     sol = ocp.solve()
 
@@ -93,14 +92,14 @@ def test_add_new_plot():
     # Load graphs_one_phase
     PROJECT_FOLDER = Path(__file__).parent / ".."
     spec = importlib.util.spec_from_file_location(
-        "align_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/align_markers_with_torque_actuators.py"
+        "track_markers", str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
     )
     graphs_one_phase = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(graphs_one_phase)
 
     ocp = graphs_one_phase.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod",
-        number_shooting_points=20,
+        n_shooting=20,
         final_time=0.5,
     )
     sol = ocp.solve(solver_options={"max_iter": 1})

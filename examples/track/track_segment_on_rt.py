@@ -1,7 +1,11 @@
-import numpy as np
+"""
+This example is a trivial example where a stick must keep its coordinate system of axes aligned with the one
+from a box during the whole duration of the movement. The initial and final position of the box are dictated,
+the rest is fully optimized. It is designed to show how one can use the tracking RT function to track a
+any RT (for instance Inertial Measurement Unit [IMU]) with a body segment
+"""
 
 import biorbd
-
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -19,15 +23,29 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path="cube_with_forces.bioMod", ode_solver=OdeSolver.RK4):
-    # --- Options --- #
-    # Model path
-    biorbd_model = biorbd.Model(biorbd_model_path)
+def prepare_ocp(
+    biorbd_model_path: str, final_time: float, n_shooting: int, ode_solver: OdeSolver = OdeSolver.RK4
+) -> OptimalControlProgram:
+    """
+    Prepare the ocp
 
-    # Problem parameters
-    number_shooting_points = 30
-    final_time = 2
-    tau_min, tau_max, tau_init = -100, 100, 0
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the model
+    final_time: float
+        The time of the final node
+    n_shooting: int
+        The number of shooting points
+    ode_solver:
+        The ode solver to use
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
+    biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -39,26 +57,21 @@ def prepare_ocp(biorbd_model_path="cube_with_forces.bioMod", ode_solver=OdeSolve
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
-
-    # External forces
-    external_forces = [
-        np.repeat(
-            np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T[:, :, np.newaxis], number_shooting_points, axis=2
-        )
-    ]
+    constraints.add(ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment_idx=2, rt_idx=0)
 
     # Path constraint
+    nq = biorbd_model.nbQ()
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds[0][3:6, [0, -1]] = 0
+    x_bounds[0][2, [0, -1]] = [-1.57, 1.57]
+    x_bounds[0][nq:, [0, -1]] = 0
 
     # Initial guess
     x_init = InitialGuessList()
     x_init.add([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
 
     # Define control path constraint
+    tau_min, tau_max, tau_init = -100, 100, 0
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
 
@@ -70,21 +83,28 @@ def prepare_ocp(biorbd_model_path="cube_with_forces.bioMod", ode_solver=OdeSolve
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         final_time,
         x_init,
         u_init,
         x_bounds,
         u_bounds,
-        objective_functions=objective_functions,
-        constraints=constraints,
-        external_forces=external_forces,
+        objective_functions,
+        constraints,
         ode_solver=ode_solver,
     )
 
 
 if __name__ == "__main__":
-    ocp = prepare_ocp()
+    """
+    Prepares, solves and animates the program
+    """
+
+    ocp = prepare_ocp(
+        biorbd_model_path="cube_and_line.bioMod",
+        n_shooting=30,
+        final_time=1,
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

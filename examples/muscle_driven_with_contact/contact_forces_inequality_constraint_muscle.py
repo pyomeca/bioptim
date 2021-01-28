@@ -1,7 +1,12 @@
+"""
+# TODO: Remove all the examples/muscle_driven_with_contact and make sure everything is properly tested
+All the examples in muscle_driven_with_contact are merely to show some dynamics and prepare some OCP for the tests.
+It is not really relevant and will be removed when unitary tests for the dynamics will be implemented
+"""
+
 from matplotlib import pyplot as plt
 import numpy as np
 import biorbd
-
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -12,7 +17,6 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     BidirectionalMapping,
-    Mapping,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -21,13 +25,13 @@ from bioptim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_bound):
+def prepare_ocp(model_path, phase_time, n_shooting, min_bound, max_bound):
     # --- Options --- #
     # Model path
     biorbd_model = biorbd.Model(model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
-    tau_mapping = BidirectionalMapping(Mapping([-1, -1, -1, 0]), Mapping([3]))
+    tau_mapping = BidirectionalMapping([None, None, None, 0], [3])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -55,36 +59,34 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, min_bound, max_b
     )
 
     # Path constraint
-    nb_q = biorbd_model.nbQ()
-    nb_qdot = nb_q
+    n_q = biorbd_model.nbQ()
+    n_qdot = n_q
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add(pose_at_first_node + [0] * nb_qdot)
+    x_init.add(pose_at_first_node + [0] * n_qdot)
 
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [
-            [tau_min] * tau_mapping.reduce.len + [activation_min] * biorbd_model.nbMuscleTotal(),
-            [tau_max] * tau_mapping.reduce.len + [activation_max] * biorbd_model.nbMuscleTotal(),
-        ]
+        [tau_min] * tau_mapping.to_first.len + [activation_min] * biorbd_model.nbMuscleTotal(),
+        [tau_max] * tau_mapping.to_first.len + [activation_max] * biorbd_model.nbMuscleTotal(),
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * tau_mapping.reduce.len + [activation_init] * biorbd_model.nbMuscleTotal())
+    u_init.add([tau_init] * tau_mapping.to_first.len + [activation_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
 
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
-        number_shooting_points,
+        n_shooting,
         phase_time,
         x_init,
         u_init,
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     ocp = prepare_ocp(
         model_path=model_path,
         phase_time=t,
-        number_shooting_points=ns,
+        n_shooting=ns,
         min_bound=50,
         max_bound=np.inf,
     )
@@ -115,8 +117,8 @@ if __name__ == "__main__":
     nlp.model = biorbd.Model(model_path)
 
     states, controls = Data.get_data(ocp, sol["x"])
-    q, q_dot, tau, mus = states["q"], states["q_dot"], controls["tau"], controls["muscles"]
-    x = np.concatenate((q, q_dot))
+    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
+    x = np.concatenate((q, qdot))
     u = np.concatenate((tau, mus))
     contact_forces = np.array(nlp.contact_forces_func(x[:, :-1], u[:, :-1], []))
 

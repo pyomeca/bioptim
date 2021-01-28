@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import biorbd
-
 from bioptim import (
     BoundsList,
     Bounds,
@@ -38,7 +37,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     ode_solver = OdeSolver.RK4
 
     # --- Options --- #
-    nb_phases = len(ns)
+    n_phases = len(ns)
 
     # Model path
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path))
@@ -60,10 +59,12 @@ def prepare_ocp(phase_time_constraint, use_parameter):
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0)
-    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=0)
-    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=1, phase=1)
-    constraints.add(ConstraintFcn.ALIGN_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=2)
+    constraints.add(
+        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0
+    )
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=0)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=1, phase=1)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=2)
 
     constraints.add(
         ConstraintFcn.TIME_CONSTRAINT,
@@ -132,10 +133,10 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     # ------------- #
 
     return OptimalControlProgram(
-        biorbd_model[:nb_phases],
+        biorbd_model[:n_phases],
         dynamics,
         ns,
-        final_time[:nb_phases],
+        final_time[:n_phases],
         x_init,
         u_init,
         x_bounds,
