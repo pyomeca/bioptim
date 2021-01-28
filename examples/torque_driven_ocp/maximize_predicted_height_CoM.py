@@ -97,7 +97,10 @@ def prepare_ocp(
             max_bound=np.array([100, 100, 100]),
         )
         constraints.add(
-            ConstraintFcn.TRACK_COM_POSITION, node=Node.ALL, min_bound=np.array([-1, -1, -1]), max_bound=np.array([1, 1, 1])
+            ConstraintFcn.TRACK_COM_POSITION,
+            node=Node.ALL,
+            min_bound=np.array([-1, -1, -1]),
+            max_bound=np.array([1, 1, 1]),
         )
 
     # Path constraint
