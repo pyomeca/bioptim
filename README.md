@@ -1,7 +1,7 @@
 # `bioptim`
 `Bioptim` is an optimal control program (OCP) framework for biomechanics. 
-It is based on the efficient [biorbd](https://github.com/pyomeca/biorbd) biomechanics library and befits from the powerful algorithmic diff provided by [CasADi](https://web.casadi.org/).
-It interfaces the robust [Ipopt](https://github.com/coin-or/Ipopt) and fast [ACADOS](https://github.com/acados/acados) solvers to suit all your needs for an OCP in biomechanics. 
+It is based on the efficient [biorbd](https://github.com/pyomeca/biorbd) biomechanics library and benefits from the powerful algorithmic diff provided by [CasADi](https://web.casadi.org/).
+It interfaces the robust [Ipopt](https://github.com/coin-or/Ipopt) and the fast [ACADOS](https://github.com/acados/acados) solvers to suit all your needs for solving OCP in biomechanics. 
 
 ## Status
 
@@ -14,7 +14,7 @@ It interfaces the robust [Ipopt](https://github.com/coin-or/Ipopt) and fast [ACA
 # How to install 
 The preferred way to install for the lay user is using anaconda. 
 Another way, more designed for the core programmers is from the sources. 
-When it is theoretically possible to use `bioptim` from Windows, it is highly discouraged since it will require to manually compile all the dependencies. 
+While it is theoretically possible to use `bioptim` from Windows, it is highly discouraged since it will require to manually compile all the dependencies. 
 A great alternative for the Windows users is *Ubuntu on Windows*.
 
 ## Installing from Anaconda (For Linux and Mac)
@@ -36,24 +36,24 @@ The current status of `bioptim` on conda-forge is
 
 
 ## Installing from the sources (For Windows, Linux and Mac)
-Installing from the source is basically as easy as installing from Anaconda, with the difference that you will be required to download and install the dependencies by hand (see section below). 
+Installing from the sources is basically as easy as installing from Anaconda, with the difference that you will be required to download and install the dependencies by hand (see section below). 
 
-Once you have downloaded `bioptim`, you navigate to the root folder and (assuming your conda environment is loaded if needed), you can type the following command:
+Once you have downloaded `bioptim`, navigate to the root folder and (assuming your conda environment is loaded if needed), you can type the following command:
 ```bash 
 python setup.py install
 ```
 Assuming everything went well, that is it! 
 You can already enjoy bioptiming!
 
-Please note that Windows is shown here as possible OS. 
-As stated before, when this is theoretically possible, it will require that you compile `CasADi`, `RBDL` and `biorbd` by hand since the Anaconda packages are not built for Windows.
+Please note that Windows is shown here as a possible OS. 
+As stated before, while this is theoretically possible, it will require that you compile `CasADi`, `RBDL` and `biorbd` by hand since the Anaconda packages are not built for Windows.
 This is therefore highly discouraged. 
 
 ## Dependencies
 `bioptim` relies on several libraries. 
-The most obvious one is `biorbd` suite (including indeed `biorbd` and `bioviz`), but some extra more are required.
+The most obvious one is the `biorbd` suite (including indeed `biorbd` and `bioviz`), but some extra more are required.
 Due to the amount of different dependencies, it would be tedious to show how to install them all here. 
-The user is therefore invited to read the relevant documentation. 
+The user is therefore invited to read the relevant documentations. 
 
 Here is a list of all direct dependencies (meaning that some dependencies may require other libraries themselves):
 - [Python](https://www.python.org/)
@@ -90,12 +90,12 @@ Please note that depending on your computer architecture, ACADOS may or may not 
 
 
 # Getting started
-The easiest way to lear `bioptim` is to dive into.
+The easiest way to learn `bioptim` is to dive into it.
 So let's do that and build our first optimal control program together.
-Please note that this tutorial is design to recreate the `examples/getting_started/pendulum.py` file where a pendulum is asked to start in a downward position and to end, balanced, in an upward position while only being able to actively move sideways.
+Please note that this tutorial is designed to recreate the `examples/getting_started/pendulum.py` file where a pendulum is asked to start in a downward position and to end, balanced, in an upward position while only being able to actively move sideways.
 
 ## The import
-We won't spend time explaining the import, since every one of them will be explained in details later, and is pretty straightforward anyway.
+We won't spend time explaining the import, since every one of them will be explained in details later, and that it is pretty straightforward anyway.
 ```python
 import biorbd
 from bioptim import (
@@ -122,16 +122,16 @@ In brief, the pendulum consists of two degrees of freedom (sideways movement and
 
 The dynamics of the pendulum, as for a lot of biomechanics one as well, is to drive it by the generalized forces. 
 That is forces and moments directly applied to the degrees of freedom as if virtual motors were to power them.
-This dynamic is called in `bioptim` torque driven. 
+In `bioptim`, this dynamic is called torque driven. 
 In a torque driven dynamics, the states are the positions (also called generalized coordinates, *q*) and the velocities (also called the generalized velocities, *qdot*) and the controls are the joint torques (also called generalized forces, *tau*). 
 Let's define such a dynamics:
 ```python
 dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 ```
 
-The pendulum is required to start in a downward position (0 rad) and finish in upward position (3.14 rad) with no velocity at start and end nodes.
+The pendulum is required to start in a downward position (0 rad) and to finish in an upward position (3.14 rad) with no velocity at start and end nodes.
 To define that, it would be nice to first define boundary constraints on the position (*q*) and velocities (*qdot*) that match those in the bioMod file and to apply them at the very beginning, the very end and all the intermediate nodes as well.
-QAndQDotBounds waits for a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final nodes, respectively.
+QAndQDotBounds waits for a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final node, respectively.
 How convenient!
 ```python
 x_bounds = QAndQDotBounds(biorbd_model)
@@ -174,8 +174,8 @@ Please note that `x_init` is twice the size of `u_init` because it contains the 
 
 We now have everything to create the ocp!
 For that we have to decide how much time the pendulum has to get up there (`phase_time`) and how many shooting point are defined for the multishoot (`n_shooting`).
-Thereafter, you just have to send everything to the `OptimalControlProgram` class and let `bioptim` prepares everything for you.
-For simplicity's sake, I copy all the piece of code previously visited in the building the ocp section here:
+Thereafter, you just have to send everything to the `OptimalControlProgram` class and let `bioptim` prepare everything for you.
+For simplicity's sake, I copy all the piece of code previously visited in the building of the ocp section here:
 ```python
 ocp = OptimalControlProgram(
         biorbd_model,
@@ -196,18 +196,18 @@ To solve the ocp, you simply have to call the `solve()` method of the `ocp` clas
 ```python
 sol = ocp.solve(show_online_optim=True)
 ```
-If you feel fancy, you can even activate the only optimization graphs!
-However, for such an easy problem, `Ipopt` won't leave you the time to appreciate the update realtime updates of the graph...
+If you feel fancy, you can even activate the online optimization graphs!
+However, for such an easy problem, `Ipopt` won't leave you the time to appreciate the realtime updates of the graph...
 That's it!
 
 ## Show the results
 If you want to have a look at the animated data, `bioptim` has an interface to `bioviz` which is designed to visualize bioMod files.
-For that, simple call the `animate()` method of a `ShowData` class as such:
+For that, simply call the `animate()` method of a `ShowData` class as follows:
 ```python
 ShowResult(ocp, sol).animate()
 ```
 
-If you did not fancy the only graphs, but would enjoy them anyway, you can call the same class with the method `graphs()`:
+If you did not fancy the online graphs, but would enjoy them anyway, you can call the same class with the method `graphs()`:
 ```python
 ShowResult(ocp, sol).graphs()
 ```
@@ -328,10 +328,10 @@ from bioptim import ClassName
 
 ## The OCP
 An optimal control program is an optimization that uses control variables in order to drive some state variables.
-There are mainly two different type of ocp, which is the `direct collocation` and the `direct multiple shooting`.
+There are mainly two different types of ocp, which is the `direct collocation` and the `direct multiple shooting`.
 `Bioptim` is based on the latter. 
-To summarize, it defines a large optimization problem by discrediting the controls and the state variables into a predetermined number of intervals, the beginning of which called the shooting points.
-By defining strict constraints between the end of an interval and the beginning of the next, it can ensure a proper dynamics of the system, while have good insight to solve the problem using gradient decending algorithms.
+To summarize, it defines a large optimization problem by discretizing the control and the state variables into a predetermined number of intervals, the beginning of which are called the shooting points.
+By defining strict constraints between the end of an interval and the beginning of the next, it can ensure a proper dynamics of the system, ???->while have good insight to solve the problem using gradient decending algorithms.
 
 ### Class: OptimalControlProgram
 This is the main class that holds an ocp. 
@@ -423,14 +423,14 @@ ocp.update_parameters()
 ocp.update_bounds()
 ocp.update_initial_guess()
 ```
-These allows to modify the ocp after being defined. 
+These allow to modify the ocp after being defined. 
 It is particularly useful when solving the ocp for a first time, and then adjusting some parameters and reoptimizing afterwards.
 
 Moreover, the method 
 ```python
 solution = ocp.solve(Solver, solver_options:{})
 ```
-is called to actually solves the ocp. 
+is called to actually solve the ocp. 
 The `Solver` parameter can be used to select the nonlinear solver to solve the ocp, Ipopt being the default choice.
 Note that options can be passed to the solver via the `solver_options` parameter.
 One can refer to the documentation of their respective chosen solver to know which options exist.
