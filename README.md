@@ -431,6 +431,7 @@ Moreover, the method
 solution = ocp.solve(Solver, solver_options:{})
 ```
 is called to actually solves the ocp. 
+The `Solver` parameter can be used to select the nonlinear solver to solve the ocp, Ipopt being the default choice.
 Note that options can be passed to the solver via the `solver_options` parameter.
 One can refer to the documentation of their respective chosen solver to know which options exist.
 The `show_online_optim` parameter can be set to `True` so the graphs nicely update during the optimization.
@@ -449,10 +450,23 @@ ocp.save_get_data(solution, file_path)
 which will save the results in a numpy array format. 
 
 Finally, the `add_plot(name, update_function)` method can be used to create new dynamics plots.
+The name is simply the name of the figure.
+If one with the same already exists, then the axes are merged.
+The update_function is a function handler with signature: `update_function(states: np.ndarray, constrols: np.ndarray: parameters: np.ndarray) -> np.ndarray`.
+It is expected to return a np.ndarray((n, 1)), where `n` is the number of elements to plot. 
+The `axes_idx` parameter can be added to parse the data in a more exotic manner.
+For instance, on a three axes figure, if one wanted to plot the first value on the third axes and the second value on the first axes and nothing on the second, the `axes_idx=[2, 0]` would do the trick.
 The interested user can have a look at the `examples/getting_started/custom_plotting.py` example.
 
 ### Class: NonLinearProgram
+The NonLinearProgram is by essence the phase of an ocp. 
+The user is expected not to change anything from this class, but can retrieve useful information from it.
 
+One of the main use of nlp is to get a reference to the biorbd_model for the current phase: `nlp.model`.
+Another important value stored in nlp is the shape of the states and controls: `nlp.shape`, which is a dictionary where the keys are the names of the elements (for instance, *q* for the generalized coordinates)
+
+It would be tedious, and probably not much useful, to list all the elements of nlp here.   
+The interested user is invited to have a look at the docstrings for this particular class to get a detailed overview of it.
 
 ## The dynamics
 By essence, an optimal control program (ocp) links two types of variables: the states (x) and the controls (u). 
@@ -519,8 +533,8 @@ dyn_list = DynamicsList()
 dyn_list.add(DynamicsFcn)
 ```
 
-### Enum: DynamicsFcn
-The `DynamicsFcn` enum is the configuration and declaration of all the already available dynamics in `bioptim`. 
+### Class: DynamicsFcn
+The `DynamicsFcn` class is the configuration and declaration of all the already available dynamics in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 
 Please note that one can change the dynamic function associated to any of the configuration by providing a custom dynamics_function. 
@@ -722,7 +736,8 @@ The `target` is a value subtracted to the constraint value.
 It is useful to define tracking problems.
 The dimensions of the target must be of [index, node]
 
-The `ConstraintFcn` enum provides a list of some predefined constraint functions. 
+The `ConstraintFcn` class provides a list of some predefined constraint functions. 
+Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 It is possible however to define a custom constraint by sending a function handler in place of the `ConstraintFcn`.
 The signature of this custom function is: `custom_function(pn: PenaltyNodes, **extra_params)`
 The PenaltyNodes contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Constraint` constructor. 
@@ -743,7 +758,7 @@ constraint_list.add(constraint)
 ```
 
 ### Class: ConstraintFcn
-The `ConstraintFcn` enum is the declaration of all the already available constraints in `bioptim`. 
+The `ConstraintFcn` class is the declaration of all the already available constraints in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 
 #### TRACK_STATE
@@ -860,7 +875,8 @@ The dimensions of the target must be of [index, node].
 Finally, `weight` is the weighting that should be applied to the objective. 
 The higher the weight is, the more important the objective is compared to the other objective functions.
 
-The `ObjectiveFcn` enum provides a list of some predefined objective functions. 
+The `ObjectiveFcn` class provides a list of some predefined objective functions. 
+Since `ObjectiveFcn.Lagrange` and `ObjectiveFcn.Mayer` are Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 It is possible however to define a custom objective function by sending a function handler in place of the `ObjectiveFcn`.
 If one do so, an additional parameter must be sent to the `Objective` constructor which is `custom_type` and must be either `ObjectiveFcn.Lagrange` or `ObjectiveFcn.Mayer`.
 The signature of the custom function is: `custom_function(pn: PenaltyNodes, **extra_params)`
@@ -1044,7 +1060,7 @@ Anyone who wants to define phase transitions should be at least familiar with th
 The `phase_pre_idx` is the index of the phase before the transition.
 
 ### Class: PhaseTransitionFcn
-The `PhaseTransitionFcn` enum is the already available phase transitions in `bioptim`. 
+The `PhaseTransitionFcn` class is the already available phase transitions in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 
 #### CONTINUOUS
@@ -1063,56 +1079,153 @@ Apply the CONTINUOUS phase transition to the end of the last phase and the begin
 CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
 You can have a look at the PhaseTransitionList section for more information about how to define custom transition function.
 
+## The results
+`Bioptim` offers different ways to visualize the results from an optimisation. 
+This section explores the different methods that can be called to have a look at your data.
 
+### Class: Data
+The `Data` class, via the static method `Data.get_data(ocp, solution)` class the results vector in a more comprehensive way.
+Since the data returned by get_data are of the form of numpy arrays, it is the preferred way to transfer the data to another software. 
+It is what is stored when using the `OptimalControlProgram.save_get_data()` method.
+So let's explore this method.
 
+Firstly, by default, it returns two dictionaries (or tho list of dictionaries if there is more than one phase), one for the states and one for the controls. 
+If parameters are also optimized, one can set the parameter `get_parameters` to true, to get them.
+If the parameter `concatenate` is set to true, then all the phases are concatenated, and the method therefore does not return a list but directly the dictionaries. 
+
+The keys of the returned dictionaries correspond to the name of the variables. 
+For instance, if generalized coordinates (*q*) are states, then the state dictionary has *q* as key.
+The data for this particular variable are then store in a numpy.ndarray matrix of n_elements X n_nodes. 
+
+The number of returned nodes (n_nodes) can be changed by setting the parameter `interpolate_n_frames` to the required number of nodes.
+If it does not correspond to the number of shooting points of the ocp, then an interpolation is performed.
+
+Moreover, for the states, it is possible to get the integrated the values. 
+The number of nodes returned will depend on the number of element of the `n_integration_steps` of the ocp.
+
+### Class: ShowResult
+ShowResult is the interface class towards graphs and `bioviz`.
+It is constructed from an ocp and a solution (`sr = ShowResult(ocp, solution)`) and consists of two methods.
+
+The first one is `sr.graphs()`. 
+This method will spawn all the graphs associated with the ocp. 
+This is the same method that is called by the online plotter. 
+In order to add and modify plots, one should use the `OptimalControlProgram.add_plot()` method.
+
+The second one is `sr.animate()`.
+This method summons a `bioviz` figure and animates the model.
+Please note that despite `bioviz` best efforts, plotting a lot of meshing vertices in MX format is slow.
+So even though it is possible, it is suggested to animate without the bone meshing (by passing the parameter `show_meshes=False`)
+To do so, we strongly suggest to save the data and load them in an environment where `biotim` is compiled with the Eigen backend, which will be much more performant. 
+
+### Class: ObjectivePrinter
+The ObjectivePrinter class is just a fast and easy way to dump all the individual values of the objective functions to the console.
+In the future, this will be done in a graph. 
+
+### Class: Simulate
+Finally, one may want to resimulate the results, that is integrating the states from the controls.
+Simulate is the preferred interface for this. 
+
+It is possible to simulate in two ways, namely single shooting and multiple shooting, by setting `single_shoot` to true of false, respectively.
+The difference is that in multiple shooting, the integration is performed up to the next shooting poing.
+Then, the states are reset to match the solution.
+In single shooting however, it is not reset, meaning the integration is performed in one go.
+Single shooting can be used to valide the quality of integration. 
+For example, if the single shooting diverges at some point, when compared to the multiple shooting, you may want to increase the number of integration steps.
+
+## The extra stuff and the Enum
+It was hard to categorize the remaining classes and enum. 
+So I present them in bulk in this extra stuff section
+
+### The mappings
+The mapping are a way to link things stored in a list.
+For instance, lets consider these vectors: a = [0, 0, 0, 10, -9] and b = [10, 9]. 
+Even though they are quite different, they share some common values. 
+It it therefore possible to retrieve a from b, and conversely.
+
+This is what the Mapping class does, for the rows of numpy arrays.
+So if one was to declare the following Mapping: `b_from_a = Mapping([3, -4])`.
+Then, assuming a is a numpy.ndarray column vector (`a = np.array([a]).T`), it would be possible to summon b from a like so: 
+```python
+b = b_from_a.map(a)
+```
+Note that the `-4` opposed the forth value.
+Conversely, using the `a_from_b = Mapping([None, None, None, 0, -1])` mapping, and assuming b is a numpy.ndarray column vector (`b = np.array([b]).T`), it would be possible to summon b from a like so:
+```python
+a = a_from_b.map(b)
+```
+Note the `None` are replaced by zeros.
+
+The BidirectionalMapping is no more no less than a list of two mappings that link two matrices both ways: `BidirectionalMapping(a_to_b, b_to_a)`
 
 ### Enum: Node
+The node targets some specific nodes of the ocp or of a phase
+
+The accepted values are:
+- START: The first node
+- MID: The middle node
+- INTERMEDIATES: All the nodes but the first and the last one
+- END: The last node
+- ALL: All the nodes
+
 ### Enum: OdeSolver
+The ordinary differential equation (ode) solver to solve the dynamics of the system. 
+The RK4 and RK8 are the one with the most options available.
+IRK is think to be a bit more robust, but may be solver too. 
+CVODES is the one with the least options, since it is not in-house implemented. 
+
+The accepted values are:
+- RK4: Runge-Kutta of the 4th order
+- RK8: Runge-Kutta of the 8th order
+- IRK: Implicit runge-Kutta
+- CVODES: cvodes solver
+
 ### Enum: Solver
+The nonlinear solver to solve the whole ocp. 
+Each solver has some requirements (for instance, ACADOS necessitates that the graph is SX). 
+Feel free to test each of them to see which one fits the best your needs.
+Ipopt is a robust solver, that may be a bit slow though.
+ACADOS on the other is a very fast solver, but is much more sensitive to the relative weightings of the objective functions and on the initial guess.
+It is perfectly designed for MHE and NMPC problems.
+
+The accepted values are:
+- IPOPT
+- ACADOS
+
 ### Enum: ControlType
+The type the controls are. 
+Typically, the controls for an optimal control program are constant over the shooting intervals. 
+However, one may wants to get non constant values.
+`Bioptim` has therefore implemented some other types of controls.
+
+The accepted values are:
+- CONSTANT: The controls remain constant over the interval. The number of control is therefore equals to the number of shooting point
+- LINEAR_CONTINUOUS: The controls are linearly interpolated over the interval. Since they are continuous, the end of an interval corresponds to the beginning of the next. There is therefore number of shooting point + 1 controls.
+
+### Enum: PlotType
+When adding a plot, it is possible to change the aspect of it.
+
+The accepted values are:
+PLOT: Normal plot that links the points.
+INTEGRATED: Plot that links the points within an interval, but is discrete between the end of an interval and the beginning of the next one.
+STEP: Step plot, that is that is it constant over an interval
 
 ### Enum: InterpolationType
-The type of interpolation something is. 
-- CONSTANT needs only one column, since it does not change over time
-- CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT needs three columns. The first and last columns correspond to the first and last node, while the remaining intermediate nodes are treated as CONSTANT from the middle column
-- LINEAR, needs two columns. It corresponds to the first and last node and is linearly interpolated in between.
-- EACH_FRAME, needs as many as nodes. It is not an interpolation per se, but it allows the user to specify all the nodes individually.
-- SPLINE, needs five columns. It performs a cubic spline to interpolate
+The type of interpolation something is.
+It is mostly used for the duration of a phase.
+Therefore, first and last nodes refer to the first and last nodes of a phase
+
+The accepted values are:
+- CONSTANT: Requires only one column, all the values are equation during the whole period of time.
+- CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT: Requires three columns. The first and last columns correspond to the first and last node, while the middle corresponds to all the other nodes.
+- LINEAR: Requires two columns. It corresponds to the first and last node. The middle nodes are linearly interpolated to get their values.
+- EACH_FRAME: Requires as many columns as there are nodes. It is not an interpolation per se, but it allows the user to specify all the nodes individually.
+- SPLINE: Requires five columns. It performs a cubic spline to interpolate between the nodes.
 - CUSTOM, user defined interpolation function
 
 
-
-## The Results
-
-### Class: Data
-
-### Class: ShowResult
-TODO + It is expected to slow down the optimization by about 15%
-
-### Class: CustomPlot
-
-### Class: ObjectivePrinter
-
-### Class: Simulate
-
-
-## The mappings 
-### Enum: BidirectionalMapping
-### Enum: Mapping
-
-### Enum: PlotType
-
-
-
-
-
-
-
-
 # Citing
-
 If you use `bioptim`, we would be grateful if you could cite it as follows:
-
 @misc{Michaud2020bioptim,
     author = {Michaud, Benjamin and Bailly, Francois and Begon, Mickael et al.},
     title = {bioptim, a Python interface for Musculoskeletal Optimal Control in Biomechanics},

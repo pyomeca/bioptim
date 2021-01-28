@@ -32,8 +32,6 @@ Simulate
 # --- Managing the results --- #
 ShowResult
     The main interface to bioptim GUI
-CustomPlot
-    Interface to create/add plots of the simulation
 Data
     Data manipulation and storage
 ObjectivePrinter
@@ -157,7 +155,7 @@ from .misc.__version__ import __version__
 from .dynamics.problem import Problem
 from .dynamics.dynamics_type import DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
-from .gui.plot import CustomPlot, ShowResult
+from .gui.plot import ShowResult
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ObjectivePrinter
