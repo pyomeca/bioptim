@@ -1097,6 +1097,7 @@ TODO + It is expected to slow down the optimization by about 15%
 
 
 ## The mappings 
+### Enum: BidirectionalMapping
 ### Enum: Mapping
 
 ### Enum: PlotType
