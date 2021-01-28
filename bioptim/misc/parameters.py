@@ -1,6 +1,6 @@
 from typing import Callable, Union, Any
 
-from casadi import vertcat
+from casadi import vertcat, MX, SX
 
 from .enums import Node
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
@@ -233,7 +233,7 @@ class Parameters:
         function: Union[Callable, None],
         bounds: Union[Bounds, BoundsList],
         initial_guess: Union[InitialGuess, InitialGuessList],
-        cx: Callable = None,
+        cx: Union[MX, SX] = None,
         **extra_params
     ) -> Callable:
         """

@@ -26,7 +26,7 @@ class Constraint(PenaltyOption):
 
     def __init__(
         self,
-        constraint,
+        constraint: Any,
         min_bound: Union[np.ndarray, float] = None,
         max_bound: Union[np.ndarray, float] = None,
         phase: int = 0,
@@ -168,8 +168,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             static_friction_coefficient: float,
         ):
             """
-            Add a constraint of static friction at contact points constraining for small tangential forces. This constraint
-            assumes that the normal forces is positive
+            Add a constraint of static friction at contact points constraining for small tangential forces.
+            This constraint assumes that the normal forces is positive
 
             Parameters
             ----------

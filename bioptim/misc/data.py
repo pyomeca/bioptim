@@ -199,7 +199,7 @@ class Data:
         integrate: bool = False,
         interpolate_n_frames: int = -1,
         concatenate: bool = True,
-    ) -> dict:
+    ) -> Union[dict, list]:
         """
         Comprehensively parse the data from a solution
 
