@@ -481,7 +481,7 @@ The following section investigate how to instruct `bioptim` of the dynamic equat
 ### Class: Dynamics
 This class is the main class to define a dynamics. 
 It therefore contains all the information necessary to configure (i.e., determining which variables are states or controls) and perform the dynamics. 
-??->It is what is expected by the `OptimalControlProgram` for its `dynamics_type` parameter. 
+When constructing an `OptimalControlProgram()`, Dynamics is the expected class for the `dynamics` parameter. 
 
 The user can minimally define a Dynamics as follows: `dyn = Dynamics(DynamicsFcn)`.
 The `DynamicsFcn` are the one presented in the corresponding section below. 
@@ -511,7 +511,7 @@ In this function the user is expected to call the relevant `Problem` class metho
 - `configure_tau(nlp, as_states: bool, as_controls: bool)`
 - `configure_muscles(nlp, as_states: bool, as_controls: bool)`
 where `as_states` add the variable to the states vector and `as_controls` to the controls vector.
-OMG!!-->Please note that this is not necessary mutually exclusive.
+Please note that this is not necessary mutually exclusive.
 Finally, the user is expected to configure the dynamic by calling `Problem.configure_dynamics_function(ocp, nlp, custom_dynamics)`
 
 Defining the dynamic function must be done when one provides a custom configuration, but can also be defined by providing a function handler to the `dynamic_function` parameter for `Dynamics`. 
@@ -712,7 +712,7 @@ The constraints come in two format: equality and inequality.
 
 ### Class: Constraint
 The Constraint provides a class that prepares a constraint, so it can be added to the constraint set by `bioptim`.
-In that sense, it is what is expected by the `OptimalControlProgram` for its `constraints` parameter. 
+When constructing an `OptimalControlProgram()`, Constraint is the expected class for the `constraint` parameter. 
 It is also possible to later change the constraint by calling the method `update_constraints(the_constraint)` of the `OptimalControlProgram`
 
 The Constraint class is the main class to define constraints.
@@ -793,7 +793,7 @@ Tracks the muscles part of the control variables towards a target
 Tracks all the control variables towards a target
 
 #### TRACK_CONTACT_FORCES
-Track sthe non-acceleration point reaction forces towards a target
+Tracks the non-acceleration point reaction forces towards a target
 
 #### TRACK_SEGMENT_WITH_CUSTOM_RT
 Links a segment with an RT (for instance, an Inertial Measurement Unit). 
@@ -848,7 +848,7 @@ The Mayer objective functions are values at a single node, usually the Node.LAST
 
 ### Class: Objective
 The Objective provides a class that prepares an objective function, so it can be added to the objective set by `bioptim`.
-In that sense, it is what is expected by the `OptimalControlProgram` for its `objective_functions` parameter. 
+When constructing an `OptimalControlProgram()`, Objective is the expected class for the `objective_functions` parameter. 
 It is also possible to later change the objective functions by calling the method `update_objectives(the_objective_function)` of the `OptimalControlProgram`
 
 The Objective class is the main class to define objectives.
@@ -901,7 +901,7 @@ objective_list.add(objective)
 
 #### MINIMIZE_TIME (Lagrange and Mayer)
 Adds the time to the optimization variable set. 
-It will try to minimize the time towards ???->-infinity or towards a target.
+It will try to minimize the time towards minus infinity or towards a target.
 If the Mayer term is used, `min_bound` and `max_bound` can also be defined.
 
 #### MINIMIZE_STATE (Lagrange and Mayer)
@@ -1003,7 +1003,7 @@ Therefore, all the parameters are custom made.
 
 ### Class: ParameterList
 The ParameterList provides a class that prepares the parameters, so it can be added to the parameter set to optimize by `bioptim`.
-In that sense, it is what is expected by the `OptimalControlProgram` for its `parameters` parameter. 
+When constructing an `OptimalControlProgram()`, ParameterList is the expected class for the `parameters` parameter. 
 It is also possible to later change the parameters by calling the method `update_parameters(the_parameter_list)` of the `OptimalControlProgram`
 
 The ParameterList class is the main class to define parameters.
@@ -1017,7 +1017,7 @@ ParameterList.add(parameter_name: str, function: Callable, initial_guess: Initia
 The `parameter_name` is the name of the parameter. 
 This is how it will be referred to in the output data as well.
 The `function` is the function that modifies the biorbd model, it will be called just prior to applying the dynamics
-The signature of the custom function is: `custom_function(biorbd.Model, MX, **extra_params)`, where biorbd.Model is the model to apply the parameter to, the MX is the value the parameter will take, and the `**extra_parameters` are those sent to the add() method.
+The signature of the custom function is: `custom_function(biorbd.Model, MX, **extra_parameters)`, where biorbd.Model is the model to apply the parameter to, the MX is the value the parameter will take, and the `**extra_parameters` are those sent to the add() method.
 This function is expected to modify the biorbd_model, and not return anything.
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom parameters should be at least familiar with this type beforehand.
@@ -1040,7 +1040,7 @@ Due to some limitations created by the use of MX variables, some things can be d
 
 ### Class: PhaseTransitionList
 The PhaseTransitionList provide a class that prepares the phase transitions.
-In that sense, it is what is expected by the `OptimalControlProgram` for its `phase_transitions` parameter. 
+When constructing an `OptimalControlProgram()`, PhaseTransitionList is the expected class for the `phase_transitions` parameter. 
 
 The PhaseTransitionList class is the main class to define parameters.
 Please note that unlike other lists, `PhaseTransition` is not accessible since phase transition don't make sense for single phase ocp.
@@ -1210,8 +1210,8 @@ INTEGRATED: Plot that links the points within an interval, but is discrete betwe
 STEP: Step plot, constant over an interval
 
 ### Enum: InterpolationType
-The type of interpolation something is.<-???
-It is mostly used for the duration of a phase.
+How a time dependent variable is interpolated.
+It is mostly used for phases time span.
 Therefore, first and last nodes refer to the first and last nodes of a phase
 
 The accepted values are:
