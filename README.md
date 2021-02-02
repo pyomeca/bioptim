@@ -15,7 +15,7 @@ It interfaces the robust [Ipopt](https://github.com/coin-or/Ipopt) and fast [ACA
 The preferred way to install for the lay user is using anaconda. 
 Another way, more designed for the core programmers is from the sources. 
 When it is theoretically possible to use `bioptim` from Windows, it is highly discouraged since it will require to manually compile all the dependencies. 
-A great alternative for the Windows users is *Ubuntu on Windows*.
+A great alternative for the Windows users is *Ubuntu* on *Windows supporting Linux*.
 
 ## Installing from Anaconda (For Linux and Mac)
 The easiest way to install `bioptim` is to download the binaries from [Anaconda](https://anaconda.org/) repositories. 
