@@ -931,6 +931,11 @@ class PenaltyFunctionAbstract:
         penalty: PenaltyOption
             The actual penalty to declare
         """
+        if not penalty.name:
+            if penalty.type.name == "CUSTOM":
+                penalty.name = penalty.custom_function.__name__
+            else:
+                penalty.name = penalty.type.name
 
         t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
         pn = PenaltyNodes(ocp, nlp, t, x, u, nlp.p)

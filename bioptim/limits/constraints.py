@@ -312,8 +312,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             A reference to the ocp
         """
         # Dynamics must be sound within phases
-        penalty = Constraint([])
         for i, nlp in enumerate(ocp.nlp):
+            penalty = Constraint([])
+            penalty.name = f"CONTINUITY {i}"
             penalty.list_index = -1
             ConstraintFunction.clear_penalty(ocp, None, penalty)
             # Loop over shooting nodes or use parallelization
@@ -358,6 +359,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         # Dynamics must be respected between phases
         penalty = OptionGeneric()
+        penalty.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_pre_idx + 1}"
         penalty.min_bound = 0
         penalty.max_bound = 0
         penalty.list_index = -1
@@ -398,7 +400,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
 
-        g = {"constraint": penalty, "val": val, "bounds": g_bounds}
+        g = {"constraint": penalty, "val": val, "bounds": g_bounds}  # TODO Target should always be available...
         if nlp:
             nlp.g[penalty.list_index].append(g)
         else:

@@ -1,6 +1,8 @@
 """
 Test for file IO
 """
+import io
+import sys
 import os
 import pytest
 import importlib.util
@@ -131,3 +133,51 @@ def test_add_new_plot():
 
     # Delete the saved file
     os.remove(save_name)
+
+
+def test_console_objective_functions():
+    # Load graphs_one_phase
+    PROJECT_FOLDER = Path(__file__).parent / ".."
+    spec = importlib.util.spec_from_file_location(
+        "track_markers", str(PROJECT_FOLDER) + "/examples/getting_started/example_multiphase.py"
+    )
+    graphs_multi_phases = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(graphs_multi_phases)
+
+    ocp = graphs_multi_phases.prepare_ocp(
+        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod"
+    )
+    sol = ocp.solve()
+
+    plt = ShowResult(ocp, sol)
+    plt.graphs(automatically_organize=False)
+
+    captured_output = io.StringIO()  # Create StringIO object
+    sys.stdout = captured_output  # and redirect stdout.
+    plt.objective_functions()
+    plt.constraints()
+    expected_output = \
+        "\n---- COST FUNCTION VALUES ----\n" \
+        "PHASE 0\n" \
+        "MINIMIZE_TORQUE: 1939.759593984963 (weighted 19397.6)\n\n" \
+        "PHASE 1\n" \
+        "MINIMIZE_TORQUE: 2887.6596407119023 (weighted 48127.7)\n\n" \
+        "PHASE 2\n" \
+        "MINIMIZE_TORQUE: 1927.9784849624061 (weighted 38559.6)\n\n" \
+        "Sum cost functions: 106085\n" \
+        "------------------------------\n\n" \
+        "--------- CONSTRAINTS ---------\n" \
+        "CONTINUITY 0: -2.0942136940081426e-15 (lm: -2533.428570794398)\n" \
+        "CONTINUITY 1: -1.7527416602404898e-15 (lm: -2503.3533828868353)\n" \
+        "CONTINUITY 2: -1.6142180061847322e-15 (lm: -2473.278194979192)\n" \
+        "PHASE_TRANSITION 0->1: -1.4947896387533468e-15 (lm: -2443.2030070722612)\n" \
+        "PHASE_TRANSITION 1->2: -1.2825459962065691e-15 (lm: -2413.127819166678)\n\n" \
+        "PHASE 0\n" \
+        "SUPERIMPOSE_MARKERS: -1.1082117465386211e-15 (lm: -300.7518793431671)\n" \
+        "SUPERIMPOSE_MARKERS: -1.7578565005574134e-16 (lm: -2082.3007519197845)\n\n" \
+        "PHASE 1\nSUPERIMPOSE_MARKERS: -1.1086783993466735e-15 (lm: -300.75187937956275)\n\n" \
+        "PHASE 2\nSUPERIMPOSE_MARKERS: -7.409640695761012e-17 (lm: -2052.2255639819446)\n\n" \
+        "------------------------------\n"
+
+    sys.stdout = sys.__stdout__  # Reset redirect.
+    assert captured_output.getvalue() == expected_output
