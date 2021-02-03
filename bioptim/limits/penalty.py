@@ -265,6 +265,7 @@ class PenaltyFunctionAbstract:
             penalty: PenaltyOption,
             pn: PenaltyNodes,
             axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z),
+            markers_idx = -1
         ):
             """
             Minimize a marker set.
@@ -280,10 +281,10 @@ class PenaltyFunctionAbstract:
             axis_to_track: Axis
                 The axis the penalty is acting on
             """
-
-            markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                penalty.index, pn.nlp.model.nbMarkers(), "markers_idx"
-            )
+            if markers_idx < 0:
+                markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
+                    penalty.index, pn.nlp.model.nbMarkers(), "markers_idx"
+                )
             target = None
             if penalty.target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
