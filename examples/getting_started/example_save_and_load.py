@@ -18,7 +18,6 @@ from bioptim import (
     ShowResult,
     ObjectiveFcn,
     Objective,
-    ObjectivePrinter,
     OdeSolver,
 )
 
@@ -116,9 +115,8 @@ if __name__ == "__main__":
 
     # --- Print objective cost  --- #
     print(f"Final objective value : {np.nansum(sol_obj)} \n")
-    analyse = ObjectivePrinter(ocp, sol_obj)
-    analyse.by_function()
-    analyse.by_nodes()
+    analyse = ShowResult(ocp, sol)
+    analyse.objective_functions()
 
     # --- Save result of get_data --- #
     ocp.save_get_data(sol, "pendulum.bob", sol_iterations)  # you don't have to specify the extension ".bob"

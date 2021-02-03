@@ -34,8 +34,6 @@ ShowResult
     The main interface to bioptim GUI
 Data
     Data manipulation and storage
-ObjectivePrinter
-    Interface to print the values of the objectives to the console
 
 
 # --- Some useful options --- #
