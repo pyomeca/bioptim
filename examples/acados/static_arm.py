@@ -10,7 +10,6 @@ from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    ObjectivePrinter,
     DynamicsList,
     DynamicsFcn,
     BoundsList,
@@ -132,8 +131,8 @@ if __name__ == "__main__":
     print("\n\n")
     print("Results using ACADOS")
     print(f"Final objective: {np.nansum(sol_obj_acados)}")
-    analyse_acados = ObjectivePrinter(ocp_acados, sol_obj_acados)
-    analyse_acados.by_function()
+    result_acados = ShowResult(ocp_acados, sol_acados)
+    result_acados.objective_functions()
     print(f"Time to solve: {sol_acados['time_tot']}sec")
     print(f"")
 
@@ -142,13 +141,11 @@ if __name__ == "__main__":
         f"warm started from ACADOS solution"
     )
     print(f"Final objective : {np.nansum(sol_obj_ipopt)}")
-    analyse_ipopt = ObjectivePrinter(ocp_ipopt, sol_obj_ipopt)
-    analyse_ipopt.by_function()
+    result_ipopt = ShowResult(ocp_ipopt, sol_ipopt)
+    result_ipopt.objective_functions()
     print(f"Time to solve: {sol_ipopt['time_tot']}sec")
     print(f"")
 
-    result_acados = ShowResult(ocp_acados, sol_acados)
-    result_ipopt = ShowResult(ocp_ipopt, sol_ipopt)
     visualizer = result_acados.animate(show_now=False)
     visualizer.extend(result_ipopt.animate(show_now=False))
 

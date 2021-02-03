@@ -187,6 +187,7 @@ class IpoptInterface(SolverInterface):
         """
         Parse the bounds of the full ocp to a Ipopt-friendly one
         """
+        # TODO: This should be done in bounds, so it is available for all the code
 
         all_g = self.ocp.CX()
         all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
@@ -208,6 +209,7 @@ class IpoptInterface(SolverInterface):
         """
         Parse the objective functions of the full ocp to a Ipopt-friendly one
         """
+        # TODO: This should be done in bounds, so it is available for all the code
 
         all_J = self.ocp.CX()
         for j_nodes in self.ocp.J:

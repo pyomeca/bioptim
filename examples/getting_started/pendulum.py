@@ -93,4 +93,5 @@ if __name__ == "__main__":
 
     # --- Show the results in a bioviz animation --- #
     result = ShowResult(ocp, sol)
+    result.objective_functions()
     result.animate()

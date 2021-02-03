@@ -15,7 +15,7 @@ It interfaces the robust [Ipopt](https://github.com/coin-or/Ipopt) and the fast 
 The preferred way to install for the lay user is using anaconda. 
 Another way, more designed for the core programmers is from the sources. 
 While it is theoretically possible to use `bioptim` from Windows, it is highly discouraged since it will require to manually compile all the dependencies. 
-A great alternative for the Windows users is *Ubuntu on Windows*.
+A great alternative for the Windows users is *Ubuntu* on *Windows supporting Linux*.
 
 ## Installing from Anaconda (For Linux and Mac)
 The easiest way to install `bioptim` is to download the binaries from [Anaconda](https://anaconda.org/) repositories. 
@@ -212,6 +212,12 @@ If you did not fancy the online graphs, but would enjoy them anyway, you can cal
 ShowResult(ocp, sol).graphs()
 ```
 
+If you are interested in the results of individual objective functions, you can print them using the `objective_functions()`:
+```python
+ShowResult(ocp, sol).objective_functions()
+```
+
+
 And that is all! 
 You have completed your first optimal control program with `bioptim`! 
 
@@ -257,7 +263,9 @@ ocp = OptimalControlProgram(
     )
     
 sol = ocp.solve(show_online_optim=True)
-ShowResult(ocp, sol).animate()
+sr = ShowResult(ocp, sol)
+sr.objective_functions()
+sr.animate()
 ```
 ### The pendulum.bioMod file
 Here is a simple pendulum that can be interpreted by `biorbd`. 
@@ -1104,23 +1112,25 @@ Moreover, for the states, it is possible to get the integrated the values.
 The number of nodes returned will depend on the number of element of the `n_integration_steps` of the ocp.
 
 ### Class: ShowResult
-ShowResult is the interface class towards graphs and `bioviz`.
-It is constructed from an ocp and a solution (`sr = ShowResult(ocp, solution)`) and consists of two methods.
+ShowResult is the interface class towards console printing, graphs and `bioviz`.
+It is constructed from an ocp and a solution (`sr = ShowResult(ocp, solution)`).
 
-The first one is `sr.graphs()`. 
+A first method is `sr.graphs()`. 
 This method will spawn all the graphs associated with the ocp. 
 This is the same method that is called by the online plotter. 
 In order to add and modify plots, one should use the `OptimalControlProgram.add_plot()` method.
 
-The second one is `sr.animate()`.
+A second one is `sr.animate()`.
 This method summons a `bioviz` figure and animates the model.
 Please note that despite `bioviz` best efforts, plotting a lot of meshing vertices in MX format is slow.
 So even though it is possible, it is suggested to animate without the bone meshing (by passing the parameter `show_meshes=False`)
-To do so, we strongly suggest to save the data and load them in an environment where `bioptim` is compiled with the Eigen backend, which will be much more efficient. 
+To do so, we strongly suggest saving the data and load them in an environment where `bioptim` is compiled with the Eigen backend, which will be much more efficient.
 
-### Class: ObjectivePrinter
-The ObjectivePrinter class is just a fast and easy way to dump all the individual values of the objective functions to the console.
-In the future, this will be done in a graph. 
+In order to plot print the values of the objective functions and constraints, one can use the corresponding functions.
+Therefore, `sr.objective_functions()` will return the values of each objective functions.
+As for the method `sr.constraints()`, it will return the value of the constraint and the lagrange multiplier associated with that constraint.
+Please note that for readability purposes, these functions return the sum by phases. 
+
 
 ### Class: Simulate
 Finally, one may want to resimulate the results, i.e., forwardly integrating the states from the controls.

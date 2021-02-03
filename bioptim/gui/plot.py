@@ -8,7 +8,7 @@ from itertools import accumulate
 
 import numpy as np
 from matplotlib import pyplot as plt, lines
-from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM, Function
 
 from ..limits.path_conditions import Bounds
 from ..misc.data import Data
@@ -716,6 +716,10 @@ class ShowResult:
         Prepare the graphs of the simulation
     animate(self, n_frames:int=80, show_now:bool=True, **kwargs) -> list
         An interface to animate solution with bioviz
+    objective_functions(self)
+        Print the values of each objective function to the console
+    constraints(self)
+        Print the values of each constraints with its lagrange multiplier to the console
     keep_matplotlib()
         Allows for non-blocking show of the figure. This works only in Debug
     """
@@ -804,6 +808,109 @@ class ShowResult:
                         b_is_visible[i] = False
         else:
             return all_bioviz
+
+    def objective_functions(self):
+        """
+        Print the values of each objective function to the console
+        """
+
+        def __extract_objective(pen: dict):
+            """
+            Extract objective function from a penalty
+
+            Parameters
+            ----------
+            pen: dict
+                The penalty to extract the value from
+
+            Returns
+            -------
+            The value extract
+            """
+
+            # TODO: This should be done in bounds and objective functions, so it is available for all the code
+            val_tp = Function("val_tp", [self.ocp.V], [pen["val"]]).expand()(self.sol["x"])
+            if pen["target"] is not None:
+                # TODO Target should be available to constraint?
+                nan_idx = np.isnan(pen["target"])
+                pen["target"][nan_idx] = 0
+                val_tp -= pen["target"]
+                if np.any(nan_idx):
+                    val_tp[np.where(nan_idx)] = 0
+
+            if pen["objective"].quadratic:
+                val_tp *= val_tp
+
+            val = np.sum(val_tp)
+
+            dt = Function("dt", [self.ocp.V], [pen["dt"]]).expand()(self.sol["x"])
+            val_weighted = pen["objective"].weight * val * dt
+            return val, val_weighted
+
+        print(f"\n---- COST FUNCTION VALUES ----")
+        has_global = False
+        running_total = 0
+        for J in self.ocp.J:
+            has_global = True
+            val = []
+            val_weighted = []
+            for j in J:
+                out = __extract_objective(j)
+                val.append(out[0])
+                val_weighted.append(out[1])
+            sum_val_weighted = sum(val_weighted)
+            print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
+            running_total += sum_val_weighted
+        if has_global:
+            print("")
+
+        for idx_phase, nlp in enumerate(self.ocp.nlp):
+            print(f"PHASE {idx_phase}")
+            for J in nlp.J:
+                val = []
+                val_weighted = []
+                for j in J:
+                    out = __extract_objective(j)
+                    val.append(out[0])
+                    val_weighted.append(out[1])
+                sum_val_weighted = sum(val_weighted)
+                print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
+                running_total += sum_val_weighted
+            print("")
+        print(f"Sum cost functions: {running_total}")
+        print(f"------------------------------")
+
+    def constraints(self):
+        """
+        Print the values of each constraints with its lagrange multiplier to the console
+        """
+
+        print(f"\n--------- CONSTRAINTS ---------")
+        idx = 0
+        has_global = False
+        for G in self.ocp.g:
+            has_global = True
+            for g in G:
+                next_idx = idx + g["val"].shape[0]
+            print(
+                f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])} (lm: {np.sum(self.sol['lam_g'][idx:next_idx])})"
+            )
+            idx = next_idx
+        if has_global:
+            print("")
+
+        for idx_phase, nlp in enumerate(self.ocp.nlp):
+            print(f"PHASE {idx_phase}")
+            for G in nlp.g:
+                next_idx = idx
+                for g in G:
+                    next_idx += g["val"].shape[0]
+                print(
+                    f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])} (lm: {np.sum(self.sol['lam_g'][idx:next_idx])})"
+                )
+                idx = next_idx
+            print("")
+        print(f"------------------------------")
 
     @staticmethod
     def keep_matplotlib():
