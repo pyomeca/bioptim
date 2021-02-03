@@ -152,35 +152,36 @@ def test_console_objective_functions():
     plt = ShowResult(ocp, sol)
     plt.graphs(automatically_organize=False)
 
-    sol["g"] = np.array([range(sol["g"].shape[0])]).T/10
+    sol["g"] = np.array([range(sol["g"].shape[0])]).T / 10
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
     plt.objective_functions()
     plt.constraints()
-    expected_output = \
-        "\n---- COST FUNCTION VALUES ----\n" \
-        "PHASE 0\n" \
-        "MINIMIZE_TORQUE: 1939.759593984963 (weighted 19397.6)\n\n" \
-        "PHASE 1\n" \
-        "MINIMIZE_TORQUE: 2887.6596407119023 (weighted 48127.7)\n\n" \
-        "PHASE 2\n" \
-        "MINIMIZE_TORQUE: 1927.9784849624061 (weighted 38559.6)\n\n" \
-        "Sum cost functions: 106085\n" \
-        "------------------------------\n\n" \
-        "--------- CONSTRAINTS ---------\n" \
-        "CONTINUITY 0: 1.5 (lm: -2533.428570794398)\n" \
-        "CONTINUITY 1: 5.1 (lm: -2503.3533828868353)\n" \
-        "CONTINUITY 2: 8.7 (lm: -2473.278194979192)\n" \
-        "PHASE_TRANSITION 0->1: 12.3 (lm: -2443.2030070722612)\n" \
-        "PHASE_TRANSITION 1->2: 15.9 (lm: -2413.127819166678)\n\n" \
-        "PHASE 0\n" \
-        "SUPERIMPOSE_MARKERS: 9.3 (lm: -300.7518793431671)\n" \
-        "SUPERIMPOSE_MARKERS: 10.2 (lm: -2082.3007519197845)\n\n" \
-        "PHASE 1\n" \
-        "SUPERIMPOSE_MARKERS: 11.100000000000001 (lm: -300.75187937956275)\n\n" \
-        "PHASE 2\n" \
-        "SUPERIMPOSE_MARKERS: 12.0 (lm: -2052.2255639819446)\n\n" \
+    expected_output = (
+        "\n---- COST FUNCTION VALUES ----\n"
+        "PHASE 0\n"
+        "MINIMIZE_TORQUE: 1939.759593984963 (weighted 19397.6)\n\n"
+        "PHASE 1\n"
+        "MINIMIZE_TORQUE: 2887.6596407119023 (weighted 48127.7)\n\n"
+        "PHASE 2\n"
+        "MINIMIZE_TORQUE: 1927.9784849624061 (weighted 38559.6)\n\n"
+        "Sum cost functions: 106085\n"
+        "------------------------------\n\n"
+        "--------- CONSTRAINTS ---------\n"
+        "CONTINUITY 0: 1.5 (lm: -2533.428570794398)\n"
+        "CONTINUITY 1: 5.1 (lm: -2503.3533828868353)\n"
+        "CONTINUITY 2: 8.7 (lm: -2473.278194979192)\n"
+        "PHASE_TRANSITION 0->1: 12.3 (lm: -2443.2030070722612)\n"
+        "PHASE_TRANSITION 1->2: 15.9 (lm: -2413.127819166678)\n\n"
+        "PHASE 0\n"
+        "SUPERIMPOSE_MARKERS: 9.3 (lm: -300.7518793431671)\n"
+        "SUPERIMPOSE_MARKERS: 10.2 (lm: -2082.3007519197845)\n\n"
+        "PHASE 1\n"
+        "SUPERIMPOSE_MARKERS: 11.100000000000001 (lm: -300.75187937956275)\n\n"
+        "PHASE 2\n"
+        "SUPERIMPOSE_MARKERS: 12.0 (lm: -2052.2255639819446)\n\n"
         "------------------------------\n"
+    )
 
     sys.stdout = sys.__stdout__  # Reset redirect.
     assert captured_output.getvalue() == expected_output

@@ -829,7 +829,7 @@ class ShowResult:
             """
 
             # TODO: This should be done in bounds and objective functions, so it is available for all the code
-            val_tp = Function("val_tp", [self.ocp.V], [pen['val']]).expand()(self.sol["x"])
+            val_tp = Function("val_tp", [self.ocp.V], [pen["val"]]).expand()(self.sol["x"])
             if pen["target"] is not None:
                 # TODO Target should be available to constraint?
                 nan_idx = np.isnan(pen["target"])
@@ -843,7 +843,7 @@ class ShowResult:
 
             val = np.sum(val_tp)
 
-            dt = Function("dt", [self.ocp.V], [pen['dt']]).expand()(self.sol["x"])
+            dt = Function("dt", [self.ocp.V], [pen["dt"]]).expand()(self.sol["x"])
             val_weighted = pen["objective"].weight * val * dt
             return val, val_weighted
 
@@ -891,8 +891,10 @@ class ShowResult:
         for G in self.ocp.g:
             has_global = True
             for g in G:
-                next_idx = idx+g['val'].shape[0]
-            print(f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])} (lm: {np.sum(self.sol['lam_g'][idx:next_idx])})")
+                next_idx = idx + g["val"].shape[0]
+            print(
+                f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])} (lm: {np.sum(self.sol['lam_g'][idx:next_idx])})"
+            )
             idx = next_idx
         if has_global:
             print("")
@@ -902,8 +904,10 @@ class ShowResult:
             for G in nlp.g:
                 next_idx = idx
                 for g in G:
-                    next_idx += g['val'].shape[0]
-                print(f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])} (lm: {np.sum(self.sol['lam_g'][idx:next_idx])})")
+                    next_idx += g["val"].shape[0]
+                print(
+                    f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])} (lm: {np.sum(self.sol['lam_g'][idx:next_idx])})"
+                )
                 idx = next_idx
             print("")
         print(f"------------------------------")
