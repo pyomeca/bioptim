@@ -152,6 +152,7 @@ def test_console_objective_functions():
     plt = ShowResult(ocp, sol)
     plt.graphs(automatically_organize=False)
 
+    sol["g"] = np.array([range(sol["g"].shape[0])]).T/10
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
     plt.objective_functions()
@@ -167,16 +168,18 @@ def test_console_objective_functions():
         "Sum cost functions: 106085\n" \
         "------------------------------\n\n" \
         "--------- CONSTRAINTS ---------\n" \
-        "CONTINUITY 0: -2.0942136940081426e-15 (lm: -2533.428570794398)\n" \
-        "CONTINUITY 1: -1.7527416602404898e-15 (lm: -2503.3533828868353)\n" \
-        "CONTINUITY 2: -1.6142180061847322e-15 (lm: -2473.278194979192)\n" \
-        "PHASE_TRANSITION 0->1: -1.4947896387533468e-15 (lm: -2443.2030070722612)\n" \
-        "PHASE_TRANSITION 1->2: -1.2825459962065691e-15 (lm: -2413.127819166678)\n\n" \
+        "CONTINUITY 0: 1.5 (lm: -2533.428570794398)\n" \
+        "CONTINUITY 1: 5.1 (lm: -2503.3533828868353)\n" \
+        "CONTINUITY 2: 8.7 (lm: -2473.278194979192)\n" \
+        "PHASE_TRANSITION 0->1: 12.3 (lm: -2443.2030070722612)\n" \
+        "PHASE_TRANSITION 1->2: 15.9 (lm: -2413.127819166678)\n\n" \
         "PHASE 0\n" \
-        "SUPERIMPOSE_MARKERS: -1.1082117465386211e-15 (lm: -300.7518793431671)\n" \
-        "SUPERIMPOSE_MARKERS: -1.7578565005574134e-16 (lm: -2082.3007519197845)\n\n" \
-        "PHASE 1\nSUPERIMPOSE_MARKERS: -1.1086783993466735e-15 (lm: -300.75187937956275)\n\n" \
-        "PHASE 2\nSUPERIMPOSE_MARKERS: -7.409640695761012e-17 (lm: -2052.2255639819446)\n\n" \
+        "SUPERIMPOSE_MARKERS: 9.3 (lm: -300.7518793431671)\n" \
+        "SUPERIMPOSE_MARKERS: 10.2 (lm: -2082.3007519197845)\n\n" \
+        "PHASE 1\n" \
+        "SUPERIMPOSE_MARKERS: 11.100000000000001 (lm: -300.75187937956275)\n\n" \
+        "PHASE 2\n" \
+        "SUPERIMPOSE_MARKERS: 12.0 (lm: -2052.2255639819446)\n\n" \
         "------------------------------\n"
 
     sys.stdout = sys.__stdout__  # Reset redirect.
