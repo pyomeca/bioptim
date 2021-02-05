@@ -176,6 +176,10 @@ class PenaltyFunctionAbstract:
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+        minimize_state_derivative(penalty: PenaltyOption, pn: PenaltyNodes)
+            Minimize the states velocity by comparing the state at a node and at the next node.
+            By default this function is quadratic, meaning that it minimizes the difference.
+            Indices (default=all_idx) can be specified.
         minimize_torque_derivative(penalty: PenaltyOption, pn: PenaltyNodes)
             Minimize the joint torque velocity by comparing the torque at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -512,6 +516,27 @@ class PenaltyFunctionAbstract:
             for i, v in enumerate(pn.u):
                 val = v[controls_idx]
                 penalty.sliced_target = target[:, i] if target is not None else None
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+
+        @staticmethod
+        def minimize_state_derivative(penalty: PenaltyOption, pn: PenaltyNodes):
+            """
+            Minimize the states velocity by comparing the state at a node and at the next node.
+            By default this function is quadratic, meaning that it minimizes the difference.
+            Indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            pn: PenaltyNodes
+                The penalty node elements
+            """
+
+            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, pn.nlp.nx, "states_idx")
+
+            for i in range(len(pn.x) - 1):
+                val = pn.x[i + 1][states_idx] - pn.x[i][states_idx]
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
@@ -997,6 +1022,7 @@ class PenaltyFunctionAbstract:
                 or func == PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT
                 or func == PenaltyType.TRACK_MARKER_WITH_SEGMENT_AXIS
                 or func == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
+                or func == PenaltyType.MINIMIZE_STATE_DERIVATIVE
                 or func == PenaltyType.MINIMIZE_COM_POSITION
                 or func == PenaltyType.MINIMIZE_COM_VELOCITY
             ):
@@ -1286,6 +1312,7 @@ class PenaltyType(Enum):
     PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_variable
     MINIMIZE_TORQUE = PenaltyFunctionAbstract.Functions.minimize_torque
     TRACK_TORQUE = MINIMIZE_TORQUE
+    MINIMIZE_STATE_DERIVATIVE = PenaltyFunctionAbstract.Functions.minimize_state_derivative
     MINIMIZE_TORQUE_DERIVATIVE = PenaltyFunctionAbstract.Functions.minimize_torque_derivative
     MINIMIZE_MUSCLES_CONTROL = PenaltyFunctionAbstract.Functions.minimize_muscles_control
     TRACK_MUSCLES_CONTROL = MINIMIZE_MUSCLES_CONTROL

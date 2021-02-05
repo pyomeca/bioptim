@@ -955,6 +955,9 @@ Minimizes the generalized forces part of the controls variable towards zero (or 
 #### TRACK_TORQUE (Lagrange)
 Tracks the generalized forces part of the controls variable towards a target
 
+#### MINIMIZE_STATE_DERIVATIVE (Lagrange)
+Minimizes the difference between a state at a node and the same state at the next node, effectively minimizing the generalized forces derivative
+
 #### MINIMIZE_TORQUE_DERIVATIVE (Lagrange)
 Minimizes the difference between a *tau* at a node and the same *tau* at the next node, effectively minimizing the generalized forces derivative
 
