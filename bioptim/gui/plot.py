@@ -885,6 +885,7 @@ class ShowResult:
         Print the values of each constraints with its lagrange multiplier to the console
         """
 
+        # Todo, min/mean/max
         print(f"\n--------- CONSTRAINTS ---------")
         idx = 0
         has_global = False
@@ -893,7 +894,7 @@ class ShowResult:
             for g in G:
                 next_idx = idx + g["val"].shape[0]
             print(
-                f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])} (lm: {np.sum(self.sol['lam_g'][idx:next_idx])})"
+                f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])}"
             )
             idx = next_idx
         if has_global:
@@ -906,7 +907,7 @@ class ShowResult:
                 for g in G:
                     next_idx += g["val"].shape[0]
                 print(
-                    f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])} (lm: {np.sum(self.sol['lam_g'][idx:next_idx])})"
+                    f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])}"
                 )
                 idx = next_idx
             print("")
