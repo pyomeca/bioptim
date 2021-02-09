@@ -1,7 +1,7 @@
 # `bioptim`
 `Bioptim` is an optimal control program (OCP) framework for biomechanics. 
 It is based on the efficient [biorbd](https://github.com/pyomeca/biorbd) biomechanics library and benefits from the powerful algorithmic diff provided by [CasADi](https://web.casadi.org/).
-It interfaces the robust [Ipopt](https://github.com/coin-or/Ipopt) and the fast [ACADOS](https://github.com/acados/acados) solvers to suit all your needs for solving OCP in biomechanics. 
+It interfaces the robust [̀`Ipopt`](https://github.com/coin-or/Ipopt) and the fast [̀`Acados`](https://github.com/acados/acados) solvers to suit all your needs for solving OCP in biomechanics. 
 
 ## Status
 
@@ -71,28 +71,28 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 - [vtk](https://vtk.org/)
 - [PyQt](https://www.riverbankcomputing.com/software/pyqt)
 - [bioviz](https://github.com/pyomeca/bioviz)
-- [Ipopt](https://github.com/coin-or/Ipopt)
-- [ACADOS](https://github.com/acados/acados)
+- [̀`Ipopt`](https://github.com/coin-or/Ipopt)
+- [̀`Acados`](https://github.com/acados/acados)
 
 and optionally:
 - [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
 
-All these (except for ACADOS and the HSL lib) can manually be installed using (assuming the anaconda environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
+All these (except for ̀`Acados` and the HSL lib) can manually be installed using (assuming the anaconda environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
 ```bash
 conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* [bioviz=*=*casadi*] -cconda-forge
 ```
 
-Since there isn't any `Anaconda` nor `pip3` package of ACADOS, a convenient installer is provided with `bioptim`. 
+Since there isn't any `Anaconda` nor `pip3` package of ̀`Acados`, a convenient installer is provided with `bioptim`. 
 The installer can be found and run at `[ROOT_BIOPTIM]/external/acados_install.sh`.
 However, the installer requires an `Anaconda` environment.
 If you have an `Anaconda` environment loaded, the installer should find itself where to install. 
 If you want to install elsewhere, you can provide the script with a first argument which is the `$CONDA_PREFIX`. 
 The second argument that can be passed to the script is the `$BLASFEO_TARGET`. 
 If you don't know what it is, it is probably better to keep the default. 
-Please note that depending on your computer architecture, ACADOS may or may not work properly.
+Please note that depending on your computer architecture, ̀`Acados` may or may not work properly.
 
 HSL is a collection of state-of-the-art packages for large-scale scientific computation. 
-Among its best known packages are those for the solution of sparse linear systems (`ma27`, `ma57`, etc.), compatible with Ipopt.
+Among its best known packages are those for the solution of sparse linear systems (`ma27`, `ma57`, etc.), compatible with ̀`Ipopt`.
 HSL packages are [available](http://www.hsl.rl.ac.uk/download/coinhsl-archive-linux-x86_64/2014.01.17/) at no cost for academic research and teaching. 
 Once you obtain the HSL dynamic library (libhsl.so), you just have place it in your `Anaconda` environment into the `lib/` folder.
 You are now able to use all the options of `bioptim`, including the HSL linear solvers with `Acados`.
@@ -172,7 +172,7 @@ objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
 ```
 
 At that point, it is possible to solves the program.
-Still, helping the solver is usually a good idea, so let's give Ipopt a starting point to investigate.
+Still, helping the solver is usually a good idea, so let's give ̀`Ipopt` a starting point to investigate.
 The initial guess that we can provide are those for the states (`x_init`, here *q* and *qdot*) and for the controls (`u_init`, here *tau*). 
 So let's define both of them quickly
 ```python
@@ -448,7 +448,7 @@ Moreover, the method
 solution = ocp.solve(Solver, solver_options:{})
 ```
 is called to actually solve the ocp. 
-The `Solver` parameter can be used to select the nonlinear solver to solve the ocp, Ipopt being the default choice.
+The `Solver` parameter can be used to select the nonlinear solver to solve the ocp, ̀`Ipopt` being the default choice.
 Note that options can be passed to the solver via the `solver_options` parameter.
 One can refer to the documentation of their respective chosen solver to know which options exist.
 The `show_online_optim` parameter can be set to `True` so the graphs nicely update during the optimization.
@@ -1200,15 +1200,15 @@ The accepted values are:
 
 ### Enum: Solver
 The nonlinear solver to solve the whole ocp. 
-Each solver has some requirements (for instance, ACADOS necessitates that the graph is SX). 
+Each solver has some requirements (for instance, ̀`Acados` necessitates that the graph is SX). 
 Feel free to test each of them to see which one fits the best your needs.
-Ipopt is a robust solver, that may be a bit slow though.
-ACADOS on the other is a very fast solver, but is much more sensitive to the relative weightings of the objective functions and to the initial guess.
+̀`Ipopt` is a robust solver, that may be a bit slow though.
+̀`Acados` on the other is a very fast solver, but is much more sensitive to the relative weightings of the objective functions and to the initial guess.
 It is perfectly designed for MHE and NMPC problems.
 
 The accepted values are:
-- IPOPT
-- ACADOS
+- ̀`Ipopt`
+- ̀`Acados`
 
 ### Enum: ControlType
 The type the controls are. 
