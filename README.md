@@ -96,7 +96,10 @@ Among its best known packages are those for the solution of sparse linear system
 HSL packages are [available](http://www.hsl.rl.ac.uk/download/coinhsl-archive-linux-x86_64/2014.01.17/) at no cost for academic research and teaching. 
 Once you obtain the HSL dynamic library (libhsl.so), you just have place it in your `Anaconda` environment into the `lib/` folder.
 You are now able to use all the options of `bioptim`, including the HSL linear solvers with `Acados`.
-We recommend that you use `ma57` as a default linear solver. 
+We recommend that you use `ma57` as a default linear solver by calling as such:
+```python
+ocp.solve(solver_options={"linear_solver": "ma57"})
+```
 
 # Getting started
 The easiest way to learn `bioptim` is to dive into it.
