@@ -74,7 +74,10 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 - [Ipopt](https://github.com/coin-or/Ipopt)
 - [ACADOS](https://github.com/acados/acados)
 
-All these (except for ACADOS) can manually be installed using (assuming the anaconda environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
+and optionally:
+- [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
+
+All these (except for ACADOS and the HSL lib) can manually be installed using (assuming the anaconda environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
 ```bash
 conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* [bioviz=*=*casadi*] -cconda-forge
 ```
@@ -88,6 +91,12 @@ The second argument that can be passed to the script is the `$BLASFEO_TARGET`.
 If you don't know what it is, it is probably better to keep the default. 
 Please note that depending on your computer architecture, ACADOS may or may not work properly.
 
+HSL is a collection of state-of-the-art packages for large-scale scientific computation. 
+Among its best known packages are those for the solution of sparse linear systems (`ma27`, `ma57`, etc.), compatible with Ipopt.
+HSL packages are [available](http://www.hsl.rl.ac.uk/download/coinhsl-archive-linux-x86_64/2014.01.17/) at no cost for academic research and teaching. 
+Once you obtain the HSL dynamic library (libhsl.so), you just have place it in your `Anaconda` environment into the `lib/` folder.
+You are now able to use all the options of `bioptim`, including the HSL linear solvers with `Acados`.
+We recommend that you use `ma57` as a default linear solver. 
 
 # Getting started
 The easiest way to learn `bioptim` is to dive into it.
