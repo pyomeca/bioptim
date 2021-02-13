@@ -2,10 +2,10 @@ from typing import Callable, Union, Any
 
 from casadi import vertcat, MX, SX
 
-from .enums import Node
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
-from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
-from .options import OptionList, OptionGeneric
+from bioptim.misc.enums import Node
+from bioptim.limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
+from bioptim.limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
+from bioptim.misc.options import OptionList, OptionGeneric
 
 
 class Parameter(OptionGeneric):

@@ -1,8 +1,8 @@
 from typing import Callable, Any
 
-from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
-from .enums import ControlType, OdeSolver
-from .options import OptionList
+from bioptim.limits.path_conditions import Bounds, InitialGuess, BoundsList
+from bioptim.misc.enums import ControlType, OdeSolver
+from bioptim.misc.options import OptionList
 
 
 class NonLinearProgram:

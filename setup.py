@@ -11,7 +11,7 @@ setup(
     description="An optimization framework for Optimal Control Programming in biomechanics",
     long_description=long_description,
     url="https://github.com/bioptim/bioptim",
-    packages=["bioptim", "bioptim/dynamics", "bioptim/gui", "bioptim/interfaces", "bioptim/limits", "bioptim/misc"],
+    packages=["bioptim", "bioptim/dynamics", "bioptim/gui", "bioptim/interfaces", "bioptim/limits", "bioptim/misc", "bioptim/optimization"],
     license="LICENSE",
     keywords=["biorbd", "Ipopt", "CasADi", "Optimal control", "biomechanics"],
     classifiers=[

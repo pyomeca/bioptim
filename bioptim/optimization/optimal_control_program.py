@@ -8,25 +8,25 @@ import biorbd
 import casadi
 from casadi import MX, vertcat, SX
 
-from .non_linear_program import NonLinearProgram as NLP
-from .__version__ import __version__
-from .data import Data
-from ..dynamics.integrator import Integrator
-from .enums import ControlType, OdeSolver, Solver
-from .mapping import BidirectionalMapping, Mapping
-from .parameters import Parameters, ParameterList, Parameter
-from .utils import check_version
-from ..dynamics.problem import Problem
-from ..dynamics.dynamics_type import DynamicsList, Dynamics
-from ..gui.plot import CustomPlot
-from ..interfaces.biorbd_interface import BiorbdInterface
-from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
-from ..limits.phase_transition import PhaseTransitionFunctions, PhaseTransitionList
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
-from ..limits.path_conditions import BoundsList, Bounds
-from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..limits.path_conditions import InterpolationType
-from ..limits.penalty import PenaltyOption
+from bioptim.optimization.non_linear_program import NonLinearProgram as NLP
+from bioptim.misc.__version__ import __version__
+from bioptim.misc.data import Data
+from bioptim.dynamics.integrator import Integrator
+from bioptim.misc.enums import ControlType, OdeSolver, Solver
+from bioptim.misc.mapping import BidirectionalMapping, Mapping
+from bioptim.optimization.parameters import Parameters, ParameterList, Parameter
+from bioptim.misc.utils import check_version
+from bioptim.dynamics.problem import Problem
+from bioptim.dynamics.dynamics_type import DynamicsList, Dynamics
+from bioptim.gui.plot import CustomPlot
+from bioptim.interfaces.biorbd_interface import BiorbdInterface
+from bioptim.limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
+from bioptim.limits.phase_transition import PhaseTransitionFunctions, PhaseTransitionList
+from bioptim.limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
+from bioptim.limits.path_conditions import BoundsList, Bounds
+from bioptim.limits.path_conditions import InitialGuess, InitialGuessList
+from bioptim.limits.path_conditions import InterpolationType
+from bioptim.limits.penalty import PenaltyOption
 
 check_version(biorbd, "1.4.0", "1.5.0")
 
