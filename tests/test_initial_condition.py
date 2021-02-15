@@ -119,8 +119,9 @@ def test_initial_guess_update():
 
     np.testing.assert_almost_equal(ocp.nlp[0].x_init.init, np.zeros((4, 1)))
     np.testing.assert_almost_equal(ocp.nlp[0].u_init.init, np.zeros((2, 1)))
-    np.testing.assert_almost_equal(ocp.param_to_optimize["time"].initial_guess.init[0, 0], 2)
-    np.testing.assert_almost_equal(ocp.V_init.init, np.concatenate(([[2]], np.zeros((4 * 11 + 2 * 10, 1)))))
+    idx = ocp.v.parameters_in_list.index("time")
+    np.testing.assert_almost_equal(ocp.v.parameters_in_list[idx].initial_guess.init[0, 0], 2)
+    np.testing.assert_almost_equal(ocp.v.init.init, np.concatenate((np.zeros((4 * 11 + 2 * 10, 1)), [[2]])))
 
     wrong_new_x_init = InitialGuess([1] * 6)
     new_x_init = InitialGuess([1] * 4)
@@ -146,8 +147,9 @@ def test_initial_guess_update():
 
     np.testing.assert_almost_equal(ocp.nlp[0].x_init.init, np.ones((4, 1)))
     np.testing.assert_almost_equal(ocp.nlp[0].u_init.init, np.ones((2, 1)) * 3)
-    np.testing.assert_almost_equal(ocp.param_to_optimize["time"].initial_guess.init[0, 0], 4)
-    np.testing.assert_almost_equal(ocp.V_init.init, np.array([[4] + [1, 1, 1, 1, 3, 3] * 10 + [1, 1, 1, 1]]).T)
+    idx = ocp.v.parameters_in_list.index("time")
+    np.testing.assert_almost_equal(ocp.v.parameters_in_list[idx].initial_guess.init[0, 0], 4)
+    np.testing.assert_almost_equal(ocp.v.init.init, np.array([ [1, 1, 1, 1] * 11 + [3, 3] * 10 + [4] ]).T)
 
 
 def test_initial_guess_custom():

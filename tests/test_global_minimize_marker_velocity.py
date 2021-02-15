@@ -161,9 +161,9 @@ def test_track_and_minimize_marker_displacement_global(ode_solver):
     # initial and final velocities
     if ode_solver == OdeSolver.IRK:
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([0.71793369, -0.44573137, -2.97319049, 0.02378767]), decimal=2)
+        np.testing.assert_almost_equal(q[:, 0], np.array([0.71778348, -0.44573609, -2.91128965,  0.02378766]), decimal=2)
         np.testing.assert_almost_equal(
-            q[:, -1], np.array([1.08524701, -0.38694715, 3.02680956, -0.02378811]), decimal=2
+            q[:, -1], np.array([1.08500958, -0.38698865,  3.08871039, -0.02378812]), decimal=2
         )
     else:
         # initial and final position

@@ -1,5 +1,6 @@
 from typing import Callable, Any
 
+from .parameters import ParameterList
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType, OdeSolver
 from ..misc.options import OptionList
@@ -61,8 +62,6 @@ class NonLinearProgram:
         The casadi variables for the parameters
     par_dynamics: casadi.Function
         The casadi function of the threaded dynamics
-    parameters_to_optimize: dict
-        The collection of parameters to optimize
     phase_idx: int
         The index of the current nlp in the ocp.nlp structure
     plot: dict
@@ -136,8 +135,8 @@ class NonLinearProgram:
         self.nx = None
         self.ode_solver = OdeSolver.NO_SOLVER
         self.p = None
+        self.parameters = ParameterList()
         self.par_dynamics = None
-        self.parameters_to_optimize = {}
         self.phase_idx = None
         self.plot = {}
         self.q = None

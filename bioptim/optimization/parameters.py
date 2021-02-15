@@ -98,7 +98,7 @@ class ParameterList(UniquePerPhaseOptionList):
         initial_guess: Union[InitialGuess, InitialGuessList] = None,
         bounds: Union[Bounds, BoundsList] = None,
         size: int = None,
-        phase: int = 0,
+        phase: int = -1,
         penalty_list: Union[Objective, ObjectiveList] = None,
         **extra_arguments: Any
     ):

@@ -27,7 +27,7 @@ def test_muscle_driven_ocp(ode_solver):
         weight=1,
         ode_solver=ode_solver,
     )
-    sol, obj = ocp.solve(return_objectives=True)
+    sol = ocp.solve()
 
     # Check constraints
     g = np.array(sol["g"])
@@ -39,40 +39,6 @@ def test_muscle_driven_ocp(ode_solver):
     q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
-        # Check return_objectives
-        np.testing.assert_almost_equal(
-            obj[0],
-            np.array(
-                [
-                    [
-                        5.85907876e-06,
-                        4.90787480e-06,
-                        4.11445097e-06,
-                        3.23249314e-06,
-                        2.32017681e-06,
-                        1.53145423e-06,
-                        9.52003920e-07,
-                        5.97894049e-07,
-                        4.50363195e-07,
-                        1.11557294e-07,
-                    ],
-                    [
-                        9.60459127e-03,
-                        7.74907187e-03,
-                        5.60335998e-03,
-                        2.97901541e-03,
-                        1.03718035e-03,
-                        2.17889033e-04,
-                        2.73537061e-05,
-                        1.22144173e-05,
-                        1.78454284e-05,
-                        5.89515242e-06,
-                    ],
-                    [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 1.16237622e-01],
-                ]
-            ),
-        )
-
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
@@ -97,40 +63,6 @@ def test_muscle_driven_ocp(ode_solver):
         )
 
     elif ode_solver == OdeSolver.RK8:
-        # Check return_objectives
-        np.testing.assert_almost_equal(
-            obj[0],
-            np.array(
-                [
-                    [
-                        5.86130950e-06,
-                        4.90858403e-06,
-                        4.11439824e-06,
-                        3.23202480e-06,
-                        2.31951020e-06,
-                        1.53065911e-06,
-                        9.51069088e-07,
-                        5.96999314e-07,
-                        4.49941576e-07,
-                        1.11561148e-07,
-                    ],
-                    [
-                        9.60779353e-03,
-                        7.74754706e-03,
-                        5.59910323e-03,
-                        2.97564968e-03,
-                        1.03602703e-03,
-                        2.17877317e-04,
-                        2.73703489e-05,
-                        1.21820523e-05,
-                        1.78251397e-05,
-                        5.90838337e-06,
-                    ],
-                    [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 1.16237781e-01],
-                ]
-            ),
-        )
-
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))
@@ -155,40 +87,6 @@ def test_muscle_driven_ocp(ode_solver):
         )
 
     else:
-        # Check return_objectives
-        np.testing.assert_almost_equal(
-            obj[0],
-            np.array(
-                [
-                    [
-                        5.86278160e-06,
-                        4.90908874e-06,
-                        4.11442651e-06,
-                        3.23179182e-06,
-                        2.31914537e-06,
-                        1.53018849e-06,
-                        9.50482800e-07,
-                        5.96421781e-07,
-                        4.49664434e-07,
-                        1.11563008e-07,
-                    ],
-                    [
-                        9.60988809e-03,
-                        7.74655413e-03,
-                        5.59633777e-03,
-                        2.97348197e-03,
-                        1.03531097e-03,
-                        2.17878176e-04,
-                        2.73789409e-05,
-                        1.21584248e-05,
-                        1.78095282e-05,
-                        5.90847984e-06,
-                    ],
-                    [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 1.16237866e-01],
-                ]
-            ),
-        )
-
         # Check objective function value
         f = np.array(sol["f"])
         np.testing.assert_equal(f.shape, (1, 1))

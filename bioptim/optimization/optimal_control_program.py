@@ -681,7 +681,6 @@ class OptimalControlProgram:
         solver: Solver = Solver.IPOPT,
         show_online_optim: bool = False,
         return_iterations: bool = False,
-        return_objectives: bool = False,
         solver_options: dict = {},
     ) -> Any:
         """
@@ -736,9 +735,6 @@ class OptimalControlProgram:
 
         if return_iterations:
             self.solver.finish_get_iterations()
-
-        if return_objectives:
-            self.solver.get_objectives()
 
         return self.solver.get_optimized_value()
 

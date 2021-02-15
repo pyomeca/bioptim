@@ -408,37 +408,35 @@ def test_phase_transitions(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"], concatenate=False)
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[0][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(q[-1][:, -1], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states[-1]["q"][:, -1], np.array((1, 0, 0)))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[0][:, 0], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[-1][:, -1], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(states[-1]["qdot"][:, -1], np.array((0, 0, 0)))
 
     # cyclic continuity (between phase 3 and phase 0)
-    np.testing.assert_almost_equal(q[-1][:, -1], q[0][:, 0])
+    np.testing.assert_almost_equal(states[-1]["q"][:, -1], states[0]["q"][:, 0])
 
     # Continuity between phase 0 and phase 1
-    np.testing.assert_almost_equal(q[0][:, -1], q[1][:, 0])
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], states[1]["q"][:, 0])
 
     if ode_solver == OdeSolver.IRK:
         # initial and final controls
-        np.testing.assert_almost_equal(tau[0][:, 0], np.array((0.95986719, 9.70855983, -0.06237331)))
-        np.testing.assert_almost_equal(tau[-1][:, -1], np.array((0, 1.27170519e01, 1.14878049e00)))
+        np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((0.95986719, 9.70855983, -0.06237331)))
+        np.testing.assert_almost_equal(controls[-1]["tau"][:, -1], np.array((0, 1.27170519e01, 1.14878049e00)))
     else:
         # initial and final controls
-        np.testing.assert_almost_equal(tau[0][:, 0], np.array((0.9598672, 9.7085598, -0.0623733)))
-        np.testing.assert_almost_equal(tau[-1][:, -1], np.array((0, 1.2717052e01, 1.1487805e00)))
+        np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((0.9598672, 9.7085598, -0.0623733)))
+        np.testing.assert_almost_equal(controls[-1]["tau"][:, -1], np.array((0, 1.2717052e01, 1.1487805e00)))
 
     # save and load
     with pytest.raises(PicklingError, match="import of module 'phase_transitions' failed"):
         TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
-        TestUtils.simulate(sol, ocp)
+    # TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -524,8 +522,7 @@ def test_parameter_optimization(ode_solver):
         TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
-        TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])
@@ -649,106 +646,7 @@ def test_example_multiphase(ode_solver):
     ocp = multiphase_track_markers.prepare_ocp(
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver
     )
-    sol, obj = ocp.solve(return_objectives=True)
-
-    # Check return_objectives
-    np.testing.assert_almost_equal(
-        obj[0],
-        np.array(
-            [
-                [
-                    982.76916324,
-                    978.69883706,
-                    975.08076934,
-                    971.91496008,
-                    969.20140929,
-                    966.94011697,
-                    965.13108311,
-                    963.77430771,
-                    962.86979078,
-                    962.41753231,
-                    962.41753231,
-                    962.86979077,
-                    963.7743077,
-                    965.1310831,
-                    966.94011696,
-                    969.20140929,
-                    971.91496009,
-                    975.08076936,
-                    978.6988371,
-                    982.76916331,
-                ]
-            ]
-        ),
-    )
-    np.testing.assert_almost_equal(
-        obj[1],
-        np.array(
-            [
-                [
-                    1604.83406353,
-                    1604.71433092,
-                    1604.60315064,
-                    1604.5005227,
-                    1604.40644708,
-                    1604.3209238,
-                    1604.24395284,
-                    1604.17553422,
-                    1604.11566792,
-                    1604.06435395,
-                    1604.02159231,
-                    1603.987383,
-                    1603.96172602,
-                    1603.94462137,
-                    1603.93606904,
-                    1603.93606904,
-                    1603.94462137,
-                    1603.96172603,
-                    1603.98738301,
-                    1604.02159232,
-                    1604.06435396,
-                    1604.11566793,
-                    1604.17553422,
-                    1604.24395285,
-                    1604.32092379,
-                    1604.40644707,
-                    1604.50052267,
-                    1604.6031506,
-                    1604.71433086,
-                    1604.83406345,
-                ]
-            ]
-        ),
-    )
-    np.testing.assert_almost_equal(
-        obj[2],
-        np.array(
-            [
-                [
-                    1933.56103058,
-                    1931.79812144,
-                    1930.23109109,
-                    1928.85993953,
-                    1927.68466677,
-                    1926.7052728,
-                    1925.92175762,
-                    1925.33412124,
-                    1924.94236365,
-                    1924.74648485,
-                    1924.74648485,
-                    1924.94236364,
-                    1925.33412123,
-                    1925.92175761,
-                    1926.70527279,
-                    1927.68466676,
-                    1928.85993954,
-                    1930.23109111,
-                    1931.79812149,
-                    1933.56103067,
-                ]
-            ]
-        ),
-    )
+    sol = ocp.solve()
 
     # Check objective function value
     f = np.array(sol["f"])
@@ -762,38 +660,36 @@ def test_example_multiphase(ode_solver):
 
     # Check some of the results
     states, controls = Data.get_data(ocp, sol["x"], concatenate=False)
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[0][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(q[0][:, -1], np.array((2, 0, 0)))
-    np.testing.assert_almost_equal(q[1][:, 0], np.array((2, 0, 0)))
-    np.testing.assert_almost_equal(q[1][:, -1], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(q[2][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(q[2][:, -1], np.array((2, 0, 1.57)))
+    np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array((2, 0, 0)))
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array((2, 0, 0)))
+    np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states[2]["q"][:, 0], np.array((1, 0, 0)))
+    np.testing.assert_almost_equal(states[2]["q"][:, -1], np.array((2, 0, 1.57)))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[0][:, 0], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[0][:, -1], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[1][:, 0], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[1][:, -1], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[2][:, 0], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[2][:, -1], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(states[0]["qdot"][:, -1], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(states[1]["qdot"][:, -1], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(states[2]["qdot"][:, 0], np.array((0, 0, 0)))
+    np.testing.assert_almost_equal(states[2]["qdot"][:, -1], np.array((0, 0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[0][:, 0], np.array((1.42857142, 9.81, 0)))
-    np.testing.assert_almost_equal(tau[0][:, -1], np.array((-1.42857144, 9.81, 0)))
-    np.testing.assert_almost_equal(tau[1][:, 0], np.array((-0.2322581, 9.81, 0.0)))
-    np.testing.assert_almost_equal(tau[1][:, -1], np.array((0.2322581, 9.81, -0.0)))
-    np.testing.assert_almost_equal(tau[2][:, 0], np.array((0.35714285, 9.81, 0.56071428)))
-    np.testing.assert_almost_equal(tau[2][:, -1], np.array((-0.35714285, 9.81, -0.56071428)))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((1.42857142, 9.81, 0)))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -1], np.array((-1.42857144, 9.81, 0)))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array((-0.2322581, 9.81, 0.0)))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, -1], np.array((0.2322581, 9.81, -0.0)))
+    np.testing.assert_almost_equal(controls[2]["tau"][:, 0], np.array((0.35714285, 9.81, 0.56071428)))
+    np.testing.assert_almost_equal(controls[2]["tau"][:, -1], np.array((-0.35714285, 9.81, -0.56071428)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
-        TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])

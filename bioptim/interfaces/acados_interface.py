@@ -156,13 +156,13 @@ class AcadosInterface(SolverInterface):
         x = ocp.nlp[0].X[0]
         u = ocp.nlp[0].U[0]
         p = ocp.nlp[0].p
-        if ocp.nlp[0].parameters_to_optimize:
+        if ocp.nlp[0].parameters:
             for n in range(ocp.n_phases):
-                for i in range(len(ocp.nlp[0].parameters_to_optimize)):
-                    if str(ocp.nlp[0].p[i]) == f"time_phase_{n}":
+                for p in ocp.nlp[0].parameters:
+                    if str(p) == f"time_phase_{n}":
                         raise RuntimeError("Time constraint not implemented yet with Acados.")
 
-        self.params = ocp.nlp[0].parameters_to_optimize
+        self.params = ocp.nlp[0].parameters
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 

@@ -12,7 +12,6 @@ class OptimizationVariable:
         self.ocp = ocp
 
         self.parameters_in_list = ParameterList()
-        self.params = Parameter(cx=ocp.CX(), bounds=Bounds(interpolation=InterpolationType.CONSTANT), initial_guess=InitialGuess())
 
         self.x = []
         self.x_bounds = []
@@ -47,7 +46,7 @@ class OptimizationVariable:
         The vector of all variables
         """
 
-        return vertcat(*self.x, *self.u, self.params.cx)
+        return vertcat(*self.x, *self.u, self.parameters.cx)
 
     @property
     def bounds(self):
@@ -64,7 +63,7 @@ class OptimizationVariable:
             v_bounds.concatenate(x_bound)
         for u_bound in self.u_bounds:
             v_bounds.concatenate(u_bound)
-        v_bounds.concatenate(self.params.bounds)
+        v_bounds.concatenate(self.parameters.bounds)
         return v_bounds
 
     @property
@@ -82,8 +81,22 @@ class OptimizationVariable:
             v_init.concatenate(x_init)
         for u_init in self.u_init:
             v_init.concatenate(u_init)
-        v_init.concatenate(self.params.initial_guess)
+        v_init.concatenate(self.parameters.initial_guess)
         return v_init
+
+    @property
+    def parameters(self):
+        param = Parameter(cx=self.ocp.CX(), bounds=Bounds(interpolation=InterpolationType.CONSTANT), initial_guess=InitialGuess(), size=0)
+        for p in self.parameters_in_list:
+            param.cx = vertcat(param.cx, p.cx)
+            param.size += p.size if p else 0
+
+            p.bounds.check_and_adjust_dimensions(p.size, 1)
+            param.bounds.concatenate(p.bounds)
+
+            p.initial_guess.check_and_adjust_dimensions(p.size, 1)
+            param.initial_guess.concatenate(p.initial_guess)
+        return param
 
     def to_dictionaries(self, data, phase_idx):
         ocp = self.ocp
@@ -257,21 +270,10 @@ class OptimizationVariable:
             if param.function != self.parameters_in_list[i].function:
                 raise RuntimeError("Pre dynamic function of same parameters must be the same")
             self.parameters_in_list[i].size += param.size
+            self.parameters_in_list[i].cx = vertcat(self.parameters_in_list[i].cx, param.cx)
             if param.params != self.parameters_in_list[i].params:
                 raise RuntimeError("Extra parameters of same parameters must be the same")
             self.parameters_in_list[i].bounds.concatenate(param.bounds)
             self.parameters_in_list[i].initial_guess.concatenate(param.initial_guess)
         else:
             self.parameters_in_list.add(param)
-
-        # Reinitialize param vector (Allows to regroup Parameter of same name together)
-        self.params = Parameter(cx=ocp.CX(), bounds=Bounds(interpolation=InterpolationType.CONSTANT), initial_guess=InitialGuess())
-        for p in self.parameters_in_list:
-            self.params.cx = vertcat(self.params.cx, p.cx)
-            self.params.size = p.size
-
-            p.bounds.check_and_adjust_dimensions(p.size, 1)
-            self.params.bounds.concatenate(p.bounds)
-
-            p.initial_guess.check_and_adjust_dimensions(p.size, 1)
-            self.params.initial_guess.concatenate(p.initial_guess)
