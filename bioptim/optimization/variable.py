@@ -91,11 +91,11 @@ class OptimizationVariable:
             param.cx = vertcat(param.cx, p.cx)
             param.size += p.size if p else 0
 
-            p.bounds.check_and_adjust_dimensions(p.size, 1)
             param.bounds.concatenate(p.bounds)
+            param.bounds.check_and_adjust_dimensions(param.size, 1)
 
-            p.initial_guess.check_and_adjust_dimensions(p.size, 1)
             param.initial_guess.concatenate(p.initial_guess)
+            param.initial_guess.check_and_adjust_dimensions(param.size, 1)
         return param
 
     def to_dictionaries(self, data, phase_idx):
