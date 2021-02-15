@@ -162,7 +162,7 @@ from .limits.penalty import PenaltyNodes
 from .misc.data import Data
 from .misc.enums import Axis, Node, InterpolationType, OdeSolver, PlotType, Solver, ControlType
 from .misc.mapping import BidirectionalMapping, Mapping
-from bioptim.optimization.non_linear_program import NonLinearProgram
-from bioptim.optimization.optimal_control_program import OptimalControlProgram
-from bioptim.optimization.parameters import ParameterList
+from .optimization.non_linear_program import NonLinearProgram
+from .optimization.optimal_control_program import OptimalControlProgram
+from .optimization.parameters import ParameterList
 from .misc.simulate import Simulate

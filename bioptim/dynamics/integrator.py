@@ -209,7 +209,7 @@ class Integrator:
         elif nlp.ode_solver == OdeSolver.CVODES:
             if not isinstance(ocp.CX(), MX):
                 raise RuntimeError("CVODES integrator can only be used with MX graphs")
-            if len(ocp.param_to_optimize) != 0:
+            if len(ocp.v.params.size) != 0:
                 raise RuntimeError("CVODES cannot be used while optimizing parameters")
             if nlp.external_forces:
                 raise RuntimeError("CVODES cannot be used with external_forces")

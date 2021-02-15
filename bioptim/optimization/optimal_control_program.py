@@ -6,27 +6,28 @@ from math import inf
 
 import biorbd
 import casadi
-from casadi import MX, vertcat, SX
+from casadi import MX, SX
 
-from bioptim.optimization.non_linear_program import NonLinearProgram as NLP
-from bioptim.misc.__version__ import __version__
-from bioptim.misc.data import Data
-from bioptim.dynamics.integrator import Integrator
-from bioptim.misc.enums import ControlType, OdeSolver, Solver
-from bioptim.misc.mapping import BidirectionalMapping, Mapping
-from bioptim.optimization.parameters import Parameters, ParameterList, Parameter
-from bioptim.misc.utils import check_version
-from bioptim.dynamics.problem import Problem
-from bioptim.dynamics.dynamics_type import DynamicsList, Dynamics
-from bioptim.gui.plot import CustomPlot
-from bioptim.interfaces.biorbd_interface import BiorbdInterface
-from bioptim.limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
-from bioptim.limits.phase_transition import PhaseTransitionFunctions, PhaseTransitionList
-from bioptim.limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
-from bioptim.limits.path_conditions import BoundsList, Bounds
-from bioptim.limits.path_conditions import InitialGuess, InitialGuessList
-from bioptim.limits.path_conditions import InterpolationType
-from bioptim.limits.penalty import PenaltyOption
+from .non_linear_program import NonLinearProgram as NLP
+from .variable import OptimizationVariable
+from ..misc.__version__ import __version__
+from ..misc.data import Data
+from ..dynamics.integrator import Integrator
+from ..misc.enums import ControlType, OdeSolver, Solver
+from ..misc.mapping import BidirectionalMapping, Mapping
+from ..optimization.parameters import Parameters, ParameterList, Parameter
+from ..misc.utils import check_version
+from ..dynamics.problem import Problem
+from ..dynamics.dynamics_type import DynamicsList, Dynamics
+from ..gui.plot import CustomPlot
+from ..interfaces.biorbd_interface import BiorbdInterface
+from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
+from ..limits.phase_transition import PhaseTransitionFunctions, PhaseTransitionList
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
+from ..limits.path_conditions import BoundsList, Bounds
+from ..limits.path_conditions import InitialGuess, InitialGuessList
+from ..limits.path_conditions import InterpolationType
+from ..limits.penalty import PenaltyOption
 
 check_version(biorbd, "1.4.0", "1.5.0")
 
@@ -47,14 +48,6 @@ class OptimalControlProgram:
         Objective values that are not phase dependent (mostly parameters)
     g: MX
         Constraints that are not phase dependent (mostly parameters and continuity constraints)
-    V: MX
-        All the casadi variables of the ocp in a single vector
-    V_bounds: Bounds
-        All the bounds for V
-    V_init: InitialGuess
-        All the initial guesses for V
-    param_to_optimize: dict
-        All the parameters to optimize
     nlp: NLP
         All the phases of the ocp
     CX: [MX, SX]
@@ -285,24 +278,21 @@ class OptimalControlProgram:
         if not isinstance(use_sx, bool):
             raise RuntimeError("use_sx should be a bool")
 
-        # Declare optimization variables
-        self.J = []
-        self.g = []
-        self.V = []
-        self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        self.V_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
-        self.param_to_optimize = {}
-
-        # nlp is the core of a phase
-        self.nlp = [NLP() for _ in range(self.n_phases)]
-        NLP.add(self, "model", biorbd_model, False)
-        NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
-
         # Type of CasADi graph
         if use_sx:
             self.CX = SX
         else:
             self.CX = MX
+
+        # Declare optimization variables
+        self.J = []
+        self.g = []
+        self.v = OptimizationVariable(self)
+
+        # nlp is the core of a phase
+        self.nlp = [NLP() for _ in range(self.n_phases)]
+        NLP.add(self, "model", biorbd_model, False)
+        NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
         # Define some aliases
         NLP.add(self, "ns", n_shooting, False)
@@ -360,8 +350,7 @@ class OptimalControlProgram:
             Integrator.prepare_dynamic_integrator(self, self.nlp[i])
 
         # Define the actual NLP problem
-        for i in range(self.n_phases):
-            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
+        self.v.define_ocp_shooting_points()
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
@@ -384,129 +373,6 @@ class OptimalControlProgram:
 
         # Prepare objectives
         self.update_objectives(objective_functions)
-
-    def __define_multiple_shooting_nodes_per_phase(self, nlp: NLP, idx_phase: int):
-        """
-        Declare all the casadi variables with the right size to be used during a specific phase
-
-        Parameters
-        ----------
-        nlp: NonLinearProgram
-            A reference to the current phase
-        idx_phase
-            The index associate with that phase
-        """
-
-        V = []
-        X = []
-        U = []
-
-        if nlp.control_type != ControlType.CONSTANT and nlp.control_type != ControlType.LINEAR_CONTINUOUS:
-            raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-
-        offset = 0
-        for k in range(nlp.ns + 1):
-            X_ = nlp.CX.sym("X_" + str(idx_phase) + "_" + str(k), nlp.nx)
-            X.append(X_)
-            offset += nlp.nx
-            V = vertcat(V, X_)
-
-            if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
-                U_ = nlp.CX.sym("U_" + str(idx_phase) + "_" + str(k), nlp.nu, 1)
-                U.append(U_)
-                offset += nlp.nu
-                V = vertcat(V, U_)
-
-        nlp.X = X
-        nlp.U = U
-        self.V = vertcat(self.V, V)
-
-    def __define_initial_guess(self):
-        """
-        Declare and parse the initial guesses for all the variables (V vector)
-        """
-
-        for i in range(self.n_phases):
-            self.nlp[i].x_init.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
-            if self.nlp[i].control_type == ControlType.CONSTANT:
-                self.nlp[i].u_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
-            elif self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                self.nlp[i].u_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
-            else:
-                raise NotImplementedError(f"Plotting {self.nlp[i].control_type} is not implemented yet")
-
-        self.V_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
-
-        for key in self.param_to_optimize.keys():
-            self.V_init.concatenate(self.param_to_optimize[key].initial_guess)
-
-        for idx_phase, nlp in enumerate(self.nlp):
-            if nlp.control_type == ControlType.CONSTANT:
-                nV = nlp.nx * (nlp.ns + 1) + nlp.nu * nlp.ns
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                nV = (nlp.nx + nlp.nu) * (nlp.ns + 1)
-            else:
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-
-            V_init = InitialGuess([0] * nV, interpolation=InterpolationType.CONSTANT)
-
-            offset = 0
-            for k in range(nlp.ns + 1):
-                V_init.init[offset : offset + nlp.nx, 0] = nlp.x_init.init.evaluate_at(shooting_point=k)
-                offset += nlp.nx
-
-                if nlp.control_type != ControlType.CONSTANT or (
-                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
-                ):
-                    V_init.init[offset : offset + nlp.nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
-                    offset += nlp.nu
-
-            V_init.check_and_adjust_dimensions(nV, 1)
-            self.V_init.concatenate(V_init)
-
-    def __define_bounds(self):
-        """
-        Declare and parse the bounds for all the variables (V vector)
-        """
-
-        for i in range(self.n_phases):
-            self.nlp[i].x_bounds.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
-            if self.nlp[i].control_type == ControlType.CONSTANT:
-                self.nlp[i].u_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
-            elif self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                self.nlp[i].u_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
-            else:
-                raise NotImplementedError(f"Plotting {self.nlp[i].control_type} is not implemented yet")
-
-        self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-
-        for key in self.param_to_optimize.keys():
-            self.V_bounds.concatenate(self.param_to_optimize[key].bounds)
-
-        for idx_phase, nlp in enumerate(self.nlp):
-            if nlp.control_type == ControlType.CONSTANT:
-                nV = nlp.nx * (nlp.ns + 1) + nlp.nu * nlp.ns
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                nV = (nlp.nx + nlp.nu) * (nlp.ns + 1)
-            else:
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-            V_bounds = Bounds([0] * nV, [0] * nV, interpolation=InterpolationType.CONSTANT)
-
-            offset = 0
-            for k in range(nlp.ns + 1):
-                V_bounds.min[offset : offset + nlp.nx, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=k)
-                V_bounds.max[offset : offset + nlp.nx, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=k)
-                offset += nlp.nx
-
-                if nlp.control_type != ControlType.CONSTANT or (
-                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
-                ):
-                    V_bounds.min[offset : offset + nlp.nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
-                    V_bounds.max[offset : offset + nlp.nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
-                    offset += nlp.nu
-
-            V_bounds.check_and_adjust_dimensions(nV, 1)
-            self.V_bounds.concatenate(V_bounds)
 
     def __define_time(
         self,
@@ -612,7 +478,10 @@ class OptimalControlProgram:
             if isinstance(nlp.tf, self.CX):
                 time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
                 time_init = InitialGuess(initial_time_guess[i])
-                Parameters._add_to_v(self, "time", 1, None, time_bounds, time_init, nlp.tf)
+                time_param = Parameter(
+                    cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
+                )
+                self.v.add_parameter(time_param)
                 i += 1
 
     def update_objectives(self, new_objective_function: Union[Objective, ObjectiveList]):
@@ -671,9 +540,8 @@ class OptimalControlProgram:
             self.__modify_penalty(new_parameters)
 
         elif isinstance(new_parameters, ParameterList):
-            for parameters_in_phase in new_parameters:
-                for parameter in parameters_in_phase:
-                    self.__modify_penalty(parameter)
+            for parameter in new_parameters:
+                self.__modify_penalty(parameter)
 
         else:
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
@@ -697,7 +565,7 @@ class OptimalControlProgram:
         if u_bounds:
             NLP.add_path_condition(self, u_bounds, "u_bounds", Bounds, BoundsList)
         if self.isdef_x_bounds and self.isdef_u_bounds:
-            self.__define_bounds()
+            self.v.define_ocp_bounds()
 
     def update_initial_guess(
         self,
@@ -732,12 +600,14 @@ class OptimalControlProgram:
         for param in param_init_list:
             if not param.name:
                 raise ValueError("update_initial_guess must specify a name for the parameters")
-            if param.name not in self.param_to_optimize:
+            try:
+                idx = self.v.parameters_in_list.index(param.name)
+                self.v.parameters_in_list[idx].initial_guess.init = param.init
+            except ValueError:
                 raise ValueError("update_initial_guess cannot declare new parameters")
-            self.param_to_optimize[param.name].initial_guess.init = param.init
 
         if self.isdef_x_init and self.isdef_u_init:
-            self.__define_initial_guess()
+            self.v.define_ocp_initial_guess()
 
     def __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter]):
         """

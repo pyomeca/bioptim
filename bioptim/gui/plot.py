@@ -516,14 +516,14 @@ class PlotOcp:
 
             state = np.ndarray((0, n_elements))
             for s in nlp.var_states:
-                if isinstance(data_states_per_phase[s], (list, tuple)):
-                    state = np.concatenate((state, data_states_per_phase[s][i]))
+                if isinstance(data_states_per_phase, (list, tuple)):
+                    state = np.concatenate((state, data_states_per_phase[i][s]))
                 else:
                     state = np.concatenate((state, data_states_per_phase[s]))
             control = np.ndarray((0, nlp.ns + 1))
             for s in nlp.var_controls:
-                if isinstance(data_controls_per_phase[s], (list, tuple)):
-                    control = np.concatenate((control, data_controls_per_phase[s][i]))
+                if isinstance(data_controls_per_phase, (list, tuple)):
+                    control = np.concatenate((control, data_controls_per_phase[i][s]))
                 else:
                     control = np.concatenate((control, data_controls_per_phase[s]))
 
@@ -829,7 +829,7 @@ class ShowResult:
             """
 
             # TODO: This should be done in bounds and objective functions, so it is available for all the code
-            val_tp = Function("val_tp", [self.ocp.V], [pen["val"]]).expand()(self.sol["x"])
+            val_tp = Function("val_tp", [self.ocp.v.vector], [pen["val"]]).expand()(self.sol["x"])
             if pen["target"] is not None:
                 # TODO Target should be available to constraint?
                 nan_idx = np.isnan(pen["target"])
@@ -843,7 +843,7 @@ class ShowResult:
 
             val = np.sum(val_tp)
 
-            dt = Function("dt", [self.ocp.V], [pen["dt"]]).expand()(self.sol["x"])
+            dt = Function("dt", [self.ocp.v.vector], [pen["dt"]]).expand()(self.sol["x"])
             val_weighted = pen["objective"].weight * val * dt
             return val, val_weighted
 
@@ -968,7 +968,7 @@ class OnlineCallback(Callback):
         """
         Callback.__init__(self)
         self.ocp = ocp
-        self.nx = self.ocp.V.rows()
+        self.nx = self.ocp.v.vector.shape[0]
         self.ng = 0
         self.construct("AnimateCallback", opts)
 

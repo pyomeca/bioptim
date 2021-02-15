@@ -146,13 +146,15 @@ class IpoptInterface(SolverInterface):
         all_J = self.__dispatch_obj_func()
         all_g, all_g_bounds = self.__dispatch_bounds()
 
-        self.ipopt_nlp = {"x": self.ocp.V, "f": sum1(all_J), "g": all_g}
+        self.ipopt_nlp = {"x": self.ocp.v.vector, "f": sum1(all_J), "g": all_g}
+        v_bounds = self.ocp.v.bounds
+        v_init = self.ocp.v.init
         self.ipopt_limits = {
-            "lbx": self.ocp.V_bounds.min,
-            "ubx": self.ocp.V_bounds.max,
+            "lbx": v_bounds.min,
+            "ubx": v_bounds.max,
             "lbg": all_g_bounds.min,
             "ubg": all_g_bounds.max,
-            "x0": self.ocp.V_init.init,
+            "x0": v_init.init,
         }
 
         if self.lam_g is not None:
