@@ -577,7 +577,7 @@ class Problem:
         mx_symbolic_controls = MX.sym("u", nlp.nu, 1)
 
         nlp.p = ocp.v.params.cx
-        nlp.np = ocp.v.params.size
+        nlp.np = ocp.v.params.size if ocp.v.params.size else 0
         mx_symbolic_params = MX.sym("p", nlp.np, 1)
 
         dynamics = dyn_func(mx_symbolic_states, mx_symbolic_controls, mx_symbolic_params, nlp)

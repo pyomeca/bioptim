@@ -93,8 +93,11 @@ class OptimizationVariable:
             phase_idx = range(len(ocp.nlp))
         elif isinstance(phase_idx, int):
             phase_idx = [phase_idx]
-        data_states = [{}] * len(phase_idx)
-        data_controls = [{}] * len(phase_idx)
+        data_states = []
+        data_controls = []
+        for _ in range(len(phase_idx)):
+            data_states.append({})
+            data_controls.append({})
         data_parameters = {}
 
         offset = 0

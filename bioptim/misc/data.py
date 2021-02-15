@@ -1,7 +1,7 @@
 from typing import Union
 
 import numpy as np
-from scipy import interpolate
+from scipy import interpolate as sci_interp
 
 from .enums import ControlType
 from ..optimization.variable import OptimizationVariable
@@ -54,7 +54,7 @@ class Data:
         get_parameters: bool = False,
         phase_idx: Union[int, list, tuple] = None,
         integrate: bool = False,
-        interpolate_n_frames: int = -1,
+        interpolate_n_frames: int = 0,
         concatenate: bool = True,
     ) -> Union[dict, list]:
         """
@@ -89,21 +89,35 @@ class Data:
         if isinstance(sol, dict) and "x" in sol:
             sol = sol["x"]
 
+        if phase_idx is None:
+            phase_idx = range(len(ocp.nlp))
+        elif isinstance(phase_idx, int):
+            phase_idx = [phase_idx]
+
         data_states, data_controls, data_parameters = OptimizationVariable.to_dictionaries(ocp.v, sol, phase_idx)
+
+        phase_time = [0] + [nlp.tf for nlp in ocp.nlp]
+        if "time" in data_parameters:
+            cmp = 0
+            for i in range(len(phase_time)):
+                if isinstance(phase_time[i], ocp.CX):
+                    phase_time[i] = data_parameters["time"][cmp, 0]
+                    cmp += 1
 
         if integrate:
             data_states = Data._integrate(ocp, data_states, data_controls, data_parameters)
 
         Data._complete_control(ocp, data_controls)
         if concatenate:
-            data_states = Data._concatenate(data_states)
-            data_controls = Data._concatenate(data_controls)
+            data_states = Data._concatenate(ocp, data_states, phase_idx)
+            data_controls = Data._concatenate(ocp, data_controls, phase_idx)
+            phase_time = [0] + [sum([phase_time[i+1] for i in phase_idx])]
 
         if interpolate_n_frames > 0:
             if integrate:
                 raise RuntimeError("interpolate values are not compatible yet with integrated values")
-            data_states = Data._get_data_interpolated_from_V(data_states, interpolate_n_frames)
-            data_controls = Data._get_data_interpolated_from_V(data_controls, interpolate_n_frames)
+            data_states = Data._interpolate(ocp, data_states, interpolate_n_frames, phase_time)
+            data_controls = Data._interpolate(ocp, data_controls, interpolate_n_frames, phase_time)
 
         out = []
         if get_states:
@@ -154,7 +168,10 @@ class Data:
         The dictionary of states integrated
         """
 
-        data_states_out = [{}] * len(data_states)
+        data_states_out = []
+        for _ in range(len(data_states)):
+            data_states_out.append({})
+
         params = data_parameters["all"]
         for p in range(len(data_states)):
             n_steps = ocp.nlp[p].n_integration_steps + 1
@@ -180,7 +197,7 @@ class Data:
         return data_states_out
 
     @staticmethod
-    def _concatenate(data: list) -> dict:
+    def _concatenate(ocp, data: list, phase_idx) -> list:
         """
         Concatenate all the phases
 
@@ -201,25 +218,28 @@ class Data:
             if d.keys() != keys or [d[key].shape[0] for key in d] != sizes:
                 raise RuntimeError("Program dimension must be coherent across phases to concatenate them")
 
-        data_out = {}
+        data_out = [{}]
         for i, key in enumerate(keys):
-            data_out[key] = np.ndarray((sizes[i], 0))
+            data_out[0][key] = np.ndarray((sizes[i], 0))
 
-        for d in data:
+        for p in phase_idx:
+            d = data[p]
             for key in d:
-                data_out[key] = np.concatenate((data_out[key], d[key]), axis=1)
+                data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, :ocp.nlp[p].ns]), axis=1)
+        for key in data[-1]:
+            data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
 
         return data_out
 
     @staticmethod
-    def _get_data_interpolated_from_V(data_states: dict, n_frames: int) -> dict:
+    def _interpolate(ocp, data: dict, n_frames: int, phase_time) -> list:
         """
         Interpolate the states
 
         Parameters
         ----------
-        data_states: dict
-            A dictionary of all the states
+        data: dict
+            A dictionary of all the data to interpolate
         n_frames: int
             The number of frames to interpolate the data
 
@@ -228,22 +248,29 @@ class Data:
         The dictionary of states interpolated
         """
 
-        for key in data_states:
-            t = data_states[key].get_time_per_phase(concatenate=False)
-            d = data_states[key].to_matrix(concatenate_phases=False)
-            if not isinstance(d, (tuple, list)):
-                t = [t]
-                d = [d]
+        data_out = []
+        for _ in range(len(data)):
+            data_out.append({})
+        for idx_phase in range(len(data)):
+            x_phase = data[idx_phase]["all"]
+            n_elements = x_phase.shape[0]
 
-            for idx_phase in range(len(d)):
-                t_phase = t[idx_phase]
-                t_int = np.linspace(t_phase[0], t_phase[-1], n_frames)
-                x_phase = d[idx_phase]
+            t_phase = np.linspace(phase_time[idx_phase], phase_time[idx_phase + 1], x_phase.shape[1])
+            t_int = np.linspace(phase_time[0], phase_time[-1], n_frames)
 
-                x_interpolate = np.ndarray((data_states[key].n_elements, n_frames))
-                for j in range(data_states[key].n_elements):
-                    s = interpolate.splrep(t_phase, x_phase[j, :])
-                    x_interpolate[j, :] = interpolate.splev(t_int, s)
-                data_states[key].phase[idx_phase] = Data.Phase(t_int, x_interpolate)
+            x_interpolate = np.ndarray((n_elements, n_frames))
+            for j in range(n_elements):
+                s = sci_interp.splrep(t_phase, x_phase[j, :])
+                x_interpolate[j, :] = sci_interp.splev(t_int, s)
+            data_out[idx_phase]["all"] = x_interpolate
 
-        return data_states
+            offset = 0
+            for key in data[idx_phase]:
+                if key == "all":
+                    continue
+                n_elements = data[idx_phase][key].shape[0]
+                data_out[idx_phase][key] = data_out[idx_phase]["all"][offset: offset + n_elements]
+                offset += n_elements
+
+        return data_out
+
