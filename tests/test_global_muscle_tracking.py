@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 import biorbd
-from bioptim import Data, OdeSolver
+from bioptim import OdeSolver
 
 from .utils import TestUtils
 
@@ -50,7 +50,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     if ode_solver == OdeSolver.RK8:
         np.testing.assert_almost_equal(f[0, 0], 6.340821289366818e-06)
@@ -58,13 +58,12 @@ def test_muscle_activations_and_states_tracking(ode_solver):
         np.testing.assert_almost_equal(f[0, 0], 6.518854595660012e-06)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (36, 1))
     np.testing.assert_almost_equal(g, np.zeros((36, 1)), decimal=6)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
+    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         # initial and final position
@@ -162,7 +161,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     if ode_solver == OdeSolver.RK8:
         np.testing.assert_almost_equal(f[0, 0], 6.39401362889915e-06)
@@ -170,13 +169,12 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
         np.testing.assert_almost_equal(f[0, 0], 6.5736277330517424e-06)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (36, 1))
     np.testing.assert_almost_equal(g, np.zeros((36, 1)), decimal=6)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, mus = states["q"], states["qdot"], controls["muscles"]
+    q, qdot, mus = sol.states["q"], sol.states["qdot"], sol.controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         # initial and final position
@@ -267,23 +265,22 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
     sol = ocp.solve()
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (90, 1))
     np.testing.assert_almost_equal(g, np.zeros((90, 1)), decimal=6)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
     q, qdot, mus_states, tau, mus_controls = (
-        states["q"],
-        states["qdot"],
-        states["muscles"],
-        controls["tau"],
-        controls["muscles"],
+        sol.states["q"],
+        sol.states["qdot"],
+        sol.states["muscles"],
+        sol.controls["tau"],
+        sol.controls["muscles"],
     )
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 7.972968350373634e-07)
 
@@ -312,7 +309,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
 
     elif ode_solver == OdeSolver.RK8:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 7.972968350373634e-07)
 
@@ -341,7 +338,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
 
     else:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 3.5086270922948964e-07)
 
@@ -412,17 +409,16 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     sol = ocp.solve()
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (90, 1))
     np.testing.assert_almost_equal(g, np.zeros((90, 1)), decimal=6)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, mus_states, mus_controls = (states["q"], states["qdot"], states["muscles"], controls["muscles"])
+    q, qdot, mus_states, mus_controls = (sol.states["q"], sol.states["qdot"], sol.states["muscles"], sol.controls["muscles"])
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 7.973265397440505e-07)
 
@@ -450,7 +446,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
 
     elif ode_solver == OdeSolver.RK8:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 7.973265397440505e-07)
 
@@ -478,7 +474,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
 
     else:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 3.5087093735149467e-07)
 
@@ -543,18 +539,17 @@ def test_muscle_activation_and_contacts_tracking(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 1.2080146471135251)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (40, 1))
     np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau, mus_controls = (states["q"], states["qdot"], controls["tau"], controls["muscles"])
+    q, qdot, tau, mus_controls = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0, -0.75, 0.75]))

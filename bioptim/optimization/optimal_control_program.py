@@ -10,13 +10,7 @@ from casadi import MX, SX
 
 from .non_linear_program import NonLinearProgram as NLP
 from .variable import OptimizationVariable
-from ..misc.__version__ import __version__
-from ..misc.data import Data
 from ..dynamics.integrator import Integrator
-from ..misc.enums import ControlType, OdeSolver, Solver
-from ..misc.mapping import BidirectionalMapping, Mapping
-from ..optimization.parameters import Parameters, ParameterList, Parameter
-from ..misc.utils import check_version
 from ..dynamics.problem import Problem
 from ..dynamics.dynamics_type import DynamicsList, Dynamics
 from ..gui.plot import CustomPlot
@@ -28,6 +22,12 @@ from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
+from ..misc.__version__ import __version__
+from ..misc.enums import ControlType, OdeSolver, Solver
+from ..misc.mapping import BidirectionalMapping, Mapping
+from ..misc.utils import check_version
+from ..optimization.parameters import ParameterList, Parameter
+from ..optimization.solution import Solution
 
 check_version(biorbd, "1.4.0", "1.5.0")
 
@@ -682,7 +682,7 @@ class OptimalControlProgram:
         show_online_optim: bool = False,
         return_iterations: bool = False,
         solver_options: dict = {},
-    ) -> Any:
+    ) -> Solution:
         """
         Call the solver to actually solve the ocp
 
@@ -736,7 +736,7 @@ class OptimalControlProgram:
         if return_iterations:
             self.solver.finish_get_iterations()
 
-        return self.solver.get_optimized_value()
+        return Solution(self, self.solver.get_optimized_value())
 
     def save(self, sol: dict, file_path: str, sol_iterations: list = None):
         """

@@ -17,7 +17,6 @@ from bioptim import (
     OptimalControlProgram,
     NonLinearProgram,
     BidirectionalMapping,
-    Data,
     DynamicsList,
     DynamicsFcn,
     DynamicsFunctions,
@@ -259,13 +258,12 @@ if __name__ == "__main__":
     # --- Show the results --- #
     muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
 
-    states, controls = Data.get_data(ocp, sol["x"])
-    q = states["q"]
-    qdot = states["qdot"]
-    mus = controls["muscles"]
+    q = sol.states["q"]
+    qdot = sol.states["qdot"]
+    mus = sol.controls["muscles"]
 
     if use_residual_torque:
-        tau = controls["tau"]
+        tau = sol.controls["tau"]
 
     n_q = ocp.nlp[0].model.nbQ()
     n_mark = ocp.nlp[0].model.nbMarkers()

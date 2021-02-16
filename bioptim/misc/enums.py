@@ -22,6 +22,17 @@ class Solver(Enum):
     NONE = None
 
 
+class DataType(Enum):
+    """
+    The type of data
+    """
+
+    STATES = "states"
+    CONTROLS = "controls"
+    PARAMETERS = "parameters"
+    NONE = None
+
+
 class OdeSolver(Enum):
     """
     Selection of valid integrator

@@ -12,7 +12,6 @@ import numpy as np
 import biorbd
 from bioptim import (
     OptimalControlProgram,
-    Data,
     DynamicsList,
     DynamicsFcn,
     ObjectiveList,
@@ -105,9 +104,8 @@ if __name__ == "__main__":
         min_bound=50,
         max_bound=np.inf,
     )
-    sol_to_track = ocp_to_track.solve()
-    states, controls = Data.get_data(ocp_to_track, sol_to_track)
-    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
+    sol = ocp_to_track.solve()
+    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
     x = np.concatenate((q, qdot))
     u = np.concatenate((tau, mus))
     contact_forces_ref = np.array(ocp_to_track.nlp[0].contact_forces_func(x[:, :-1], u[:, :-1], []))

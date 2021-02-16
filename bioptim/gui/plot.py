@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt, lines
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM, Function
 
 from ..limits.path_conditions import Bounds
-from ..misc.data import Data
+from bioptim.optimization.solution import Solution
 from ..misc.enums import PlotType, ControlType, InterpolationType
 from ..misc.mapping import Mapping
 from ..misc.utils import check_version
@@ -498,34 +498,34 @@ class PlotOcp:
 
         self.ydata = []
 
-        data_states, data_controls, data_param = Data.get_data(
-            self.ocp, V, get_parameters=True, integrate=True, concatenate=False
-        )
-        data_param_in_dyn = np.array([data_param[key] for key in data_param if key != "time"]).squeeze()
+        sol = Solution(self.ocp, V)
+        data_states = sol.integrate()
+        data_controls = sol.controls
+        data_params = sol.parameters
+        data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "time"]).squeeze()
 
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
-                    self.tf[i_in_tf] = data_param["time"][i_in_time]
+                    self.tf[i_in_tf] = data_params["time"][i_in_time]
             self.__update_xdata()
 
-        data_states_per_phase, data_controls_per_phase = Data.get_data(self.ocp, V, integrate=True, concatenate=False)
         for i, nlp in enumerate(self.ocp.nlp):
             step_size = nlp.n_integration_steps + 1
             n_elements = nlp.ns * step_size + 1
 
             state = np.ndarray((0, n_elements))
             for s in nlp.var_states:
-                if isinstance(data_states_per_phase, (list, tuple)):
-                    state = np.concatenate((state, data_states_per_phase[i][s]))
+                if isinstance(data_states, (list, tuple)):
+                    state = np.concatenate((state, data_states[i][s]))
                 else:
-                    state = np.concatenate((state, data_states_per_phase[s]))
+                    state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
             for s in nlp.var_controls:
-                if isinstance(data_controls_per_phase, (list, tuple)):
-                    control = np.concatenate((control, data_controls_per_phase[i][s]))
+                if isinstance(data_controls, (list, tuple)):
+                    control = np.concatenate((control, data_controls[i][s]))
                 else:
-                    control = np.concatenate((control, data_controls_per_phase[s]))
+                    control = np.concatenate((control, data_controls[s]))
 
             if nlp.control_type == ControlType.CONSTANT:
                 u_mod = 1
@@ -543,7 +543,7 @@ class PlotOcp:
                         y_tp[:, :] = self.plot_func[key][i].function(
                             state[:, step_size * idx : step_size * (idx + 1)],
                             control[:, idx : idx + u_mod],
-                            data_param_in_dyn,
+                            data_params_in_dyn,
                         )
                         all_y.append(y_tp)
 
@@ -556,11 +556,11 @@ class PlotOcp:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
                     try:
-                        y[:, :] = self.plot_func[key][i].function(state[:, ::step_size], control, data_param_in_dyn)
+                        y[:, :] = self.plot_func[key][i].function(state[:, ::step_size], control, data_params_in_dyn)
                     except ValueError:
                         raise ValueError(
                             f"Wrong dimensions for plot {key}. Got "
-                            f"{self.plot_func[key][i].function(state[:, ::step_size], control, data_param_in_dyn).shape}"
+                            f"{self.plot_func[key][i].function(state[:, ::step_size], control, data_params_in_dyn).shape}"
                             f", but expected {y.shape}"
                         )
                     self.__append_to_ydata(y)
@@ -724,7 +724,7 @@ class ShowResult:
         Allows for non-blocking show of the figure. This works only in Debug
     """
 
-    def __init__(self, ocp, sol: dict):
+    def __init__(self, ocp, sol: Solution):
         """
         Parameters
         ----------
@@ -760,7 +760,7 @@ class ShowResult:
             automatically_organize=automatically_organize,
             adapt_graph_size_to_bounds=adapt_graph_size_to_bounds,
         )
-        plot_ocp.update_data(self.sol["x"])
+        plot_ocp.update_data(self.sol.vector)
         if show_now:
             plt.show()
 
@@ -787,9 +787,7 @@ class ShowResult:
         except ModuleNotFoundError:
             raise RuntimeError("bioviz must be install to animate the model")
         check_version(bioviz, "2.0.1", "2.1.0")
-        data_interpolate, data_control = Data.get_data(
-            self.ocp, self.sol["x"], integrate=False, interpolate_n_frames=n_frames
-        )
+        data_interpolate = self.sol.interpolate(n_frames) if n_frames > 0 else self.sol.states
         if not isinstance(data_interpolate["q"], (list, tuple)):
             data_interpolate["q"] = [data_interpolate["q"]]
 
@@ -829,7 +827,7 @@ class ShowResult:
             """
 
             # TODO: This should be done in bounds and objective functions, so it is available for all the code
-            val_tp = Function("val_tp", [self.ocp.v.vector], [pen["val"]]).expand()(self.sol["x"])
+            val_tp = Function("val_tp", [self.ocp.v.vector], [pen["val"]]).expand()(self.sol.vector)
             if pen["target"] is not None:
                 # TODO Target should be available to constraint?
                 nan_idx = np.isnan(pen["target"])
@@ -843,7 +841,7 @@ class ShowResult:
 
             val = np.sum(val_tp)
 
-            dt = Function("dt", [self.ocp.v.vector], [pen["dt"]]).expand()(self.sol["x"])
+            dt = Function("dt", [self.ocp.v.vector], [pen["dt"]]).expand()(self.sol.vector)
             val_weighted = pen["objective"].weight * val * dt
             return val, val_weighted
 
@@ -894,7 +892,7 @@ class ShowResult:
             for g in G:
                 next_idx = idx + g["val"].shape[0]
             print(
-                f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])}"
+                f"{g['constraint'].name}: {np.sum(self.sol.constraints[idx:next_idx])}"
             )
             idx = next_idx
         if has_global:
@@ -907,7 +905,7 @@ class ShowResult:
                 for g in G:
                     next_idx += g["val"].shape[0]
                 print(
-                    f"{g['constraint'].name}: {np.sum(self.sol['g'][idx:next_idx])}"
+                    f"{g['constraint'].name}: {np.sum(self.sol.constraints[idx:next_idx])}"
                 )
                 idx = next_idx
             print("")

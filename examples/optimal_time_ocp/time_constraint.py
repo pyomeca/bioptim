@@ -18,7 +18,6 @@ from bioptim import (
     InitialGuess,
     Node,
     ShowResult,
-    Data,
     OdeSolver,
 )
 
@@ -119,8 +118,7 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
-    param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
-    print(f"The optimized phase time is: {param['time'][0, 0]}")
+    print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}")
 
     result = ShowResult(ocp, sol)
     result.animate()

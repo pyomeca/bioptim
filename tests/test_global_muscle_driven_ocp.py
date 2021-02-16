@@ -5,7 +5,7 @@ import importlib.util
 from pathlib import Path
 import pytest
 import numpy as np
-from bioptim import Data, OdeSolver
+from bioptim import OdeSolver
 
 from .utils import TestUtils
 
@@ -30,17 +30,16 @@ def test_muscle_driven_ocp(ode_solver):
     sol = ocp.solve()
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (40, 1))
     np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
+    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 0.14351611580879933)
 
@@ -64,7 +63,7 @@ def test_muscle_driven_ocp(ode_solver):
 
     elif ode_solver == OdeSolver.RK8:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 0.14350914060136277)
 
@@ -88,7 +87,7 @@ def test_muscle_driven_ocp(ode_solver):
 
     else:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 0.14350464848810182)
 
@@ -141,18 +140,17 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 0.14351397970185203)
 
         # Check constraints
-        g = np.array(sol["g"])
+        g = np.array(sol.constraints)
         np.testing.assert_equal(g.shape, (60, 1))
         np.testing.assert_almost_equal(g, np.zeros((60, 1)), decimal=6)
 
         # Check some of the results
-        states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
+        q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([0, 0.07, 1.4]))
@@ -174,18 +172,17 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
 
     elif ode_solver == OdeSolver.RK8:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 0.14350699571954104)
 
         # Check constraints
-        g = np.array(sol["g"])
+        g = np.array(sol.constraints)
         np.testing.assert_equal(g.shape, (60, 1))
         np.testing.assert_almost_equal(g, np.zeros((60, 1)), decimal=6)
 
         # Check some of the results
-        states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
+        q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([0, 0.07, 1.4]))
@@ -207,18 +204,17 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
 
     else:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 0.1435025030068162)
 
         # Check constraints
-        g = np.array(sol["g"])
+        g = np.array(sol.constraints)
         np.testing.assert_equal(g.shape, (60, 1))
         np.testing.assert_almost_equal(g, np.zeros((60, 1)), decimal=6)
 
         # Check some of the results
-        states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
+        q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([0, 0.07, 1.4]))
@@ -265,23 +261,22 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 0.14525619)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
     q, qdot, mus_states, tau, mus_controls = (
-        states["q"],
-        states["qdot"],
-        states["muscles"],
-        controls["tau"],
-        controls["muscles"],
+        sol.states["q"],
+        sol.states["qdot"],
+        sol.states["muscles"],
+        sol.controls["tau"],
+        sol.controls["muscles"],
     )
 
     if ode_solver == OdeSolver.IRK:
         # Check constraints
-        g = np.array(sol["g"])
+        g = np.array(sol.constraints)
         np.testing.assert_equal(g.shape, (110, 1))
         np.testing.assert_almost_equal(g[:90], np.zeros((90, 1)), decimal=6)
         np.testing.assert_array_less(-g[90:], -boundary)
@@ -332,7 +327,7 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
 
     elif ode_solver == OdeSolver.RK8:
         # Check constraints
-        g = np.array(sol["g"])
+        g = np.array(sol.constraints)
         np.testing.assert_equal(g.shape, (110, 1))
         np.testing.assert_almost_equal(g[:90], np.zeros((90, 1)), decimal=6)
         np.testing.assert_array_less(-g[90:], -boundary)
@@ -383,7 +378,7 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
 
     else:
         # Check constraints
-        g = np.array(sol["g"])
+        g = np.array(sol.constraints)
         np.testing.assert_equal(g.shape, (110, 1))
         np.testing.assert_almost_equal(g[:90], np.zeros((90, 1)))
         np.testing.assert_array_less(-g[90:], -boundary)

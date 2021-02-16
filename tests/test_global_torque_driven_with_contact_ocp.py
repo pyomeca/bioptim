@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-from bioptim import Data, OdeSolver
+from bioptim import OdeSolver
 
 from .utils import TestUtils
 
@@ -40,11 +40,11 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
     )
     sol = ocp.solve()
 
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     if com_constraints:
         np.testing.assert_equal(g.shape, (244, 1))
     else:
@@ -52,8 +52,7 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
         np.testing.assert_almost_equal(g, np.zeros((160, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
@@ -118,18 +117,17 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 0.21850679397314332)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (160, 1))
     np.testing.assert_almost_equal(g, np.zeros((160, 1)), decimal=6)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     if ode_solver == OdeSolver.IRK:
         # initial and final position

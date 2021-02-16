@@ -152,7 +152,7 @@ def test_console_objective_functions():
     plt = ShowResult(ocp, sol)
     plt.graphs(automatically_organize=False)
 
-    sol["g"] = np.array([range(sol["g"].shape[0])]).T / 10
+    sol.constraints = np.array([range(sol.constraints.shape[0])]).T / 10
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
     plt.objective_functions()

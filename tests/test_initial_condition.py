@@ -3,7 +3,7 @@ import importlib.util
 from pathlib import Path
 
 import numpy as np
-from bioptim import Data, InterpolationType, Simulate, InitialGuess
+from bioptim import InterpolationType, Simulate, InitialGuess
 
 # TODO: Add negative test for sizes
 
@@ -193,11 +193,10 @@ def test_simulate_from_initial_multiple_shoot():
     X = InitialGuess([-1, -2, 1, 0.5])
     U = InitialGuess(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
 
-    sol_simulate_multiple_shooting = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=False)
+    sol = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=False)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol_simulate_multiple_shooting["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
@@ -231,11 +230,10 @@ def test_simulate_from_initial_single_shoot():
     X = InitialGuess([-1, -2, 1, 0.5])
     U = InitialGuess(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
 
-    sol_simulate_single_shooting = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=True)
+    sol = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=True)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol_simulate_single_shooting["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))

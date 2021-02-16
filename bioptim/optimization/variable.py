@@ -98,21 +98,14 @@ class OptimizationVariable:
             param.initial_guess.check_and_adjust_dimensions(param.size, 1)
         return param
 
-    @staticmethod
-    def phase_index_to_slice(ocp, phase_index):
-        if phase_index is None:
-            phase_index = range(len(ocp.nlp))
-        elif isinstance(phase_index, int):
-            phase_index = [phase_index]
-        return phase_index
-
     def extract_phase_time(self, data):
         offset = self.n_all_x + self.n_all_u
         data_time_optimized = []
         if "time" in self.parameters_in_list.names:
             for param in self.parameters_in_list:
                 if param.name == "time":
-                    data_time_optimized.append(data[offset:offset + param.size])
+                    data_time_optimized = list(np.array(data[offset:offset + param.size])[:, 0])
+                    break
                 offset += param.size
 
         phase_time = [0] + [nlp.tf for nlp in self.ocp.nlp]
@@ -124,14 +117,13 @@ class OptimizationVariable:
                     cmp += 1
         return phase_time
 
-    def to_dictionaries(self, data, phase_idx):
+    def to_dictionaries(self, data):
         ocp = self.ocp
         v_array = np.array(data).squeeze()
-        phase_idx = OptimizationVariable.phase_index_to_slice(self.ocp, phase_idx)
 
         data_states = []
         data_controls = []
-        for _ in range(len(phase_idx)):
+        for _ in range(self.ocp.n_phases):
             data_states.append({})
             data_controls.append({})
         data_parameters = {}
@@ -139,27 +131,25 @@ class OptimizationVariable:
         offset = 0
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            if p in phase_idx:
-                x_array = v_array[offset:offset + self.n_phase_x[p]].reshape((ocp.nlp[p].nx, -1), order='F')
-                data_states[p_idx]["all"] = x_array
-                offset_var = 0
-                for var in ocp.nlp[p].var_states:
-                    data_states[p_idx][var] = x_array[offset_var : offset_var + ocp.nlp[p].var_states[var], :]
-                    offset_var += ocp.nlp[p].var_states[var]
-                p_idx += 1
+            x_array = v_array[offset:offset + self.n_phase_x[p]].reshape((ocp.nlp[p].nx, -1), order='F')
+            data_states[p_idx]["all"] = x_array
+            offset_var = 0
+            for var in ocp.nlp[p].var_states:
+                data_states[p_idx][var] = x_array[offset_var : offset_var + ocp.nlp[p].var_states[var], :]
+                offset_var += ocp.nlp[p].var_states[var]
+            p_idx += 1
             offset += self.n_phase_x[p]
 
         offset = self.n_all_x
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            if p in phase_idx:
-                u_array = v_array[offset:offset + self.n_phase_u[p]].reshape((ocp.nlp[p].nu, -1), order='F')
-                data_controls[p_idx]["all"] = u_array
-                offset_var = 0
-                for var in ocp.nlp[p].var_controls:
-                    data_controls[p_idx][var] = u_array[offset_var: offset_var + ocp.nlp[p].var_controls[var], :]
-                    offset_var += ocp.nlp[p].var_controls[var]
-                p_idx += 1
+            u_array = v_array[offset:offset + self.n_phase_u[p]].reshape((ocp.nlp[p].nu, -1), order='F')
+            data_controls[p_idx]["all"] = u_array
+            offset_var = 0
+            for var in ocp.nlp[p].var_controls:
+                data_controls[p_idx][var] = u_array[offset_var: offset_var + ocp.nlp[p].var_controls[var], :]
+                offset_var += ocp.nlp[p].var_controls[var]
+            p_idx += 1
             offset += self.n_phase_u[p]
 
         offset = self.n_all_x + self.n_all_u

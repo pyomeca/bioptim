@@ -9,7 +9,6 @@ from bioptim import (
     Bounds,
     ConstraintFcn,
     ConstraintList,
-    Data,
     DynamicsFcn,
     DynamicsList,
     InitialGuessList,
@@ -24,7 +23,7 @@ from bioptim import (
     ParameterList,
     QAndQDotBounds,
 )
-
+from bioptim.optimization.solution import Solution
 
 def prepare_ocp(phase_time_constraint, use_parameter):
     # --- Inputs --- #
@@ -155,10 +154,10 @@ def test_variable_time(phase_time_constraint, use_parameter):
 
     # --- Solve the program --- #
     np.random.seed(42)
-    sol = np.random.random((649 + use_parameter, 1))
+    sol = Solution(ocp, np.random.random((649 + use_parameter, 1)))
 
     # --- Show results --- #
-    states, controls, parameters = Data.get_data(ocp, sol, get_parameters=True, concatenate=False)
+    states, controls, parameters = sol.states, sol.controls, sol.parameters
 
     np.testing.assert_almost_equal(
         states[0]["q"][0, 0:8],

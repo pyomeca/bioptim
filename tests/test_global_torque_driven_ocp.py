@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 import biorbd
-from bioptim import Data, OdeSolver, ConstraintList, ConstraintFcn, Node
+from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node
 
 from .utils import TestUtils
 
@@ -33,12 +33,12 @@ def test_track_markers(ode_solver, actuator_type):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 19767.53312569522)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     if not actuator_type:
         np.testing.assert_equal(g.shape, (186, 1))
     else:
@@ -46,8 +46,7 @@ def test_track_markers(ode_solver, actuator_type):
     np.testing.assert_almost_equal(g[:186], np.zeros((186, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -98,18 +97,17 @@ def test_track_markers_changing_constraints(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 20370.211697123825)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (189, 1))
     np.testing.assert_almost_equal(g, np.zeros((189, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -139,18 +137,17 @@ def test_track_markers_changing_constraints(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 31670.93770220887)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (189, 1))
     np.testing.assert_almost_equal(g, np.zeros((189, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((2, 0, 0)))
@@ -189,18 +186,17 @@ def test_track_markers_with_actuators(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 204.18087334169184)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (186, 1))
     np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -246,17 +242,16 @@ def test_track_marker_2D_pendulum(ode_solver):
     sol = ocp.solve()
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (80, 1))
     np.testing.assert_almost_equal(g, np.zeros((80, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 537.1178745697684)
 
@@ -274,7 +269,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
     elif ode_solver == OdeSolver.RK8:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 537.1268848704174)
 
@@ -292,7 +287,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
     else:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 537.1280965743497)
 
@@ -334,12 +329,12 @@ def test_trampo_quaternions():
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], -41.491609816961535)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (130, 1))
     np.testing.assert_almost_equal(
         g,
@@ -480,8 +475,7 @@ def test_trampo_quaternions():
     )
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(

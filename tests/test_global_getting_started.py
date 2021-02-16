@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-from bioptim import Data, InterpolationType, OdeSolver
+from bioptim import InterpolationType, OdeSolver
 
 from .utils import TestUtils
 
@@ -29,17 +29,17 @@ def test_pendulum_save_and_load():
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 6657.974502951726)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (40, 1))
     np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
+    states, controls = sol.states, sol.controls
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
@@ -96,18 +96,17 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             sol = ocp.solve()
 
             # Check objective function value
-            f = np.array(sol["f"])
+            f = np.array(sol.cost)
             np.testing.assert_equal(f.shape, (1, 1))
             np.testing.assert_almost_equal(f[0, 0], 6644.75968052)
 
             # Check constraints
-            g = np.array(sol["g"])
+            g = np.array(sol.constraints)
             np.testing.assert_equal(g.shape, (40, 1))
             np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
             # Check some of the results
-            states, controls = Data.get_data(ocp, sol["x"])
-            q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+            q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
             # initial and final position
             np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -138,7 +137,7 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
         sol = ocp.solve()
 
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         if ode_solver == OdeSolver.RK8:
             np.testing.assert_almost_equal(f[0, 0], 6654.69715318338)
@@ -146,13 +145,12 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             np.testing.assert_almost_equal(f[0, 0], 6657.974502951726)
 
         # Check constraints
-        g = np.array(sol["g"])
+        g = np.array(sol.constraints)
         np.testing.assert_equal(g.shape, (40, 1))
         np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
         # Check some of the results
-        states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+        q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -192,13 +190,12 @@ def test_custom_constraint_track_markers(ode_solver):
     sol = ocp.solve()
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (186, 1))
     np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -209,7 +206,7 @@ def test_custom_constraint_track_markers(ode_solver):
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 19767.53312569523)
 
@@ -218,7 +215,7 @@ def test_custom_constraint_track_markers(ode_solver):
         np.testing.assert_almost_equal(tau[:, -1], np.array((-1.45161291, 9.81, -2.27903226)))
     else:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 19767.533125695223)
 
@@ -248,18 +245,17 @@ def test_initial_guesses(interpolation, ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 13954.735)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (36, 1))
     np.testing.assert_almost_equal(g, np.zeros((36, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0]))
@@ -272,11 +268,12 @@ def test_initial_guesses(interpolation, ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array([-5.0, 9.81, -7.85]))
 
     # save and load
-    if interpolation in [InterpolationType.CUSTOM]:
-        with pytest.raises(AttributeError):
-            TestUtils.save_and_load(sol, ocp, True)
-    else:
-        TestUtils.save_and_load(sol, ocp, True)
+    # if interpolation in [InterpolationType.CUSTOM]:
+    #     with pytest.raises(AttributeError):
+    #         TestUtils.save_and_load(sol, ocp, True)
+    # else:
+    #     TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, True)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -300,18 +297,17 @@ def test_cyclic_objective(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 56851.88181545)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (67, 1))
     np.testing.assert_almost_equal(g, np.zeros((67, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1.60205103, -0.01069317, 0.62477988]))
@@ -351,18 +347,17 @@ def test_cyclic_constraint(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 78921.61000000016)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (73, 1))
     np.testing.assert_almost_equal(g, np.zeros((73, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 1.57]))
@@ -397,17 +392,17 @@ def test_phase_transitions(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 110875.0772043361)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (515, 1))
     np.testing.assert_almost_equal(g, np.zeros((515, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"], concatenate=False)
+    states, controls = sol.states, sol.controls
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array((1, 0, 0)))
@@ -432,11 +427,11 @@ def test_phase_transitions(ode_solver):
         np.testing.assert_almost_equal(controls[-1]["tau"][:, -1], np.array((0, 1.2717052e01, 1.1487805e00)))
 
     # save and load
-    with pytest.raises(PicklingError, match="import of module 'phase_transitions' failed"):
-        TestUtils.save_and_load(sol, ocp, True)
+    # with pytest.raises(PicklingError, match="import of module 'phase_transitions' failed"):
+    TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    # TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol, ocp)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -461,14 +456,12 @@ def test_parameter_optimization(ode_solver):
     sol = ocp.solve()
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (80, 1))
     np.testing.assert_almost_equal(g, np.zeros((80, 1)))
 
     # Check some of the results
-    states, controls, params = Data.get_data(ocp, sol["x"], concatenate=False, get_parameters=True)
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-    gravity = params["gravity_z"]
+    q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_z"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -480,7 +473,7 @@ def test_parameter_optimization(ode_solver):
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 853.5298104707485, decimal=6)
 
@@ -493,7 +486,7 @@ def test_parameter_optimization(ode_solver):
 
     elif ode_solver == OdeSolver.RK8:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 853.5348080507781, decimal=6)
 
@@ -506,7 +499,7 @@ def test_parameter_optimization(ode_solver):
 
     else:
         # Check objective function value
-        f = np.array(sol["f"])
+        f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 853.5406085230834, decimal=6)
 
@@ -518,8 +511,8 @@ def test_parameter_optimization(ode_solver):
         np.testing.assert_almost_equal(gravity, np.array([[-9.09889371]]))
 
     # save and load
-    with pytest.raises(PicklingError, match="import of module 'parameter_optimization' failed"):
-        TestUtils.save_and_load(sol, ocp, True)
+    # with pytest.raises(PicklingError, match="import of module 'parameter_optimization' failed"):
+    TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
     TestUtils.simulate(sol, ocp)
@@ -545,18 +538,17 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 19767.5331257)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (186, 1))
     np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -588,18 +580,17 @@ def test_example_external_forces(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 9875.88768746912)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (246, 1))
     np.testing.assert_almost_equal(g, np.zeros((246, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.71322593, 0, 0)))
@@ -649,17 +640,17 @@ def test_example_multiphase(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 106084.82631762947)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (444, 1))
     np.testing.assert_almost_equal(g, np.zeros((444, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"], concatenate=False)
+    states, controls = sol.states, sol.controls
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array((1, 0, 0)))
@@ -715,12 +706,12 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 0.15132909609835643)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (120, 1))
     np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
     np.testing.assert_array_less(-g[80:101], -min_bound)
@@ -772,8 +763,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     np.testing.assert_almost_equal(g[80:], expected_pos_g, decimal=5)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
@@ -815,12 +805,12 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 0.16913696624413754)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (120, 1))
     np.testing.assert_almost_equal(g[:80], np.zeros((80, 1)))
     np.testing.assert_array_less(g[80:101], max_bound)
@@ -871,8 +861,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     np.testing.assert_almost_equal(g[80:], expected_non_zero_g, decimal=5)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
     np.testing.assert_almost_equal(q[:, -1], np.array((-0.10473449, 0.07490939, -0.4917506, 0.4917506)))
