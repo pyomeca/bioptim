@@ -107,20 +107,17 @@ class Solution:
 
         if self.is_interpolated:
             raise RuntimeError("Cannot integrate after interpolating, please use reset_data before integrating")
+        if self.is_concatenated:
+            raise RuntimeError("Cannot integrate after concatenating, please use reset_data before integrating")
 
-        if concatenate:
-            data_states, data_controls, _, _ = self._concatenate_phases()
-        else:
-            data_states, data_controls = self._states, self._controls
         ns = self.ns
-
         ocp = self.ocp
         out = []
-        for _ in range(len(data_states)):
+        for _ in range(len(self._states)):
             out.append({})
 
         params = self._parameters["all"]
-        for p in range(len(data_states)):
+        for p in range(len(self._states)):
             if continuous:
                 n_steps = ocp.nlp[p].n_integration_steps if continuous else ocp.nlp[p].n_integration_steps + 1
                 ns[p] *= ocp.nlp[p].n_integration_steps
@@ -128,14 +125,14 @@ class Solution:
                 n_steps = ocp.nlp[p].n_integration_steps + 1
                 ns[p] *= ocp.nlp[p].n_integration_steps + 1
 
-            for key in data_states[p]:
-                shape = data_states[p][key].shape
+            for key in self._states[p]:
+                shape = self._states[p][key].shape
                 out[p][key] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
             for n in range(ocp.nlp[p].ns):
-                x0 = data_states[p]["all"][:, n]
-                u = data_controls[p]["all"][:, n]
+                x0 = self._states[p]["all"][:, n]
+                u = self._controls[p]["all"][:, n]
                 cols = range(n*n_steps, (n+1)*n_steps+1) if continuous else range(n*n_steps, (n+1)*n_steps)
                 out[p]["all"][:, cols] = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
                 off = 0
@@ -143,9 +140,14 @@ class Solution:
                     out[p][key][:, cols] = out[p]["all"][off:off+ocp.nlp[p].var_states[key], cols]
                     off += ocp.nlp[p].var_states[key]
 
+        phase_time = self.phase_time
+        if concatenate:
+            out, _, phase_time, ns = self._concatenate_phases(out, None, self.phase_time, ns)
+
         if apply_to_self:
             self.is_integrated = True
             self._states = out
+            self.phase_time = phase_time
             self.ns = ns
         return out[0] if len(out) == 1 else out
 
@@ -166,7 +168,7 @@ class Solution:
         if isinstance(n_frames, int):
             # Todo interpolate relative to time of the phase and not relative to number of frames in the phase
             is_concatenated = True
-            data_states, _, phase_time, ns = self._concatenate_phases()
+            data_states, _, phase_time, ns = self._concatenate_phases(self._states, self._controls, self.phase_time, self.ns)
             n_frames = [n_frames]
         elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states):
             is_concatenated = False
@@ -210,7 +212,7 @@ class Solution:
         return out[0] if len(out) == 1 else out
 
     def concatenate_phases(self, apply_to_self: bool = False):
-        out_states, out_controls, phase_time, ns = self._concatenate_phases()
+        out_states, out_controls, phase_time, ns = self._concatenate_phases(self._states, self._controls, self.phase_time, self.ns)
         if apply_to_self:
             self.is_concatenated = True
             self._states = out_states
@@ -219,7 +221,7 @@ class Solution:
             self.ns = ns
         return out_states[0], out_controls[0]
 
-    def _concatenate_phases(self) -> tuple:
+    def _concatenate_phases(self, states, controls, phase_time, ns) -> tuple:
         """
         Concatenate all the phases
 
@@ -232,7 +234,7 @@ class Solution:
         """
 
         if self.is_concatenated or len(self._states) == 1:
-            return self._states[0], self._controls[0]
+            return self._states, self._controls, phase_time, ns
 
         def _concat(data, ns):
             if isinstance(data, dict):
@@ -258,9 +260,9 @@ class Solution:
 
             return data_out
 
-        out_states = _concat(self._states, self.ns)
-        out_controls = _concat(self._controls, self.ns)
-        phase_time = [0] + [sum([self.phase_time[i+1] for i in range(self.ocp.n_phases)])]
+        out_states = _concat(states, ns) if states else None
+        out_controls = _concat(controls, ns) if controls else None
+        phase_time = [0] + [sum([phase_time[i+1] for i in range(self.ocp.n_phases)])]
         ns = [sum(self.ns)]
 
         return out_states, out_controls, phase_time, ns
