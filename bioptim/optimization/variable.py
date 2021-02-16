@@ -98,14 +98,37 @@ class OptimizationVariable:
             param.initial_guess.check_and_adjust_dimensions(param.size, 1)
         return param
 
+    @staticmethod
+    def phase_index_to_slice(ocp, phase_index):
+        if phase_index is None:
+            phase_index = range(len(ocp.nlp))
+        elif isinstance(phase_index, int):
+            phase_index = [phase_index]
+        return phase_index
+
+    def extract_phase_time(self, data):
+        offset = self.n_all_x + self.n_all_u
+        data_time_optimized = []
+        if "time" in self.parameters_in_list.names:
+            for param in self.parameters_in_list:
+                if param.name == "time":
+                    data_time_optimized.append(data[offset:offset + param.size])
+                offset += param.size
+
+        phase_time = [0] + [nlp.tf for nlp in self.ocp.nlp]
+        if data_time_optimized:
+            cmp = 0
+            for i in range(len(phase_time)):
+                if isinstance(phase_time[i], self.ocp.CX):
+                    phase_time[i] = data_time_optimized[cmp]
+                    cmp += 1
+        return phase_time
+
     def to_dictionaries(self, data, phase_idx):
         ocp = self.ocp
         v_array = np.array(data).squeeze()
+        phase_idx = OptimizationVariable.phase_index_to_slice(self.ocp, phase_idx)
 
-        if phase_idx is None:
-            phase_idx = range(len(ocp.nlp))
-        elif isinstance(phase_idx, int):
-            phase_idx = [phase_idx]
         data_states = []
         data_controls = []
         for _ in range(len(phase_idx)):

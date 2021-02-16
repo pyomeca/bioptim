@@ -89,25 +89,15 @@ class Data:
         if isinstance(sol, dict) and "x" in sol:
             sol = sol["x"]
 
-        if phase_idx is None:
-            phase_idx = range(len(ocp.nlp))
-        elif isinstance(phase_idx, int):
-            phase_idx = [phase_idx]
+        phase_idx = OptimizationVariable.phase_index_to_slice(ocp, phase_idx)
+        phase_time = ocp.v.extract_phase_time(sol)
 
         data_states, data_controls, data_parameters = OptimizationVariable.to_dictionaries(ocp.v, sol, phase_idx)
-
-        phase_time = [0] + [nlp.tf for nlp in ocp.nlp]
-        if "time" in data_parameters:
-            cmp = 0
-            for i in range(len(phase_time)):
-                if isinstance(phase_time[i], ocp.CX):
-                    phase_time[i] = data_parameters["time"][cmp, 0]
-                    cmp += 1
+        Data._complete_control(ocp, data_controls)
 
         if integrate:
             data_states = Data._integrate(ocp, data_states, data_controls, data_parameters)
 
-        Data._complete_control(ocp, data_controls)
         if concatenate:
             data_states = Data._concatenate(ocp, data_states, phase_idx)
             data_controls = Data._concatenate(ocp, data_controls, phase_idx)
@@ -116,8 +106,8 @@ class Data:
         if interpolate_n_frames > 0:
             if integrate:
                 raise RuntimeError("interpolate values are not compatible yet with integrated values")
-            data_states = Data._interpolate(ocp, data_states, interpolate_n_frames, phase_time)
-            data_controls = Data._interpolate(ocp, data_controls, interpolate_n_frames, phase_time)
+            data_states = Data._interpolate(data_states, interpolate_n_frames, phase_time)
+            data_controls = Data._interpolate(data_controls, interpolate_n_frames, phase_time)
 
         out = []
         if get_states:
@@ -232,7 +222,7 @@ class Data:
         return data_out
 
     @staticmethod
-    def _interpolate(ocp, data: dict, n_frames: int, phase_time) -> list:
+    def _interpolate(data: dict, n_frames: int, phase_time) -> list:
         """
         Interpolate the states
 
