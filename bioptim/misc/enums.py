@@ -30,6 +30,9 @@ class DataType(Enum):
     STATES = "states"
     CONTROLS = "controls"
     PARAMETERS = "parameters"
+    OBJECTIVES = "Objectives"
+    CONSTRAINTS = "Constraints"
+    ALL = "All"
     NONE = None
 
 

@@ -20,7 +20,6 @@ from bioptim import (
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
-    ShowResult,
 )
 
 
@@ -129,5 +128,4 @@ if __name__ == "__main__":
     plt.show()
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.animate()
+    sol.animate()

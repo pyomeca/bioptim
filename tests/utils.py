@@ -6,7 +6,6 @@ from casadi import MX
 import biorbd
 from bioptim import (
     OptimalControlProgram,
-    Data,
     BidirectionalMapping,
     Mapping,
     Simulate,

@@ -17,7 +17,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     ObjectiveFcn,
     Objective,
 )
@@ -92,7 +91,5 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show the results in a bioviz animation --- #
-    result = ShowResult(ocp, sol)
-    result.objective_functions()
-    result.constraints()
-    result.animate()
+    sol.print()
+    sol.animate()

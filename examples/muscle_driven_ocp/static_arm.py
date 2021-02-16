@@ -16,7 +16,6 @@ from bioptim import (
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
-    ShowResult,
     OdeSolver,
 )
 
@@ -111,5 +110,4 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.animate(show_meshes=True)
+    sol.animate(show_meshes=True)

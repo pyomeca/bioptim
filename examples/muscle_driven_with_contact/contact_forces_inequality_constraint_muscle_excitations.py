@@ -21,7 +21,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuessList,
-    ShowResult,
     OdeSolver,
 )
 
@@ -131,5 +130,4 @@ if __name__ == "__main__":
     plt.show()
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.animate()
+    sol.animate()

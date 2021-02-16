@@ -18,7 +18,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     Objective,
     ObjectiveFcn,
     InterpolationType,
@@ -180,4 +179,4 @@ if __name__ == "__main__":
     print(length)
 
     # --- Show results --- #
-    ShowResult(ocp, sol).animate(n_frames=200)
+    sol.animate(n_frames=200)

@@ -15,7 +15,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     ObjectiveFcn,
     Objective,
     OdeSolver,
@@ -104,7 +103,7 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     tic = time()
-    sol, sol_iterations, sol_obj = ocp.solve(show_online_optim=True, return_iterations=True, return_objectives=True)
+    sol, sol_iterations = ocp.solve(show_online_optim=True, return_iterations=True)
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
@@ -114,9 +113,8 @@ if __name__ == "__main__":
         third_iteration = sol_iterations[2]
 
     # --- Print objective cost  --- #
-    print(f"Final objective value : {np.nansum(sol_obj)} \n")
-    analyse = ShowResult(ocp, sol)
-    analyse.objective_functions()
+    print(f"Final objective value : {np.nansum(sol.cost)} \n")
+    sol.print()
 
     # --- Save result of get_data --- #
     ocp.save_get_data(sol, "pendulum.bob", sol_iterations)  # you don't have to specify the extension ".bob"
@@ -132,5 +130,4 @@ if __name__ == "__main__":
     ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")
 
     # --- Show results --- #
-    result = ShowResult(ocp_load, sol_load)
-    result.animate()
+    sol_load.animate()

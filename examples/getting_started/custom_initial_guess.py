@@ -28,7 +28,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     InterpolationType,
     OdeSolver,
 )
@@ -171,5 +170,4 @@ if __name__ == "__main__":
         print("\n")
 
     # Print the last solution
-    result_plot = ShowResult(ocp, sol)
-    result_plot.animate()
+    sol.animate()

@@ -13,7 +13,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     OdeSolver,
     Solver,
 )
@@ -69,8 +68,7 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     sol = ocp.solve(solver=Solver.ACADOS, show_online_optim=False)
-    result = ShowResult(ocp, sol)
-    result.graphs()
+    sol.graphs()
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=1, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
@@ -86,6 +84,5 @@ if __name__ == "__main__":
     sol = ocp.solve(solver=Solver.ACADOS, show_online_optim=False, solver_options=solver_options)
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.graphs()
-    result.animate()
+    sol.graphs()
+    sol.animate()

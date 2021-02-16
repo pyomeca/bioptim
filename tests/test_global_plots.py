@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 import numpy as np
 import biorbd
-from bioptim import ShowResult, OptimalControlProgram
+from bioptim import OptimalControlProgram
 
 
 def test_plot_graphs_one_phase():
@@ -31,9 +31,7 @@ def test_plot_graphs_one_phase():
         final_time=2,
     )
     sol = ocp.solve()
-
-    plt = ShowResult(ocp, sol)
-    plt.graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
 
 def test_plot_merged_graphs():
@@ -67,9 +65,7 @@ def test_plot_merged_graphs():
         kin_data_to_track="markers",
     )
     sol = ocp.solve()
-
-    plt = ShowResult(ocp, sol)
-    plt.graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
 
 def test_plot_graphs_multi_phases():
@@ -85,9 +81,7 @@ def test_plot_graphs_multi_phases():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod"
     )
     sol = ocp.solve()
-
-    plt = ShowResult(ocp, sol)
-    plt.graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
 
 def test_add_new_plot():
@@ -112,7 +106,7 @@ def test_add_new_plot():
 
     # Test 1 - Working plot
     ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
-    ShowResult(ocp, sol).graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
     # Test 2 - Combine using combine_to is not allowed
     ocp, sol = OptimalControlProgram.load(save_name)
@@ -123,13 +117,13 @@ def test_add_new_plot():
     ocp, sol = OptimalControlProgram.load(save_name)
     ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
     ocp.add_plot("My Second New Plot", lambda x, p, u: x[0:2, :])
-    ShowResult(ocp, sol).graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
     # Test 4 - Combine to the first using fig_name
     ocp, sol = OptimalControlProgram.load(save_name)
     ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
     ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
-    ShowResult(ocp, sol).graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
     # Delete the saved file
     os.remove(save_name)
@@ -148,15 +142,12 @@ def test_console_objective_functions():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod"
     )
     sol = ocp.solve()
-
-    plt = ShowResult(ocp, sol)
-    plt.graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
     sol.constraints = np.array([range(sol.constraints.shape[0])]).T / 10
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
-    plt.objective_functions()
-    plt.constraints()
+    sol.print()
     expected_output = (
         "\n---- COST FUNCTION VALUES ----\n"
         "PHASE 0\n"

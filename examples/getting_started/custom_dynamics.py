@@ -25,7 +25,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     OdeSolver,
     NonLinearProgram,
 )
@@ -172,5 +171,4 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.animate()
+    sol.animate()

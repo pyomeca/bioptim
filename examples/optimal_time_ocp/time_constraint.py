@@ -17,7 +17,6 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     Node,
-    ShowResult,
     OdeSolver,
 )
 
@@ -120,5 +119,4 @@ if __name__ == "__main__":
     # --- Show results --- #
     print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}")
 
-    result = ShowResult(ocp, sol)
-    result.animate()
+    sol.animate()

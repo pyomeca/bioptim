@@ -1,4 +1,4 @@
-from typing import Callable, Union, Any
+from typing import Callable, Union
 import multiprocessing as mp
 from copy import copy
 import tkinter
@@ -8,13 +8,12 @@ from itertools import accumulate
 
 import numpy as np
 from matplotlib import pyplot as plt, lines
-from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM, Function
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
-from bioptim.optimization.solution import Solution
 from ..misc.enums import PlotType, ControlType, InterpolationType
 from ..misc.mapping import Mapping
-from ..misc.utils import check_version
+from ..optimization.solution import Solution
 
 
 class CustomPlot:
@@ -697,227 +696,6 @@ class PlotOcp:
 
         n_rows = int(round(np.sqrt(nb)))
         return n_rows + 1 if n_rows * n_rows < nb else n_rows, n_rows
-
-
-class ShowResult:
-    """
-    The main interface to bioptim GUI
-
-    Attributes
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp to show
-    sol: dict
-        The solution dictionary
-
-    Methods
-    -------
-    graphs(self, automatically_organize: bool=True, adapt_graph_size_to_bounds:bool=False, show_now:bool=True)
-        Prepare the graphs of the simulation
-    animate(self, n_frames:int=80, show_now:bool=True, **kwargs) -> list
-        An interface to animate solution with bioviz
-    objective_functions(self)
-        Print the values of each objective function to the console
-    constraints(self)
-        Print the values of each constraints with its lagrange multiplier to the console
-    keep_matplotlib()
-        Allows for non-blocking show of the figure. This works only in Debug
-    """
-
-    def __init__(self, ocp, sol: Solution):
-        """
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-        A reference to the ocp to show
-        sol: dict
-            The solution dictionary
-        """
-        self.ocp = ocp
-        self.sol = sol
-
-    def graphs(
-        self, automatically_organize: bool = True, adapt_graph_size_to_bounds: bool = False, show_now: bool = True
-    ):
-        """
-        Prepare the graphs of the simulation
-
-        Parameters
-        ----------
-        automatically_organize: bool
-            If the figures should be spread on the screen automatically
-        adapt_graph_size_to_bounds: bool
-            If the plot should adapt to bounds (True) or to data (False)
-        show_now: bool
-            If the show method should be called. This is blocking
-
-        Returns
-        -------
-
-        """
-        plot_ocp = PlotOcp(
-            self.ocp,
-            automatically_organize=automatically_organize,
-            adapt_graph_size_to_bounds=adapt_graph_size_to_bounds,
-        )
-        plot_ocp.update_data(self.sol.vector)
-        if show_now:
-            plt.show()
-
-    def animate(self, n_frames: int = 80, show_now: bool = True, **kwargs: Any) -> list:
-        """
-        An interface to animate solution with bioviz
-
-        Parameters
-        ----------
-        n_frames: int
-            The number of frames to interpolate to
-        show_now: bool
-            If the bioviz exec() function should be called. This is blocking
-        kwargs: dict
-            Any parameters to pass to bioviz
-
-        Returns
-        -------
-            A list of bioviz structures (one for each phase)
-        """
-
-        try:
-            import bioviz
-        except ModuleNotFoundError:
-            raise RuntimeError("bioviz must be install to animate the model")
-        check_version(bioviz, "2.0.1", "2.1.0")
-        data_interpolate = self.sol.interpolate(n_frames) if n_frames > 0 else self.sol.states
-        if not isinstance(data_interpolate["q"], (list, tuple)):
-            data_interpolate["q"] = [data_interpolate["q"]]
-
-        all_bioviz = []
-        for idx_phase, data in enumerate(data_interpolate["q"]):
-            all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
-            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].to_second.map(data))
-
-        if show_now:
-            b_is_visible = [True] * len(all_bioviz)
-            while sum(b_is_visible):
-                for i, b in enumerate(all_bioviz):
-                    if b.vtk_window.is_active:
-                        b.update()
-                    else:
-                        b_is_visible[i] = False
-        else:
-            return all_bioviz
-
-    def objective_functions(self):
-        """
-        Print the values of each objective function to the console
-        """
-
-        def __extract_objective(pen: dict):
-            """
-            Extract objective function from a penalty
-
-            Parameters
-            ----------
-            pen: dict
-                The penalty to extract the value from
-
-            Returns
-            -------
-            The value extract
-            """
-
-            # TODO: This should be done in bounds and objective functions, so it is available for all the code
-            val_tp = Function("val_tp", [self.ocp.v.vector], [pen["val"]]).expand()(self.sol.vector)
-            if pen["target"] is not None:
-                # TODO Target should be available to constraint?
-                nan_idx = np.isnan(pen["target"])
-                pen["target"][nan_idx] = 0
-                val_tp -= pen["target"]
-                if np.any(nan_idx):
-                    val_tp[np.where(nan_idx)] = 0
-
-            if pen["objective"].quadratic:
-                val_tp *= val_tp
-
-            val = np.sum(val_tp)
-
-            dt = Function("dt", [self.ocp.v.vector], [pen["dt"]]).expand()(self.sol.vector)
-            val_weighted = pen["objective"].weight * val * dt
-            return val, val_weighted
-
-        print(f"\n---- COST FUNCTION VALUES ----")
-        has_global = False
-        running_total = 0
-        for J in self.ocp.J:
-            has_global = True
-            val = []
-            val_weighted = []
-            for j in J:
-                out = __extract_objective(j)
-                val.append(out[0])
-                val_weighted.append(out[1])
-            sum_val_weighted = sum(val_weighted)
-            print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
-            running_total += sum_val_weighted
-        if has_global:
-            print("")
-
-        for idx_phase, nlp in enumerate(self.ocp.nlp):
-            print(f"PHASE {idx_phase}")
-            for J in nlp.J:
-                val = []
-                val_weighted = []
-                for j in J:
-                    out = __extract_objective(j)
-                    val.append(out[0])
-                    val_weighted.append(out[1])
-                sum_val_weighted = sum(val_weighted)
-                print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
-                running_total += sum_val_weighted
-            print("")
-        print(f"Sum cost functions: {running_total}")
-        print(f"------------------------------")
-
-    def constraints(self):
-        """
-        Print the values of each constraints with its lagrange multiplier to the console
-        """
-
-        # Todo, min/mean/max
-        print(f"\n--------- CONSTRAINTS ---------")
-        idx = 0
-        has_global = False
-        for G in self.ocp.g:
-            has_global = True
-            for g in G:
-                next_idx = idx + g["val"].shape[0]
-            print(
-                f"{g['constraint'].name}: {np.sum(self.sol.constraints[idx:next_idx])}"
-            )
-            idx = next_idx
-        if has_global:
-            print("")
-
-        for idx_phase, nlp in enumerate(self.ocp.nlp):
-            print(f"PHASE {idx_phase}")
-            for G in nlp.g:
-                next_idx = idx
-                for g in G:
-                    next_idx += g["val"].shape[0]
-                print(
-                    f"{g['constraint'].name}: {np.sum(self.sol.constraints[idx:next_idx])}"
-                )
-                idx = next_idx
-            print("")
-        print(f"------------------------------")
-
-    @staticmethod
-    def keep_matplotlib():
-        """
-        Allows for non-blocking show of the figure. This works only in Debug
-        """
-        plt.figure(figsize=(0.01, 0.01)).canvas.manager.window.move(1000, 100)
-        plt.show()
 
 
 class OnlineCallback(Callback):

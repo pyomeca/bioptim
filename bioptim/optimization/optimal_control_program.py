@@ -13,7 +13,7 @@ from .variable import OptimizationVariable
 from ..dynamics.integrator import Integrator
 from ..dynamics.problem import Problem
 from ..dynamics.dynamics_type import DynamicsList, Dynamics
-from ..gui.plot import CustomPlot
+from ..gui.plot import CustomPlot, PlotOcp
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionFunctions, PhaseTransitionList
@@ -628,6 +628,13 @@ class OptimalControlProgram:
         pen = new_penalty.type.get_type()
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
         pen.add_or_replace(self, self.nlp[phase_idx], new_penalty)
+
+    def prepare_plots(self, automatically_organize: bool = True, adapt_graph_size_to_bounds: bool = False):
+        return PlotOcp(
+            self,
+            automatically_organize=automatically_organize,
+            adapt_graph_size_to_bounds=adapt_graph_size_to_bounds,
+        )
 
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
         """
