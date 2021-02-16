@@ -14,7 +14,6 @@ import shutil
 import biorbd
 from bioptim import (
     Axis,
-    Data,
     Solver,
     ObjectiveList,
     ObjectiveFcn,
@@ -72,8 +71,7 @@ def test_acados_one_mayer(cost_type):
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
 
     # Check end state value
-    model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
-    q = np.array(sol["qqdot"])[: model.nbQ()]
+    q = sol.states["q"]
     np.testing.assert_almost_equal(q[0, -1], 1.0)
 
     # Clean test folder
@@ -104,8 +102,7 @@ def test_acados_several_mayer(cost_type):
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
 
     # Check end state value
-    model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
-    q = np.array(sol["qqdot"])[: model.nbQ()]
+    q = sol.states["q"]
     np.testing.assert_almost_equal(q[0, -1], 1.0)
     np.testing.assert_almost_equal(q[1, -1], 2.0)
     np.testing.assert_almost_equal(q[2, -1], 3.0)
@@ -140,8 +137,7 @@ def test_acados_one_lagrange(cost_type):
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
 
     # Check end state value
-    model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
-    q = np.array(sol["qqdot"])[: model.nbQ()]
+    q = sol.states["q"]
     np.testing.assert_almost_equal(q[0, :], target[0, :].squeeze())
 
     # Clean test folder
@@ -175,8 +171,7 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
 
     # Check end state value
-    model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
-    q = np.array(sol["qqdot"])[: model.nbQ()]
+    q = sol.states["q"]
     np.testing.assert_almost_equal(q[0, :], target[0, :].squeeze())
 
     # Clean test folder
@@ -211,8 +206,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
 
     # Check end state value
-    model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
-    q = np.array(sol["qqdot"])[: model.nbQ()]
+    q = sol.states["q"]
     np.testing.assert_almost_equal(q[0, -1], target.squeeze())
 
     # Clean test folder
@@ -253,7 +247,7 @@ def test_acados_mhe(cost_type):
         sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
 
         # Check end state value
-        q = np.array(sol["qqdot"])[: model.nbQ()]
+        q = sol.states["q"]
         np.testing.assert_almost_equal(q[0, :], target[0, i : i + n_shooting + 1].squeeze())
 
     # Clean test folder
@@ -282,7 +276,7 @@ def test_acados_options(cost_type):
     for i in range(3):
         solver_options = {"nlp_solver_tol_stat": tol[i], "cost_type": cost_type}
         sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
-        iter += [sol["iter"]]
+        iter += [sol.iterations]
 
     # Check that tol impacted convergence
     np.testing.assert_array_less(iter[1], iter[0])
@@ -361,8 +355,7 @@ def test_acados_custom_dynamics(problem_type_custom):
     sol = ocp.solve(solver=Solver.ACADOS)
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((2, 0, 0)), decimal=6)
@@ -412,9 +405,7 @@ def test_acados_one_parameter():
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
 
     # Check some of the results
-    states, controls, params = Data.get_data(ocp, sol["x"], concatenate=False, get_parameters=True)
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-    gravity = params["gravity_z"]
+    q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_z"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
@@ -470,8 +461,7 @@ def test_acados_one_end_constraints():
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position
     np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)), decimal=6)
@@ -508,8 +498,7 @@ def test_acados_constraints_all():
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.8385190835, 0, 0, -0.212027938]), decimal=6)
@@ -551,8 +540,7 @@ def test_acados_constraints_end_all():
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position
     np.testing.assert_almost_equal(q[:, 0], np.array([2, 0, 0, -0.139146705]), decimal=6)

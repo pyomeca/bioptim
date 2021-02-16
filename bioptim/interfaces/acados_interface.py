@@ -676,7 +676,6 @@ class AcadosInterface(SolverInterface):
         acados_u = np.array([self.ocp_solver.get(i, "u") for i in range(ns)]).T
 
         out = {
-            "qqdot": acados_x,
             "x": [],
             "u": acados_u,
             "time_tot": self.ocp_solver.get_stats("time_tot")[0],

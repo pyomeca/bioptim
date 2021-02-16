@@ -55,6 +55,8 @@ class Solution:
         self.lam_g = sol["lam_g"] if isinstance(sol, dict) and "lam_g" in sol else None
         self.lam_p = sol["lam_p"] if isinstance(sol, dict) and "lam_p" in sol else None
         self.lam_x = sol["lam_x"] if isinstance(sol, dict) and "lam_x" in sol else None
+        self.time_to_optimize = sol["time_tot"] if isinstance(sol, dict) and "time_tot" in sol else None
+        self.iterations = sol["iter"] if isinstance(sol, dict) and "iter" in sol else None
 
         # Extract the data now for further use
         self._data_states, self._data_controls, self._data_parameters = self.ocp.v.to_dictionaries(self.vector)
