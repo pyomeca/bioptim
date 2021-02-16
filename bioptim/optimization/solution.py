@@ -96,7 +96,7 @@ class Solution:
         self._states = self._states_original
         self._controls = self._controls_original
 
-    def integrate(self, concatenate: bool = False, apply_to_self: bool = False):
+    def integrate(self, concatenate: bool = False, apply_to_self: bool = False, continuous: bool = True):
         """
         Integrates the states
 
@@ -121,8 +121,12 @@ class Solution:
 
         params = self._parameters["all"]
         for p in range(len(data_states)):
-            n_steps = ocp.nlp[p].n_integration_steps
-            ns[p] *= ocp.nlp[p].n_integration_steps
+            if continuous:
+                n_steps = ocp.nlp[p].n_integration_steps if continuous else ocp.nlp[p].n_integration_steps + 1
+                ns[p] *= ocp.nlp[p].n_integration_steps
+            else:
+                n_steps = ocp.nlp[p].n_integration_steps + 1
+                ns[p] *= ocp.nlp[p].n_integration_steps + 1
 
             for key in data_states[p]:
                 shape = data_states[p][key].shape
@@ -132,7 +136,7 @@ class Solution:
             for n in range(ocp.nlp[p].ns):
                 x0 = data_states[p]["all"][:, n]
                 u = data_controls[p]["all"][:, n]
-                cols = range(n*n_steps, (n+1)*n_steps+1)
+                cols = range(n*n_steps, (n+1)*n_steps+1) if continuous else range(n*n_steps, (n+1)*n_steps)
                 out[p]["all"][:, cols] = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
                 off = 0
                 for key in ocp.nlp[p].var_states:
