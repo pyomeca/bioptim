@@ -96,7 +96,7 @@ class Solution:
         self._states = self._states_original
         self._controls = self._controls_original
 
-    def integrate(self, concatenate: bool = False, apply_to_self: bool = False, continuous: bool = True):
+    def integrate(self, concatenate: bool = False, apply_to_self: bool = False, continuous: bool = True, single_shoot: bool = False):
         """
         Integrates the states
 
@@ -117,6 +117,7 @@ class Solution:
             out.append({})
 
         params = self._parameters["all"]
+        x0 = self._states[0]["all"][:, 0]
         for p in range(len(self._states)):
             if continuous:
                 n_steps = ocp.nlp[p].n_integration_steps if continuous else ocp.nlp[p].n_integration_steps + 1
@@ -125,20 +126,24 @@ class Solution:
                 n_steps = ocp.nlp[p].n_integration_steps + 1
                 ns[p] *= ocp.nlp[p].n_integration_steps + 1
 
-            for key in self._states[p]:
-                shape = self._states[p][key].shape
-                out[p][key] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
+            shape = self._states[p]["all"].shape
+            out[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
+            if not concatenate:
+                x0 = self._states[p]["all"][:, 0]
             for n in range(ocp.nlp[p].ns):
-                x0 = self._states[p]["all"][:, n]
                 u = self._controls[p]["all"][:, n]
+                integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
                 cols = range(n*n_steps, (n+1)*n_steps+1) if continuous else range(n*n_steps, (n+1)*n_steps)
-                out[p]["all"][:, cols] = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
-                off = 0
-                for key in ocp.nlp[p].var_states:
-                    out[p][key][:, cols] = out[p]["all"][off:off+ocp.nlp[p].var_states[key], cols]
-                    off += ocp.nlp[p].var_states[key]
+                out[p]["all"][:, cols] = integrated
+                x0 = integrated[:, -1] if single_shoot else self._states[p]["all"][:, n + 1]
+
+            # Dispatch the integrated values to all the keys
+            off = 0
+            for key in ocp.nlp[p].var_states:
+                out[p][key] = out[p]["all"][off:off+ocp.nlp[p].var_states[key], :]
+                off += ocp.nlp[p].var_states[key]
 
         phase_time = self.phase_time
         if concatenate:
@@ -301,7 +306,7 @@ class Solution:
         if show_now:
             plt.show()
 
-    def animate(self, n_frames: int = 80, show_now: bool = True, **kwargs: Any) -> list:
+    def animate(self, n_frames: int = 100, show_now: bool = True, **kwargs: Any) -> list:
         """
         An interface to animate solution with bioviz
 
