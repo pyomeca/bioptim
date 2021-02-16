@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Union
 
 import numpy as np
 from scipy import interpolate as sci_interp
@@ -61,23 +61,42 @@ class Solution:
         self.iterations = sol["iter"] if isinstance(sol, dict) and "iter" in sol else None
 
         # Extract the data now for further use
-        self._data_states, self._data_controls, self._data_parameters = self.ocp.v.to_dictionaries(self.vector)
+        self._states, self._controls, self._parameters = self.ocp.v.to_dictionaries(self.vector)
         self._complete_control()
+
         self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+        self.ns = [nlp.ns for nlp in self.ocp.nlp]
+
+        self.is_interpolated = False
+        self.is_integrated = False
+        self.is_concatenated = False
+        self.phase_time_original = self.phase_time
+        self.ns_original = self.ns
+        self._states_original = self._states
+        self._controls_original = self._controls
 
     @property
     def states(self):
-        return self._data_states[0] if len(self._data_states) == 1 else self._data_states
+        return self._states[0] if len(self._states) == 1 else self._states
 
     @property
     def controls(self):
-        return self._data_controls[0] if len(self._data_controls) == 1 else self._data_controls
+        return self._controls[0] if len(self._controls) == 1 else self._controls
 
     @property
     def parameters(self):
-        return self._data_parameters
+        return self._parameters
 
-    def integrate(self, concatenate: bool = False) -> list:
+    def reset_data(self):
+        self.is_interpolated = False
+        self.is_integrated = False
+        self.is_concatenated = False
+        self.phase_time = self.phase_time_original
+        self.ns = self.ns_original
+        self._states = self._states_original
+        self._controls = self._controls_original
+
+    def integrate(self, concatenate: bool = False, apply_to_self: bool = False):
         """
         Integrates the states
 
@@ -85,39 +104,48 @@ class Solution:
         -------
         The dictionary of states integrated
         """
-        # This will become relevant when concatenate is used
-        phase_time = [0] + [sum([self.phase_time[i+1] for i in range(self.ocp.n_phases)])]
+
+        if self.is_interpolated:
+            raise RuntimeError("Cannot integrate after interpolating, please use reset_data before integrating")
+
+        if concatenate:
+            data_states, data_controls, _, _ = self._concatenate_phases()
+        else:
+            data_states, data_controls = self._states, self._controls
+        ns = self.ns
 
         ocp = self.ocp
-        data_states_out = []
-        for _ in range(len(self._data_states)):
-            data_states_out.append({})
+        out = []
+        for _ in range(len(data_states)):
+            out.append({})
 
-        params = self._data_parameters["all"]
-        for p in range(len(self._data_states)):
-            n_steps = ocp.nlp[p].n_integration_steps + 1
+        params = self._parameters["all"]
+        for p in range(len(data_states)):
+            n_steps = ocp.nlp[p].n_integration_steps
+            ns[p] *= ocp.nlp[p].n_integration_steps
 
-            for key in self._data_states[p]:
-                shape = self._data_states[p][key].shape
-                data_states_out[p][key] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
+            for key in data_states[p]:
+                shape = data_states[p][key].shape
+                out[p][key] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
             for n in range(ocp.nlp[p].ns):
-                x0 = self._data_states[p]["all"][:, n]
-                u = self._data_controls[p]["all"][:, n]
-                data_states_out[p]["all"] = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
+                x0 = data_states[p]["all"][:, n]
+                u = data_controls[p]["all"][:, n]
+                cols = range(n*n_steps, (n+1)*n_steps+1)
+                out[p]["all"][:, cols] = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
                 off = 0
                 for key in ocp.nlp[p].var_states:
-                    data_states_out[p][key][:, n*n_steps: (n+1)*n_steps] = data_states_out[p]["all"][off:off+ocp.nlp[p].var_states[key], :]
+                    out[p][key][:, cols] = out[p]["all"][off:off+ocp.nlp[p].var_states[key], cols]
                     off += ocp.nlp[p].var_states[key]
 
-            # Copy last states
-            for key in ocp.nlp[p].var_states:
-                data_states_out[p][key][:, -1] = self._data_states[p][key][:, -1]
+        if apply_to_self:
+            self.is_integrated = True
+            self._states = out
+            self.ns = ns
+        return out[0] if len(out) == 1 else out
 
-        return data_states_out[0] if len(data_states_out) == 1 else data_states_out
-
-    def interpolate(self, n_frames: int, data_type=DataType.STATES) -> list:
+    def interpolate(self, n_frames: Union[int, list, tuple], apply_to_self: bool = False) -> list:
         """
         Interpolate the states
 
@@ -131,81 +159,113 @@ class Solution:
         The dictionary of states interpolated
         """
 
-        if data_type == DataType.STATES:
-            data = self._data_states
-        elif data_type == DataType.CONTROLS:
-            data = self._data_controls
+        if isinstance(n_frames, int):
+            # Todo interpolate relative to time of the phase and not relative to number of frames in the phase
+            is_concatenated = True
+            data_states, _, phase_time, ns = self._concatenate_phases()
+            n_frames = [n_frames]
+        elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states):
+            is_concatenated = False
+            data_states = self._states
+            phase_time = self.phase_time
+            ns = n_frames
         else:
-            raise ValueError("Interpolate can only be called with DataType.STATES or DataType.CONTROLS")
+            raise ValueError("n_frames should either be a int to concatenate phases "
+                             "or a list of int of the number of phases dimension")
 
-        data_out = []
-        for _ in range(len(data)):
-            data_out.append({})
-        for idx_phase in range(len(data)):
-            x_phase = data[idx_phase]["all"]
+        out = []
+        for _ in range(len(data_states)):
+            out.append({})
+        for p in range(len(data_states)):
+            x_phase = data_states[p]["all"]
             n_elements = x_phase.shape[0]
 
-            t_phase = np.linspace(self.phase_time[idx_phase], self.phase_time[idx_phase + 1], x_phase.shape[1])
-            t_int = np.linspace(self.phase_time[0], self.phase_time[-1], n_frames)
+            t_phase = np.linspace(phase_time[p], phase_time[p] + phase_time[p + 1], x_phase.shape[1])
+            t_int = np.linspace(t_phase[0], t_phase[-1], n_frames[p])
 
-            x_interpolate = np.ndarray((n_elements, n_frames))
+            x_interpolate = np.ndarray((n_elements, n_frames[p]))
             for j in range(n_elements):
                 s = sci_interp.splrep(t_phase, x_phase[j, :])
                 x_interpolate[j, :] = sci_interp.splev(t_int, s)
-            data_out[idx_phase]["all"] = x_interpolate
+            out[p]["all"] = x_interpolate
 
             offset = 0
-            for key in data[idx_phase]:
+            for key in data_states[p]:
                 if key == "all":
                     continue
-                n_elements = data[idx_phase][key].shape[0]
-                data_out[idx_phase][key] = data_out[idx_phase]["all"][offset: offset + n_elements]
+                n_elements = data_states[p][key].shape[0]
+                out[p][key] = out[p]["all"][offset: offset + n_elements]
                 offset += n_elements
 
-        return data_out[0] if len(data_out) == 1 else data_out
+        if apply_to_self:
+            self.is_interpolated = True
+            self.is_concatenated = self.is_interpolated or is_concatenated
+            self.phase_time = phase_time
+            self.ns = ns
+            self._states = out
+        return out[0] if len(out) == 1 else out
 
-    def concatenate_phases(self, data) -> dict:
+    def concatenate_phases(self, apply_to_self: bool = False):
+        out_states, out_controls, phase_time, ns = self._concatenate_phases()
+        if apply_to_self:
+            self.is_concatenated = True
+            self._states = out_states
+            self._controls = out_controls
+            self.phase_time = phase_time
+            self.ns = ns
+        return out_states[0], out_controls[0]
+
+    def _concatenate_phases(self) -> tuple:
         """
         Concatenate all the phases
 
         Parameters
         ----------
-        data: dict
-            The dictionary of data
 
         Returns
         -------
         The new dictionary of data concatenated
         """
 
-        if isinstance(data, dict):
-            return data
+        if self.is_concatenated or len(self._states) == 1:
+            return self._states[0], self._controls[0]
 
-        # Sanity check (all phases must contain the same keys with the same dimensions)
-        keys = data[0].keys()
-        sizes = [data[0][d].shape[0] for d in data[0]]
-        for d in data:
-            if d.keys() != keys or [d[key].shape[0] for key in d] != sizes:
-                raise RuntimeError("Program dimension must be coherent across phases to concatenate them")
+        def _concat(data, ns):
+            if isinstance(data, dict):
+                return data
 
-        data_out = [{}]
-        for i, key in enumerate(keys):
-            data_out[0][key] = np.ndarray((sizes[i], 0))
+            # Sanity check (all phases must contain the same keys with the same dimensions)
+            keys = data[0].keys()
+            sizes = [data[0][d].shape[0] for d in data[0]]
+            for d in data:
+                if d.keys() != keys or [d[key].shape[0] for key in d] != sizes:
+                    raise RuntimeError("Program dimension must be coherent across phases to concatenate them")
 
-        for p in range(self.ocp.n_phases):
-            d = data[p]
-            for key in d:
-                data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, :self.ocp.nlp[p].ns]), axis=1)
-        for key in data[-1]:
-            data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
+            data_out = [{}]
+            for i, key in enumerate(keys):
+                data_out[0][key] = np.ndarray((sizes[i], 0))
 
-        return data_out[0]
+            for p in range(self.ocp.n_phases):
+                d = data[p]
+                for key in d:
+                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, :ns[p]]), axis=1)
+            for key in data[-1]:
+                data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
+
+            return data_out
+
+        out_states = _concat(self._states, self.ns)
+        out_controls = _concat(self._controls, self.ns)
+        phase_time = [0] + [sum([self.phase_time[i+1] for i in range(self.ocp.n_phases)])]
+        ns = [sum(self.ns)]
+
+        return out_states, out_controls, phase_time, ns
 
     def _complete_control(self):
         for p, nlp in enumerate(self.ocp.nlp):
             if nlp.control_type == ControlType.CONSTANT:
-                for key in self._data_controls[p]:
-                    self._data_controls[p][key] = np.concatenate((self._data_controls[p][key], self._data_controls[p][key][:, -1][:, np.newaxis]), axis=1)
+                for key in self._controls[p]:
+                    self._controls[p][key] = np.concatenate((self._controls[p][key], self._controls[p][key][:, -1][:, np.newaxis]), axis=1)
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 pass
             else:
@@ -258,14 +318,15 @@ class Solution:
         except ModuleNotFoundError:
             raise RuntimeError("bioviz must be install to animate the model")
         check_version(bioviz, "2.0.1", "2.1.0")
-        data_interpolate = self.interpolate(n_frames) if n_frames > 0 else self.states
-        if not isinstance(data_interpolate["q"], (list, tuple)):
-            data_interpolate["q"] = [data_interpolate["q"]]
+        data_interpolate = self.interpolate(n_frames) if not isinstance(n_frames, int) or n_frames > 0 else self.states
+
+        if not isinstance(data_interpolate, (list, tuple)):
+            data_interpolate = [data_interpolate]
 
         all_bioviz = []
-        for idx_phase, data in enumerate(data_interpolate["q"]):
+        for idx_phase, data in enumerate(data_interpolate):
             all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
-            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].to_second.map(data))
+            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].to_second.map(data["q"]))
 
         if show_now:
             b_is_visible = [True] * len(all_bioviz)
