@@ -22,18 +22,14 @@ class Solver(Enum):
     NONE = None
 
 
-class DataType(Enum):
+class CostType(Enum):
     """
-    The type of data
+    The type of cost
     """
 
-    STATES = "states"
-    CONTROLS = "controls"
-    PARAMETERS = "parameters"
     OBJECTIVES = "Objectives"
     CONSTRAINTS = "Constraints"
     ALL = "All"
-    NONE = None
 
 
 class OdeSolver(Enum):

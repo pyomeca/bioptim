@@ -5,7 +5,7 @@ from scipy import interpolate as sci_interp
 from casadi import Function
 from matplotlib import pyplot as plt
 
-from ..misc.enums import ControlType, DataType
+from ..misc.enums import ControlType, CostType
 from ..misc.utils import check_version
 
 
@@ -350,7 +350,7 @@ class Solution:
         else:
             return all_bioviz
 
-    def print(self, data_type: DataType = DataType.ALL):
+    def print(self, data_type: CostType = CostType.ALL):
         def print_objective_functions(ocp, sol):
             """
             Print the values of each objective function to the console
@@ -458,12 +458,12 @@ class Solution:
                 print("")
             print(f"------------------------------")
 
-        if data_type == DataType.OBJECTIVES:
+        if data_type == CostType.OBJECTIVES:
             print_objective_functions(self.ocp, self)
-        elif data_type == DataType.CONSTRAINTS:
+        elif data_type == CostType.CONSTRAINTS:
             print_constraints(self.ocp, self)
-        elif data_type == DataType.ALL:
-            self.print(DataType.OBJECTIVES)
-            self.print(DataType.CONSTRAINTS)
+        elif data_type == CostType.ALL:
+            self.print(CostType.OBJECTIVES)
+            self.print(CostType.CONSTRAINTS)
         else:
-            raise ValueError("print can only be called with DataType.OBJECTIVES or DataType.CONSTRAINTS")
+            raise ValueError("print can only be called with CostType.OBJECTIVES or CostType.CONSTRAINTS")
