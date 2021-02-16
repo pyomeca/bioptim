@@ -130,7 +130,10 @@ class Solution:
             out[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
-            if not concatenate:
+            if concatenate:
+                if p != 0:
+                    x0 += self.ocp.phase_transitions[p - 1].casadi_function(self.vector)
+            else:
                 x0 = self._states[p]["all"][:, 0]
             for n in range(ocp.nlp[p].ns):
                 u = self._controls[p]["all"][:, n]

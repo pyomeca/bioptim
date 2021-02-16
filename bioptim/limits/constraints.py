@@ -3,7 +3,7 @@ from math import inf
 from enum import Enum
 
 import numpy as np
-from casadi import sum1, horzcat, if_else, vertcat, lt, MX, SX
+from casadi import sum1, horzcat, if_else, vertcat, lt, MX, SX, Function
 import biorbd
 
 from .path_conditions import Bounds
@@ -365,6 +365,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         penalty.list_index = -1
         pt.base.clear_penalty(ocp, None, penalty)
         val = pt.type.value[0](ocp, pt)
+        casadi_name = f"PHASE_TRANSITION_{pt.phase_pre_idx}_{pt.phase_pre_idx + 1}"
+        pt.casadi_function = Function(casadi_name, [ocp.v.vector], [val]).expand()
         pt.base.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod

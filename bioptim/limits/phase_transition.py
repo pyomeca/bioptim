@@ -48,6 +48,7 @@ class PhaseTransition(OptionGeneric):
         self.quadratic = True
         self.phase_pre_idx = phase_pre_idx
         self.custom_function = custom_function
+        self.casadi_function = None
 
 
 class PhaseTransitionList(UniquePerPhaseOptionList):
