@@ -164,4 +164,3 @@ from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.parameters import ParameterList
 from .optimization.solution import Solution
-from .misc.simulate import Simulate
