@@ -48,8 +48,28 @@ class Solution:
         Add a new phase to the phase list
     """
 
+    class SimplifiedNLP:
+        def __init__(self, nlp):
+            self.model = nlp.model
+            self.dynamics = nlp.dynamics
+            self.n_integration_steps = nlp.n_integration_steps
+            self.mapping = nlp.mapping
+            self.var_states = nlp.var_states
+            self.control_type = nlp.control_type
+            self.J = nlp.J
+            self.g = nlp.g
+
+    class SimplifiedOCP:
+        def __init__(self, ocp):
+            self.nlp = [Solution.SimplifiedNLP(nlp) for nlp in ocp.nlp]
+            self.v = ocp.v
+            self.J = ocp.J
+            self.g = ocp.g
+            self.phase_transitions = ocp.phase_transitions
+            self.prepare_plots = ocp.prepare_plots
+
     def __init__(self, ocp, sol):
-        self.ocp = ocp if ocp else None
+        self.ocp = Solution.SimplifiedOCP(ocp) if ocp else None
 
         self.vector = sol["x"] if isinstance(sol, dict) and "x" in sol else sol
         self.cost = sol["f"] if isinstance(sol, dict) and "f" in sol else None
@@ -76,12 +96,11 @@ class Solution:
         self._complete_control()
 
         self.phase_time = self.ocp.v.extract_phase_time(self.vector)
-        self.ns = [nlp.ns for nlp in self.ocp.nlp]
+        self.ns = [nlp.ns for nlp in ocp.nlp]
 
     @staticmethod
     def copy(other, skip_data=False):
-        new = Solution(None, None)
-        new.ocp = other.ocp
+        new = Solution(other.ocp, None)
 
         new.vector = deepcopy(other.vector)
         new.cost = deepcopy(other.cost)
@@ -115,6 +134,9 @@ class Solution:
 
     @property
     def controls(self):
+        if not self._controls:
+            raise RuntimeError("There is not controls. This may happen in "
+                               "previously integrated and interpolated structure")
         return self._controls[0] if len(self._controls) == 1 else self._controls
 
     @property
@@ -131,6 +153,8 @@ class Solution:
         """
 
         # Sanity check
+        if self.is_integrated:
+            raise RuntimeError("Cannot integrate twice")
         if self.is_interpolated:
             raise RuntimeError("Cannot integrate after interpolating")
         if self.is_merged:
@@ -163,7 +187,7 @@ class Solution:
                     x0 += self.ocp.phase_transitions[p - 1].casadi_function(self.vector)
             else:
                 x0 = self._states[p]["all"][:, 0]
-            for n in range(ocp.nlp[p].ns):
+            for n in range(self.ns[p]):
                 u = self._controls[p]["all"][:, n]
                 integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
                 cols = range(n*n_steps, (n+1)*n_steps+1) if continuous else range(n*n_steps, (n+1)*n_steps)
@@ -273,7 +297,7 @@ class Solution:
             for i, key in enumerate(keys):
                 data_out[0][key] = np.ndarray((sizes[i], 0))
 
-            for p in range(self.ocp.n_phases):
+            for p in range(len(data)):
                 d = data[p]
                 for key in d:
                     data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, :self.ns[p]]), axis=1)
@@ -284,7 +308,7 @@ class Solution:
 
         out_states = _merge(self.states) if not skip_states and self._states else None
         out_controls = _merge(self.controls) if not skip_controls and self._controls else None
-        phase_time = [0] + [sum([self.phase_time[i+1] for i in range(self.ocp.n_phases)])]
+        phase_time = [0] + [sum([self.phase_time[i+1] for i in range(len(self.phase_time)-1)])]
         ns = [sum(self.ns)]
 
         return out_states, out_controls, phase_time, ns
@@ -462,11 +486,13 @@ class Solution:
             has_global = False
             for G in ocp.g:
                 has_global = True
+                g, next_idx = None, None
                 for g in G:
                     next_idx = idx + g["val"].shape[0]
-                print(
-                    f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}"
-                )
+                if g:
+                    print(
+                        f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}"
+                    )
                 idx = next_idx
             if has_global:
                 print("")
@@ -474,12 +500,13 @@ class Solution:
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
                 for G in nlp.g:
-                    next_idx = idx
+                    g, next_idx = None, idx
                     for g in G:
                         next_idx += g["val"].shape[0]
-                    print(
-                        f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}"
-                    )
+                    if g:
+                        print(
+                            f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}"
+                        )
                     idx = next_idx
                 print("")
             print(f"------------------------------")
