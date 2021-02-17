@@ -3,9 +3,10 @@ from copy import deepcopy
 
 import numpy as np
 from scipy import interpolate as sci_interp
-from casadi import Function
+from casadi import Function, DM
 from matplotlib import pyplot as plt
 
+from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import ControlType, CostType, Shooting
 from ..misc.utils import check_version
 
@@ -58,6 +59,7 @@ class Solution:
             self.control_type = nlp.control_type
             self.J = nlp.J
             self.g = nlp.g
+            self.ns = nlp.ns
 
     class SimplifiedOCP:
         def __init__(self, ocp):
@@ -70,33 +72,107 @@ class Solution:
 
     def __init__(self, ocp, sol):
         self.ocp = Solution.SimplifiedOCP(ocp) if ocp else None
-
-        self.vector = sol["x"] if isinstance(sol, dict) and "x" in sol else sol
-        self.cost = sol["f"] if isinstance(sol, dict) and "f" in sol else None
-        self.constraints = sol["g"] if isinstance(sol, dict) and "g" in sol else None
-
-        self.lam_g = sol["lam_g"] if isinstance(sol, dict) and "lam_g" in sol else None
-        self.lam_p = sol["lam_p"] if isinstance(sol, dict) and "lam_p" in sol else None
-        self.lam_x = sol["lam_x"] if isinstance(sol, dict) and "lam_x" in sol else None
-        self.time_to_optimize = sol["time_tot"] if isinstance(sol, dict) and "time_tot" in sol else None
-        self.iterations = sol["iter"] if isinstance(sol, dict) and "iter" in sol else None
+        self.ns = [nlp.ns for nlp in self.ocp.nlp]
 
         # Current internal state of the data
         self.is_interpolated = False
         self.is_integrated = False
         self.is_merged = False
 
-        if sol is None:
+        self.vector = None
+        self.cost = None
+        self.constraints = None
+
+        self.lam_g = None
+        self.lam_p = None
+        self.lam_x = None
+        self.time_to_optimize = None
+        self.iterations = None
+
+        # Extract the data now for further use
+        self._states, self._controls, self._parameters = None, None, None
+        self.phase_time = None
+
+        def init_from_dict(sol: dict):
+            self.vector = sol["x"] if isinstance(sol, dict) and "x" in sol else sol
+            self.cost = sol["f"] if isinstance(sol, dict) and "f" in sol else None
+            self.constraints = sol["g"] if isinstance(sol, dict) and "g" in sol else None
+
+            self.lam_g = sol["lam_g"] if isinstance(sol, dict) and "lam_g" in sol else None
+            self.lam_p = sol["lam_p"] if isinstance(sol, dict) and "lam_p" in sol else None
+            self.lam_x = sol["lam_x"] if isinstance(sol, dict) and "lam_x" in sol else None
+            self.time_to_optimize = sol["time_tot"] if isinstance(sol, dict) and "time_tot" in sol else None
+            self.iterations = sol["iter"] if isinstance(sol, dict) and "iter" in sol else None
+
+            # Extract the data now for further use
+            self._states, self._controls, self._parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._complete_control()
+            self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+
+        def init_from_initial_guess(sol: list):
+            n_param = len(ocp.v.parameters_in_list)
+
+            # Sanity checks
+            for i in range(len(sol)):  # Convert to list if necessary and copy for as many phases there are
+                if isinstance(sol[i], InitialGuess):
+                    tp = InitialGuessList()
+                    for _ in range(len(self.ns)):
+                        tp.add(deepcopy(sol[i].init))
+                    sol[i] = tp
+            if sum([isinstance(s, InitialGuessList) for s in sol]) != 2:
+                raise ValueError("solution must be a solution dict, "
+                                 "an InitialGuess[List] of len 2 or 3 (states, controls, parameters), "
+                                 "or a None")
+            if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(sol)]) != 0:
+                raise ValueError("The InitialGuessList len must match the number of phases")
+            if n_param != 0:
+                if len(sol) != 3 and len(sol[2]) != 1 and sol[2][0].shape != (n_param, 1):
+                    raise ValueError("The 3rd element is the InitialGuess of the parameter and "
+                                     "should be a unique vector of size equal to n_param")
+
+            self.vector = np.ndarray((0, 1))
+            sol_states, sol_controls = sol[0], sol[1]
+            for p, s in enumerate(sol_states):
+                self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
+            for p, s in enumerate(sol_controls):
+                control_type = self.ocp.nlp[p].control_type
+                if control_type == ControlType.CONSTANT:
+                    self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p])[:, np.newaxis]))
+                elif control_type == ControlType.LINEAR_CONTINUOUS:
+                    self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p])[:, np.newaxis]))
+                else:
+                    raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
+            if n_param:
+                sol_params = sol[2]
+                for p, s in enumerate(sol_params):
+                    self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
+
+            self._states, self._controls, self._parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._complete_control()
+            self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+
+        def init_from_vector(sol):
+            self.vector = sol
+            self._states, self._controls, self._parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._complete_control()
+            self.phase_time = self.ocp.v.extract_phase_time(self.vector)
+
+        def init_from_none():
             self._states, self._controls, self._parameters = {}, {}, {}
             self.phase_time = []
             self.ns = []
-            return
-        # Extract the data now for further use
-        self._states, self._controls, self._parameters = self.ocp.v.to_dictionaries(self.vector)
-        self._complete_control()
 
-        self.phase_time = self.ocp.v.extract_phase_time(self.vector)
-        self.ns = [nlp.ns for nlp in ocp.nlp]
+        if isinstance(sol, dict):
+            init_from_dict(sol)
+
+        elif isinstance(sol, (list, tuple)) and len(sol) in (2, 3):
+            init_from_initial_guess(sol)
+
+        elif isinstance(sol, (np.ndarray, DM)):
+            init_from_vector(sol)
+
+        elif sol is None:
+            init_from_none()
 
     @staticmethod
     def copy(other, skip_data=False):
@@ -342,6 +418,10 @@ class Solution:
         -------
 
         """
+
+        if self.is_merged or self.is_interpolated or self.is_integrated:
+            raise NotImplementedError("It is not possible to graph a modified Solution yet")
+
         plot_ocp = self.ocp.prepare_plots(automatically_organize, adapt_graph_size_to_bounds)
         plot_ocp.update_data(self.vector)
         if show_now:

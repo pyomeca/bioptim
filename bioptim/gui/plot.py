@@ -498,7 +498,7 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution(self.ocp, V)
-        data_states = sol.integrate(continuous=False)
+        data_states = sol.integrate(continuous=False).states
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "time"]).squeeze()

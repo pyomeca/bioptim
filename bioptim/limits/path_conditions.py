@@ -532,33 +532,6 @@ class BoundsList(UniquePerPhaseOptionList):
                 min_bound=min_bound, max_bound=max_bound, option_type=Bounds, **extra_arguments
             )
 
-    def __getitem__(self, i: int):
-        """
-        Get the ith bounds of the list
-
-        Parameters
-        ----------
-        i: int
-            The index of the bounds to get
-
-        Returns
-        -------
-        The ith bounds of the list
-        """
-
-        return super(BoundsList, self).__getitem__(i)
-
-    def __next__(self):
-        """
-        Get the next bounds of the list
-
-        Returns
-        -------
-        The next bounds of the list
-        """
-
-        return super(BoundsList, self).__next__()
-
     def print(self):
         """
         Print the BoundsList to the console
@@ -756,33 +729,6 @@ class InitialGuessList(UniquePerPhaseOptionList):
             self.copy(initial_guess)
         else:
             super(InitialGuessList, self)._add(initial_guess=initial_guess, option_type=InitialGuess, **extra_arguments)
-
-    def __getitem__(self, i):
-        """
-        Get the ith initial guess of the list
-
-        Parameters
-        ----------
-        i: int
-            The index of the initial guess to get
-
-        Returns
-        -------
-        The ith initial guess of the list
-        """
-
-        return super(InitialGuessList, self).__getitem__(i)
-
-    def __next__(self):
-        """
-        Get the next initial guess of the list
-
-        Returns
-        -------
-        The next initial guess of the list
-        """
-
-        return super(InitialGuessList, self).__next__()
 
     def print(self):
         """
