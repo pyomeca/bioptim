@@ -1,4 +1,5 @@
 from typing import Any, Union
+from copy import deepcopy
 
 import numpy as np
 from scipy import interpolate as sci_interp
@@ -48,7 +49,7 @@ class Solution:
     """
 
     def __init__(self, ocp, sol):
-        self.ocp = ocp
+        self.ocp = ocp if ocp else None
 
         self.vector = sol["x"] if isinstance(sol, dict) and "x" in sol else sol
         self.cost = sol["f"] if isinstance(sol, dict) and "f" in sol else None
@@ -60,6 +61,16 @@ class Solution:
         self.time_to_optimize = sol["time_tot"] if isinstance(sol, dict) and "time_tot" in sol else None
         self.iterations = sol["iter"] if isinstance(sol, dict) and "iter" in sol else None
 
+        # Current internal state of the data
+        self.is_interpolated = False
+        self.is_integrated = False
+        self.is_merged = False
+
+        if sol is None:
+            self._states, self._controls, self._parameters = {}, {}, {}
+            self.phase_time = []
+            self.ns = []
+            return
         # Extract the data now for further use
         self._states, self._controls, self._parameters = self.ocp.v.to_dictionaries(self.vector)
         self._complete_control()
@@ -67,13 +78,36 @@ class Solution:
         self.phase_time = self.ocp.v.extract_phase_time(self.vector)
         self.ns = [nlp.ns for nlp in self.ocp.nlp]
 
-        self.is_interpolated = False
-        self.is_integrated = False
-        self.is_merged = False
-        self.phase_time_original = self.phase_time
-        self.ns_original = self.ns
-        self._states_original = self._states
-        self._controls_original = self._controls
+    @staticmethod
+    def copy(other, skip_data=True):
+        new = Solution(None, None)
+        new.ocp = other.ocp
+
+        new.vector = deepcopy(other.vector)
+        new.cost = deepcopy(other.cost)
+        new.constraints = deepcopy(other.constraints)
+
+        new.lam_g = deepcopy(other.lam_g)
+        new.lam_p = deepcopy(other.lam_p)
+        new.lam_x = deepcopy(other.lam_x)
+        new.time_to_optimize = deepcopy(other.time_to_optimize)
+        new.iterations = deepcopy(other.iterations)
+
+        new.is_interpolated = deepcopy(other.is_interpolated)
+        new.is_integrated = deepcopy(other.is_integrated)
+        new.is_merged = deepcopy(other.is_merged)
+
+        new.phase_time = deepcopy(other.phase_time)
+        new.ns = deepcopy(other.ns)
+
+        if skip_data:
+            new._states, new._controls, new._parameters = None, None, None
+        else:
+            new._states = other._states
+            new._controls = other._controls
+            new._parameters = other._parameters
+
+        return new
 
     @property
     def states(self):
@@ -87,16 +121,7 @@ class Solution:
     def parameters(self):
         return self._parameters
 
-    def reset_data(self):
-        self.is_interpolated = False
-        self.is_integrated = False
-        self.is_merged = False
-        self.phase_time = self.phase_time_original
-        self.ns = self.ns_original
-        self._states = self._states_original
-        self._controls = self._controls_original
-
-    def integrate(self, merge_phases: bool = False, apply_to_self: bool = False, continuous: bool = True, single_shoot: bool = False):
+    def integrate(self, merge_phases: bool = False, continuous: bool = True, single_shoot: bool = False):
         """
         Integrates the states
 
@@ -105,29 +130,34 @@ class Solution:
         The dictionary of states integrated
         """
 
+        # Sanity check
         if self.is_interpolated:
             raise RuntimeError("Cannot integrate after interpolating")
         if self.is_merged:
             raise RuntimeError("Cannot integrate after merging phases")
 
-        ns = self.ns
-        ocp = self.ocp
-        out = []
+        # Copy the data
+        out = Solution.copy(self, skip_data=True)
+        out._controls = deepcopy(self._controls)
+        out._parameters = deepcopy(self._parameters)
+
+        ocp = out.ocp
+        out._states = []
         for _ in range(len(self._states)):
-            out.append({})
+            out._states.append({})
 
         params = self._parameters["all"]
         x0 = self._states[0]["all"][:, 0]
         for p in range(len(self._states)):
             if continuous:
                 n_steps = ocp.nlp[p].n_integration_steps if continuous else ocp.nlp[p].n_integration_steps + 1
-                ns[p] *= ocp.nlp[p].n_integration_steps
+                out.ns[p] *= ocp.nlp[p].n_integration_steps
             else:
                 n_steps = ocp.nlp[p].n_integration_steps + 1
-                ns[p] *= ocp.nlp[p].n_integration_steps + 1
+                out.ns[p] *= ocp.nlp[p].n_integration_steps + 1
 
             shape = self._states[p]["all"].shape
-            out[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
+            out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
             if merge_phases:
@@ -139,25 +169,21 @@ class Solution:
                 u = self._controls[p]["all"][:, n]
                 integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
                 cols = range(n*n_steps, (n+1)*n_steps+1) if continuous else range(n*n_steps, (n+1)*n_steps)
-                out[p]["all"][:, cols] = integrated
+                out._states[p]["all"][:, cols] = integrated
                 x0 = integrated[:, -1] if single_shoot else self._states[p]["all"][:, n + 1]
 
             # Dispatch the integrated values to all the keys
             off = 0
             for key in ocp.nlp[p].var_states:
-                out[p][key] = out[p]["all"][off:off+ocp.nlp[p].var_states[key], :]
+                out._states[p][key] = out._states[p]["all"][off:off+ocp.nlp[p].var_states[key], :]
                 off += ocp.nlp[p].var_states[key]
 
-        phase_time = self.phase_time
         if merge_phases:
-            out, _, phase_time, ns = self._merge_phases(out, None, self.phase_time, ns)
+            out._states, out._controls, out.phase_time, out.ns = out._merge_phases()
+            out.is_merged = True
 
-        if apply_to_self:
-            self.is_integrated = True
-            self._states = out
-            self.phase_time = phase_time
-            self.ns = ns
-        return out[0] if len(out) == 1 else out
+        out.is_integrated = True
+        return out
 
     def interpolate(self, n_frames: Union[int, list, tuple], apply_to_self: bool = False) -> list:
         """
@@ -219,17 +245,14 @@ class Solution:
             self._states = out
         return out[0] if len(out) == 1 else out
 
-    def merge_phases(self, apply_to_self: bool = False):
-        out_states, out_controls, phase_time, ns = self._merge_phases(self._states, self._controls, self.phase_time, self.ns)
-        if apply_to_self:
-            self.is_merged = True
-            self._states = out_states
-            self._controls = out_controls
-            self.phase_time = phase_time
-            self.ns = ns
-        return out_states[0], out_controls[0]
+    def merge_phases(self):
+        new = Solution.copy(self, skip_data=True)
+        new._parameters = deepcopy(self._parameters)
+        new._states, new._controls, new.phase_time, new.ns = self._merge_phases()
+        new.is_merged = True
+        return new
 
-    def _merge_phases(self, states, controls, phase_time, ns) -> tuple:
+    def _merge_phases(self, skip_states=False, skip_controls=False) -> tuple:
         """
         Concatenate all the phases
 
@@ -242,9 +265,9 @@ class Solution:
         """
 
         if self.is_merged or len(self._states) == 1:
-            return self._states, self._controls, phase_time, ns
+            return deepcopy(self._states), deepcopy(self._controls), deepcopy(self.phase_time), deepcopy(self.ns)
 
-        def _merge(data, ns):
+        def _merge(data):
             if isinstance(data, dict):
                 return data
 
@@ -262,15 +285,15 @@ class Solution:
             for p in range(self.ocp.n_phases):
                 d = data[p]
                 for key in d:
-                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, :ns[p]]), axis=1)
+                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, :self.ns[p]]), axis=1)
             for key in data[-1]:
                 data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
 
             return data_out
 
-        out_states = _merge(states, ns) if states else None
-        out_controls = _merge(controls, ns) if controls else None
-        phase_time = [0] + [sum([phase_time[i+1] for i in range(self.ocp.n_phases)])]
+        out_states = _merge(self.states) if not skip_states else None
+        out_controls = _merge(self.controls) if not skip_controls else None
+        phase_time = [0] + [sum([self.phase_time[i+1] for i in range(self.ocp.n_phases)])]
         ns = [sum(self.ns)]
 
         return out_states, out_controls, phase_time, ns
@@ -335,19 +358,19 @@ class Solution:
 
         if n_frames == 0:
             try:
-                data_interpolate = self.merge_phases()
+                states_to_animate = self.merge_phases().states
             except RuntimeError:
-                data_interpolate = self.states
+                states_to_animate = self.states
         elif n_frames == -1:
-            data_interpolate = self.states
+            states_to_animate = self.states
         else:
-            data_interpolate = self.interpolate(n_frames)
+            states_to_animate = self.interpolate(n_frames)
 
-        if not isinstance(data_interpolate, (list, tuple)):
-            data_interpolate = [data_interpolate]
+        if not isinstance(states_to_animate, (list, tuple)):
+            states_to_animate = [states_to_animate]
 
         all_bioviz = []
-        for idx_phase, data in enumerate(data_interpolate):
+        for idx_phase, data in enumerate(states_to_animate):
             all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].to_second.map(data["q"]))
 
