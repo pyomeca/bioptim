@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt, lines
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
-from ..misc.enums import PlotType, ControlType, InterpolationType
+from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting
 from ..misc.mapping import Mapping
 from ..optimization.solution import Solution
 
@@ -177,6 +177,7 @@ class PlotOcp:
         ocp,
         automatically_organize: bool = True,
         adapt_graph_size_to_bounds: bool = False,
+        shooting_type: Shooting = Shooting.MULTIPLE
     ):
         """
         Prepares the figures during the simulation
@@ -237,6 +238,7 @@ class PlotOcp:
         self.variable_sizes = []
         self.adapt_graph_size_to_bounds = adapt_graph_size_to_bounds
         self.__create_plots()
+        self.shooting_type = shooting_type
 
         horz = 0
         vert = 1 if len(self.all_figures) < self.n_vertical_windows * self.n_horizontal_windows else 0
@@ -498,7 +500,7 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution(self.ocp, V)
-        data_states = sol.integrate(continuous=False).states
+        data_states = sol.integrate(continuous=False, shooting_type=self.shooting_type).states
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "time"]).squeeze()

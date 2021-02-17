@@ -400,7 +400,7 @@ class Solution:
                 raise NotImplementedError(f"ControlType {nlp.control_type} is not implemented  in _complete_control")
 
     def graphs(
-        self, automatically_organize: bool = True, adapt_graph_size_to_bounds: bool = False, show_now: bool = True
+        self, automatically_organize: bool = True, adapt_graph_size_to_bounds: bool = False, show_now: bool = True, shooting_type=Shooting.MULTIPLE
     ):
         """
         Prepare the graphs of the simulation
@@ -422,7 +422,7 @@ class Solution:
         if self.is_merged or self.is_interpolated or self.is_integrated:
             raise NotImplementedError("It is not possible to graph a modified Solution yet")
 
-        plot_ocp = self.ocp.prepare_plots(automatically_organize, adapt_graph_size_to_bounds)
+        plot_ocp = self.ocp.prepare_plots(automatically_organize, adapt_graph_size_to_bounds, shooting_type)
         plot_ocp.update_data(self.vector)
         if show_now:
             plt.show()
