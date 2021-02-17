@@ -20,14 +20,14 @@ class Solution:
         Parse the data into a np.ndarray
     set_time_per_phase(self, new_t: list)
         Set the time vector of the phase
-    get_time_per_phase(self, phases: Union[int, list, tuple] = (), concatenate: bool = False) -> np.ndarray
+    get_time_per_phase(self, phases: Union[int, list, tuple] = (), merge_phases: bool = False) -> np.ndarray
         Get the time for each phase
     get_data(ocp: OptimalControlProgram, sol_x: dict, get_states: bool = True, get_controls: bool = True,
             get_parameters: bool = False, phase_idx: Union[int, list, tuple] = None, integrate: bool = False,
-            interpolate_n_frames: int = -1, concatenate: bool = True,) -> tuple
+            interpolate_n_frames: int = -1, merge_phases: bool = True,) -> tuple
         Comprehensively parse the data from a solution
     get_data_object(ocp: OptimalControlProgram, V: np.ndarray, phase_idx: Union[int, list, tuple] = None,
-            integrate: bool = False, interpolate_n_frames: int = -1, concatenate: bool = True) -> tuple
+            integrate: bool = False, interpolate_n_frames: int = -1, merge_phases: bool = True) -> tuple
         Parse an unstructured vector of data of data into their list of Phase format
     _get_data_integrated_from_V(ocp: OptimalControlProgram, data_states: dict,
             data_controls: dict, data_parameters: dict) -> dict
@@ -69,7 +69,7 @@ class Solution:
 
         self.is_interpolated = False
         self.is_integrated = False
-        self.is_concatenated = False
+        self.is_merged = False
         self.phase_time_original = self.phase_time
         self.ns_original = self.ns
         self._states_original = self._states
@@ -90,13 +90,13 @@ class Solution:
     def reset_data(self):
         self.is_interpolated = False
         self.is_integrated = False
-        self.is_concatenated = False
+        self.is_merged = False
         self.phase_time = self.phase_time_original
         self.ns = self.ns_original
         self._states = self._states_original
         self._controls = self._controls_original
 
-    def integrate(self, concatenate: bool = False, apply_to_self: bool = False, continuous: bool = True, single_shoot: bool = False):
+    def integrate(self, merge_phases: bool = False, apply_to_self: bool = False, continuous: bool = True, single_shoot: bool = False):
         """
         Integrates the states
 
@@ -106,9 +106,9 @@ class Solution:
         """
 
         if self.is_interpolated:
-            raise RuntimeError("Cannot integrate after interpolating, please use reset_data before integrating")
-        if self.is_concatenated:
-            raise RuntimeError("Cannot integrate after concatenating, please use reset_data before integrating")
+            raise RuntimeError("Cannot integrate after interpolating")
+        if self.is_merged:
+            raise RuntimeError("Cannot integrate after merging phases")
 
         ns = self.ns
         ocp = self.ocp
@@ -130,7 +130,7 @@ class Solution:
             out[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
-            if concatenate:
+            if merge_phases:
                 if p != 0:
                     x0 += self.ocp.phase_transitions[p - 1].casadi_function(self.vector)
             else:
@@ -149,8 +149,8 @@ class Solution:
                 off += ocp.nlp[p].var_states[key]
 
         phase_time = self.phase_time
-        if concatenate:
-            out, _, phase_time, ns = self._concatenate_phases(out, None, self.phase_time, ns)
+        if merge_phases:
+            out, _, phase_time, ns = self._merge_phases(out, None, self.phase_time, ns)
 
         if apply_to_self:
             self.is_integrated = True
@@ -175,16 +175,16 @@ class Solution:
 
         if isinstance(n_frames, int):
             # Todo interpolate relative to time of the phase and not relative to number of frames in the phase
-            is_concatenated = True
-            data_states, _, phase_time, ns = self._concatenate_phases(self._states, self._controls, self.phase_time, self.ns)
+            is_merged = True
+            data_states, _, phase_time, ns = self._merge_phases(self._states, self._controls, self.phase_time, self.ns)
             n_frames = [n_frames]
         elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states):
-            is_concatenated = False
+            is_merged = False
             data_states = self._states
             phase_time = self.phase_time
             ns = n_frames
         else:
-            raise ValueError("n_frames should either be a int to concatenate phases "
+            raise ValueError("n_frames should either be a int to merge_phases phases "
                              "or a list of int of the number of phases dimension")
 
         out = []
@@ -213,23 +213,23 @@ class Solution:
 
         if apply_to_self:
             self.is_interpolated = True
-            self.is_concatenated = self.is_interpolated or is_concatenated
+            self.is_merged = self.is_interpolated or is_merged
             self.phase_time = phase_time
             self.ns = ns
             self._states = out
         return out[0] if len(out) == 1 else out
 
-    def concatenate_phases(self, apply_to_self: bool = False):
-        out_states, out_controls, phase_time, ns = self._concatenate_phases(self._states, self._controls, self.phase_time, self.ns)
+    def merge_phases(self, apply_to_self: bool = False):
+        out_states, out_controls, phase_time, ns = self._merge_phases(self._states, self._controls, self.phase_time, self.ns)
         if apply_to_self:
-            self.is_concatenated = True
+            self.is_merged = True
             self._states = out_states
             self._controls = out_controls
             self.phase_time = phase_time
             self.ns = ns
         return out_states[0], out_controls[0]
 
-    def _concatenate_phases(self, states, controls, phase_time, ns) -> tuple:
+    def _merge_phases(self, states, controls, phase_time, ns) -> tuple:
         """
         Concatenate all the phases
 
@@ -238,13 +238,13 @@ class Solution:
 
         Returns
         -------
-        The new dictionary of data concatenated
+        The new dictionary of data with the phases merged
         """
 
-        if self.is_concatenated or len(self._states) == 1:
+        if self.is_merged or len(self._states) == 1:
             return self._states, self._controls, phase_time, ns
 
-        def _concat(data, ns):
+        def _merge(data, ns):
             if isinstance(data, dict):
                 return data
 
@@ -253,7 +253,7 @@ class Solution:
             sizes = [data[0][d].shape[0] for d in data[0]]
             for d in data:
                 if d.keys() != keys or [d[key].shape[0] for key in d] != sizes:
-                    raise RuntimeError("Program dimension must be coherent across phases to concatenate them")
+                    raise RuntimeError("Program dimension must be coherent across phases to merge_phases them")
 
             data_out = [{}]
             for i, key in enumerate(keys):
@@ -268,8 +268,8 @@ class Solution:
 
             return data_out
 
-        out_states = _concat(states, ns) if states else None
-        out_controls = _concat(controls, ns) if controls else None
+        out_states = _merge(states, ns) if states else None
+        out_controls = _merge(controls, ns) if controls else None
         phase_time = [0] + [sum([phase_time[i+1] for i in range(self.ocp.n_phases)])]
         ns = [sum(self.ns)]
 
@@ -335,7 +335,7 @@ class Solution:
 
         if n_frames == 0:
             try:
-                data_interpolate = self.concatenate_phases()
+                data_interpolate = self.merge_phases()
             except RuntimeError:
                 data_interpolate = self.states
         elif n_frames == -1:

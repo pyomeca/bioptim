@@ -511,7 +511,7 @@ def test_multiphase_time_constraint(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((444, 1)))
 
     # Check some of the results
-    states, controls = sol.concatenate_phases()
+    states, controls = sol.merge_phases()
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     tf = sol.parameters["time"][0, 0]
 
