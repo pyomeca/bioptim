@@ -309,7 +309,7 @@ class Solution:
         if show_now:
             plt.show()
 
-    def animate(self, n_frames: int = 100, show_now: bool = True, **kwargs: Any) -> list:
+    def animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> list:
         """
         An interface to animate solution with bioviz
 
@@ -332,7 +332,16 @@ class Solution:
         except ModuleNotFoundError:
             raise RuntimeError("bioviz must be install to animate the model")
         check_version(bioviz, "2.0.1", "2.1.0")
-        data_interpolate = self.interpolate(n_frames) if not isinstance(n_frames, int) or n_frames > 0 else self.states
+
+        if n_frames == 0:
+            try:
+                data_interpolate = self.concatenate_phases()
+            except RuntimeError:
+                data_interpolate = self.states
+        elif n_frames == -1:
+            data_interpolate = self.states
+        else:
+            data_interpolate = self.interpolate(n_frames)
 
         if not isinstance(data_interpolate, (list, tuple)):
             data_interpolate = [data_interpolate]
