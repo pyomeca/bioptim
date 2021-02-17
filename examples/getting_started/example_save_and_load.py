@@ -103,25 +103,13 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     tic = time()
-    sol, sol_iterations = ocp.solve(show_online_optim=True, return_iterations=True)
+    sol = ocp.solve(show_online_optim=True)
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
-
-    # --- Access to all iterations  --- #
-    if sol_iterations:  # If the processor is too fast, this will be empty since it is attached to the update function
-        n_iter = len(sol_iterations)
-        third_iteration = sol_iterations[2]
 
     # --- Print objective cost  --- #
     print(f"Final objective value : {np.nansum(sol.cost)} \n")
     sol.print()
-
-    # --- Save result of get_data --- #
-    ocp.save_get_data(sol, "pendulum.bob", sol_iterations)  # you don't have to specify the extension ".bob"
-
-    # --- Load result of get_data --- #
-    with open("pendulum.bob", "rb") as file:
-        data = pickle.load(file)
 
     # --- Save the optimal control program and the solution --- #
     ocp.save(sol, "pendulum.bo")  # you don't have to specify the extension ".bo"

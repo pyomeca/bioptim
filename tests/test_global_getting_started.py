@@ -4,6 +4,7 @@ Test for file IO
 import importlib.util
 from pickle import PicklingError
 from pathlib import Path
+import re
 
 import pytest
 import numpy as np
@@ -58,7 +59,7 @@ def test_pendulum_save_and_load():
     TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("n_threads", [1, 2])
@@ -124,7 +125,7 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             TestUtils.save_and_load(sol, ocp, True)
 
             # simulate
-            TestUtils.simulate(sol, ocp)
+            TestUtils.simulate(sol)
     else:
         ocp = pendulum.prepare_ocp(
             biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
@@ -172,7 +173,7 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
         TestUtils.save_and_load(sol, ocp, True)
 
         # simulate
-        TestUtils.simulate(sol, ocp)
+        TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -268,12 +269,14 @@ def test_initial_guesses(interpolation, ode_solver):
     np.testing.assert_almost_equal(tau[:, -1], np.array([-5.0, 9.81, -7.85]))
 
     # save and load
-    # if interpolation in [InterpolationType.CUSTOM]:
-    #     with pytest.raises(AttributeError):
-    #         TestUtils.save_and_load(sol, ocp, True)
-    # else:
-    #     TestUtils.save_and_load(sol, ocp, True)
-    TestUtils.save_and_load(sol, ocp, True)
+    if interpolation == InterpolationType.CUSTOM:
+        with pytest.raises(AttributeError, match="'PathCondition' object has no attribute 'custom_function'"):
+            TestUtils.save_and_load(sol, ocp, True)
+    else:
+        TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -323,7 +326,7 @@ def test_cyclic_objective(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -373,7 +376,7 @@ def test_cyclic_constraint(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -427,11 +430,14 @@ def test_phase_transitions(ode_solver):
         np.testing.assert_almost_equal(controls[-1]["tau"][:, -1], np.array((0, 1.2717052e01, 1.1487805e00)))
 
     # save and load
-    # with pytest.raises(PicklingError, match="import of module 'phase_transitions' failed"):
-    TestUtils.save_and_load(sol, ocp, True)
+    with pytest.raises(PicklingError, match="import of module 'phase_transitions' failed"):
+        TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    with pytest.raises(RuntimeError, match=re.escape("Phase transition must have the same number of states (2) "
+                                                     "when integrating with Shooting.SINGLE. If it is not possible, "
+                                                     "please integrate with Shooting.SINGLE_RESET_AT_PHASE")):
+        TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -511,11 +517,11 @@ def test_parameter_optimization(ode_solver):
         np.testing.assert_almost_equal(gravity, np.array([[-9.09889371]]))
 
     # save and load
-    # with pytest.raises(PicklingError, match="import of module 'parameter_optimization' failed"):
-    TestUtils.save_and_load(sol, ocp, True)
+    with pytest.raises(PicklingError, match="import of module 'parameter_optimization' failed"):
+        TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])
@@ -621,7 +627,7 @@ def test_example_external_forces(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -680,7 +686,7 @@ def test_example_multiphase(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -779,7 +785,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -877,4 +883,4 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)

@@ -181,7 +181,7 @@ def test_track_and_minimize_marker_displacement_global(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -230,7 +230,7 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -276,7 +276,7 @@ def test_track_and_minimize_marker_velocity(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -331,4 +331,4 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
         TestUtils.save_and_load(sol, ocp, False)
 
         # simulate
-        TestUtils.simulate(sol, ocp, decimal_value=5)
+        TestUtils.simulate(sol)

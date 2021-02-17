@@ -113,7 +113,7 @@ def test_muscle_driven_ocp(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4])  # Only one solver since it is very long
@@ -236,6 +236,9 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4])  # Only one solver since it is very long
@@ -431,4 +434,4 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp, decimal_value=5)
+    TestUtils.simulate(sol)

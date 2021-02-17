@@ -56,7 +56,7 @@ def test_track_segment_on_rt(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -105,4 +105,4 @@ def test_track_marker_on_segment(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)

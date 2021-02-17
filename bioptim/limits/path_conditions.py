@@ -36,7 +36,7 @@ class PathCondition(np.ndarray):
         Adding some attributes to the reduced state
     __setstate__(self, state: tuple, *args, **kwargs)
         Adding some attributes to the expanded state
-    check_and_adjust_dimensions(self, n_elements: int, n_shooting: int, element_type: InterpolationType)
+    check_and_adjust_dimensions(self, n_elements: int, n_shooting: int, element_name: InterpolationType)
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
     evaluate_at(self, shooting_point: int)
@@ -187,7 +187,7 @@ class PathCondition(np.ndarray):
         # Call the parent's __setstate__ with the other tuple elements.
         super(PathCondition, self).__setstate__(state[0:-5], *args, **kwargs)
 
-    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int, element_type: InterpolationType):
+    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int, element_name: str):
         """
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
@@ -198,8 +198,8 @@ class PathCondition(np.ndarray):
             The expected number of rows
         n_shooting: int
             The number of shooting points in the ocp
-        element_type: InterpolationType
-            The type of the interpolation
+        element_name: str
+            The human readable name of the data structure
         """
 
         if (
@@ -229,7 +229,7 @@ class PathCondition(np.ndarray):
         else:
             val_size = self.shape[0]
         if val_size != n_elements:
-            raise RuntimeError(f"Invalid number of {element_type} ({val_size}), the expected size is {n_elements}")
+            raise RuntimeError(f"Invalid number of {element_name} ({val_size}), the expected size is {n_elements}")
 
         if self.type == InterpolationType.EACH_FRAME:
             if self.shape[1] != self.n_shooting:

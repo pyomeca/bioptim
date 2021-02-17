@@ -120,7 +120,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -225,7 +225,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -368,8 +368,8 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
-    # with pytest.raises(AssertionError, match="Arrays are not almost equal to 7 decimals"):
-    #     TestUtils.simulate(sol, ocp)
+    # simulate
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -508,7 +508,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -572,4 +572,4 @@ def test_muscle_activation_and_contacts_tracking(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)

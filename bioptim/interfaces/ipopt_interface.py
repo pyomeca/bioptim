@@ -27,19 +27,11 @@ class IpoptInterface(SolverInterface):
         The lagrange multiplier of the constraints to initialize the solver
     lam_x: np.ndarray
         The lagrange multiplier of the variables to initialize the solver
-    bobo_directory: str
-        The temporary directory to save the iterations
-    bobo_file_path: str
-        The file path to save the iterations
 
     Methods
     -------
     online_optim(self, ocp: OptimalControlProgram)
         Declare the online callback to update the graphs while optimizing
-    start_get_iterations(self)
-        Create the necessary folder and create the file to store the iterations while optimizing
-    finish_get_iterations(self)
-        Close the file where iterations are saved and remove temporary folders
     configure(self, solver_options: dict)
         Set some Ipopt options
     solve(self) -> dict
@@ -72,9 +64,6 @@ class IpoptInterface(SolverInterface):
         self.lam_g = None
         self.lam_x = None
 
-        self.bobo_directory = ".__tmp_biorbd_optim"
-        self.bobo_file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
-
     def online_optim(self, ocp):
         """
         Declare the online callback to update the graphs while optimizing
@@ -86,29 +75,6 @@ class IpoptInterface(SolverInterface):
         """
 
         self.options_common["iteration_callback"] = OnlineCallback(ocp)
-
-    def start_get_iterations(self):
-        """
-        Create the necessary folder and create the file to store the iterations while optimizing
-        """
-
-        if os.path.isfile(self.bobo_file_path):
-            os.remove(self.bobo_file_path)
-            os.rmdir(self.bobo_directory)
-        os.mkdir(self.bobo_directory)
-
-        with open(self.bobo_file_path, "wb") as file:
-            pickle.dump([], file)
-
-    def finish_get_iterations(self):
-        """
-        Close the file where iterations are saved and remove temporary folders
-        """
-
-        with open(self.bobo_file_path, "rb") as file:
-            self.out["sol_iterations"] = pickle.load(file)
-            os.remove(self.bobo_file_path)
-            os.rmdir(self.bobo_directory)
 
     def configure(self, solver_options: dict):
         """

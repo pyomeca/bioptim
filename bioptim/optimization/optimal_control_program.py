@@ -693,7 +693,6 @@ class OptimalControlProgram:
         self,
         solver: Solver = Solver.IPOPT,
         show_online_optim: bool = False,
-        return_iterations: bool = False,
         solver_options: dict = {},
     ) -> Solution:
         """
@@ -706,11 +705,6 @@ class OptimalControlProgram:
         show_online_optim: bool
             If the plot should be shown while optimizing. It will slow down the optimization a bit and is only
             available with Solver.IPOPT
-        return_iterations: bool
-            If each individual iterations should be returned. It will drastically slow down the optimization and is only
-            available with Solver.IPOPT
-        return_objectives: bool
-            If the cost values for each objectives should be returned
         solver_options: dict
             Any options to change the behavior of the solver. To know which options are available, you can refer to the
             manual of the corresponding solver
@@ -720,9 +714,6 @@ class OptimalControlProgram:
         The optimized solution structure, if return_xxx is defined, it also returns it in the same order as they are
         described in the Parameters sections
         """
-
-        if return_iterations and not show_online_optim:
-            raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
 
         if solver == Solver.IPOPT and self.solver_type != Solver.IPOPT:
             from ..interfaces.ipopt_interface import IpoptInterface
@@ -740,18 +731,13 @@ class OptimalControlProgram:
 
         if show_online_optim:
             self.solver.online_optim(self)
-            if return_iterations:
-                self.solver.start_get_iterations()
 
         self.solver.configure(solver_options)
         self.solver.solve()
 
-        if return_iterations:
-            self.solver.finish_get_iterations()
-
         return Solution(self, self.solver.get_optimized_value())
 
-    def save(self, sol: dict, file_path: str, sol_iterations: list = None):
+    def save(self, sol: Solution, file_path: str):
         """
         Save the ocp and solution structure to the hard drive. It automatically create the required
         folder if it does not existsThis is the primary format if you need to reload the data later using bioptim. One
@@ -759,12 +745,10 @@ class OptimalControlProgram:
 
         Parameters
         ----------
-        sol: dict
+        sol: Solution
             The solution structure to save
         file_path: str
             The path to solve the structure. It creates a .bo (BiOptim file)
-        sol_iterations: list
-            The solution structure of each iteration to save
         """
 
         _, ext = os.path.splitext(file_path)
@@ -772,61 +756,18 @@ class OptimalControlProgram:
             file_path = file_path + ".bo"
         elif ext != ".bo":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
-        data_to_save = {"ocp_initializer": self.original_values, "sol": sol, "versions": self.version}
-        if sol_iterations is not None:
-            data_to_save["sol_iterations"] = sol_iterations
 
-        OptimalControlProgram.__save_with_pickle(data_to_save, file_path)
+        sol_copy = sol.copy()
+        sol_copy.ocp = None  # Ocp is not pickable
+        data_to_save = {"ocp_initializer": self.original_values, "sol": sol_copy, "versions": self.version}
 
-    def save_get_data(self, sol, file_path, sol_iterations=None, **parameters):
-        """
-        Save the solution into its get_data (numerical) form to the hard drive. It automatically create the required
-        folder if it does not existsThis is the primary format if you need to load the data into another software
-
-        Parameters
-        ----------
-        sol: dict
-            The solution structure to save
-        file_path: str
-            The path to solve the structure. It creates a .bob (BiOptim file)
-        sol_iterations: list
-            The solution structure of each iteration to save
-        """
-
-        _, ext = os.path.splitext(file_path)
-        if ext == "":
-            file_path = file_path + ".bob"
-        elif ext != ".bob":
-            raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
-
-        data_to_save = {"data": Data.get_data(self, sol["x"], **parameters)}
-        if sol_iterations is not None:
-            get_data_sol_iterations = []
-            for sol_iter in sol_iterations:
-                get_data_sol_iterations.append(Data.get_data(self, sol_iter, **parameters))
-            data_to_save["sol_iterations"] = get_data_sol_iterations
-
-        OptimalControlProgram.__save_with_pickle(data_to_save, file_path)
-
-    @staticmethod
-    def __save_with_pickle(data: dict, file_path: str):
-        """
-        Internal interface for pickle. It automatically create the required folder if it does not exists
-
-        Parameters
-        ----------
-        data: dict
-            The data to save
-        file_path: str
-            The path to solve the data
-        """
-
+        # Create folder if necessary
         directory, _ = os.path.split(file_path)
         if directory != "" and not os.path.isdir(directory):
             os.makedirs(directory)
 
         with open(file_path, "wb") as file:
-            pickle.dump(data, file)
+            pickle.dump(data_to_save, file)
 
     @staticmethod
     def load(file_path: str) -> list:
@@ -852,9 +793,9 @@ class OptimalControlProgram:
                         f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
                         f"installed version ({ocp.version[key]})"
                     )
-            out = [ocp, data["sol"]]
-            if "sol_iterations" in data.keys():
-                out.append(data["sol_iterations"])
+            sol = data["sol"]
+            sol.ocp = Solution.SimplifiedOCP(ocp)
+            out = [ocp, sol]
         return out
 
     @staticmethod

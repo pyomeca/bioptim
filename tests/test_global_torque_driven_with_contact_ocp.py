@@ -96,6 +96,9 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
+    # simulate
+    TestUtils.simulate(sol)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
@@ -168,5 +171,8 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
         np.testing.assert_almost_equal(tau[:, 0], np.array((-0.550905)))
         np.testing.assert_almost_equal(tau[:, -1], np.array(-0.0050623))
 
-        # save and load
-        TestUtils.save_and_load(sol, ocp, False)
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, decimal_value=5)

@@ -904,37 +904,6 @@ class OnlineCallback(Callback):
             while not self.pipe.empty():
                 V = self.pipe.get()
                 self.plot.update_data(V)
-                Iterations.save(V)
             for i, fig in enumerate(self.plot.all_figures):
                 fig.canvas.draw()
             return True
-
-
-class Iterations:
-    """
-    Act of iterations
-
-    Methods
-    -------
-    save(V: np.ndarray)
-        Save the current iteration on the hard drive
-    """
-
-    @staticmethod
-    def save(V: np.ndarray):
-        """
-        Save the current iteration on the hard drive
-
-        Parameters
-        ----------
-        V: np.ndarray
-            The vector of data to save
-        """
-
-        file_path = ".__tmp_bioptim/temp_save_iter.bobo"
-        if os.path.isfile(file_path):
-            with open(file_path, "rb") as file:
-                previews_iterations = pickle.load(file)
-            previews_iterations.append(np.array(V))
-            with open(file_path, "wb") as file:
-                pickle.dump(previews_iterations, file)

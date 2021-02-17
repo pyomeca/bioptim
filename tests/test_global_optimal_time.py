@@ -102,6 +102,9 @@ def test_pendulum_min_time_mayer(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+    # simulate
+    TestUtils.simulate(sol)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_pendulum_min_time_mayer_constrained(ode_solver):
@@ -165,6 +168,9 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+    # simulate
+    TestUtils.simulate(sol, decimal_value=6)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_pendulum_max_time_mayer_constrained(ode_solver):
@@ -223,6 +229,9 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -301,6 +310,9 @@ def test_pendulum_min_time_lagrange(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -426,6 +438,9 @@ def test_time_constraint(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+    # simulate
+    TestUtils.simulate(sol, decimal_value=6)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_monophase_time_constraint(ode_solver):
@@ -479,6 +494,9 @@ def test_monophase_time_constraint(ode_solver):
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
 
+    # simulate
+    TestUtils.simulate(sol)
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_multiphase_time_constraint(ode_solver):
@@ -511,10 +529,10 @@ def test_multiphase_time_constraint(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((444, 1)))
 
     # Check some of the results
-    sol = sol.merge_phases()
-    states, controls = sol.states, sol.controls
+    sol_merged = sol.merge_phases()
+    states, controls = sol_merged.states, sol_merged.controls
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-    tf = sol.parameters["time"][0, 0]
+    tf = sol_merged.parameters["time"][0, 0]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -533,6 +551,9 @@ def test_multiphase_time_constraint(ode_solver):
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol)
 
 
 def partial_ocp_parameters(n_phases):

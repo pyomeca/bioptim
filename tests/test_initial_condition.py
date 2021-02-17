@@ -3,7 +3,7 @@ import importlib.util
 from pathlib import Path
 
 import numpy as np
-from bioptim import InterpolationType, InitialGuess
+from bioptim import InterpolationType, InitialGuess, Solution, Shooting
 
 # TODO: Add negative test for sizes
 
@@ -193,22 +193,25 @@ def test_simulate_from_initial_multiple_shoot():
     X = InitialGuess([-1, -2, 1, 0.5])
     U = InitialGuess(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
 
-    sol = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=False)
+    sol = Solution(ocp, [X, U])
+    controls = sol.controls
+    sol = sol.integrate()
+    states = sol.states
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.76453657, -1.78061188)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.7669981 , -1.78295445)))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((1.0, 0.5)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.22338503, 1.68361549)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.20276328, 1.66091544)))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((1.0, 2.0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((0.89, 1.8)))
 
 
 def test_simulate_from_initial_single_shoot():
@@ -230,19 +233,22 @@ def test_simulate_from_initial_single_shoot():
     X = InitialGuess([-1, -2, 1, 0.5])
     U = InitialGuess(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
 
-    sol = Simulate.from_controls_and_initial_states(ocp, X, U, single_shoot=True)
+    sol = Solution(ocp, [X, U])
+    controls = sol.controls
+    sol = sol.integrate(shooting_type=Shooting.SINGLE)
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.states
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.59371229, 2.09731719)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.70545232,  2.02188073)))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((1.0, 0.5)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.38153013, -0.60425128)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.21773723, -0.77896332)))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((1.0, 2.0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((0.89, 1.8)))

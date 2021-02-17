@@ -62,12 +62,7 @@ def test_track_markers(ode_solver, actuator_type):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    if ode_solver == OdeSolver.RK4 and actuator_type == 2:
-        # I have no idea why this very test fails...
-        pass
-    else:
-        if ode_solver != OdeSolver.RK8:
-            TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -123,7 +118,7 @@ def test_track_markers_changing_constraints(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
     # Replace constraints and reoptimize
     new_constraints = ConstraintList()
@@ -163,7 +158,7 @@ def test_track_markers_changing_constraints(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -212,7 +207,7 @@ def test_track_markers_with_actuators(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp, decimal_value=5)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -307,7 +302,7 @@ def test_track_marker_2D_pendulum(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 def test_trampo_quaternions():
@@ -600,3 +595,9 @@ def test_trampo_quaternions():
             ]
         ),
     )
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, False)
+
+    # simulate
+    TestUtils.simulate(sol, decimal_value=6)

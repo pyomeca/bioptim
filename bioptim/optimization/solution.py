@@ -7,7 +7,7 @@ from casadi import Function, DM
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import ControlType, CostType, Shooting
+from ..misc.enums import ControlType, CostType, Shooting, InterpolationType
 from ..misc.utils import check_version
 
 
@@ -52,6 +52,8 @@ class Solution:
     class SimplifiedNLP:
         def __init__(self, nlp):
             self.model = nlp.model
+            self.nx = nlp.nx
+            self.nu = nlp.nu
             self.dynamics = nlp.dynamics
             self.n_integration_steps = nlp.n_integration_steps
             self.mapping = nlp.mapping
@@ -117,7 +119,7 @@ class Solution:
                 if isinstance(sol[i], InitialGuess):
                     tp = InitialGuessList()
                     for _ in range(len(self.ns)):
-                        tp.add(deepcopy(sol[i].init))
+                        tp.add(deepcopy(sol[i].init), interpolation=sol[i].init.type)
                     sol[i] = tp
             if sum([isinstance(s, InitialGuessList) for s in sol]) != 2:
                 raise ValueError(
@@ -137,15 +139,21 @@ class Solution:
             self.vector = np.ndarray((0, 1))
             sol_states, sol_controls = sol[0], sol[1]
             for p, s in enumerate(sol_states):
-                self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].nx, self.ocp.nlp[p].ns + 1, "states")
+                for i in range(self.ns[p] + 1):
+                    self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
             for p, s in enumerate(sol_controls):
                 control_type = self.ocp.nlp[p].control_type
                 if control_type == ControlType.CONSTANT:
-                    self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p])[:, np.newaxis]))
+                    off = 0
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
-                    self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p])[:, np.newaxis]))
+                    off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].nu, self.ns[p], "controls")
+                for i in range(self.ns[p] + off):
+                    self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
+
             if n_param:
                 sol_params = sol[2]
                 for p, s in enumerate(sol_params):
@@ -168,43 +176,41 @@ class Solution:
 
         if isinstance(sol, dict):
             init_from_dict(sol)
-
         elif isinstance(sol, (list, tuple)) and len(sol) in (2, 3):
             init_from_initial_guess(sol)
-
         elif isinstance(sol, (np.ndarray, DM)):
             init_from_vector(sol)
-
         elif sol is None:
             init_from_none()
+        else:
+            raise ValueError("Solution called with unknown initializer")
 
-    @staticmethod
-    def copy(other, skip_data=False):
-        new = Solution(other.ocp, None)
+    def copy(self, skip_data=False):
+        new = Solution(self.ocp, None)
 
-        new.vector = deepcopy(other.vector)
-        new.cost = deepcopy(other.cost)
-        new.constraints = deepcopy(other.constraints)
+        new.vector = deepcopy(self.vector)
+        new.cost = deepcopy(self.cost)
+        new.constraints = deepcopy(self.constraints)
 
-        new.lam_g = deepcopy(other.lam_g)
-        new.lam_p = deepcopy(other.lam_p)
-        new.lam_x = deepcopy(other.lam_x)
-        new.time_to_optimize = deepcopy(other.time_to_optimize)
-        new.iterations = deepcopy(other.iterations)
+        new.lam_g = deepcopy(self.lam_g)
+        new.lam_p = deepcopy(self.lam_p)
+        new.lam_x = deepcopy(self.lam_x)
+        new.time_to_optimize = deepcopy(self.time_to_optimize)
+        new.iterations = deepcopy(self.iterations)
 
-        new.is_interpolated = deepcopy(other.is_interpolated)
-        new.is_integrated = deepcopy(other.is_integrated)
-        new.is_merged = deepcopy(other.is_merged)
+        new.is_interpolated = deepcopy(self.is_interpolated)
+        new.is_integrated = deepcopy(self.is_integrated)
+        new.is_merged = deepcopy(self.is_merged)
 
-        new.phase_time = deepcopy(other.phase_time)
-        new.ns = deepcopy(other.ns)
+        new.phase_time = deepcopy(self.phase_time)
+        new.ns = deepcopy(self.ns)
 
         if skip_data:
             new._states, new._controls, new._parameters = None, None, None
         else:
-            new._states = other._states
-            new._controls = other._controls
-            new._parameters = other._parameters
+            new._states = deepcopy(self._states)
+            new._controls = deepcopy(self._controls)
+            new._parameters = deepcopy(self._parameters)
 
         return new
 
@@ -244,7 +250,7 @@ class Solution:
             raise RuntimeError("Cannot integrate after merging phases")
 
         # Copy the data
-        out = Solution.copy(self, skip_data=True)
+        out = self.copy(skip_data=True)
 
         ocp = out.ocp
         out._states = []
@@ -265,13 +271,24 @@ class Solution:
             out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
-            if merge_phases and shooting_type == Shooting.SINGLE:
+            if shooting_type == Shooting.SINGLE:
                 if p != 0:
-                    x0 += self.ocp.phase_transitions[p - 1].casadi_function(self.vector)
+                    val = self.ocp.phase_transitions[p - 1].casadi_function(self.vector)
+                    if val.shape[0] != x0.shape[0]:
+                        raise RuntimeError(f"Phase transition must have the same number of states ({val.shape[0]}) "
+                                           f"when integrating with Shooting.SINGLE. If it is not possible, "
+                                           f"please integrate with Shooting.SINGLE_RESET_AT_PHASE")
+                    x0 += val
             else:
                 x0 = self._states[p]["all"][:, 0]
             for n in range(self.ns[p]):
-                u = self._controls[p]["all"][:, n]
+                if self.ocp.nlp[p].control_type == ControlType.CONSTANT:
+                    u = self._controls[p]["all"][:, n]
+                elif self.ocp.nlp[p].control_type == ControlType.LINEAR_CONTINUOUS:
+                    u = self._controls[p]["all"][:, n:n+2]
+                else:
+                    raise NotImplementedError(f"ControlType {self.ocp.nlp[p].control_type} "
+                                              f"not yet implemented in integrating")
                 integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
                 cols = (
                     range(n * n_steps, (n + 1) * n_steps + 1) if continuous else range(n * n_steps, (n + 1) * n_steps)
@@ -306,7 +323,7 @@ class Solution:
         The dictionary of states interpolated
         """
 
-        out = Solution.copy(self, skip_data=True)
+        out = self.copy(skip_data=True)
         if isinstance(n_frames, int):
             # Todo interpolate relative to time of the phase and not relative to number of frames in the phase
             data_states, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
@@ -348,7 +365,7 @@ class Solution:
         return out
 
     def merge_phases(self):
-        new = Solution.copy(self, skip_data=True)
+        new = self.copy(skip_data=True)
         new._parameters = deepcopy(self._parameters)
         new._states, new._controls, new.phase_time, new.ns = self._merge_phases()
         new.is_merged = True
