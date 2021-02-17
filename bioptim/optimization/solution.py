@@ -79,7 +79,7 @@ class Solution:
         self.ns = [nlp.ns for nlp in self.ocp.nlp]
 
     @staticmethod
-    def copy(other, skip_data=True):
+    def copy(other, skip_data=False):
         new = Solution(None, None)
         new.ocp = other.ocp
 
@@ -138,8 +138,6 @@ class Solution:
 
         # Copy the data
         out = Solution.copy(self, skip_data=True)
-        out._controls = deepcopy(self._controls)
-        out._parameters = deepcopy(self._parameters)
 
         ocp = out.ocp
         out._states = []
@@ -179,13 +177,13 @@ class Solution:
                 off += ocp.nlp[p].var_states[key]
 
         if merge_phases:
-            out._states, out._controls, out.phase_time, out.ns = out._merge_phases()
+            out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
             out.is_merged = True
 
         out.is_integrated = True
         return out
 
-    def interpolate(self, n_frames: Union[int, list, tuple], apply_to_self: bool = False) -> list:
+    def interpolate(self, n_frames: Union[int, list, tuple]):
         """
         Interpolate the states
 
@@ -199,51 +197,44 @@ class Solution:
         The dictionary of states interpolated
         """
 
+        out = Solution.copy(self, skip_data=True)
         if isinstance(n_frames, int):
             # Todo interpolate relative to time of the phase and not relative to number of frames in the phase
-            is_merged = True
-            data_states, _, phase_time, ns = self._merge_phases(self._states, self._controls, self.phase_time, self.ns)
+            data_states, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
             n_frames = [n_frames]
+            out.is_merged = True
         elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states):
-            is_merged = False
             data_states = self._states
-            phase_time = self.phase_time
-            ns = n_frames
         else:
             raise ValueError("n_frames should either be a int to merge_phases phases "
                              "or a list of int of the number of phases dimension")
 
-        out = []
+        out._states = []
         for _ in range(len(data_states)):
-            out.append({})
+            out._states.append({})
         for p in range(len(data_states)):
             x_phase = data_states[p]["all"]
             n_elements = x_phase.shape[0]
 
-            t_phase = np.linspace(phase_time[p], phase_time[p] + phase_time[p + 1], x_phase.shape[1])
+            t_phase = np.linspace(out.phase_time[p], out.phase_time[p] + out.phase_time[p + 1], x_phase.shape[1])
             t_int = np.linspace(t_phase[0], t_phase[-1], n_frames[p])
 
             x_interpolate = np.ndarray((n_elements, n_frames[p]))
             for j in range(n_elements):
                 s = sci_interp.splrep(t_phase, x_phase[j, :])
                 x_interpolate[j, :] = sci_interp.splev(t_int, s)
-            out[p]["all"] = x_interpolate
+            out._states[p]["all"] = x_interpolate
 
             offset = 0
             for key in data_states[p]:
                 if key == "all":
                     continue
                 n_elements = data_states[p][key].shape[0]
-                out[p][key] = out[p]["all"][offset: offset + n_elements]
+                out._states[p][key] = out._states[p]["all"][offset: offset + n_elements]
                 offset += n_elements
 
-        if apply_to_self:
-            self.is_interpolated = True
-            self.is_merged = self.is_interpolated or is_merged
-            self.phase_time = phase_time
-            self.ns = ns
-            self._states = out
-        return out[0] if len(out) == 1 else out
+        out.is_interpolated = True
+        return out
 
     def merge_phases(self):
         new = Solution.copy(self, skip_data=True)
@@ -364,7 +355,7 @@ class Solution:
         elif n_frames == -1:
             states_to_animate = self.states
         else:
-            states_to_animate = self.interpolate(n_frames)
+            states_to_animate = self.interpolate(n_frames).states
 
         if not isinstance(states_to_animate, (list, tuple)):
             states_to_animate = [states_to_animate]
