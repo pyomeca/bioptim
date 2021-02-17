@@ -7,7 +7,6 @@ from ..misc.enums import ControlType, InterpolationType
 
 
 class OptimizationVariable:
-
     def __init__(self, ocp):
         self.ocp = ocp
 
@@ -86,7 +85,12 @@ class OptimizationVariable:
 
     @property
     def parameters(self):
-        param = Parameter(cx=self.ocp.CX(), bounds=Bounds(interpolation=InterpolationType.CONSTANT), initial_guess=InitialGuess(), size=0)
+        param = Parameter(
+            cx=self.ocp.CX(),
+            bounds=Bounds(interpolation=InterpolationType.CONSTANT),
+            initial_guess=InitialGuess(),
+            size=0,
+        )
         for p in self.parameters_in_list:
             param.cx = vertcat(param.cx, p.cx)
             param.size += p.size if p else 0
@@ -104,7 +108,7 @@ class OptimizationVariable:
         if "time" in self.parameters_in_list.names:
             for param in self.parameters_in_list:
                 if param.name == "time":
-                    data_time_optimized = list(np.array(data[offset:offset + param.size])[:, 0])
+                    data_time_optimized = list(np.array(data[offset : offset + param.size])[:, 0])
                     break
                 offset += param.size
 
@@ -131,7 +135,7 @@ class OptimizationVariable:
         offset = 0
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            x_array = v_array[offset:offset + self.n_phase_x[p]].reshape((ocp.nlp[p].nx, -1), order='F')
+            x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].nx, -1), order="F")
             data_states[p_idx]["all"] = x_array
             offset_var = 0
             for var in ocp.nlp[p].var_states:
@@ -143,11 +147,11 @@ class OptimizationVariable:
         offset = self.n_all_x
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            u_array = v_array[offset:offset + self.n_phase_u[p]].reshape((ocp.nlp[p].nu, -1), order='F')
+            u_array = v_array[offset : offset + self.n_phase_u[p]].reshape((ocp.nlp[p].nu, -1), order="F")
             data_controls[p_idx]["all"] = u_array
             offset_var = 0
             for var in ocp.nlp[p].var_controls:
-                data_controls[p_idx][var] = u_array[offset_var: offset_var + ocp.nlp[p].var_controls[var], :]
+                data_controls[p_idx][var] = u_array[offset_var : offset_var + ocp.nlp[p].var_controls[var], :]
                 offset_var += ocp.nlp[p].var_controls[var]
             p_idx += 1
             offset += self.n_phase_u[p]
@@ -157,7 +161,7 @@ class OptimizationVariable:
         if len(data_parameters["all"].shape) == 1:
             data_parameters["all"] = data_parameters["all"][:, np.newaxis]
         for param in self.parameters_in_list:
-            data_parameters[param.name] = v_array[offset:offset + param.size]
+            data_parameters[param.name] = v_array[offset : offset + param.size]
             if len(data_parameters[param.name].shape) == 1:
                 data_parameters[param.name] = data_parameters[param.name][:, np.newaxis]
 
@@ -177,7 +181,9 @@ class OptimizationVariable:
             for k in range(nlp.ns + 1):
                 x.append(nlp.CX.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.nx))
 
-                if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
+                if nlp.control_type != ControlType.CONSTANT or (
+                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
+                ):
                     u.append(nlp.CX.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.nu, 1))
 
             nlp.X = x
@@ -214,21 +220,21 @@ class OptimizationVariable:
             nx = nlp.nx * (nlp.ns + 1)
             x_bounds = Bounds([0] * nx, [0] * nx, interpolation=InterpolationType.CONSTANT)
             for k in range(nlp.ns + 1):
-                x_bounds.min[k*nlp.nx : (k+1)*nlp.nx, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=k)
-                x_bounds.max[k*nlp.nx : (k+1)*nlp.nx, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=k)
+                x_bounds.min[k * nlp.nx : (k + 1) * nlp.nx, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=k)
+                x_bounds.max[k * nlp.nx : (k + 1) * nlp.nx, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=k)
 
             # For controls
             if nlp.control_type == ControlType.CONSTANT:
                 ns = nlp.ns
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                ns = (nlp.ns + 1)
+                ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
             nu = nlp.nu * ns
             u_bounds = Bounds([0] * nu, [0] * nu, interpolation=InterpolationType.CONSTANT)
             for k in range(ns):
-                u_bounds.min[k*nlp.nu : (k+1)*nlp.nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
-                u_bounds.max[k*nlp.nu : (k+1)*nlp.nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
+                u_bounds.min[k * nlp.nu : (k + 1) * nlp.nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
+                u_bounds.max[k * nlp.nu : (k + 1) * nlp.nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
 
             self.x_bounds[i_phase] = x_bounds
             self.u_bounds[i_phase] = u_bounds
@@ -255,19 +261,19 @@ class OptimizationVariable:
             nx = nlp.nx * (nlp.ns + 1)
             x_init = InitialGuess([0] * nx, interpolation=InterpolationType.CONSTANT)
             for k in range(nlp.ns + 1):
-                x_init.init[k * nlp.nx: (k + 1) * nlp.nx, 0] = nlp.x_init.init.evaluate_at(shooting_point=k)
+                x_init.init[k * nlp.nx : (k + 1) * nlp.nx, 0] = nlp.x_init.init.evaluate_at(shooting_point=k)
 
             # For controls
             if nlp.control_type == ControlType.CONSTANT:
                 ns = nlp.ns
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                ns = (nlp.ns + 1)
+                ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
             nu = nlp.nu * ns
             u_init = InitialGuess([0] * nu, interpolation=InterpolationType.CONSTANT)
             for k in range(ns):
-                u_init.init[k*nlp.nu : (k+1)*nlp.nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
+                u_init.init[k * nlp.nu : (k + 1) * nlp.nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
 
             self.x_init[i_phase] = x_init
             self.u_init[i_phase] = u_init

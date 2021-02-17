@@ -120,15 +120,19 @@ class Solution:
                         tp.add(deepcopy(sol[i].init))
                     sol[i] = tp
             if sum([isinstance(s, InitialGuessList) for s in sol]) != 2:
-                raise ValueError("solution must be a solution dict, "
-                                 "an InitialGuess[List] of len 2 or 3 (states, controls, parameters), "
-                                 "or a None")
+                raise ValueError(
+                    "solution must be a solution dict, "
+                    "an InitialGuess[List] of len 2 or 3 (states, controls, parameters), "
+                    "or a None"
+                )
             if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(sol)]) != 0:
                 raise ValueError("The InitialGuessList len must match the number of phases")
             if n_param != 0:
                 if len(sol) != 3 and len(sol[2]) != 1 and sol[2][0].shape != (n_param, 1):
-                    raise ValueError("The 3rd element is the InitialGuess of the parameter and "
-                                     "should be a unique vector of size equal to n_param")
+                    raise ValueError(
+                        "The 3rd element is the InitialGuess of the parameter and "
+                        "should be a unique vector of size equal to n_param"
+                    )
 
             self.vector = np.ndarray((0, 1))
             sol_states, sol_controls = sol[0], sol[1]
@@ -211,15 +215,18 @@ class Solution:
     @property
     def controls(self):
         if not self._controls:
-            raise RuntimeError("There is not controls. This may happen in "
-                               "previously integrated and interpolated structure")
+            raise RuntimeError(
+                "There is not controls. This may happen in " "previously integrated and interpolated structure"
+            )
         return self._controls[0] if len(self._controls) == 1 else self._controls
 
     @property
     def parameters(self):
         return self._parameters
 
-    def integrate(self, merge_phases: bool = False, continuous: bool = True, shooting_type: Shooting = Shooting.MULTIPLE):
+    def integrate(
+        self, merge_phases: bool = False, continuous: bool = True, shooting_type: Shooting = Shooting.MULTIPLE
+    ):
         """
         Integrates the states
 
@@ -266,14 +273,16 @@ class Solution:
             for n in range(self.ns[p]):
                 u = self._controls[p]["all"][:, n]
                 integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
-                cols = range(n*n_steps, (n+1)*n_steps+1) if continuous else range(n*n_steps, (n+1)*n_steps)
+                cols = (
+                    range(n * n_steps, (n + 1) * n_steps + 1) if continuous else range(n * n_steps, (n + 1) * n_steps)
+                )
                 out._states[p]["all"][:, cols] = integrated
                 x0 = self._states[p]["all"][:, n + 1] if shooting_type == Shooting.MULTIPLE else integrated[:, -1]
 
             # Dispatch the integrated values to all the keys
             off = 0
             for key in ocp.nlp[p].var_states:
-                out._states[p][key] = out._states[p]["all"][off:off+ocp.nlp[p].var_states[key], :]
+                out._states[p][key] = out._states[p]["all"][off : off + ocp.nlp[p].var_states[key], :]
                 off += ocp.nlp[p].var_states[key]
 
         if merge_phases:
@@ -306,8 +315,10 @@ class Solution:
         elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states):
             data_states = self._states
         else:
-            raise ValueError("n_frames should either be a int to merge_phases phases "
-                             "or a list of int of the number of phases dimension")
+            raise ValueError(
+                "n_frames should either be a int to merge_phases phases "
+                "or a list of int of the number of phases dimension"
+            )
 
         out._states = []
         for _ in range(len(data_states)):
@@ -330,7 +341,7 @@ class Solution:
                 if key == "all":
                     continue
                 n_elements = data_states[p][key].shape[0]
-                out._states[p][key] = out._states[p]["all"][offset: offset + n_elements]
+                out._states[p][key] = out._states[p]["all"][offset : offset + n_elements]
                 offset += n_elements
 
         out.is_interpolated = True
@@ -376,7 +387,7 @@ class Solution:
             for p in range(len(data)):
                 d = data[p]
                 for key in d:
-                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, :self.ns[p]]), axis=1)
+                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, : self.ns[p]]), axis=1)
             for key in data[-1]:
                 data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
 
@@ -384,7 +395,7 @@ class Solution:
 
         out_states = _merge(self.states) if not skip_states and self._states else None
         out_controls = _merge(self.controls) if not skip_controls and self._controls else None
-        phase_time = [0] + [sum([self.phase_time[i+1] for i in range(len(self.phase_time)-1)])]
+        phase_time = [0] + [sum([self.phase_time[i + 1] for i in range(len(self.phase_time) - 1)])]
         ns = [sum(self.ns)]
 
         return out_states, out_controls, phase_time, ns
@@ -393,14 +404,20 @@ class Solution:
         for p, nlp in enumerate(self.ocp.nlp):
             if nlp.control_type == ControlType.CONSTANT:
                 for key in self._controls[p]:
-                    self._controls[p][key] = np.concatenate((self._controls[p][key], self._controls[p][key][:, -1][:, np.newaxis]), axis=1)
+                    self._controls[p][key] = np.concatenate(
+                        (self._controls[p][key], self._controls[p][key][:, -1][:, np.newaxis]), axis=1
+                    )
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 pass
             else:
                 raise NotImplementedError(f"ControlType {nlp.control_type} is not implemented  in _complete_control")
 
     def graphs(
-        self, automatically_organize: bool = True, adapt_graph_size_to_bounds: bool = False, show_now: bool = True, shooting_type=Shooting.MULTIPLE
+        self,
+        automatically_organize: bool = True,
+        adapt_graph_size_to_bounds: bool = False,
+        show_now: bool = True,
+        shooting_type=Shooting.MULTIPLE,
     ):
         """
         Prepare the graphs of the simulation
@@ -570,9 +587,7 @@ class Solution:
                 for g in G:
                     next_idx = idx + g["val"].shape[0]
                 if g:
-                    print(
-                        f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}"
-                    )
+                    print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
                 idx = next_idx
             if has_global:
                 print("")
@@ -584,9 +599,7 @@ class Solution:
                     for g in G:
                         next_idx += g["val"].shape[0]
                     if g:
-                        print(
-                            f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}"
-                        )
+                        print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
                     idx = next_idx
                 print("")
             print(f"------------------------------")

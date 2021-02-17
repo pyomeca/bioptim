@@ -25,6 +25,7 @@ from bioptim import (
 )
 from bioptim.optimization.solution import Solution
 
+
 def prepare_ocp(phase_time_constraint, use_parameter):
     # --- Inputs --- #
     final_time = (2, 5, 4)
@@ -178,11 +179,11 @@ def test_variable_time(phase_time_constraint, use_parameter):
     )
     np.testing.assert_almost_equal(
         states[1]["qdot"][0, 0:8],
-        np.array([0.5107473 , 0.32320293, 0.2517823 , 0.50267902, 0.48945276, 0.72821635, 0.8353025 , 0.01658783]),
+        np.array([0.5107473, 0.32320293, 0.2517823, 0.50267902, 0.48945276, 0.72821635, 0.8353025, 0.01658783]),
     )
     np.testing.assert_almost_equal(
         states[2]["qdot"][0, 0:8],
-        np.array([0.69597421, 0.71459592, 0.61172075, 0.11607264, 0.09783416, 0.6158501 , 0.85648984, 0.58577558]),
+        np.array([0.69597421, 0.71459592, 0.61172075, 0.11607264, 0.09783416, 0.6158501, 0.85648984, 0.58577558]),
     )
 
     np.testing.assert_almost_equal(
@@ -191,7 +192,7 @@ def test_variable_time(phase_time_constraint, use_parameter):
     )
     np.testing.assert_almost_equal(
         controls[1]["tau"][0, 0:8],
-        np.array([0.97439481, 0.53609637, 0.68473117, 0.82253724, 0.6134152 , 0.86606389, 0.37646337, 0.15041689]),
+        np.array([0.97439481, 0.53609637, 0.68473117, 0.82253724, 0.6134152, 0.86606389, 0.37646337, 0.15041689]),
     )
     np.testing.assert_almost_equal(
         controls[2]["tau"][0, 0:8],
@@ -204,4 +205,3 @@ def test_variable_time(phase_time_constraint, use_parameter):
     )
 
     np.testing.assert_almost_equal(parameters["time"], 0.78917124)
-

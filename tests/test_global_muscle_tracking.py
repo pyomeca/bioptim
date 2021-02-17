@@ -414,7 +414,12 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((90, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, mus_states, mus_controls = (sol.states["q"], sol.states["qdot"], sol.states["muscles"], sol.controls["muscles"])
+    q, qdot, mus_states, mus_controls = (
+        sol.states["q"],
+        sol.states["qdot"],
+        sol.states["muscles"],
+        sol.controls["muscles"],
+    )
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value

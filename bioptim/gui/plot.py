@@ -177,7 +177,7 @@ class PlotOcp:
         ocp,
         automatically_organize: bool = True,
         adapt_graph_size_to_bounds: bool = False,
-        shooting_type: Shooting = Shooting.MULTIPLE
+        shooting_type: Shooting = Shooting.MULTIPLE,
     ):
         """
         Prepares the figures during the simulation

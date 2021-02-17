@@ -149,7 +149,7 @@ def test_initial_guess_update():
     np.testing.assert_almost_equal(ocp.nlp[0].u_init.init, np.ones((2, 1)) * 3)
     idx = ocp.v.parameters_in_list.index("time")
     np.testing.assert_almost_equal(ocp.v.parameters_in_list[idx].initial_guess.init[0, 0], 4)
-    np.testing.assert_almost_equal(ocp.v.init.init, np.array([ [1, 1, 1, 1] * 11 + [3, 3] * 10 + [4] ]).T)
+    np.testing.assert_almost_equal(ocp.v.init.init, np.array([[1, 1, 1, 1] * 11 + [3, 3] * 10 + [4]]).T)
 
 
 def test_initial_guess_custom():

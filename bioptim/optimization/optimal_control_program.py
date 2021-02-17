@@ -629,12 +629,17 @@ class OptimalControlProgram:
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
         pen.add_or_replace(self, self.nlp[phase_idx], new_penalty)
 
-    def prepare_plots(self, automatically_organize: bool = True, adapt_graph_size_to_bounds: bool = False, shooting_type: Shooting = Shooting.MULTIPLE):
+    def prepare_plots(
+        self,
+        automatically_organize: bool = True,
+        adapt_graph_size_to_bounds: bool = False,
+        shooting_type: Shooting = Shooting.MULTIPLE,
+    ):
         return PlotOcp(
             self,
             automatically_organize=automatically_organize,
             adapt_graph_size_to_bounds=adapt_graph_size_to_bounds,
-            shooting_type=shooting_type
+            shooting_type=shooting_type,
         )
 
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
