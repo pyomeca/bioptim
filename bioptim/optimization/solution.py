@@ -6,7 +6,7 @@ from scipy import interpolate as sci_interp
 from casadi import Function
 from matplotlib import pyplot as plt
 
-from ..misc.enums import ControlType, CostType
+from ..misc.enums import ControlType, CostType, Shooting
 from ..misc.utils import check_version
 
 
@@ -121,7 +121,7 @@ class Solution:
     def parameters(self):
         return self._parameters
 
-    def integrate(self, merge_phases: bool = False, continuous: bool = True, single_shoot: bool = False):
+    def integrate(self, merge_phases: bool = False, continuous: bool = True, shooting_type: Shooting = Shooting.MULTIPLE):
         """
         Integrates the states
 
@@ -158,7 +158,7 @@ class Solution:
             out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
-            if merge_phases:
+            if merge_phases and shooting_type == Shooting.SINGLE:
                 if p != 0:
                     x0 += self.ocp.phase_transitions[p - 1].casadi_function(self.vector)
             else:
@@ -168,7 +168,7 @@ class Solution:
                 integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
                 cols = range(n*n_steps, (n+1)*n_steps+1) if continuous else range(n*n_steps, (n+1)*n_steps)
                 out._states[p]["all"][:, cols] = integrated
-                x0 = integrated[:, -1] if single_shoot else self._states[p]["all"][:, n + 1]
+                x0 = self._states[p]["all"][:, n + 1] if shooting_type == Shooting.MULTIPLE else integrated[:, -1]
 
             # Dispatch the integrated values to all the keys
             off = 0
@@ -282,8 +282,8 @@ class Solution:
 
             return data_out
 
-        out_states = _merge(self.states) if not skip_states else None
-        out_controls = _merge(self.controls) if not skip_controls else None
+        out_states = _merge(self.states) if not skip_states and self._states else None
+        out_controls = _merge(self.controls) if not skip_controls and self._controls else None
         phase_time = [0] + [sum([self.phase_time[i+1] for i in range(self.ocp.n_phases)])]
         ns = [sum(self.ns)]
 

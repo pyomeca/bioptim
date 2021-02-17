@@ -22,6 +22,13 @@ class Solver(Enum):
     NONE = None
 
 
+class Shooting(Enum):
+
+    MULTIPLE = "Multiple"
+    SINGLE = "Single"
+    SINGLE_RESET_AT_PHASE = "Single reset"
+
+
 class CostType(Enum):
     """
     The type of cost
