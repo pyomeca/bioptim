@@ -222,7 +222,8 @@ class Solution:
     def controls(self):
         if not self._controls:
             raise RuntimeError(
-                "There is not controls. This may happen in " "previously integrated and interpolated structure"
+                "There is no controls in the solution. "
+                "This may happen in " "previously integrated and interpolated structure"
             )
         return self._controls[0] if len(self._controls) == 1 else self._controls
 
@@ -231,7 +232,7 @@ class Solution:
         return self._parameters
 
     def integrate(
-        self, merge_phases: bool = False, continuous: bool = True, shooting_type: Shooting = Shooting.MULTIPLE
+        self, shooting_type: Shooting = Shooting.MULTIPLE, merge_phases: bool = False, continuous: bool = True
     ):
         """
         Integrates the states
@@ -260,15 +261,15 @@ class Solution:
         params = self._parameters["all"]
         x0 = self._states[0]["all"][:, 0]
         for p in range(len(self._states)):
+            shape = self._states[p]["all"].shape
             if continuous:
-                n_steps = ocp.nlp[p].n_integration_steps if continuous else ocp.nlp[p].n_integration_steps + 1
+                n_steps = ocp.nlp[p].n_integration_steps
                 out.ns[p] *= ocp.nlp[p].n_integration_steps
+                out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
             else:
                 n_steps = ocp.nlp[p].n_integration_steps + 1
                 out.ns[p] *= ocp.nlp[p].n_integration_steps + 1
-
-            shape = self._states[p]["all"].shape
-            out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
+                out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps))
 
             # Integrate
             if shooting_type == Shooting.SINGLE:
@@ -303,7 +304,7 @@ class Solution:
                 off += ocp.nlp[p].var_states[key]
 
         if merge_phases:
-            out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
+            out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, force_skip_last_copy=not continuous)
             out.is_merged = True
 
         out.is_integrated = True
@@ -371,7 +372,7 @@ class Solution:
         new.is_merged = True
         return new
 
-    def _merge_phases(self, skip_states=False, skip_controls=False) -> tuple:
+    def _merge_phases(self, skip_states=False, skip_controls=False, force_skip_last_copy=False) -> tuple:
         """
         Concatenate all the phases
 
@@ -405,8 +406,9 @@ class Solution:
                 d = data[p]
                 for key in d:
                     data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, : self.ns[p]]), axis=1)
-            for key in data[-1]:
-                data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
+            if not force_skip_last_copy:
+                for key in data[-1]:
+                    data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
 
             return data_out
 
