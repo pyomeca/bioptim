@@ -265,11 +265,10 @@ class Solution:
             if continuous:
                 n_steps = ocp.nlp[p].n_integration_steps
                 out.ns[p] *= ocp.nlp[p].n_integration_steps
-                out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
             else:
                 n_steps = ocp.nlp[p].n_integration_steps + 1
                 out.ns[p] *= ocp.nlp[p].n_integration_steps + 1
-                out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps))
+            out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
             if shooting_type == Shooting.SINGLE:
@@ -296,6 +295,8 @@ class Solution:
                 )
                 out._states[p]["all"][:, cols] = integrated
                 x0 = self._states[p]["all"][:, n + 1] if shooting_type == Shooting.MULTIPLE else integrated[:, -1]
+            if not continuous:
+                out._states[p]["all"][:, -1] = self._states[p]["all"][:, -1]
 
             # Dispatch the integrated values to all the keys
             off = 0
@@ -304,7 +305,7 @@ class Solution:
                 off += ocp.nlp[p].var_states[key]
 
         if merge_phases:
-            out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True, force_skip_last_copy=not continuous)
+            out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
             out.is_merged = True
 
         out.is_integrated = True
@@ -372,7 +373,7 @@ class Solution:
         new.is_merged = True
         return new
 
-    def _merge_phases(self, skip_states=False, skip_controls=False, force_skip_last_copy=False) -> tuple:
+    def _merge_phases(self, skip_states=False, skip_controls=False) -> tuple:
         """
         Concatenate all the phases
 
@@ -406,9 +407,8 @@ class Solution:
                 d = data[p]
                 for key in d:
                     data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, : self.ns[p]]), axis=1)
-            if not force_skip_last_copy:
-                for key in data[-1]:
-                    data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
+            for key in data[-1]:
+                data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
 
             return data_out
 

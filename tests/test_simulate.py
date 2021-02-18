@@ -245,8 +245,9 @@ def test_integrate_non_continuous(shooting, merge):
 
     for i, key in enumerate(sol.states):
         np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]])
+        np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -2]], sol.states[key][:, [0, -1]])
 
-        assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (5 + 1))
+        assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (5 + 1) + 1)
         assert sol.states[key].shape == (shapes[i], n_shooting + 1)
 
     with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
@@ -342,8 +343,9 @@ def test_integrate_multiphase_non_continuous(shooting):
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
             np.testing.assert_almost_equal(sol_integrated.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]])
+            np.testing.assert_almost_equal(sol_integrated.states[i][key][:, [0, -2]], sol.states[i][key][:, [0, -1]])
 
-            assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * (5 + 1))
+            assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * (5 + 1) + 1)
             assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
 
     with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
@@ -373,8 +375,9 @@ def test_integrate_multiphase_merged_non_continuous(shooting):
     for k, key in enumerate(sol.states[0]):
         expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
         np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected)
+        np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -2]], expected)
 
-        assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * (5 + 1))
+        assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * (5 + 1) + 1)
 
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
