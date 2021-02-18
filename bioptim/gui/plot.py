@@ -99,50 +99,52 @@ class PlotOcp:
     """
     Attributes
     ----------
-    ocp: OptimalControlProgram
-        A reference to the full ocp
-    plot_options: dict
-        matplotlib options template for specified PlotType
-    ydata: list
-        The actual current data to be plotted. It is update by update_data
-    ns: int
-        The total number of shooting points
-    t: list[float]
-        The time vector
-    t_integrated: list[float]
-        The time vector integrated
-    tf: list[float]
-        The times at the end of each phase
-    t_idx_to_optimize: list[int]
-        The index of the phases where time is a variable to optimize (non constant)
-    axes: dict
-        The dictionary of handlers to the matplotlib axes
-    plots: list
-        The list of handlers to the matplotlib plots for the ydata
-    plots_vertical_lines: list
-        The list of handlers to the matplotlib plots for the phase separators
-    plots_bounds: list
-        The list of handlers to the matplotlib plots for the bounds
+    adapt_graph_size_to_bounds: bool
+        If the plot should adapt to bounds or to ydata
     all_figures: list
         The list of handlers to the matplotlib figures
     automatically_organize: bool
         If the figure should be automatically organized on screen
-    self.plot_func: dict
-        The dictionary of all the CustomPlot
-    self.variable_sizes: list[int]
-        The size of all variables. This helps declaring all the plots in advance
-    self.adapt_graph_size_to_bounds: bool
-        If the plot should adapt to bounds or to ydata
-    n_vertical_windows: int
-        The number of figure rows
-    n_horizontal_windows: int
-        The number of figure columns
-    top_margin: float
-        The space between the top of the screen and the figure when automatically rearrange
+    axes: dict
+        The dictionary of handlers to the matplotlib axes
     height_step: float
         The height of the figure
+    n_horizontal_windows: int
+        The number of figure columns
+    ns: int
+        The total number of shooting points
+    n_vertical_windows: int
+        The number of figure rows
+    ocp: OptimalControlProgram
+        A reference to the full ocp
+    plots: list
+        The list of handlers to the matplotlib plots for the ydata
+    plots_bounds: list
+        The list of handlers to the matplotlib plots for the bounds
+    plot_func: dict
+        The dictionary of all the CustomPlot
+    plot_options: dict
+        matplotlib options template for specified PlotType
+    plots_vertical_lines: list
+        The list of handlers to the matplotlib plots for the phase separators
+    shooting_type: Shooting
+        The type of integration method
+    t: list[float]
+        The time vector
+    tf: list[float]
+        The times at the end of each phase
+    t_integrated: list[float]
+        The time vector integrated
+    t_idx_to_optimize: list[int]
+        The index of the phases where time is a variable to optimize (non constant)
+    top_margin: float
+        The space between the top of the screen and the figure when automatically rearrange
+    variable_sizes: list[int]
+        The size of all variables. This helps declaring all the plots in advance
     width_step: float
         The width of the figure
+    ydata: list
+        The actual current data to be plotted. It is update by update_data
 
     Methods
     -------
@@ -158,7 +160,7 @@ class PlotOcp:
         Finds the intersection between the phases
     show()
         Force the show of the graphs. This is a blocking function
-    update_data(self, V: dict)
+    update_data(self, v: dict)
         Update ydata from the variable a solution structure
     __update_xdata(self)
         Update of the time axes in plots
@@ -190,6 +192,8 @@ class PlotOcp:
             If the figures should be spread on the screen automatically
         adapt_graph_size_to_bounds: bool
             If the axes should fit the bounds (True) or the data (False)
+        shooting_type: Shooting
+            The type of integration method
         """
         for i in range(1, ocp.n_phases):
             if ocp.nlp[0].shape["q"] != ocp.nlp[i].shape["q"]:
@@ -216,7 +220,7 @@ class PlotOcp:
             self.tf = list(self.ocp.original_phase_time)
         self.t_idx_to_optimize = []
         for i, nlp in enumerate(self.ocp.nlp):
-            if isinstance(nlp.tf, self.ocp.CX):
+            if isinstance(nlp.tf, self.ocp.cx):
                 self.t_idx_to_optimize.append(i)
         self.__update_time_vector()
 
@@ -487,19 +491,19 @@ class PlotOcp:
 
         plt.show()
 
-    def update_data(self, V: dict):
+    def update_data(self, v: dict):
         """
         Update ydata from the variable a solution structure
 
         Parameters
         ----------
-        V: dict
+        v: dict
             The data to parse
         """
 
         self.ydata = []
 
-        sol = Solution(self.ocp, V)
+        sol = Solution(self.ocp, v)
         data_states = sol.integrate(continuous=False, shooting_type=self.shooting_type).states
         data_controls = sol.controls
         data_params = sol.parameters

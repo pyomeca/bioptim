@@ -31,19 +31,19 @@ X = InitialGuess([0, 0, 0, 0])
 U = InitialGuess([-1, 1])
 
 sol_from_initial_guess = Solution(ocp, [X, U])
-s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE)
+s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
 print(f"Final position of q from single shooting of initial guess = {s.states['q'][:, -1]}")
 # Uncomment the next line to animate the integration
 # s.animate()
 
 # Uncomment the following lines to graph the solution from initial guesses
-# sol_from_initial_guess.graphs(shooting_type=Shooting.SINGLE)
+# sol_from_initial_guess.graphs(shooting_type=Shooting.SINGLE_CONTINUOUS)
 # sol_from_initial_guess.graphs(shooting_type=Shooting.MULTIPLE)
 
 
 # Simulation of the solution. It is not the graph of the solution, it is the graph of a Runge Kutta from the solution
 sol = ocp.solve()
-s_single = sol.integrate(shooting_type=Shooting.SINGLE)
+s_single = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
 # Uncomment the next line to animate the integration
 # s_single.animate()
 print(f"Final position of q from single shooting of the solution = {s_single.states['q'][:, -1]}")
@@ -51,5 +51,5 @@ s_multiple = sol.integrate(shooting_type=Shooting.MULTIPLE)
 print(f"Final position of q from multiple shooting of the solution = {s_multiple.states['q'][:, -1]}")
 
 # Uncomment the following lines to graph the solution from the actual solution
-# sol.graphs(shooting_type=Shooting.SINGLE)
+# sol.graphs(shooting_type=Shooting.SINGLE_CONTINUOUS)
 # sol.graphs(shooting_type=Shooting.MULTIPLE)

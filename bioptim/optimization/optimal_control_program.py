@@ -39,41 +39,76 @@ class OptimalControlProgram:
 
     Attributes
     ----------
-    version: dict
-        The version of all the underlying software. This is important when loading a previous ocp
-    n_phases: Union[int, list, tuple]
-        The number of phases of the ocp
-    original_values: A copy of the ocp as it is after defining everything
-    J: MX
-        Objective values that are not phase dependent (mostly parameters)
-    g: MX
-        Constraints that are not phase dependent (mostly parameters and continuity constraints)
-    nlp: NLP
-        All the phases of the ocp
-    CX: [MX, SX]
+    cx: [MX, SX]
         The base type for the symbolic casadi variables
-    original_phase_time: list[float]
-        The time vector as sent by the user
-    n_threads: int
-        The number of thread to use if using multithreading
-    solver_type: Solver
-        The designated solver to solve the ocp
-    solver: SolverInterface
-        A reference to the ocp solver
-    phase_transitions: list[PhaseTransition]
-        The list of transition constraint between phases
+    g: list
+        Constraints that are not phase dependent (mostly parameters and continuity constraints)
+    J: list
+        Objective values that are not phase dependent (mostly parameters)
     isdef_x_init: bool
         If the initial condition of the states are set
-    isdef_u_init: bool
-        If the initial condition of the controls are set
     isdef_x_bounds: bool
         If the bounds of the states are set
+    isdef_u_init: bool
+        If the initial condition of the controls are set
     isdef_u_bounds: bool
         If the bounds of the controls are set
+    nlp: NLP
+        All the phases of the ocp
+    n_phases: Union[int, list, tuple]
+        The number of phases of the ocp
+    n_threads: int
+        The number of thread to use if using multithreading
+    original_phase_time: list[float]
+        The time vector as sent by the user
+    original_values: dict
+        A copy of the ocp as it is after defining everything
+    phase_transitions: list[PhaseTransition]
+        The list of transition constraint between phases
+    solver: SolverInterface
+        A reference to the ocp solver
+    solver_type: Solver
+        The designated solver to solve the ocp
+    v: OptimizationVariable
+        The variable optimization holder
+    version: dict
+        The version of all the underlying software. This is important when loading a previous ocp
 
     Methods
     -------
-
+    update_objectives(self, new_objective_function: Union[Objective, ObjectiveList])
+        The main user interface to add or modify objective functions in the ocp
+    update_constraints(self, new_constraint: Union[Constraint, ConstraintList])
+        The main user interface to add or modify constraint in the ocp
+    update_parameters(self, new_parameters: Union[Parameter, ParameterList])
+        The main user interface to add or modify parameters in the ocp
+    update_bounds(self, x_bounds: Union[Bounds, BoundsList], u_bounds: Union[Bounds, BoundsList])
+        The main user interface to add bounds in the ocp
+    update_initial_guess(
+        self,
+        x_init: Union[InitialGuess, InitialGuessList],
+        u_init: Union[InitialGuess, InitialGuessList],
+        param_init: Union[InitialGuess, InitialGuessList],
+    )
+        The main user interface to add initial guesses in the ocp
+    add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any)
+        The main user interface to add a new plot to the ocp
+    prepare_plots(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool, shooting_type: Shooting) -> PlotOCP
+        Create all the plots associated with the OCP
+    solve(self, solver: Solver, show_online_optim: bool, solver_options: dict) -> Solution
+        Call the solver to actually solve the ocp
+    save(self, sol: Solution, file_path: str)
+        Save the ocp and solution structure to the hard drive. It automatically create the required
+        folder if it does not exists. Please note that biorbd is required to load back this structure.
+    @staticmethod
+    load(file_path: str) -> list
+        Reload a previous optimization (*.bo) saved using save
+    __define_time(self, phase_time: Union[float, tuple], objective_functions: ObjectiveList, constraints: ConstraintList)
+        Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
+        a sanity check is perform and the values of initial guess and bounds for these particular phases
+    __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter])
+        The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
+        overrides an objective only the latter is preserved when saved
     """
 
     def __init__(
@@ -280,9 +315,9 @@ class OptimalControlProgram:
 
         # Type of CasADi graph
         if use_sx:
-            self.CX = SX
+            self.cx = SX
         else:
-            self.CX = MX
+            self.cx = MX
 
         # Declare optimization variables
         self.J = []
@@ -343,7 +378,7 @@ class OptimalControlProgram:
 
         # Prepare the dynamics
         for i in range(self.n_phases):
-            self.nlp[i].initialize(self.CX)
+            self.nlp[i].initialize(self.cx)
             Problem.initialize(self, self.nlp[i])
             if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
@@ -373,116 +408,6 @@ class OptimalControlProgram:
 
         # Prepare objectives
         self.update_objectives(objective_functions)
-
-    def __define_time(
-        self,
-        phase_time: Union[int, float, list, tuple],
-        objective_functions: ObjectiveList,
-        constraints: ConstraintList,
-    ):
-        """
-        Declare the phase_time vector in V. If objective_functions or constraints defined a time optimization,
-        a sanity check is perform and the values of initial guess and bounds for these particular phases
-
-        Parameters
-        ----------
-        phase_time: Union[int, float, list, tuple]
-            The time of all the phases
-        objective_functions: ObjectiveList
-            All the objective functions. It is used to scan if any time optimization was defined
-        constraints: ConstraintList
-            All the constraint functions. It is used to scan if any free time was defined
-        """
-
-        def define_parameters_phase_time(
-            ocp: OptimalControlProgram,
-            penalty_functions: Union[ObjectiveList, ConstraintList],
-            initial_time_guess: list,
-            phase_time: list,
-            time_min: list,
-            time_max: list,
-            has_penalty: list = None,
-        ) -> list:
-            """
-            Sanity check to ensure that only one time optimization is defined per phase. It also creates the time vector
-            for initial guesses and bounds
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            penalty_functions: Union[ObjectiveList, ConstraintList]
-                The list to parse to ensure no double free times are declared
-            initial_time_guess: list
-                The list of all initial guesses for the free time optimization
-            phase_time: list
-                Replaces the values where free time is found for MX or SX
-            time_min: list
-                Minimal bounds for the time parameter
-            time_max: list
-                Maximal bounds for the time parameter
-            has_penalty: list[bool]
-                If a penalty was previously found. This should be None on the first call to ensure proper initialization
-
-            Returns
-            -------
-            The state of has_penalty
-            """
-
-            if has_penalty is None:
-                has_penalty = [False] * ocp.n_phases
-
-            for i, penalty_functions_phase in enumerate(penalty_functions):
-                for pen_fun in penalty_functions_phase:
-                    if not pen_fun:
-                        continue
-                    if (
-                        pen_fun.type == ObjectiveFcn.Mayer.MINIMIZE_TIME
-                        or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
-                        or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
-                    ):
-                        if has_penalty[i]:
-                            raise RuntimeError("Time constraint/objective cannot declare more than once")
-                        has_penalty[i] = True
-
-                        initial_time_guess.append(phase_time[i])
-                        phase_time[i] = ocp.CX.sym(f"time_phase_{i}", 1, 1)
-                        if pen_fun.type.get_type() == ConstraintFunction:
-                            time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
-                            time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
-                        else:
-                            time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
-                            time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
-            return has_penalty
-
-        self.original_phase_time = phase_time
-        if isinstance(phase_time, (int, float)):
-            phase_time = [phase_time]
-        phase_time = list(phase_time)
-        initial_time_guess, time_min, time_max = [], [], []
-        has_penalty = define_parameters_phase_time(
-            self, objective_functions, initial_time_guess, phase_time, time_min, time_max
-        )
-        define_parameters_phase_time(
-            self, constraints, initial_time_guess, phase_time, time_min, time_max, has_penalty=has_penalty
-        )
-
-        # Add to the nlp
-        NLP.add(self, "tf", phase_time, False)
-        NLP.add(self, "t0", [0] + [nlp.tf for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
-        NLP.add(self, "dt", [self.nlp[i].tf / max(self.nlp[i].ns, 1) for i in range(self.n_phases)], False)
-
-        # Add to the V vector
-        i = 0
-        for nlp in self.nlp:
-            if isinstance(nlp.tf, self.CX):
-                time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
-                time_init = InitialGuess(initial_time_guess[i])
-                time_param = Parameter(
-                    cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
-                )
-                self.v.add_parameter(time_param)
-                i += 1
 
     def update_objectives(self, new_objective_function: Union[Objective, ObjectiveList]):
         """
@@ -609,39 +534,6 @@ class OptimalControlProgram:
         if self.isdef_x_init and self.isdef_u_init:
             self.v.define_ocp_initial_guess()
 
-    def __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter]):
-        """
-        The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
-        overrides an objective only the latter is preserved when saved
-
-        Parameters
-        ----------
-        new_penalty: PenaltyOption
-            Any valid option to add to the program
-        """
-
-        if not new_penalty:
-            return
-        phase_idx = new_penalty.phase
-
-        # Copy to self.original_values so it can be save/load
-        pen = new_penalty.type.get_type()
-        self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
-        pen.add_or_replace(self, self.nlp[phase_idx], new_penalty)
-
-    def prepare_plots(
-        self,
-        automatically_organize: bool = True,
-        adapt_graph_size_to_bounds: bool = False,
-        shooting_type: Shooting = Shooting.MULTIPLE,
-    ):
-        return PlotOcp(
-            self,
-            automatically_organize=automatically_organize,
-            adapt_graph_size_to_bounds=adapt_graph_size_to_bounds,
-            shooting_type=shooting_type,
-        )
-
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
         """
         The main user interface to add a new plot to the ocp
@@ -650,7 +542,7 @@ class OptimalControlProgram:
         ----------
         fig_name: str
             The name of the figure, it the name already exists, it is merged
-        update_function: function
+        update_function: Callable
             The update function callable using f(states, controls, parameters, **parameters)
         phase: int
             The phase to add the plot to. -1 is the last
@@ -689,6 +581,36 @@ class OptimalControlProgram:
 
         nlp.plot[plot_name] = custom_plot
 
+    def prepare_plots(
+        self,
+        automatically_organize: bool = True,
+        adapt_graph_size_to_bounds: bool = False,
+        shooting_type: Shooting = Shooting.MULTIPLE,
+    ) -> PlotOcp:
+        """
+        Create all the plots associated with the OCP
+
+        Parameters
+        ----------
+        automatically_organize: bool
+            If the graphs should be parsed on the screen
+        adapt_graph_size_to_bounds: bool
+            If the ylim should fit the bounds
+        shooting_type: Shooting
+            What type of integration
+
+        Returns
+        -------
+        The PlotOcp class
+        """
+
+        return PlotOcp(
+            self,
+            automatically_organize=automatically_organize,
+            adapt_graph_size_to_bounds=adapt_graph_size_to_bounds,
+            shooting_type=shooting_type,
+        )
+
     def solve(
         self,
         solver: Solver = Solver.IPOPT,
@@ -711,8 +633,7 @@ class OptimalControlProgram:
 
         Returns
         -------
-        The optimized solution structure, if return_xxx is defined, it also returns it in the same order as they are
-        described in the Parameters sections
+        The optimized solution structure
         """
 
         if solver == Solver.IPOPT and self.solver_type != Solver.IPOPT:
@@ -740,8 +661,7 @@ class OptimalControlProgram:
     def save(self, sol: Solution, file_path: str):
         """
         Save the ocp and solution structure to the hard drive. It automatically create the required
-        folder if it does not existsThis is the primary format if you need to reload the data later using bioptim. One
-        can use the load function to reload the data structure
+        folder if it does not exists. Please note that biorbd is required to load back this structure.
 
         Parameters
         ----------
@@ -798,51 +718,132 @@ class OptimalControlProgram:
             out = [ocp, sol]
         return out
 
-    @staticmethod
-    def print_bo(file_path: str):
+    def __define_time(
+        self,
+        phase_time: Union[int, float, list, tuple],
+        objective_functions: ObjectiveList,
+        constraints: ConstraintList,
+    ):
         """
-        Easy access to print a *.bo file to the console. It shows all the relevant ocp information
+        Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
+        a sanity check is perform and the values of initial guess and bounds for these particular phases
 
         Parameters
         ----------
-        file_path: str
-            The *.bo file to print to the console
+        phase_time: Union[int, float, list, tuple]
+            The time of all the phases
+        objective_functions: ObjectiveList
+            All the objective functions. It is used to scan if any time optimization was defined
+        constraints: ConstraintList
+            All the constraint functions. It is used to scan if any free time was defined
         """
 
-        with open(file_path, "rb") as file:
-            data = pickle.load(file)
-            original_values = data["ocp_initializer"]
-            print("****************************** Information ******************************")
-            for key in original_values.keys():
-                if key not in ["x_init", "u_init", "x_bounds", "u_bounds"]:
-                    print(f"{key} : ")
-                    OptimalControlProgram._deep_print(original_values[key])
-                    print("")
+        def define_parameters_phase_time(
+            ocp: OptimalControlProgram,
+            penalty_functions: Union[ObjectiveList, ConstraintList],
+            initial_time_guess: list,
+            phase_time: list,
+            time_min: list,
+            time_max: list,
+            has_penalty: list = None,
+        ) -> list:
+            """
+            Sanity check to ensure that only one time optimization is defined per phase. It also creates the time vector
+            for initial guesses and bounds
 
-    @staticmethod
-    def _deep_print(elem: Any, label: str = ""):
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            penalty_functions: Union[ObjectiveList, ConstraintList]
+                The list to parse to ensure no double free times are declared
+            initial_time_guess: list
+                The list of all initial guesses for the free time optimization
+            phase_time: list
+                Replaces the values where free time is found for MX or SX
+            time_min: list
+                Minimal bounds for the time parameter
+            time_max: list
+                Maximal bounds for the time parameter
+            has_penalty: list[bool]
+                If a penalty was previously found. This should be None on the first call to ensure proper initialization
+
+            Returns
+            -------
+            The state of has_penalty
+            """
+
+            if has_penalty is None:
+                has_penalty = [False] * ocp.n_phases
+
+            for i, penalty_functions_phase in enumerate(penalty_functions):
+                for pen_fun in penalty_functions_phase:
+                    if not pen_fun:
+                        continue
+                    if (
+                        pen_fun.type == ObjectiveFcn.Mayer.MINIMIZE_TIME
+                        or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
+                        or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
+                    ):
+                        if has_penalty[i]:
+                            raise RuntimeError("Time constraint/objective cannot declare more than once")
+                        has_penalty[i] = True
+
+                        initial_time_guess.append(phase_time[i])
+                        phase_time[i] = ocp.cx.sym(f"time_phase_{i}", 1, 1)
+                        if pen_fun.type.get_type() == ConstraintFunction:
+                            time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
+                            time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
+                        else:
+                            time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
+                            time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
+            return has_penalty
+
+        self.original_phase_time = phase_time
+        if isinstance(phase_time, (int, float)):
+            phase_time = [phase_time]
+        phase_time = list(phase_time)
+        initial_time_guess, time_min, time_max = [], [], []
+        has_penalty = define_parameters_phase_time(
+            self, objective_functions, initial_time_guess, phase_time, time_min, time_max
+        )
+        define_parameters_phase_time(
+            self, constraints, initial_time_guess, phase_time, time_min, time_max, has_penalty=has_penalty
+        )
+
+        # Add to the nlp
+        NLP.add(self, "tf", phase_time, False)
+        NLP.add(self, "t0", [0] + [nlp.tf for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
+        NLP.add(self, "dt", [self.nlp[i].tf / max(self.nlp[i].ns, 1) for i in range(self.n_phases)], False)
+
+        # Add to the v vector
+        i = 0
+        for nlp in self.nlp:
+            if isinstance(nlp.tf, self.cx):
+                time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
+                time_init = InitialGuess(initial_time_guess[i])
+                time_param = Parameter(
+                    cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
+                )
+                self.v.add_parameter(time_param)
+                i += 1
+
+    def __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter]):
         """
-        Dig into a list or a dictionary to print all numerical or str elements in it. It is call recursively to dig into
-        structure
+        The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
+        overrides an objective only the latter is preserved when saved
 
         Parameters
         ----------
-        elem: Any
-            The list or dict, or actual element to print
-        label: str
-            The key of the dict if elem is a dict. Otherwise it should be empty
+        new_penalty: PenaltyOption
+            Any valid option to add to the program
         """
 
-        if isinstance(elem, (list, tuple)):
-            for k in range(len(elem)):
-                OptimalControlProgram._deep_print(elem[k])
-                if k != len(elem) - 1:
-                    print("")
-        elif isinstance(elem, dict):
-            for key in elem.keys():
-                OptimalControlProgram._deep_print(elem[key], label=key)
-        else:
-            if label == "":
-                print(f"   {elem}")
-            else:
-                print(f"   [{label}] = {elem}")
+        if not new_penalty:
+            return
+        phase_idx = new_penalty.phase
+
+        # Copy to self.original_values so it can be save/load
+        pen = new_penalty.type.get_type()
+        self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
+        pen.add_or_replace(self, self.nlp[phase_idx], new_penalty)

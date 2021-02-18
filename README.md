@@ -117,7 +117,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     ObjectiveFcn,
     Objective,
 )
@@ -214,21 +213,20 @@ That's it!
 
 ## Show the results
 If you want to have a look at the animated data, `bioptim` has an interface to `bioviz` which is designed to visualize bioMod files.
-For that, simply call the `animate()` method of a `ShowData` class as follows:
+For that, simply call the `animate()` method of the solution:
 ```python
-ShowResult(ocp, sol).animate()
+sol.animate()
 ```
 
-If you did not fancy the online graphs, but would enjoy them anyway, you can call the same class with the method `graphs()`:
+If you did not fancy the online graphs, but would enjoy them anyway, you can call the method `graphs()`:
 ```python
-ShowResult(ocp, sol).graphs()
+sol.graphs()
 ```
 
-If you are interested in the results of individual objective functions, you can print them using the `objective_functions()`:
+If you are interested in the results of individual objective functions and constraints, you can print them using the `print()`:
 ```python
-ShowResult(ocp, sol).objective_functions()
+sol.print()
 ```
-
 
 And that is all! 
 You have completed your first optimal control program with `bioptim`! 
@@ -247,7 +245,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     ObjectiveFcn,
     Objective,
 )
@@ -275,9 +272,8 @@ ocp = OptimalControlProgram(
     )
     
 sol = ocp.solve(show_online_optim=True)
-sr = ShowResult(ocp, sol)
-sr.objective_functions()
-sr.animate()
+sol.print()
+sol.animate()
 ```
 ### The pendulum.bioMod file
 Here is a simple pendulum that can be interpreted by `biorbd`. 
@@ -450,7 +446,7 @@ Moreover, the method
 ```python
 solution = ocp.solve(Solver, solver_options:{})
 ```
-is called to actually solve the ocp. 
+is called to actually solve the ocp (the solution structure is discussed later). 
 The `Solver` parameter can be used to select the nonlinear solver to solve the ocp, ̀`Ipopt` being the default choice.
 Note that options can be passed to the solver via the `solver_options` parameter.
 One can refer to the documentation of their respective chosen solver to know which options exist.
@@ -463,11 +459,7 @@ ocp.save(solution, file_path)
 ocp, solution = OptimalControlProgram.load(file_path)
 ```
 Please note that this is `bioptim` version dependent, which means that an optimized solution from a previous version will not probably load on a newer `bioptim` version.
-To save the solution in a version independent manner, one can use the following method
-```python
-ocp.save_get_data(solution, file_path)
-```
-which will save the results in a numpy array format. 
+To save the solution in a version independent manner, you may want to manually save the data from the solution.
 
 Finally, the `add_plot(name, update_function)` method can be used to create new dynamics plots.
 The name is simply the name of the figure.
@@ -1103,59 +1095,52 @@ CUSTOM should not be directly sent by the user, but the user should pass the cus
 You can have a look at the PhaseTransitionList section for more information about how to define custom transition function.
 
 ## The results
-`Bioptim` offers different ways to visualize the results from an optimisation. 
+`Bioptim` offers different ways to manage and visualize the results from an optimisation. 
 This section explores the different methods that can be called to have a look at your data.
 
-### Class: Data
-The `Data` class, via the static method `Data.get_data(ocp, solution)` class the results vector in a more comprehensive way.
-Since the data returned by get_data are of the form of numpy arrays, it is the preferred way to transfer the data to another software. 
-It is what is stored when using the `OptimalControlProgram.save_get_data()` method.
-So let's explore this method.
+Everything related to managing the results can be accessed from the solution class returned from 
+```python
+sol = ocp.solve()
+```
 
-First, by default, it returns two dictionaries (or tho list of dictionaries if there is more than one phase), one for the states and one for the controls. 
-If parameters are also optimized, one can set the parameter `get_parameters` to true, to get them.
-If the parameter `concatenate` is set to true, then all the phases are concatenated, and the method therefore does not return a list but directly the dictionaries. 
+### Data manipulation
+It is possible to integrate the states at will, by calling the `sol.integrate()` method.
+The `shooting_type: Shooting` parameter allows to select the type of integration to perform (see the enum Shooting for more detail).
+The `merge_phase: bool` parameter requests to merge all the phases into one [True] or not [False].
+The `continuous: bool` parameter can be deceiving. If it mostly for internal purposes. 
+In brief, it discards [True] or keeps [False] the arrival value of a node of integration, resulting in doubling the number of points at each node.
+Most of the time, one wants to set `continuous` to True, unless you need to get the individual integrations of each node.
 
-The keys of the returned dictionaries correspond to the name of the variables. 
-For instance, if generalized coordinates (*q*) are states, then the state dictionary has *q* as key.
-The data for this particular variable are then store in a numpy.ndarray matrix of n_elements X n_nodes. 
+The `sol.interpolation(n_frames: [int, tuple])` method returns the states interpolated by changing the number of shooting points.
+If the program is multiphase, but only a `int` is sent, then the phases are merged and the interpolation keeps their respective time ratio consistent.
+If one does not want to merge the phases, then a `tuple` with one value per phase can be sent. 
 
-The number of returned nodes (n_nodes) can be changed by setting the parameter `interpolate_n_frames` to the required number of nodes.
-If it does not correspond to the number of shooting points of the ocp, then an interpolation is performed.
+Finally `sol.merge_phases()` returns a Solution structure with all the phases merged into one.
 
-Moreover, for the states, it is possible to get the integrated the values. 
-The number of nodes returned will depend on the number of element of the `n_integration_steps` of the ocp.
+Please note that, apart from `sol.merge_phases()`, these data manipulation methods return an incomplete Solution structure.
+This structure can be used for further analyses, but cannot be used for visualization. 
+If one wants to visualize integrated or interpolated data, they are required to use the corresponding parameters or the visualization method they use.
 
-### Class: ShowResult
-ShowResult is the interface class towards console printing, graphs and `bioviz`.
-It is constructed from an ocp and a solution (`sr = ShowResult(ocp, solution)`).
-
-A first method is `sr.graphs()`. 
+### Data visualization
+A first method to visualize the data is `sol.graphs()`. 
 This method will spawn all the graphs associated with the ocp. 
 This is the same method that is called by the online plotter. 
-In order to add and modify plots, one should use the `OptimalControlProgram.add_plot()` method.
+In order to add and modify plots, one should use the `ocp.add_plot()` method.
+By default, this graphs the states as multiple shootings.
+If one wants to simulate in single shooting, the option `shooting_type=Shooting.SINGLE` will do the trick.
 
-A second one is `sr.animate()`.
-This method summons a `bioviz` figure and animates the model.
+A second one is `sol.animate()`.
+This method summons one or more `bioviz` figures (depending if phases were merged or not) and animates the model.
 Please note that despite `bioviz` best efforts, plotting a lot of meshing vertices in MX format is slow.
 So even though it is possible, it is suggested to animate without the bone meshing (by passing the parameter `show_meshes=False`)
 To do so, we strongly suggest saving the data and load them in an environment where `bioptim` is compiled with the Eigen backend, which will be much more efficient.
+If `n_frames` is set, an interpolation is performed, otherwise, the phases are merged if possible, so a single animation is shown. 
+To prevent from the phase merging, one can set `n_frames=-1`.
 
-In order to plot print the values of the objective functions and constraints, one can use the corresponding functions.
-Therefore, `sr.objective_functions()` will return the values of each objective functions.
-As for the method `sr.constraints()`, it will return the value of the constraint and the lagrange multiplier associated with that constraint.
-Please note that for readability purposes, these functions return the sum by phases. 
-
-
-### Class: Simulate
-Finally, one may want to resimulate the results, i.e., forwardly integrating the states from the controls.
-Simulate is the preferred interface for this. 
-
-It is possible to simulate in two ways, namely single shooting and multiple shooting, by setting `single_shoot` to true of false, respectively.
-In multiple shooting, the integration is only performed inbetween two shooting point, i.e., the optimized state at each shooting point are the first value of integrated intervals. 
-In single shooting however, the integration is performed from the state at the first shooting node, regardless of the next optimized state values. 
-Single shooting can be used to validate the quality of integration. 
-For example, if the single shooting diverges at some point, when compared to the multiple shooting, you may want to reoptimize yout problem while increasing the number of integration steps.
+In order to print the values of the objective functions and constraints, one can use the `sol.print()` method.
+If the parameter `cost_type=CostType.OBJECTIVE` is passed, only the values of each objective functions are printed.
+The same is true for the constraints with `CostType.CONSTRAINTS`.
+Please note that for readability purposes, this method prints the sum by phases for the constraints. 
 
 ## The extra stuff and the Enum
 It was hard to categorize the remaining classes and enum. 
@@ -1247,6 +1232,18 @@ The accepted values are:
 - SPLINE: Requires five columns. It performs a cubic spline to interpolate between the nodes.
 - CUSTOM: User defined interpolation function
 
+
+### Enum: Shooting
+The type of integration to perform
+- MULTIPLE: resets the state at each node
+- SINGLE: resets the state at each phase
+- SINGLE_CONTINUOUS: never resets the state
+
+### Enum: CostType
+The type of cost
+- OBJECTIVES: The objective functions
+- CONSTRAINTS: The constraints
+- ALL: All the previously described cost type
 
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:

@@ -93,7 +93,7 @@ class AcadosInterface(SolverInterface):
             The options to pass to the solver
         """
 
-        if not isinstance(ocp.CX(), SX):
+        if not isinstance(ocp.cx(), SX):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS. Please set use_sx to True in OCP")
 
         super().__init__(ocp)

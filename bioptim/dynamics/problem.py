@@ -323,10 +323,10 @@ class Problem:
 
         dof_names = nlp.model.nameDof()
         q_mx = MX()
-        q = nlp.CX()
+        q = nlp.cx()
 
         for i in nlp.mapping["q"].to_first.map_idx:
-            q = vertcat(q, nlp.CX.sym("Q_" + dof_names[i].to_string(), 1, 1))
+            q = vertcat(q, nlp.cx.sym("Q_" + dof_names[i].to_string(), 1, 1))
         for i, _ in enumerate(nlp.mapping["q"].to_second.map_idx):
             q_mx = vertcat(q_mx, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
 
@@ -375,10 +375,10 @@ class Problem:
 
         dof_names = nlp.model.nameDof()
         qdot_mx = MX()
-        qdot = nlp.CX()
+        qdot = nlp.cx()
 
         for i in nlp.mapping["qdot"].to_first.map_idx:
-            qdot = vertcat(qdot, nlp.CX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
+            qdot = vertcat(qdot, nlp.cx.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
         for i, _ in enumerate(nlp.mapping["qdot"].to_second.map_idx):
             qdot_mx = vertcat(qdot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
 
@@ -449,11 +449,11 @@ class Problem:
 
         n_col = nlp.control_type.value
         tau_mx = MX()
-        all_tau = [nlp.CX() for _ in range(n_col)]
+        all_tau = [nlp.cx() for _ in range(n_col)]
 
         for i in nlp.mapping["tau"].to_first.map_idx:
             for j in range(len(all_tau)):
-                all_tau[j] = vertcat(all_tau[j], nlp.CX.sym(f"Tau_{dof_names[i].to_string()}_{j}", 1, 1))
+                all_tau[j] = vertcat(all_tau[j], nlp.cx.sym(f"Tau_{dof_names[i].to_string()}_{j}", 1, 1))
         for i, _ in enumerate(nlp.mapping["q"].to_second.map_idx):
             tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
@@ -509,9 +509,9 @@ class Problem:
 
         combine = None
         if as_states:
-            muscles = nlp.CX()
+            muscles = nlp.cx()
             for name in nlp.muscleNames:
-                muscles = vertcat(muscles, nlp.CX.sym(f"Muscle_{name}_activation_{nlp.phase_idx}"))
+                muscles = vertcat(muscles, nlp.cx.sym(f"Muscle_{name}_activation_{nlp.phase_idx}"))
 
             nlp.x = vertcat(nlp.x, muscles)
             nlp.var_states["muscles"] = nlp.shape["muscle"]
@@ -529,11 +529,11 @@ class Problem:
 
         if as_controls:
             n_col = nlp.control_type.value
-            all_muscles = [nlp.CX() for _ in range(n_col)]
+            all_muscles = [nlp.cx() for _ in range(n_col)]
             for j in range(len(all_muscles)):
                 for name in nlp.muscleNames:
                     all_muscles[j] = vertcat(
-                        all_muscles[j], nlp.CX.sym(f"Muscle_{name}_excitation_{j}_{nlp.phase_idx}", 1, 1)
+                        all_muscles[j], nlp.cx.sym(f"Muscle_{name}_excitation_{j}_{nlp.phase_idx}", 1, 1)
                     )
 
             nlp.u = vertcat(nlp.u, horzcat(*all_muscles))

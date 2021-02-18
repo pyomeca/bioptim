@@ -35,8 +35,8 @@ class Parameter(OptionGeneric):
         quadratic: bool = True,
         size: int = None,
         penalty_list: Union[Objective, ObjectiveList] = None,
-        cx: Callable = None,
-        **params
+        cx: Union[Callable, MX, SX] = None,
+        **params: Any,
     ):
         """
         Parameters
@@ -75,9 +75,9 @@ class ParameterList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    def add(
+    add(
         self,
-        parameter_name: str,
+        parameter_name: Union[str, Parameter],
         function: Callable = None,
         initial_guess: Union[InitialGuess, InitialGuessList] = None,
         bounds: Union[Bounds, BoundsList] = None,
@@ -89,6 +89,13 @@ class ParameterList(UniquePerPhaseOptionList):
         Add a new Parameter to the list
     print(self)
         Print the ParameterList to the console
+    __contains__(self, item: str) -> bool
+        Allow for `str in ParameterList`
+    @property
+    names(self) -> list:
+        Get all the name of the Parameter in the List
+    index(self, item: str) -> int
+        Get the index of a specific Parameter in the list
     """
 
     def add(
@@ -98,9 +105,9 @@ class ParameterList(UniquePerPhaseOptionList):
         initial_guess: Union[InitialGuess, InitialGuessList] = None,
         bounds: Union[Bounds, BoundsList] = None,
         size: int = None,
-        phase: int = -1,
+        phase: int = 0,
         penalty_list: Union[Objective, ObjectiveList] = None,
-        **extra_arguments: Any
+        **extra_arguments: Any,
     ):
         """
         Add a new Parameter to the list
@@ -143,10 +150,23 @@ class ParameterList(UniquePerPhaseOptionList):
                 bounds=bounds,
                 size=size,
                 penalty_list=penalty_list,
-                **extra_arguments
+                **extra_arguments,
             )
 
-    def __contains__(self, item):
+    def __contains__(self, item: str) -> bool:
+        """
+        Allow for `str in ParameterList`
+
+        Parameters
+        ----------
+        item: str
+            The element to search
+
+        Returns
+        -------
+        If the element is the list
+        """
+
         for p in self:
             if p.name == item:
                 return True
@@ -160,13 +180,34 @@ class ParameterList(UniquePerPhaseOptionList):
         raise NotImplementedError("Printing of ParameterList is not ready yet")
 
     @property
-    def names(self):
+    def names(self) -> list:
+        """
+        Get all the name of the Parameter in the List
+
+        Returns
+        -------
+        A list of all names
+        """
+
         n = []
         for p in self:
             n.append(p.name)
         return n
 
-    def index(self, item):
+    def index(self, item: str) -> int:
+        """
+        Get the index of a specific Parameter in the list
+
+        Parameters
+        ----------
+        item: str
+            The name of the parameter to find
+
+        Returns
+        -------
+        The index of the Parameter in the list
+        """
+
         return self.names.index(item)
 
 

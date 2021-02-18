@@ -25,15 +25,8 @@ OptimalControlProgram
     modify and solve the program
 NonLinearProgram
     A nonlinear program that describes a phase in the ocp
-Simulate
-    Interface that allows to integrate a solution
-
-
-# --- Managing the results --- #
-ShowResult
-    The main interface to bioptim GUI
-Data
-    Data manipulation and storage
+Solution
+    Data manipulation, showing and storage
 
 
 # --- Some useful options --- #

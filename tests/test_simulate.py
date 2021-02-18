@@ -225,7 +225,7 @@ def test_integrate_single_shoot():
     )
 
     sol = ocp.solve()
-    sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE)
+    sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
     shapes = (4, 2, 2)
 
     for i, key in enumerate(sol.states):
@@ -242,7 +242,7 @@ def test_integrate_single_shoot():
         sol_integrated.controls
 
 
-@pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_RESET_AT_PHASE])
+@pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 @pytest.mark.parametrize("merge", [False, True])
 def test_integrate_non_continuous(shooting, merge):
     # Load pendulum
@@ -261,7 +261,7 @@ def test_integrate_non_continuous(shooting, merge):
     )
 
     sol = ocp.solve()
-    sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE, continuous=False, merge_phases=merge)
+    sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS, continuous=False, merge_phases=merge)
     shapes = (4, 2, 2)
 
     for i, key in enumerate(sol.states):
@@ -279,7 +279,7 @@ def test_integrate_non_continuous(shooting, merge):
         sol_integrated.controls
 
 
-@pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_RESET_AT_PHASE])
+@pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 def test_integrate_multiphase(shooting):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -313,7 +313,7 @@ def test_integrate_multiphase(shooting):
         sol_integrated.controls
 
 
-@pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_RESET_AT_PHASE])
+@pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 def test_integrate_multiphase_merged(shooting):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -350,7 +350,7 @@ def test_integrate_multiphase_merged(shooting):
         sol_integrated.controls
 
 
-@pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_RESET_AT_PHASE])
+@pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 def test_integrate_multiphase_non_continuous(shooting):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."
@@ -385,7 +385,7 @@ def test_integrate_multiphase_non_continuous(shooting):
         sol_integrated.controls
 
 
-@pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_RESET_AT_PHASE])
+@pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 def test_integrate_multiphase_merged_non_continuous(shooting):
     # Load pendulum
     PROJECT_FOLDER = Path(__file__).parent / ".."

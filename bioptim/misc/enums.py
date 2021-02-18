@@ -22,23 +22,6 @@ class Solver(Enum):
     NONE = None
 
 
-class Shooting(Enum):
-
-    MULTIPLE = "Multiple"
-    SINGLE = "Single"
-    SINGLE_RESET_AT_PHASE = "Single reset"
-
-
-class CostType(Enum):
-    """
-    The type of cost
-    """
-
-    OBJECTIVES = "Objectives"
-    CONSTRAINTS = "Constraints"
-    ALL = "All"
-
-
 class OdeSolver(Enum):
     """
     Selection of valid integrator
@@ -76,6 +59,29 @@ class InterpolationType(Enum):
     EACH_FRAME = 3  # Each values are provided by the user
     SPLINE = 4  # Cubic spline interpolation
     CUSTOM = 5  # Interpolation via a used-defined custom function
+
+
+class Shooting(Enum):
+    """
+    The type of integration
+    MULTIPLE resets the state at each node
+    SINGLE resets the state at each phase
+    SINGLE_CONTINUOUS never resets the state
+    """
+
+    MULTIPLE = "Multiple"
+    SINGLE = "Single"
+    SINGLE_CONTINUOUS = "Single continuous"
+
+
+class CostType(Enum):
+    """
+    The type of cost
+    """
+
+    OBJECTIVES = "Objectives"
+    CONSTRAINTS = "Constraints"
+    ALL = "All"
 
 
 class PlotType(Enum):

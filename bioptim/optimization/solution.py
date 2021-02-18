@@ -1,56 +1,125 @@
 from typing import Any, Union
 from copy import deepcopy
 
+import biorbd
 import numpy as np
 from scipy import interpolate as sci_interp
 from casadi import Function, DM
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import ControlType, CostType, Shooting, InterpolationType
+from ..misc.enums import ControlType, CostType, Shooting
 from ..misc.utils import check_version
+from ..optimization.non_linear_program import NonLinearProgram
 
 
 class Solution:
     """
-    Data manipulation and storage
+    Data manipulation, graphing and storage
+
+    Attributes
+    ----------
+    ocp: SimplifiedOCP
+        The OCP simplified
+    ns: list
+        The number of shooting point for each phase
+    is_interpolated: bool
+        If the current structure is interpolated
+    is_integrated: bool
+        If the current structure is integrated
+    is_merged: bool
+        If the phases were merged
+    vector: np.ndarray
+        The data in the vector format
+    cost: float
+        The value of the cost function
+    constraints: list
+        The values of the constraint
+    lam_g: list
+        The Lagrange multiplier of the constraints
+    lam_p: list
+        The Lagrange multiplier of the parameters
+    lam_x: list
+        The Lagrange multiplier of the states and controls
+    time_to_optimize: float
+        The total time to solve the program
+    iterations: int
+        The number of iterations that were required to solve the program
+    _states: list
+        The data structure that holds the states
+    _controls: list
+        The data structure that holds the controls
+    parameters: dict
+        The data structure that holds the parameters
+    phase_time: list
+        The total time for each phases
 
     Methods
     -------
-    to_matrix(self, idx: Union[int, list, tuple] = (), phase_idx: Union[int, list, tuple] = (),
-            node_idx: Union[int, list, tuple] = (), concatenate_phases: bool = True) -> np.ndarray
-        Parse the data into a np.ndarray
-    set_time_per_phase(self, new_t: list)
-        Set the time vector of the phase
-    get_time_per_phase(self, phases: Union[int, list, tuple] = (), merge_phases: bool = False) -> np.ndarray
-        Get the time for each phase
-    get_data(ocp: OptimalControlProgram, sol_x: dict, get_states: bool = True, get_controls: bool = True,
-            get_parameters: bool = False, phase_idx: Union[int, list, tuple] = None, integrate: bool = False,
-            interpolate_n_frames: int = -1, merge_phases: bool = True,) -> tuple
-        Comprehensively parse the data from a solution
-    get_data_object(ocp: OptimalControlProgram, V: np.ndarray, phase_idx: Union[int, list, tuple] = None,
-            integrate: bool = False, interpolate_n_frames: int = -1, merge_phases: bool = True) -> tuple
-        Parse an unstructured vector of data of data into their list of Phase format
-    _get_data_integrated_from_V(ocp: OptimalControlProgram, data_states: dict,
-            data_controls: dict, data_parameters: dict) -> dict
-        Integrates the states
-    _data_concatenated(data: dict) -> dict
-        Concatenate all the phases
-    _get_data_interpolated_from_V(data_states: dict, n_frames: int) -> dict
+    copy(self, skip_data: bool = False) -> Any
+        Create a deepcopy of the Solution
+    @property
+    states(self) -> Union[list, dict]
+        Returns the state in list if more than one phases, otherwise it returns the only dict
+    @property
+    controls(self) -> Union[list, dict]
+        Returns the controls in list if more than one phases, otherwise it returns the only dict
+    integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, merge_phases: bool = False, continuous: bool = True) -> Solution
+        Integrate the states
+    interpolate(self, n_frames: Union[int, list, tuple]) -> Solution
         Interpolate the states
-    _horzcat_node(self, dt: float, x_to_add: np.ndarray, idx_phase: int, idx_node: int)
-        Concatenate the nodes of a Phase into a np.ndarray
-    _get_phase(V_phase: np.ndarray, var_size: int, n_nodes: int, offset: int, n_variables: int,
-            duplicate_last_column: bool) -> np.ndarray
-        Extract the data of a specific phase from an unstructured vector of data
-    _vertcat(data: np.ndarray, keys: str, phases: Union[int, list, tuple] = (), nodes: Union[int, list, tuple] = ())
-        Add new elements (rows) to the data
-    _append_phase(self, time: np.ndarray, phase: "Data.Phase")
-        Add a new phase to the phase list
+    merge_phases(self) -> Solution
+        Get a data structure where all the phases are merged into one
+    _merge_phases(self, skip_states: bool = False, skip_controls: bool = False) -> tuple
+        Actually performing the phase merging
+    _complete_control(self)
+        Controls don't necessarily have dimensions that matches the states. This method aligns them
+    graphs(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool, show_now: bool, shooting_type: Shooting)
+        Show the graphs of the simulation
+    animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> Union[None, list]
+        Animate the simulation
+    print(self, cost_type: CostType = CostType.ALL)
+        Print the objective functions and/or constraints to the console
     """
 
     class SimplifiedNLP:
-        def __init__(self, nlp):
+        """
+        A simplified version of the NonLinearProgram structure
+
+        Attributes
+        ----------
+        control_type: ControlType
+            The control type for the current nlp
+        dynamics: list[ODE_SOLVER]
+            All the dynamics for each of the node of the phase
+        g: list[list[Constraint]]
+            All the constraints at each of the node of the phase
+        J: list[list[Objective]]
+            All the objectives at each of the node of the phase
+        model: biorbd.Model
+            A reference to the biorbd Model
+        mapping: dict
+            All the BidirectionalMapping of the states and controls
+        n_integration_steps: int
+            The number of finite element of the RK
+        ns: int
+            The number of shooting points
+        nu: int
+            The number of controls
+        nx: int
+            The number of states
+        var_states: dict
+            The number of elements for each state the key is the name of the state
+        """
+
+        def __init__(self, nlp: NonLinearProgram):
+            """
+            Parameters
+            ----------
+            nlp: NonLinearProgram
+                A reference to the NonLinearProgram to strip
+            """
+
             self.model = nlp.model
             self.nx = nlp.nx
             self.nu = nlp.nu
@@ -64,7 +133,33 @@ class Solution:
             self.ns = nlp.ns
 
     class SimplifiedOCP:
+        """
+        A simplified version of the NonLinearProgram structure
+
+        Attributes
+        ----------
+        g: list
+            Constraints that are not phase dependent (mostly parameters and continuity constraints)
+        J: list
+            Objective values that are not phase dependent (mostly parameters)
+        nlp: NLP
+            All the phases of the ocp
+        phase_transitions: list[PhaseTransition]
+            The list of transition constraint between phases
+        prepare_plots: Callable
+            The function to call to prepare the PlotOCP
+        v: OptimizationVariable
+        The variable optimization holder
+        """
+
         def __init__(self, ocp):
+            """
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp to strip
+            """
+
             self.nlp = [Solution.SimplifiedNLP(nlp) for nlp in ocp.nlp]
             self.v = ocp.v
             self.J = ocp.J
@@ -72,7 +167,16 @@ class Solution:
             self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
 
-    def __init__(self, ocp, sol):
+    def __init__(self, ocp, sol: Union[dict, list, tuple, np.ndarray, DM, None]):
+        """
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp to strip
+        sol: Union[dict, list, tuple, np.ndarray, DM]
+            The values of a solution
+        """
+
         self.ocp = Solution.SimplifiedOCP(ocp) if ocp else None
         self.ns = [nlp.ns for nlp in self.ocp.nlp]
 
@@ -92,10 +196,19 @@ class Solution:
         self.iterations = None
 
         # Extract the data now for further use
-        self._states, self._controls, self._parameters = None, None, None
-        self.phase_time = None
+        self._states, self._controls, self.parameters = [], [], {}
+        self.phase_time = []
 
         def init_from_dict(sol: dict):
+            """
+            Initialize all the attributes from an Ipopt-like dictionary data structure
+
+            Parameters
+            ----------
+            sol: dict
+                The solution in a Ipopt-like dictionary
+            """
+
             self.vector = sol["x"] if isinstance(sol, dict) and "x" in sol else sol
             self.cost = sol["f"] if isinstance(sol, dict) and "f" in sol else None
             self.constraints = sol["g"] if isinstance(sol, dict) and "g" in sol else None
@@ -107,11 +220,20 @@ class Solution:
             self.iterations = sol["iter"] if isinstance(sol, dict) and "iter" in sol else None
 
             # Extract the data now for further use
-            self._states, self._controls, self._parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
 
         def init_from_initial_guess(sol: list):
+            """
+            Initialize all the attributes from a list of initial guesses (states, controls)
+
+            Parameters
+            ----------
+            sol: list
+                The list of initial guesses
+            """
+
             n_param = len(ocp.v.parameters_in_list)
 
             # Sanity checks
@@ -159,20 +281,24 @@ class Solution:
                 for p, s in enumerate(sol_params):
                     self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
 
-            self._states, self._controls, self._parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
 
-        def init_from_vector(sol):
+        def init_from_vector(sol: Union[np.ndarray, DM]):
+            """
+            Initialize all the attributes from a vector of solution
+
+            Parameters
+            ----------
+            sol: Union[np.ndarray, DM]
+                The solution in vector format
+            """
+
             self.vector = sol
-            self._states, self._controls, self._parameters = self.ocp.v.to_dictionaries(self.vector)
+            self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
-
-        def init_from_none():
-            self._states, self._controls, self._parameters = {}, {}, {}
-            self.phase_time = []
-            self.ns = []
 
         if isinstance(sol, dict):
             init_from_dict(sol)
@@ -181,11 +307,24 @@ class Solution:
         elif isinstance(sol, (np.ndarray, DM)):
             init_from_vector(sol)
         elif sol is None:
-            init_from_none()
+            self.ns = []
         else:
             raise ValueError("Solution called with unknown initializer")
 
-    def copy(self, skip_data=False):
+    def copy(self, skip_data: bool = False) -> Any:
+        """
+        Create a deepcopy of the Solution
+
+        Parameters
+        ----------
+        skip_data: bool
+            If data should be ignored in the copy
+
+        Returns
+        -------
+        Return a Solution data structure
+        """
+
         new = Solution(self.ocp, None)
 
         new.vector = deepcopy(self.vector)
@@ -206,20 +345,36 @@ class Solution:
         new.ns = deepcopy(self.ns)
 
         if skip_data:
-            new._states, new._controls, new._parameters = None, None, None
+            new._states, new._controls, new.parameters = [], [], {}
         else:
             new._states = deepcopy(self._states)
             new._controls = deepcopy(self._controls)
-            new._parameters = deepcopy(self._parameters)
+            new.parameters = deepcopy(self.parameters)
 
         return new
 
     @property
-    def states(self):
+    def states(self) -> Union[list, dict]:
+        """
+        Returns the state in list if more than one phases, otherwise it returns the only dict
+
+        Returns
+        -------
+        The states data
+        """
+
         return self._states[0] if len(self._states) == 1 else self._states
 
     @property
-    def controls(self):
+    def controls(self) -> Union[list, dict]:
+        """
+        Returns the controls in list if more than one phases, otherwise it returns the only dict
+
+        Returns
+        -------
+        The controls data
+        """
+
         if not self._controls:
             raise RuntimeError(
                 "There is no controls in the solution. "
@@ -228,19 +383,25 @@ class Solution:
             )
         return self._controls[0] if len(self._controls) == 1 else self._controls
 
-    @property
-    def parameters(self):
-        return self._parameters
-
     def integrate(
         self, shooting_type: Shooting = Shooting.MULTIPLE, merge_phases: bool = False, continuous: bool = True
-    ):
+    ) -> Any:
         """
-        Integrates the states
+        Integrate the states
+
+        Parameters
+        ----------
+        shooting_type: Shooting
+            Which type of integration
+        merge_phases: bool
+            If the phase should be merged in a unique phase
+        continuous: bool
+            If the arrival value of a node should be discarted [True] or keep [False]. The value of an integrated
+            arrival node and the beginning of the next one are expected to be almost equal when the problem converged
 
         Returns
         -------
-        The dictionary of states integrated
+        A Solution data structure with the states integrated. The controls are removed from this structure
         """
 
         # Sanity check
@@ -259,7 +420,7 @@ class Solution:
         for _ in range(len(self._states)):
             out._states.append({})
 
-        params = self._parameters["all"]
+        params = self.parameters["all"]
         x0 = self._states[0]["all"][:, 0]
         for p in range(len(self._states)):
             shape = self._states[p]["all"].shape
@@ -272,7 +433,7 @@ class Solution:
             out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
-            if shooting_type == Shooting.SINGLE:
+            if shooting_type == Shooting.SINGLE_CONTINUOUS:
                 if p != 0:
                     val = self.ocp.phase_transitions[p - 1].casadi_function(self.vector)
                     if val.shape[0] != x0.shape[0]:
@@ -315,18 +476,19 @@ class Solution:
         out.is_integrated = True
         return out
 
-    def interpolate(self, n_frames: Union[int, list, tuple]):
+    def interpolate(self, n_frames: Union[int, list, tuple]) -> Any:
         """
         Interpolate the states
 
         Parameters
         ----------
-        n_frames: int
-            The number of frames to interpolate the data
+        n_frames: Union[int, list, tuple]
+            If the value is an int, the Solution returns merges the phases,
+            otherwise, it interpolates them independently
 
         Returns
         -------
-        The dictionary of states interpolated
+        A Solution data structure with the states integrated. The controls are removed from this structure
         """
 
         out = self.copy(skip_data=True)
@@ -370,29 +532,55 @@ class Solution:
         out.is_interpolated = True
         return out
 
-    def merge_phases(self):
+    def merge_phases(self) -> Any:
+        """
+        Get a data structure where all the phases are merged into one
+
+        Returns
+        -------
+        The new data structure with the phases merged
+        """
+
         new = self.copy(skip_data=True)
-        new._parameters = deepcopy(self._parameters)
+        new.parameters = deepcopy(self.parameters)
         new._states, new._controls, new.phase_time, new.ns = self._merge_phases()
         new.is_merged = True
         return new
 
-    def _merge_phases(self, skip_states=False, skip_controls=False) -> tuple:
+    def _merge_phases(self, skip_states: bool = False, skip_controls: bool = False) -> tuple:
         """
-        Concatenate all the phases
+        Actually performing the phase merging
 
         Parameters
         ----------
+        skip_states: bool
+            If the merge should ignore the states
+        skip_controls: bool
+            If the merge should ignore the controls
 
         Returns
         -------
-        The new dictionary of data with the phases merged
+        A tuple containing the new states, new controls, the recalculated phase time
+        and the new number of shooting points
         """
 
-        if self.is_merged or len(self._states) == 1:
+        if self.is_merged:
             return deepcopy(self._states), deepcopy(self._controls), deepcopy(self.phase_time), deepcopy(self.ns)
 
-        def _merge(data):
+        def _merge(data: list) -> Union[list, dict]:
+            """
+            Merge the phases of a states or controls data structure
+
+            Parameters
+            ----------
+            data: list
+                The data to structure to merge the phases
+
+            Returns
+            -------
+            The data merged
+            """
+
             if isinstance(data, dict):
                 return data
 
@@ -416,14 +604,25 @@ class Solution:
 
             return data_out
 
-        out_states = _merge(self.states) if not skip_states and self._states else None
-        out_controls = _merge(self.controls) if not skip_controls and self._controls else None
+        if len(self._states) == 1:
+            out_states = deepcopy(self._states)
+        else:
+            out_states = _merge(self.states) if not skip_states and self._states else None
+
+        if len(self._controls) == 1:
+            out_controls = deepcopy(self._controls)
+        else:
+            out_controls = _merge(self.controls) if not skip_controls and self._controls else None
         phase_time = [0] + [sum([self.phase_time[i + 1] for i in range(len(self.phase_time) - 1)])]
         ns = [sum(self.ns)]
 
         return out_states, out_controls, phase_time, ns
 
     def _complete_control(self):
+        """
+        Controls don't necessarily have dimensions that matches the states. This method aligns them
+        """
+
         for p, nlp in enumerate(self.ocp.nlp):
             if nlp.control_type == ControlType.CONSTANT:
                 for key in self._controls[p]:
@@ -440,10 +639,10 @@ class Solution:
         automatically_organize: bool = True,
         adapt_graph_size_to_bounds: bool = False,
         show_now: bool = True,
-        shooting_type=Shooting.MULTIPLE,
+        shooting_type: Shooting = Shooting.MULTIPLE,
     ):
         """
-        Prepare the graphs of the simulation
+        Show the graphs of the simulation
 
         Parameters
         ----------
@@ -453,10 +652,8 @@ class Solution:
             If the plot should adapt to bounds (True) or to data (False)
         show_now: bool
             If the show method should be called. This is blocking
-
-        Returns
-        -------
-
+        shooting_type: Shooting
+            The type of interpolation
         """
 
         if self.is_merged or self.is_interpolated or self.is_integrated:
@@ -467,22 +664,23 @@ class Solution:
         if show_now:
             plt.show()
 
-    def animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> list:
+    def animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> Union[None, list]:
         """
-        An interface to animate solution with bioviz
+        Animate the simulation
 
         Parameters
         ----------
         n_frames: int
-            The number of frames to interpolate to
+            The number of frames to interpolate to. If the value is 0, the data are merged to a one phase if possible.
+            If the value is -1, the data is not merge in one phase
         show_now: bool
-            If the bioviz exec() function should be called. This is blocking
-        kwargs: dict
+            If the bioviz exec() function should be called automatically. This is blocking method
+        kwargs: Any
             Any parameters to pass to bioviz
 
         Returns
         -------
-            A list of bioviz structures (one for each phase)
+            A list of bioviz structures (one for each phase). So one can call exec() by hand
         """
 
         try:
@@ -517,10 +715,20 @@ class Solution:
                         b.update()
                     else:
                         b_is_visible[i] = False
+            return None
         else:
             return all_bioviz
 
-    def print(self, data_type: CostType = CostType.ALL):
+    def print(self, cost_type: CostType = CostType.ALL):
+        """
+        Print the objective functions and/or constraints to the console
+
+        Parameters
+        ----------
+        cost_type: CostType
+            The type of cost to console print
+        """
+
         def print_objective_functions(ocp, sol):
             """
             Print the values of each objective function to the console
@@ -627,11 +835,11 @@ class Solution:
                 print("")
             print(f"------------------------------")
 
-        if data_type == CostType.OBJECTIVES:
+        if cost_type == CostType.OBJECTIVES:
             print_objective_functions(self.ocp, self)
-        elif data_type == CostType.CONSTRAINTS:
+        elif cost_type == CostType.CONSTRAINTS:
             print_constraints(self.ocp, self)
-        elif data_type == CostType.ALL:
+        elif cost_type == CostType.ALL:
             self.print(CostType.OBJECTIVES)
             self.print(CostType.CONSTRAINTS)
         else:

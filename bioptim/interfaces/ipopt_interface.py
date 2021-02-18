@@ -157,7 +157,7 @@ class IpoptInterface(SolverInterface):
         """
         # TODO: This should be done in bounds, so it is available for all the code
 
-        all_g = self.ocp.CX()
+        all_g = self.ocp.cx()
         all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(len(self.ocp.g)):
             for j in range(len(self.ocp.g[i])):
@@ -179,7 +179,7 @@ class IpoptInterface(SolverInterface):
         """
         # TODO: This should be done in bounds, so it is available for all the code
 
-        all_J = self.ocp.CX()
+        all_J = self.ocp.cx()
         for j_nodes in self.ocp.J:
             for obj in j_nodes:
                 all_J = vertcat(all_J, IpoptInterface.finalize_objective_value(obj))

@@ -1,5 +1,7 @@
+from typing import Union
+
 import numpy as np
-from casadi import vertcat
+from casadi import vertcat, DM
 
 from .parameters import ParameterList, Parameter
 from ..limits.path_conditions import Bounds, InitialGuess
@@ -7,7 +9,70 @@ from ..misc.enums import ControlType, InterpolationType
 
 
 class OptimizationVariable:
+    """
+    Attributes
+    ----------
+    ocp: OptimalControlProgram
+        A reference to the ocp
+    parameters_in_list: ParameterList
+        A list of all the parameters in the ocp
+    x: MX, SX
+        The optimization variable for the states
+    x_bounds: list
+        A list of state bounds for each phase
+    x_init: list
+        A list of states initial guesses for each phase
+    n_all_x: int
+        The number of states of all the phases
+    n_phase_x: list
+        The number of states per phases
+    u: MX, SX
+        The optimization variable for the controls
+    u_bounds: list
+        A list of control bounds for each phase
+    u_init: list
+        A list of control initial guesses for each phase
+    n_all_u: int
+        The number of controls of all the phases
+    n_phase_u: list
+        The number of controls per phases
+
+    Methods
+    -------
+    @property
+    vector(self)
+        Format the x, u and p so they are in one nice (and useful) vector
+    @property
+    bounds(self)
+        Format the x, u and p bounds so they are in one nice (and useful) vector
+    @property
+    init(self)
+        Format the x, u and p init so they are in one nice (and useful) vector
+    @property
+    parameters(self)
+        Get the parameters in one single Parameter class
+    extract_phase_time(self, data: Union[np.array, DM]) -> list
+        Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
+    to_dictionaries(self, data: Union[np.array, DM]) -> list
+        Convert a vector of solution in an easy to use dictionary, where are the variables are given their proper names
+    define_ocp_shooting_points(self)
+        Declare all the casadi variables with the right size to be used during a specific phase
+    define_ocp_bounds(self)
+        Declare and parse the bounds for all the variables (v vector)
+    define_ocp_initial_guess(self)
+        Declare and parse the initial guesses for all the variables (v vector)
+    add_parameter(self, param: Parameter)
+        Add a parameter to the parameters pool
+    """
+
     def __init__(self, ocp):
+        """
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
+
         self.ocp = ocp
 
         self.parameters_in_list = ParameterList()
@@ -38,7 +103,7 @@ class OptimizationVariable:
     @property
     def vector(self):
         """
-        Format the p, x and u so they are in one nice vector
+        Format the x, u and p so they are in one nice (and useful) vector
 
         Returns
         -------
@@ -50,7 +115,7 @@ class OptimizationVariable:
     @property
     def bounds(self):
         """
-        Format the p, x and u bounds so they are in one nice vector
+        Format the x, u and p bounds so they are in one nice (and useful) vector
 
         Returns
         -------
@@ -68,7 +133,7 @@ class OptimizationVariable:
     @property
     def init(self):
         """
-        Format the p, x and u init so they are in one nice vector
+        Format the x, u and p init so they are in one nice (and useful) vector
 
         Returns
         -------
@@ -85,8 +150,16 @@ class OptimizationVariable:
 
     @property
     def parameters(self):
+        """
+        Get the parameters in one single Parameter class
+
+        Returns
+        -------
+        The parameters in one single Parameter class
+        """
+
         param = Parameter(
-            cx=self.ocp.CX(),
+            cx=self.ocp.cx(),
             bounds=Bounds(interpolation=InterpolationType.CONSTANT),
             initial_guess=InitialGuess(),
             size=0,
@@ -102,7 +175,20 @@ class OptimizationVariable:
             param.initial_guess.check_and_adjust_dimensions(param.size, 1)
         return param
 
-    def extract_phase_time(self, data):
+    def extract_phase_time(self, data: Union[np.array, DM]) -> list:
+        """
+        Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
+
+        Parameters
+        ----------
+        data: Union[np.array, DM]
+            The solution in a vector
+
+        Returns
+        -------
+        The phase time
+        """
+
         offset = self.n_all_x + self.n_all_u
         data_time_optimized = []
         if "time" in self.parameters_in_list.names:
@@ -116,12 +202,25 @@ class OptimizationVariable:
         if data_time_optimized:
             cmp = 0
             for i in range(len(phase_time)):
-                if isinstance(phase_time[i], self.ocp.CX):
+                if isinstance(phase_time[i], self.ocp.cx):
                     phase_time[i] = data_time_optimized[cmp]
                     cmp += 1
         return phase_time
 
-    def to_dictionaries(self, data):
+    def to_dictionaries(self, data: Union[np.array, DM]) -> list:
+        """
+        Convert a vector of solution in an easy to use dictionary, where are the variables are given their proper names
+
+        Parameters
+        ----------
+        data: Union[np.array, DM]
+            The solution in a vector
+
+        Returns
+        -------
+        The solution in a list of dictionaries format (list => each phase)
+        """
+
         ocp = self.ocp
         v_array = np.array(data).squeeze()
 
@@ -179,12 +278,12 @@ class OptimizationVariable:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
-                x.append(nlp.CX.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.nx))
+                x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.nx))
 
                 if nlp.control_type != ControlType.CONSTANT or (
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                 ):
-                    u.append(nlp.CX.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.nu, 1))
+                    u.append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.nu, 1))
 
             nlp.X = x
             self.x[nlp.phase_idx] = vertcat(*x)
@@ -199,7 +298,7 @@ class OptimizationVariable:
 
     def define_ocp_bounds(self):
         """
-        Declare and parse the bounds for all the variables (V vector)
+        Declare and parse the bounds for all the variables (v vector)
         """
 
         ocp = self.ocp
@@ -241,8 +340,9 @@ class OptimizationVariable:
 
     def define_ocp_initial_guess(self):
         """
-        Declare and parse the initial guesses for all the variables (V vector)
+        Declare and parse the initial guesses for all the variables (v vector)
         """
+
         ocp = self.ocp
 
         # Sanity check
@@ -279,8 +379,17 @@ class OptimizationVariable:
             self.u_init[i_phase] = u_init
 
     def add_parameter(self, param: Parameter):
+        """
+        Add a parameter to the parameters pool
+
+        Parameters
+        ----------
+        param: Parameter
+            The new parameter to add to the pool
+        """
+
         ocp = self.ocp
-        param.cx = param.cx if param.cx is not None else ocp.CX.sym(param.name, param.size, 1)
+        param.cx = param.cx if param.cx is not None else ocp.cx.sym(param.name, param.size, 1)
 
         if param.name in self.parameters_in_list:
             # Sanity check, you can only add a parameter with the same name if they do the same thing

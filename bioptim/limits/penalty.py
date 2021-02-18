@@ -59,7 +59,7 @@ class PenaltyOption(OptionGeneric):
         A target to track for the penalty
     sliced_target: np.array(target)
         The sliced version of the target to track, this is the one actually tracked
-    custom_function: function
+    custom_function: Callable
         A user defined function to call to get the penalty
     """
 
@@ -345,8 +345,8 @@ class PenaltyFunctionAbstract:
                 q_1 = nlp.mapping["q"].to_second.map(pn.x[i + 1][:nq])
 
                 if coordinates_system_idx < 0:
-                    jcs_0_T = nlp.CX.eye(4)
-                    jcs_1_T = nlp.CX.eye(4)
+                    jcs_0_T = nlp.cx.eye(4)
+                    jcs_1_T = nlp.cx.eye(4)
 
                 elif coordinates_system_idx < n_rts:
                     jcs_0 = nlp.casadi_func[f"globalJCS_{coordinates_system_idx}"](q_0)
@@ -362,9 +362,9 @@ class PenaltyFunctionAbstract:
                     )
 
                 val = jcs_1_T @ vertcat(
-                    nlp.casadi_func["biorbd_markers"](q_1)[:, markers_idx], nlp.CX.ones(1, markers_idx.shape[0])
+                    nlp.casadi_func["biorbd_markers"](q_1)[:, markers_idx], nlp.cx.ones(1, markers_idx.shape[0])
                 ) - jcs_0_T @ vertcat(
-                    nlp.casadi_func["biorbd_markers"](q_0)[:, markers_idx], nlp.CX.ones(1, markers_idx.shape[0])
+                    nlp.casadi_func["biorbd_markers"](q_0)[:, markers_idx], nlp.cx.ones(1, markers_idx.shape[0])
                 )
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val[:3, :], penalty)
 
@@ -983,7 +983,7 @@ class PenaltyFunctionAbstract:
             A reference to the current phase of the ocp
         name: str
             The unique name of the function to add to the casadi functions pool
-        function: function
+        function: Callable
             The biorbd function to add
         all_param: dict
             Any parameters to pass to the biorbd function

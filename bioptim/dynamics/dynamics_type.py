@@ -32,9 +32,9 @@ class Dynamics(OptionGeneric):
 
     Attributes
     ----------
-    dynamic_function: function
+    dynamic_function: Callable
         The custom dynamic function provided by the user
-    configure: function
+    configure: Callable
         The configuration function provided by the user that declares the NLP (states and controls),
         usually only necessary when defining custom functions
 
@@ -52,10 +52,10 @@ class Dynamics(OptionGeneric):
         ----------
         dynamics_type: Union[Callable, DynamicsFcn]
             The chosen dynamic functions
-        configure: function
+        configure: Callable
             The configuration function provided by the user that declares the NLP (states and controls),
             usually only necessary when defining custom functions
-        dynamic_function: function
+        dynamic_function: Callable
             The custom dynamic function provided by the user
         params: dict
             Any parameters to pass to the dynamic and configure functions

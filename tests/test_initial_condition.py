@@ -235,7 +235,7 @@ def test_simulate_from_initial_single_shoot():
 
     sol = Solution(ocp, [X, U])
     controls = sol.controls
-    sol = sol.integrate(shooting_type=Shooting.SINGLE)
+    sol = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
 
     # Check some of the results
     states = sol.states
