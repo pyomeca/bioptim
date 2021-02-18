@@ -1104,7 +1104,19 @@ sol = ocp.solve()
 ```
 
 ### Data manipulation
-It is possible to integrate the states at will, by calling the `sol.integrate()` method.
+The Solution structure holds all the optimized values. 
+To get the states variable, one can invoke the `states = sol.states` property.
+Similarly, to get the controls variable, one can invoke the `states = sol.controls` property.
+If the program was a single phase problem, then the returned values are dictionaries, otherwise it is a list of dictionaries of size equals to the number of phases.
+The keys of the returned dictionaries correspond to the name of the variables. 
+For instance, if generalized coordinates (*q*) are states, then the state dictionary has *q* as key.
+In any cases, the key `all` is always there.
+The values inside the dictionaries are np.array of dimension `n_elements` x `n_shooting`, unless the data were previously altered by integrating or interpolating (then the number of columns may differ).
+
+The parameters are very similar, but differs by the fact that it is always a dictionary (since parameters don't depend on the phases).
+Also, the values inside the dictionaries are of dimension `n_elements` x 1. 
+
+It is possible to integrate (also called simulate) the states at will, by calling the `sol.integrate()` method.
 The `shooting_type: Shooting` parameter allows to select the type of integration to perform (see the enum Shooting for more detail).
 The `merge_phase: bool` parameter requests to merge all the phases into one [True] or not [False].
 The `continuous: bool` parameter can be deceiving. If it mostly for internal purposes. 

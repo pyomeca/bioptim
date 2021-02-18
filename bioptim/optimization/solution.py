@@ -439,8 +439,8 @@ class Solution:
                     if val.shape[0] != x0.shape[0]:
                         raise RuntimeError(
                             f"Phase transition must have the same number of states ({val.shape[0]}) "
-                            f"when integrating with Shooting.SINGLE. If it is not possible, "
-                            f"please integrate with Shooting.SINGLE_RESET_AT_PHASE"
+                            f"when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
+                            f"please integrate with Shooting.SINGLE"
                         )
                     x0 += val
             else:
