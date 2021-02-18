@@ -243,6 +243,8 @@ class UniquePerPhaseOptionList(OptionList):
     -------
     _add(self, phase: int = -1, **extra_arguments)
         Add a new option to the list
+    copy(self, option: OptionGeneric)
+        Deepcopy of an option in the list
     __getitem__(self, i_phase)
         Get the ith option of the list
     __next__(self)
@@ -266,6 +268,18 @@ class UniquePerPhaseOptionList(OptionList):
         if phase == -1:
             phase = len(self)
         super(UniquePerPhaseOptionList, self)._add(phase=phase, list_index=0, **extra_arguments)
+
+    def copy(self, option: OptionGeneric):
+        """
+        Deepcopy of an option in the list
+
+        Parameters
+        ----------
+        """
+
+        if option.phase == -1:
+            option.phase = len(self)
+        super(UniquePerPhaseOptionList, self).copy(option)
 
     def __getitem__(self, i_phase):
         """

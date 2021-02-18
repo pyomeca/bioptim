@@ -15,7 +15,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     ObjectiveFcn,
     Objective,
     OdeSolver,
@@ -104,26 +103,13 @@ if __name__ == "__main__":
 
     # --- Solve the program --- #
     tic = time()
-    sol, sol_iterations, sol_obj = ocp.solve(show_online_optim=True, return_iterations=True, return_objectives=True)
+    sol = ocp.solve(show_online_optim=True)
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
-    # --- Access to all iterations  --- #
-    if sol_iterations:  # If the processor is too fast, this will be empty since it is attached to the update function
-        n_iter = len(sol_iterations)
-        third_iteration = sol_iterations[2]
-
     # --- Print objective cost  --- #
-    print(f"Final objective value : {np.nansum(sol_obj)} \n")
-    analyse = ShowResult(ocp, sol)
-    analyse.objective_functions()
-
-    # --- Save result of get_data --- #
-    ocp.save_get_data(sol, "pendulum.bob", sol_iterations)  # you don't have to specify the extension ".bob"
-
-    # --- Load result of get_data --- #
-    with open("pendulum.bob", "rb") as file:
-        data = pickle.load(file)
+    print(f"Final objective value : {np.nansum(sol.cost)} \n")
+    sol.print()
 
     # --- Save the optimal control program and the solution --- #
     ocp.save(sol, "pendulum.bo")  # you don't have to specify the extension ".bo"
@@ -132,5 +118,4 @@ if __name__ == "__main__":
     ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")
 
     # --- Show results --- #
-    result = ShowResult(ocp_load, sol_load)
-    result.animate()
+    sol_load.animate()

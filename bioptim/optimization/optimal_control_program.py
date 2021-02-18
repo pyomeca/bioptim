@@ -6,19 +6,14 @@ from math import inf
 
 import biorbd
 import casadi
-from casadi import MX, vertcat, SX
+from casadi import MX, SX
 
 from .non_linear_program import NonLinearProgram as NLP
-from .__version__ import __version__
-from .data import Data
+from .variable import OptimizationVariable
 from ..dynamics.integrator import Integrator
-from .enums import ControlType, OdeSolver, Solver
-from .mapping import BidirectionalMapping, Mapping
-from .parameters import Parameters, ParameterList, Parameter
-from .utils import check_version
 from ..dynamics.problem import Problem
 from ..dynamics.dynamics_type import DynamicsList, Dynamics
-from ..gui.plot import CustomPlot
+from ..gui.plot import CustomPlot, PlotOcp
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionFunctions, PhaseTransitionList
@@ -27,6 +22,12 @@ from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
+from ..misc.__version__ import __version__
+from ..misc.enums import ControlType, OdeSolver, Solver, Shooting
+from ..misc.mapping import BidirectionalMapping, Mapping
+from ..misc.utils import check_version
+from ..optimization.parameters import ParameterList, Parameter
+from ..optimization.solution import Solution
 
 check_version(biorbd, "1.4.0", "1.5.0")
 
@@ -38,49 +39,76 @@ class OptimalControlProgram:
 
     Attributes
     ----------
-    version: dict
-        The version of all the underlying software. This is important when loading a previous ocp
-    n_phases: Union[int, list, tuple]
-        The number of phases of the ocp
-    original_values: A copy of the ocp as it is after defining everything
-    J: MX
-        Objective values that are not phase dependent (mostly parameters)
-    g: MX
-        Constraints that are not phase dependent (mostly parameters and continuity constraints)
-    V: MX
-        All the casadi variables of the ocp in a single vector
-    V_bounds: Bounds
-        All the bounds for V
-    V_init: InitialGuess
-        All the initial guesses for V
-    param_to_optimize: dict
-        All the parameters to optimize
-    nlp: NLP
-        All the phases of the ocp
-    CX: [MX, SX]
+    cx: [MX, SX]
         The base type for the symbolic casadi variables
-    original_phase_time: list[float]
-        The time vector as sent by the user
-    n_threads: int
-        The number of thread to use if using multithreading
-    solver_type: Solver
-        The designated solver to solve the ocp
-    solver: SolverInterface
-        A reference to the ocp solver
-    phase_transitions: list[PhaseTransition]
-        The list of transition constraint between phases
+    g: list
+        Constraints that are not phase dependent (mostly parameters and continuity constraints)
+    J: list
+        Objective values that are not phase dependent (mostly parameters)
     isdef_x_init: bool
         If the initial condition of the states are set
-    isdef_u_init: bool
-        If the initial condition of the controls are set
     isdef_x_bounds: bool
         If the bounds of the states are set
+    isdef_u_init: bool
+        If the initial condition of the controls are set
     isdef_u_bounds: bool
         If the bounds of the controls are set
+    nlp: NLP
+        All the phases of the ocp
+    n_phases: Union[int, list, tuple]
+        The number of phases of the ocp
+    n_threads: int
+        The number of thread to use if using multithreading
+    original_phase_time: list[float]
+        The time vector as sent by the user
+    original_values: dict
+        A copy of the ocp as it is after defining everything
+    phase_transitions: list[PhaseTransition]
+        The list of transition constraint between phases
+    solver: SolverInterface
+        A reference to the ocp solver
+    solver_type: Solver
+        The designated solver to solve the ocp
+    v: OptimizationVariable
+        The variable optimization holder
+    version: dict
+        The version of all the underlying software. This is important when loading a previous ocp
 
     Methods
     -------
-
+    update_objectives(self, new_objective_function: Union[Objective, ObjectiveList])
+        The main user interface to add or modify objective functions in the ocp
+    update_constraints(self, new_constraint: Union[Constraint, ConstraintList])
+        The main user interface to add or modify constraint in the ocp
+    update_parameters(self, new_parameters: Union[Parameter, ParameterList])
+        The main user interface to add or modify parameters in the ocp
+    update_bounds(self, x_bounds: Union[Bounds, BoundsList], u_bounds: Union[Bounds, BoundsList])
+        The main user interface to add bounds in the ocp
+    update_initial_guess(
+        self,
+        x_init: Union[InitialGuess, InitialGuessList],
+        u_init: Union[InitialGuess, InitialGuessList],
+        param_init: Union[InitialGuess, InitialGuessList],
+    )
+        The main user interface to add initial guesses in the ocp
+    add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any)
+        The main user interface to add a new plot to the ocp
+    prepare_plots(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool, shooting_type: Shooting) -> PlotOCP
+        Create all the plots associated with the OCP
+    solve(self, solver: Solver, show_online_optim: bool, solver_options: dict) -> Solution
+        Call the solver to actually solve the ocp
+    save(self, sol: Solution, file_path: str)
+        Save the ocp and solution structure to the hard drive. It automatically create the required
+        folder if it does not exists. Please note that biorbd is required to load back this structure.
+    @staticmethod
+    load(file_path: str) -> list
+        Reload a previous optimization (*.bo) saved using save
+    __define_time(self, phase_time: Union[float, tuple], objective_functions: ObjectiveList, constraints: ConstraintList)
+        Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
+        a sanity check is perform and the values of initial guess and bounds for these particular phases
+    __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter])
+        The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
+        overrides an objective only the latter is preserved when saved
     """
 
     def __init__(
@@ -285,24 +313,21 @@ class OptimalControlProgram:
         if not isinstance(use_sx, bool):
             raise RuntimeError("use_sx should be a bool")
 
+        # Type of CasADi graph
+        if use_sx:
+            self.cx = SX
+        else:
+            self.cx = MX
+
         # Declare optimization variables
         self.J = []
         self.g = []
-        self.V = []
-        self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        self.V_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
-        self.param_to_optimize = {}
+        self.v = OptimizationVariable(self)
 
         # nlp is the core of a phase
         self.nlp = [NLP() for _ in range(self.n_phases)]
         NLP.add(self, "model", biorbd_model, False)
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
-
-        # Type of CasADi graph
-        if use_sx:
-            self.CX = SX
-        else:
-            self.CX = MX
 
         # Define some aliases
         NLP.add(self, "ns", n_shooting, False)
@@ -353,15 +378,14 @@ class OptimalControlProgram:
 
         # Prepare the dynamics
         for i in range(self.n_phases):
-            self.nlp[i].initialize(self.CX)
+            self.nlp[i].initialize(self.cx)
             Problem.initialize(self, self.nlp[i])
             if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
             Integrator.prepare_dynamic_integrator(self, self.nlp[i])
 
         # Define the actual NLP problem
-        for i in range(self.n_phases):
-            self.__define_multiple_shooting_nodes_per_phase(self.nlp[i], i)
+        self.v.define_ocp_shooting_points()
 
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
@@ -385,128 +409,314 @@ class OptimalControlProgram:
         # Prepare objectives
         self.update_objectives(objective_functions)
 
-    def __define_multiple_shooting_nodes_per_phase(self, nlp: NLP, idx_phase: int):
+    def update_objectives(self, new_objective_function: Union[Objective, ObjectiveList]):
         """
-        Declare all the casadi variables with the right size to be used during a specific phase
+        The main user interface to add or modify objective functions in the ocp
 
         Parameters
         ----------
-        nlp: NonLinearProgram
-            A reference to the current phase
-        idx_phase
-            The index associate with that phase
+        new_objective_function: Union[Objective, ObjectiveList]
+            The objective to add to the ocp
         """
 
-        V = []
-        X = []
-        U = []
+        if isinstance(new_objective_function, Objective):
+            self.__modify_penalty(new_objective_function)
 
-        if nlp.control_type != ControlType.CONSTANT and nlp.control_type != ControlType.LINEAR_CONTINUOUS:
-            raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
+        elif isinstance(new_objective_function, ObjectiveList):
+            for objective_in_phase in new_objective_function:
+                for objective in objective_in_phase:
+                    self.__modify_penalty(objective)
 
-        offset = 0
-        for k in range(nlp.ns + 1):
-            X_ = nlp.CX.sym("X_" + str(idx_phase) + "_" + str(k), nlp.nx)
-            X.append(X_)
-            offset += nlp.nx
-            V = vertcat(V, X_)
+        else:
+            raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
 
-            if nlp.control_type != ControlType.CONSTANT or (nlp.control_type == ControlType.CONSTANT and k != nlp.ns):
-                U_ = nlp.CX.sym("U_" + str(idx_phase) + "_" + str(k), nlp.nu, 1)
-                U.append(U_)
-                offset += nlp.nu
-                V = vertcat(V, U_)
-
-        nlp.X = X
-        nlp.U = U
-        self.V = vertcat(self.V, V)
-
-    def __define_initial_guess(self):
+    def update_constraints(self, new_constraint: Union[Constraint, ConstraintList]):
         """
-        Declare and parse the initial guesses for all the variables (V vector)
+        The main user interface to add or modify constraint in the ocp
+
+        Parameters
+        ----------
+        new_constraint: Union[Constraint, ConstraintList]
+            The constraint to add to the ocp
         """
 
-        for i in range(self.n_phases):
-            self.nlp[i].x_init.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
-            if self.nlp[i].control_type == ControlType.CONSTANT:
-                self.nlp[i].u_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
-            elif self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                self.nlp[i].u_init.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
-            else:
-                raise NotImplementedError(f"Plotting {self.nlp[i].control_type} is not implemented yet")
+        if isinstance(new_constraint, Constraint):
+            self.__modify_penalty(new_constraint)
 
-        self.V_init = InitialGuess(interpolation=InterpolationType.CONSTANT)
+        elif isinstance(new_constraint, ConstraintList):
+            for constraints_in_phase in new_constraint:
+                for constraint in constraints_in_phase:
+                    self.__modify_penalty(constraint)
 
-        for key in self.param_to_optimize.keys():
-            self.V_init.concatenate(self.param_to_optimize[key].initial_guess)
+        else:
+            raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
 
-        for idx_phase, nlp in enumerate(self.nlp):
-            if nlp.control_type == ControlType.CONSTANT:
-                nV = nlp.nx * (nlp.ns + 1) + nlp.nu * nlp.ns
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                nV = (nlp.nx + nlp.nu) * (nlp.ns + 1)
-            else:
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-
-            V_init = InitialGuess([0] * nV, interpolation=InterpolationType.CONSTANT)
-
-            offset = 0
-            for k in range(nlp.ns + 1):
-                V_init.init[offset : offset + nlp.nx, 0] = nlp.x_init.init.evaluate_at(shooting_point=k)
-                offset += nlp.nx
-
-                if nlp.control_type != ControlType.CONSTANT or (
-                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
-                ):
-                    V_init.init[offset : offset + nlp.nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
-                    offset += nlp.nu
-
-            V_init.check_and_adjust_dimensions(nV, 1)
-            self.V_init.concatenate(V_init)
-
-    def __define_bounds(self):
+    def update_parameters(self, new_parameters: Union[Parameter, ParameterList]):
         """
-        Declare and parse the bounds for all the variables (V vector)
+        The main user interface to add or modify parameters in the ocp
+
+        Parameters
+        ----------
+        new_parameters: Union[Parameter, ParameterList]
+            The parameters to add to the ocp
         """
 
-        for i in range(self.n_phases):
-            self.nlp[i].x_bounds.check_and_adjust_dimensions(self.nlp[i].nx, self.nlp[i].ns)
-            if self.nlp[i].control_type == ControlType.CONSTANT:
-                self.nlp[i].u_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns - 1)
-            elif self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                self.nlp[i].u_bounds.check_and_adjust_dimensions(self.nlp[i].nu, self.nlp[i].ns)
-            else:
-                raise NotImplementedError(f"Plotting {self.nlp[i].control_type} is not implemented yet")
+        if isinstance(new_parameters, Parameter):
+            self.__modify_penalty(new_parameters)
 
-        self.V_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        elif isinstance(new_parameters, ParameterList):
+            for parameter in new_parameters:
+                self.__modify_penalty(parameter)
 
-        for key in self.param_to_optimize.keys():
-            self.V_bounds.concatenate(self.param_to_optimize[key].bounds)
+        else:
+            raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
-        for idx_phase, nlp in enumerate(self.nlp):
-            if nlp.control_type == ControlType.CONSTANT:
-                nV = nlp.nx * (nlp.ns + 1) + nlp.nu * nlp.ns
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                nV = (nlp.nx + nlp.nu) * (nlp.ns + 1)
-            else:
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-            V_bounds = Bounds([0] * nV, [0] * nV, interpolation=InterpolationType.CONSTANT)
+    def update_bounds(
+        self, x_bounds: Union[Bounds, BoundsList] = BoundsList(), u_bounds: Union[Bounds, BoundsList] = BoundsList()
+    ):
+        """
+        The main user interface to add bounds in the ocp
 
-            offset = 0
-            for k in range(nlp.ns + 1):
-                V_bounds.min[offset : offset + nlp.nx, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=k)
-                V_bounds.max[offset : offset + nlp.nx, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=k)
-                offset += nlp.nx
+        Parameters
+        ----------
+        x_bounds: Union[Bounds, BoundsList]
+            The state bounds to add
+        u_bounds: Union[Bounds, BoundsList]
+            The control bounds to add
+        """
 
-                if nlp.control_type != ControlType.CONSTANT or (
-                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
-                ):
-                    V_bounds.min[offset : offset + nlp.nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
-                    V_bounds.max[offset : offset + nlp.nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
-                    offset += nlp.nu
+        if x_bounds:
+            NLP.add_path_condition(self, x_bounds, "x_bounds", Bounds, BoundsList)
+        if u_bounds:
+            NLP.add_path_condition(self, u_bounds, "u_bounds", Bounds, BoundsList)
+        if self.isdef_x_bounds and self.isdef_u_bounds:
+            self.v.define_ocp_bounds()
 
-            V_bounds.check_and_adjust_dimensions(nV, 1)
-            self.V_bounds.concatenate(V_bounds)
+    def update_initial_guess(
+        self,
+        x_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
+        u_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
+        param_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
+    ):
+        """
+        The main user interface to add initial guesses in the ocp
+
+        Parameters
+        ----------
+        x_init: Union[Bounds, BoundsList]
+            The state initial guess to add
+        u_init: Union[Bounds, BoundsList]
+            The control initial guess to add
+        param_init: Union[Bounds, BoundsList]
+            The parameters initial guess to add
+        """
+
+        if x_init:
+            NLP.add_path_condition(self, x_init, "x_init", InitialGuess, InitialGuessList)
+        if u_init:
+            NLP.add_path_condition(self, u_init, "u_init", InitialGuess, InitialGuessList)
+
+        if isinstance(param_init, InitialGuess):
+            param_init_list = InitialGuessList()
+            param_init_list.add(param_init)
+        else:
+            param_init_list = param_init
+
+        for param in param_init_list:
+            if not param.name:
+                raise ValueError("update_initial_guess must specify a name for the parameters")
+            try:
+                idx = self.v.parameters_in_list.index(param.name)
+                self.v.parameters_in_list[idx].initial_guess.init = param.init
+            except ValueError:
+                raise ValueError("update_initial_guess cannot declare new parameters")
+
+        if self.isdef_x_init and self.isdef_u_init:
+            self.v.define_ocp_initial_guess()
+
+    def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
+        """
+        The main user interface to add a new plot to the ocp
+
+        Parameters
+        ----------
+        fig_name: str
+            The name of the figure, it the name already exists, it is merged
+        update_function: Callable
+            The update function callable using f(states, controls, parameters, **parameters)
+        phase: int
+            The phase to add the plot to. -1 is the last
+        parameters: dict
+            Any parameters to pass to the update_function
+        """
+
+        if "combine_to" in parameters:
+            raise RuntimeError(
+                "'combine_to' cannot be specified in add_plot, please use same 'fig_name' to combine plots"
+            )
+
+        # --- Solve the program --- #
+        if len(self.nlp) == 1:
+            phase = 0
+        else:
+            if phase < 0:
+                raise RuntimeError("phase_idx must be specified for multiphase OCP")
+        nlp = self.nlp[phase]
+        custom_plot = CustomPlot(update_function, **parameters)
+
+        plot_name = "no_name"
+        if fig_name in nlp.plot:
+            # Make sure we add a unique name in the dict
+            custom_plot.combine_to = fig_name
+
+            if fig_name:
+                cmp = 0
+                while True:
+                    plot_name = f"{fig_name}_phase{phase}_{cmp}"
+                    if plot_name not in nlp.plot:
+                        break
+                    cmp += 1
+        else:
+            plot_name = fig_name
+
+        nlp.plot[plot_name] = custom_plot
+
+    def prepare_plots(
+        self,
+        automatically_organize: bool = True,
+        adapt_graph_size_to_bounds: bool = False,
+        shooting_type: Shooting = Shooting.MULTIPLE,
+    ) -> PlotOcp:
+        """
+        Create all the plots associated with the OCP
+
+        Parameters
+        ----------
+        automatically_organize: bool
+            If the graphs should be parsed on the screen
+        adapt_graph_size_to_bounds: bool
+            If the ylim should fit the bounds
+        shooting_type: Shooting
+            What type of integration
+
+        Returns
+        -------
+        The PlotOcp class
+        """
+
+        return PlotOcp(
+            self,
+            automatically_organize=automatically_organize,
+            adapt_graph_size_to_bounds=adapt_graph_size_to_bounds,
+            shooting_type=shooting_type,
+        )
+
+    def solve(
+        self,
+        solver: Solver = Solver.IPOPT,
+        show_online_optim: bool = False,
+        solver_options: dict = {},
+    ) -> Solution:
+        """
+        Call the solver to actually solve the ocp
+
+        Parameters
+        ----------
+        solver: Solver
+            The solver which will be used to solve the ocp
+        show_online_optim: bool
+            If the plot should be shown while optimizing. It will slow down the optimization a bit and is only
+            available with Solver.IPOPT
+        solver_options: dict
+            Any options to change the behavior of the solver. To know which options are available, you can refer to the
+            manual of the corresponding solver
+
+        Returns
+        -------
+        The optimized solution structure
+        """
+
+        if solver == Solver.IPOPT and self.solver_type != Solver.IPOPT:
+            from ..interfaces.ipopt_interface import IpoptInterface
+
+            self.solver = IpoptInterface(self)
+
+        elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
+            from ..interfaces.acados_interface import AcadosInterface
+
+            self.solver = AcadosInterface(self, **solver_options)
+
+        elif self.solver_type == Solver.NONE:
+            raise RuntimeError("Solver not specified")
+        self.solver_type = solver
+
+        if show_online_optim:
+            self.solver.online_optim(self)
+
+        self.solver.configure(solver_options)
+        self.solver.solve()
+
+        return Solution(self, self.solver.get_optimized_value())
+
+    def save(self, sol: Solution, file_path: str):
+        """
+        Save the ocp and solution structure to the hard drive. It automatically create the required
+        folder if it does not exists. Please note that biorbd is required to load back this structure.
+
+        Parameters
+        ----------
+        sol: Solution
+            The solution structure to save
+        file_path: str
+            The path to solve the structure. It creates a .bo (BiOptim file)
+        """
+
+        _, ext = os.path.splitext(file_path)
+        if ext == "":
+            file_path = file_path + ".bo"
+        elif ext != ".bo":
+            raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
+
+        sol_copy = sol.copy()
+        sol_copy.ocp = None  # Ocp is not pickable
+        data_to_save = {"ocp_initializer": self.original_values, "sol": sol_copy, "versions": self.version}
+
+        # Create folder if necessary
+        directory, _ = os.path.split(file_path)
+        if directory != "" and not os.path.isdir(directory):
+            os.makedirs(directory)
+
+        with open(file_path, "wb") as file:
+            pickle.dump(data_to_save, file)
+
+    @staticmethod
+    def load(file_path: str) -> list:
+        """
+        Reload a previous optimization (*.bo) saved using save
+
+        Parameters
+        ----------
+        file_path: str
+            The path to the *.bo file
+
+        Returns
+        -------
+        The ocp and sol structure. If it was saved, the iterations are also loaded
+        """
+
+        with open(file_path, "rb") as file:
+            data = pickle.load(file)
+            ocp = OptimalControlProgram(**data["ocp_initializer"])
+            for key in data["versions"].keys():
+                if data["versions"][key] != ocp.version[key]:
+                    raise RuntimeError(
+                        f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
+                        f"installed version ({ocp.version[key]})"
+                    )
+            sol = data["sol"]
+            sol.ocp = Solution.SimplifiedOCP(ocp)
+            out = [ocp, sol]
+        return out
 
     def __define_time(
         self,
@@ -515,7 +725,7 @@ class OptimalControlProgram:
         constraints: ConstraintList,
     ):
         """
-        Declare the phase_time vector in V. If objective_functions or constraints defined a time optimization,
+        Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
         a sanity check is perform and the values of initial guess and bounds for these particular phases
 
         Parameters
@@ -580,7 +790,7 @@ class OptimalControlProgram:
                         has_penalty[i] = True
 
                         initial_time_guess.append(phase_time[i])
-                        phase_time[i] = ocp.CX.sym(f"time_phase_{i}", 1, 1)
+                        phase_time[i] = ocp.cx.sym(f"time_phase_{i}", 1, 1)
                         if pen_fun.type.get_type() == ConstraintFunction:
                             time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
                             time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
@@ -606,138 +816,17 @@ class OptimalControlProgram:
         NLP.add(self, "t0", [0] + [nlp.tf for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
         NLP.add(self, "dt", [self.nlp[i].tf / max(self.nlp[i].ns, 1) for i in range(self.n_phases)], False)
 
-        # Add to the V vector
+        # Add to the v vector
         i = 0
         for nlp in self.nlp:
-            if isinstance(nlp.tf, self.CX):
+            if isinstance(nlp.tf, self.cx):
                 time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
                 time_init = InitialGuess(initial_time_guess[i])
-                Parameters._add_to_v(self, "time", 1, None, time_bounds, time_init, nlp.tf)
+                time_param = Parameter(
+                    cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
+                )
+                self.v.add_parameter(time_param)
                 i += 1
-
-    def update_objectives(self, new_objective_function: Union[Objective, ObjectiveList]):
-        """
-        The main user interface to add or modify objective functions in the ocp
-
-        Parameters
-        ----------
-        new_objective_function: Union[Objective, ObjectiveList]
-            The objective to add to the ocp
-        """
-
-        if isinstance(new_objective_function, Objective):
-            self.__modify_penalty(new_objective_function)
-
-        elif isinstance(new_objective_function, ObjectiveList):
-            for objective_in_phase in new_objective_function:
-                for objective in objective_in_phase:
-                    self.__modify_penalty(objective)
-
-        else:
-            raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
-
-    def update_constraints(self, new_constraint: Union[Constraint, ConstraintList]):
-        """
-        The main user interface to add or modify constraint in the ocp
-
-        Parameters
-        ----------
-        new_constraint: Union[Constraint, ConstraintList]
-            The constraint to add to the ocp
-        """
-
-        if isinstance(new_constraint, Constraint):
-            self.__modify_penalty(new_constraint)
-
-        elif isinstance(new_constraint, ConstraintList):
-            for constraints_in_phase in new_constraint:
-                for constraint in constraints_in_phase:
-                    self.__modify_penalty(constraint)
-
-        else:
-            raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
-
-    def update_parameters(self, new_parameters: Union[Parameter, ParameterList]):
-        """
-        The main user interface to add or modify parameters in the ocp
-
-        Parameters
-        ----------
-        new_parameters: Union[Parameter, ParameterList]
-            The parameters to add to the ocp
-        """
-
-        if isinstance(new_parameters, Parameter):
-            self.__modify_penalty(new_parameters)
-
-        elif isinstance(new_parameters, ParameterList):
-            for parameters_in_phase in new_parameters:
-                for parameter in parameters_in_phase:
-                    self.__modify_penalty(parameter)
-
-        else:
-            raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
-
-    def update_bounds(
-        self, x_bounds: Union[Bounds, BoundsList] = BoundsList(), u_bounds: Union[Bounds, BoundsList] = BoundsList()
-    ):
-        """
-        The main user interface to add bounds in the ocp
-
-        Parameters
-        ----------
-        x_bounds: Union[Bounds, BoundsList]
-            The state bounds to add
-        u_bounds: Union[Bounds, BoundsList]
-            The control bounds to add
-        """
-
-        if x_bounds:
-            NLP.add_path_condition(self, x_bounds, "x_bounds", Bounds, BoundsList)
-        if u_bounds:
-            NLP.add_path_condition(self, u_bounds, "u_bounds", Bounds, BoundsList)
-        if self.isdef_x_bounds and self.isdef_u_bounds:
-            self.__define_bounds()
-
-    def update_initial_guess(
-        self,
-        x_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
-        u_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
-        param_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
-    ):
-        """
-        The main user interface to add initial guesses in the ocp
-
-        Parameters
-        ----------
-        x_init: Union[Bounds, BoundsList]
-            The state initial guess to add
-        u_init: Union[Bounds, BoundsList]
-            The control initial guess to add
-        param_init: Union[Bounds, BoundsList]
-            The parameters initial guess to add
-        """
-
-        if x_init:
-            NLP.add_path_condition(self, x_init, "x_init", InitialGuess, InitialGuessList)
-        if u_init:
-            NLP.add_path_condition(self, u_init, "u_init", InitialGuess, InitialGuessList)
-
-        if isinstance(param_init, InitialGuess):
-            param_init_list = InitialGuessList()
-            param_init_list.add(param_init)
-        else:
-            param_init_list = param_init
-
-        for param in param_init_list:
-            if not param.name:
-                raise ValueError("update_initial_guess must specify a name for the parameters")
-            if param.name not in self.param_to_optimize:
-                raise ValueError("update_initial_guess cannot declare new parameters")
-            self.param_to_optimize[param.name].initial_guess.init = param.init
-
-        if self.isdef_x_init and self.isdef_u_init:
-            self.__define_initial_guess()
 
     def __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter]):
         """
@@ -758,271 +847,3 @@ class OptimalControlProgram:
         pen = new_penalty.type.get_type()
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
         pen.add_or_replace(self, self.nlp[phase_idx], new_penalty)
-
-    def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
-        """
-        The main user interface to add a new plot to the ocp
-
-        Parameters
-        ----------
-        fig_name: str
-            The name of the figure, it the name already exists, it is merged
-        update_function: function
-            The update function callable using f(states, controls, parameters, **parameters)
-        phase: int
-            The phase to add the plot to. -1 is the last
-        parameters: dict
-            Any parameters to pass to the update_function
-        """
-
-        if "combine_to" in parameters:
-            raise RuntimeError(
-                "'combine_to' cannot be specified in add_plot, please use same 'fig_name' to combine plots"
-            )
-
-        # --- Solve the program --- #
-        if len(self.nlp) == 1:
-            phase = 0
-        else:
-            if phase < 0:
-                raise RuntimeError("phase_idx must be specified for multiphase OCP")
-        nlp = self.nlp[phase]
-        custom_plot = CustomPlot(update_function, **parameters)
-
-        plot_name = "no_name"
-        if fig_name in nlp.plot:
-            # Make sure we add a unique name in the dict
-            custom_plot.combine_to = fig_name
-
-            if fig_name:
-                cmp = 0
-                while True:
-                    plot_name = f"{fig_name}_phase{phase}_{cmp}"
-                    if plot_name not in nlp.plot:
-                        break
-                    cmp += 1
-        else:
-            plot_name = fig_name
-
-        nlp.plot[plot_name] = custom_plot
-
-    def solve(
-        self,
-        solver: Solver = Solver.IPOPT,
-        show_online_optim: bool = False,
-        return_iterations: bool = False,
-        return_objectives: bool = False,
-        solver_options: dict = {},
-    ) -> Any:
-        """
-        Call the solver to actually solve the ocp
-
-        Parameters
-        ----------
-        solver: Solver
-            The solver which will be used to solve the ocp
-        show_online_optim: bool
-            If the plot should be shown while optimizing. It will slow down the optimization a bit and is only
-            available with Solver.IPOPT
-        return_iterations: bool
-            If each individual iterations should be returned. It will drastically slow down the optimization and is only
-            available with Solver.IPOPT
-        return_objectives: bool
-            If the cost values for each objectives should be returned
-        solver_options: dict
-            Any options to change the behavior of the solver. To know which options are available, you can refer to the
-            manual of the corresponding solver
-
-        Returns
-        -------
-        The optimized solution structure, if return_xxx is defined, it also returns it in the same order as they are
-        described in the Parameters sections
-        """
-
-        if return_iterations and not show_online_optim:
-            raise RuntimeError("return_iterations without show_online_optim is not implemented yet.")
-
-        if solver == Solver.IPOPT and self.solver_type != Solver.IPOPT:
-            from ..interfaces.ipopt_interface import IpoptInterface
-
-            self.solver = IpoptInterface(self)
-
-        elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
-            from ..interfaces.acados_interface import AcadosInterface
-
-            self.solver = AcadosInterface(self, **solver_options)
-
-        elif self.solver_type == Solver.NONE:
-            raise RuntimeError("Solver not specified")
-        self.solver_type = solver
-
-        if show_online_optim:
-            self.solver.online_optim(self)
-            if return_iterations:
-                self.solver.start_get_iterations()
-
-        self.solver.configure(solver_options)
-        self.solver.solve()
-
-        if return_iterations:
-            self.solver.finish_get_iterations()
-
-        if return_objectives:
-            self.solver.get_objectives()
-
-        return self.solver.get_optimized_value()
-
-    def save(self, sol: dict, file_path: str, sol_iterations: list = None):
-        """
-        Save the ocp and solution structure to the hard drive. It automatically create the required
-        folder if it does not existsThis is the primary format if you need to reload the data later using bioptim. One
-        can use the load function to reload the data structure
-
-        Parameters
-        ----------
-        sol: dict
-            The solution structure to save
-        file_path: str
-            The path to solve the structure. It creates a .bo (BiOptim file)
-        sol_iterations: list
-            The solution structure of each iteration to save
-        """
-
-        _, ext = os.path.splitext(file_path)
-        if ext == "":
-            file_path = file_path + ".bo"
-        elif ext != ".bo":
-            raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
-        data_to_save = {"ocp_initializer": self.original_values, "sol": sol, "versions": self.version}
-        if sol_iterations is not None:
-            data_to_save["sol_iterations"] = sol_iterations
-
-        OptimalControlProgram.__save_with_pickle(data_to_save, file_path)
-
-    def save_get_data(self, sol, file_path, sol_iterations=None, **parameters):
-        """
-        Save the solution into its get_data (numerical) form to the hard drive. It automatically create the required
-        folder if it does not existsThis is the primary format if you need to load the data into another software
-
-        Parameters
-        ----------
-        sol: dict
-            The solution structure to save
-        file_path: str
-            The path to solve the structure. It creates a .bob (BiOptim file)
-        sol_iterations: list
-            The solution structure of each iteration to save
-        """
-
-        _, ext = os.path.splitext(file_path)
-        if ext == "":
-            file_path = file_path + ".bob"
-        elif ext != ".bob":
-            raise RuntimeError(f"Incorrect extension({ext}), it should be (.bob) or (.bo) if you use save.")
-
-        data_to_save = {"data": Data.get_data(self, sol["x"], **parameters)}
-        if sol_iterations is not None:
-            get_data_sol_iterations = []
-            for sol_iter in sol_iterations:
-                get_data_sol_iterations.append(Data.get_data(self, sol_iter, **parameters))
-            data_to_save["sol_iterations"] = get_data_sol_iterations
-
-        OptimalControlProgram.__save_with_pickle(data_to_save, file_path)
-
-    @staticmethod
-    def __save_with_pickle(data: dict, file_path: str):
-        """
-        Internal interface for pickle. It automatically create the required folder if it does not exists
-
-        Parameters
-        ----------
-        data: dict
-            The data to save
-        file_path: str
-            The path to solve the data
-        """
-
-        directory, _ = os.path.split(file_path)
-        if directory != "" and not os.path.isdir(directory):
-            os.makedirs(directory)
-
-        with open(file_path, "wb") as file:
-            pickle.dump(data, file)
-
-    @staticmethod
-    def load(file_path: str) -> list:
-        """
-        Reload a previous optimization (*.bo) saved using save
-
-        Parameters
-        ----------
-        file_path: str
-            The path to the *.bo file
-
-        Returns
-        -------
-        The ocp and sol structure. If it was saved, the iterations are also loaded
-        """
-
-        with open(file_path, "rb") as file:
-            data = pickle.load(file)
-            ocp = OptimalControlProgram(**data["ocp_initializer"])
-            for key in data["versions"].keys():
-                if data["versions"][key] != ocp.version[key]:
-                    raise RuntimeError(
-                        f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
-                        f"installed version ({ocp.version[key]})"
-                    )
-            out = [ocp, data["sol"]]
-            if "sol_iterations" in data.keys():
-                out.append(data["sol_iterations"])
-        return out
-
-    @staticmethod
-    def print_bo(file_path: str):
-        """
-        Easy access to print a *.bo file to the console. It shows all the relevant ocp information
-
-        Parameters
-        ----------
-        file_path: str
-            The *.bo file to print to the console
-        """
-
-        with open(file_path, "rb") as file:
-            data = pickle.load(file)
-            original_values = data["ocp_initializer"]
-            print("****************************** Information ******************************")
-            for key in original_values.keys():
-                if key not in ["x_init", "u_init", "x_bounds", "u_bounds"]:
-                    print(f"{key} : ")
-                    OptimalControlProgram._deep_print(original_values[key])
-                    print("")
-
-    @staticmethod
-    def _deep_print(elem: Any, label: str = ""):
-        """
-        Dig into a list or a dictionary to print all numerical or str elements in it. It is call recursively to dig into
-        structure
-
-        Parameters
-        ----------
-        elem: Any
-            The list or dict, or actual element to print
-        label: str
-            The key of the dict if elem is a dict. Otherwise it should be empty
-        """
-
-        if isinstance(elem, (list, tuple)):
-            for k in range(len(elem)):
-                OptimalControlProgram._deep_print(elem[k])
-                if k != len(elem) - 1:
-                    print("")
-        elif isinstance(elem, dict):
-            for key in elem.keys():
-                OptimalControlProgram._deep_print(elem[key], label=key)
-        else:
-            if label == "":
-                print(f"   {elem}")
-            else:
-                print(f"   [{label}] = {elem}")

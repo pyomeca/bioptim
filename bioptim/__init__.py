@@ -25,15 +25,8 @@ OptimalControlProgram
     modify and solve the program
 NonLinearProgram
     A nonlinear program that describes a phase in the ocp
-Simulate
-    Interface that allows to integrate a solution
-
-
-# --- Managing the results --- #
-ShowResult
-    The main interface to bioptim GUI
-Data
-    Data manipulation and storage
+Solution
+    Data manipulation, showing and storage
 
 
 # --- Some useful options --- #
@@ -153,16 +146,14 @@ from .misc.__version__ import __version__
 from .dynamics.problem import Problem
 from .dynamics.dynamics_type import DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
-from .gui.plot import ShowResult
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
 from .limits.penalty import PenaltyNodes
-from .misc.data import Data
-from .misc.enums import Axis, Node, InterpolationType, OdeSolver, PlotType, Solver, ControlType
+from .misc.enums import Axis, Node, InterpolationType, OdeSolver, PlotType, Solver, ControlType, CostType, Shooting
 from .misc.mapping import BidirectionalMapping, Mapping
-from .misc.non_linear_program import NonLinearProgram
-from .misc.optimal_control_program import OptimalControlProgram
-from .misc.parameters import ParameterList
-from .misc.simulate import Simulate
+from .optimization.non_linear_program import NonLinearProgram
+from .optimization.optimal_control_program import OptimalControlProgram
+from .optimization.parameters import ParameterList
+from .optimization.solution import Solution

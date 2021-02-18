@@ -6,13 +6,12 @@ from casadi import MX
 import biorbd
 from bioptim import (
     OptimalControlProgram,
-    Data,
     BidirectionalMapping,
     Mapping,
-    Simulate,
     OdeSolver,
     Bounds,
     InitialGuess,
+    Shooting,
 )
 
 
@@ -33,17 +32,6 @@ class TestUtils:
         TestUtils.deep_assert(ocp_load, ocp)
         TestUtils.deep_assert(ocp, ocp_load)
         os.remove(file_path)
-
-        file_path_bob = "test.bob"
-        ocp.save_get_data(sol, file_path_bob, interpolate_n_frames=-1, concatenate=True)
-        data = Data.get_data(ocp, sol, file_path_bob, interpolate_n_frames=-1, concatenate=True)
-
-        with open(file_path_bob, "rb") as file:
-            data_load = pickle.load(file)["data"]
-
-        TestUtils.deep_assert(data, data_load)
-        TestUtils.deep_assert(data_load, data)
-        os.remove(file_path_bob)
 
     @staticmethod
     def deep_assert(first_elem, second_elem):
@@ -68,16 +56,11 @@ class TestUtils:
                     pass
 
     @staticmethod
-    def simulate(sol, ocp, decimal_value=None):
-        sol_from_solver = np.array(sol["x"]).squeeze()
-        sol_simulation_from_solve = Simulate.from_solve(ocp, sol)["x"]
-        sol_simulation_from_data = Simulate.from_data(ocp, Data.get_data(ocp, sol))["x"]
+    def simulate(sol, decimal_value=7):
+        sol_merged = sol.merge_phases()
+        sol_single = sol.integrate(merge_phases=True, shooting_type=Shooting.SINGLE_CONTINUOUS)
 
-        if decimal_value is None:
-            np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_solve)
-            np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_data)
-            np.testing.assert_almost_equal(sol_simulation_from_solve, sol_simulation_from_data)
-        else:
-            np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_solve, decimal=decimal_value)
-            np.testing.assert_almost_equal(sol_from_solver, sol_simulation_from_data, decimal=decimal_value)
-            np.testing.assert_almost_equal(sol_simulation_from_solve, sol_simulation_from_data, decimal=decimal_value)
+        # Evaluate the final error of the single shooting integration versus the finale node
+        np.testing.assert_almost_equal(
+            sol_merged.states["all"][:, -1], sol_single.states["all"][:, -1], decimal=decimal_value
+        )

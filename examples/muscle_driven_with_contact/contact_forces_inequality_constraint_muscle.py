@@ -20,8 +20,6 @@ from bioptim import (
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
-    ShowResult,
-    Data,
 )
 
 
@@ -116,8 +114,7 @@ if __name__ == "__main__":
     nlp = ocp.nlp[0]
     nlp.model = biorbd.Model(model_path)
 
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
+    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
     x = np.concatenate((q, qdot))
     u = np.concatenate((tau, mus))
     contact_forces = np.array(nlp.contact_forces_func(x[:, :-1], u[:, :-1], []))
@@ -131,5 +128,4 @@ if __name__ == "__main__":
     plt.show()
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.animate()
+    sol.animate()

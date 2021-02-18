@@ -9,7 +9,6 @@ from bioptim import (
     Bounds,
     ConstraintFcn,
     ConstraintList,
-    Data,
     DynamicsFcn,
     DynamicsList,
     InitialGuessList,
@@ -24,6 +23,7 @@ from bioptim import (
     ParameterList,
     QAndQDotBounds,
 )
+from bioptim.optimization.solution import Solution
 
 
 def prepare_ocp(phase_time_constraint, use_parameter):
@@ -149,70 +149,59 @@ def prepare_ocp(phase_time_constraint, use_parameter):
 
 
 @pytest.mark.parametrize("phase_time_constraint", [0, 1, 2])
-@pytest.mark.parametrize("use_parameter", [False, True])
+@pytest.mark.parametrize("use_parameter", [True, True])
 def test_variable_time(phase_time_constraint, use_parameter):
     ocp = prepare_ocp(phase_time_constraint, use_parameter)
 
     # --- Solve the program --- #
     np.random.seed(42)
-    sol = np.random.random((649 + use_parameter, 1))
+    sol = Solution(ocp, np.random.random((649 + use_parameter, 1)))
 
     # --- Show results --- #
-    param = Data.get_data(ocp, sol)
+    states, controls, parameters = sol.states, sol.controls, sol.parameters
 
-    if use_parameter:
-        if phase_time_constraint == 0:
-            np.testing.assert_almost_equal(
-                param[0]["q"][0][0:8],
-                np.array([0.7319939, 0.9699099, 0.6118529, 0.0464504, 0.684233, 0.520068, 0.0884925, 0.5426961]),
-            )
-            np.testing.assert_almost_equal(
-                param[0]["q"][1][0:8],
-                np.array([0.5986585, 0.8324426, 0.1394939, 0.6075449, 0.4401525, 0.5467103, 0.1959829, 0.1409242]),
-            )
-        if phase_time_constraint == 1:
-            np.testing.assert_almost_equal(
-                param[0]["q"][1][8:16],
-                np.array([0.7290072, 0.3109823, 0.5612772, 0.314356, 0.1612213, 0.8074402, 0.5107473, 0.3636296]),
-            )
-            np.testing.assert_almost_equal(
-                param[0]["q"][2][8:16],
-                np.array([0.7712703, 0.3251833, 0.7709672, 0.5085707, 0.9296977, 0.8960913, 0.417411, 0.9717821]),
-            )
-        if phase_time_constraint == 2:
-            np.testing.assert_almost_equal(
-                param[0]["q"][1][16:24],
-                np.array([0.502679, 0.6721355, 0.8353025, 0.6451728, 0.2418523, 0.8870864, 0.6635018, 0.3253997]),
-            )
-            np.testing.assert_almost_equal(
-                param[0]["q"][2][16:24],
-                np.array([0.0514788, 0.7616196, 0.3207801, 0.1743664, 0.0931028, 0.7798755, 0.0050616, 0.7464914]),
-            )
-    else:
-        if phase_time_constraint == 0:
-            np.testing.assert_almost_equal(
-                param[0]["q"][0][0:8],
-                np.array([0.9507143, 0.0205845, 0.2912291, 0.5924146, 0.0976721, 0.3117111, 0.9218742, 0.2809345]),
-            )
-            np.testing.assert_almost_equal(
-                param[0]["q"][1][0:8],
-                np.array([0.7319939, 0.9699099, 0.6118529, 0.0464504, 0.684233, 0.520068, 0.0884925, 0.5426961]),
-            )
-        if phase_time_constraint == 1:
-            np.testing.assert_almost_equal(
-                param[0]["q"][1][8:16],
-                np.array([0.7068573, 0.0635584, 0.760785, 0.6364104, 0.2897515, 0.5393422, 0.0069521, 0.703019]),
-            )
-            np.testing.assert_almost_equal(
-                param[0]["q"][2][8:16],
-                np.array([0.7290072, 0.3109823, 0.5612772, 0.314356, 0.1612213, 0.8074402, 0.5107473, 0.3636296]),
-            )
-        if phase_time_constraint == 2:
-            np.testing.assert_almost_equal(
-                param[0]["q"][1][16:24],
-                np.array([0.6095643, 0.2420553, 0.0902898, 0.2264958, 0.5296506, 0.8971103, 0.1014715, 0.2372491]),
-            )
-            np.testing.assert_almost_equal(
-                param[0]["q"][2][16:24],
-                np.array([0.502679, 0.6721355, 0.8353025, 0.6451728, 0.2418523, 0.8870864, 0.6635018, 0.3253997]),
-            )
+    np.testing.assert_almost_equal(
+        states[0]["q"][0, 0:8],
+        np.array([0.37454012, 0.05808361, 0.83244264, 0.43194502, 0.45606998, 0.60754485, 0.30461377, 0.03438852]),
+    )
+    np.testing.assert_almost_equal(
+        states[1]["q"][0, 0:8],
+        np.array([0.81801477, 0.11986537, 0.3636296, 0.28484049, 0.90826589, 0.67213555, 0.63352971, 0.04077514]),
+    )
+    np.testing.assert_almost_equal(
+        states[2]["q"][0, 0:8],
+        np.array([0.02535074, 0.15643704, 0.95486528, 0.35597268, 0.85546058, 0.17320187, 0.37461261, 0.07056875]),
+    )
+
+    np.testing.assert_almost_equal(
+        states[0]["qdot"][0, 0:8],
+        np.array([0.59865848, 0.70807258, 0.18340451, 0.13949386, 0.51423444, 0.94888554, 0.44015249, 0.66252228]),
+    )
+    np.testing.assert_almost_equal(
+        states[1]["qdot"][0, 0:8],
+        np.array([0.5107473, 0.32320293, 0.2517823, 0.50267902, 0.48945276, 0.72821635, 0.8353025, 0.01658783]),
+    )
+    np.testing.assert_almost_equal(
+        states[2]["qdot"][0, 0:8],
+        np.array([0.69597421, 0.71459592, 0.61172075, 0.11607264, 0.09783416, 0.6158501, 0.85648984, 0.58577558]),
+    )
+
+    np.testing.assert_almost_equal(
+        controls[0]["tau"][0, 0:8],
+        np.array([0.70624223, 0.98663958, 0.81279957, 0.75337819, 0.77714692, 0.90635439, 0.01135364, 0.11881792]),
+    )
+    np.testing.assert_almost_equal(
+        controls[1]["tau"][0, 0:8],
+        np.array([0.97439481, 0.53609637, 0.68473117, 0.82253724, 0.6134152, 0.86606389, 0.37646337, 0.15041689]),
+    )
+    np.testing.assert_almost_equal(
+        controls[2]["tau"][0, 0:8],
+        np.array([0.12804584, 0.64087474, 0.89678841, 0.17231987, 0.16893506, 0.08870253, 0.20633372, 0.69039483]),
+    )
+
+    np.testing.assert_almost_equal(
+        controls[2]["tau"][0, 0:8],
+        np.array([0.12804584, 0.64087474, 0.89678841, 0.17231987, 0.16893506, 0.08870253, 0.20633372, 0.69039483]),
+    )
+
+    np.testing.assert_almost_equal(parameters["time"], 0.78917124)

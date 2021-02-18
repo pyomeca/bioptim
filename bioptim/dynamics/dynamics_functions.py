@@ -676,9 +676,7 @@ class DynamicsFunctions:
             The definition of the system
         """
 
-        for key in nlp.parameters_to_optimize:
-            param = nlp.parameters_to_optimize[key]
-
+        for param in nlp.parameters:
             # Call the pre dynamics function
             if param.function:
                 param.function(nlp.model, parameters, **param.params)

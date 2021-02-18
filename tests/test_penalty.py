@@ -482,6 +482,29 @@ def test_penalty_track_torque(penalty_origin, value):
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_state_derivative(value):
+    ocp = prepare_test_ocp()
+    x = [DM.ones((12, 1)) * value, DM.ones((12, 1)) * value * 3]
+    penalty_type = ObjectiveFcn.Lagrange.MINIMIZE_STATE_DERIVATIVE
+    penalty = Objective(penalty_type)
+    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []))
+
+    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        res = ocp.nlp[0].J[0][0]["val"]
+    else:
+        res = ocp.nlp[0].g[0][0]["val"]
+
+    np.testing.assert_almost_equal(
+        res,
+        np.array([[value * 2] * 8]).T,
+    )
+
+    if isinstance(penalty_type, ConstraintFcn):
+        np.testing.assert_almost_equal(ocp.nlp[0].g[0][0]["bounds"].min, np.array([[0.0, 0, 0, 0]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g[0][0]["bounds"].max, np.array([[0.0, 0, 0, 0]]))
+
+
+@pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_torque_derivative(value):
     ocp = prepare_test_ocp()
     u = [DM.ones((12, 1)) * value, DM.ones((12, 1)) * value * 3]

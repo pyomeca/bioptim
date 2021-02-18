@@ -93,7 +93,7 @@ class AcadosInterface(SolverInterface):
             The options to pass to the solver
         """
 
-        if not isinstance(ocp.CX(), SX):
+        if not isinstance(ocp.cx(), SX):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS. Please set use_sx to True in OCP")
 
         super().__init__(ocp)
@@ -156,13 +156,12 @@ class AcadosInterface(SolverInterface):
         x = ocp.nlp[0].X[0]
         u = ocp.nlp[0].U[0]
         p = ocp.nlp[0].p
-        if ocp.nlp[0].parameters_to_optimize:
-            for n in range(ocp.n_phases):
-                for i in range(len(ocp.nlp[0].parameters_to_optimize)):
-                    if str(ocp.nlp[0].p[i]) == f"time_phase_{n}":
-                        raise RuntimeError("Time constraint not implemented yet with Acados.")
+        if ocp.v.parameters_in_list:
+            for param in ocp.v.parameters_in_list:
+                if str(param.cx)[:11] == f"time_phase_":
+                    raise RuntimeError("Time constraint not implemented yet with Acados.")
 
-        self.params = ocp.nlp[0].parameters_to_optimize
+        self.params = ocp.v.parameters
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
@@ -276,14 +275,15 @@ class AcadosInterface(SolverInterface):
             )
 
         # setup state constraints
+        # TODO replace all these np.concatenate by proper bound and initial_guess classes
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
         self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
         param_bounds_max = []
         param_bounds_min = []
 
-        if self.params:
-            param_bounds_max = np.concatenate([self.params[key].bounds.max for key in self.params.keys()])[:, 0]
-            param_bounds_min = np.concatenate([self.params[key].bounds.min for key in self.params.keys()])[:, 0]
+        if self.params.size:
+            param_bounds_max = self.params.bounds.max[:, 0]
+            param_bounds_min = self.params.bounds.min[:, 0]
 
         for i in range(3):
             self.x_bound_max[:, i] = np.concatenate((param_bounds_max, np.array(ocp.nlp[0].x_bounds.max[:, i])))
@@ -453,7 +453,7 @@ class AcadosInterface(SolverInterface):
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
-                if self.params:
+                if self.params.size:
                     raise RuntimeError("Params not yet handled with LINEAR_LS cost type")
 
             # Set costs
@@ -514,7 +514,7 @@ class AcadosInterface(SolverInterface):
 
                 # parameter as mayer function
                 # IMPORTANT: it is considered that only parameters are stored in ocp.J, for now.
-                if self.params:
+                if self.params.size:
                     for j, J in enumerate(ocp.J):
                         mayer_func_tp = Function(f"cas_J_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
                         self.W_e = linalg.block_diag(
@@ -560,10 +560,8 @@ class AcadosInterface(SolverInterface):
             # check following line
             # self.ocp_solver.cost_set(n, "W", self.W)
 
-            if self.params:
-                param_init = np.concatenate(
-                    [self.params[key].initial_guess.init.evaluate_at(n) for key in self.params.keys()]
-                )
+            if self.params.size:
+                param_init = self.params.initial_guess.init.evaluate_at(n)
 
             self.ocp_solver.set(n, "x", np.concatenate((param_init, self.ocp.nlp[0].x_init.init.evaluate_at(n))))
             self.ocp_solver.set(n, "u", self.ocp.nlp[0].u_init.init.evaluate_at(n))
@@ -595,15 +593,13 @@ class AcadosInterface(SolverInterface):
             self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lh", self.end_g_bounds.min[:, 0])
 
         if self.ocp.nlp[0].x_init.init.shape[1] == self.acados_ocp.dims.N + 1:
-            if self.params:
+            if self.params.size:
                 self.ocp_solver.set(
                     self.acados_ocp.dims.N,
                     "x",
                     np.concatenate(
                         (
-                            np.concatenate([self.params[key]["initial_guess"].init for key in self.params.keys()])[
-                                :, 0
-                            ],
+                            self.params.initial_guess.init[:, 0],
                             self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N],
                         )
                     ),
@@ -676,26 +672,21 @@ class AcadosInterface(SolverInterface):
         n_params = self.ocp.nlp[0].np
         acados_x = np.array([self.ocp_solver.get(i, "x") for i in range(ns + 1)]).T
         acados_p = acados_x[:n_params, :]
-        acados_q = acados_x[n_params : nq + n_params, :]
-        acados_qdot = acados_x[nq + n_params : nx, :]
+        acados_x = acados_x[n_params:, :]
         acados_u = np.array([self.ocp_solver.get(i, "u") for i in range(ns)]).T
 
         out = {
-            "qqdot": acados_x,
             "x": [],
             "u": acados_u,
             "time_tot": self.ocp_solver.get_stats("time_tot")[0],
             "iter": self.ocp_solver.get_stats("sqp_iter")[0],
             "status": self.status,
         }
-        for i in range(ns):
-            out["x"] = vertcat(out["x"], acados_q[:, i])
-            out["x"] = vertcat(out["x"], acados_qdot[:, i])
-            out["x"] = vertcat(out["x"], acados_u[:, i])
 
-        out["x"] = vertcat(out["x"], acados_q[:, ns])
-        out["x"] = vertcat(out["x"], acados_qdot[:, ns])
-        out["x"] = vertcat(acados_p[:, 0], out["x"])
+        out["x"] = vertcat(out["x"], acados_x.reshape(-1, 1, order="F"))
+        out["x"] = vertcat(out["x"], acados_u.reshape(-1, 1, order="F"))
+        out["x"] = vertcat(out["x"], acados_p[:, 0])
+
         self.out["sol"] = out
         out = []
         for key in self.out.keys():

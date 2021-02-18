@@ -8,7 +8,6 @@ import pytest
 import numpy as np
 import biorbd
 from bioptim import (
-    Data,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -145,30 +144,19 @@ def test_track_and_minimize_marker_displacement_global(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], -143.5854887928483)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (40, 1))
     np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final velocities
-    if ode_solver == OdeSolver.IRK:
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([0.71793369, -0.44573137, -2.97319049, 0.02378767]), decimal=2)
-        np.testing.assert_almost_equal(
-            q[:, -1], np.array([1.08524701, -0.38694715, 3.02680956, -0.02378811]), decimal=2
-        )
-    else:
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([0.71797344, -0.44573002, -3.00001922, 0.02378758]), decimal=2)
-        np.testing.assert_almost_equal(q[:, -1], np.array([1.08530972, -0.3869361, 2.99998083, -0.02378757]), decimal=2)
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0.37791617, 3.70167396, 10.0, 10.0]), decimal=2)
     np.testing.assert_almost_equal(qdot[:, -1], np.array([0.37675299, -3.40771446, 10.0, 10.0]), decimal=2)
     # initial and final controls
@@ -183,7 +171,7 @@ def test_track_and_minimize_marker_displacement_global(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -202,18 +190,17 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], -200.80194174353494)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (40, 1))
     np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.02595694, -0.57073004, -1.00000001, 1.57079633]))
@@ -233,7 +220,7 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -253,18 +240,17 @@ def test_track_and_minimize_marker_velocity(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], -80.20048585400944)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (40, 1))
     np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([7.18708669e-01, -4.45703930e-01, -3.14159262e00, 0]))
@@ -280,7 +266,7 @@ def test_track_and_minimize_marker_velocity(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -314,13 +300,12 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
         sol = ocp.solve()
 
         # Check constraints
-        g = np.array(sol["g"])
+        g = np.array(sol.constraints)
         np.testing.assert_equal(g.shape, (40, 1))
         np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
         # Check some of the results
-        states, controls = Data.get_data(ocp, sol["x"])
-        q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+        q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[2:, 0], np.array([-3.14159264, 0]))
@@ -336,4 +321,4 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
         TestUtils.save_and_load(sol, ocp, False)
 
         # simulate
-        TestUtils.simulate(sol, ocp, decimal_value=5)
+        TestUtils.simulate(sol)

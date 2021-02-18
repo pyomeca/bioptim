@@ -3,7 +3,7 @@ from warnings import warn
 from enum import Enum
 
 import biorbd
-from casadi import vertcat, MX
+from casadi import vertcat, MX, Function
 
 from .constraints import ConstraintFunction
 from .objective_functions import ObjectiveFunction
@@ -18,14 +18,16 @@ class PhaseTransition(OptionGeneric):
     ----------
     base: ConstraintFunction
         The type of penalty the phase transition is (Constraint if no weight, Mayer otherwise)
-    weight: float
-        The weight of the objective function. The transition is a constraint if weight is not specified
-    quadratic: bool
-        If the objective function is quadratic
+    casadi_function: Function
+        The casadi function of the cost function
+    custom_function: Callable
+        The function to call if a custom transition function is provided
     phase_pre_idx: int
         The index of the phase right before the transition
-    custom_function: function
-        The function to call if a custom transition function is provided
+    quadratic: bool
+        If the objective function is quadratic
+    weight: float
+        The weight of the objective function. The transition is a constraint if weight is not specified
     """
 
     def __init__(
@@ -36,7 +38,7 @@ class PhaseTransition(OptionGeneric):
         ----------
         phase_pre_idx: int
             The index of the phase right before the transition
-        custom_function: function
+        custom_function: Callable
             The function to call if a custom transition function is provided
         params:
             Generic parameters for options
@@ -48,6 +50,7 @@ class PhaseTransition(OptionGeneric):
         self.quadratic = True
         self.phase_pre_idx = phase_pre_idx
         self.custom_function = custom_function
+        self.casadi_function = None
 
 
 class PhaseTransitionList(UniquePerPhaseOptionList):
@@ -189,7 +192,7 @@ class PhaseTransitionFunctions:
             if nlp_post.model.nbContacts() == 0:
                 warn("The chosen model does not have any contact")
             # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
-            # a better way (e.g. create a supplementary variable in V that link the pre and post phase with a
+            # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
             model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
             func = biorbd.to_casadi_func(

@@ -18,11 +18,9 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     Objective,
     ObjectiveFcn,
     InterpolationType,
-    Data,
     ParameterList,
     OdeSolver,
 )
@@ -177,9 +175,8 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=True)
 
     # --- Get the results --- #
-    states, controls, params = Data.get_data(ocp, sol, get_parameters=True)
-    length = params["gravity_z"][0, 0]
+    length = sol.parameters["gravity_z"][0, 0]
     print(length)
 
     # --- Show results --- #
-    ShowResult(ocp, sol).animate(n_frames=200)
+    sol.animate(n_frames=200)

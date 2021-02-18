@@ -16,7 +16,6 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     InitialGuess,
-    ShowResult,
     Solver,
     InterpolationType,
 )
@@ -87,7 +86,7 @@ if __name__ == "__main__":
     ocp_acados = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
 
     tic = time()
-    sol_acados, sol_obj_acados = ocp_acados.solve(
+    sol_acados = ocp_acados.solve(
         solver=Solver.ACADOS,
         show_online_optim=False,
         solver_options={
@@ -95,7 +94,6 @@ if __name__ == "__main__":
             "nlp_solver_tol_eq": 1e-3,
             "nlp_solver_tol_stat": 1e-3,
         },
-        return_objectives=True,
     )
     toc_acados = time() - tic
 
@@ -111,7 +109,7 @@ if __name__ == "__main__":
     )
 
     tic = time()
-    sol_ipopt, sol_obj_ipopt = ocp_ipopt.solve(
+    sol_ipopt = ocp_ipopt.solve(
         solver=Solver.IPOPT,
         show_online_optim=False,
         solver_options={
@@ -123,31 +121,28 @@ if __name__ == "__main__":
             "max_iter": 100,
             "hessian_approximation": "exact",
         },
-        return_objectives=True,
     )
     toc_ipopt = time() - tic
 
     # --- Show results --- #
     print("\n\n")
     print("Results using ACADOS")
-    print(f"Final objective: {np.nansum(sol_obj_acados)}")
-    result_acados = ShowResult(ocp_acados, sol_acados)
-    result_acados.objective_functions()
-    print(f"Time to solve: {sol_acados['time_tot']}sec")
+    print(f"Final objective: {np.nansum(sol_acados.cost)}")
+    sol_acados.print()
+    print(f"Time to solve: {sol_acados.time_to_optimize}sec")
     print(f"")
 
     print(
         f"Results using Ipopt{'' if warm_start_ipopt_from_acados_solution else ' not'} "
         f"warm started from ACADOS solution"
     )
-    print(f"Final objective : {np.nansum(sol_obj_ipopt)}")
-    result_ipopt = ShowResult(ocp_ipopt, sol_ipopt)
-    result_ipopt.objective_functions()
-    print(f"Time to solve: {sol_ipopt['time_tot']}sec")
+    print(f"Final objective : {np.nansum(sol_ipopt.cost)}")
+    sol_ipopt.print()
+    print(f"Time to solve: {sol_ipopt.time_to_optimize}sec")
     print(f"")
 
-    visualizer = result_acados.animate(show_now=False)
-    visualizer.extend(result_ipopt.animate(show_now=False))
+    visualizer = sol_acados.animate(show_now=False)
+    visualizer.extend(sol_ipopt.animate(show_now=False))
 
     # Update biorbd-viz by hand so they can be visualized simultaneously
     should_continue = True

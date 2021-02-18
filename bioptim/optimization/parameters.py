@@ -1,11 +1,11 @@
 from typing import Callable, Union, Any
 
-from casadi import vertcat, MX, SX
+from casadi import MX, SX
 
-from .enums import Node
+from ..misc.enums import Node
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
 from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
-from .options import OptionList, OptionGeneric
+from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 
 
 class Parameter(OptionGeneric):
@@ -35,8 +35,8 @@ class Parameter(OptionGeneric):
         quadratic: bool = True,
         size: int = None,
         penalty_list: Union[Objective, ObjectiveList] = None,
-        cx: Callable = None,
-        **params
+        cx: Union[Callable, MX, SX] = None,
+        **params: Any,
     ):
         """
         Parameters
@@ -69,15 +69,15 @@ class Parameter(OptionGeneric):
         self.cx = cx
 
 
-class ParameterList(OptionList):
+class ParameterList(UniquePerPhaseOptionList):
     """
     A list of Parameter
 
     Methods
     -------
-    def add(
+    add(
         self,
-        parameter_name: str,
+        parameter_name: Union[str, Parameter],
         function: Callable = None,
         initial_guess: Union[InitialGuess, InitialGuessList] = None,
         bounds: Union[Bounds, BoundsList] = None,
@@ -89,26 +89,34 @@ class ParameterList(OptionList):
         Add a new Parameter to the list
     print(self)
         Print the ParameterList to the console
+    __contains__(self, item: str) -> bool
+        Allow for `str in ParameterList`
+    @property
+    names(self) -> list:
+        Get all the name of the Parameter in the List
+    index(self, item: str) -> int
+        Get the index of a specific Parameter in the list
     """
 
     def add(
         self,
-        parameter_name: str,
+        parameter_name: Union[str, Parameter],
         function: Callable = None,
         initial_guess: Union[InitialGuess, InitialGuessList] = None,
         bounds: Union[Bounds, BoundsList] = None,
         size: int = None,
         phase: int = 0,
         penalty_list: Union[Objective, ObjectiveList] = None,
-        **extra_arguments: Any
+        **extra_arguments: Any,
     ):
         """
         Add a new Parameter to the list
 
         Parameters
         ----------
-        parameter_name: str
-            The name of the parameter. This name will be used for plotting purpose. It must be unique
+        parameter_name: Union[str, Parameter
+            If str, the name of the parameter. This name will be used for plotting purpose. It must be unique
+            If Parameter, the parameter is copied
         function: Callable[OptimalControlProgram, MX]
             The user defined function that modify the model
         initial_guess: Union[InitialGuess, InitialGuessList]
@@ -142,8 +150,27 @@ class ParameterList(OptionList):
                 bounds=bounds,
                 size=size,
                 penalty_list=penalty_list,
-                **extra_arguments
+                **extra_arguments,
             )
+
+    def __contains__(self, item: str) -> bool:
+        """
+        Allow for `str in ParameterList`
+
+        Parameters
+        ----------
+        item: str
+            The element to search
+
+        Returns
+        -------
+        If the element is the list
+        """
+
+        for p in self:
+            if p.name == item:
+                return True
+        return False
 
     def print(self):
         """
@@ -151,6 +178,37 @@ class ParameterList(OptionList):
         """
         # TODO: Print all elements in the console
         raise NotImplementedError("Printing of ParameterList is not ready yet")
+
+    @property
+    def names(self) -> list:
+        """
+        Get all the name of the Parameter in the List
+
+        Returns
+        -------
+        A list of all names
+        """
+
+        n = []
+        for p in self:
+            n.append(p.name)
+        return n
+
+    def index(self, item: str) -> int:
+        """
+        Get the index of a specific Parameter in the list
+
+        Parameters
+        ----------
+        item: str
+            The name of the parameter to find
+
+        Returns
+        -------
+        The index of the Parameter in the list
+        """
+
+        return self.names.index(item)
 
 
 class Parameters:
@@ -161,10 +219,6 @@ class Parameters:
     -------
     add_or_replace(ocp, _, parameter: Parameter)
         Doing some configuration on the parameter and add it to the list of parameter_to_optimize
-    _add_to_v(
-            ocp, name: str, size: int, function: Callable, bounds: Union[Bounds, BoundsList],
-            initial_guess: Union[InitialGuess, InitialGuessList], cx: Callable = None, **extra_params) -> Callable
-        Add a parameter the vector of all variables (V)
     get_type()
         Returns the type of the penalty
     penalty_nature() -> str
@@ -186,17 +240,9 @@ class Parameters:
             The actual parameter to declare
         """
 
-        param_name = parameter.name
-        pre_dynamic_function = parameter.function
-        initial_guess = parameter.initial_guess
-        bounds = parameter.bounds
-        n_elements = parameter.size
+        ocp.v.add_parameter(parameter)
+
         penalty_list = parameter.penalty_list
-
-        cx = Parameters._add_to_v(
-            ocp, param_name, n_elements, pre_dynamic_function, bounds, initial_guess, **parameter.params
-        )
-
         if penalty_list:
             if ocp.phase_transitions:
                 raise NotImplementedError("Updating parameters while having phase_transition is not supported yet")
@@ -220,76 +266,10 @@ class Parameters:
 
             func = penalty.custom_function
 
-            val = func(ocp, cx, **penalty.params)
+            val = func(ocp, parameter.cx, **penalty.params)
             penalty.sliced_target = penalty.target
             ObjectiveFunction.ParameterFunction.clear_penalty(ocp, None, penalty)
             ObjectiveFunction.ParameterFunction.add_to_penalty(ocp, None, val, penalty)
-
-    @staticmethod
-    def _add_to_v(
-        ocp,
-        name: str,
-        size: int,
-        function: Union[Callable, None],
-        bounds: Union[Bounds, BoundsList],
-        initial_guess: Union[InitialGuess, InitialGuessList],
-        cx: Union[MX, SX] = None,
-        **extra_params
-    ) -> Callable:
-        """
-        Add a parameter the vector of all variables (V)
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        name: str
-            The name of the parameter
-        size: int
-            The number of variables this parameter has
-        function: Callable[OptimalControlProgram, MX]
-                The user defined function that modify the model
-        bounds: Union[Bounds, BoundsList]
-            The list of bounds associated with this parameter
-        initial_guess: Union[InitialGuess, InitialGuessList]
-            The list of initial guesses associated with this parameter
-        cx: Union[MX, SX]
-            The type of casadi variable
-        extra_params: dict
-            Any parameters to pass to the function
-
-        Returns
-        -------
-        The cx type
-        """
-        if cx is None:
-            cx = ocp.CX.sym(name, size, 1)
-
-        ocp.V = vertcat(ocp.V, cx)
-        param_to_store = Parameter(
-            cx=cx, function=function, size=size, bounds=bounds, initial_guess=initial_guess, **extra_params
-        )
-
-        if name in ocp.param_to_optimize:
-            p = ocp.param_to_optimize[name]
-            p.cx = vertcat(p.cx, param_to_store.cx)
-            if p.function != param_to_store.function:
-                raise RuntimeError("Pre dynamic function of same parameters must be the same")
-            p.size += param_to_store.size
-            if p.params != param_to_store.params:
-                raise RuntimeError("Extra parameters of same parameters must be the same")
-            p.bounds.concatenate(param_to_store.bounds)
-            p.initial_guess.concatenate(param_to_store.initial_guess)
-        else:
-            ocp.param_to_optimize[name] = param_to_store
-
-        bounds.check_and_adjust_dimensions(size, 1)
-        ocp.V_bounds.concatenate(bounds)
-
-        initial_guess.check_and_adjust_dimensions(size, 1)
-        ocp.V_init.concatenate(initial_guess)
-
-        return cx
 
     @staticmethod
     def get_type():

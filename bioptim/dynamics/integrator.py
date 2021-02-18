@@ -27,7 +27,7 @@ class Integrator:
         The control variables
     param_sym: Union[MX, SX]
         The parameters variables
-    fun: function
+    fun: Callable
         The dynamic function which provides the derivative of the states
     control_type: ControlType
         The type of the controls
@@ -65,7 +65,7 @@ class Integrator:
         self.model = ode_opt["model"]
         self.t_span = ode_opt["t0"], ode_opt["tf"]
         self.idx = ode_opt["idx"]
-        self.CX = ode_opt["CX"]
+        self.CX = ode_opt["cx"]
         self.x_sym = ode["x"]
         self.u_sym = ode["p"]
         self.param_sym = ode_opt["param"]
@@ -171,7 +171,7 @@ class Integrator:
         nlp.par_dynamics = {}
         if nlp.ode_solver == OdeSolver.RK4 or nlp.ode_solver == OdeSolver.RK8 or nlp.ode_solver == OdeSolver.IRK:
             if nlp.ode_solver == OdeSolver.IRK:
-                if ocp.CX is SX:
+                if ocp.cx is SX:
                     raise NotImplementedError("use_sx and OdeSolver.IRK are not yet compatible")
 
                 if nlp.model.nbQuat() > 0:
@@ -182,7 +182,7 @@ class Integrator:
 
             ode_opt["model"] = nlp.model
             ode_opt["param"] = nlp.p
-            ode_opt["CX"] = nlp.CX
+            ode_opt["cx"] = nlp.cx
             ode_opt["idx"] = 0
             ode["ode"] = dynamics
             ode_opt["control_type"] = nlp.control_type
@@ -207,9 +207,9 @@ class Integrator:
                     ode_opt["irk_polynomial_interpolation_degree"] = nlp.irk_polynomial_interpolation_degree
                     nlp.dynamics.append(IRK(ode, ode_opt))
         elif nlp.ode_solver == OdeSolver.CVODES:
-            if not isinstance(ocp.CX(), MX):
+            if not isinstance(ocp.cx(), MX):
                 raise RuntimeError("CVODES integrator can only be used with MX graphs")
-            if len(ocp.param_to_optimize) != 0:
+            if len(ocp.v.params.size) != 0:
                 raise RuntimeError("CVODES cannot be used while optimizing parameters")
             if nlp.external_forces:
                 raise RuntimeError("CVODES cannot be used with external_forces")

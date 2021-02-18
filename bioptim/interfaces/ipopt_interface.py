@@ -27,19 +27,11 @@ class IpoptInterface(SolverInterface):
         The lagrange multiplier of the constraints to initialize the solver
     lam_x: np.ndarray
         The lagrange multiplier of the variables to initialize the solver
-    bobo_directory: str
-        The temporary directory to save the iterations
-    bobo_file_path: str
-        The file path to save the iterations
 
     Methods
     -------
     online_optim(self, ocp: OptimalControlProgram)
         Declare the online callback to update the graphs while optimizing
-    start_get_iterations(self)
-        Create the necessary folder and create the file to store the iterations while optimizing
-    finish_get_iterations(self)
-        Close the file where iterations are saved and remove temporary folders
     configure(self, solver_options: dict)
         Set some Ipopt options
     solve(self) -> dict
@@ -72,9 +64,6 @@ class IpoptInterface(SolverInterface):
         self.lam_g = None
         self.lam_x = None
 
-        self.bobo_directory = ".__tmp_biorbd_optim"
-        self.bobo_file_path = ".__tmp_biorbd_optim/temp_save_iter.bobo"
-
     def online_optim(self, ocp):
         """
         Declare the online callback to update the graphs while optimizing
@@ -86,29 +75,6 @@ class IpoptInterface(SolverInterface):
         """
 
         self.options_common["iteration_callback"] = OnlineCallback(ocp)
-
-    def start_get_iterations(self):
-        """
-        Create the necessary folder and create the file to store the iterations while optimizing
-        """
-
-        if os.path.isfile(self.bobo_file_path):
-            os.remove(self.bobo_file_path)
-            os.rmdir(self.bobo_directory)
-        os.mkdir(self.bobo_directory)
-
-        with open(self.bobo_file_path, "wb") as file:
-            pickle.dump([], file)
-
-    def finish_get_iterations(self):
-        """
-        Close the file where iterations are saved and remove temporary folders
-        """
-
-        with open(self.bobo_file_path, "rb") as file:
-            self.out["sol_iterations"] = pickle.load(file)
-            os.remove(self.bobo_file_path)
-            os.rmdir(self.bobo_directory)
 
     def configure(self, solver_options: dict):
         """
@@ -146,13 +112,15 @@ class IpoptInterface(SolverInterface):
         all_J = self.__dispatch_obj_func()
         all_g, all_g_bounds = self.__dispatch_bounds()
 
-        self.ipopt_nlp = {"x": self.ocp.V, "f": sum1(all_J), "g": all_g}
+        self.ipopt_nlp = {"x": self.ocp.v.vector, "f": sum1(all_J), "g": all_g}
+        v_bounds = self.ocp.v.bounds
+        v_init = self.ocp.v.init
         self.ipopt_limits = {
-            "lbx": self.ocp.V_bounds.min,
-            "ubx": self.ocp.V_bounds.max,
+            "lbx": v_bounds.min,
+            "ubx": v_bounds.max,
             "lbg": all_g_bounds.min,
             "ubg": all_g_bounds.max,
-            "x0": self.ocp.V_init.init,
+            "x0": v_init.init,
         }
 
         if self.lam_g is not None:
@@ -189,7 +157,7 @@ class IpoptInterface(SolverInterface):
         """
         # TODO: This should be done in bounds, so it is available for all the code
 
-        all_g = self.ocp.CX()
+        all_g = self.ocp.cx()
         all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(len(self.ocp.g)):
             for j in range(len(self.ocp.g[i])):
@@ -211,7 +179,7 @@ class IpoptInterface(SolverInterface):
         """
         # TODO: This should be done in bounds, so it is available for all the code
 
-        all_J = self.ocp.CX()
+        all_J = self.ocp.cx()
         for j_nodes in self.ocp.J:
             for obj in j_nodes:
                 all_J = vertcat(all_J, IpoptInterface.finalize_objective_value(obj))

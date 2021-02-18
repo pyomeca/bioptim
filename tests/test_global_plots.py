@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 import numpy as np
 import biorbd
-from bioptim import ShowResult, OptimalControlProgram
+from bioptim import OptimalControlProgram
 
 
 def test_plot_graphs_one_phase():
@@ -31,9 +31,7 @@ def test_plot_graphs_one_phase():
         final_time=2,
     )
     sol = ocp.solve()
-
-    plt = ShowResult(ocp, sol)
-    plt.graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
 
 def test_plot_merged_graphs():
@@ -67,9 +65,7 @@ def test_plot_merged_graphs():
         kin_data_to_track="markers",
     )
     sol = ocp.solve()
-
-    plt = ShowResult(ocp, sol)
-    plt.graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
 
 def test_plot_graphs_multi_phases():
@@ -85,9 +81,7 @@ def test_plot_graphs_multi_phases():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod"
     )
     sol = ocp.solve()
-
-    plt = ShowResult(ocp, sol)
-    plt.graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
 
 def test_add_new_plot():
@@ -112,7 +106,7 @@ def test_add_new_plot():
 
     # Test 1 - Working plot
     ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
-    ShowResult(ocp, sol).graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
     # Test 2 - Combine using combine_to is not allowed
     ocp, sol = OptimalControlProgram.load(save_name)
@@ -123,13 +117,13 @@ def test_add_new_plot():
     ocp, sol = OptimalControlProgram.load(save_name)
     ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
     ocp.add_plot("My Second New Plot", lambda x, p, u: x[0:2, :])
-    ShowResult(ocp, sol).graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
     # Test 4 - Combine to the first using fig_name
     ocp, sol = OptimalControlProgram.load(save_name)
     ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
     ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
-    ShowResult(ocp, sol).graphs(automatically_organize=False)
+    sol.graphs(automatically_organize=False)
 
     # Delete the saved file
     os.remove(save_name)
@@ -148,15 +142,12 @@ def test_console_objective_functions():
         biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod"
     )
     sol = ocp.solve()
+    sol.graphs(automatically_organize=False)
 
-    plt = ShowResult(ocp, sol)
-    plt.graphs(automatically_organize=False)
-
-    sol["g"] = np.array([range(sol["g"].shape[0])]).T / 10
+    sol.constraints = np.array([range(sol.constraints.shape[0])]).T / 10
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
-    plt.objective_functions()
-    plt.constraints()
+    sol.print()
     expected_output = (
         "\n---- COST FUNCTION VALUES ----\n"
         "PHASE 0\n"
@@ -168,18 +159,18 @@ def test_console_objective_functions():
         "Sum cost functions: 106085\n"
         "------------------------------\n\n"
         "--------- CONSTRAINTS ---------\n"
-        "CONTINUITY 0: 1.5 (lm: -2533.428570794398)\n"
-        "CONTINUITY 1: 5.1 (lm: -2503.3533828868353)\n"
-        "CONTINUITY 2: 8.7 (lm: -2473.278194979192)\n"
-        "PHASE_TRANSITION 0->1: 12.3 (lm: -2443.2030070722612)\n"
-        "PHASE_TRANSITION 1->2: 15.9 (lm: -2413.127819166678)\n\n"
+        "CONTINUITY 0: 1.5\n"
+        "CONTINUITY 1: 5.1\n"
+        "CONTINUITY 2: 8.7\n"
+        "PHASE_TRANSITION 0->1: 12.3\n"
+        "PHASE_TRANSITION 1->2: 15.9\n\n"
         "PHASE 0\n"
-        "SUPERIMPOSE_MARKERS: 9.3 (lm: -300.7518793431671)\n"
-        "SUPERIMPOSE_MARKERS: 10.2 (lm: -2082.3007519197845)\n\n"
+        "SUPERIMPOSE_MARKERS: 9.3\n"
+        "SUPERIMPOSE_MARKERS: 10.2\n\n"
         "PHASE 1\n"
-        "SUPERIMPOSE_MARKERS: 11.100000000000001 (lm: -300.75187937956275)\n\n"
+        "SUPERIMPOSE_MARKERS: 11.100000000000001\n\n"
         "PHASE 2\n"
-        "SUPERIMPOSE_MARKERS: 12.0 (lm: -2052.2255639819446)\n\n"
+        "SUPERIMPOSE_MARKERS: 12.0\n\n"
         "------------------------------\n"
     )
 

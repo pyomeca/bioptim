@@ -20,8 +20,6 @@ from bioptim import (
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
-    ShowResult,
-    Data,
     ObjectiveList,
     ObjectiveFcn,
     Axis,
@@ -151,9 +149,8 @@ if __name__ == "__main__":
     n_shooting = 20
 
     ocp_to_track = data_to_track.prepare_ocp(biorbd_model_path=biorbd_path, final_time=3, n_shooting=19)
-    sol_to_track = ocp_to_track.solve()
-    states, controls = Data.get_data(ocp_to_track, sol_to_track)
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    sol = ocp_to_track.solve()
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
     n_q = n_qdot = n_tau = biorbd_model.nbQ()
     n_marker = biorbd_model.nbMarkers()
     x = np.concatenate((q, qdot))
@@ -213,5 +210,4 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.animate()
+    sol.animate()

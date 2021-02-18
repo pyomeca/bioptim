@@ -25,7 +25,7 @@ class PathCondition(np.ndarray):
         Any extra parameters that is associated to the path condition
     slice_list: slice
         Slice of the array
-    custom_function: function
+    custom_function: Callable
         Custom function to describe the path condition interpolation
 
     Methods
@@ -36,7 +36,7 @@ class PathCondition(np.ndarray):
         Adding some attributes to the reduced state
     __setstate__(self, state: tuple, *args, **kwargs)
         Adding some attributes to the expanded state
-    check_and_adjust_dimensions(self, n_elements: int, n_shooting: int, element_type: InterpolationType)
+    check_and_adjust_dimensions(self, n_elements: int, n_shooting: int, element_name: str)
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
     evaluate_at(self, shooting_point: int)
@@ -187,7 +187,7 @@ class PathCondition(np.ndarray):
         # Call the parent's __setstate__ with the other tuple elements.
         super(PathCondition, self).__setstate__(state[0:-5], *args, **kwargs)
 
-    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int, element_type: InterpolationType):
+    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int, element_name: str):
         """
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
@@ -198,8 +198,8 @@ class PathCondition(np.ndarray):
             The expected number of rows
         n_shooting: int
             The number of shooting points in the ocp
-        element_type: InterpolationType
-            The type of the interpolation
+        element_name: str
+            The human readable name of the data structure
         """
 
         if (
@@ -229,7 +229,7 @@ class PathCondition(np.ndarray):
         else:
             val_size = self.shape[0]
         if val_size != n_elements:
-            raise RuntimeError(f"Invalid number of {element_type} ({val_size}), the expected size is {n_elements}")
+            raise RuntimeError(f"Invalid number of {element_name} ({val_size}), the expected size is {n_elements}")
 
         if self.type == InterpolationType.EACH_FRAME:
             if self.shape[1] != self.n_shooting:
@@ -491,10 +491,6 @@ class BoundsList(UniquePerPhaseOptionList):
     add(self, min_bound: Union[PathCondition, np.ndarray, list, tuple] = None,
             max_bound: Union[PathCondition, np.ndarray, list, tuple] = None, bounds: Bounds = None, **extra_arguments)
         Add a new constraint to the list, either [min_bound AND max_bound] OR [bounds] should be defined
-    __getitem__(self, i: int)
-        Get the ith bounds of the list
-    __next__(self)
-        Get the next bounds of the list
     print(self)
         Print the BoundsList to the console
     """
@@ -531,33 +527,6 @@ class BoundsList(UniquePerPhaseOptionList):
             super(BoundsList, self)._add(
                 min_bound=min_bound, max_bound=max_bound, option_type=Bounds, **extra_arguments
             )
-
-    def __getitem__(self, i: int):
-        """
-        Get the ith bounds of the list
-
-        Parameters
-        ----------
-        i: int
-            The index of the bounds to get
-
-        Returns
-        -------
-        The ith bounds of the list
-        """
-
-        return super(BoundsList, self).__getitem__(i)
-
-    def __next__(self):
-        """
-        Get the next bounds of the list
-
-        Returns
-        -------
-        The next bounds of the list
-        """
-
-        return super(BoundsList, self).__next__()
 
     def print(self):
         """
@@ -732,10 +701,6 @@ class InitialGuessList(UniquePerPhaseOptionList):
     -------
     add(self, initial_guess: Union[PathCondition, np.ndarray, list, tuple], **extra_arguments)
         Add a new initial guess to the list
-    __getitem__(self, i)
-        Get the ith initial guess of the list
-    __next__(self)
-        Get the next initial guess of the list
     print(self)
         Print the InitialGuessList to the console
     """
@@ -756,33 +721,6 @@ class InitialGuessList(UniquePerPhaseOptionList):
             self.copy(initial_guess)
         else:
             super(InitialGuessList, self)._add(initial_guess=initial_guess, option_type=InitialGuess, **extra_arguments)
-
-    def __getitem__(self, i):
-        """
-        Get the ith initial guess of the list
-
-        Parameters
-        ----------
-        i: int
-            The index of the initial guess to get
-
-        Returns
-        -------
-        The ith initial guess of the list
-        """
-
-        return super(InitialGuessList, self).__getitem__(i)
-
-    def __next__(self):
-        """
-        Get the next initial guess of the list
-
-        Returns
-        -------
-        The next initial guess of the list
-        """
-
-        return super(InitialGuessList, self).__next__()
 
     def print(self):
         """

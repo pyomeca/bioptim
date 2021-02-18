@@ -61,6 +61,29 @@ class InterpolationType(Enum):
     CUSTOM = 5  # Interpolation via a used-defined custom function
 
 
+class Shooting(Enum):
+    """
+    The type of integration
+    MULTIPLE resets the state at each node
+    SINGLE resets the state at each phase
+    SINGLE_CONTINUOUS never resets the state
+    """
+
+    MULTIPLE = "Multiple"
+    SINGLE = "Single"
+    SINGLE_CONTINUOUS = "Single continuous"
+
+
+class CostType(Enum):
+    """
+    The type of cost
+    """
+
+    OBJECTIVES = "Objectives"
+    CONSTRAINTS = "Constraints"
+    ALL = "All"
+
+
 class PlotType(Enum):
     """
     Selection of valid plots

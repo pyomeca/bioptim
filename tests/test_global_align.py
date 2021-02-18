@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-from bioptim import Data, OdeSolver
+from bioptim import OdeSolver
 
 from .utils import TestUtils
 
@@ -30,18 +30,17 @@ def test_track_segment_on_rt(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 197120.95524154368)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (91, 1))
     np.testing.assert_almost_equal(g, np.zeros((91, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.30543155, 0, -1.57, -1.57]))
@@ -57,7 +56,7 @@ def test_track_segment_on_rt(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -80,18 +79,17 @@ def test_track_marker_on_segment(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol["f"])
+    f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 42127.04677760122)
 
     # Check constraints
-    g = np.array(sol["g"])
+    g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (88, 1))
     np.testing.assert_almost_equal(g, np.zeros((88, 1)))
 
     # Check some of the results
-    states, controls = Data.get_data(ocp, sol["x"])
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0, 0.46364761]))
@@ -107,4 +105,4 @@ def test_track_marker_on_segment(ode_solver):
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
-    TestUtils.simulate(sol, ocp)
+    TestUtils.simulate(sol)

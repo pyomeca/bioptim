@@ -1,8 +1,9 @@
 from typing import Callable, Any
 
+from .parameters import ParameterList
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
-from .enums import ControlType, OdeSolver
-from .options import OptionList
+from ..misc.enums import ControlType, OdeSolver
+from ..misc.options import OptionList
 
 
 class NonLinearProgram:
@@ -17,13 +18,13 @@ class NonLinearProgram:
         The contact force function if exists for the current nlp
     control_type: ControlType
         The control type for the current nlp
-    CX: Union[MX, SX]
+    cx: Union[MX, SX]
         The type of symbolic variable that is used
     dt: float
         The delta time of the current phase
     dynamics: list[ODE_SOLVER]
         All the dynamics for each of the node of the phase
-    dynamics_func: function
+    dynamics_func: Callable
         The dynamic function used during the current phase
     dynamics_type: Dynamics
         The dynamic option declared by the user for the current phase
@@ -59,10 +60,10 @@ class NonLinearProgram:
         The chosen ode solver
     p: MX
         The casadi variables for the parameters
+    parameters: ParameterList
+        Reference to the optimized parameters in the underlying ocp
     par_dynamics: casadi.Function
         The casadi function of the threaded dynamics
-    parameters_to_optimize: dict
-        The collection of parameters to optimize
     phase_idx: int
         The index of the current nlp in the ocp.nlp structure
     plot: dict
@@ -115,7 +116,7 @@ class NonLinearProgram:
         self.casadi_func = {}
         self.contact_forces_func = None
         self.control_type = ControlType.NONE
-        self.CX = None
+        self.cx = None
         self.dt = None
         self.dynamics = []
         self.dynamics_func = None
@@ -136,8 +137,8 @@ class NonLinearProgram:
         self.nx = None
         self.ode_solver = OdeSolver.NO_SOLVER
         self.p = None
+        self.parameters = ParameterList()
         self.par_dynamics = None
-        self.parameters_to_optimize = {}
         self.phase_idx = None
         self.plot = {}
         self.q = None
@@ -171,9 +172,9 @@ class NonLinearProgram:
         self.plot = {}
         self.var_states = {}
         self.var_controls = {}
-        self.CX = cx
-        self.x = self.CX()
-        self.u = self.CX()
+        self.cx = cx
+        self.x = self.cx()
+        self.u = self.cx()
         self.J = []
         self.g = []
         self.casadi_func = {}

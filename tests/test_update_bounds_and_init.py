@@ -30,40 +30,32 @@ def test_double_update_bounds_and_init():
     u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
     ocp.update_bounds(x_bounds, u_bounds)
 
-    expected = np.append(np.tile(np.append(-np.ones((nq * 2, 1)), -2.0 * np.ones((nq, 1))), ns), -np.ones((nq * 2, 1)))
-    np.testing.assert_almost_equal(ocp.V_bounds.min, expected.reshape(128, 1))
-    expected = np.append(np.tile(np.append(np.ones((nq * 2, 1)), 2.0 * np.ones((nq, 1))), ns), np.ones((nq * 2, 1)))
-    np.testing.assert_almost_equal(ocp.V_bounds.max, expected.reshape(128, 1))
+    expected = np.array([[-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns]).T
+    np.testing.assert_almost_equal(ocp.v.bounds.min, expected)
+    expected = np.array([[1] * (nq * 2) * (ns + 1) + [2] * nq * ns]).T
+    np.testing.assert_almost_equal(ocp.v.bounds.max, expected)
 
     x_init = InitialGuess(0.5 * np.ones((nq * 2, 1)))
     u_init = InitialGuess(-0.5 * np.ones((nq, 1)))
     ocp.update_initial_guess(x_init, u_init)
-    expected = np.append(
-        np.tile(np.append(0.5 * np.ones((nq * 2, 1)), -0.5 * np.ones((nq, 1))), ns), 0.5 * np.ones((nq * 2, 1))
-    )
-    np.testing.assert_almost_equal(ocp.V_init.init, expected.reshape(128, 1))
+    expected = np.array([[0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns]).T
+    np.testing.assert_almost_equal(ocp.v.init.init, expected)
 
     x_bounds = Bounds(-2.0 * np.ones((nq * 2, 1)), 2.0 * np.ones((nq * 2, 1)))
     u_bounds = Bounds(-4.0 * np.ones((nq, 1)), 4.0 * np.ones((nq, 1)))
     ocp.update_bounds(x_bounds=x_bounds)
     ocp.update_bounds(u_bounds=u_bounds)
 
-    expected = np.append(
-        np.tile(np.append(-2.0 * np.ones((nq * 2, 1)), -4.0 * np.ones((nq, 1))), ns), -2.0 * np.ones((nq * 2, 1))
-    )
-    np.testing.assert_almost_equal(ocp.V_bounds.min, expected.reshape(128, 1))
-    expected = np.append(
-        np.tile(np.append(2.0 * np.ones((nq * 2, 1)), 4.0 * np.ones((nq, 1))), ns), 2.0 * np.ones((nq * 2, 1))
-    )
-    np.testing.assert_almost_equal(ocp.V_bounds.max, expected.reshape(128, 1))
+    expected = np.array([[-2] * (nq * 2) * (ns + 1) + [-4] * nq * ns]).T
+    np.testing.assert_almost_equal(ocp.v.bounds.min, expected)
+    expected = np.array([[2] * (nq * 2) * (ns + 1) + [4] * nq * ns]).T
+    np.testing.assert_almost_equal(ocp.v.bounds.max, expected)
 
     x_init = InitialGuess(0.25 * np.ones((nq * 2, 1)))
     u_init = InitialGuess(-0.25 * np.ones((nq, 1)))
     ocp.update_initial_guess(x_init, u_init)
-    expected = np.append(
-        np.tile(np.append(0.25 * np.ones((nq * 2, 1)), -0.25 * np.ones((nq, 1))), ns), 0.25 * np.ones((nq * 2, 1))
-    )
-    np.testing.assert_almost_equal(ocp.V_init.init, expected.reshape(128, 1))
+    expected = np.array([[0.25] * (nq * 2) * (ns + 1) + [-0.25] * nq * ns]).T
+    np.testing.assert_almost_equal(ocp.v.init.init, expected)
 
     with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuess or InitialGuessList"):
         ocp.update_initial_guess(x_bounds, u_bounds)
@@ -109,18 +101,16 @@ def test_update_bounds_and_init_with_param():
     u_bounds = Bounds(-2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1)))
     ocp.update_bounds(x_bounds, u_bounds)
 
-    expected = np.append(np.tile(np.append(-np.ones((nq * 2, 1)), -2.0 * np.ones((nq, 1))), ns), -np.ones((nq * 2, 1)))
-    np.testing.assert_almost_equal(ocp.V_bounds.min, np.append([g_min], expected).reshape(129, 1))
-    expected = np.append(np.tile(np.append(np.ones((nq * 2, 1)), 2.0 * np.ones((nq, 1))), ns), np.ones((nq * 2, 1)))
-    np.testing.assert_almost_equal(ocp.V_bounds.max, np.append([[g_max]], expected).reshape(129, 1))
+    expected = np.array([[-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns]).T
+    np.testing.assert_almost_equal(ocp.v.bounds.min, np.append(expected, [g_min])[:, np.newaxis])
+    expected = np.array([[1] * (nq * 2) * (ns + 1) + [2] * nq * ns]).T
+    np.testing.assert_almost_equal(ocp.v.bounds.max, np.append(expected, [g_max])[:, np.newaxis])
 
     x_init = InitialGuess(0.5 * np.ones((nq * 2, 1)))
     u_init = InitialGuess(-0.5 * np.ones((nq, 1)))
     ocp.update_initial_guess(x_init, u_init)
-    expected = np.append(
-        np.tile(np.append(0.5 * np.ones((nq * 2, 1)), -0.5 * np.ones((nq, 1))), ns), 0.5 * np.ones((nq * 2, 1))
-    )
-    np.testing.assert_almost_equal(ocp.V_init.init, np.append([g_init], expected).reshape(129, 1))
+    expected = np.array([[0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns]).T
+    np.testing.assert_almost_equal(ocp.v.init.init, np.append(expected, [g_init])[:, np.newaxis])
 
 
 def test_add_wrong_param():

@@ -18,7 +18,6 @@ from bioptim import (
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
-    ShowResult,
     Node,
     Solver,
 )
@@ -117,5 +116,4 @@ if __name__ == "__main__":
     sol = ocp.solve(solver=Solver.ACADOS)
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.graphs()
+    sol.graphs()

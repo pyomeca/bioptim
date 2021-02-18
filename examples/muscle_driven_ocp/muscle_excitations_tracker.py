@@ -20,7 +20,6 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     DynamicsFunctions,
-    Data,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -256,13 +255,12 @@ if __name__ == "__main__":
     # --- Show the results --- #
     muscle_excitations_ref = np.append(muscle_excitations_ref, muscle_excitations_ref[-1:, :], axis=0)
 
-    states_sol, controls_sol = Data.get_data(ocp, sol["x"])
-    q = states_sol["q"]
-    qdot = states_sol["qdot"]
-    activations = states_sol["muscles"]
+    q = sol.states["q"]
+    qdot = sol.states["qdot"]
+    activations = sol.states["muscles"]
     if use_residual_torque:
-        tau = controls_sol["tau"]
-    excitations = controls_sol["muscles"]
+        tau = sol.controls["tau"]
+    excitations = sol.controls["muscles"]
 
     n_q = ocp.nlp[0].model.nbQ()
     n_qdot = ocp.nlp[0].model.nbQdot()

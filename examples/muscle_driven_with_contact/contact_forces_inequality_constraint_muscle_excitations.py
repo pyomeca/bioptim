@@ -21,8 +21,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuessList,
-    ShowResult,
-    Data,
     OdeSolver,
 )
 
@@ -113,12 +111,11 @@ if __name__ == "__main__":
     nlp = ocp.nlp[0]
     nlp.model = biorbd.Model(model_path)
 
-    states_sol, controls_sol = Data.get_data(ocp, sol["x"])
-    q = states_sol["q"]
-    qdot = states_sol["qdot"]
-    activations = states_sol["muscles"]
-    tau = controls_sol["tau"]
-    excitations = controls_sol["muscles"]
+    q = sol.states["q"]
+    qdot = sol.states["qdot"]
+    activations = sol.states["muscles"]
+    tau = sol.controls["tau"]
+    excitations = sol.controls["muscles"]
 
     x = np.concatenate((q, qdot, activations))
     u = np.concatenate((tau, excitations))
@@ -133,5 +130,4 @@ if __name__ == "__main__":
     plt.show()
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.animate()
+    sol.animate()
