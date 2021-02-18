@@ -434,9 +434,14 @@ def test_phase_transitions(ode_solver):
         TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    with pytest.raises(RuntimeError, match=re.escape("Phase transition must have the same number of states (2) "
-                                                     "when integrating with Shooting.SINGLE. If it is not possible, "
-                                                     "please integrate with Shooting.SINGLE_RESET_AT_PHASE")):
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "Phase transition must have the same number of states (2) "
+            "when integrating with Shooting.SINGLE. If it is not possible, "
+            "please integrate with Shooting.SINGLE_RESET_AT_PHASE"
+        ),
+    ):
         TestUtils.simulate(sol)
 
 

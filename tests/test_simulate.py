@@ -87,12 +87,18 @@ def test_interpolate():
         assert sol_interp_list.states[key].shape == (shapes[i], n_frames)
         assert sol.states[key].shape == (shapes[i], n_shooting + 1)
 
-    with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
-                                           "integrated and interpolated structure"):
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. This may happen in previously "
+        "integrated and interpolated structure",
+    ):
         sol_interp.controls
 
-    with pytest.raises(ValueError, match="n_frames should either be a int to merge_phases phases or a "
-                                           "list of int of the number of phases dimension"):
+    with pytest.raises(
+        ValueError,
+        match="n_frames should either be a int to merge_phases phases or a "
+        "list of int of the number of phases dimension",
+    ):
         sol.interpolate([n_frames, n_frames])
 
 
@@ -119,12 +125,18 @@ def test_interpolate_multiphases():
         assert sol_interp.states[i][key].shape == (shapes[i], n_frames)
         assert sol.states[i][key].shape == (shapes[i], n_shooting[i] + 1)
 
-    with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
-                                           "integrated and interpolated structure"):
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. This may happen in previously "
+        "integrated and interpolated structure",
+    ):
         sol_interp.controls
 
-    with pytest.raises(ValueError, match="n_frames should either be a int to merge_phases phases or a "
-                                           "list of int of the number of phases dimension"):
+    with pytest.raises(
+        ValueError,
+        match="n_frames should either be a int to merge_phases phases or a "
+        "list of int of the number of phases dimension",
+    ):
         sol.interpolate([n_frames, n_frames])
 
 
@@ -154,8 +166,11 @@ def test_interpolate_multiphases_merge_phase():
         assert sol_interp.states[key].shape == (shapes[i], n_frames)
         assert sol.states[i][key].shape == (shapes[i], n_shooting[i] + 1)
 
-    with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
-                                           "integrated and interpolated structure"):
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. This may happen in previously "
+        "integrated and interpolated structure",
+    ):
         sol_interp.controls
 
 
@@ -185,8 +200,11 @@ def test_integrate():
         assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
         assert sol.states[key].shape == (shapes[i], n_shooting + 1)
 
-    with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
-                                           "integrated and interpolated structure"):
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. This may happen in previously "
+        "integrated and interpolated structure",
+    ):
         sol_integrated.controls
 
 
@@ -216,8 +234,11 @@ def test_integrate_single_shoot():
         assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
         assert sol.states[key].shape == (shapes[i], n_shooting + 1)
 
-    with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
-                                           "integrated and interpolated structure"):
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. This may happen in previously "
+        "integrated and interpolated structure",
+    ):
         sol_integrated.controls
 
 
@@ -250,8 +271,11 @@ def test_integrate_non_continuous(shooting, merge):
         assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (5 + 1) + 1)
         assert sol.states[key].shape == (shapes[i], n_shooting + 1)
 
-    with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
-                                           "integrated and interpolated structure"):
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. This may happen in previously "
+        "integrated and interpolated structure",
+    ):
         sol_integrated.controls
 
 
@@ -281,8 +305,11 @@ def test_integrate_multiphase(shooting):
             assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
             assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
 
-    with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
-                                           "integrated and interpolated structure"):
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. This may happen in previously "
+        "integrated and interpolated structure",
+    ):
         sol_integrated.controls
 
 
@@ -315,9 +342,11 @@ def test_integrate_multiphase_merged(shooting):
         for k, key in enumerate(sol.states[i]):
             assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
 
-
-    with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
-                                           "integrated and interpolated structure"):
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. This may happen in previously "
+        "integrated and interpolated structure",
+    ):
         sol_integrated.controls
 
 
@@ -348,8 +377,11 @@ def test_integrate_multiphase_non_continuous(shooting):
             assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * (5 + 1) + 1)
             assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
 
-    with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
-                                           "integrated and interpolated structure"):
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. This may happen in previously "
+        "integrated and interpolated structure",
+    ):
         sol_integrated.controls
 
 
@@ -383,6 +415,9 @@ def test_integrate_multiphase_merged_non_continuous(shooting):
         for k, key in enumerate(sol.states[i]):
             assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
 
-    with pytest.raises(RuntimeError, match="There is no controls in the solution. This may happen in previously "
-                                           "integrated and interpolated structure"):
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. This may happen in previously "
+        "integrated and interpolated structure",
+    ):
         sol_integrated.controls

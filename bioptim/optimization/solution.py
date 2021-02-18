@@ -223,7 +223,8 @@ class Solution:
         if not self._controls:
             raise RuntimeError(
                 "There is no controls in the solution. "
-                "This may happen in " "previously integrated and interpolated structure"
+                "This may happen in "
+                "previously integrated and interpolated structure"
             )
         return self._controls[0] if len(self._controls) == 1 else self._controls
 
@@ -275,9 +276,11 @@ class Solution:
                 if p != 0:
                     val = self.ocp.phase_transitions[p - 1].casadi_function(self.vector)
                     if val.shape[0] != x0.shape[0]:
-                        raise RuntimeError(f"Phase transition must have the same number of states ({val.shape[0]}) "
-                                           f"when integrating with Shooting.SINGLE. If it is not possible, "
-                                           f"please integrate with Shooting.SINGLE_RESET_AT_PHASE")
+                        raise RuntimeError(
+                            f"Phase transition must have the same number of states ({val.shape[0]}) "
+                            f"when integrating with Shooting.SINGLE. If it is not possible, "
+                            f"please integrate with Shooting.SINGLE_RESET_AT_PHASE"
+                        )
                     x0 += val
             else:
                 x0 = self._states[p]["all"][:, 0]
@@ -285,10 +288,11 @@ class Solution:
                 if self.ocp.nlp[p].control_type == ControlType.CONSTANT:
                     u = self._controls[p]["all"][:, n]
                 elif self.ocp.nlp[p].control_type == ControlType.LINEAR_CONTINUOUS:
-                    u = self._controls[p]["all"][:, n:n+2]
+                    u = self._controls[p]["all"][:, n : n + 2]
                 else:
-                    raise NotImplementedError(f"ControlType {self.ocp.nlp[p].control_type} "
-                                              f"not yet implemented in integrating")
+                    raise NotImplementedError(
+                        f"ControlType {self.ocp.nlp[p].control_type} " f"not yet implemented in integrating"
+                    )
                 integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
                 cols = (
                     range(n * n_steps, (n + 1) * n_steps + 1) if continuous else range(n * n_steps, (n + 1) * n_steps)
