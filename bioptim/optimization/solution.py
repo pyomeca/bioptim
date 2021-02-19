@@ -64,7 +64,7 @@ class Solution:
     @property
     controls(self) -> Union[list, dict]
         Returns the controls in list if more than one phases, otherwise it returns the only dict
-    integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, merge_phases: bool = False, continuous: bool = True) -> Solution
+    integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keepdims: bool = True, merge_phases: bool = False, continuous: bool = True) -> Solution
         Integrate the states
     interpolate(self, n_frames: Union[int, list, tuple]) -> Solution
         Interpolate the states
@@ -457,12 +457,19 @@ class Solution:
                     raise NotImplementedError(
                         f"ControlType {self.ocp.nlp[p].control_type} " f"not yet implemented in integrating"
                     )
-                integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
-                cols = (
-                    range(n * n_steps, (n + 1) * n_steps + 1) if continuous else range(n * n_steps, (n + 1) * n_steps)
-                )
+
+                if keepdims:
+                    integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xf"])
+                    cols = [n, n + 1]
+                else:
+                    integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
+                    cols = [n * n_steps, (n + 1) * n_steps]
+                cols[1] = cols[1] + 1 if continuous else cols[1]
+                cols = range(cols[0], cols[1])
+
                 out._states[p]["all"][:, cols] = integrated
                 x0 = self._states[p]["all"][:, n + 1] if shooting_type == Shooting.MULTIPLE else integrated[:, -1]
+
             if not continuous:
                 out._states[p]["all"][:, -1] = self._states[p]["all"][:, -1]
 

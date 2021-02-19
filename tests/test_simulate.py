@@ -166,7 +166,7 @@ def test_integrate():
     )
 
     sol = ocp.solve()
-    sol_integrated = sol.integrate(shooting_type=Shooting.MULTIPLE)
+    sol_integrated = sol.integrate(shooting_type=Shooting.MULTIPLE, keepdims=False)
     shapes = (4, 2, 2)
 
     for i, key in enumerate(sol.states):
@@ -196,7 +196,7 @@ def test_integrate_single_shoot():
     )
 
     sol = ocp.solve()
-    sol_integrated = sol.integrate()
+    sol_integrated = sol.integrate(keepdims=False)
     shapes = (4, 2, 2)
 
     for i, key in enumerate(sol.states):
@@ -228,7 +228,7 @@ def test_integrate_non_continuous(shooting, merge):
     )
 
     sol = ocp.solve()
-    sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS, continuous=False, merge_phases=merge)
+    sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS, continuous=False, merge_phases=merge, keepdims=False)
     shapes = (4, 2, 2)
 
     for i, key in enumerate(sol.states):
@@ -258,7 +258,7 @@ def test_integrate_multiphase(shooting):
 
     sol = ocp.solve()
     n_shooting = [20, 30, 20]
-    sol_integrated = sol.integrate(shooting_type=shooting)
+    sol_integrated = sol.integrate(shooting_type=shooting, keepdims=False)
     shapes = (6, 3, 3)
 
     for i in range(len(sol_integrated.states)):
@@ -288,7 +288,7 @@ def test_integrate_multiphase_merged(shooting):
 
     sol = ocp.solve()
     n_shooting = [20, 30, 20]
-    sol_integrated = sol.integrate(shooting_type=shooting, merge_phases=True)
+    sol_integrated = sol.integrate(shooting_type=shooting, merge_phases=True, keepdims=False)
     shapes = (6, 3, 3)
 
     for k, key in enumerate(sol.states[0]):
@@ -321,7 +321,7 @@ def test_integrate_multiphase_non_continuous(shooting):
 
     sol = ocp.solve()
     n_shooting = [20, 30, 20]
-    sol_integrated = sol.integrate(shooting_type=shooting, continuous=False)
+    sol_integrated = sol.integrate(shooting_type=shooting, continuous=False, keepdims=False)
     shapes = (6, 3, 3)
 
     for i in range(len(sol_integrated.states)):
@@ -352,7 +352,7 @@ def test_integrate_multiphase_merged_non_continuous(shooting):
 
     sol = ocp.solve()
     n_shooting = [20, 30, 20]
-    sol_integrated = sol.integrate(shooting_type=shooting, merge_phases=True, continuous=False)
+    sol_integrated = sol.integrate(shooting_type=shooting, merge_phases=True, continuous=False, keepdims=False)
     shapes = (6, 3, 3)
 
     for k, key in enumerate(sol.states[0]):
