@@ -5,12 +5,11 @@ It tests the results of an optimal control problem with acados regarding the pro
 """
 import importlib.util
 from pathlib import Path
-
-import pytest
-import numpy as np
 import os
 import shutil
 
+import pytest
+import numpy as np
 import biorbd
 from bioptim import (
     Axis,
@@ -25,19 +24,15 @@ from bioptim import (
     Node,
 )
 
+from .utils import TestUtils
+
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_no_obj(cost_type):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "cube",
-        str(PROJECT_FOLDER) + "/examples/acados/cube.py",
-    )
-    cube = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(cube)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
         n_shooting=10,
         tf=2,
     )
@@ -51,16 +46,11 @@ def test_acados_no_obj(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_mayer(cost_type):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "cube",
-        str(PROJECT_FOLDER) + "/examples/acados/cube.py",
-    )
-    cube = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(cube)
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
 
     ocp = cube.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
         n_shooting=10,
         tf=2,
     )
@@ -81,16 +71,10 @@ def test_acados_one_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_several_mayer(cost_type):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "cube",
-        str(PROJECT_FOLDER) + "/examples/acados/cube.py",
-    )
-    cube = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(cube)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
         n_shooting=10,
         tf=2,
     )
@@ -114,19 +98,13 @@ def test_acados_several_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_lagrange(cost_type):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "cube",
-        str(PROJECT_FOLDER) + "/examples/acados/cube.py",
-    )
-    cube = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(cube)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     n_shooting = 10
     target = np.expand_dims(np.arange(0, n_shooting + 1), axis=0)
     target[0, -1] = n_shooting - 2
     ocp = cube.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
         n_shooting=n_shooting,
         tf=2,
     )
@@ -147,19 +125,13 @@ def test_acados_one_lagrange(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_lagrange_and_one_mayer(cost_type):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "cube",
-        str(PROJECT_FOLDER) + "/examples/acados/cube.py",
-    )
-    cube = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(cube)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     n_shooting = 10
     target = np.expand_dims(np.arange(0, n_shooting + 1), axis=0)
     target[0, -1] = n_shooting - 2
     ocp = cube.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
         n_shooting=n_shooting,
         tf=2,
     )
@@ -181,18 +153,12 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_control_lagrange_and_state_mayer(cost_type):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "cube",
-        str(PROJECT_FOLDER) + "/examples/acados/cube.py",
-    )
-    cube = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(cube)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     n_shooting = 10
     target = np.array([[2]])
     ocp = cube.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
         n_shooting=n_shooting,
         tf=2,
     )
@@ -216,25 +182,19 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_mhe(cost_type):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "cube",
-        str(PROJECT_FOLDER) + "/examples/acados/cube.py",
-    )
-    cube = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(cube)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     n_shooting = 5
     n_shootingample = 20
     target = np.expand_dims(np.cos(np.arange(0, n_shootingample + 1)), axis=0)
 
     ocp = cube.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
         n_shooting=n_shooting,
         tf=2,
     )
 
-    model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod")
+    model = biorbd.Model(bioptim_folder + "/examples/acados/cube.bioMod")
     for i in range(n_shootingample - n_shooting):
         objective_functions = ObjectiveList()
         objective_functions.add(
@@ -257,16 +217,10 @@ def test_acados_mhe(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_options(cost_type):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum",
-        str(PROJECT_FOLDER) + "/examples/acados/pendulum.py",
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/acados/pendulum.py")
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/pendulum.bioMod",
         final_time=3,
         n_shooting=12,
     )
@@ -288,16 +242,10 @@ def test_acados_options(cost_type):
 
 
 def test_acados_fail_external():
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum",
-        str(PROJECT_FOLDER) + "/examples/acados/pendulum.py",
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/acados/pendulum.py")
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/pendulum.bioMod",
         final_time=1,
         n_shooting=2,
     )
@@ -309,16 +257,10 @@ def test_acados_fail_external():
 
 
 def test_acados_fail_lls():
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "arm",
-        str(PROJECT_FOLDER) + "/examples/acados/static_arm.py",
-    )
-    arm = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(arm)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    arm = TestUtils.load_module(bioptim_folder + "/examples/acados/static_arm.py")
     ocp = arm.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/arm26.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/acados/arm26.bioMod",
         final_time=1,
         n_shooting=2,
         use_sx=True,
@@ -334,17 +276,10 @@ def test_acados_fail_lls():
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])
 def test_acados_custom_dynamics(problem_type_custom):
-    # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "custom_problem_type_and_dynamics",
-        str(PROJECT_FOLDER) + "/examples/getting_started/custom_dynamics.py",
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_dynamics.py")
+    ocp = cube.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
         problem_type_custom=problem_type_custom,
         ode_solver=OdeSolver.RK4,
         use_sx=True,
@@ -371,16 +306,10 @@ def test_acados_custom_dynamics(problem_type_custom):
 
 
 def test_acados_one_parameter():
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "parameters",
-        str(PROJECT_FOLDER) + "/examples/getting_started/custom_parameters.py",
-    )
-    parameters = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(parameters)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
     ocp = parameters.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         n_shooting=100,
         min_g=-10,
@@ -428,16 +357,10 @@ def test_acados_one_parameter():
 
 
 def test_acados_one_end_constraints():
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "constraint",
-        str(PROJECT_FOLDER) + "/examples/acados/cube.py",
-    )
-    constraint = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(constraint)
-
-    ocp = constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/acados/cube.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
+    ocp = cube.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
         n_shooting=10,
         tf=2,
     )
@@ -472,16 +395,10 @@ def test_acados_one_end_constraints():
 
 
 def test_acados_constraints_all():
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "constraint",
-        str(PROJECT_FOLDER) + "/examples/track/track_marker_on_segment.py",
-    )
-    constraint = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(constraint)
-
-    ocp = constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    track = TestUtils.load_module(bioptim_folder + "/examples/track/track_marker_on_segment.py")
+    ocp = track.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/track/cube_and_line.bioMod",
         n_shooting=30,
         final_time=2,
         initialize_near_solution=True,
@@ -513,16 +430,10 @@ def test_acados_constraints_all():
 
 
 def test_acados_constraints_end_all():
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "constraint",
-        str(PROJECT_FOLDER) + "/examples/track/track_marker_on_segment.py",
-    )
-    constraint = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(constraint)
-
-    ocp = constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    track = TestUtils.load_module(bioptim_folder + "/examples/track/track_marker_on_segment.py")
+    ocp = track.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/track/cube_and_line.bioMod",
         n_shooting=30,
         final_time=2,
         initialize_near_solution=True,

@@ -20,7 +20,7 @@ from bioptim import (
 
 class TestUtils:
     @staticmethod
-    def biorbd_folder() -> str:
+    def bioptim_folder() -> str:
         return str(Path(__file__).parent / "..")
 
     @staticmethod
