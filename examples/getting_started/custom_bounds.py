@@ -28,7 +28,6 @@ from bioptim import (
     ConstraintFcn,
     Bounds,
     InitialGuess,
-    ShowResult,
     InterpolationType,
 )
 
@@ -254,8 +253,7 @@ if __name__ == "__main__":
         print("\n")
 
         # Print the last solution
-        result_plot = ShowResult(ocp, sol)
-        result_plot.graphs(adapt_graph_size_to_bounds=True)
+        sol.graphs(adapt_graph_size_to_bounds=True)
 
     for interpolation_type in InterpolationType:
         print(f"Solving problem using {interpolation_type} bounds")
@@ -264,5 +262,4 @@ if __name__ == "__main__":
         print("\n")
 
         # Print the last solution
-        result_plot = ShowResult(ocp, sol)
-        result_plot.graphs(adapt_graph_size_to_bounds=False)
+        sol.graphs(adapt_graph_size_to_bounds=False)

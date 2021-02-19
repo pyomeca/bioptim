@@ -30,10 +30,10 @@ from bioptim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, n_shooting, min_bound, max_bound, mu, ode_solver=OdeSolver.RK4):
+def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound, mu, ode_solver=OdeSolver.RK4):
     # --- Options --- #
     # Model path
-    biorbd_model = biorbd.Model(model_path)
+    biorbd_model = biorbd.Model(biorbd_model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
     tau_mapping = BiMapping([None, None, None, 0], [3])
 
@@ -107,12 +107,12 @@ def prepare_ocp(model_path, phase_time, n_shooting, min_bound, max_bound, mu, od
 
 
 if __name__ == "__main__":
-    model_path = "../torque_driven_with_contact/2segments_4dof_2contacts.bioMod"
+    model_path = "../torque_driven_ocp/2segments_4dof_2contacts.bioMod"
     t = 0.3
     ns = 10
     mu = 0.2
     ocp = prepare_ocp(
-        model_path=model_path,
+        biorbd_model_path=model_path,
         phase_time=t,
         n_shooting=ns,
         min_bound=50,

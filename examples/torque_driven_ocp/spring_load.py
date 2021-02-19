@@ -16,7 +16,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     NonLinearProgram,
 )
 
@@ -69,46 +68,50 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     Problem.configure_dynamics_function(ocp, nlp, custom_dynamic)
 
 
-# Model path
-m = biorbd.Model("mass_point.bioMod")
-m.setGravity(biorbd.Vector3d(0, 0, 0))
+def prepare_ocp(biorbd_model_path: str = "mass_point.bioMod"):
+    # Model path
+    m = biorbd.Model(biorbd_model_path)
+    m.setGravity(biorbd.Vector3d(0, 0, 0))
 
-# Add objective functions (high upward velocity at end point)
-objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=1, weight=-1)
+    # Add objective functions (high upward velocity at end point)
+    objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=1, weight=-1)
 
-# Dynamics
-dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic)
+    # Dynamics
+    dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic)
 
-# Path constraint
-x_bounds = QAndQDotBounds(m)
-x_bounds[:, 0] = [0] * m.nbQ() + [0] * m.nbQdot()
-x_bounds.min[:, 1] = [-1] * m.nbQ() + [-100] * m.nbQdot()
-x_bounds.max[:, 1] = [1] * m.nbQ() + [100] * m.nbQdot()
-x_bounds.min[:, 2] = [-1] * m.nbQ() + [-100] * m.nbQdot()
-x_bounds.max[:, 2] = [1] * m.nbQ() + [100] * m.nbQdot()
+    # Path constraint
+    x_bounds = QAndQDotBounds(m)
+    x_bounds[:, 0] = [0] * m.nbQ() + [0] * m.nbQdot()
+    x_bounds.min[:, 1] = [-1] * m.nbQ() + [-100] * m.nbQdot()
+    x_bounds.max[:, 1] = [1] * m.nbQ() + [100] * m.nbQdot()
+    x_bounds.min[:, 2] = [-1] * m.nbQ() + [-100] * m.nbQdot()
+    x_bounds.max[:, 2] = [1] * m.nbQ() + [100] * m.nbQdot()
 
-# Initial guess
-x_init = InitialGuess([0] * (m.nbQ() + m.nbQdot()))
+    # Initial guess
+    x_init = InitialGuess([0] * (m.nbQ() + m.nbQdot()))
 
-# Define control path constraint
-u_bounds = Bounds([-100] * m.nbGeneralizedTorque(), [0] * m.nbGeneralizedTorque())
+    # Define control path constraint
+    u_bounds = Bounds([-100] * m.nbGeneralizedTorque(), [0] * m.nbGeneralizedTorque())
 
-u_init = InitialGuess([0] * m.nbGeneralizedTorque())
-ocp = OptimalControlProgram(
-    m,
-    dynamics,
-    n_shooting=30,
-    phase_time=0.5,
-    x_init=x_init,
-    u_init=u_init,
-    x_bounds=x_bounds,
-    u_bounds=u_bounds,
-    objective_functions=objective_functions,
-)
+    u_init = InitialGuess([0] * m.nbGeneralizedTorque())
+    return OptimalControlProgram(
+        m,
+        dynamics,
+        n_shooting=30,
+        phase_time=0.5,
+        x_init=x_init,
+        u_init=u_init,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
+    )
 
-# --- Solve the program --- #
-sol = ocp.solve(show_online_optim=True)
 
-# --- Show results --- #
-result = ShowResult(ocp, sol)
-result.animate()
+if __name__ == "__main__":
+    ocp = prepare_ocp()
+
+    # --- Solve the program --- #
+    sol = ocp.solve(show_online_optim=True)
+
+    # --- Show results --- #
+    sol.animate()

@@ -26,7 +26,7 @@ from bioptim import (
 
 
 def prepare_ocp(
-    model_path: str,
+    biorbd_model_path: str,
     phase_time: float,
     n_shooting: int,
     use_actuators: bool = False,
@@ -39,7 +39,7 @@ def prepare_ocp(
 
     Parameters
     ----------
-    model_path: str
+    biorbd_model_path: str
         The path to the bioMod file
     phase_time: float
         The time at the final node
@@ -60,7 +60,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    biorbd_model = biorbd.Model(model_path)
+    biorbd_model = biorbd.Model(biorbd_model_path)
 
     if use_actuators:
         tau_min, tau_max, tau_init = -1, 1, 0
@@ -144,11 +144,11 @@ if __name__ == "__main__":
     Prepares and solves a maximal velocity at center of mass program and animates it
     """
 
-    model_path = "../torque_driven_with_contact/2segments_4dof_2contacts.bioMod"
+    model_path = "2segments_4dof_2contacts.bioMod"
     t = 0.5
     ns = 20
     ocp = prepare_ocp(
-        model_path=model_path,
+        biorbd_model_path=model_path,
         phase_time=t,
         n_shooting=ns,
         use_actuators=False,

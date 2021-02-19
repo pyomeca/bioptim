@@ -25,8 +25,8 @@ from bioptim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4):
-    biorbd_model = biorbd.Model(model_path)
+def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4):
+    biorbd_model = biorbd.Model(biorbd_model_path)
     torque_min, torque_max, torque_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
     tau_mapping = BiMapping([None, None, None, 0], [3])
@@ -100,16 +100,16 @@ def prepare_ocp(model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSol
 
 
 if __name__ == "__main__":
-    model_path = "2segments_4dof_2contacts_1muscle.bioMod"
+    biorbd_model_path = "2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.3
     ns = 10
-    ocp = prepare_ocp(model_path=model_path, phase_time=t, n_shooting=ns, min_bound=50)
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, phase_time=t, n_shooting=ns, min_bound=50)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 
     nlp = ocp.nlp[0]
-    nlp.model = biorbd.Model(model_path)
+    nlp.model = biorbd.Model(biorbd_model_path)
 
     q = sol.states["q"]
     qdot = sol.states["qdot"]

@@ -31,10 +31,10 @@ spec.loader.exec_module(data_to_track)
 
 
 def prepare_ocp(
-    model_path, phase_time, n_shooting, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK4
+    biorbd_model_path, phase_time, n_shooting, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK4
 ):
     # Model path
-    biorbd_model = biorbd.Model(model_path)
+    biorbd_model = biorbd.Model(biorbd_model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     # Track these data
     ocp = prepare_ocp(
-        model_path=model_path,
+        biorbd_model_path=model_path,
         phase_time=final_time,
         n_shooting=ns,
         muscle_activations_ref=muscle_activations_ref[:, :-1],
