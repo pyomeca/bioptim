@@ -197,7 +197,7 @@ def test_track_marker_2D_pendulum(ode_solver):
     # Load muscle_activations_contact_tracker
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_2D_pendulum.py")
-    
+
     # Define the problem
     model_path = bioptim_folder + "/examples/getting_started/pendulum.bioMod"
     biorbd_model = biorbd.Model(model_path)
@@ -209,9 +209,7 @@ def test_track_marker_2D_pendulum(ode_solver):
     markers_ref = np.random.rand(3, 2, n_shooting + 1)
     tau_ref = np.random.rand(2, n_shooting)
 
-    ocp = track.prepare_ocp(
-        biorbd_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver
-    )
+    ocp = track.prepare_ocp(biorbd_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check constraints
@@ -287,7 +285,7 @@ def test_trampo_quaternions():
     # Load trampo_quaternion
     bioptim_folder = TestUtils.bioptim_folder()
     trampo = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/trampo_quaternions.py")
-    
+
     # Define the problem
     model_path = bioptim_folder + "/examples/torque_driven_ocp/TruncAnd2Arm_Quaternion.bioMod"
     final_time = 0.25

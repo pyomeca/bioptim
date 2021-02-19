@@ -15,6 +15,7 @@ from bioptim import (
 
 from .utils import TestUtils
 
+
 def test_double_update_bounds_and_init():
     bioptim_folder = TestUtils.bioptim_folder()
     biorbd_model = biorbd.Model(bioptim_folder + "/examples/track/cube_and_line.bioMod")

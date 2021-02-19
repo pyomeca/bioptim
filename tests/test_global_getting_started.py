@@ -211,7 +211,7 @@ def test_custom_constraint_track_markers(ode_solver):
 def test_initial_guesses(interpolation, ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     initial_guess = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_initial_guess.py")
-    
+
     np.random.seed(42)
     ocp = initial_guess.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
@@ -260,7 +260,7 @@ def test_initial_guesses(interpolation, ode_solver):
 def test_cyclic_objective(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     cyclic_movement = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_cyclic_movement.py")
-    
+
     np.random.seed(42)
     ocp = cyclic_movement.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
@@ -305,7 +305,7 @@ def test_cyclic_objective(ode_solver):
 def test_cyclic_constraint(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     cyclic_movement = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_cyclic_movement.py")
-    
+
     np.random.seed(42)
     ocp = cyclic_movement.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
@@ -391,7 +391,7 @@ def test_phase_transitions(ode_solver):
         np.testing.assert_almost_equal(controls[-1]["tau"][:, -1], np.array((0, 1.2717052e01, 1.1487805e00)))
 
     # save and load
-    with pytest.raises(PicklingError, match="import of module 'generic_name' failed"):
+    with pytest.raises(PicklingError, match="import of module 'custom_phase_transitions' failed"):
         TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
@@ -477,7 +477,7 @@ def test_parameter_optimization(ode_solver):
         np.testing.assert_almost_equal(gravity, np.array([[-9.09889371]]))
 
     # save and load
-    with pytest.raises(PicklingError, match="import of module 'generic_name' failed"):
+    with pytest.raises(PicklingError, match="import of module 'custom_parameters' failed"):
         TestUtils.save_and_load(sol, ocp, True)
 
     # simulate

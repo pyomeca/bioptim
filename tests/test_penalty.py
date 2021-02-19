@@ -21,6 +21,7 @@ from bioptim.interfaces.ipopt_interface import IpoptInterface
 
 from .utils import TestUtils
 
+
 def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False):
     bioptim_folder = TestUtils.bioptim_folder()
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:

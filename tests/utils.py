@@ -25,7 +25,11 @@ class TestUtils:
 
     @staticmethod
     def load_module(path: str) -> Any:
-        spec = importlib.util.spec_from_file_location("generic_name", path,)
+        module_name = path.split("/")[-1].split(".")[0]
+        spec = importlib.util.spec_from_file_location(
+            module_name,
+            path,
+        )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module

@@ -232,7 +232,10 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
 def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
     # Load contact_forces_inequality_constraint_muscle_excitations
     bioptim_folder = TestUtils.bioptim_folder()
-    contact = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle_excitations.py")
+    contact = TestUtils.load_module(
+        bioptim_folder
+        + "/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle_excitations.py"
+    )
     boundary = 50
     ocp = contact.prepare_ocp(
         bioptim_folder + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod",

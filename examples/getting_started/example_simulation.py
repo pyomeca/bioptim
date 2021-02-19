@@ -36,7 +36,6 @@ if __name__ == "__main__":
     # sol_from_initial_guess.graphs(shooting_type=Shooting.SINGLE_CONTINUOUS)
     # sol_from_initial_guess.graphs(shooting_type=Shooting.MULTIPLE)
 
-
     # Simulation of the solution. It is not the graph of the solution, it is the graph of a Runge Kutta from the solution
     sol = ocp.solve()
     s_single = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)

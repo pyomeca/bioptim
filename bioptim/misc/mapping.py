@@ -95,7 +95,9 @@ class BiMapping:
         The mapping that links the second variable to the first
     """
 
-    def __init__(self, to_second: Union[Mapping, int, list, tuple, range], to_first: Union[Mapping, int, list, tuple, range]):
+    def __init__(
+        self, to_second: Union[Mapping, int, list, tuple, range], to_first: Union[Mapping, int, list, tuple, range]
+    ):
         """
         Parameters
         ----------

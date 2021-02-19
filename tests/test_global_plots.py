@@ -7,6 +7,7 @@ import os
 import pytest
 
 import matplotlib
+
 matplotlib.use("Agg")
 import numpy as np
 import biorbd
@@ -33,7 +34,7 @@ def test_plot_merged_graphs():
     # Load graphs_one_phase
     bioptim_folder = TestUtils.bioptim_folder()
     merged_graphs = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py")
-    
+
     # Define the problem
     model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
@@ -63,9 +64,7 @@ def test_plot_graphs_multi_phases():
     # Load graphs_one_phase
     bioptim_folder = TestUtils.bioptim_folder()
     graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
-    ocp = graphs.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod"
-    )
+    ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod")
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -73,7 +72,9 @@ def test_plot_graphs_multi_phases():
 def test_add_new_plot():
     # Load graphs_one_phase
     bioptim_folder = TestUtils.bioptim_folder()
-    graphs = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py")
+    graphs = TestUtils.load_module(
+        bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
+    )
     ocp = graphs.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/cube.bioMod",
         n_shooting=20,
@@ -114,9 +115,7 @@ def test_console_objective_functions():
     # Load graphs_one_phase
     bioptim_folder = TestUtils.bioptim_folder()
     graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
-    ocp = graphs.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod"
-    )
+    ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod")
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
