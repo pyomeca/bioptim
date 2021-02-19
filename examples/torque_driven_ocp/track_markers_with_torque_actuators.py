@@ -29,7 +29,7 @@ def prepare_ocp(
     n_shooting: int,
     final_time: float,
     actuator_type: int = None,
-    ode_solver: OdeSolver = OdeSolver.RK4,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp

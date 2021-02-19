@@ -15,6 +15,8 @@ from .utils import TestUtils
 def test_track_segment_on_rt(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/track/track_segment_on_rt.py")
+    ode_solver = ode_solver()
+
     ocp = track.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/track/cube_and_line.bioMod",
         final_time=0.5,
@@ -57,6 +59,8 @@ def test_track_segment_on_rt(ode_solver):
 def test_track_marker_on_segment(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/track/track_marker_on_segment.py")
+    ode_solver = ode_solver()
+
     ocp = track.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/track/cube_and_line.bioMod",
         final_time=0.5,

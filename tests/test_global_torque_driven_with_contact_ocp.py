@@ -23,6 +23,8 @@ from .utils import TestUtils
 def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constraints):
     bioptim_folder = TestUtils.bioptim_folder()
     jump = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/maximize_predicted_height_CoM.py")
+    ode_solver = ode_solver()
+
     ocp = jump.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
@@ -98,6 +100,8 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
 def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     jump = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/maximize_predicted_height_CoM.py")
+    ode_solver = ode_solver()
+
     ocp = jump.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
@@ -120,7 +124,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
         np.testing.assert_almost_equal(q[:, -1], np.array((-0.2393758, 0.0612086, -0.0006739, 0.0006739)))
@@ -133,7 +137,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
         np.testing.assert_almost_equal(tau[:, 0], np.array((-0.5509092)))
         np.testing.assert_almost_equal(tau[:, -1], np.array(-0.00506117))
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
         np.testing.assert_almost_equal(q[:, -1], np.array((-0.23937581, 0.06120861, -0.00067392, 0.00067392)))

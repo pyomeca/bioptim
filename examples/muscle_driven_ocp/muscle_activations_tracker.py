@@ -127,7 +127,7 @@ def prepare_ocp(
     q_ref: np.ndarray,
     kin_data_to_track: str = "markers",
     use_residual_torque: bool = True,
-    ode_solver: OdeSolver = OdeSolver.RK4,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp to solve

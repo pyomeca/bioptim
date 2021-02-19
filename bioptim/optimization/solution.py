@@ -100,7 +100,7 @@ class Solution:
             A reference to the biorbd Model
         mapping: dict
             All the BiMapping of the states and controls
-        n_integration_steps: int
+        ode_solver: OdeSolverBase
             The number of finite element of the RK
         ns: int
             The number of shooting points
@@ -124,7 +124,7 @@ class Solution:
             self.nx = nlp.nx
             self.nu = nlp.nu
             self.dynamics = nlp.dynamics
-            self.n_integration_steps = nlp.n_integration_steps
+            self.ode_solver = nlp.ode_solver
             self.mapping = nlp.mapping
             self.var_states = nlp.var_states
             self.control_type = nlp.control_type
@@ -384,7 +384,7 @@ class Solution:
         return self._controls[0] if len(self._controls) == 1 else self._controls
 
     def integrate(
-        self, shooting_type: Shooting = Shooting.MULTIPLE, merge_phases: bool = False, continuous: bool = True
+        self, shooting_type: Shooting = Shooting.SINGLE_CONTINUOUS, keepdims: bool = True, merge_phases: bool = False, continuous: bool = True
     ) -> Any:
         """
         Integrate the states
@@ -393,6 +393,9 @@ class Solution:
         ----------
         shooting_type: Shooting
             Which type of integration
+        keepdims: bool
+            If the integration should returns the intermediate values of the integration [False]
+            or only keep the node [True] effective keeping the initial size of the states
         merge_phases: bool
             If the phase should be merged in a unique phase
         continuous: bool
@@ -425,11 +428,11 @@ class Solution:
         for p in range(len(self._states)):
             shape = self._states[p]["all"].shape
             if continuous:
-                n_steps = ocp.nlp[p].n_integration_steps
-                out.ns[p] *= ocp.nlp[p].n_integration_steps
+                n_steps = ocp.nlp[p].ode_solver.steps
+                out.ns[p] *= ocp.nlp[p].ode_solver.steps
             else:
-                n_steps = ocp.nlp[p].n_integration_steps + 1
-                out.ns[p] *= ocp.nlp[p].n_integration_steps + 1
+                n_steps = ocp.nlp[p].ode_solver.steps + 1
+                out.ns[p] *= ocp.nlp[p].ode_solver.steps + 1
             out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
@@ -664,7 +667,7 @@ class Solution:
         if show_now:
             plt.show()
 
-    def animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> Union[None, list]:
+    def animate(self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any) -> Union[None, list]:
         """
         Animate the simulation
 
@@ -689,15 +692,15 @@ class Solution:
             raise RuntimeError("bioviz must be install to animate the model")
         check_version(bioviz, "2.0.1", "2.1.0")
 
+        states_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:
             try:
-                states_to_animate = self.merge_phases().states
+                states_to_animate = states_to_animate.merge_phases().states
             except RuntimeError:
-                states_to_animate = self.states
-        elif n_frames == -1:
-            states_to_animate = self.states
-        else:
-            states_to_animate = self.interpolate(n_frames).states
+                pass
+
+        elif n_frames > 0:
+            states_to_animate = states_to_animate.interpolate(n_frames).states
 
         if not isinstance(states_to_animate, (list, tuple)):
             states_to_animate = [states_to_animate]

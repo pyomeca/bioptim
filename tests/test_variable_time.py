@@ -33,7 +33,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     time_max = [2, 4, 0.8]
     ns = (20, 30, 20)
     biorbd_model_path = TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/cube.bioMod"
-    ode_solver = OdeSolver.RK4
+    ode_solver = OdeSolver.RK4()
 
     # --- Options --- #
     n_phases = len(ns)

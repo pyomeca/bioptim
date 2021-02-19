@@ -27,7 +27,7 @@ def prepare_ocp(
     time_max: list,
     n_shooting: list,
     biorbd_model_path: str = "cube.bioMod",
-    ode_solver: OdeSolver = OdeSolver.RK4,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program. This example can be called as a normal single phase (all list len equals to 1)

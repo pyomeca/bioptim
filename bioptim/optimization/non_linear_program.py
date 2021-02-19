@@ -1,8 +1,9 @@
 from typing import Callable, Any
 
 from .parameters import ParameterList
+from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
-from ..misc.enums import ControlType, OdeSolver
+from ..misc.enums import ControlType
 from ..misc.options import OptionList
 
 
@@ -32,8 +33,6 @@ class NonLinearProgram:
         The external forces acting at the center of mass of the designated segment
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase
-    irk_polynomial_interpolation_degree: int
-        The degree of the IRK  # TODO: these option should be from a special class
     J: list[list[Objective]]
         All the objectives at each of the node of the phase
     mapping: dict
@@ -44,8 +43,6 @@ class NonLinearProgram:
         List of all the muscle names
     muscles: MX
         The casadi variables for the muscles
-    n_integration_steps: int
-        The number of finite element of the RK  # TODO: these option should be from a special class
     n_threads: int
         The number of thread to use
     np: int
@@ -123,19 +120,17 @@ class NonLinearProgram:
         self.dynamics_type = None
         self.external_forces = []
         self.g = []
-        self.irk_polynomial_interpolation_degree = None
         self.J = []
         self.mapping = {}
         self.model = None
         self.muscleNames = None
         self.muscles = None
-        self.n_integration_steps = None
         self.n_threads = None
         self.np = None
         self.ns = None
         self.nu = None
         self.nx = None
-        self.ode_solver = OdeSolver.NO_SOLVER
+        self.ode_solver = OdeSolver.RK4()
         self.p = None
         self.parameters = ParameterList()
         self.par_dynamics = None

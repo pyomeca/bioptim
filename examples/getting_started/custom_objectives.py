@@ -21,6 +21,7 @@ from bioptim import (
     InitialGuess,
     OdeSolver,
     PenaltyNodes,
+    Shooting
 )
 
 
@@ -56,7 +57,7 @@ def custom_func_track_markers(pn: PenaltyNodes, first_marker_idx: int, second_ma
     return val
 
 
-def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4) -> OptimalControlProgram:
+def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControlProgram:
     """
     Prepare the program
 
@@ -131,7 +132,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4) -> OptimalControlPr
         x_bounds,
         u_bounds,
         objective_functions,
-        ode_solver=ode_solver,
+        ode_solver=ode_solver
     )
 
 
@@ -147,4 +148,5 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
-    sol.animate()
+    sol.animate(shooting_type=Shooting.SINGLE_CONTINUOUS, n_frames=100)
+

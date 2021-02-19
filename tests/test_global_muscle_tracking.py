@@ -14,6 +14,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
     # Load muscle_activations_tracker
     bioptim_folder = TestUtils.bioptim_folder()
     tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_activations_tracker.py")
+    ode_solver = ode_solver()
 
     # Define the problem
     model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
@@ -45,7 +46,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    if ode_solver == OdeSolver.RK8:
+    if isinstance(ode_solver, OdeSolver.RK8):
         np.testing.assert_almost_equal(f[0, 0], 6.340821289366818e-06)
     else:
         np.testing.assert_almost_equal(f[0, 0], 6.518854595660012e-06)
@@ -58,7 +59,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
     # Check some of the results
     q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([-9.11292790e-06, -9.98708184e-06]))
         np.testing.assert_almost_equal(q[:, -1], np.array([-0.49388008, -1.4492482]))
@@ -75,7 +76,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
             mus[:, -1], np.array([0.54685822, 0.18481451, 0.96949193, 0.77512584, 0.93948978, 0.89483523])
         )
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([-1.20296925e-05, -1.42883927e-05]))
         np.testing.assert_almost_equal(q[:, -1], np.array([-0.49387969, -1.44924798]))
@@ -121,6 +122,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     # Load muscle_activations_tracker
     bioptim_folder = TestUtils.bioptim_folder()
     tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_activations_tracker.py")
+    ode_solver = ode_solver()
 
     # Define the problem
     model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
@@ -152,7 +154,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    if ode_solver == OdeSolver.RK8:
+    if isinstance(ode_solver, OdeSolver.RK8):
         np.testing.assert_almost_equal(f[0, 0], 6.39401362889915e-06)
     else:
         np.testing.assert_almost_equal(f[0, 0], 6.5736277330517424e-06)
@@ -165,7 +167,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     # Check some of the results
     q, qdot, mus = sol.states["q"], sol.states["qdot"], sol.controls["muscles"]
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([-9.17149105e-06, -1.00592773e-05]))
         np.testing.assert_almost_equal(q[:, -1], np.array([-0.49387979, -1.44924811]))
@@ -180,7 +182,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
             mus[:, -1], np.array([0.5468617, 0.18481307, 0.96948995, 0.77512646, 0.93949036, 0.89483428])
         )
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([-1.20797525e-05, -1.44483833e-05]))
         np.testing.assert_almost_equal(q[:, -1], np.array([-0.4938794, -1.44924789]))
@@ -222,6 +224,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
     # Load muscle_excitations_tracker
     bioptim_folder = TestUtils.bioptim_folder()
     tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py")
+    ode_solver = ode_solver()
 
     # Define the problem
     model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
@@ -261,7 +264,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
         sol.controls["muscles"],
     )
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -290,7 +293,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
             mus_controls[:, -1], np.array([0.54671768, 0.18485764, 0.96954556, 0.77512657, 0.93947675, 0.89481789])
         )
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -360,6 +363,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     # Load muscle_excitations_tracker
     bioptim_folder = TestUtils.bioptim_folder()
     tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py")
+    ode_solver = ode_solver()
 
     # Define the problem
     model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
@@ -398,7 +402,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
         sol.controls["muscles"],
     )
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -426,7 +430,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
             mus_controls[:, -1], np.array([0.54671768, 0.18485764, 0.96954556, 0.77512657, 0.93947675, 0.89481789])
         )
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -495,6 +499,7 @@ def test_muscle_activation_and_contacts_tracking(ode_solver):
     contact = TestUtils.load_module(
         bioptim_folder + "/examples/muscle_driven_with_contact/muscle_activations_contacts_tracker.py"
     )
+    ode_solver = ode_solver()
 
     # Define the problem
     model_path = bioptim_folder + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod"

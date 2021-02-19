@@ -272,7 +272,7 @@ class PlotOcp:
         self.t_integrated = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
-            n_int_steps = nlp.n_integration_steps
+            n_int_steps = nlp.ode_solver.steps
             dt_ns = self.tf[phase_idx] / nlp.ns
             time_phase_integrated = []
             last_t_int = copy(last_t)
@@ -373,7 +373,7 @@ class PlotOcp:
                     elif plot_type == PlotType.INTEGRATED:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         plots_integrated = []
-                        n_int_steps = nlp.n_integration_steps
+                        n_int_steps = nlp.ode_solver.steps
                         for cmp in range(nlp.ns):
                             plots_integrated.append(
                                 ax.plot(
@@ -504,7 +504,7 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution(self.ocp, v)
-        data_states = sol.integrate(continuous=False, shooting_type=self.shooting_type).states
+        data_states = sol.integrate(continuous=False, shooting_type=self.shooting_type, keepdims=False).states
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "time"]).squeeze()
@@ -516,7 +516,7 @@ class PlotOcp:
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):
-            step_size = nlp.n_integration_steps + 1
+            step_size = nlp.ode_solver.steps + 1
             n_elements = nlp.ns * step_size + 1
 
             state = np.ndarray((0, n_elements))

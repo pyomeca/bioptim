@@ -8,7 +8,8 @@ import biorbd
 
 from .path_conditions import Bounds
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption, PenaltyNodes
-from ..misc.enums import Node, InterpolationType, OdeSolver, ControlType
+from ..dynamics.ode_solver import OdeSolver
+from ..misc.enums import Node, InterpolationType, ControlType
 from ..misc.options import OptionList, OptionGeneric
 
 
@@ -326,9 +327,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 for k in range(nlp.ns):
                     # Create an evaluation node
                     if (
-                        nlp.ode_solver == OdeSolver.RK4
-                        or nlp.ode_solver == OdeSolver.RK8
-                        or nlp.ode_solver == OdeSolver.IRK
+                        isinstance(nlp.ode_solver, OdeSolver.RK4)
+                        or isinstance(nlp.ode_solver, OdeSolver.RK8)
+                        or isinstance(nlp.ode_solver, OdeSolver.IRK)
                     ):
                         if nlp.control_type == ControlType.CONSTANT:
                             u = nlp.U[k]

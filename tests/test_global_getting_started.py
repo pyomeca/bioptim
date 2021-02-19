@@ -14,6 +14,7 @@ from .utils import TestUtils
 def test_pendulum_save_and_load():
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
@@ -60,10 +61,11 @@ def test_pendulum_save_and_load():
 def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_save_and_load.py")
+    ode_solver = ode_solver()
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         if use_sx:
-            with pytest.raises(NotImplementedError, match="use_sx and OdeSolver.IRK are not yet compatible"):
+            with pytest.raises(NotImplementedError, match="use_sx=True and OdeSolver.IRK are not yet compatible"):
                 pendulum.prepare_ocp(
                     biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
                     final_time=2,
@@ -127,7 +129,7 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        if ode_solver == OdeSolver.RK8:
+        if isinstance(ode_solver, OdeSolver.RK8):
             np.testing.assert_almost_equal(f[0, 0], 6654.69715318338)
         else:
             np.testing.assert_almost_equal(f[0, 0], 6657.974502951726)
@@ -149,7 +151,7 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
         # initial and final controls
-        if ode_solver == OdeSolver.RK8:
+        if isinstance(ode_solver, OdeSolver.RK8):
             np.testing.assert_almost_equal(tau[:, 0], np.array((16.2560473, 0)))
             np.testing.assert_almost_equal(tau[:, -1], np.array((-25.5991168, 0)))
         else:
@@ -167,6 +169,8 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
 def test_custom_constraint_track_markers(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     custom_constraint = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_constraint.py")
+    ode_solver = ode_solver()
+
     ocp = custom_constraint.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver
     )
@@ -187,7 +191,7 @@ def test_custom_constraint_track_markers(ode_solver):
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -211,6 +215,7 @@ def test_custom_constraint_track_markers(ode_solver):
 def test_initial_guesses(interpolation, ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     initial_guess = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_initial_guess.py")
+    ode_solver = ode_solver()
 
     np.random.seed(42)
     ocp = initial_guess.prepare_ocp(
@@ -260,6 +265,7 @@ def test_initial_guesses(interpolation, ode_solver):
 def test_cyclic_objective(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     cyclic_movement = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_cyclic_movement.py")
+    ode_solver = ode_solver()
 
     np.random.seed(42)
     ocp = cyclic_movement.prepare_ocp(
@@ -305,6 +311,7 @@ def test_cyclic_objective(ode_solver):
 def test_cyclic_constraint(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     cyclic_movement = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_cyclic_movement.py")
+    ode_solver = ode_solver()
 
     np.random.seed(42)
     ocp = cyclic_movement.prepare_ocp(
@@ -350,6 +357,8 @@ def test_cyclic_constraint(ode_solver):
 def test_phase_transitions(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     phase_transition = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_phase_transitions.py")
+    ode_solver = ode_solver()
+
     ocp = phase_transition.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver
     )
@@ -381,7 +390,7 @@ def test_phase_transitions(ode_solver):
     # Continuity between phase 0 and phase 1
     np.testing.assert_almost_equal(states[0]["q"][:, -1], states[1]["q"][:, 0])
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final controls
         np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((0.95986719, 9.70855983, -0.06237331)))
         np.testing.assert_almost_equal(controls[-1]["tau"][:, -1], np.array((0, 1.27170519e01, 1.14878049e00)))
@@ -410,6 +419,8 @@ def test_phase_transitions(ode_solver):
 def test_parameter_optimization(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     parameter = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
+    ode_solver = ode_solver()
+
     ocp = parameter.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=3,
@@ -437,7 +448,7 @@ def test_parameter_optimization(ode_solver):
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -450,7 +461,7 @@ def test_parameter_optimization(ode_solver):
         # gravity parameter
         np.testing.assert_almost_equal(gravity, np.array([[-9.0988827]]))
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -489,6 +500,8 @@ def test_parameter_optimization(ode_solver):
 def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_dynamics.py")
+    ode_solver = ode_solver()
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
         problem_type_custom=problem_type_custom,
@@ -526,6 +539,8 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver):
 def test_example_external_forces(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     external_forces = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_external_forces.py")
+    ode_solver = ode_solver()
+
     ocp = external_forces.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube_with_forces.bioMod",
         ode_solver=ode_solver,
@@ -551,7 +566,7 @@ def test_example_external_forces(ode_solver):
     np.testing.assert_almost_equal(tau[:, 20], np.array((0, 5.70877651, 0, 0)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((0, 3.90677425, 0, 0)))
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)), decimal=5)
@@ -581,6 +596,8 @@ def test_example_external_forces(ode_solver):
 def test_example_multiphase(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     multiphase = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    ode_solver = ode_solver()
+
     ocp = multiphase.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver
     )
@@ -635,6 +652,8 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     contact = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_inequality_constraint.py")
     min_bound = 50
+    ode_solver = ode_solver()
+
     ocp = contact.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
@@ -728,6 +747,8 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     contact = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_inequality_constraint.py")
     max_bound = 75
+    ode_solver = ode_solver()
+
     ocp = contact.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,

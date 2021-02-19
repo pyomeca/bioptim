@@ -15,6 +15,8 @@ def test_track_markers(ode_solver, actuator_type):
     # Load track_markers
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py")
+    ode_solver = ode_solver()
+
     ocp = track.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/cube.bioMod",
         n_shooting=30,
@@ -62,6 +64,8 @@ def test_track_markers_changing_constraints(ode_solver):
     # Load track_markers
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py")
+    ode_solver = ode_solver()
+
     ocp = track.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/cube.bioMod",
         n_shooting=30,
@@ -153,6 +157,8 @@ def test_track_markers_with_actuators(ode_solver):
     # Load track_markers
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py")
+    ode_solver = ode_solver()
+
     ocp = track.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/cube.bioMod",
         n_shooting=30,
@@ -197,6 +203,7 @@ def test_track_marker_2D_pendulum(ode_solver):
     # Load muscle_activations_contact_tracker
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_2D_pendulum.py")
+    ode_solver = ode_solver()
 
     # Define the problem
     model_path = bioptim_folder + "/examples/getting_started/pendulum.bioMod"
@@ -220,7 +227,7 @@ def test_track_marker_2D_pendulum(ode_solver):
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -238,7 +245,7 @@ def test_track_marker_2D_pendulum(ode_solver):
         np.testing.assert_almost_equal(tau[:, 0], np.array((0.98431048, -13.78108592)))
         np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15668869, 0.77410131)))
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))

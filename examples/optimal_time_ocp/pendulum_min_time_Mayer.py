@@ -26,7 +26,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.RK4,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
     weight: float = 1,
     min_time=0,
     max_time=np.inf,

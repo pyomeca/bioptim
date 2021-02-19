@@ -10,6 +10,7 @@ def test_merge_phases_one_phase():
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
@@ -28,6 +29,7 @@ def test_merge_phases_multi_phase():
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+
     ocp = cube.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
@@ -53,6 +55,7 @@ def test_interpolate():
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
     n_shooting = 10
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
@@ -90,6 +93,7 @@ def test_interpolate_multiphases():
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+
     ocp = cube.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
@@ -123,6 +127,7 @@ def test_interpolate_multiphases_merge_phase():
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+
     ocp = cube.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
@@ -153,6 +158,37 @@ def test_integrate():
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
     n_shooting = 10
+
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
+        final_time=2,
+        n_shooting=n_shooting,
+    )
+
+    sol = ocp.solve()
+    sol_integrated = sol.integrate(shooting_type=Shooting.MULTIPLE)
+    shapes = (4, 2, 2)
+
+    for i, key in enumerate(sol.states):
+        np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]])
+
+        assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
+        assert sol.states[key].shape == (shapes[i], n_shooting + 1)
+
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. This may happen in previously "
+        "integrated and interpolated structure",
+    ):
+        _ = sol_integrated.controls
+
+
+def test_integrate_single_shoot():
+    # Load pendulum
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
+    n_shooting = 10
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
@@ -177,35 +213,6 @@ def test_integrate():
         _ = sol_integrated.controls
 
 
-def test_integrate_single_shoot():
-    # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
-    n_shooting = 10
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
-        n_shooting=n_shooting,
-    )
-
-    sol = ocp.solve()
-    sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
-    shapes = (4, 2, 2)
-
-    for i, key in enumerate(sol.states):
-        np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]])
-
-        assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
-        assert sol.states[key].shape == (shapes[i], n_shooting + 1)
-
-    with pytest.raises(
-        RuntimeError,
-        match="There is no controls in the solution. This may happen in previously "
-        "integrated and interpolated structure",
-    ):
-        _ = sol_integrated.controls
-
-
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 @pytest.mark.parametrize("merge", [False, True])
 def test_integrate_non_continuous(shooting, merge):
@@ -213,6 +220,7 @@ def test_integrate_non_continuous(shooting, merge):
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
     n_shooting = 10
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
@@ -243,6 +251,7 @@ def test_integrate_multiphase(shooting):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+
     ocp = cube.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
@@ -272,6 +281,7 @@ def test_integrate_multiphase_merged(shooting):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+
     ocp = cube.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
@@ -304,6 +314,7 @@ def test_integrate_multiphase_non_continuous(shooting):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+
     ocp = cube.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
@@ -334,6 +345,7 @@ def test_integrate_multiphase_merged_non_continuous(shooting):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+
     ocp = cube.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )

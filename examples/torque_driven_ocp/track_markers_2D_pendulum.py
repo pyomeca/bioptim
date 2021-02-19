@@ -65,7 +65,7 @@ def prepare_ocp(
     n_shooting: int,
     markers_ref: np.ndarray,
     tau_ref: np.ndarray,
-    ode_solver: OdeSolver = OdeSolver.RK4,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp

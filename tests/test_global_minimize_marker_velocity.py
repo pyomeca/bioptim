@@ -27,7 +27,7 @@ def prepare_ocp(
     marker_velocity_or_displacement: str,
     marker_in_first_coordinates_system: bool,
     control_type: ControlType,
-    ode_solver: OdeSolver = OdeSolver.RK4,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare an ocp that targets some marker velocities, either by finite differences or by jacobian
@@ -118,7 +118,6 @@ def prepare_ocp(
         x_bounds,
         u_bounds,
         objective_functions,
-        n_integration_steps=5,
         control_type=control_type,
         ode_solver=ode_solver,
     )
@@ -127,6 +126,7 @@ def prepare_ocp(
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_and_minimize_marker_displacement_global(ode_solver):
     # Load track_and_minimize_marker_velocity
+    ode_solver = ode_solver()
     ocp = prepare_ocp(
         biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/cube_and_line.bioMod",
         n_shooting=5,
@@ -172,6 +172,7 @@ def test_track_and_minimize_marker_displacement_global(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_and_minimize_marker_displacement_RT(ode_solver):
     # Load track_and_minimize_marker_velocity
+    ode_solver = ode_solver()
     ocp = prepare_ocp(
         biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/cube_and_line.bioMod",
         n_shooting=5,
@@ -220,6 +221,7 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_and_minimize_marker_velocity(ode_solver):
     # Load track_and_minimize_marker_velocity
+    ode_solver = ode_solver()
     ocp = prepare_ocp(
         biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/cube_and_line.bioMod",
         n_shooting=5,
@@ -264,7 +266,8 @@ def test_track_and_minimize_marker_velocity(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
     # Load track_and_minimize_marker_velocity
-    if ode_solver == OdeSolver.IRK:
+    ode_solver = ode_solver()
+    if isinstance(ode_solver, OdeSolver.IRK):
         with pytest.raises(
             NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with IRK"
         ):

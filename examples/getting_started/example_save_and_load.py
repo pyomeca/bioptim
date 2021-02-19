@@ -27,7 +27,7 @@ def prepare_ocp(
     n_shooting: int,
     n_threads: int,
     use_sx: bool = False,
-    ode_solver: OdeSolver = OdeSolver.RK4,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the program

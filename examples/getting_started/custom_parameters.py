@@ -70,7 +70,7 @@ def prepare_ocp(
     min_g,
     max_g,
     target_g,
-    ode_solver=OdeSolver.RK4,
+    ode_solver=OdeSolver.RK4(),
     use_sx=False,
 ) -> OptimalControlProgram:
     """
