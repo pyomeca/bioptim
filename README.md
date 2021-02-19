@@ -1249,7 +1249,7 @@ The accepted values are:
 The type of integration to perform
 - MULTIPLE: resets the state at each node
 - SINGLE: resets the state at each phase
-- SINGLE_CONTINUOUS: never resets the state
+- SINGLE_CONTINUOUS: never resets the state. The behaviour of SINGLE and SINGLE_CONTINUOUS are the same for a single phase program
 
 ### Enum: CostType
 The type of cost
