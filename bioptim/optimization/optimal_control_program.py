@@ -24,7 +24,7 @@ from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..misc.__version__ import __version__
 from ..misc.enums import ControlType, OdeSolver, Solver, Shooting
-from ..misc.mapping import BidirectionalMapping, Mapping
+from ..misc.mapping import BiMapping, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
@@ -129,10 +129,10 @@ class OptimalControlProgram:
         n_integration_steps: int = 5,
         irk_polynomial_interpolation_degree: int = 4,
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
-        all_generalized_mapping: Union[BidirectionalMapping, list, tuple] = None,
-        q_mapping: Union[BidirectionalMapping, list, tuple] = None,
-        qdot_mapping: Union[BidirectionalMapping, list, tuple] = None,
-        tau_mapping: Union[BidirectionalMapping, list, tuple] = None,
+        all_generalized_mapping: Union[BiMapping, list, tuple] = None,
+        q_mapping: Union[BiMapping, list, tuple] = None,
+        qdot_mapping: Union[BiMapping, list, tuple] = None,
+        tau_mapping: Union[BiMapping, list, tuple] = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = PhaseTransitionList(),
         n_threads: int = 1,
@@ -173,13 +173,13 @@ class OptimalControlProgram:
             The degrees for the IRK
         control_type: ControlType
             The type of controls for each phase
-        all_generalized_mapping: BidirectionalMapping
+        all_generalized_mapping: BiMapping
             The mapping to apply on q, qdot and tau at the same time
-        q_mapping: BidirectionalMapping
+        q_mapping: BiMapping
             The mapping to apply on q
-        qdot_mapping: BidirectionalMapping
+        qdot_mapping: BiMapping
             The mapping to apply on qdot
-        tau_mapping: BidirectionalMapping
+        tau_mapping: BiMapping
             The mapping to apply on tau
         plot_mappings: Mapping
             The mapping to apply on the plots
@@ -350,9 +350,9 @@ class OptimalControlProgram:
             if q_mapping is not None or qdot_mapping is not None or tau_mapping is not None:
                 raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used alongside")
             q_mapping = qdot_mapping = tau_mapping = all_generalized_mapping
-        NLP.add(self, "q", q_mapping, q_mapping is None, BidirectionalMapping, name="mapping")
-        NLP.add(self, "qdot", qdot_mapping, qdot_mapping is None, BidirectionalMapping, name="mapping")
-        NLP.add(self, "tau", tau_mapping, tau_mapping is None, BidirectionalMapping, name="mapping")
+        NLP.add(self, "q", q_mapping, q_mapping is None, BiMapping, name="mapping")
+        NLP.add(self, "qdot", qdot_mapping, qdot_mapping is None, BiMapping, name="mapping")
+        NLP.add(self, "tau", tau_mapping, tau_mapping is None, BiMapping, name="mapping")
         plot_mappings = plot_mappings if plot_mappings is not None else {}
         reshaped_plot_mappings = []
         for i in range(self.n_phases):

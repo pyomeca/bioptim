@@ -4,7 +4,7 @@ from casadi import MX, vertcat, horzcat, Function
 
 from .dynamics_functions import DynamicsFunctions
 from ..misc.enums import PlotType, ControlType
-from ..misc.mapping import BidirectionalMapping, Mapping
+from ..misc.mapping import BiMapping, Mapping
 from ..gui.plot import CustomPlot
 
 
@@ -319,7 +319,7 @@ class Problem:
         """
 
         if nlp.mapping["q"] is None:
-            nlp.mapping["q"] = BidirectionalMapping(range(nlp.model.nbQ()), range(nlp.model.nbQ()))
+            nlp.mapping["q"] = BiMapping(range(nlp.model.nbQ()), range(nlp.model.nbQ()))
 
         dof_names = nlp.model.nameDof()
         q_mx = MX()
@@ -371,7 +371,7 @@ class Problem:
         """
 
         if nlp.mapping["qdot"] is None:
-            nlp.mapping["qdot"] = BidirectionalMapping(range(nlp.model.nbQdot()), range(nlp.model.nbQdot()))
+            nlp.mapping["qdot"] = BiMapping(range(nlp.model.nbQdot()), range(nlp.model.nbQdot()))
 
         dof_names = nlp.model.nameDof()
         qdot_mx = MX()
@@ -441,7 +441,7 @@ class Problem:
         """
 
         if nlp.mapping["tau"] is None:
-            nlp.mapping["tau"] = BidirectionalMapping(
+            nlp.mapping["tau"] = BiMapping(
                 range(nlp.model.nbGeneralizedTorque()), range(nlp.model.nbGeneralizedTorque())
             )
 

@@ -1,7 +1,7 @@
 import pytest
 
 import numpy as np
-from bioptim import Mapping, BidirectionalMapping
+from bioptim import Mapping, BiMapping
 
 
 def test_mapping():
@@ -13,13 +13,13 @@ def test_mapping():
 
 
 def test_bidirectional_mapping():
-    mapping = BidirectionalMapping([0, 1, 2], [3, 4, 5])
+    mapping = BiMapping([0, 1, 2], [3, 4, 5])
 
     np.testing.assert_almost_equal(mapping.to_first.len, 3)
     np.testing.assert_almost_equal(mapping.to_first.map_idx, [3, 4, 5])
     np.testing.assert_almost_equal(mapping.to_second.map_idx, [0, 1, 2])
 
     with pytest.raises(RuntimeError, match="to_second must be a Mapping class"):
-        BidirectionalMapping(1, [3, 4, 5])
+        BiMapping(1, [3, 4, 5])
     with pytest.raises(RuntimeError, match="to_first must be a Mapping class"):
-        BidirectionalMapping([0, 1, 2], 3)
+        BiMapping([0, 1, 2], 3)

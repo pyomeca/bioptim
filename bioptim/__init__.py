@@ -108,7 +108,7 @@ PhaseTransitionFcn
 # --- Mapping indices between vector --- #
 Mapping
     Mapping of index set to a different index set
-BidirectionalMapping
+BiMapping
     Mapping of two index sets between each other
 
 
@@ -152,7 +152,7 @@ from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
 from .limits.penalty import PenaltyNodes
 from .misc.enums import Axis, Node, InterpolationType, OdeSolver, PlotType, Solver, ControlType, CostType, Shooting
-from .misc.mapping import BidirectionalMapping, Mapping
+from .misc.mapping import BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.parameters import ParameterList

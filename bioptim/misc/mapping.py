@@ -83,7 +83,7 @@ class Mapping:
         return len(self.map_idx)
 
 
-class BidirectionalMapping:
+class BiMapping:
     """
     Mapping of two index sets between each other
 

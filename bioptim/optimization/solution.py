@@ -99,7 +99,7 @@ class Solution:
         model: biorbd.Model
             A reference to the biorbd Model
         mapping: dict
-            All the BidirectionalMapping of the states and controls
+            All the BiMapping of the states and controls
         n_integration_steps: int
             The number of finite element of the RK
         ns: int

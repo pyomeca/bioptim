@@ -22,7 +22,7 @@ from bioptim import (
     ObjectiveFcn,
     DynamicsList,
     DynamicsFcn,
-    BidirectionalMapping,
+    BiMapping,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -35,7 +35,7 @@ def prepare_ocp(model_path, phase_time, n_shooting, min_bound, max_bound, mu, od
     # Model path
     biorbd_model = biorbd.Model(model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
-    tau_mapping = BidirectionalMapping([None, None, None, 0], [3])
+    tau_mapping = BiMapping([None, None, None, 0], [3])
 
     # Add objective functions
     objective_functions = ObjectiveList()

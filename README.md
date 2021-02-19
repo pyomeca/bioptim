@@ -374,10 +374,10 @@ OptimalControlProgram(
     n_integration_steps: int,
     irk_polynomial_interpolation_degree: int,
     control_type: [ControlType, list],
-    all_generalized_mapping: BidirectionalMapping,
-    q_mapping: BidirectionalMapping,
-    qdot_mapping: BidirectionalMapping,
-    tau_mapping: BidirectionalMapping,
+    all_generalized_mapping: BiMapping,
+    q_mapping: BiMapping,
+    qdot_mapping: BiMapping,
+    tau_mapping: BiMapping,
     plot_mappings: Mapping,
     phase_transitions: PhaseTransitionList,
     n_threads: int,
@@ -1177,7 +1177,7 @@ a = a_from_b.map(b)
 ```
 Note the `None` are replaced by zeros.
 
-The BidirectionalMapping is no more no less than a list of two mappings that link two matrices both ways: `BidirectionalMapping(a_to_b, b_to_a)`
+The BiMapping is no more no less than a list of two mappings that link two matrices both ways: `BiMapping(a_to_b, b_to_a)`
 
 ### Enum: Node
 The node targets some specific nodes of the ocp or of a phase
