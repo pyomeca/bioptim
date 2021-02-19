@@ -1,8 +1,6 @@
 """
 Test for file IO
 """
-import importlib.util
-from pathlib import Path
 import pytest
 import numpy as np
 from bioptim import OdeSolver
@@ -12,16 +10,10 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_muscle_driven_ocp(ode_solver):
-    # Load static_arm
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "static_arm", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/static_arm.py"
-    )
-    static_arm = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(static_arm)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    static_arm = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/static_arm.py")
     ocp = static_arm.prepare_ocp(
-        str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod",
+        bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod",
         final_time=2,
         n_shooting=10,
         weight=1,
@@ -122,15 +114,10 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
     # unitary tested
 
     # Load static_arm_with_contact
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "static_arm_with_contact", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/static_arm_with_contact.py"
-    )
-    static_arm_with_contact = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(static_arm_with_contact)
-
-    ocp = static_arm_with_contact.prepare_ocp(
-        str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26_with_contact.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    static_arm = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/static_arm_with_contact.py")
+    ocp = static_arm.prepare_ocp(
+        bioptim_folder + "/examples/muscle_driven_ocp/arm26_with_contact.bioMod",
         final_time=2,
         n_shooting=10,
         weight=1,
@@ -244,18 +231,14 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4])  # Only one solver since it is very long
 def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
     # Load contact_forces_inequality_constraint_muscle_excitations
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "contact_forces_inequality_constraint_muscle_excitations",
-        str(PROJECT_FOLDER)
-        + "/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle_excitations.py",
+    bioptim_folder = TestUtils.bioptim_folder()
+    contact = TestUtils.load_module(
+        bioptim_folder
+        + "/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle_excitations.py"
     )
-    contact_forces_inequality_constraint_muscle_excitations = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(contact_forces_inequality_constraint_muscle_excitations)
-
     boundary = 50
-    ocp = contact_forces_inequality_constraint_muscle_excitations.prepare_ocp(
-        str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod",
+    ocp = contact.prepare_ocp(
+        bioptim_folder + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod",
         phase_time=0.3,
         n_shooting=10,
         min_bound=boundary,

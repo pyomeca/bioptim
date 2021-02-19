@@ -1,6 +1,9 @@
-import numpy as np
+import importlib.util
+from pathlib import Path
 import os
-import pickle
+from typing import Any
+
+import numpy as np
 
 from casadi import MX
 import biorbd
@@ -16,6 +19,21 @@ from bioptim import (
 
 
 class TestUtils:
+    @staticmethod
+    def bioptim_folder() -> str:
+        return str(Path(__file__).parent / "..")
+
+    @staticmethod
+    def load_module(path: str) -> Any:
+        module_name = path.split("/")[-1].split(".")[0]
+        spec = importlib.util.spec_from_file_location(
+            module_name,
+            path,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
     @staticmethod
     def save_and_load(sol, ocp, test_solve_of_loaded=False):
         file_path = "test.bo"

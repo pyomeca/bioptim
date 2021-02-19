@@ -19,13 +19,12 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     OdeSolver,
     PenaltyNodes,
 )
 
 
-def custom_func_track_markers(pn: PenaltyNodes, first_marker_idx, int, second_marker_idx: int) -> MX:
+def custom_func_track_markers(pn: PenaltyNodes, first_marker_idx: int, second_marker_idx: int) -> MX:
     """
     The used-defined constraint function (This particular one mimics the ConstraintFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
@@ -148,5 +147,4 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.animate()
+    sol.animate()

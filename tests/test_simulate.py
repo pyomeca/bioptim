@@ -1,23 +1,17 @@
-import importlib.util
-from pathlib import Path
 import pytest
 
 import numpy as np
-
 from bioptim import Shooting
+
+from .utils import TestUtils
 
 
 def test_merge_phases_one_phase():
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
     )
@@ -32,15 +26,10 @@ def test_merge_phases_one_phase():
 
 def test_merge_phases_multi_phase():
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/example_multiphase.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    ocp = cube.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
 
     sol = ocp.solve()
@@ -61,16 +50,11 @@ def test_merge_phases_multi_phase():
 
 def test_interpolate():
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
     n_shooting = 10
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         n_shooting=n_shooting,
     )
@@ -92,7 +76,7 @@ def test_interpolate():
         match="There is no controls in the solution. This may happen in previously "
         "integrated and interpolated structure",
     ):
-        sol_interp.controls
+        _ = sol_interp.controls
 
     with pytest.raises(
         ValueError,
@@ -104,15 +88,10 @@ def test_interpolate():
 
 def test_interpolate_multiphases():
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/example_multiphase.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    ocp = cube.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
 
     sol = ocp.solve()
@@ -130,7 +109,7 @@ def test_interpolate_multiphases():
         match="There is no controls in the solution. This may happen in previously "
         "integrated and interpolated structure",
     ):
-        sol_interp.controls
+        _ = sol_interp.controls
 
     with pytest.raises(
         ValueError,
@@ -142,15 +121,10 @@ def test_interpolate_multiphases():
 
 def test_interpolate_multiphases_merge_phase():
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/example_multiphase.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    ocp = cube.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
 
     sol = ocp.solve()
@@ -171,21 +145,16 @@ def test_interpolate_multiphases_merge_phase():
         match="There is no controls in the solution. This may happen in previously "
         "integrated and interpolated structure",
     ):
-        sol_interp.controls
+        _ = sol_interp.controls
 
 
 def test_integrate():
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
     n_shooting = 10
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         n_shooting=n_shooting,
     )
@@ -205,21 +174,16 @@ def test_integrate():
         match="There is no controls in the solution. This may happen in previously "
         "integrated and interpolated structure",
     ):
-        sol_integrated.controls
+        _ = sol_integrated.controls
 
 
 def test_integrate_single_shoot():
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
     n_shooting = 10
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         n_shooting=n_shooting,
     )
@@ -239,23 +203,18 @@ def test_integrate_single_shoot():
         match="There is no controls in the solution. This may happen in previously "
         "integrated and interpolated structure",
     ):
-        sol_integrated.controls
+        _ = sol_integrated.controls
 
 
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 @pytest.mark.parametrize("merge", [False, True])
 def test_integrate_non_continuous(shooting, merge):
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
     n_shooting = 10
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         n_shooting=n_shooting,
     )
@@ -276,21 +235,16 @@ def test_integrate_non_continuous(shooting, merge):
         match="There is no controls in the solution. This may happen in previously "
         "integrated and interpolated structure",
     ):
-        sol_integrated.controls
+        _ = sol_integrated.controls
 
 
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 def test_integrate_multiphase(shooting):
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/example_multiphase.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    ocp = cube.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
 
     sol = ocp.solve()
@@ -310,21 +264,16 @@ def test_integrate_multiphase(shooting):
         match="There is no controls in the solution. This may happen in previously "
         "integrated and interpolated structure",
     ):
-        sol_integrated.controls
+        _ = sol_integrated.controls
 
 
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 def test_integrate_multiphase_merged(shooting):
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/example_multiphase.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    ocp = cube.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
 
     sol = ocp.solve()
@@ -347,21 +296,16 @@ def test_integrate_multiphase_merged(shooting):
         match="There is no controls in the solution. This may happen in previously "
         "integrated and interpolated structure",
     ):
-        sol_integrated.controls
+        _ = sol_integrated.controls
 
 
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 def test_integrate_multiphase_non_continuous(shooting):
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/example_multiphase.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    ocp = cube.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
 
     sol = ocp.solve()
@@ -382,21 +326,16 @@ def test_integrate_multiphase_non_continuous(shooting):
         match="There is no controls in the solution. This may happen in previously "
         "integrated and interpolated structure",
     ):
-        sol_integrated.controls
+        _ = sol_integrated.controls
 
 
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 def test_integrate_multiphase_merged_non_continuous(shooting):
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/example_multiphase.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
+    ocp = cube.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
     )
 
     sol = ocp.solve()
@@ -420,4 +359,4 @@ def test_integrate_multiphase_merged_non_continuous(shooting):
         match="There is no controls in the solution. This may happen in previously "
         "integrated and interpolated structure",
     ):
-        sol_integrated.controls
+        _ = sol_integrated.controls

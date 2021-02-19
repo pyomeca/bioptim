@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import numpy as np
 import pytest
 
@@ -25,6 +23,8 @@ from bioptim import (
 )
 from bioptim.optimization.solution import Solution
 
+from .utils import TestUtils
+
 
 def prepare_ocp(phase_time_constraint, use_parameter):
     # --- Inputs --- #
@@ -32,8 +32,7 @@ def prepare_ocp(phase_time_constraint, use_parameter):
     time_min = [1, 3, 0.1]
     time_max = [2, 4, 0.8]
     ns = (20, 30, 20)
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    biorbd_model_path = str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/cube.bioMod"
+    biorbd_model_path = TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/cube.bioMod"
     ode_solver = OdeSolver.RK4
 
     # --- Options --- #

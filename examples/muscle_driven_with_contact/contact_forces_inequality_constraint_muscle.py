@@ -23,10 +23,10 @@ from bioptim import (
 )
 
 
-def prepare_ocp(model_path, phase_time, n_shooting, min_bound, max_bound):
+def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound):
     # --- Options --- #
     # Model path
-    biorbd_model = biorbd.Model(model_path)
+    biorbd_model = biorbd.Model(biorbd_model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
     tau_mapping = BiMapping([None, None, None, 0], [3])
@@ -97,11 +97,11 @@ def prepare_ocp(model_path, phase_time, n_shooting, min_bound, max_bound):
 
 
 if __name__ == "__main__":
-    model_path = "2segments_4dof_2contacts_1muscle.bioMod"
+    biorbd_model_path = "2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.3
     ns = 10
     ocp = prepare_ocp(
-        model_path=model_path,
+        biorbd_model_path=biorbd_model_path,
         phase_time=t,
         n_shooting=ns,
         min_bound=50,
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=True)
 
     nlp = ocp.nlp[0]
-    nlp.model = biorbd.Model(model_path)
+    nlp.model = biorbd.Model(biorbd_model_path)
 
     q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
     x = np.concatenate((q, qdot))

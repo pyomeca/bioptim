@@ -13,16 +13,10 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_segment_on_rt(ode_solver):
-    # Load track_segment_on_rt
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "track_segment_on_rt", str(PROJECT_FOLDER) + "/examples/track/track_segment_on_rt.py"
-    )
-    track_segment_on_rt = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(track_segment_on_rt)
-
-    ocp = track_segment_on_rt.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    track = TestUtils.load_module(bioptim_folder + "/examples/track/track_segment_on_rt.py")
+    ocp = track.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/track/cube_and_line.bioMod",
         final_time=0.5,
         n_shooting=8,
         ode_solver=ode_solver,
@@ -61,16 +55,10 @@ def test_track_segment_on_rt(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_marker_on_segment(ode_solver):
-    # Load track_marker_on_segment
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "track_marker_on_segment", str(PROJECT_FOLDER) + "/examples/track/track_marker_on_segment.py"
-    )
-    track_marker_on_segment = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(track_marker_on_segment)
-
-    ocp = track_marker_on_segment.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    track = TestUtils.load_module(bioptim_folder + "/examples/track/track_marker_on_segment.py")
+    ocp = track.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/track/cube_and_line.bioMod",
         final_time=0.5,
         n_shooting=8,
         initialize_near_solution=True,

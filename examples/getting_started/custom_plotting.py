@@ -12,7 +12,6 @@ from bioptim import (
     Bounds,
     QAndQDotBounds,
     InitialGuess,
-    ShowResult,
     PlotType,
 )
 
@@ -109,5 +108,4 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=False)
 
     # --- Show results --- #
-    result = ShowResult(ocp, sol)
-    result.graphs()
+    sol.graphs()

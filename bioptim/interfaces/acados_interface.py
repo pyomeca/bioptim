@@ -270,7 +270,7 @@ class AcadosInterface(SolverInterface):
             or not np.isfinite(x_max).all()
         ):
             raise NotImplementedError(
-                "u_bounds and x_bounds cannot be set to infinity in ACADOS. Consider changing it"
+                "u_bounds and x_bounds cannot be set to infinity in ACADOS. Consider changing it "
                 "to a big value instead."
             )
 
