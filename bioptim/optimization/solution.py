@@ -99,7 +99,7 @@ class Solution:
         model: biorbd.Model
             A reference to the biorbd Model
         mapping: dict
-            All the BidirectionalMapping of the states and controls
+            All the BiMapping of the states and controls
         n_integration_steps: int
             The number of finite element of the RK
         ns: int
@@ -396,7 +396,7 @@ class Solution:
         merge_phases: bool
             If the phase should be merged in a unique phase
         continuous: bool
-            If the arrival value of a node should be discarted [True] or keep [False]. The value of an integrated
+            If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
             arrival node and the beginning of the next one are expected to be almost equal when the problem converged
 
         Returns

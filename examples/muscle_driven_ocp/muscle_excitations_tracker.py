@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from bioptim import (
     OptimalControlProgram,
     NonLinearProgram,
-    BidirectionalMapping,
+    BiMapping,
     DynamicsList,
     DynamicsFcn,
     DynamicsFunctions,
@@ -70,9 +70,9 @@ def generate_data(
     nlp.model = biorbd_model
     nlp.shape = {"q": n_q, "qdot": n_qdot, "tau": n_tau, "muscle": n_mus}
     nlp.mapping = {
-        "q": BidirectionalMapping(range(n_q), range(n_q)),
-        "qdot": BidirectionalMapping(range(n_qdot), range(n_qdot)),
-        "tau": BidirectionalMapping(range(n_tau), range(n_tau)),
+        "q": BiMapping(range(n_q), range(n_q)),
+        "qdot": BiMapping(range(n_qdot), range(n_qdot)),
+        "tau": BiMapping(range(n_tau), range(n_tau)),
     }
     markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_q)
 

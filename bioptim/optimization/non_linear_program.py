@@ -37,7 +37,7 @@ class NonLinearProgram:
     J: list[list[Objective]]
         All the objectives at each of the node of the phase
     mapping: dict
-        All the BidirectionalMapping of the states and controls
+        All the BiMapping of the states and controls
     model: biorbd.Model
         The biorbd model associated with the phase
     muscleNames: list[str]

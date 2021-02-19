@@ -6,7 +6,7 @@ from casadi import MX
 import biorbd
 from bioptim import (
     OptimalControlProgram,
-    BidirectionalMapping,
+    BiMapping,
     Mapping,
     OdeSolver,
     Bounds,
@@ -41,9 +41,7 @@ class TestUtils:
         elif isinstance(first_elem, (list, tuple)):
             for i in range(len(first_elem)):
                 TestUtils.deep_assert(first_elem[i], second_elem[i])
-        elif isinstance(
-            first_elem, (OptimalControlProgram, Bounds, InitialGuess, BidirectionalMapping, Mapping, OdeSolver)
-        ):
+        elif isinstance(first_elem, (OptimalControlProgram, Bounds, InitialGuess, BiMapping, Mapping, OdeSolver)):
             for key in dir(first_elem):
                 TestUtils.deep_assert(getattr(first_elem, key), getattr(second_elem, key))
         else:

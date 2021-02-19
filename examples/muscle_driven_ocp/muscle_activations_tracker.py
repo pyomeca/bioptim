@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from bioptim import (
     OptimalControlProgram,
     NonLinearProgram,
-    BidirectionalMapping,
+    BiMapping,
     DynamicsList,
     DynamicsFcn,
     DynamicsFunctions,
@@ -74,13 +74,13 @@ def generate_data(
     nlp.model = biorbd_model
     nlp.shape = {"muscle": n_mus}
     nlp.mapping = {
-        "q": BidirectionalMapping(range(n_q), range(n_q)),
-        "qdot": BidirectionalMapping(range(n_qdot), range(n_qdot)),
+        "q": BiMapping(range(n_q), range(n_q)),
+        "qdot": BiMapping(range(n_qdot), range(n_qdot)),
     }
 
     if use_residual_torque:
         nlp.shape["tau"] = n_tau
-        nlp.mapping["tau"] = BidirectionalMapping(range(n_tau), range(n_tau))
+        nlp.mapping["tau"] = BiMapping(range(n_tau), range(n_tau))
         dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_and_torque_driven
     else:
         dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_driven

@@ -5,7 +5,7 @@ from casadi import MX, SX, vertcat
 from scipy.interpolate import interp1d
 
 from ..misc.enums import InterpolationType
-from ..misc.mapping import BidirectionalMapping
+from ..misc.mapping import BiMapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 
 
@@ -544,17 +544,17 @@ class QAndQDotBounds(Bounds):
     def __init__(
         self,
         biorbd_model,
-        q_mapping: BidirectionalMapping = None,
-        qdot_mapping: BidirectionalMapping = None,
+        q_mapping: BiMapping = None,
+        qdot_mapping: BiMapping = None,
     ):
         """
         Parameters
         ----------
         biorbd_model: biorbd.Model
             A reference to the model
-        q_mapping: BidirectionalMapping
+        q_mapping: BiMapping
             The mapping of q
-        qdot_mapping: BidirectionalMapping
+        qdot_mapping: BiMapping
             The mapping of qdot. If qdot_mapping is not provided, q_mapping is used
         """
         if biorbd_model.nbQuat() > 0:
@@ -568,11 +568,11 @@ class QAndQDotBounds(Bounds):
                 )
 
         if not q_mapping:
-            q_mapping = BidirectionalMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+            q_mapping = BiMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
 
         if not qdot_mapping:
             if biorbd_model.nbQuat() > 0:
-                qdot_mapping = BidirectionalMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+                qdot_mapping = BiMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
             else:
                 qdot_mapping = q_mapping
 
