@@ -415,6 +415,11 @@ class Solution:
         if self.is_merged:
             raise RuntimeError("Cannot integrate after merging phases")
 
+        if shooting_type == Shooting.MULTIPLE and keepdims:
+            raise ValueError("Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing")
+        if keepdims and not continuous:
+            raise ValueError("continuous=False and keepdims=True cannot be used simultanously since it would necessarily change the dimension")
+
         # Copy the data
         out = self.copy(skip_data=True)
 
@@ -429,11 +434,16 @@ class Solution:
             shape = self._states[p]["all"].shape
             if continuous:
                 n_steps = ocp.nlp[p].ode_solver.steps
-                out.ns[p] *= ocp.nlp[p].ode_solver.steps
+                if not keepdims:
+                    out.ns[p] *= ocp.nlp[p].ode_solver.steps
             else:
                 n_steps = ocp.nlp[p].ode_solver.steps + 1
-                out.ns[p] *= ocp.nlp[p].ode_solver.steps + 1
-            out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
+                if not keepdims:
+                    out.ns[p] *= ocp.nlp[p].ode_solver.steps + 1
+            if keepdims:
+                out._states[p]["all"] = np.ndarray((shape[0], shape[1]))
+            else:
+                out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
             if shooting_type == Shooting.SINGLE_CONTINUOUS:
@@ -445,7 +455,7 @@ class Solution:
                             f"when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
                             f"please integrate with Shooting.SINGLE"
                         )
-                    x0 += val
+                    x0 += np.array(val)[:, 0]
             else:
                 x0 = self._states[p]["all"][:, 0]
             for n in range(self.ns[p]):
@@ -459,7 +469,7 @@ class Solution:
                     )
 
                 if keepdims:
-                    integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xf"])
+                    integrated = np.concatenate((x0[:, np.newaxis], ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xf"]), axis=1)
                     cols = [n, n + 1]
                 else:
                     integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
@@ -468,7 +478,7 @@ class Solution:
                 cols = range(cols[0], cols[1])
 
                 out._states[p]["all"][:, cols] = integrated
-                x0 = self._states[p]["all"][:, n + 1] if shooting_type == Shooting.MULTIPLE else integrated[:, -1]
+                x0 = np.array(self._states[p]["all"][:, n + 1]) if shooting_type == Shooting.MULTIPLE else integrated[:, -1]
 
             if not continuous:
                 out._states[p]["all"][:, -1] = self._states[p]["all"][:, -1]

@@ -371,8 +371,6 @@ OptimalControlProgram(
     parameters: ParameterList,
     external_forces: list,
     ode_solver: OdeSolver,
-    n_integration_steps: int,
-    irk_polynomial_interpolation_degree: int,
     control_type: [ControlType, list],
     all_generalized_mapping: BiMapping,
     q_mapping: BiMapping,
@@ -400,8 +398,6 @@ In the case of a multiphase optimization, one model per phase should be passed i
 `external_forces` are the external forces acting on the center of mass of the bodies. 
 It is list (one element for each phase) of np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n
 `ode_solver` is the ode solver used to solve the dynamic equations
-`n_integration_steps` is the number of elements when solving with a explicit Runge Kutta ode solver
-`irk_polynomial_interpolation_degree` is the degree of the implicit Runge Kutta ode solver
 `control_type` is the type of discretization of the controls (usually CONSTANT) (see ControlType section)
 `all_generalized_mapping` is used to reduce the number of degrees of freedom by linking them (see The mappings section).
 This ones applies the same mapping to the generalized coordinates (*q*), velocities (*qdot*) and forces (*tau*).
@@ -1118,6 +1114,9 @@ Also, the values inside the dictionaries are of dimension `n_elements` x 1.
 
 It is possible to integrate (also called simulate) the states at will, by calling the `sol.integrate()` method.
 The `shooting_type: Shooting` parameter allows to select the type of integration to perform (see the enum Shooting for more detail).
+The `keepdims` parameter allows to keep the initial dimensions of the return structure. If set to false, depending on the integrator, intermediate points between the node can be added (usually a multiple of n_steps of the Runge-Kutta).
+By definition, setting `keepdims` to True while asking for `Shooting.MULTIPLE` would return the exact same structure. This will therefore raise an error.
+The same is true if `continusous` is set to False, which necessarily changes the dimension. It is therefore prohibited.
 The `merge_phase: bool` parameter requests to merge all the phases into one [True] or not [False].
 The `continuous: bool` parameter can be deceiving. If it mostly for internal purposes. 
 In brief, it discards [True] or keeps [False] the arrival value of a node of integration, resulting in doubling the number of points at each node.
@@ -1189,11 +1188,11 @@ The accepted values are:
 - END: The last node
 - ALL: All the nodes
 
-### Enum: OdeSolver
+### Class: OdeSolver
 The ordinary differential equation (ode) solver to solve the dynamics of the system. 
 The RK4 and RK8 are the one with the most options available.
 IRK is supposed to be a bit more robust, but may be slower too. 
-CVODES is the one with the least options, since it is not in-house implemented. 
+CVODES is the one with the least options, since it is not in-house implemented.
 
 The accepted values are:
 - RK4: Runge-Kutta of the 4th order

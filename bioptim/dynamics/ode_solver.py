@@ -6,18 +6,44 @@ from ..misc.enums import ControlType
 
 class OdeSolverBase:
     """
-    Selection of valid integrator
-    The goto value is RK4
+    The base class for the ODE solvers
 
+    Attributes
+    ----------
+    steps: int
+        The number of integration steps
+    rk_integrator: Union[RK4, RK8, IRK]
+        The corresponding integrator class
 
-    prepare_dynamic_integrator(ocp: OptimalControlProgram, nlp: NonLinearProgram)
+    Methods
+    -------
+    integrator(self, ocp, nlp) -> list
+        The interface of the OdeSolver to the corresponding integrator
+    @staticmethod
+    prepare_dynamic_integrator(ocp, nlp)
         Properly set the integration in an nlp
     """
 
     def __init__(self):
         self.steps = 1
+        self.rk_integrator = None
 
-    def integrator(self, ocp, nlp):
+    def integrator(self, ocp, nlp) -> list:
+        """
+        The interface of the OdeSolver to the corresponding integrator
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the nlp
+
+        Returns
+        -------
+        A list of integrators
+        """
+
         raise RuntimeError("OdeSolveBase is abstract, please select a valid OdeSolver")
 
     @staticmethod
@@ -41,11 +67,42 @@ class OdeSolverBase:
 
 
 class RK(OdeSolverBase):
+    """
+    The base class for Runge-Kutta
+
+    Methods
+    -------
+    integrator(self, ocp, nlp) -> list
+        The interface of the OdeSolver to the corresponding integrator
+    """
+
     def __init__(self, n_integration_steps):
+        """
+        Parameters
+        ----------
+        n_integration_steps: int
+            The number of steps for the integration
+        """
+
         super(RK, self).__init__()
         self.steps = n_integration_steps
 
-    def integrator(self, ocp, nlp):
+    def integrator(self, ocp, nlp) -> list:
+        """
+        The interface of the OdeSolver to the corresponding integrator
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the nlp
+
+        Returns
+        -------
+        A list of integrators
+        """
+
         if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
             raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
 
@@ -64,23 +121,85 @@ class RK(OdeSolverBase):
 
 
 class OdeSolver:
+    """
+    The public interface to the different OdeSolvers
+    """
+
     class RK4(RK):
+        """
+        A Runge-Kutta 4 solver
+        """
+
         def __init__(self, n_integration_steps: int = 5):
+            """
+            Parameters
+            ----------
+            n_integration_steps: int
+                The number of steps for the integration
+            """
+
             super(OdeSolver.RK4, self).__init__(n_integration_steps)
             self.rk_integrator = RK4
 
     class RK8(RK):
+        """
+        A Runge-Kutta 8 solver
+        """
+
         def __init__(self, n_integration_steps: int = 5):
+            """
+            Parameters
+            ----------
+            n_integration_steps: int
+                The number of steps for the integration
+            """
+
             super(OdeSolver.RK8, self).__init__(n_integration_steps)
             self.rk_integrator = RK8
 
     class IRK(OdeSolverBase):
+        """
+        An implicit Runge-Kutta solver
+
+        Attributes
+        ----------
+        polynome_degree: int
+            The degree of the implicit RK
+
+        Methods
+        -------
+        integrator(self, ocp, nlp) -> list
+            The interface of the OdeSolver to the corresponding integrator
+        """
+
         def __init__(self, polynome_degree: int = 4):
+            """
+            Parameters
+            ----------
+            polynome_degree: int
+                The degree of the implicit RK
+            """
+
             super(OdeSolver.IRK, self).__init__()
             self.polynome_degree = polynome_degree
             self.rk_integrator = IRK
 
-        def integrator(self, ocp, nlp):
+        def integrator(self, ocp, nlp) -> list:
+            """
+            The interface of the OdeSolver to the corresponding integrator
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the nlp
+
+            Returns
+            -------
+            A list of integrators
+            """
+
             if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
 
@@ -99,10 +218,29 @@ class OdeSolver:
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
     class CVODES(OdeSolverBase):
+        """
+        An interface to CVODES
+        """
+
         def __init__(self):
             super(OdeSolver.CVODES, self).__init__()
 
-        def integrator(self, ocp, nlp):
+        def integrator(self, ocp, nlp) -> list:
+            """
+            The interface of the OdeSolver to the corresponding integrator
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the nlp
+
+            Returns
+            -------
+            A list of integrators
+            """
+
             if not isinstance(ocp.cx(), casadi.MX):
                 raise RuntimeError("CVODES integrator can only be used with MX graphs")
             if len(ocp.v.params.size) != 0:
@@ -117,4 +255,4 @@ class OdeSolver:
             ode = {"x": nlp.x, "p": nlp.u, "ode": nlp.dynamics_func(nlp.x, nlp.u, nlp.p)}
             ode_opt = {"t0": 0, "tf": nlp.dt, "number_of_finite_elements": nlp.ode_solver.steps}
 
-            casadi.integrator("integrator", "cvodes", ode, ode_opt)
+            return [casadi.integrator("integrator", "cvodes", ode, ode_opt)]
