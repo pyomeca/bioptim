@@ -10,19 +10,15 @@ import casadi as cas
 import numpy as np
 import biorbd
 from bioptim import (
-    Node,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
-    ConstraintList,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
     InterpolationType,
-    PlotType,
-    Data,
     Solver,
 )
 
@@ -47,7 +43,7 @@ def generate_data(biorbd_model, Tf, X0, T_max, N, noise_std, SHOW_PLOTS=False):
     ).expand()
     pendulum_ode = lambda t, x, u: forw_dyn(x, u).toarray().squeeze()
 
-    markers_kyn = cas.Function("makers_kyn", [q], [biorbd_model.markers(q)]).expand()
+    markers_kyn = biorbd.to_casadi_func("makers_kyn", biorbd_model.markers, q)
 
     # Simulated data
     h = Tf / N
@@ -94,7 +90,7 @@ def check_results(biorbd_model, N, Xs):
     u = cas.MX.sym("u", 1)
     q = cas.MX.sym("q", biorbd_model.nbQ())
 
-    markers_kyn = cas.Function("makers_kyn", [q], [biorbd_model.markers(q)]).expand()
+    markers_kyn = biorbd.to_casadi_func("makers_kyn", biorbd_model.markers, q)
     Y_est = np.zeros((3, biorbd_model.nbMarkers(), N))  # Measurements trajectory
 
     for n in range(N):
@@ -113,10 +109,10 @@ def plot_true_U(q_to_plot):
 
 def warm_start_mhe(data_sol_prev):
     # TODO: This should be moved in a MHE module
-    q = data_sol_prev[0]["q"]
-    dq = data_sol_prev[0]["qdot"]
-    u = data_sol_prev[1]["tau"]
-    x = np.vstack([q, dq])
+    states = data_sol_prev.states
+    controls = data_sol_prev.controls
+    x = states["all"]
+    u = controls["all"]
     X0 = np.hstack((x[:, 1:], np.tile(x[:, [-1]], 1)))  # discard oldest estimate of the window, duplicates youngest
     U0 = u[:, 1:]  # discard oldest estimate of the window
     X_out = x[:, 0]
@@ -152,15 +148,15 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:, 0] = -np.inf
-    x_bounds[0].max[:, 0] = np.inf
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
+    x_bounds[0].min[:, 0] = -10000
+    x_bounds[0].max[:, 0] = 10000
     # x_bounds[0].min[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
     # x_bounds[0].max[:biorbd_model.nbQ(), 0] = X0[:biorbd_model.nbQ(),0]
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min, 0.0], [tau_max, 0.0]])
+    u_bounds.add([tau_min, 0.0], [tau_max, 0.0])
 
     # Initial guesses
     x = X0
@@ -235,8 +231,7 @@ if __name__ == "__main__":
     }
     # sol = ocp.solve(solver_options=options_ipopt)
     sol = ocp.solve(solver=Solver.ACADOS, solver_options=options_acados)
-    data_sol = Data.get_data(ocp, sol)
-    X0, U0, X_out = warm_start_mhe(data_sol)
+    X0, U0, X_out = warm_start_mhe(sol)
     X_est[:, 0] = X_out
     t0 = time.time()
 
@@ -248,15 +243,14 @@ if __name__ == "__main__":
     for i in range(1, N - N_mhe):
         Y_i = Y_N_[:, :, i : i + N_mhe + 1]
         new_objectives = ObjectiveList()
-        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, target=Y_i, idx=0)
-        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=100, target=X0, phase=0, idx=1)
+        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, target=Y_i, list_index=0)
+        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=100, target=X0, phase=0, list_index=1)
 
         ocp.update_objectives(new_objectives)
 
         # sol = ocp.solve(solver_options=options_ipopt)
-        sol = ocp.solve(solver=Solver.ACADOS, solver_options=options_acados)
-        data_sol = Data.get_data(ocp, sol, concatenate=False)
-        X0, U0, X_out = warm_start_mhe(data_sol)
+        sol = ocp.solve(solver=Solver.ACADOS)
+        X0, U0, X_out = warm_start_mhe(sol)
         X_est[:, i] = X_out
     t1 = time.time()
     print("ACADOS with BiorbdOptim")
