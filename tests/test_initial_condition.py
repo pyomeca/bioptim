@@ -1,9 +1,9 @@
 import pytest
-import importlib.util
-from pathlib import Path
 
 import numpy as np
 from bioptim import InterpolationType, InitialGuess, Solution, Shooting
+
+from .utils import TestUtils
 
 # TODO: Add negative test for sizes
 
@@ -104,15 +104,10 @@ def test_initial_guess_spline():
 
 def test_initial_guess_update():
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
     )
@@ -175,16 +170,10 @@ def test_initial_guess_custom():
 
 
 def test_simulate_from_initial_multiple_shoot():
-    # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/example_save_and_load.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_save_and_load.py")
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         n_threads=4,
@@ -216,15 +205,10 @@ def test_simulate_from_initial_multiple_shoot():
 
 def test_simulate_from_initial_single_shoot():
     # Load pendulum
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum", str(PROJECT_FOLDER) + "/examples/getting_started/example_save_and_load.py"
-    )
-    pendulum = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_save_and_load.py")
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/getting_started/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         n_threads=4,

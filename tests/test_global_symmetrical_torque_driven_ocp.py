@@ -1,9 +1,6 @@
 """
 Test for file IO
 """
-import importlib.util
-from pathlib import Path
-
 import pytest
 import numpy as np
 from bioptim import OdeSolver
@@ -13,16 +10,10 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_symmetry_by_construction(ode_solver):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "symmetry_by_construction",
-        str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py",
-    )
-    symmetry_by_construction = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(symmetry_by_construction)
-
-    ocp = symmetry_by_construction.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    sym = TestUtils.load_module(bioptim_folder + "/examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py")
+    ocp = sym.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
         ode_solver=ode_solver,
     )
     sol = ocp.solve()
@@ -59,16 +50,10 @@ def test_symmetry_by_construction(ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_symmetry_by_constraint(ode_solver):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "symmetry_by_constraint",
-        str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/symmetry_by_constraint.py",
-    )
-    symmetry_by_constraint = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(symmetry_by_constraint)
-
-    ocp = symmetry_by_constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    sym = TestUtils.load_module(bioptim_folder + "/examples/symmetrical_torque_driven_ocp/symmetry_by_constraint.py")
+    ocp = sym.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
         ode_solver=ode_solver,
     )
     sol = ocp.solve()

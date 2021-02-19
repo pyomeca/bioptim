@@ -1,4 +1,3 @@
-from pathlib import Path
 import pytest
 
 from casadi import DM, Function
@@ -20,33 +19,34 @@ from bioptim import (
 )
 from bioptim.interfaces.ipopt_interface import IpoptInterface
 
+from .utils import TestUtils
 
 def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
+    bioptim_folder = TestUtils.bioptim_folder()
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
     elif with_muscles:
-        biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod")
+        biorbd_model = biorbd.Model(bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque() + biorbd_model.nbMuscles()
     elif with_contact:
         biorbd_model = biorbd.Model(
-            str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod"
+            bioptim_folder + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod"
         )
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     elif with_actuator:
-        biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/cube.bioMod")
+        biorbd_model = biorbd.Model(bioptim_folder + "/examples/torque_driven_ocp/cube.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     else:
-        biorbd_model = biorbd.Model(str(PROJECT_FOLDER) + "/examples/track/cube_and_line.bioMod")
+        biorbd_model = biorbd.Model(bioptim_folder + "/examples/track/cube_and_line.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()

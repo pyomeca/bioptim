@@ -1,9 +1,6 @@
 """
 Test for file IO
 """
-import importlib.util
-from pathlib import Path
-
 import pytest
 import numpy as np
 import biorbd
@@ -28,15 +25,10 @@ from .utils import TestUtils
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_pendulum_min_time_mayer(ode_solver):
     # Load pendulum_min_time_Mayer
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py"
-    )
-    pendulum_min_time_Mayer = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum_min_time_Mayer)
-
-    ocp = pendulum_min_time_Mayer.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         ode_solver=ode_solver,
@@ -109,15 +101,10 @@ def test_pendulum_min_time_mayer(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_pendulum_min_time_mayer_constrained(ode_solver):
     # Load pendulum_min_time_Mayer
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py"
-    )
-    pendulum_min_time_Mayer = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum_min_time_Mayer)
-
-    ocp = pendulum_min_time_Mayer.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         ode_solver=ode_solver,
@@ -175,15 +162,10 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_pendulum_max_time_mayer_constrained(ode_solver):
     # Load pendulum_min_time_Mayer
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum_min_time_Mayer", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py"
-    )
-    pendulum_min_time_Mayer = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum_min_time_Mayer)
-
-    ocp = pendulum_min_time_Mayer.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         ode_solver=ode_solver,
@@ -237,15 +219,10 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_pendulum_min_time_lagrange(ode_solver):
     # Load pendulum_min_time_Lagrange
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "pendulum_min_time_Lagrange", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py"
-    )
-    pendulum_min_time_Lagrange = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pendulum_min_time_Lagrange)
-
-    ocp = pendulum_min_time_Lagrange.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py")
+    ocp = pendulum.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         ode_solver=ode_solver,
@@ -318,8 +295,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_pendulum_min_time_lagrange_constrained(ode_solver):
     # Load pendulum_min_time_Lagrange
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    biorbd_model_path = (str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",)
+    biorbd_model_path = (TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/pendulum.bioMod",)
 
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path[0])
@@ -343,8 +319,7 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_pendulum_max_time_lagrange_constrained(ode_solver):
     # Load pendulum_min_time_Lagrange
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    biorbd_model_path = (str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",)
+    biorbd_model_path = (TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/pendulum.bioMod",)
 
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path[0])
@@ -368,15 +343,10 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_time_constraint(ode_solver):
     # Load time_constraint
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/time_constraint.py"
-    )
-    time_constraint = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(time_constraint)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    time_constraint = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/time_constraint.py")
     ocp = time_constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         time_min=0.6,
@@ -445,15 +415,10 @@ def test_time_constraint(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_monophase_time_constraint(ode_solver):
     # Load time_constraint
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "monophase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py"
-    )
-    monophase_time_constraint = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(monophase_time_constraint)
-
-    ocp = monophase_time_constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/cube.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    time_constraint = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/multiphase_time_constraint.py")
+    ocp = time_constraint.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/cube.bioMod",
         final_time=(2, 5, 4),
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
@@ -501,15 +466,10 @@ def test_monophase_time_constraint(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_multiphase_time_constraint(ode_solver):
     # Load time_constraint
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "multiphase_time_constraint", str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py"
-    )
-    multiphase_time_constraint = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(multiphase_time_constraint)
-
-    ocp = multiphase_time_constraint.prepare_ocp(
-        biorbd_model_path=str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/cube.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    time_constraint = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/multiphase_time_constraint.py")
+    ocp = time_constraint.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/cube.bioMod",
         final_time=(2, 5, 4),
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
@@ -560,7 +520,7 @@ def partial_ocp_parameters(n_phases):
     if n_phases != 1 and n_phases != 3:
         raise RuntimeError("n_phases should be 1 or 3")
 
-    biorbd_model_path = str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/cube.bioMod"
+    biorbd_model_path = TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/cube.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path)
     n_shooting = (2, 2, 2)
     final_time = (2, 5, 4)
@@ -625,15 +585,6 @@ def partial_ocp_parameters(n_phases):
         u_bounds,
         u_init,
     )
-
-
-PROJECT_FOLDER = Path(__file__).parent / ".."
-spec = importlib.util.spec_from_file_location(
-    "test_mayer_neg_monophase_time_constraint",
-    str(PROJECT_FOLDER) + "/examples/optimal_time_ocp/multiphase_time_constraint.py",
-)
-test_mayer_neg_monophase_time_constraint = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(test_mayer_neg_monophase_time_constraint)
 
 
 def test_mayer_neg_monophase_time_constraint():

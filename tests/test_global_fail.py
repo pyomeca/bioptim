@@ -1,7 +1,5 @@
 import pytest
 
-from pathlib import Path
-
 import biorbd
 from casadi import vertcat, MX
 from bioptim import (
@@ -12,13 +10,15 @@ from bioptim import (
     ConstraintList,
 )
 
+from .utils import TestUtils
+
 
 def test_custom_constraint_mx_fail():
     def custom_mx_fail(pn):
         return MX(0), vertcat(*pn.u), MX(0)
 
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    model_path = str(PROJECT_FOLDER) + "/examples/getting_started/cube.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
     constraints = ConstraintList()
     constraints.add(custom_mx_fail, node=Node.ALL)
 

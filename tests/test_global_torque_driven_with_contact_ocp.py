@@ -21,16 +21,10 @@ from .utils import TestUtils
 )
 @pytest.mark.parametrize("com_constraints", [False, True])
 def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constraints):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "maximize_predicted_height_CoM",
-        str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/maximize_predicted_height_CoM.py",
-    )
-    maximize_predicted_height_CoM = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(maximize_predicted_height_CoM)
-
-    ocp = maximize_predicted_height_CoM.prepare_ocp(
-        model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/2segments_4dof_2contacts.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    jump = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/maximize_predicted_height_CoM.py")
+    ocp = jump.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=False,
@@ -102,16 +96,10 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "maximize_predicted_height_CoM",
-        str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/maximize_predicted_height_CoM.py",
-    )
-    maximize_predicted_height_CoM = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(maximize_predicted_height_CoM)
-
-    ocp = maximize_predicted_height_CoM.prepare_ocp(
-        model_path=str(PROJECT_FOLDER) + "/examples/torque_driven_ocp/2segments_4dof_2contacts.bioMod",
+    bioptim_folder = TestUtils.bioptim_folder()
+    jump = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/maximize_predicted_height_CoM.py")
+    ocp = jump.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=True,

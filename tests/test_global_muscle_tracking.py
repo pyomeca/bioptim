@@ -1,9 +1,6 @@
 """
 Test for file IO
 """
-import importlib.util
-from pathlib import Path
-
 import pytest
 import numpy as np
 import biorbd
@@ -15,15 +12,11 @@ from .utils import TestUtils
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_muscle_activations_and_states_tracking(ode_solver):
     # Load muscle_activations_tracker
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "muscle_activations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_activations_tracker.py"
-    )
-    muscle_activations_tracker = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(muscle_activations_tracker)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_activations_tracker.py")
+    
     # Define the problem
-    model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 2
     n_shooting = 9
@@ -31,12 +24,12 @@ def test_muscle_activations_and_states_tracking(ode_solver):
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_activations_ref = muscle_activations_tracker.generate_data(
+    t, markers_ref, x_ref, muscle_activations_ref = tracker.generate_data(
         biorbd_model, final_time, n_shooting, use_residual_torque=use_residual_torque
     )
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
-    ocp = muscle_activations_tracker.prepare_ocp(
+    ocp = tracker.prepare_ocp(
         biorbd_model,
         final_time,
         n_shooting,
@@ -126,15 +119,11 @@ def test_muscle_activations_and_states_tracking(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     # Load muscle_activations_tracker
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "muscle_activations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_activations_tracker.py"
-    )
-    muscle_activations_tracker = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(muscle_activations_tracker)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_activations_tracker.py")
+    
     # Define the problem
-    model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 2
     n_shooting = 9
@@ -142,12 +131,12 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_activations_ref = muscle_activations_tracker.generate_data(
+    t, markers_ref, x_ref, muscle_activations_ref = tracker.generate_data(
         biorbd_model, final_time, n_shooting, use_residual_torque=use_residual_torque
     )
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
-    ocp = muscle_activations_tracker.prepare_ocp(
+    ocp = tracker.prepare_ocp(
         biorbd_model,
         final_time,
         n_shooting,
@@ -231,27 +220,23 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver):
     # Load muscle_excitations_tracker
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "muscle_excitations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py"
-    )
-    muscle_excitations_tracker = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(muscle_excitations_tracker)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py")
+    
     # Define the problem
-    model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.5
     n_shooting = 9
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_excitations_ref = muscle_excitations_tracker.generate_data(
+    t, markers_ref, x_ref, muscle_excitations_ref = tracker.generate_data(
         biorbd_model, final_time, n_shooting
     )
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
-    ocp = muscle_excitations_tracker.prepare_ocp(
+    ocp = tracker.prepare_ocp(
         biorbd_model,
         final_time,
         n_shooting,
@@ -375,27 +360,23 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     # Load muscle_excitations_tracker
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "muscle_excitations_tracker", str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py"
-    )
-    muscle_excitations_tracker = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(muscle_excitations_tracker)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py")
+    
     # Define the problem
-    model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_ocp/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.5
     n_shooting = 9
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_excitations_ref = muscle_excitations_tracker.generate_data(
+    t, markers_ref, x_ref, muscle_excitations_ref = tracker.generate_data(
         biorbd_model, final_time, n_shooting
     )
 
     biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
-    ocp = muscle_excitations_tracker.prepare_ocp(
+    ocp = tracker.prepare_ocp(
         biorbd_model,
         final_time,
         n_shooting,
@@ -514,16 +495,11 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_muscle_activation_and_contacts_tracking(ode_solver):
     # Load muscle_activations_contact_tracker
-    PROJECT_FOLDER = Path(__file__).parent / ".."
-    spec = importlib.util.spec_from_file_location(
-        "muscle_activations_contact_tracker",
-        str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/muscle_activations_contacts_tracker.py",
-    )
-    muscle_activations_contact_tracker = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(muscle_activations_contact_tracker)
-
+    bioptim_folder = TestUtils.bioptim_folder()
+    contact = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_with_contact/muscle_activations_contacts_tracker.py")
+    
     # Define the problem
-    model_path = str(PROJECT_FOLDER) + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod"
+    model_path = bioptim_folder + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.1
     n_shooting = 5
@@ -533,7 +509,7 @@ def test_muscle_activation_and_contacts_tracking(ode_solver):
     contact_forces_ref = np.random.rand(biorbd_model.nbContacts(), n_shooting)
     muscle_activations_ref = np.random.rand(biorbd_model.nbMuscles(), n_shooting + 1)
 
-    ocp = muscle_activations_contact_tracker.prepare_ocp(
+    ocp = contact.prepare_ocp(
         model_path,
         final_time,
         n_shooting,

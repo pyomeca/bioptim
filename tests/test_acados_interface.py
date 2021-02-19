@@ -3,8 +3,6 @@ Test for file IO.
 It tests the results of an optimal control problem with acados regarding the proper functioning of :
 - the handling of mayer and lagrange obj
 """
-import importlib.util
-from pathlib import Path
 import os
 import shutil
 
