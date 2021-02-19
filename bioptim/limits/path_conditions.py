@@ -313,7 +313,7 @@ class Bounds(OptionGeneric):
         Vertical concatenate of two Bounds
     __getitem__(self, slice_list: slice) -> "Bounds"
         Allows to get from square brackets
-    __setitem__(self, slice: slice, value: Union[np.ndarray, float])
+    __setitem__(self, slice: slice, value: Union[np.ndarray, list, float])
         Allows to set from square brackets
     __bool__(self) -> bool
         Get if the Bounds is empty
@@ -443,7 +443,7 @@ class Bounds(OptionGeneric):
                 "b is the stopping index and c is the step for slicing."
             )
 
-    def __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, float]):
+    def __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float]):
         """
         Allows to set from square brackets
 
@@ -491,6 +491,8 @@ class BoundsList(UniquePerPhaseOptionList):
     add(self, min_bound: Union[PathCondition, np.ndarray, list, tuple] = None,
             max_bound: Union[PathCondition, np.ndarray, list, tuple] = None, bounds: Bounds = None, **extra_arguments)
         Add a new constraint to the list, either [min_bound AND max_bound] OR [bounds] should be defined
+    __getitem__(self, item) -> Bounds
+        Get the ith option of the list
     print(self)
         Print the BoundsList to the console
     """
@@ -527,6 +529,22 @@ class BoundsList(UniquePerPhaseOptionList):
             super(BoundsList, self)._add(
                 min_bound=min_bound, max_bound=max_bound, option_type=Bounds, **extra_arguments
             )
+
+    def __getitem__(self, item) -> Bounds:
+        """
+        Get the ith option of the list
+
+        Parameters
+        ----------
+        item: int
+            The index of the option to get
+
+        Returns
+        -------
+        The ith option of the list
+        """
+
+        return super(BoundsList, self).__getitem__(item)
 
     def print(self):
         """
@@ -617,14 +635,14 @@ class InitialGuess(OptionGeneric):
 
     def __init__(
         self,
-        initial_guess: Union[np.ndarray, list, tuple, float] = (),
+        initial_guess: Union[np.ndarray, list, tuple, float, Callable] = (),
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         **parameters: Any,
     ):
         """
         Parameters
         ----------
-        initial_guess: np.ndarray
+        initial_guess: Union[np.ndarray, list, tuple, float, Callable]
             The initial guess
         interpolation: InterpolationType
             The type of interpolation of the initial guess

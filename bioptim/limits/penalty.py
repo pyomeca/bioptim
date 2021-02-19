@@ -17,7 +17,7 @@ class PenaltyNodes:
     A placeholder for the required elements to compute a penalty
     """
 
-    def __init__(self, ocp, nlp, t: list, x: list, u: list, p: Union[MX, SX]):
+    def __init__(self, ocp, nlp, t: list, x: list, u: list, p: Union[MX, SX, list]):
         """
         Parameters
         ----------
@@ -40,7 +40,7 @@ class PenaltyNodes:
         self.t = t
         self.x = x
         self.u = u
-        self.p = p
+        self.p = vertcat(p)
 
 
 class PenaltyOption(OptionGeneric):
