@@ -1,4 +1,4 @@
-from typing import Callable, Any
+from typing import Callable, Any, Union
 
 from .parameters import ParameterList
 from ..dynamics.ode_solver import OdeSolver
@@ -205,11 +205,7 @@ class NonLinearProgram:
 
             for i in range(ocp.n_phases):
                 cmp = 0 if len(param) == 1 else i
-
-                if name is None:
-                    setattr(ocp.nlp[i], param_name, param[cmp])
-                else:
-                    getattr(ocp.nlp[i], name)[param_name] = param[cmp]
+                NonLinearProgram.__setattr(ocp.nlp[i], name, param_name, param[cmp])
 
         else:
             if ocp.n_phases != 1 and not duplicate_singleton:
@@ -219,10 +215,7 @@ class NonLinearProgram:
                 )
 
             for i in range(ocp.n_phases):
-                if name is None:
-                    setattr(ocp.nlp[i], param_name, param)
-                else:
-                    getattr(ocp.nlp[i], name)[param_name] = param
+                NonLinearProgram.__setattr(ocp.nlp[i], name, param_name, param)
 
         if _type is not None:
             for nlp in ocp.nlp:
@@ -236,6 +229,28 @@ class NonLinearProgram:
                     and False in [False for i in param if not isinstance(i, _type)]
                 ):
                     raise RuntimeError(f"Parameter {param_name} must be a {str(_type)}")
+
+    @staticmethod
+    def __setattr(nlp, name: Union[str, None], param_name: str, param: Any):
+        """
+        Add a new element to the nlp of the format 'nlp.param_name = param' or 'nlp.name["param_name"] = param'
+        
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to a nlp
+        name: Union[str, None]
+            A meta name of the param if the param is set in a dictionary
+        param_name: str
+            The name of the parameter
+        param: Any
+            The parameter itself
+        """
+
+        if name is None:
+            setattr(nlp, param_name, param)
+        else:
+            getattr(nlp, name)[param_name] = param
 
     @staticmethod
     def add_path_condition(ocp, var: Any, path_name: str, type_option: Any, type_list: Any):
