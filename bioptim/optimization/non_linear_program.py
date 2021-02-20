@@ -196,51 +196,33 @@ class NonLinearProgram:
             The name of the parameter if the param_name should be stored in a dictionary
         """
 
-        if isinstance(param, (list, tuple)):
-            if len(param) != ocp.n_phases:
+        if isinstance(param, (OptionList, list, tuple)):
+            if len(param) == 1 and ocp.n_phases != 1 and not duplicate_singleton:
                 raise RuntimeError(
-                    f"{param_name} size({len(param)}) does not correspond to the number of phases({ocp.n_phases})."
+                    f"{param_name} size({len(param)}) does not correspond "
+                    f"to the number of phases({ocp.n_phases})."
                 )
-            else:
-                for i in range(ocp.n_phases):
-                    if name is None:
-                        setattr(ocp.nlp[i], param_name, param[i])
-                    else:
-                        getattr(ocp.nlp[i], name)[param_name] = param[i]
-        elif isinstance(param, OptionList):
-            if len(param) == ocp.n_phases:
-                for i in range(ocp.n_phases):
-                    if name is None:
-                        setattr(ocp.nlp[i], param_name, param[i])
-                    else:
-                        getattr(ocp.nlp[i], name)[param_name] = param[i]
-            else:
-                if len(param) == 1 and duplicate_singleton:
-                    for i in range(ocp.n_phases):
-                        if name is None:
-                            setattr(ocp.nlp[i], param_name, param[0])
-                        else:
-                            getattr(ocp.nlp[i], name)[param_name] = param[0]
-                else:
-                    raise RuntimeError(
-                        f"{param_name} size({len(param)}) does not correspond "
-                        f"to the number of phases({ocp.n_phases})."
-                    )
-        else:
-            if ocp.n_phases == 1:
+
+            for i in range(ocp.n_phases):
+                cmp = 0 if len(param) == 1 else i
+
                 if name is None:
-                    setattr(ocp.nlp[0], param_name, param)
+                    setattr(ocp.nlp[i], param_name, param[cmp])
                 else:
-                    getattr(ocp.nlp[0], name)[param_name] = param
-            else:
-                if duplicate_singleton:
-                    for i in range(ocp.n_phases):
-                        if name is None:
-                            setattr(ocp.nlp[i], param_name, param)
-                        else:
-                            getattr(ocp.nlp[i], name)[param_name] = param
+                    getattr(ocp.nlp[i], name)[param_name] = param[cmp]
+
+        else:
+            if ocp.n_phases != 1 and not duplicate_singleton:
+                raise RuntimeError(
+                    f"{param_name} size({len(param)}) does not correspond "
+                    f"to the number of phases({ocp.n_phases})."
+                )
+
+            for i in range(ocp.n_phases):
+                if name is None:
+                    setattr(ocp.nlp[i], param_name, param)
                 else:
-                    raise RuntimeError(f"{param_name} must be a list or tuple when number of phase is not equal to 1")
+                    getattr(ocp.nlp[i], name)[param_name] = param
 
         if _type is not None:
             for nlp in ocp.nlp:
