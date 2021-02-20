@@ -125,7 +125,7 @@ class OptimalControlProgram:
         constraints: Union[Constraint, ConstraintList] = ConstraintList(),
         parameters: Union[Parameter, ParameterList] = ParameterList(),
         external_forces: Union[list, tuple] = (),
-        ode_solver: OdeSolverBase = OdeSolver.RK4(),
+        ode_solver: Union[OdeSolverBase, OdeSolver] = OdeSolver.RK4(),
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
         all_generalized_mapping: Union[BiMapping, list, tuple] = None,
         q_mapping: Union[BiMapping, list, tuple] = None,

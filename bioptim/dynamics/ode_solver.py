@@ -106,8 +106,16 @@ class RK(OdeSolverBase):
         if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
             raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
 
-        ode_opt = {"t0": 0, "tf": nlp.dt, "model": nlp.model, "param": nlp.p, "cx": nlp.cx, "idx": 0,
-                   "control_type": nlp.control_type, "number_of_finite_elements": self.steps}
+        ode_opt = {
+            "t0": 0,
+            "tf": nlp.dt,
+            "model": nlp.model,
+            "param": nlp.p,
+            "cx": nlp.cx,
+            "idx": 0,
+            "control_type": nlp.control_type,
+            "number_of_finite_elements": self.steps,
+        }
         ode = {"x": nlp.x, "p": nlp.u, "ode": nlp.dynamics_func}
 
         if nlp.external_forces:
@@ -213,8 +221,16 @@ class OdeSolver:
                 )
 
             ode = {"x": nlp.x, "p": nlp.u, "ode": nlp.dynamics_func}
-            ode_opt = {"t0": 0, "tf": nlp.dt, "model": nlp.model, "param": nlp.p, "cx": nlp.cx, "idx": 0,
-                       "control_type": nlp.control_type, "irk_polynomial_interpolation_degree": self.polynome_degree}
+            ode_opt = {
+                "t0": 0,
+                "tf": nlp.dt,
+                "model": nlp.model,
+                "param": nlp.p,
+                "cx": nlp.cx,
+                "idx": 0,
+                "control_type": nlp.control_type,
+                "irk_polynomial_interpolation_degree": self.polynome_degree,
+            }
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
     class CVODES(OdeSolverBase):

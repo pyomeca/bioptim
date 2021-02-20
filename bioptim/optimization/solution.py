@@ -384,7 +384,11 @@ class Solution:
         return self._controls[0] if len(self._controls) == 1 else self._controls
 
     def integrate(
-        self, shooting_type: Shooting = Shooting.SINGLE_CONTINUOUS, keepdims: bool = True, merge_phases: bool = False, continuous: bool = True
+        self,
+        shooting_type: Shooting = Shooting.SINGLE_CONTINUOUS,
+        keepdims: bool = True,
+        merge_phases: bool = False,
+        continuous: bool = True,
     ) -> Any:
         """
         Integrate the states
@@ -416,9 +420,13 @@ class Solution:
             raise RuntimeError("Cannot integrate after merging phases")
 
         if shooting_type == Shooting.MULTIPLE and keepdims:
-            raise ValueError("Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing")
+            raise ValueError(
+                "Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing"
+            )
         if keepdims and not continuous:
-            raise ValueError("continuous=False and keepdims=True cannot be used simultanously since it would necessarily change the dimension")
+            raise ValueError(
+                "continuous=False and keepdims=True cannot be used simultanously since it would necessarily change the dimension"
+            )
 
         # Copy the data
         out = self.copy(skip_data=True)
@@ -469,7 +477,9 @@ class Solution:
                     )
 
                 if keepdims:
-                    integrated = np.concatenate((x0[:, np.newaxis], ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xf"]), axis=1)
+                    integrated = np.concatenate(
+                        (x0[:, np.newaxis], ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xf"]), axis=1
+                    )
                     cols = [n, n + 1]
                 else:
                     integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
@@ -478,7 +488,11 @@ class Solution:
                 cols = range(cols[0], cols[1])
 
                 out._states[p]["all"][:, cols] = integrated
-                x0 = np.array(self._states[p]["all"][:, n + 1]) if shooting_type == Shooting.MULTIPLE else integrated[:, -1]
+                x0 = (
+                    np.array(self._states[p]["all"][:, n + 1])
+                    if shooting_type == Shooting.MULTIPLE
+                    else integrated[:, -1]
+                )
 
             if not continuous:
                 out._states[p]["all"][:, -1] = self._states[p]["all"][:, -1]
@@ -684,7 +698,9 @@ class Solution:
         if show_now:
             plt.show()
 
-    def animate(self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any) -> Union[None, list]:
+    def animate(
+        self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any
+    ) -> Union[None, list]:
         """
         Animate the simulation
 

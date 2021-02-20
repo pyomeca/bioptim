@@ -197,8 +197,8 @@ def test_integrate_keepdims():
 
     sol = ocp.solve()
     with pytest.raises(
-            ValueError,
-            match="Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing",
+        ValueError,
+        match="Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing",
     ):
         _ = sol.integrate(shooting_type=Shooting.MULTIPLE, keepdims=True)
 
@@ -256,14 +256,14 @@ def test_integrate_non_continuous(shooting, merge):
 
     if shooting == Shooting.MULTIPLE:
         with pytest.raises(
-                ValueError,
-                match="Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing",
+            ValueError,
+            match="Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing",
         ):
             _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
     else:
         with pytest.raises(
-                ValueError,
-                match="continuous=False and keepdims=True cannot be used simultanously since it would necessarily change the dimension",
+            ValueError,
+            match="continuous=False and keepdims=True cannot be used simultanously since it would necessarily change the dimension",
         ):
             _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
 
@@ -300,8 +300,8 @@ def test_integrate_multiphase(shooting, keepdims):
     n_shooting = [20, 30, 20]
     if shooting == Shooting.MULTIPLE and keepdims:
         with pytest.raises(
-                ValueError,
-                match="Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing",
+            ValueError,
+            match="Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing",
         ):
             _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=keepdims)
         return
@@ -341,8 +341,8 @@ def test_integrate_multiphase_merged(shooting, keepdims):
     sol = ocp.solve()
     if shooting == Shooting.MULTIPLE and keepdims:
         with pytest.raises(
-                ValueError,
-                match="Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing",
+            ValueError,
+            match="Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing",
         ):
             _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=keepdims)
         return
@@ -422,14 +422,14 @@ def test_integrate_multiphase_merged_non_continuous(shooting):
 
     if shooting == Shooting.MULTIPLE:
         with pytest.raises(
-                ValueError,
-                match="Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing",
+            ValueError,
+            match="Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing",
         ):
             _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
     else:
         with pytest.raises(
-                ValueError,
-                match="continuous=False and keepdims=True cannot be used simultanously since it would necessarily change the dimension",
+            ValueError,
+            match="continuous=False and keepdims=True cannot be used simultanously since it would necessarily change the dimension",
         ):
             _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
 

@@ -50,7 +50,9 @@ def custom_phase_transition(state_pre: MX, state_post: MX, idx_1: int, idx_2: in
     return state_pre[idx_1:idx_2] - state_post[idx_1:idx_2]
 
 
-def prepare_ocp(biorbd_model_path: str = "cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path: str = "cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()
+) -> OptimalControlProgram:
     """
     Parameters
     ----------

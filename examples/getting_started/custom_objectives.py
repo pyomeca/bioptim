@@ -21,7 +21,6 @@ from bioptim import (
     InitialGuess,
     OdeSolver,
     PenaltyNodes,
-    Shooting
 )
 
 
@@ -132,7 +131,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
         x_bounds,
         u_bounds,
         objective_functions,
-        ode_solver=ode_solver
+        ode_solver=ode_solver,
     )
 
 
@@ -148,5 +147,4 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
-    sol.animate(shooting_type=Shooting.SINGLE_CONTINUOUS, n_frames=100)
-
+    sol.animate()
