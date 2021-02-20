@@ -199,8 +199,7 @@ class NonLinearProgram:
         if isinstance(param, (OptionList, list, tuple)):
             if len(param) == 1 and ocp.n_phases != 1 and not duplicate_singleton:
                 raise RuntimeError(
-                    f"{param_name} size({len(param)}) does not correspond "
-                    f"to the number of phases({ocp.n_phases})."
+                    f"{param_name} size({len(param)}) does not correspond " f"to the number of phases({ocp.n_phases})."
                 )
 
             for i in range(ocp.n_phases):
@@ -210,8 +209,7 @@ class NonLinearProgram:
         else:
             if ocp.n_phases != 1 and not duplicate_singleton:
                 raise RuntimeError(
-                    f"{param_name} size({len(param)}) does not correspond "
-                    f"to the number of phases({ocp.n_phases})."
+                    f"{param_name} size({len(param)}) does not correspond " f"to the number of phases({ocp.n_phases})."
                 )
 
             for i in range(ocp.n_phases):
@@ -234,7 +232,7 @@ class NonLinearProgram:
     def __setattr(nlp, name: Union[str, None], param_name: str, param: Any):
         """
         Add a new element to the nlp of the format 'nlp.param_name = param' or 'nlp.name["param_name"] = param'
-        
+
         Parameters
         ----------
         nlp: NonLinearProgram
