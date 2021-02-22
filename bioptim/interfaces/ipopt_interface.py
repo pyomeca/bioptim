@@ -1,12 +1,10 @@
-import os
-import pickle
-
 from casadi import vertcat, sum1, nlpsol, SX, MX
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType
+from ..optimization.solution import Solution
 
 
 class IpoptInterface(SolverInterface):
@@ -133,12 +131,13 @@ class IpoptInterface(SolverInterface):
         # Solve the problem
         self.out = {"sol": solver.call(self.ipopt_limits)}
         self.out["sol"]["time_tot"] = solver.stats()["t_wall_total"]
+        self.out["sol"]["iter"] = solver.stats()["iter_count"]
         # To match acados convention (0 = success, 1 = error)
         self.out["sol"]["status"] = int(not solver.stats()["success"])
 
         return self.out
 
-    def set_lagrange_multiplier(self, sol: dict):
+    def set_lagrange_multiplier(self, sol: Solution):
         """
         Set the lagrange multiplier from a solution structure
 
@@ -148,8 +147,8 @@ class IpoptInterface(SolverInterface):
             A solution structure where the lagrange multipliers are set
         """
 
-        self.lam_g = sol["lam_g"]
-        self.lam_x = sol["lam_x"]
+        self.lam_g = sol.lam_g
+        self.lam_x = sol.lam_x
 
     def __dispatch_bounds(self):
         """
