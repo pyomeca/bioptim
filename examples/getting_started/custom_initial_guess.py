@@ -61,7 +61,7 @@ def prepare_ocp(
     n_shooting: int,
     final_time: float,
     initial_guess: InterpolationType = InterpolationType.CONSTANT,
-    ode_solver=OdeSolver.RK4,
+    ode_solver=OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the program

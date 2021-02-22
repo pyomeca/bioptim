@@ -56,7 +56,7 @@ def custom_func_track_markers(pn: PenaltyNodes, first_marker_idx: int, second_ma
     return val
 
 
-def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4) -> OptimalControlProgram:
+def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControlProgram:
     """
     Prepare the program
 

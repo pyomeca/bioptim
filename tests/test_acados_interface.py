@@ -279,7 +279,7 @@ def test_acados_custom_dynamics(problem_type_custom):
     ocp = cube.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
         problem_type_custom=problem_type_custom,
-        ode_solver=OdeSolver.RK4,
+        ode_solver=OdeSolver.RK4(),
         use_sx=True,
     )
     constraints = ConstraintList()

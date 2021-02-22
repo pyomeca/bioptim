@@ -1,8 +1,9 @@
-from typing import Callable, Any
+from typing import Callable, Any, Union
 
 from .parameters import ParameterList
+from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
-from ..misc.enums import ControlType, OdeSolver
+from ..misc.enums import ControlType
 from ..misc.options import OptionList
 
 
@@ -32,8 +33,6 @@ class NonLinearProgram:
         The external forces acting at the center of mass of the designated segment
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase
-    irk_polynomial_interpolation_degree: int
-        The degree of the IRK  # TODO: these option should be from a special class
     J: list[list[Objective]]
         All the objectives at each of the node of the phase
     mapping: dict
@@ -44,8 +43,6 @@ class NonLinearProgram:
         List of all the muscle names
     muscles: MX
         The casadi variables for the muscles
-    n_integration_steps: int
-        The number of finite element of the RK  # TODO: these option should be from a special class
     n_threads: int
         The number of thread to use
     np: int
@@ -123,19 +120,17 @@ class NonLinearProgram:
         self.dynamics_type = None
         self.external_forces = []
         self.g = []
-        self.irk_polynomial_interpolation_degree = None
         self.J = []
         self.mapping = {}
         self.model = None
         self.muscleNames = None
         self.muscles = None
-        self.n_integration_steps = None
         self.n_threads = None
         self.np = None
         self.ns = None
         self.nu = None
         self.nx = None
-        self.ode_solver = OdeSolver.NO_SOLVER
+        self.ode_solver = OdeSolver.RK4()
         self.p = None
         self.parameters = ParameterList()
         self.par_dynamics = None
@@ -201,51 +196,24 @@ class NonLinearProgram:
             The name of the parameter if the param_name should be stored in a dictionary
         """
 
-        if isinstance(param, (list, tuple)):
-            if len(param) != ocp.n_phases:
+        if isinstance(param, (OptionList, list, tuple)):
+            if len(param) == 1 and ocp.n_phases != 1 and not duplicate_singleton:
                 raise RuntimeError(
-                    f"{param_name} size({len(param)}) does not correspond to the number of phases({ocp.n_phases})."
+                    f"{param_name} size({len(param)}) does not correspond " f"to the number of phases({ocp.n_phases})."
                 )
-            else:
-                for i in range(ocp.n_phases):
-                    if name is None:
-                        setattr(ocp.nlp[i], param_name, param[i])
-                    else:
-                        getattr(ocp.nlp[i], name)[param_name] = param[i]
-        elif isinstance(param, OptionList):
-            if len(param) == ocp.n_phases:
-                for i in range(ocp.n_phases):
-                    if name is None:
-                        setattr(ocp.nlp[i], param_name, param[i])
-                    else:
-                        getattr(ocp.nlp[i], name)[param_name] = param[i]
-            else:
-                if len(param) == 1 and duplicate_singleton:
-                    for i in range(ocp.n_phases):
-                        if name is None:
-                            setattr(ocp.nlp[i], param_name, param[0])
-                        else:
-                            getattr(ocp.nlp[i], name)[param_name] = param[0]
-                else:
-                    raise RuntimeError(
-                        f"{param_name} size({len(param)}) does not correspond "
-                        f"to the number of phases({ocp.n_phases})."
-                    )
+
+            for i in range(ocp.n_phases):
+                cmp = 0 if len(param) == 1 else i
+                NonLinearProgram.__setattr(ocp.nlp[i], name, param_name, param[cmp])
+
         else:
-            if ocp.n_phases == 1:
-                if name is None:
-                    setattr(ocp.nlp[0], param_name, param)
-                else:
-                    getattr(ocp.nlp[0], name)[param_name] = param
-            else:
-                if duplicate_singleton:
-                    for i in range(ocp.n_phases):
-                        if name is None:
-                            setattr(ocp.nlp[i], param_name, param)
-                        else:
-                            getattr(ocp.nlp[i], name)[param_name] = param
-                else:
-                    raise RuntimeError(f"{param_name} must be a list or tuple when number of phase is not equal to 1")
+            if ocp.n_phases != 1 and not duplicate_singleton:
+                raise RuntimeError(
+                    f"{param_name} size({len(param)}) does not correspond " f"to the number of phases({ocp.n_phases})."
+                )
+
+            for i in range(ocp.n_phases):
+                NonLinearProgram.__setattr(ocp.nlp[i], name, param_name, param)
 
         if _type is not None:
             for nlp in ocp.nlp:
@@ -259,6 +227,28 @@ class NonLinearProgram:
                     and False in [False for i in param if not isinstance(i, _type)]
                 ):
                     raise RuntimeError(f"Parameter {param_name} must be a {str(_type)}")
+
+    @staticmethod
+    def __setattr(nlp, name: Union[str, None], param_name: str, param: Any):
+        """
+        Add a new element to the nlp of the format 'nlp.param_name = param' or 'nlp.name["param_name"] = param'
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to a nlp
+        name: Union[str, None]
+            A meta name of the param if the param is set in a dictionary
+        param_name: str
+            The name of the parameter
+        param: Any
+            The parameter itself
+        """
+
+        if name is None:
+            setattr(nlp, param_name, param)
+        else:
+            getattr(nlp, name)[param_name] = param
 
     @staticmethod
     def add_path_condition(ocp, var: Any, path_name: str, type_option: Any, type_list: Any):

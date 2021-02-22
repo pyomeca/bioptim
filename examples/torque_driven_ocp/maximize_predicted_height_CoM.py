@@ -30,7 +30,7 @@ def prepare_ocp(
     phase_time: float,
     n_shooting: int,
     use_actuators: bool = False,
-    ode_solver: OdeSolver = OdeSolver.RK4,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
     objective_name: str = "MINIMIZE_PREDICTED_COM_HEIGHT",
     com_constraints: bool = False,
 ) -> OptimalControlProgram:

@@ -10,9 +10,9 @@ from casadi import MX, SX
 
 from .non_linear_program import NonLinearProgram as NLP
 from .variable import OptimizationVariable
-from ..dynamics.integrator import Integrator
-from ..dynamics.problem import Problem
 from ..dynamics.dynamics_type import DynamicsList, Dynamics
+from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
+from ..dynamics.problem import Problem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
@@ -23,7 +23,7 @@ from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..misc.__version__ import __version__
-from ..misc.enums import ControlType, OdeSolver, Solver, Shooting
+from ..misc.enums import ControlType, Solver, Shooting
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
@@ -125,9 +125,7 @@ class OptimalControlProgram:
         constraints: Union[Constraint, ConstraintList] = ConstraintList(),
         parameters: Union[Parameter, ParameterList] = ParameterList(),
         external_forces: Union[list, tuple] = (),
-        ode_solver: OdeSolver = OdeSolver.RK4,
-        n_integration_steps: int = 5,
-        irk_polynomial_interpolation_degree: int = 4,
+        ode_solver: Union[list, OdeSolverBase, OdeSolver] = OdeSolver.RK4(),
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
         all_generalized_mapping: Union[BiMapping, list, tuple] = None,
         q_mapping: Union[BiMapping, list, tuple] = None,
@@ -165,12 +163,8 @@ class OptimalControlProgram:
             All the parameters to optimize of the program
         external_forces: Union[list, tuple]
             The external forces acting on the center of mass of the segments specified in the bioMod
-        ode_solver: OdeSolver
+        ode_solver: OdeSolverBase
             The solver for the ordinary differential equations
-        n_integration_steps: int
-            The number of steps for the RK
-        irk_polynomial_interpolation_degree: int
-            The degrees for the IRK
         control_type: ControlType
             The type of controls for each phase
         all_generalized_mapping: BiMapping
@@ -217,8 +211,6 @@ class OptimalControlProgram:
             "parameters": ParameterList(),
             "external_forces": external_forces,
             "ode_solver": ode_solver,
-            "n_integration_steps": n_integration_steps,
-            "irk_polynomial_interpolation_degree": irk_polynomial_interpolation_degree,
             "control_type": control_type,
             "all_generalized_mapping": all_generalized_mapping,
             "q_mapping": q_mapping,
@@ -248,9 +240,6 @@ class OptimalControlProgram:
                     raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
             else:
                 raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
-        n_step = n_integration_steps
-        if not isinstance(n_step, int) or isinstance(n_step, bool) or n_step < 1:
-            raise RuntimeError("n_integration_steps should be a positive integer greater or equal than 1")
 
         if not isinstance(phase_time, (int, float)):
             if isinstance(phase_time, (tuple, list)):
@@ -307,7 +296,7 @@ class OptimalControlProgram:
         if not isinstance(phase_transitions, PhaseTransitionList):
             raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
 
-        if not isinstance(ode_solver, OdeSolver):
+        if not isinstance(ode_solver, OdeSolverBase):
             raise RuntimeError("ode_solver should be built an instance of OdeSolver")
 
         if not isinstance(use_sx, bool):
@@ -373,8 +362,6 @@ class OptimalControlProgram:
         NLP.add(self, "dynamics_type", dynamics, False)
         NLP.add(self, "ode_solver", ode_solver, True)
         NLP.add(self, "control_type", control_type, True)
-        NLP.add(self, "n_integration_steps", n_integration_steps, True)
-        NLP.add(self, "irk_polynomial_interpolation_degree", irk_polynomial_interpolation_degree, True)
 
         # Prepare the dynamics
         for i in range(self.n_phases):
@@ -382,7 +369,7 @@ class OptimalControlProgram:
             Problem.initialize(self, self.nlp[i])
             if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
-            Integrator.prepare_dynamic_integrator(self, self.nlp[i])
+            self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
         # Define the actual NLP problem
         self.v.define_ocp_shooting_points()

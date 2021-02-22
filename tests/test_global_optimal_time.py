@@ -27,6 +27,8 @@ def test_pendulum_min_time_mayer(ode_solver):
     # Load pendulum_min_time_Mayer
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
+    ode_solver = ode_solver()
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
@@ -52,7 +54,7 @@ def test_pendulum_min_time_mayer(ode_solver):
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -65,7 +67,7 @@ def test_pendulum_min_time_mayer(ode_solver):
         # optimized time
         np.testing.assert_almost_equal(tf, 0.6209187886055388)
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -103,6 +105,8 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
     # Load pendulum_min_time_Mayer
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
+    ode_solver = ode_solver()
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
@@ -134,12 +138,12 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 1)
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((24.34465091, 0)), decimal=3)
         np.testing.assert_almost_equal(tau[:, -1], np.array((-53.24135804, 0)), decimal=3)
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((24.24625693, 0)), decimal=3)
         np.testing.assert_almost_equal(tau[:, -1], np.array((-45.58969963, 0)), decimal=3)
@@ -164,6 +168,8 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
     # Load pendulum_min_time_Mayer
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
+    ode_solver = ode_solver()
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
@@ -196,7 +202,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], -1)
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final controls
         np.testing.assert_almost_equal(tau[1, 0], np.array(0))
         np.testing.assert_almost_equal(tau[1, -1], np.array(0))
@@ -221,6 +227,8 @@ def test_pendulum_min_time_lagrange(ode_solver):
     # Load pendulum_min_time_Lagrange
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py")
+    ode_solver = ode_solver()
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
@@ -246,7 +254,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -259,7 +267,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
         # optimized time
         np.testing.assert_almost_equal(tf, 0.6209245173245879)
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -345,6 +353,8 @@ def test_time_constraint(ode_solver):
     # Load time_constraint
     bioptim_folder = TestUtils.bioptim_folder()
     time_constraint = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/time_constraint.py")
+    ode_solver = ode_solver()
+
     ocp = time_constraint.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
@@ -375,7 +385,7 @@ def test_time_constraint(ode_solver):
     # optimized time
     np.testing.assert_almost_equal(tf, 1.0)
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -385,7 +395,7 @@ def test_time_constraint(ode_solver):
         np.testing.assert_almost_equal(tau[:, 0], np.array((22.49949667, 0)))
         np.testing.assert_almost_equal(tau[:, -1], np.array((-33.90954581, 0)))
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -417,6 +427,8 @@ def test_monophase_time_constraint(ode_solver):
     # Load time_constraint
     bioptim_folder = TestUtils.bioptim_folder()
     time_constraint = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/multiphase_time_constraint.py")
+    ode_solver = ode_solver()
+
     ocp = time_constraint.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/cube.bioMod",
         final_time=(2, 5, 4),
@@ -468,6 +480,8 @@ def test_multiphase_time_constraint(ode_solver):
     # Load time_constraint
     bioptim_folder = TestUtils.bioptim_folder()
     time_constraint = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/multiphase_time_constraint.py")
+    ode_solver = ode_solver()
+
     ocp = time_constraint.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/cube.bioMod",
         final_time=(2, 5, 4),

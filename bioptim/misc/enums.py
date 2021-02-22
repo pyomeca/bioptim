@@ -22,19 +22,6 @@ class Solver(Enum):
     NONE = None
 
 
-class OdeSolver(Enum):
-    """
-    Selection of valid integrator
-    The goto value is RK4
-    """
-
-    RK4 = 0  # Runge-Kutta of the 4th order
-    RK8 = 1  # Runge-Kutta of the 8th order
-    IRK = 2  # Implicit runge-Kutta
-    CVODES = 3
-    NO_SOLVER = 4
-
-
 class Node(Enum):
     """
     Selection of valid node

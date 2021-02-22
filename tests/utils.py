@@ -74,7 +74,7 @@ class TestUtils:
     @staticmethod
     def simulate(sol, decimal_value=7):
         sol_merged = sol.merge_phases()
-        sol_single = sol.integrate(merge_phases=True, shooting_type=Shooting.SINGLE_CONTINUOUS)
+        sol_single = sol.integrate(merge_phases=True, shooting_type=Shooting.SINGLE_CONTINUOUS, keepdims=False)
 
         # Evaluate the final error of the single shooting integration versus the finale node
         np.testing.assert_almost_equal(

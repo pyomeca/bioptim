@@ -12,6 +12,8 @@ from .utils import TestUtils
 def test_muscle_driven_ocp(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     static_arm = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/static_arm.py")
+    ode_solver = ode_solver()
+
     ocp = static_arm.prepare_ocp(
         bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod",
         final_time=2,
@@ -29,7 +31,7 @@ def test_muscle_driven_ocp(ode_solver):
     # Check some of the results
     q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -53,7 +55,7 @@ def test_muscle_driven_ocp(ode_solver):
             np.array([4.25940361e-03, 3.21754460e-05, 3.12984790e-05, 2.00725054e-03, 1.99993619e-03, 1.81725854e-03]),
         )
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -116,6 +118,8 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
     # Load static_arm_with_contact
     bioptim_folder = TestUtils.bioptim_folder()
     static_arm = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/static_arm_with_contact.py")
+    ode_solver = ode_solver()
+
     ocp = static_arm.prepare_ocp(
         bioptim_folder + "/examples/muscle_driven_ocp/arm26_with_contact.bioMod",
         final_time=2,
@@ -125,7 +129,7 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
     )
     sol = ocp.solve()
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -157,7 +161,7 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
             np.array([4.25988708e-03, 3.21882769e-05, 3.13076618e-05, 2.01160287e-03, 2.00431774e-03, 1.82289866e-03]),
         )
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
@@ -237,6 +241,8 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
         + "/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle_excitations.py"
     )
     boundary = 50
+    ode_solver = ode_solver()
+
     ocp = contact.prepare_ocp(
         bioptim_folder + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod",
         phase_time=0.3,
@@ -260,7 +266,7 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
         sol.controls["muscles"],
     )
 
-    if ode_solver == OdeSolver.IRK:
+    if isinstance(ode_solver, OdeSolver.IRK):
         # Check constraints
         g = np.array(sol.constraints)
         np.testing.assert_equal(g.shape, (110, 1))
@@ -311,7 +317,7 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
         np.testing.assert_almost_equal(mus_controls[:, 0], np.array([0.48071638]))
         np.testing.assert_almost_equal(mus_controls[:, -1], np.array([0.40159522]))
 
-    elif ode_solver == OdeSolver.RK8:
+    elif isinstance(ode_solver, OdeSolver.RK8):
         # Check constraints
         g = np.array(sol.constraints)
         np.testing.assert_equal(g.shape, (110, 1))

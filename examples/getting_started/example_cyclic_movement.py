@@ -33,7 +33,7 @@ def prepare_ocp(
     n_shooting: int,
     final_time: float,
     loop_from_constraint: bool,
-    ode_solver: OdeSolver = OdeSolver.RK4,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
     Prepare the program

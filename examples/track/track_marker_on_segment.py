@@ -27,7 +27,7 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     initialize_near_solution: bool,
-    ode_solver: OdeSolver = OdeSolver.RK4,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
     constr: bool = True,
     use_sx: bool = False,
 ) -> OptimalControlProgram:

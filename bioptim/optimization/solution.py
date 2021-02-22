@@ -64,7 +64,7 @@ class Solution:
     @property
     controls(self) -> Union[list, dict]
         Returns the controls in list if more than one phases, otherwise it returns the only dict
-    integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, merge_phases: bool = False, continuous: bool = True) -> Solution
+    integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keepdims: bool = True, merge_phases: bool = False, continuous: bool = True) -> Solution
         Integrate the states
     interpolate(self, n_frames: Union[int, list, tuple]) -> Solution
         Interpolate the states
@@ -100,7 +100,7 @@ class Solution:
             A reference to the biorbd Model
         mapping: dict
             All the BiMapping of the states and controls
-        n_integration_steps: int
+        ode_solver: OdeSolverBase
             The number of finite element of the RK
         ns: int
             The number of shooting points
@@ -124,7 +124,7 @@ class Solution:
             self.nx = nlp.nx
             self.nu = nlp.nu
             self.dynamics = nlp.dynamics
-            self.n_integration_steps = nlp.n_integration_steps
+            self.ode_solver = nlp.ode_solver
             self.mapping = nlp.mapping
             self.var_states = nlp.var_states
             self.control_type = nlp.control_type
@@ -384,7 +384,11 @@ class Solution:
         return self._controls[0] if len(self._controls) == 1 else self._controls
 
     def integrate(
-        self, shooting_type: Shooting = Shooting.MULTIPLE, merge_phases: bool = False, continuous: bool = True
+        self,
+        shooting_type: Shooting = Shooting.SINGLE_CONTINUOUS,
+        keepdims: bool = True,
+        merge_phases: bool = False,
+        continuous: bool = True,
     ) -> Any:
         """
         Integrate the states
@@ -393,6 +397,9 @@ class Solution:
         ----------
         shooting_type: Shooting
             Which type of integration
+        keepdims: bool
+            If the integration should returns the intermediate values of the integration [False]
+            or only keep the node [True] effective keeping the initial size of the states
         merge_phases: bool
             If the phase should be merged in a unique phase
         continuous: bool
@@ -412,6 +419,15 @@ class Solution:
         if self.is_merged:
             raise RuntimeError("Cannot integrate after merging phases")
 
+        if shooting_type == Shooting.MULTIPLE and keepdims:
+            raise ValueError(
+                "Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing"
+            )
+        if keepdims and not continuous:
+            raise ValueError(
+                "continuous=False and keepdims=True cannot be used simultanously since it would necessarily change the dimension"
+            )
+
         # Copy the data
         out = self.copy(skip_data=True)
 
@@ -425,12 +441,17 @@ class Solution:
         for p in range(len(self._states)):
             shape = self._states[p]["all"].shape
             if continuous:
-                n_steps = ocp.nlp[p].n_integration_steps
-                out.ns[p] *= ocp.nlp[p].n_integration_steps
+                n_steps = ocp.nlp[p].ode_solver.steps
+                if not keepdims:
+                    out.ns[p] *= ocp.nlp[p].ode_solver.steps
             else:
-                n_steps = ocp.nlp[p].n_integration_steps + 1
-                out.ns[p] *= ocp.nlp[p].n_integration_steps + 1
-            out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
+                n_steps = ocp.nlp[p].ode_solver.steps + 1
+                if not keepdims:
+                    out.ns[p] *= ocp.nlp[p].ode_solver.steps + 1
+            if keepdims:
+                out._states[p]["all"] = np.ndarray((shape[0], shape[1]))
+            else:
+                out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
 
             # Integrate
             if shooting_type == Shooting.SINGLE_CONTINUOUS:
@@ -442,7 +463,7 @@ class Solution:
                             f"when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
                             f"please integrate with Shooting.SINGLE"
                         )
-                    x0 += val
+                    x0 += np.array(val)[:, 0]
             else:
                 x0 = self._states[p]["all"][:, 0]
             for n in range(self.ns[p]):
@@ -454,12 +475,25 @@ class Solution:
                     raise NotImplementedError(
                         f"ControlType {self.ocp.nlp[p].control_type} " f"not yet implemented in integrating"
                     )
-                integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
-                cols = (
-                    range(n * n_steps, (n + 1) * n_steps + 1) if continuous else range(n * n_steps, (n + 1) * n_steps)
-                )
+
+                if keepdims:
+                    integrated = np.concatenate(
+                        (x0[:, np.newaxis], ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xf"]), axis=1
+                    )
+                    cols = [n, n + 1]
+                else:
+                    integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
+                    cols = [n * n_steps, (n + 1) * n_steps]
+                cols[1] = cols[1] + 1 if continuous else cols[1]
+                cols = range(cols[0], cols[1])
+
                 out._states[p]["all"][:, cols] = integrated
-                x0 = self._states[p]["all"][:, n + 1] if shooting_type == Shooting.MULTIPLE else integrated[:, -1]
+                x0 = (
+                    np.array(self._states[p]["all"][:, n + 1])
+                    if shooting_type == Shooting.MULTIPLE
+                    else integrated[:, -1]
+                )
+
             if not continuous:
                 out._states[p]["all"][:, -1] = self._states[p]["all"][:, -1]
 
@@ -664,7 +698,9 @@ class Solution:
         if show_now:
             plt.show()
 
-    def animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> Union[None, list]:
+    def animate(
+        self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any
+    ) -> Union[None, list]:
         """
         Animate the simulation
 
@@ -689,15 +725,15 @@ class Solution:
             raise RuntimeError("bioviz must be install to animate the model")
         check_version(bioviz, "2.0.1", "2.1.0")
 
+        states_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:
             try:
-                states_to_animate = self.merge_phases().states
+                states_to_animate = states_to_animate.merge_phases().states
             except RuntimeError:
-                states_to_animate = self.states
-        elif n_frames == -1:
-            states_to_animate = self.states
-        else:
-            states_to_animate = self.interpolate(n_frames).states
+                pass
+
+        elif n_frames > 0:
+            states_to_animate = states_to_animate.interpolate(n_frames).states
 
         if not isinstance(states_to_animate, (list, tuple)):
             states_to_animate = [states_to_animate]

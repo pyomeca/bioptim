@@ -81,7 +81,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
 def prepare_ocp(
     biorbd_model_path: str,
     problem_type_custom: bool = True,
-    ode_solver: OdeSolver = OdeSolver.RK4,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
     use_sx: bool = False,
 ) -> OptimalControlProgram:
     """

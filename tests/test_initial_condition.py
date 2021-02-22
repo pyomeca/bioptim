@@ -106,6 +106,7 @@ def test_initial_guess_update():
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
         final_time=2,
@@ -172,6 +173,7 @@ def test_initial_guess_custom():
 def test_simulate_from_initial_multiple_shoot():
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_save_and_load.py")
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
@@ -184,7 +186,7 @@ def test_simulate_from_initial_multiple_shoot():
 
     sol = Solution(ocp, [X, U])
     controls = sol.controls
-    sol = sol.integrate()
+    sol = sol.integrate(shooting_type=Shooting.MULTIPLE, keepdims=False)
     states = sol.states
 
     # Check some of the results
@@ -219,7 +221,7 @@ def test_simulate_from_initial_single_shoot():
 
     sol = Solution(ocp, [X, U])
     controls = sol.controls
-    sol = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
+    sol = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS, keepdims=False)
 
     # Check some of the results
     states = sol.states

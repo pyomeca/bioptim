@@ -146,12 +146,13 @@ from .misc.__version__ import __version__
 from .dynamics.problem import Problem
 from .dynamics.dynamics_type import DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
+from .dynamics.ode_solver import OdeSolver
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
 from .limits.penalty import PenaltyNodes
-from .misc.enums import Axis, Node, InterpolationType, OdeSolver, PlotType, Solver, ControlType, CostType, Shooting
+from .misc.enums import Axis, Node, InterpolationType, PlotType, Solver, ControlType, CostType, Shooting
 from .misc.mapping import BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
