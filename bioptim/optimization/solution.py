@@ -457,7 +457,7 @@ class Solution:
             # Integrate
             if shooting_type == Shooting.SINGLE_CONTINUOUS:
                 if p != 0:
-                    u0 =  self._controls[p - 1]["all"][:, -1]
+                    u0 = self._controls[p - 1]["all"][:, -1]
                     val = self.ocp.phase_transitions[p - 1].casadi_function(x0, u0, x0, u0, params)
                     if val.shape[0] != x0.shape[0]:
                         raise RuntimeError(
