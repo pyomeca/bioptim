@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import ControlType, CostType, Shooting
 from ..misc.utils import check_version
+from ..limits.phase_transition import PhaseTransitionFunctions
 from ..optimization.non_linear_program import NonLinearProgram
 
 
@@ -435,7 +436,8 @@ class Solution:
             # Integrate
             if shooting_type == Shooting.SINGLE_CONTINUOUS:
                 if p != 0:
-                    val = self.ocp.phase_transitions[p - 1].casadi_function(self.vector)
+                    u0 =  self._controls[p - 1]["all"][:, -1]
+                    val = self.ocp.phase_transitions[p - 1].casadi_function(x0, u0, x0, u0, params)
                     if val.shape[0] != x0.shape[0]:
                         raise RuntimeError(
                             f"Phase transition must have the same number of states ({val.shape[0]}) "

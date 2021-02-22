@@ -366,7 +366,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         pt.base.clear_penalty(ocp, None, penalty)
         val = pt.type.value[0](ocp, pt)
         casadi_name = f"PHASE_TRANSITION_{pt.phase_pre_idx}_{pt.phase_pre_idx + 1}"
-        pt.casadi_function = Function(casadi_name, [ocp.v.vector], [val]).expand()
+        pre_nlp, post_nlp =  ocp.nlp[pt.phase_pre_idx], ocp.nlp[(pt.phase_pre_idx + 1) % ocp.n_phases]
+        pt.casadi_function = Function(casadi_name, [pre_nlp.X[-1], pre_nlp.U[-1], post_nlp.X[0], post_nlp.U[0], ocp.v.parameters.cx], [val]).expand()
         pt.base.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
