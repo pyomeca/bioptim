@@ -396,7 +396,7 @@ class Solution:
         new = Solution(self.ocp, None)
 
         new.vector = deepcopy(self.vector)
-        new.cost = deepcopy(self.cost)
+        new._cost = deepcopy(self._cost)
         new.constraints = deepcopy(self.constraints)
 
         new.lam_g = deepcopy(self.lam_g)
