@@ -573,8 +573,11 @@ class Solution:
                 off += ocp.nlp[p].var_states[key]
 
         if merge_phases:
-            out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
-            out.is_merged = True
+            if continuous:
+                out = out.interpolate(sum(out.ns) + 1)
+            else:
+                out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
+                out.is_merged = True
 
         out.is_integrated = True
         return out
@@ -595,9 +598,14 @@ class Solution:
         """
 
         out = self.copy(skip_data=True)
+
+        t_all = []
+        for p, data in enumerate(self._states):
+            t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), data["all"].shape[1]))
+
         if isinstance(n_frames, int):
-            # Todo interpolate relative to time of the phase and not relative to number of frames in the phase
             data_states, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
+            t_all = [np.unique(np.concatenate(t_all))]
             n_frames = [n_frames]
             out.is_merged = True
         elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states):
@@ -615,7 +623,7 @@ class Solution:
             x_phase = data_states[p]["all"]
             n_elements = x_phase.shape[0]
 
-            t_phase = np.linspace(out.phase_time[p], out.phase_time[p] + out.phase_time[p + 1], x_phase.shape[1])
+            t_phase = t_all[p]
             t_int = np.linspace(t_phase[0], t_phase[-1], n_frames[p])
 
             x_interpolate = np.ndarray((n_elements, n_frames[p]))
@@ -794,21 +802,22 @@ class Solution:
             raise RuntimeError("bioviz must be install to animate the model")
         check_version(bioviz, "2.0.1", "2.1.0")
 
-        states_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
+        data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:
             try:
-                states_to_animate = states_to_animate.merge_phases().states
+                data_to_animate = data_to_animate.interpolate(sum(self.ns))
             except RuntimeError:
                 pass
 
         elif n_frames > 0:
-            states_to_animate = states_to_animate.interpolate(n_frames).states
+            data_to_animate = data_to_animate.interpolate(n_frames)
 
-        if not isinstance(states_to_animate, (list, tuple)):
-            states_to_animate = [states_to_animate]
+        states = data_to_animate.states
+        if not isinstance(states, (list, tuple)):
+            states = [states]
 
         all_bioviz = []
-        for idx_phase, data in enumerate(states_to_animate):
+        for idx_phase, data in enumerate(states):
             all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].to_second.map(data["q"]))
 
