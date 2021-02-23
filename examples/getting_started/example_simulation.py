@@ -9,8 +9,8 @@ is to validate the dynamics of multiple shooting. If they both are equal, it usu
 can be held in the solution. Another goal would be to reload fast a previously saved optimized solution
 """
 
-from bioptim import InitialGuess, Solution, Shooting
-
+from bioptim import InitialGuess, Solution, Shooting, InterpolationType
+import numpy as np
 import pendulum
 
 
@@ -23,8 +23,19 @@ if __name__ == "__main__":
     )
 
     # Simulation the Initial Guess
+    # Interpolation: Constant
     X = InitialGuess([0, 0, 0, 0])
     U = InitialGuess([-1, 1])
+
+    sol_from_initial_guess = Solution(ocp, [X, U])
+    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
+    print(f"Final position of q from single shooting of initial guess = {s.states['q'][:, -1]}")
+
+    # Interpolation: Each frame
+    X = np.random.rand(4, 11)
+    X = InitialGuess(X, interpolation=InterpolationType.EACH_FRAME)
+    U = np.random.rand(2, 11)
+    U = InitialGuess(U, interpolation=InterpolationType.EACH_FRAME)
 
     sol_from_initial_guess = Solution(ocp, [X, U])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
