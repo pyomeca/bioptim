@@ -1,3 +1,5 @@
+from time import time
+
 from casadi import vertcat, sum1, nlpsol, SX, MX
 
 from .solver_interface import SolverInterface
@@ -129,8 +131,9 @@ class IpoptInterface(SolverInterface):
         solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts)
 
         # Solve the problem
+        tic = time()
         self.out = {"sol": solver.call(self.ipopt_limits)}
-        self.out["sol"]["time_tot"] = solver.stats()["t_wall_total"]
+        self.out["sol"]["time_tot"] = time() - tic
         self.out["sol"]["iter"] = solver.stats()["iter_count"]
         # To match acados convention (0 = success, 1 = error)
         self.out["sol"]["status"] = int(not solver.stats()["success"])

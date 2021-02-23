@@ -708,6 +708,7 @@ class AcadosInterface(SolverInterface):
         if self.ocp_solver is None:
             self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json")
         self.__update_solver()
+
         self.status = self.ocp_solver.solve()
         self.get_optimized_value()
         return self
