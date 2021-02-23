@@ -573,7 +573,11 @@ class Solution:
                 off += ocp.nlp[p].var_states[key]
 
         if merge_phases:
-            out = out.interpolate(sum(out.ns))
+            if continuous:
+                out = out.interpolate(sum(out.ns) + 1)
+            else:
+                out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
+                out.is_merged = True
 
         out.is_integrated = True
         return out

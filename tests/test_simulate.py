@@ -356,11 +356,9 @@ def test_integrate_multiphase_merged(shooting, keepdims):
         np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected)
 
         if keepdims:
-            expected = np.ndarray((sol.states[0][key].shape[0], 0))
-            for data in sol.states:
-                expected = np.concatenate((expected, data[key][:, :-1]), axis=1)
-            expected = np.concatenate((expected, sol.states[-1][key][:, -1][:, np.newaxis]), axis=1)
-            np.testing.assert_almost_equal(sol_integrated.states[key], expected)
+            # The interpolation prevents from comparing all points
+            expected = np.concatenate((sol.states[0][key][:, 0:1], sol.states[-1][key][:, -1][:, np.newaxis]), axis=1)
+            np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected)
             assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) + 1)
         else:
             assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * 5 + 1)
