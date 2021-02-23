@@ -187,7 +187,7 @@ class Solution:
         self.is_merged = False
 
         self.vector = None
-        self.cost = None
+        self._cost = None
         self.constraints = None
 
         self.lam_g = None
@@ -211,7 +211,7 @@ class Solution:
             """
 
             self.vector = sol["x"] if isinstance(sol, dict) and "x" in sol else sol
-            self.cost = sol["f"] if isinstance(sol, dict) and "f" in sol else None
+            self._cost = sol["f"] if isinstance(sol, dict) and "f" in sol else None
             self.constraints = sol["g"] if isinstance(sol, dict) and "g" in sol else None
 
             self.lam_g = sol["lam_g"] if isinstance(sol, dict) and "lam_g" in sol else None
@@ -311,6 +311,73 @@ class Solution:
             self.ns = []
         else:
             raise ValueError("Solution called with unknown initializer")
+
+    @property
+    def cost(self):
+        def get_objective_functions(ocp, sol):
+            """
+            Print the values of each objective function to the console
+            """
+
+            def __extract_objective(pen: dict):
+                """
+                Extract objective function from a penalty
+
+                Parameters
+                ----------
+                pen: dict
+                    The penalty to extract the value from
+
+                Returns
+                -------
+                The value extract
+                """
+
+                # TODO: This should be done in bounds and objective functions, so it is available for all the code
+                val_tp = Function("val_tp", [ocp.v.vector], [pen["val"]]).expand()(sol.vector)
+                if pen["target"] is not None:
+                    # TODO Target should be available to constraint?
+                    nan_idx = np.isnan(pen["target"])
+                    pen["target"][nan_idx] = 0
+                    val_tp -= pen["target"]
+                    if np.any(nan_idx):
+                        val_tp[np.where(nan_idx)] = 0
+
+                if pen["objective"].quadratic:
+                    val_tp *= val_tp
+
+                val = np.sum(val_tp)
+
+                dt = Function("dt", [ocp.v.vector], [pen["dt"]]).expand()(sol.vector)
+                val_weighted = pen["objective"].weight * val * dt
+                return val, val_weighted
+
+            running_total = 0
+            for J in ocp.J:
+                val = []
+                val_weighted = []
+                for j in J:
+                    out = __extract_objective(j)
+                    val.append(out[0])
+                    val_weighted.append(out[1])
+                sum_val_weighted = sum(val_weighted)
+                running_total += sum_val_weighted
+
+            for idx_phase, nlp in enumerate(ocp.nlp):
+                for J in nlp.J:
+                    val = []
+                    val_weighted = []
+                    for j in J:
+                        out = __extract_objective(j)
+                        val.append(out[0])
+                        val_weighted.append(out[1])
+                    sum_val_weighted = sum(val_weighted)
+                    running_total += sum_val_weighted
+            return running_total
+
+        if self._cost is None:
+            self._cost = get_objective_functions(self.ocp, self)
+        return self._cost
 
     def copy(self, skip_data: bool = False) -> Any:
         """
@@ -835,6 +902,7 @@ class Solution:
                     print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
                     running_total += sum_val_weighted
                 print("")
+
             print(f"Sum cost functions: {running_total}")
             print(f"------------------------------")
 
