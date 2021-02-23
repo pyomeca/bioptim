@@ -1,6 +1,5 @@
 from typing import Union
 from datetime import datetime
-from time import time
 
 import numpy as np
 from scipy import linalg
