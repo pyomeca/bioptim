@@ -31,7 +31,7 @@ if __name__ == "__main__":
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
     print(f"Final position of q from single shooting of initial guess = {s.states['q'][:, -1]}")
 
-    # Interpolation: Each frame
+    # Interpolation: Each frame (for instance, values from a previous optimization or from measured data)
     X = np.random.rand(4, 11)
     X = InitialGuess(X, interpolation=InterpolationType.EACH_FRAME)
     U = np.random.rand(2, 11)
