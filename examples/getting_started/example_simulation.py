@@ -30,10 +30,10 @@ if __name__ == "__main__":
     sol_from_initial_guess = Solution(ocp, [X, U])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
     print(f"Final position of q from single shooting of initial guess = {s.states['q'][:, -1]}")
+    # Uncomment the next line to animate the integration
+    # s.animate()
 
     # Interpolation: Each frame (for instance, values from a previous optimization or from measured data)
-    X = np.random.rand(4, 11)
-    X = InitialGuess(X, interpolation=InterpolationType.EACH_FRAME)
     U = np.random.rand(2, 11)
     U = InitialGuess(U, interpolation=InterpolationType.EACH_FRAME)
 
@@ -47,7 +47,8 @@ if __name__ == "__main__":
     # sol_from_initial_guess.graphs(shooting_type=Shooting.SINGLE_CONTINUOUS)
     # sol_from_initial_guess.graphs(shooting_type=Shooting.MULTIPLE)
 
-    # Simulation of the solution. It is not the graph of the solution, it is the graph of a Runge Kutta from the solution
+    # Simulation of the solution. It is not the graph of the solution,
+    # it is the graph of a Runge Kutta from the solution
     sol = ocp.solve()
     s_single = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
     # Uncomment the next line to animate the integration
