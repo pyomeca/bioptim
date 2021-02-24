@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # Uncomment the next line to animate the integration
     # s_single.animate()
     print(f"Final position of q from single shooting of the solution = {s_single.states['q'][:, -1]}")
-    s_multiple = sol.integrate(shooting_type=Shooting.MULTIPLE)
+    s_multiple = sol.integrate(shooting_type=Shooting.MULTIPLE, keepdims=False)
     print(f"Final position of q from multiple shooting of the solution = {s_multiple.states['q'][:, -1]}")
 
     # Uncomment the following lines to graph the solution from the actual solution
