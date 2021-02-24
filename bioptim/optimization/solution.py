@@ -14,7 +14,6 @@ from ..limits.phase_transition import PhaseTransitionFunctions
 from ..optimization.non_linear_program import NonLinearProgram
 
 
-
 class Solution:
     """
     Data manipulation, graphing and storage
