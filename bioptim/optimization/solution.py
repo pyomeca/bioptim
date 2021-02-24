@@ -8,7 +8,7 @@ from casadi import Function, DM
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import ControlType, CostType, Shooting
+from ..misc.enums import ControlType, CostType, Shooting, InterpolationType
 from ..misc.utils import check_version
 from ..limits.phase_transition import PhaseTransitionFunctions
 from ..optimization.non_linear_program import NonLinearProgram
@@ -262,7 +262,8 @@ class Solution:
             self.vector = np.ndarray((0, 1))
             sol_states, sol_controls = sol[0], sol[1]
             for p, s in enumerate(sol_states):
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].nx, self.ocp.nlp[p].ns + 1, "states")
+                ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].nx, ns, "states")
                 for i in range(self.ns[p] + 1):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
             for p, s in enumerate(sol_controls):

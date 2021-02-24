@@ -9,8 +9,8 @@ is to validate the dynamics of multiple shooting. If they both are equal, it usu
 can be held in the solution. Another goal would be to reload fast a previously saved optimized solution
 """
 
-from bioptim import InitialGuess, Solution, Shooting
-
+from bioptim import InitialGuess, Solution, Shooting, InterpolationType
+import numpy as np
 import pendulum
 
 
@@ -23,8 +23,19 @@ if __name__ == "__main__":
     )
 
     # Simulation the Initial Guess
+    # Interpolation: Constant
     X = InitialGuess([0, 0, 0, 0])
     U = InitialGuess([-1, 1])
+
+    sol_from_initial_guess = Solution(ocp, [X, U])
+    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
+    print(f"Final position of q from single shooting of initial guess = {s.states['q'][:, -1]}")
+    # Uncomment the next line to animate the integration
+    # s.animate()
+
+    # Interpolation: Each frame (for instance, values from a previous optimization or from measured data)
+    U = np.random.rand(2, 11)
+    U = InitialGuess(U, interpolation=InterpolationType.EACH_FRAME)
 
     sol_from_initial_guess = Solution(ocp, [X, U])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
@@ -36,13 +47,14 @@ if __name__ == "__main__":
     # sol_from_initial_guess.graphs(shooting_type=Shooting.SINGLE_CONTINUOUS)
     # sol_from_initial_guess.graphs(shooting_type=Shooting.MULTIPLE)
 
-    # Simulation of the solution. It is not the graph of the solution, it is the graph of a Runge Kutta from the solution
+    # Simulation of the solution. It is not the graph of the solution,
+    # it is the graph of a Runge Kutta from the solution
     sol = ocp.solve()
     s_single = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
     # Uncomment the next line to animate the integration
     # s_single.animate()
     print(f"Final position of q from single shooting of the solution = {s_single.states['q'][:, -1]}")
-    s_multiple = sol.integrate(shooting_type=Shooting.MULTIPLE)
+    s_multiple = sol.integrate(shooting_type=Shooting.MULTIPLE, keepdims=False)
     print(f"Final position of q from multiple shooting of the solution = {s_multiple.states['q'][:, -1]}")
 
     # Uncomment the following lines to graph the solution from the actual solution
