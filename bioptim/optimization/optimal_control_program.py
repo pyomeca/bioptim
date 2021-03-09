@@ -97,7 +97,7 @@ class OptimalControlProgram:
         Create all the plots associated with the OCP
     solve(self, solver: Solver, show_online_optim: bool, solver_options: dict) -> Solution
         Call the solver to actually solve the ocp
-    save(self, sol: Solution, file_path: str)
+    save(self, sol: Solution, file_path: str, stand_alone: bool = False)
         Save the ocp and solution structure to the hard drive. It automatically create the required
         folder if it does not exists. Please note that biorbd is required to load back this structure.
     @staticmethod
@@ -645,7 +645,7 @@ class OptimalControlProgram:
 
         return Solution(self, self.solver.get_optimized_value())
 
-    def save(self, sol: Solution, file_path: str):
+    def save(self, sol: Solution, file_path: str, stand_alone: bool = False):
         """
         Save the ocp and solution structure to the hard drive. It automatically create the required
         folder if it does not exists. Please note that biorbd is required to load back this structure.
@@ -656,6 +656,10 @@ class OptimalControlProgram:
             The solution structure to save
         file_path: str
             The path to solve the structure. It creates a .bo (BiOptim file)
+        stand_alone: bool
+            If set to True, the variable dictionaries (states, controls and parameters) are saved instead of the full
+            Solution class itself. This allows to load the saved file into a setting where bioptim is not installed
+            using the pickle package, but prevents from using the class methods Solution offers after loading the file
         """
 
         _, ext = os.path.splitext(file_path)
@@ -664,9 +668,13 @@ class OptimalControlProgram:
         elif ext != ".bo":
             raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
 
-        sol_copy = sol.copy()
-        sol_copy.ocp = None  # Ocp is not pickable
-        data_to_save = {"ocp_initializer": self.original_values, "sol": sol_copy, "versions": self.version}
+        if stand_alone:
+            # TODO check if this file is loaded when load is used, and raise an error
+            data_to_save = sol.states, sol.controls, sol.parameters
+        else:
+            sol_copy = sol.copy()
+            sol_copy.ocp = None  # Ocp is not pickable
+            data_to_save = {"ocp_initializer": self.original_values, "sol": sol_copy, "versions": self.version}
 
         # Create folder if necessary
         directory, _ = os.path.split(file_path)
