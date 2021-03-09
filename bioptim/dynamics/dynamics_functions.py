@@ -315,7 +315,7 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-        muscles_states = biorbd.VecBiorbdMuscleState(nlp.shape["muscle"])
+        muscles_states = nlp.model.stateSet()
         muscles_activations = controls[nlp.shape["tau"] :]
 
         for k in range(nlp.shape["muscle"]):
@@ -357,7 +357,7 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-        muscles_states = biorbd.VecBiorbdMuscleState(nlp.shape["muscle"])
+        muscles_states = nlp.model.stateSet()
         muscles_activations = controls[nlp.shape["tau"] :]
 
         for k in range(nlp.shape["muscle"]):
@@ -400,7 +400,7 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-        muscles_states = biorbd.VecBiorbdMuscleState(nlp.shape["muscle"])
+        muscles_states = nlp.model.stateSet()
         muscles_activations = controls[nlp.shape["tau"] :]
 
         for k in range(nlp.shape["muscle"]):
@@ -442,7 +442,7 @@ class DynamicsFunctions:
         q = nlp.mapping["q"].to_second.map(states[:nq])
         qdot = nlp.mapping["qdot"].to_second.map(states[nq:])
 
-        muscles_states = biorbd.VecBiorbdMuscleState(nlp.shape["muscle"])
+        muscles_states = nlp.model.stateSet()
         muscles_activations = controls
 
         for k in range(nlp.shape["muscle"]):
@@ -484,7 +484,7 @@ class DynamicsFunctions:
         q = nlp.mapping["q"].to_second.map(states[:nq])
         qdot = nlp.mapping["qdot"].to_second.map(states[nq:])
 
-        muscles_states = biorbd.VecBiorbdMuscleState(nlp.shape["muscle"])
+        muscles_states = nlp.model.stateSet()
         muscles_excitation = controls
         muscles_activations = states[nlp.shape["q"] + nlp.shape["qdot"] :]
 
@@ -528,7 +528,7 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-        muscles_states = biorbd.VecBiorbdMuscleState(nlp.shape["muscle"])
+        muscles_states = nlp.model.stateSet()
         muscles_excitation = controls[nlp.shape["tau"] :]
         muscles_activations = states[nlp.shape["q"] + nlp.shape["qdot"] :]
 
@@ -573,7 +573,7 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-        muscles_states = biorbd.VecBiorbdMuscleState(nlp.shape["muscle"])
+        muscles_states = nlp.model.stateSet()
         muscles_excitation = controls[nlp.shape["tau"] :]
         muscles_activations = states[nlp.shape["q"] + nlp.shape["qdot"] :]
 
@@ -618,7 +618,7 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-        muscles_states = biorbd.VecBiorbdMuscleState(nlp.shape["muscle"])
+        muscles_states = nlp.model.stateSet()
         muscles_excitation = controls[nlp.shape["tau"] :]
         muscles_activations = states[nlp.shape["q"] + nlp.shape["qdot"] :]
 
