@@ -7,4 +7,5 @@ dependencies:
 - biorbd =*=*casadi*
 - bioviz =*=*casadi*
 - scipy
+- numpy
 - packaging

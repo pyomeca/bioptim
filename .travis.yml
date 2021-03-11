@@ -11,8 +11,8 @@ before_install:
   - conda update -q conda
 
 install:
-  - conda env update -n root -f environment.yml
-  - conda install biorbd=1.4.4=*casadi* -cconda-forge
+  - conda env update -n bioptim -f environment.yml
+  - conda activate bioptim
   - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
   - conda install xorg-libx11 xorg-libxtst -cconda-forge
   - conda list
