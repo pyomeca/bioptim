@@ -4,11 +4,6 @@ channels:
 - conda-forge
 - default
 dependencies:
-- python
-- numpy
-- matplotlib
-- casadi
-- rbdl =*=*casadi*
 - biorbd =*=*casadi*
 - bioviz =*=*casadi*
 - scipy

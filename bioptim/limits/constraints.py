@@ -406,7 +406,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
 
-        g = {"constraint": penalty, "val": val, "bounds": g_bounds, "target": penalty.sliced_target, }
+        g = {
+            "constraint": penalty,
+            "val": val,
+            "bounds": g_bounds,
+            "target": penalty.sliced_target,
+        }
         if nlp:
             nlp.g[penalty.list_index].append(g)
         else:
