@@ -9,7 +9,7 @@ before_install:
   - conda config --set always_yes yes --set changeps1 no
   - conda config --set auto_update_conda no
   - conda update -q conda
-  - conda init bash
+  - source activate
 
 install:
   - conda env update -n bioptim -f environment.yml
