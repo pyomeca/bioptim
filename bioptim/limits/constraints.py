@@ -364,6 +364,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         penalty.min_bound = 0
         penalty.max_bound = 0
         penalty.list_index = -1
+        penalty.sliced_target = None
         pt.base.clear_penalty(ocp, None, penalty)
         val = pt.type.value[0](ocp, pt)
         casadi_name = f"PHASE_TRANSITION_{pt.phase_pre_idx}_{pt.phase_pre_idx + 1}"

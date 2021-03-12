@@ -120,11 +120,13 @@ def test_console_objective_functions():
     sol.graphs(automatically_organize=False)
 
     sol.constraints = np.array([range(sol.constraints.shape[0])]).T / 10
+    sol.time_to_optimize = 1.2345
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
     sol.print()
     expected_output = (
-        "\n---- COST FUNCTION VALUES ----\n"
+        "TIME TO SOLVE: 1.2345 sec\n\n"
+        "---- COST FUNCTION VALUES ----\n"
         "PHASE 0\n"
         "MINIMIZE_TORQUE: 1939.759593984963 (weighted 19397.6)\n\n"
         "PHASE 1\n"
