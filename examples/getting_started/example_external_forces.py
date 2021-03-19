@@ -31,7 +31,9 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path: str = "cube_with_forces.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path: str = "cube_with_forces.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()
+) -> OptimalControlProgram:
     """
     Prepare the ocp
 
@@ -69,9 +71,7 @@ def prepare_ocp(biorbd_model_path: str = "cube_with_forces.bioMod", ode_solver: 
     # External forces. external_forces is of len 1 because there is only one phase.
     # The array inside it is 6x2x30 since there is [Mx, My, Mz, Fx, Fy, Fz] for the two externalforceindex for each node
     external_forces = [
-        np.repeat(
-            np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T[:, :, np.newaxis], n_shooting, axis=2
-        )
+        np.repeat(np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T[:, :, np.newaxis], n_shooting, axis=2)
     ]
 
     # Path constraint
