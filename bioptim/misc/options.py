@@ -315,3 +315,86 @@ class UniquePerPhaseOptionList(OptionList):
         Print the UniquePerPhaseOptionList to the console
         """
         raise NotImplementedError("Printing of UniquePerPhaseOptionList is not ready yet")
+
+
+class UniquePerProblemOptionList(OptionList):
+    """
+    OptionList that cannot change throughout phases (e.g., parameters)
+
+    Methods
+    -------
+    _add(self, phase: int = -1, **extra_arguments)
+        Add a new option to the list
+    copy(self, option: OptionGeneric)
+        Deepcopy of an option in the list
+    __getitem__(self, i_phase) -> Any
+        Get the ith option of the list
+    __next__(self) -> int
+        Get the next option of the list
+    print(self):
+        Print the UniquePerPhaseOptionList to the console
+    """
+
+    def _add(self, list_index: int = -1, **extra_arguments: Any):
+        """
+        Add a new option to the list
+
+        Parameters
+        ----------
+        phase: int
+            The phase the option is associated with
+        extra_arguments: dict
+            Everything but phase which is passed to OptionList, with list_index set to 0
+        """
+
+        super(UniquePerProblemOptionList, self)._add(phase=0, list_index=list_index, **extra_arguments)
+
+    def copy(self, option: OptionGeneric):
+        """
+        Deepcopy of an option in the list
+
+        Parameters
+        ----------
+        """
+
+        if option.list_index == -1:
+            option.list_index = len(self)
+        super(UniquePerProblemOptionList, self).copy(option)
+
+    def __getitem__(self, index) -> Any:
+        """
+        Get the ith option of the list
+
+        Parameters
+        ----------
+        index: int
+            The index of the option to get
+
+        Returns
+        -------
+        The ith option of the list
+        """
+
+        return super(UniquePerProblemOptionList, self).__getitem__(0)[index]
+
+    def __next__(self) -> int:
+        """
+        Get the next option of the list
+
+        Returns
+        -------
+        The next option of the list
+        """
+        self._iter_idx += 1
+        if self._iter_idx > len(self):
+            raise StopIteration
+        return self.options[0][self._iter_idx - 1]
+
+    def __len__(self):
+        return len(self.options[0])
+
+    def print(self):
+        """
+        Print the UniquePerProblemOptionList to the console
+        """
+        raise NotImplementedError("Printing of UniquePerProblemOptionList is not ready yet")

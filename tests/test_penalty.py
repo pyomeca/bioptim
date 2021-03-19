@@ -885,7 +885,7 @@ def test_penalty_non_slipping(value):
     elif value == -10:
         expected = [[899.9319451, 951.2573773], 0, np.inf]
 
-    np.testing.assert_almost_equal(res, np.array(expected[0]))
+    np.testing.assert_almost_equal(np.concatenate(res)[:, 0], np.array(expected[0]))
 
     if isinstance(penalty_type, ConstraintFcn):
         np.testing.assert_almost_equal(ocp.nlp[0].g[0][0]["bounds"].min, np.array([[expected[1]]]))
