@@ -105,7 +105,7 @@ class ParameterList(UniquePerProblemOptionList):
         initial_guess: Union[InitialGuess, InitialGuessList] = None,
         bounds: Union[Bounds, BoundsList] = None,
         size: int = None,
-        list_idx: int = -1,
+        list_index: int = -1,
         penalty_list: Union[Objective, ObjectiveList] = None,
         **extra_arguments: Any,
     ):
@@ -125,7 +125,7 @@ class ParameterList(UniquePerProblemOptionList):
             The list of bounds associated with this parameter
         size: int
             The number of variables this parameter has
-        list_idx: int
+        list_index: int
             The index of the parameter in the parameters list
         penalty_list: Union[Objective, ObjectiveList]
             The objective function associate with the parameter
@@ -143,11 +143,11 @@ class ParameterList(UniquePerProblemOptionList):
             if "phase" in extra_arguments:
                 raise ValueError(
                     "Parameters are declared for all phases at once. You must therefore not use "
-                    "'phase' but 'list_idx' instead"
+                    "'phase' but 'list_index' instead"
                 )
             super(ParameterList, self)._add(
                 option_type=Parameter,
-                list_index=list_idx,
+                list_index=list_index,
                 function=function,
                 name=parameter_name,
                 initial_guess=initial_guess,

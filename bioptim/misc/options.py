@@ -357,8 +357,8 @@ class UniquePerProblemOptionList(OptionList):
         ----------
         """
 
-        if option.phase == -1:
-            option.phase = len(self)
+        if option.list_index == -1:
+            option.list_index = len(self)
         super(UniquePerProblemOptionList, self).copy(option)
 
     def __getitem__(self, index) -> Any:
