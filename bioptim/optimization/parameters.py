@@ -5,7 +5,7 @@ from casadi import MX, SX
 from ..misc.enums import Node
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
 from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
-from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
+from ..misc.options import UniquePerProblemOptionList, OptionGeneric
 
 
 class Parameter(OptionGeneric):
@@ -69,7 +69,7 @@ class Parameter(OptionGeneric):
         self.cx = cx
 
 
-class ParameterList(UniquePerPhaseOptionList):
+class ParameterList(UniquePerProblemOptionList):
     """
     A list of Parameter
 
@@ -105,7 +105,7 @@ class ParameterList(UniquePerPhaseOptionList):
         initial_guess: Union[InitialGuess, InitialGuessList] = None,
         bounds: Union[Bounds, BoundsList] = None,
         size: int = None,
-        phase: int = 0,
+        list_index: int = -1,
         penalty_list: Union[Objective, ObjectiveList] = None,
         **extra_arguments: Any,
     ):
@@ -125,8 +125,8 @@ class ParameterList(UniquePerPhaseOptionList):
             The list of bounds associated with this parameter
         size: int
             The number of variables this parameter has
-        phase: int
-            The phase model the parameter should be associated with
+        list_index: int
+            The index of the parameter in the parameters list
         penalty_list: Union[Objective, ObjectiveList]
             The objective function associate with the parameter
         extra_arguments: dict
@@ -140,10 +140,14 @@ class ParameterList(UniquePerPhaseOptionList):
                 raise RuntimeError(
                     "function, initial_guess, bounds and size are mandatory elements to declare a parameter"
                 )
-
+            if "phase" in extra_arguments:
+                raise ValueError(
+                    "Parameters are declared for all phases at once. You must therefore not use "
+                    "'phase' but 'list_index' instead"
+                )
             super(ParameterList, self)._add(
                 option_type=Parameter,
-                phase=phase,
+                list_index=list_index,
                 function=function,
                 name=parameter_name,
                 initial_guess=initial_guess,

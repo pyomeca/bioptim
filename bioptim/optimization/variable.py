@@ -261,6 +261,7 @@ class OptimizationVariable:
             data_parameters["all"] = data_parameters["all"][:, np.newaxis]
         for param in self.parameters_in_list:
             data_parameters[param.name] = v_array[offset : offset + param.size]
+            offset += param.size
             if len(data_parameters[param.name].shape) == 1:
                 data_parameters[param.name] = data_parameters[param.name][:, np.newaxis]
 

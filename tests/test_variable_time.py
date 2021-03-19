@@ -203,4 +203,5 @@ def test_variable_time(phase_time_constraint, use_parameter):
         np.array([0.12804584, 0.64087474, 0.89678841, 0.17231987, 0.16893506, 0.08870253, 0.20633372, 0.69039483]),
     )
 
-    np.testing.assert_almost_equal(parameters["time"], 0.78917124)
+    np.testing.assert_almost_equal(parameters["gravity_z"], 0.78917124)
+    np.testing.assert_almost_equal(parameters["time"], 0.4984422)

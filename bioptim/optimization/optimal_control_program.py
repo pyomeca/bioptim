@@ -454,7 +454,6 @@ class OptimalControlProgram:
         elif isinstance(new_parameters, ParameterList):
             for parameter in new_parameters:
                 self.__modify_penalty(parameter)
-
         else:
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
