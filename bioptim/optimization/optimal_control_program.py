@@ -453,8 +453,11 @@ class OptimalControlProgram:
 
         elif isinstance(new_parameters, ParameterList):
             for parameter in new_parameters:
-                self.__modify_penalty(parameter)
-
+                for i, nlp in enumerate(self.nlp):
+                    # this is a hack to handle multiple NLPs
+                    parameter.phase = i
+                    self.__modify_penalty(parameter)
+                parameter.phase = 0
         else:
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
