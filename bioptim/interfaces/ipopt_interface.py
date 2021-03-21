@@ -169,6 +169,8 @@ class IpoptInterface(SolverInterface):
             for i in range(len(nlp.g)):
                 for j in range(len(nlp.g[i])):
                     if nlp.g[i][j]["constraint"].target is not None:
+                        # TODO This is not tested and therefore it is not sure it works..
+                        # TODO Add an example and test or remove?
                         all_g = vertcat(all_g, nlp.g[i][j]["val"] - nlp.g[i][j]["target"])
                     else:
                         all_g = vertcat(all_g, nlp.g[i][j]["val"])
