@@ -2,6 +2,7 @@ import importlib.util
 from pathlib import Path
 import os
 from typing import Any
+import pickle
 
 import numpy as np
 
@@ -36,9 +37,9 @@ class TestUtils:
 
     @staticmethod
     def save_and_load(sol, ocp, test_solve_of_loaded=False):
-        file_path = "test.bo"
-        ocp.save(sol, file_path)
-        ocp_load, sol_load = OptimalControlProgram.load(file_path)
+        file_path = "test"
+        ocp.save(sol, f"{file_path}.bo")
+        ocp_load, sol_load = OptimalControlProgram.load(f"{file_path}.bo")
 
         TestUtils.deep_assert(sol, sol_load)
         TestUtils.deep_assert(sol_load, sol)
@@ -49,7 +50,16 @@ class TestUtils:
 
         TestUtils.deep_assert(ocp_load, ocp)
         TestUtils.deep_assert(ocp, ocp_load)
-        os.remove(file_path)
+
+        ocp.save(sol, f"{file_path}_sa.bo", stand_alone=True)
+        with open(f"{file_path}_sa.bo", "rb") as file:
+            states, controls, parameters = pickle.load(file)
+        TestUtils.deep_assert(states, sol.states)
+        TestUtils.deep_assert(controls, sol.controls)
+        TestUtils.deep_assert(parameters, sol.parameters)
+
+        os.remove(f"{file_path}.bo")
+        os.remove(f"{file_path}_sa.bo")
 
     @staticmethod
     def deep_assert(first_elem, second_elem):

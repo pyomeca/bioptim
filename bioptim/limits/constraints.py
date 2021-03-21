@@ -364,6 +364,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         penalty.min_bound = 0
         penalty.max_bound = 0
         penalty.list_index = -1
+        penalty.sliced_target = None
         pt.base.clear_penalty(ocp, None, penalty)
         val = pt.type.value[0](ocp, pt)
         casadi_name = f"PHASE_TRANSITION_{pt.phase_pre_idx}_{pt.phase_pre_idx + 1}"
@@ -406,7 +407,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
 
-        g = {"constraint": penalty, "val": val, "bounds": g_bounds}  # TODO Target should always be available...
+        g = {
+            "constraint": penalty,
+            "val": val,
+            "bounds": g_bounds,
+            "target": penalty.sliced_target,
+        }
         if nlp:
             nlp.g[penalty.list_index].append(g)
         else:
