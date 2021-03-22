@@ -1321,6 +1321,72 @@ More specifically this example reproduces the behavior of the Mayer.SUPERIMPOSE_
 This example is closed to the example of the custom_constraint.py file. We use the custom_func_track_markers to define 
 the objective function. In this example, one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS.
 
+### The custom_parameters.py file 
+This example is a clone of the pendulum.py example with the difference that the
+model now evolves in an environment where the gravity can be modified.
+The goal of the solver it to find the optimal gravity (target = 8 N/kg), while performing the
+pendulum balancing task.
+
+It is designed to show how one can define its own parameter objective functions if the provided ones are not
+sufficient.
+
+The my_parameter_function function is used if one wants to modify the dynamics. In our case, we want to optimize the 
+gravity. This function is called right before defining the dynamics of the system. The my_target_function function is 
+a penalty function. Both these functions are used to define a new parameter, and then a parameter objective function 
+linked to this new parameter.
+
+### The custom_phase_transitions.py file 
+This example is a trivial multiphase box that must superimpose different markers at beginning and end of each
+phase with one of its corner
+It is designed to show how one can define its phase transition constraints if the provided ones are not sufficient.
+
+More specifically, this example mimics the behaviour of the most common PhaseTransitionFcn.CONTINUOUS
+
+The custom_phase_transition function is used to define the constraint of the transition to apply. This function can be 
+used when adding some phase transitions in the list of phase transitions. 
+
+Different phase transisitions can be considered. By default, all the phase transitions are continuous. However, in the 
+event that one or more phase transitions is desired to be continuous, it is posible to define and use a function like 
+the custom_phase_transition function, or directly use PhaseTransitionFcn.IMPACT. If a phase transition is desired 
+between the last and the first phase, use the dedicated PhaseTransitionFcn.Cyclic. 
+
+### The custom_plot_callback.py file
+This example is a trivial example using the pendulum without any objective. It is designed to show how to create new
+plots and how to expand pre-existing one with new information.
+
+We define the `custom_plot_callback` function, which returns the value(s) to plot. We use this function as an argument of 
+ocp.add_plot. Let's describe the creation of the plot "My New Extra Plot", line 96 of the example. `custom_plot_callback` 
+takes two arguments, x and the array [0, 1, 3], as you can see below :
+
+```python
+ocp.add_plot("My New Extra Plot", lambda x, u, p: custom_plot_callback(x, [0, 1, 3]), plot_type=PlotType.PLOT)
+```
+
+We use the plot_type `PlotType.PLOT`. This is a way to plot the first, 
+second, and fourth states (ie. `q_Seg1_TransY`, `q_Seg1_RotX` and `qdot_Seg1_RotX`) in a new window entitled "My New 
+Extra Plot". Please note that for further information about the different plot types, you can refer to the section 
+"Enum: PlotType".
+
+### The example_cyclic_movement.py file 
+This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
+and superimpose the same corner to a different marker at the end. Moreover, the movement must be cyclic, meaning
+that the states at the end and at the beginning are equal. It is designed to provide a comprehensible example of the way
+to declare a cyclic constraint or objective function
+
+A phase transition loop constraint is treated as hard penalty (constraint)
+if weight is <= 0 [or if no weight is provided], or as a soft penalty (objective) otherwise, as shown in the example below :
+
+```python
+phase_transitions = PhaseTransitionList()
+if loop_from_constraint:
+    phase_transitions.add(PhaseTransitionFcn.CYCLIC, weight=0)
+else:
+    phase_transitions.add(PhaseTransitionFcn.CYCLIC, weight=10000)
+```
+
+`loop_from_constraint` is a boolean. It is one of the parameters of the `prepare_ocp` function of the example. This parameter is a way to determine if the looping cost should be a constraint [True] or an objective [False]. 
+
+### The example_external_forces.py file
 
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:
