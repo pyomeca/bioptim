@@ -1570,6 +1570,50 @@ The only difference with the precedent example is that we use the arm26_with_con
 Please note that using show_meshes=True in the animator may be long due to the creation of a huge `CasADi` graph of the
 mesh points.
 
+## Muscle driven with contact
+All the examples in muscle_driven_with_contact are merely to show some dynamics and prepare some OCP for the tests.
+It is not really relevant and will be removed when unitary tests for the dynamics will be implemented.
+
+### The contact_forces_inequality_constraint_muscle.py file
+In this example, we implement inequality constraints on two contact forces. It is designed to show how to use min_bound 
+and max_bound values so they define inequality constraints instead of equality constraints, which can be used with 
+any ConstraintFcn.
+
+In this case, the dynamics function used is `DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT`.
+
+### The contact_forces_inequality_constraint_muscle_excitations.py file
+In this example, we implement inequality constraints on two contact forces. It is designed to show how to use `min_bound` 
+and `max_bound` values so they define inequality constraints instead of equality constraints, which can be used with any 
+`ConstraintFcn`.
+
+In this case, the dynamics function used is `DynamicsFcn.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT` instead of 
+`DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT` used in the precedent example. 
+
+### The muscle_activations_contacts_tracker.py file 
+In this example, we track both muscle controls and contact forces, as it is defined when adding the two objective 
+functions below, using both `ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL` and 
+`ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES` objective functions. 
+
+```python
+objective_functions = ObjectiveList()
+objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL, target=muscle_activations_ref)
+objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
+```
+
+Let's take a look at the structure of this example. First, we load data to track, and we generate data using the 
+`data_to_track.prepare_ocp` optimization control program. Then, we track these data using `muscle_activation_ref` and 
+`contact_forces_ref` as shown below:
+
+```python
+ocp = prepare_ocp(
+    biorbd_model_path=model_path,
+    phase_time=final_time,
+    n_shooting=ns,
+    muscle_activations_ref=muscle_activations_ref[:, :-1],
+    contact_forces_ref=contact_forces_ref,
+)
+```
+
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:
 @misc{Michaud2020bioptim,
