@@ -1513,7 +1513,7 @@ can be held in the solution. Another goal would be to reload fast a previously s
 ### The pendulum.py file
 This is another way to present the pendulum example of the 'Getting started' section. 
 
-## Muscle driven ocp
+## Muscle driven OCP
 In this file, you will find four examples about muscle driven optimal control programs. The two first refer to traking 
 examples. The two last refer to reaching tasks. 
 
@@ -1612,6 +1612,86 @@ ocp = prepare_ocp(
     muscle_activations_ref=muscle_activations_ref[:, :-1],
     contact_forces_ref=contact_forces_ref,
 )
+```
+
+## Optimal time OCP
+In this section, you will find four examples showing how to play with time parameters.  
+
+### The multiphase_time_constraint.py file
+This example is a trivial multiphase box that must superimpose different markers at beginning and end of each
+phase with one of its corner. The time is free for each phase.
+It is designed to show how one can define a multi-phase ocp problem with free time. 
+
+In this example, the number of phases is 1 or 3. prepare_ocp function takes `time_min`, `time_max` and `final_time` as 
+arguments. There are arrays of lenght 3 in the case of a 3-phase problem. In the example, these arguments are defined 
+as shown below:
+
+```python
+final_time = [2, 5, 4]
+time_min = [1, 3, 0.1]
+time_max = [2, 4, 0.8]
+ns = [20, 30, 20]
+ocp = prepare_ocp(final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns)
+```
+
+We can make out different time constraints for each phase, as shown in the code below:
+
+```python
+constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[0], max_bound=time_max[0], phase=0)
+if n_phases == 3:
+    constraints.add(
+        ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[1], max_bound=time_max[1], phase=1
+    )
+    constraints.add(
+        ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[2], max_bound=time_max[2], phase=2
+    )
+```
+
+### The pendulum_min_time_Lagrange.py file
+This is a clone of the example/getting_started/pendulum.py where a pendulum must be balance. The difference is that
+the time to perform the task is now free and minimized by the solver, as shown in the definition of the objective 
+function used for this example:
+
+```python
+objective_functions = ObjectiveList()
+objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=1)
+```
+
+Please note that a weight of -1 will maximize time. 
+
+This example shows how to define such an optimal
+control program with a Lagrange criteria (integral of dt).
+
+The difference between Mayer and Lagrange minimization time is that the former can define bounds to
+the values, while the latter is the most common way to define optimal time. 
+
+### The pendulum_min_time_Mayer.py file
+This is a clone of the example/getting_started/pendulum.py where a pendulum must be balance. The difference is that
+the time to perform the task is now free and minimized by the solver, as shown in the definition of the objective 
+function used for this example: 
+
+```python
+objective_functions = ObjectiveList()
+objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=weight, min_bound=min_time, max_bound=max_time)
+```
+
+Please note that a weight of -1 will maximize time. 
+
+This example shows how to define such an optimal
+control program with a Mayer criteria (value of `final_time`).
+
+The difference between Mayer and Lagrange minimization time is that the former can define bounds to
+the values, while the latter is the most common way to define optimal time.
+
+### The time_constraint.py file
+This is a clone of the example/getting_started/pendulum.py where a pendulum must be balance. The difference is that
+the time to perform the task is now free for the solver to change. This example shows how to define such an optimal
+control program. 
+
+In this example, a time constraint is implemented:
+
+```python
+constraints = Constraint(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min, max_bound=time_max)
 ```
 
 # Citing
