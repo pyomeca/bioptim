@@ -1269,12 +1269,12 @@ bounds one can define in bioptim.
 Therefore, it shows how one can define the bounds, that is the minimal and maximal values
 of the state and control variables.
 
-All the types of interpolation are shown : CONSTANT, CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, LINEAR, EACH_FRAME,
-SPLINE, and CUSTOM. 
+All the types of interpolation are shown : `CONSTANT`, `CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT`, `LINEAR`, `EACH_FRAME`,
+`SPLINE`, and `CUSTOM`. 
 
-When the CUSTOM interpolation is chosen, the functions custom_x_bounds_min and custom_x_bounds_max are used to custom 
-the x bounds. The functions custom_u_bounds_min and custom_u_bounds_max are used to custom the u bounds. In this 
-particular example, one mimics linear interpolation using these four functions.
+When the `CUSTOM` interpolation is chosen, the functions `custom_x_bounds_min` and `custom_x_bounds_max` are used to 
+custom the x bounds. The functions `custom_u_bounds_min` and `custom_u_bounds_max` are used to custom the u bounds. 
+In this particular example, one mimics linear interpolation using these four functions.
 
 ### The custom_constraints.py file
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
@@ -1282,7 +1282,7 @@ and superimpose the same corner to a different marker at the end.
 It is designed to show how one can define its own custom constraints function if the provided ones are not
 sufficient.
 
-More specifically this example reproduces the behavior of the SUPERIMPOSE_MARKERS constraint. 
+More specifically this example reproduces the behavior of the `SUPERIMPOSE_MARKERS` constraint. 
 
 The custom_func_track_markers function is used to define the constraint. In this example, one mimics the 
 ConstraintFcn.SUPERIMPOSE_MARKERS. We use the cube.bioMod model. The parent of marker 0 is the cube, whereas 
@@ -1294,7 +1294,7 @@ and superimpose the same corner to a different marker at the end.
 It is designed to show how one can define its own custom dynamics function if the provided ones are not
 sufficient.
 
-More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE_DRIVEN using a custom dynamics. 
+More specifically this example reproduces the behavior of the `DynamicsFcn.TORQUE_DRIVEN` using a custom dynamics. 
 
 The custom_dynamic function is used to provide the derivative of the states. The custom_configure function is used 
 to tell the program which variables are states and controls. 
@@ -1304,10 +1304,10 @@ This example is a trivial box that must superimpose one of its corner to a marke
 and superimpose the same corner to a different marker at the end.
 It is designed to investigate the different way to define the initial guesses at each node sent to the solver.
 
-All the types of interpolation are shown : CONSTANT, CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, LINEAR, EACH_FRAME, 
-SPLINE, and CUSTOM. 
+All the types of interpolation are shown : `CONSTANT`, `CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT`, `LINEAR`, `EACH_FRAME`,
+`SPLINE`, and `CUSTOM`. 
 
-When the CUSTOM interpolation is chosen, the custom_init_func function is used to custom the initial guesses of the 
+When the CUSTOM interpolation is chosen, the `custom_init_func` function is used to custom the initial guesses of the 
 states and controls. In this particular example, one mimics linear interpolation. 
 
 ### The custom_objectives.py file
@@ -1316,10 +1316,10 @@ and superimpose the same corner to a different marker at the end.
 It is designed to show how one can define its own custom objective function if the provided ones are not
 sufficient.
 
-More specifically this example reproduces the behavior of the Mayer.SUPERIMPOSE_MARKERS objective function. 
+More specifically this example reproduces the behavior of the `Mayer.SUPERIMPOSE_MARKERS` objective function. 
 
 This example is closed to the example of the custom_constraint.py file. We use the custom_func_track_markers to define 
-the objective function. In this example, one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS.
+the objective function. In this example, one mimics the `ObjectiveFcn.SUPERIMPOSE_MARKERS`.
 
 ### The custom_parameters.py file 
 This example is a clone of the pendulum.py example with the difference that the
@@ -1330,8 +1330,8 @@ pendulum balancing task.
 It is designed to show how one can define its own parameter objective functions if the provided ones are not
 sufficient.
 
-The my_parameter_function function is used if one wants to modify the dynamics. In our case, we want to optimize the 
-gravity. This function is called right before defining the dynamics of the system. The my_target_function function is 
+The `my_parameter_function function` is used if one wants to modify the dynamics. In our case, we want to optimize the 
+gravity. This function is called right before defining the dynamics of the system. The `my_target_function` function is 
 a penalty function. Both these functions are used to define a new parameter, and then a parameter objective function 
 linked to this new parameter.
 
@@ -1340,15 +1340,15 @@ This example is a trivial multiphase box that must superimpose different markers
 phase with one of its corner
 It is designed to show how one can define its phase transition constraints if the provided ones are not sufficient.
 
-More specifically, this example mimics the behaviour of the most common PhaseTransitionFcn.CONTINUOUS
+More specifically, this example mimics the behaviour of the most common `PhaseTransitionFcn.CONTINUOUS`
 
 The custom_phase_transition function is used to define the constraint of the transition to apply. This function can be 
 used when adding some phase transitions in the list of phase transitions. 
 
 Different phase transisitions can be considered. By default, all the phase transitions are continuous. However, in the 
 event that one or more phase transitions is desired to be continuous, it is posible to define and use a function like 
-the custom_phase_transition function, or directly use PhaseTransitionFcn.IMPACT. If a phase transition is desired 
-between the last and the first phase, use the dedicated PhaseTransitionFcn.Cyclic. 
+the `custom_phase_transition` function, or directly use `PhaseTransitionFcn.IMPACT`. If a phase transition is desired 
+between the last and the first phase, use the dedicated `PhaseTransitionFcn.Cyclic`. 
 
 ### The custom_plot_callback.py file
 This example is a trivial example using the pendulum without any objective. It is designed to show how to create new
@@ -1387,6 +1387,131 @@ else:
 `loop_from_constraint` is a boolean. It is one of the parameters of the `prepare_ocp` function of the example. This parameter is a way to determine if the looping cost should be a constraint [True] or an objective [False]. 
 
 ### The example_external_forces.py file
+This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
+and superimpose the same corner to a different marker at the end. While doing so, a force pushes the box upward.
+The solver must minimize the force needed to lift the box while reaching the marker in time.
+It is designed to show how to use external forces. An example of external forces that depends on the state (for
+example a spring) can be found at 'examples/torque_driven_ocp/spring_load.py'
+
+Please note that the point of application of the external forces are defined in the `bioMod` file by the
+`externalforceindex` tag in segment and is acting at the center of mass of this particular segment. Please note that
+this segment must have at least one degree of freedom defined (translations and/or rotations). Otherwise, the
+external_force is silently ignored. 
+
+`Bioptim` expects `external_forces` to be a list (one element for each phase) of
+np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform
+(defined by the `externalforceindex`) for each node n. Let's take a look at the definition of the external forces in 
+this example :
+
+```python
+external_forces = [
+    np.repeat(np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T[:, :, np.newaxis], n_shooting, axis=2)]
+```
+
+`external_forces` is of len 1 because there is only one phase. The array inside it is 6x2x30 since there 
+is [Mx, My, Mz, Fx, Fy, Fz] for the two `externalforceindex` for each node (in this example, we take 30 shooting nodes).
+
+### The example_inequality_constraint.py file
+This example mimics by essence what a jumper does which is maximizing the predicted height of the
+center of mass at the peak of an aerial phase. It does so with a very simple two segments model though.
+It is a clone of 'torque_driven_ocp/maximize_predicted_height_CoM.py' using
+the option `MINIMIZE_PREDICTED_COM_HEIGHT`. It is different in the sense that the contact forces on ground have
+to be downward (meaning that the object is limited to push on the ground, as one would expect when jumping, for
+instance). 
+
+Moreover, the lateral forces must respect some `NON_SLIPPING` constraint (that is the ground reaction
+forces have to remain inside of the cone of friction), as shown in the part of the code defining the constrainst:
+
+```python
+constraints = ConstraintList()
+   constraints.add(
+   ConstraintFcn.CONTACT_FORCE,
+   min_bound=min_bound,
+   max_bound=max_bound,
+   node=Node.ALL,
+   contact_force_idx=1,
+   )
+constraints.add(
+    ConstraintFcn.CONTACT_FORCE,
+    min_bound=min_bound,
+    max_bound=max_bound,
+    node=Node.ALL,
+    contact_force_idx=2,
+    )
+constraints.add(
+    ConstraintFcn.NON_SLIPPING,
+    node=Node.ALL,
+    normal_component_idx=(1, 2),
+    tangential_component_idx=0,
+    static_friction_coefficient=mu,
+    )
+```
+
+Let's describe the code above. First, we create a list of consraints. Then, two contact forces are defined, 
+respectively with the indexes 1 and 2. The last step is the implementation of the 
+non slipping constraint for the two forces defined before.   
+
+This example is designed to show how to use min_bound and max_bound values so they define inequality constraints instead
+of equality constraints, which can be used with any `ConstraintFcn`.
+
+### The example_mapping.py file 
+An example of mapping can be found at 'examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py'.
+Another example of mapping can be found at 'examples/getting_started/example_inequality_constraint.py'. 
+
+### The example_multiphase.py file
+This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement and
+a the at different marker at the end of each phase. Moreover a constraint on the rotation is imposed on the cube.
+It is designed to show how one can define a multiphase optimal control program.
+
+In this example, three phases are implemented. The `long_optim` boolean allows users to choose between solving the precise
+optimization or the approximate. In the first case, 500 points are considered and `n_shooting = (100, 300, 100)`. 
+Otherwise, 50 points are considered and `n_shooting = (20, 30, 20)`. Three steps are necessary to define the 
+objective functions, the dynamics, the constraints, the path constraints, the initial guesses and the control path 
+contsraints. Each step corresponds to one phase. 
+
+Let's take a look at the definition of the constraints:
+
+```python
+constraints = ConstraintList()
+constraints.add(
+    ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1, phase=0
+)
+constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=0)
+constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=1, phase=1)
+constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2, phase=2)
+```
+
+First, we define a list of constraints, and then we add constraints to the list. At the beginning, marker 0 must 
+superimpose marker 1. At the end of the first phase (the first 100 shooting nodes if we solve the precise optimization), 
+marker 0 must superimpose marker 2. Then, at the end of the second phase, marker 0 must superimpose marker 1. At the 
+end of the last step, marker 0 must superimpose marker 2. Please, note that the definition of the markers is 
+implemented in the `bioMod` file corresponding to the model. Further information about the definition of the markers is
+available in the `biorbd` documentation.
+
+### The example_optimal_time.py file
+Examples of time optimization can be found in 'examples/optimal_time_ocp/'.
+
+### The example_save_and_load.py file
+This is a clone of the getting_started/pendulum.py example. It is designed to show how to create and solve a problem,
+and afterward, save it to the hard drive and reload it. It shows an example of *.bo method. 
+
+Let's take a look at the most important lines of the example. To save the optimal control program and the solution, use
+ocp.save(sol, "pendulum.bo"). To load the optimal control program and the solution, use 
+`ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")`. Then, to show the results, 
+simply use `sol_load.animate()`.
+
+### The example_simulation.py file
+The first part of this example of a single shooting simulation from initial guesses.
+It is NOT an optimal control program. It is merely the simulation of values, that is applying the dynamics.
+The main goal of this kind of simulation is to get a sens of the initial guesses passed to the solver.
+
+The second part of the example is to actually solve the program and then simulate the results from this solution.
+The main goal of this kind of simulation, especially in single shooting (that is not resetting the states at each node)
+is to validate the dynamics of multiple shooting. If they both are equal, it usually means that a great confidence
+can be held in the solution. Another goal would be to reload fast a previously saved optimized solution.
+
+### The pendulum.py file
+This is another way to present the pendulum example of the 'Getting started' section. 
 
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:

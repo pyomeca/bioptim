@@ -2,13 +2,13 @@
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
 and superimpose the same corner to a different marker at the end. While doing so, a force pushes the box upward.
 The solver must minimize the force needed to lift the box while reaching the marker in time.
-It is designed to show how to user external forces. An example of external forces that depends on the state (for
+It is designed to show how to use external forces. An example of external forces that depends on the state (for
 example a spring) can be found at 'examples/torque_driven_ocp/spring_load.py'
 
 Please note that the point of application of the external forces are defined in the bioMod file by the
-externalforceindex tag in segment and is acting at the center of mass the this particular segment. Please note that
+externalforceindex tag in segment and is acting at the center of mass of this particular segment. Please note that
 this segment MUST have at least one degree of freedom defined (translations and/or rotations). Otherwise, the
-external_force is silently ignore. Bioptim expect external_forces to be a list (one element for each phase) of
+external_force is silently ignored. Bioptim expects external_forces to be a list (one element for each phase) of
 np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform
 (defined by the externalforceindex) for each node n
 """
