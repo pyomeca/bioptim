@@ -1694,6 +1694,50 @@ In this example, a time constraint is implemented:
 constraints = Constraint(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min, max_bound=time_max)
 ```
 
+## Symmetrical torque driven OCP
+In this section, you will find an example using symmetry by constraint and another using symmetry by mapping. In both 
+cases, we simulate two rodes. We must superimpose a marker on one rod at the beginning and another marker on the
+same rod at the end, while keeping the degrees of freedom opposed. 
+
+The difference between the first example (symmetry_by_mapping) and the second one (symmetry_by_constraint) is that one 
+(mapping) removes the degree of freedom from the solver, while the other (constraints) imposes a proportional 
+constraint (equals to -1) so they are opposed.
+Please note that even though removing a degree of freedom seems a good idea, it is unclear if it is actually faster when
+solving with `IPOPT`.
+
+### The symmetry_by_constraint.py file
+This example imposes a proportional constraint (equals to -1) so that the rotation around the x axis remains opposed 
+for the two rodes during the movement. 
+
+Let's take a look at the definition of such a constraint:
+
+```python
+constraints.add(ConstraintFcn.PROPORTIONAL_STATE, node=Node.ALL, first_dof=2, second_dof=3, coef=-1)
+```
+
+In this case, a proportional constraint is generated between the third degree of freedom defined in the `bioMod` file 
+(`first_dof=2`) and the fourth one (`second_dof=3`). Looking at the cubeSym.bioMod file used in this example, we can make 
+out that the dof with index 2 corresponds to the rotation around the x axis for the first segment `Seg1`. The dof 
+with index 3 corresponds to the rotation around the x axis for the second segment `Seg2`. 
+
+### The symmetry_by_mapping.py file
+This example imposes the symmetry as a mapping, that is by completely removing the degree of freedom from the solver 
+variables but interpreting the numbers properly when computing the dynamics.
+
+A `BiMapping` is used. The way to understand the mapping is that if one is provided with two vectors, what
+would be the correspondence between those vector. For instance, `BiMapping([None, 0, 1, 2, -2], [0, 1, 2])`
+would mean that the first vector (v1) has 3 components and to create it from the second vector (v2), you would do:
+v1 = [v2[0], v2[1], v2[2]]. Conversely, the second v2 has 5 components and is created from the vector v1 using:
+v2 = [0, v1[0], v1[1], v1[2], -v1[2]]. For the dynamics, it is assumed that v1 is what is to be sent to the dynamic
+functions (the full vector with all the degrees of freedom), while v2 is the one sent to the solver (the one with less
+degrees of freedom).
+
+The `BiMapping` used is defined as a problem parameter, as shown below:
+
+```python
+	all_generalized_mapping = BiMapping([0, 1, 2, -2], [0, 1, 2])
+```
+
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:
 @misc{Michaud2020bioptim,
