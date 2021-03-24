@@ -1833,6 +1833,37 @@ In this particular case, the dynamics function used is `DynamicsFcn.TORQUE_ACTIV
 This example uses a representation of a human body by a trunk_leg segment and two arms.
 It is designed to show how to use a model that has quaternions in their degrees of freedom.
 
+## The track file
+In this section, you will find the description of two tracking examples. 
+
+### The track_marker_on_segment.py file
+This example is a trivial example where a stick must keep a corner of a box in line for the whole duration of the
+movement. The initial and final position of the box are dictated, the rest is fully optimized. It is designed
+to show how one can use the tracking function to track a marker with a body segment.
+
+In this case, we use the `ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS` constraint function, as shown below in the 
+definition of the constraints of the problem:
+
+```python
+constraints = ConstraintList()
+constraints.add(
+ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=Axis.X
+)
+```
+
+Here, we minimize the distance between the marker with index 1 ans the x axis of the segment with index 2. We align 
+the axis toward the marker. 
+
+### The track_segment_on_rt.py file
+This example is a trivial example where a stick must keep its coordinate system of axes aligned with the one
+from a box during the whole duration of the movement. The initial and final position of the box are dictated,
+the rest is fully optimized. It is designed to show how one can use the tracking RT function to track
+any RT (for instance Inertial Measurement Unit [IMU]) with a body segment.
+
+To implement this tracking task, we use the `ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT` constraint function, which 
+minimizes the distance between a segment and an RT. The extra parameters `segment_idx: int` and `rt_idx: int` must be 
+passed to the Objective constructor. 
+
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:
 @misc{Michaud2020bioptim,

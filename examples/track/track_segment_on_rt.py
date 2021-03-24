@@ -1,7 +1,7 @@
 """
 This example is a trivial example where a stick must keep its coordinate system of axes aligned with the one
 from a box during the whole duration of the movement. The initial and final position of the box are dictated,
-the rest is fully optimized. It is designed to show how one can use the tracking RT function to track a
+the rest is fully optimized. It is designed to show how one can use the tracking RT function to track
 any RT (for instance Inertial Measurement Unit [IMU]) with a body segment
 """
 
