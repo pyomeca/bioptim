@@ -1735,8 +1735,103 @@ degrees of freedom).
 The `BiMapping` used is defined as a problem parameter, as shown below:
 
 ```python
-	all_generalized_mapping = BiMapping([0, 1, 2, -2], [0, 1, 2])
+all_generalized_mapping = BiMapping([0, 1, 2, -2], [0, 1, 2])
 ```
+
+## Torque driven OCP
+In this section, you will find different examples showing how to implement torque driven optimal control programs.
+
+### The maximize_predicted_height_CoM.py file
+This example mimics by essence what a jumper does which is maximizing the predicted height of the
+center of mass at the peak of an aerial phase. It does so with a very simple two segments model though.
+It is designed to give a sense of the goal of the different MINIMIZE_COM functions and the use of
+`weight=-1` to maximize instead of minimizing.
+
+Let's take a look at the definition of the objetive functions used for this example to better understand how to 
+implement that:
+
+```python
+objective_functions = ObjectiveList()
+if objective_name == "MINIMIZE_PREDICTED_COM_HEIGHT":
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
+elif objective_name == "MINIMIZE_COM_POSITION":
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, axis=Axis.Z, weight=-1)
+elif objective_name == "MINIMIZE_COM_VELOCITY":
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, axis=Axis.Z, weight=-1)
+```
+
+Another interesting point of this example is the definition of the constraints. Thanks to the `com_constraints` boolean, 
+the user can easily choose to apply constraints on the center of mass. Here is the definition of the constraints for our 
+example:
+
+```python
+constraints = ConstraintList()
+if com_constraints:
+    constraints.add(
+        ConstraintFcn.TRACK_COM_VELOCITY,
+        node=Node.ALL,
+        min_bound=np.array([-100, -100, -100]),
+        max_bound=np.array([100, 100, 100]),
+    )
+    constraints.add(
+        ConstraintFcn.TRACK_COM_POSITION,
+        node=Node.ALL,
+        min_bound=np.array([-1, -1, -1]),
+        max_bound=np.array([1, 1, 1]),
+    )
+```
+
+This example is designed to show how to use `min_bound` and `max_bound` values so they define inequality constraints 
+instead of equality constraints, which can be used with any `ConstraintFcn`. This example is closed to the 
+example_inequality_constraint.py file you can find in 'examples/getting_started/example_inequality_constraint.py'.
+
+### The spring_load.py file 
+This trivial spring example targets to have the highest upward velocity. It is however only able to load a spring by
+pulling downward and afterward to let it go so it gains velocity. It is designed to show how one can use the external
+forces to interact with the body.
+
+This example is closed to the custom_dynamics.py file you can find in 'examples/getting_started/custom_dynamics.py'. 
+Indeed, we generate an external force thanks to the custom_dynamic function. Then, we configure the dynamics with 
+the `custom_configure` function. 
+
+### The track_markers_2D_pendulum.py file
+
+This example uses the data from the balanced pendulum example to generate the data to track.
+When it optimizes the program, contrary to the vanilla pendulum, it tracks the values instead of 'knowing' that
+it is supposed to balance the pendulum. It is designed to show how to track marker and kinematic data.
+
+Note that the final node is not tracked. 
+
+In this example, we use both `ObjectiveFcn.Lagrange.TRACK_MARKERS` and `ObjectiveFcn.Lagrange.TRACK_TORQUE` objective 
+functions to track data, as shown in the definition of the objective functions used in this example:
+
+```python
+objective_functions = ObjectiveList()
+objective_functions.add(
+    ObjectiveFcn.Lagrange.TRACK_MARKERS, axis_to_track=[Axis.Y, Axis.Z], weight=100, target=markers_ref
+)
+objective_functions.add(ObjectiveFcn.Lagrange.TRACK_TORQUE, target=tau_ref)
+```
+
+This is a good example of how to load data for tracking tasks, and how to plot data. This example is closed to 
+the example_save_and_load.py and custom_plotting.py files you can find in the examples/getting_started repository. 
+
+### The track_markers_with_torque_actuators.py file
+This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
+and superimpose the same corner to a different marker at the end. It is a clone of
+'getting_started/custom_constraint.py' It is designed to show how to use the `TORQUE_ACTIVATIONS_DRIVEN` which limits
+the torque to [-1; 1]. This is useful when the maximal torque are not constant. Please note that this dynamic then
+to not converge when it is used on more complicated model. A solution that defines non-constant constraints seems a
+better idea. An example of which can be found with the bioptim paper.
+
+Let's take a look at the structure of the code. First, tau_min, tau_max and tau_init are respectively initialized 
+to -1, 1 and 0 if the integer `actuator_type` (which is a parameter of the `prepare_ocp` function) equals to 1. 
+In this particular case, the dynamics function used is `DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN`. 
+
+### The trampo_quaternions.py file
+
+This example uses a representation of a human body by a trunk_leg segment and two arms.
+It is designed to show how to use a model that has quaternions in their degrees of freedom.
 
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:
