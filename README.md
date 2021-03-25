@@ -1833,7 +1833,7 @@ In this particular case, the dynamics function used is `DynamicsFcn.TORQUE_ACTIV
 This example uses a representation of a human body by a trunk_leg segment and two arms.
 It is designed to show how to use a model that has quaternions in their degrees of freedom.
 
-## The track file
+## Track
 In this section, you will find the description of two tracking examples. 
 
 ### The track_marker_on_segment.py file
@@ -1862,7 +1862,48 @@ any RT (for instance Inertial Measurement Unit [IMU]) with a body segment.
 
 To implement this tracking task, we use the `ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT` constraint function, which 
 minimizes the distance between a segment and an RT. The extra parameters `segment_idx: int` and `rt_idx: int` must be 
-passed to the Objective constructor. 
+passed to the Objective constructor.
+
+## Moving estimation horizon
+In this section, we perform mhe on the pendulum example.
+
+### The mhe.py file
+In this example, we apply mhe (Moving Horizon Estimation) on a simple pendulum simulation. 
+To better understand this example, let’s take a look at the structure of the code. 
+
+First of all, the generate_data function generates states (X_), controls (U_) and marker trajectories (Y_ ) for our 
+pendulum example, using scipy.integrate.solve_ivp. It also returns noisy data for the marker trajectories (Y_N).
+
+The check_results function returns Y_est which corresponds to the estimated marker trajectories, based on the generated
+controls Xs (which is one of the arguments of the check_results function). 
+
+The `plot_true_X` function allows user to simply plot the generated states X_. 
+The `plot_true_U` function allows user to simply plot the generated controls U_. 
+
+The warm_start_mhe function is used to shift forward to the next frame, discarding the oldest frame (estimated controls 
+and states) of the window. At the same time, the function returns the discarded controls X_out. 
+
+In the prepare_ocp function, we define the model path, the dynamics, the initial guesses, the path constraints, the 
+control path constraints. We also add objective functions to the objective_functions list. 
+
+In the main, different parameters are defined.
+The duration of the simulation : `Tf = 5s`,
+the number of shooting nodes : `N = 500`,
+the STD of noise added to measurements : `noise_std = 0.05`,
+the max torque applied to the model : `T_max = 2`,
+the number of frames of the mhe window :` N_mhe = 10`.
+
+Please, note that this problem can be solved with both `acados` and `ipopt`. The options associated to these solvers are 
+defined in `options_ipopt` and `options_acados`. 
+
+Then, we solve the problem with the 10 first shooting nodes, and we perform N–Nmhe = 490 iterations to solve the 
+complete problem. For each iteration, we update Y_i so that we simulate a real time data acquisition, we update the 
+list of objectives, we solve the problem with the new frame added to the window, we discard the oldest frame with 
+the `warm_start_mhe function`, and we save it in X_est. 
+
+We plot the results so that we can compare marker noisy trajectories, with real marker trajectories and estimated 
+marker trajectories. 
+We also plot estimated states and real states.  
 
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:

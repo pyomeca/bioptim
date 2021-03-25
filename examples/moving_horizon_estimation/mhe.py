@@ -1,5 +1,17 @@
 """
-TODO: Cleaning and documentation
+TODO: Cleaning
+In this example, we apply mhe (Moving Horizon Estimation) on a simple pendulum simulation. We generate data (states,
+controls, and marker trajectories) to simulate the movement of a pendulum, using scipy.integrate.solve_ivp. We use
+these data to perform mhe.
+In this example, 500 shooting nodes are defined. As the size of the mhe window is 10, we perform 490 iterations to
+solve the complete problem.
+For each iteration, we take in account the new marker trajectory so that we simulate a real time data acquisition.
+For each iteration, we update the list of objectives, we solve the problem with the new frame added to the window,
+we discard the oldest frame with the warm_start_mhe function, and we save it. We plot the results and we compare
+estimated data to real data.
+
+Please, note that the complete structure of this example is described in the readme file, in the
+‘Examples/Moving horizon estimation’ section.
 """
 
 import time
