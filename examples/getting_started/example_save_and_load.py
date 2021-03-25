@@ -1,12 +1,19 @@
 """
-This is a clone of the getting_started/pendulum.py example. It is designed to show how to create and solve a problem,
-and afterward, save it to the hard drive and reload it. It shows an example of both *.bo and *.bob method
+This is a clone of the getting_started/pendulum.py example.
+
+It is designed to show how to create and solve a problem, and afterward, save it to the hard drive and reload it.
+
+It shows an example of *.bo method and how to use the stand_alone boolean parameter of the save function. If set
+to True, the variable dictionaries (states, controls and parameters) are saved instead of the full Solution class
+itself. This allows to load the saved file into a setting where bioptim is not installed using the pickle package, but
+prevents from using the class methods Solution offers after loading the file.
 """
 
 import pickle
 from time import time
 
 import numpy as np
+from casadi import MX
 import biorbd
 from bioptim import (
     OptimalControlProgram,
@@ -18,8 +25,26 @@ from bioptim import (
     ObjectiveFcn,
     Objective,
     OdeSolver,
+    PlotType,
 )
 
+def custom_plot_callback(x: MX, q_to_plot: list) -> MX:
+    """
+    Create a used defined plot function with extra_parameters
+
+    Parameters
+    ----------
+    x: MX
+        The current states of the optimization
+    q_to_plot: list
+        The slice indices to plot
+
+    Returns
+    -------
+    The value to plot
+    """
+
+    return x[q_to_plot, :]
 
 def prepare_ocp(
     biorbd_model_path: str,
@@ -96,7 +121,7 @@ def prepare_ocp(
 
 if __name__ == "__main__":
     """
-    Create and solve a program. Then it saves it using the .bob and .bo method
+    Create and solve a program. Then it saves it using the .bo method, and then using te stand_alone option. 
     """
 
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, n_threads=4)
@@ -111,11 +136,21 @@ if __name__ == "__main__":
     print(f"Final objective value : {np.nansum(sol.cost)} \n")
     sol.print()
 
-    # --- Save the optimal control program and the solution --- #
+    # --- Save the optimal control program and the solution with stand_alone = False --- #
     ocp.save(sol, "pendulum.bo")  # you don't have to specify the extension ".bo"
 
     # --- Load the optimal control program and the solution --- #
     ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")
 
+    # --- Save the optimal control program and the solution with stand_alone = True --- #
+    ocp.save(sol, f"pendulum_sa.bo", stand_alone=True)
+
+    # --- Load the solution and add extra plots --- #
+    with open(f"pendulum_sa.bo", "rb") as file:
+        states, controls, parameters = pickle.load(file)
+    ocp.add_plot("My New Extra Plot", lambda states, controls, parameters: custom_plot_callback(states, [0, 1, 2, 3]),
+                 plot_type=PlotType.PLOT)
+
     # --- Show results --- #
     sol_load.animate()
+    sol.graphs()
