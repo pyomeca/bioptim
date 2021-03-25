@@ -1,5 +1,8 @@
 """
-TODO: Cleaning and documentation
+TODO: Cleaning
+This is a basic example on how to use biorbd model driven by muscle to perform an optimal reaching task.
+The arm must reach a marker while minimizing the muscles activity and the states. We solve the problem using both
+acados and ipotpt.
 """
 
 import biorbd

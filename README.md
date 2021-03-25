@@ -1905,6 +1905,25 @@ We plot the results so that we can compare marker noisy trajectories, with real 
 marker trajectories. 
 We also plot estimated states and real states.  
 
+## Acados
+In this section, you will find three examples to investigate `bioptim` using `acados`. 
+
+### The cube.py file
+This is a basic example of a cube which have to reach a target at the end of the movement, starting from an initial 
+position, and minimizing states and torques. This problem is solved using `acados`. 
+
+### The pendulum.py file 
+A very simple yet meaningful optimal control program consisting in a pendulum starting downward and ending upward
+while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
+
+This simple example is a good place to start investigating `bioptim` using `acados` as it describes the most common
+dynamics out there (the joint torque driven), it defines an objective function and some boundaries and initial guesses.
+
+### The static_arm.py file
+This is a basic example on how to use biorbd model driven by muscle to perform an optimal reaching task.
+The arm must reach a marker while minimizing the muscles activity and the states. We solve the problem using both 
+`acados` and `ipotpt`.
+
 # Citing
 If you use `bioptim`, we would be grateful if you could cite it as follows:
 @misc{Michaud2020bioptim,
