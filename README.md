@@ -1813,16 +1813,20 @@ objective_functions.add(
 objective_functions.add(ObjectiveFcn.Lagrange.TRACK_TORQUE, target=tau_ref)
 ```
 
-This is a good example of how to load data for tracking tasks, and how to plot data. This example is closed to 
-the example_save_and_load.py and custom_plotting.py files you can find in the examples/getting_started repository. 
+This is a good example of how to load data for tracking tasks, and how to plot data. The extra parameter 
+`axis_to_track` allows users to specify the axes on which to track the markers (x and y axes in this example).
+This example is closed to the example_save_and_load.py and custom_plotting.py files you can find in the 
+examples/getting_started repository. 
 
 ### The track_markers_with_torque_actuators.py file
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
 and superimpose the same corner to a different marker at the end. It is a clone of
-'getting_started/custom_constraint.py' It is designed to show how to use the `TORQUE_ACTIVATIONS_DRIVEN` which limits
+'getting_started/custom_constraint.py' 
+
+It is designed to show how to use the `TORQUE_ACTIVATIONS_DRIVEN` which limits
 the torque to [-1; 1]. This is useful when the maximal torque are not constant. Please note that this dynamic then
 to not converge when it is used on more complicated model. A solution that defines non-constant constraints seems a
-better idea. An example of which can be found with the bioptim paper.
+better idea. An example of which can be found with the `bioptim` paper.
 
 Let's take a look at the structure of the code. First, tau_min, tau_max and tau_init are respectively initialized 
 to -1, 1 and 0 if the integer `actuator_type` (which is a parameter of the `prepare_ocp` function) equals to 1. 
@@ -1868,42 +1872,16 @@ passed to the Objective constructor.
 In this section, we perform mhe on the pendulum example.
 
 ### The mhe.py file
-In this example, we apply mhe (Moving Horizon Estimation) on a simple pendulum simulation. 
-To better understand this example, let’s take a look at the structure of the code. 
+In this example, we apply mhe (Moving Horizon Estimation) on a simple pendulum simulation. We generate data (states, 
+controls, and marker trajectories) to simulate the movement of a pendulum, using `scipy.integrate.solve_ivp`. These data 
+are used to perform mhe.  
 
-First of all, the generate_data function generates states (X_), controls (U_) and marker trajectories (Y_ ) for our 
-pendulum example, using scipy.integrate.solve_ivp. It also returns noisy data for the marker trajectories (Y_N).
-
-The check_results function returns Y_est which corresponds to the estimated marker trajectories, based on the generated
-controls Xs (which is one of the arguments of the check_results function). 
-
-The `plot_true_X` function allows user to simply plot the generated states X_. 
-The `plot_true_U` function allows user to simply plot the generated controls U_. 
-
-The warm_start_mhe function is used to shift forward to the next frame, discarding the oldest frame (estimated controls 
-and states) of the window. At the same time, the function returns the discarded controls X_out. 
-
-In the prepare_ocp function, we define the model path, the dynamics, the initial guesses, the path constraints, the 
-control path constraints. We also add objective functions to the objective_functions list. 
-
-In the main, different parameters are defined.
-The duration of the simulation : `Tf = 5s`,
-the number of shooting nodes : `N = 500`,
-the STD of noise added to measurements : `noise_std = 0.05`,
-the max torque applied to the model : `T_max = 2`,
-the number of frames of the mhe window :` N_mhe = 10`.
-
-Please, note that this problem can be solved with both `acados` and `ipopt`. The options associated to these solvers are 
-defined in `options_ipopt` and `options_acados`. 
-
-Then, we solve the problem with the 10 first shooting nodes, and we perform N–Nmhe = 490 iterations to solve the 
-complete problem. For each iteration, we update Y_i so that we simulate a real time data acquisition, we update the 
-list of objectives, we solve the problem with the new frame added to the window, we discard the oldest frame with 
-the `warm_start_mhe function`, and we save it in X_est. 
-
-We plot the results so that we can compare marker noisy trajectories, with real marker trajectories and estimated 
-marker trajectories. 
-We also plot estimated states and real states.  
+In this example, 500 shooting nodes are defined. As the size of the mhe window is 10, we perform 490 iterations to 
+solve the complete problem. 
+For each iteration, we take in account the new marker trajectory so that we simulate a real time data acquisition, 
+we update the list of objectives, we solve the problem with the new frame added to the window, we discard the oldest 
+frame from the window with the `warm_start_mhe` function, and we save it. We plot the results and we compare estimated 
+data to real data. 
 
 ## Acados
 In this section, you will find three examples to investigate `bioptim` using `acados`. 
