@@ -801,7 +801,7 @@ class Solution:
             import bioviz
         except ModuleNotFoundError:
             raise RuntimeError("bioviz must be install to animate the model")
-        check_version(bioviz, "2.0.1", "2.1.0")
+        check_version(bioviz, "2.0.1", "2.1.1")
 
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:
