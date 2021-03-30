@@ -166,6 +166,8 @@ class ObjectiveFunction:
                 A reference to the ocp
             nlp: NonLinearProgram
                 A reference to the current phase of the ocp
+            pn: PenaltyNodes
+                The penalty node elements
             val: Union[MX, SX, float, int]
                 The actual objective function to add
             penalty: Objective
@@ -347,6 +349,8 @@ class ObjectiveFunction:
                 A reference to the ocp
             nlp: NonLinearProgram
                 A reference to the current phase of the ocp
+            pn: PenaltyNodes
+                The penalty node elements
             val: Union[MX, SX, float, int]
                 The actual objective function to add
             penalty: Objective
@@ -473,6 +477,8 @@ class ObjectiveFunction:
                 A reference to the ocp
             _: Any
                 The ignored nlp
+            pn: PenaltyNodes
+                The penalty node elements
             val: Union[MX, SX, float, int]
                 The actual objective function to add
             penalty: Objective
@@ -577,6 +583,8 @@ class ObjectiveFunction:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the current phase of the ocp
+        pn: PenaltyNodes
+                The penalty node elements
         val: Union[MX, SX, float, int]
             The actual objective function to add
         penalty: Objective
