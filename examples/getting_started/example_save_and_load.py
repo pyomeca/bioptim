@@ -28,6 +28,7 @@ from bioptim import (
     PlotType,
 )
 
+
 def custom_plot_callback(x: MX, q_to_plot: list) -> MX:
     """
     Create a used defined plot function with extra_parameters
@@ -45,6 +46,7 @@ def custom_plot_callback(x: MX, q_to_plot: list) -> MX:
     """
 
     return x[q_to_plot, :]
+
 
 def prepare_ocp(
     biorbd_model_path: str,
@@ -121,7 +123,7 @@ def prepare_ocp(
 
 if __name__ == "__main__":
     """
-    Create and solve a program. Then it saves it using the .bo method, and then using te stand_alone option. 
+    Create and solve a program. Then it saves it using the .bo method, and then using te stand_alone option.
     """
 
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, n_threads=4)
@@ -142,15 +144,18 @@ if __name__ == "__main__":
     # --- Load the optimal control program and the solution --- #
     ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")
 
+    # --- Show results --- #
+    sol_load.animate()
+    sol.graphs()
+
     # --- Save the optimal control program and the solution with stand_alone = True --- #
     ocp.save(sol, f"pendulum_sa.bo", stand_alone=True)
 
     # --- Load the solution and add extra plots --- #
     with open(f"pendulum_sa.bo", "rb") as file:
         states, controls, parameters = pickle.load(file)
-    ocp.add_plot("My New Extra Plot", lambda states, controls, parameters: custom_plot_callback(states, [0, 1, 2, 3]),
-                 plot_type=PlotType.PLOT)
-
-    # --- Show results --- #
-    sol_load.animate()
-    sol.graphs()
+    ocp.add_plot(
+        "My New Extra Plot",
+        lambda states, controls, parameters: custom_plot_callback(states, [0, 1, 2, 3]),
+        plot_type=PlotType.PLOT,
+    )
