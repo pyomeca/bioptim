@@ -153,10 +153,10 @@ class ObjectiveFunction:
                 """
 
                 val = 1
-                ObjectiveFunction.LagrangeFunction.add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                ObjectiveFunction.LagrangeFunction.add_to_penalty(pn.ocp, pn.nlp, pn, val, penalty)
 
         @staticmethod
-        def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Objective):
+        def add_to_penalty(ocp, nlp, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -172,7 +172,7 @@ class ObjectiveFunction:
                 The actual objective function to declare
             """
 
-            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=nlp.dt)
+            ObjectiveFunction.add_to_penalty(ocp, nlp, pn, val, penalty, dt=nlp.dt)
 
         @staticmethod
         def clear_penalty(ocp, nlp, penalty: Objective):
@@ -311,7 +311,7 @@ class ObjectiveFunction:
                 """
 
                 val = pn.nlp.tf
-                ObjectiveFunction.MayerFunction.add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                ObjectiveFunction.MayerFunction.add_to_penalty(pn.ocp, pn.nlp, pn, val, penalty)
 
         @staticmethod
         def inter_phase_continuity(ocp, pt):
@@ -334,10 +334,10 @@ class ObjectiveFunction:
             penalty.sliced_target = None
             pt.base.clear_penalty(ocp, None, penalty)
             val = pt.type.value[0](ocp, pt)
-            pt.base.add_to_penalty(ocp, None, val, penalty)
+            pt.base.add_to_penalty(ocp, None, None, val, penalty)
 
         @staticmethod
-        def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Objective):
+        def add_to_penalty(ocp, nlp, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -353,7 +353,7 @@ class ObjectiveFunction:
                 The actual objective function to declare
             """
 
-            ObjectiveFunction.add_to_penalty(ocp, nlp, val, penalty, dt=1)
+            ObjectiveFunction.add_to_penalty(ocp, nlp, pn, val, penalty, dt=1)
 
         @staticmethod
         def clear_penalty(ocp, nlp, penalty: Objective):
@@ -463,7 +463,7 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def add_to_penalty(ocp, _, val: Union[MX, SX, float, int], penalty: Objective):
+        def add_to_penalty(ocp, _, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -478,7 +478,7 @@ class ObjectiveFunction:
             penalty: Objective
                 The actual objective function to declare
             """
-            ObjectiveFunction.add_to_penalty(ocp, None, val, penalty, dt=1)
+            ObjectiveFunction.add_to_penalty(ocp, None, pn, val, penalty, dt=1)
 
         @staticmethod
         def clear_penalty(ocp, _, penalty: Objective):
@@ -567,7 +567,7 @@ class ObjectiveFunction:
         PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective)
 
     @staticmethod
-    def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Objective, dt: float = 0):
+    def add_to_penalty(ocp, nlp, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: Objective, dt: float = 0):
         """
         Add the objective function to the objective pool
 
@@ -585,7 +585,13 @@ class ObjectiveFunction:
             The time between two nodes for the current phase. If the objective is Mayer, dt should be 1
         """
 
-        J = {"objective": penalty, "val": val, "target": penalty.sliced_target, "dt": dt}
+        J = {
+            "objective": penalty,
+            "node_index": pn.t[len(nlp.J[penalty.list_index])],
+            "val": val,
+            "target": penalty.sliced_target,
+            "dt": dt,
+        }
 
         if nlp:
             nlp.J[penalty.list_index].append(J)

@@ -273,7 +273,7 @@ class Parameters:
             val = func(ocp, parameter.cx, **penalty.params)
             penalty.sliced_target = penalty.target
             ObjectiveFunction.ParameterFunction.clear_penalty(ocp, None, penalty)
-            ObjectiveFunction.ParameterFunction.add_to_penalty(ocp, None, val, penalty)
+            ObjectiveFunction.ParameterFunction.add_to_penalty(ocp, None, None, val, penalty)
 
     @staticmethod
     def get_type():

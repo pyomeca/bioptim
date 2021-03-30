@@ -712,6 +712,53 @@ class OptimalControlProgram:
             out = [ocp, sol]
         return out
 
+    def structure_graph(
+        self,
+        n_shooting: Union[int, tuple],
+        print_to_terminal: bool = False,
+    ):
+
+        if isinstance(n_shooting, tuple):
+            n_nodes = sum(n_shooting) + 1
+        else:
+            n_nodes = n_shooting + 1
+
+        init_dict = [["Phase", []], ["Mayer", []], ["Lagrange", []], ["Constraints", []]]
+        init_dict = dict(init_dict)
+        list_nodes = [init_dict] * n_nodes
+        for i in range(n_nodes):
+            list_nodes[i] = deepcopy(init_dict)
+
+        phase_init_node = 0
+        current_phase = 0
+        for nlp in self.nlp:
+            for J in nlp.J:
+                for n in J:
+                    if isinstance(n["objective"], ObjectiveFcn.Lagrange):
+                        list_nodes[phase_init_node + n["node_index"]]["Lagrange"].append(n["objective"].name)
+                    else:
+                        list_nodes[phase_init_node + n["node_index"]]["Mayer"].append(n["objective"].name)
+            for g in nlp.g:
+                for n in g:
+                    list_nodes[phase_init_node + n["node_index"]]["Constraints"].append(n["constraint"].name)
+            for idx in range(nlp.ns):
+                list_nodes[phase_init_node + idx]["Phase"].append(current_phase)
+            if isinstance(n_shooting, tuple):
+                phase_init_node = phase_init_node + n_shooting[current_phase]
+                current_phase = current_phase + 1
+
+        if print_to_terminal:
+            node_idx = 0
+            for node in list_nodes:
+                print(f"NODE {node_idx}")
+                print(f"Phase: {node['Phase']}")
+                print(f"Objectives: ")
+                print(f"*** Mayer: {node['Mayer']}")
+                print(f"*** Lagrange: {node['Lagrange']}")
+                print(f"Constraints: {node['Constraints']}")
+                print("")
+                node_idx = node_idx +1
+
     def __define_time(
         self,
         phase_time: Union[int, float, list, tuple],

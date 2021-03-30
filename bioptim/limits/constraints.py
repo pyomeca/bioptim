@@ -156,6 +156,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 ConstraintFunction.add_to_penalty(
                     pn.ocp,
                     pn.nlp,
+                    pn,
                     pn.nlp.contact_forces_func(pn.x[i], pn.u[i], pn.p)[contact_force_idx, 0],
                     constraint,
                 )
@@ -204,12 +205,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 ConstraintFunction.add_to_penalty(
                     pn.ocp,
                     pn.nlp,
+                    pn,
                     mu * normal_contact_force - tangential_contact_force,
                     constraint,
                 )
                 ConstraintFunction.add_to_penalty(
                     pn.ocp,
                     pn.nlp,
+                    pn,
                     mu * normal_contact_force + tangential_contact_force,
                     constraint,
                 )
@@ -258,7 +261,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     max_bound = nlp.mapping["tau"].to_first.map(bound[:, 0])
 
                 ConstraintFunction.add_to_penalty(
-                    pn.ocp, nlp, vertcat(*[pn.u[i] + min_bound, pn.u[i] - max_bound]), constraint
+                    pn.ocp, nlp, pn, vertcat(*[pn.u[i] + min_bound, pn.u[i] - max_bound]), constraint
                 )
 
         @staticmethod
@@ -322,7 +325,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if ocp.n_threads > 1:
                 end_nodes = nlp.par_dynamics(horzcat(*nlp.X[:-1]), horzcat(*nlp.U), nlp.p)[0]
                 val = horzcat(*nlp.X[1:]) - end_nodes
-                ConstraintFunction.add_to_penalty(ocp, None, val.reshape((nlp.nx * nlp.ns, 1)), penalty)
+                ConstraintFunction.add_to_penalty(ocp, None, None, val.reshape((nlp.nx * nlp.ns, 1)), penalty)
             else:
                 for k in range(nlp.ns):
                     # Create an evaluation node
@@ -343,7 +346,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                     # Save continuity constraints
                     val = end_node - nlp.X[k + 1]
-                    ConstraintFunction.add_to_penalty(ocp, None, val, penalty)
+                    ConstraintFunction.add_to_penalty(ocp, None, None, val, penalty)
 
     @staticmethod
     def inter_phase_continuity(ocp, pt):
@@ -372,10 +375,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         pt.casadi_function = Function(
             casadi_name, [pre_nlp.X[-1], pre_nlp.U[-1], post_nlp.X[0], post_nlp.U[0], ocp.v.parameters.cx], [val]
         ).expand()
-        pt.base.add_to_penalty(ocp, None, val, penalty)
+        pt.base.add_to_penalty(ocp, None, None, val, penalty)
 
     @staticmethod
-    def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: Constraint):
+    def add_to_penalty(ocp, nlp, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: Constraint):
         """
         Add the constraint to the constraint pool
 
@@ -407,12 +410,22 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
 
-        g = {
-            "constraint": penalty,
-            "val": val,
-            "bounds": g_bounds,
-            "target": penalty.sliced_target,
-        }
+        if pn is None:
+            g = {
+                "constraint": penalty,
+                "node_index": None,
+                "val": val,
+                "bounds": g_bounds,
+                "target": penalty.sliced_target,
+            }
+        else:
+            g = {
+                "constraint": penalty,
+                "node_index": pn.t[len(nlp.g[penalty.list_index])],
+                "val": val,
+                "bounds": g_bounds,
+                "target": penalty.sliced_target,
+            }
         if nlp:
             nlp.g[penalty.list_index].append(g)
         else:
