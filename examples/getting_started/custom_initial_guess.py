@@ -35,7 +35,7 @@ from bioptim import (
 
 def custom_init_func(current_shooting_point: int, my_values: np.ndarray, n_shooting: int) -> np.ndarray:
     """
-    The custom function for the x bound (this particular one mimics linear interpolation)
+    The custom function for the x and u initial guesses (this particular one mimics linear interpolation)
 
     Parameters
     ----------
