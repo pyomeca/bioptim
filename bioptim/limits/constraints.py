@@ -388,6 +388,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the current phase of the ocp
+        pn: PenaltyNodes
+            The penalty node elements
         val: Union[MX, SX, float, int]
             The actual constraint to add
         penalty: Constraint
