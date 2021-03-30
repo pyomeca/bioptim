@@ -46,6 +46,8 @@ class Solution:
         The total time to solve the program
     iterations: int
         The number of iterations that were required to solve the program
+    status: int
+        Optimization success status (Ipopt: 0=Succeeded, 1=Failed)
     _states: list
         The data structure that holds the states
     _controls: list
@@ -219,6 +221,7 @@ class Solution:
             self.lam_x = sol["lam_x"] if isinstance(sol, dict) and "lam_x" in sol else None
             self.time_to_optimize = sol["time_tot"] if isinstance(sol, dict) and "time_tot" in sol else None
             self.iterations = sol["iter"] if isinstance(sol, dict) and "iter" in sol else None
+            self.status = sol["status"] if isinstance(sol, dict) and "status" in sol else None
 
             # Extract the data now for further use
             self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
@@ -801,7 +804,7 @@ class Solution:
             import bioviz
         except ModuleNotFoundError:
             raise RuntimeError("bioviz must be install to animate the model")
-        check_version(bioviz, "2.0.1", "2.1.1")
+        check_version(bioviz, "2.1.0", "2.2.0")
 
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:
