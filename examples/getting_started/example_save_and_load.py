@@ -146,16 +146,11 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol_load.animate()
-    sol.graphs()
+    sol_load.graphs()
 
     # --- Save the optimal control program and the solution with stand_alone = True --- #
     ocp.save(sol, f"pendulum_sa.bo", stand_alone=True)
 
-    # --- Load the solution and add extra plots --- #
+    # --- Load the solution saved with stand_alone = True --- #
     with open(f"pendulum_sa.bo", "rb") as file:
         states, controls, parameters = pickle.load(file)
-    ocp.add_plot(
-        "My New Extra Plot",
-        lambda states, controls, parameters: custom_plot_callback(states, [0, 1, 2, 3]),
-        plot_type=PlotType.PLOT,
-    )

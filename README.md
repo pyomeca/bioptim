@@ -1817,6 +1817,7 @@ This example is closed to the example_save_and_load.py and custom_plotting.py fi
 examples/getting_started repository. 
 
 ### The track_markers_with_torque_actuators.py file
+
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
 and superimpose the same corner to a different marker at the end. It is a clone of
 'getting_started/custom_constraint.py' 
