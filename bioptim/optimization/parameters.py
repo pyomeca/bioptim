@@ -1,6 +1,7 @@
 from typing import Callable, Union, Any
 
 from casadi import MX, SX
+import numpy as np
 
 from ..misc.enums import Node
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
@@ -36,6 +37,7 @@ class Parameter(OptionGeneric):
         size: int = None,
         penalty_list: Union[Objective, ObjectiveList] = None,
         cx: Union[Callable, MX, SX] = None,
+        scaling: Union[list, np.ndarray] = [1.0],
         **params: Any,
     ):
         """
@@ -61,8 +63,21 @@ class Parameter(OptionGeneric):
 
         super(Parameter, self).__init__(type=Parameters, **params)
         self.function = function
-        self.initial_guess = initial_guess
-        self.bounds = bounds
+
+        if not isinstance(scaling, np.ndarray):
+            scaling = np.asarray(scaling, dtype=float)
+        if len(scaling.shape) == 1:
+            self.scaling = scaling[:, np.newaxis]
+        elif len(scaling.shape) == 2:
+            if scaling.shape[1] != 1 :
+                raise RuntimeError(
+                    f"Invalid ncols for Parameter Scaling "
+                    f"(ncols = {scaling.shape[1]}), the expected number of column is 1"
+                )
+
+
+        self.initial_guess = initial_guess.scale(self.scaling)
+        self.bounds = bounds.scale(self.scaling)
         self.quadratic = quadratic
         self.size = size
         self.penalty_list = penalty_list
@@ -107,6 +122,7 @@ class ParameterList(UniquePerProblemOptionList):
         size: int = None,
         list_index: int = -1,
         penalty_list: Union[Objective, ObjectiveList] = None,
+        scaling: float = 1.0,
         **extra_arguments: Any,
     ):
         """
@@ -129,6 +145,8 @@ class ParameterList(UniquePerProblemOptionList):
             The index of the parameter in the parameters list
         penalty_list: Union[Objective, ObjectiveList]
             The objective function associate with the parameter
+        scaling: Float
+            The scaling of the parameter
         extra_arguments: dict
             Any argument that should be passed to the user defined functions
         """
@@ -154,6 +172,7 @@ class ParameterList(UniquePerProblemOptionList):
                 bounds=bounds,
                 size=size,
                 penalty_list=penalty_list,
+                scaling=scaling,
                 **extra_arguments,
             )
 
@@ -270,7 +289,7 @@ class Parameters:
 
             func = penalty.custom_function
 
-            val = func(ocp, parameter.cx, **penalty.params)
+            val = func(ocp, parameter.cx * parameter.scaling, **penalty.params)
             penalty.sliced_target = penalty.target
             ObjectiveFunction.ParameterFunction.clear_penalty(ocp, None, penalty)
             ObjectiveFunction.ParameterFunction.add_to_penalty(ocp, None, val, penalty)
