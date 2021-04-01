@@ -256,12 +256,15 @@ class OptimizationVariable:
             offset += self.n_phase_u[p]
 
         offset = self.n_all_x + self.n_all_u
-        data_parameters["all"] = v_array[offset:]
+        scaling_offset = 0
+        data_parameters["all"] = v_array[offset:, np.newaxis] * ocp.nlp[0].p_scaling
         if len(data_parameters["all"].shape) == 1:
             data_parameters["all"] = data_parameters["all"][:, np.newaxis]
         for param in self.parameters_in_list:
-            data_parameters[param.name] = v_array[offset : offset + param.size]
+            data_parameters[param.name] = v_array[offset : offset + param.size, np.newaxis] \
+                                          * ocp.nlp[0].p_scaling[scaling_offset: scaling_offset+param.size]
             offset += param.size
+            scaling_offset += param.size
             if len(data_parameters[param.name].shape) == 1:
                 data_parameters[param.name] = data_parameters[param.name][:, np.newaxis]
 
@@ -400,6 +403,7 @@ class OptimizationVariable:
                 raise RuntimeError("Pre dynamic function of same parameters must be the same")
             self.parameters_in_list[i].size += param.size
             self.parameters_in_list[i].cx = vertcat(self.parameters_in_list[i].cx, param.cx)
+            self.parameters_in_list[i].scaling = vertcat(self.parameters_in_list[i].scaling, param.scaling)
             if param.params != self.parameters_in_list[i].params:
                 raise RuntimeError("Extra parameters of same parameters must be the same")
             self.parameters_in_list[i].bounds.concatenate(param.bounds)
