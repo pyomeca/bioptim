@@ -86,6 +86,8 @@ def prepare_ocp(
     biorbd_model_path,
     final_time,
     n_shooting,
+    optim_gravity,
+    optim_mass,
     min_g,
     max_g,
     min_m,
@@ -163,25 +165,27 @@ def prepare_ocp(
     mass_objective_functions = Objective(
         my_target_function, weight=100, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_m
     )
-    parameters.add(
-        "gravity_xyz",  # The name of the parameter
-        my_parameter_function,  # The function that modifies the biorbd model
-        initial_gravity,  # The initial guess
-        bound_gravity,  # The bounds
-        size=3,  # The number of elements this particular parameter vector has
-        penalty_list=parameter_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
-        scaling=np.array([1.0, 1.0, 10.0]),
-        extra_value=1,  # You can define as many extra arguments as you want
-    )
-    parameters.add(
-        "mass",  # The name of the parameter
-        set_mass,  # The function that modifies the biorbd model
-        initial_mass,  # The initial guess
-        bound_mass,  # The bounds
-        size=1,  # The number of elements this particular parameter vector has
-        penalty_list=mass_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
-        scaling=np.array([10.0]),
-    )
+    if optim_gravity:
+        parameters.add(
+            "gravity_xyz",  # The name of the parameter
+            my_parameter_function,  # The function that modifies the biorbd model
+            initial_gravity,  # The initial guess
+            bound_gravity,  # The bounds
+            size=3,  # The number of elements this particular parameter vector has
+            penalty_list=parameter_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
+            scaling=np.array([1.0, 1.0, 10.0]),
+            extra_value=1,  # You can define as many extra arguments as you want
+        )
+    if optim_mass:
+        parameters.add(
+            "mass",  # The name of the parameter
+            set_mass,  # The function that modifies the biorbd model
+            initial_mass,  # The initial guess
+            bound_mass,  # The bounds
+            size=1,  # The number of elements this particular parameter vector has
+            penalty_list=mass_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
+            scaling=np.array([10.0]),
+        )
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
@@ -207,6 +211,8 @@ if __name__ == "__main__":
         biorbd_model_path="pendulum.bioMod",
         final_time=3,
         n_shooting=100,
+        optim_gravity=True,
+        optim_mass=True,
         min_g=np.array([-1, -1, -10]),
         max_g=np.array([1, 1, -5]),
         min_m=10,
