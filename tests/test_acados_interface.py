@@ -302,6 +302,7 @@ def test_acados_custom_dynamics(problem_type_custom):
     np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226)))
 
+
 def test_acados_one_parameter():
     bioptim_folder = TestUtils.bioptim_folder()
     parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
@@ -357,6 +358,7 @@ def test_acados_one_parameter():
     os.remove(f"./acados_ocp.json")
     shutil.rmtree(f"./c_generated_code/")
 
+
 def test_acados_several_parameter():
     bioptim_folder = TestUtils.bioptim_folder()
     parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
@@ -391,8 +393,13 @@ def test_acados_several_parameter():
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0, "nlp_solver_tol_eq": 1e-3})
 
     # Check some of the results
-    q, qdot, tau, gravity, mass = sol.states["q"], sol.states["qdot"], sol.controls["tau"], \
-        sol.parameters["gravity_xyz"], sol.parameters["mass"]
+    q, qdot, tau, gravity, mass = (
+        sol.states["q"],
+        sol.states["qdot"],
+        sol.controls["tau"],
+        sol.parameters["gravity_xyz"],
+        sol.parameters["mass"],
+    )
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
