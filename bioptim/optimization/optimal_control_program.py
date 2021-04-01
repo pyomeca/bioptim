@@ -711,6 +711,18 @@ class OptimalControlProgram:
             out = [ocp, sol]
         return out
 
+    def get_dynamics(self):
+        list_dynamics = []
+        for nlp in self.nlp:
+            list_dynamics.append(nlp.dynamics_type.type.name)
+        return list_dynamics
+
+    def get_ode_solver(self):
+        list_ode = []
+        for nlp in self.nlp:
+            list_ode.append(nlp.ode_solver.rk_integrator.__name__)
+        return list_ode
+
     def structure_graph(
         self,
         print_to_terminal: bool = False,
@@ -721,11 +733,15 @@ class OptimalControlProgram:
             m.update(b)
             return m
 
-        def print_terminal(print_terminal: bool, l_nodes: list, n_phase: int):
+        def print_terminal(print_terminal: bool, l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
             if print_terminal is True:
                 for phase_idx in range(n_phase):
                     node_idx = 0
+                    print(f"**********")
                     print(f"PHASE {phase_idx}")
+                    print(f"DYNAMICS: {l_dynamics[phase_idx]}")
+                    print(f"ODE: {l_ode[phase_idx]}")
+                    print("")
                     for node_dict in l_nodes[phase_idx]:
                         print(f"NODE {node_idx}")
                         print(f"Objectives: ")
@@ -735,19 +751,19 @@ class OptimalControlProgram:
                         print("")
                         node_idx = node_idx + 1
 
-        n_phase = 0
         list_nodes = [[{"Mayer": [], "Lagrange": [], "Constraints": []} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
 
-        list_objectives = ObjectiveList.get_objectives(self.nlp)
-        list_constraints = ConstraintList.get_constraints(self.nlp)
+        list_objectives = ObjectiveList.get_nlp_objectives(self.nlp)
+        list_constraints = ConstraintList.get_nlp_constraints(self.nlp)
+        list_dynamics = self.get_dynamics()
+        list_ode = self.get_ode_solver()
 
         for nlp in self.nlp:
-            n_phase = n_phase + 1
             for node_idx in range(nlp.ns + 1):
                 list_nodes[nlp.phase_idx][node_idx] = merge_dicts(list_objectives[nlp.phase_idx][node_idx],
                                                                   list_constraints[nlp.phase_idx][node_idx])
 
-        print_terminal(print_to_terminal, list_nodes, n_phase)
+        print_terminal(print_to_terminal, list_dynamics, list_ode, list_nodes, self.n_phases)
 
     def __define_time(
         self,

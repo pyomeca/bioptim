@@ -96,7 +96,7 @@ class ObjectiveList(OptionList):
         raise NotImplementedError("Printing of ObjectiveList is not ready yet")
 
     @staticmethod
-    def get_objectives(nlp):
+    def get_nlp_objectives(nlp):
         list_objectives = [[{"Mayer": [], "Lagrange": []} for _ in range(NLP.ns + 1)] for NLP in nlp]
         for NLP in nlp:
             for J in NLP.J:

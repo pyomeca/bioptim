@@ -95,7 +95,7 @@ class ConstraintList(OptionList):
         raise NotImplementedError("Printing of ConstraintList is not ready yet")
 
     @staticmethod
-    def get_constraints(nlp):
+    def get_nlp_constraints(nlp):
         list_constraints = [[{"Constraints": []} for _ in range(NLP.ns + 1)] for NLP in nlp]
         for NLP in nlp:
             for g in NLP.g:
