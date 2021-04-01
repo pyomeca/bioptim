@@ -24,22 +24,33 @@ It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fas
 - [Show the results](#show-the-results)
 - [The full files](#the-full-files)
 
-        1. [The pendulum.py file](#the-pendulumpy-file)
-        1. [The pendulum.bioMod file](#the-pendulumbiomod-file)
-
 [A more in depth look at the `bioptim` API](#a-more-in-depth-look-at-the-bioptim-api)
 - [The OCP](#the-ocp)
-
-        - [OptimalControlProgram](#class-optimalcontrolprogram)
-        - [NonLinearProgram](#class-nonlinearprogram)
-
 - [The dynamics](#the-dynamics)
+- [The bounds](#the-bounds)
+- [The initial conditions](#the-initial-conditions)
+- [The constraints](#the-constraints)
+- [The constrobjective functionsaints](#the-objective-functions)
+- [The parameters](#the-parameters)
+- [The phase transitions](#the-phase-transitions)
+- [The results](#the-results)
+- [The extra stuff and the Enum](#the-extra-stuff-and-the-enum)
 
-        - [Dynamics](#dynamics)
-        - [DynamicsList](#dynamicslist)
-        - [DynamicsFcn](#dynamicsfcn)
 
-                - [TORQUE_DRIVEN](#torque_driven)
+[Examples](#examples)
+- [Getting started](#getting-started)
+- [Muscle driven OCP](#Muscle-driven-ocp)
+- [Getting started](#getting-started)
+- [Muscle driven with contact](#muscle-driven-with-contact)
+- [Optimal time OCP](#optimal-time-ocp)
+- [Symmetrical torque driven OCP](#symmetrical-torque-driven-ocp)
+- [Torque driven OCP](#torque-driven-ocp)
+- [Track](#track)
+- [Moving estimation horizon](#moving-estimation-horizon)
+- [Acados](#acados)
+
+[Citing](#Citing)
+
 
 # How to install 
 The preferred way to install for the lay user is using anaconda. 
