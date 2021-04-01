@@ -9,7 +9,8 @@ sufficient.
 
 from typing import Any
 
-from casadi import MX
+import numpy as np
+from casadi import MX, vertcat
 import biorbd
 from bioptim import (
     OptimalControlProgram,
@@ -41,8 +42,24 @@ def my_parameter_function(biorbd_model: biorbd.Model, value: MX, extra_value: An
         Any parameters required by the user. The name(s) of the extra_value must match those used in parameter.add
     """
 
-    biorbd_model.setGravity(biorbd.Vector3d(0, 0, value * extra_value))
+    biorbd_model.setGravity(biorbd.Vector3d(value[0], value[1], value[2] * extra_value))
 
+def set_mass(biorbd_model: biorbd.Model, value: MX):
+    """
+    The pre dynamics function is called right before defining the dynamics of the system. If one wants to
+    modify the dynamics (e.g. optimize the gravity in this case), then this function is the proper way to do it.
+
+    Parameters
+    ----------
+    biorbd_model: biorbd.Model
+        The model to modify by the parameters
+    value: MX
+        The CasADi variables to modify the model
+    extra_value: Any
+        Any parameters required by the user. The name(s) of the extra_value must match those used in parameter.add
+    """
+
+    biorbd_model.segment(0).characteristics().setMass(value)
 
 def my_target_function(ocp: OptimalControlProgram, value: MX) -> MX:
     """
@@ -69,7 +86,10 @@ def prepare_ocp(
     n_shooting,
     min_g,
     max_g,
+    min_m,
+    max_m,
     target_g,
+    target_m,
     ode_solver=OdeSolver.RK4(),
     use_sx=False,
 ) -> OptimalControlProgram:
@@ -121,7 +141,7 @@ def prepare_ocp(
     x_init = InitialGuess([0] * (n_q + n_qdot))
 
     # Define control path constraint
-    tau_min, tau_max, tau_init = -30, 30, 0
+    tau_min, tau_max, tau_init = -300, 300, 0
     u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau)
     u_bounds[1, :] = 0
 
@@ -131,21 +151,35 @@ def prepare_ocp(
     # Give the parameter some min and max bounds
     parameters = ParameterList()
     bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
+    bound_mass = Bounds(min_m, max_m, interpolation=InterpolationType.CONSTANT)
     # and an initial condition
     initial_gravity = InitialGuess((min_g + max_g) / 2)
+    initial_mass = InitialGuess((min_m + max_m) / 2)
     parameter_objective_functions = Objective(
-        my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
+        my_target_function, weight=1000, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
+    )
+    mass_objective_functions = Objective(
+        my_target_function, weight=100, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_m
     )
     parameters.add(
-        "gravity_z",  # The name of the parameter
+        "gravity_xyz",  # The name of the parameter
         my_parameter_function,  # The function that modifies the biorbd model
         initial_gravity,  # The initial guess
         bound_gravity,  # The bounds
-        size=1,  # The number of elements this particular parameter vector has
+        size=3,  # The number of elements this particular parameter vector has
         penalty_list=parameter_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
+        scaling=np.array([1.0, 1.0, 10.0]),
         extra_value=1,  # You can define as many extra arguments as you want
     )
-
+    parameters.add(
+        "mass",  # The name of the parameter
+        set_mass,  # The function that modifies the biorbd model
+        initial_mass,  # The initial guess
+        bound_mass,  # The bounds
+        size=1,  # The number of elements this particular parameter vector has
+        penalty_list=mass_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
+        scaling=np.array([10.]),
+    )
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
@@ -168,15 +202,20 @@ if __name__ == "__main__":
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, min_g=-10, max_g=-6, target_g=-8
+        biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, min_g=np.array([-1, -1, -10]),
+        max_g=np.array([1, 1, -5]), min_m=10, max_m=30, target_g=np.array([0, 0, -9.81]), target_m=20,
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(show_online_optim=False)
 
     # --- Get the results --- #
-    length = sol.parameters["gravity_z"][0, 0]
-    print(length)
+    gravity = sol.parameters["gravity_xyz"]
+    mass = sol.parameters["mass"]
+    print(f"Optimized gravity: {gravity}")
+    print(f"Optimized mass: {mass}")
 
     # --- Show results --- #
+    sol.graphs()
     sol.animate(n_frames=200)
+
