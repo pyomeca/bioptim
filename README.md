@@ -17,6 +17,15 @@ It interfaces the robust [̀`Ipopt`](https://github.com/coin-or/Ipopt) and the f
 - [Compiling](#installing-from-the-sources-for-windows-linux-and-mac)
 - [Dependencies](#dependencies)
 
+[Getting started](#getting-started)
+- [The import](#the-import)
+- [Building the ocp](#building-the-ocp)
+- [Solving the ocp](#solving-the-ocp)
+- [Show the results](#show-the-results)
+- [The full files](#the-full-files)
+        - The pendulum.py file](#the-pendulum-py-file)
+        - The pendulum.bioMod file](#the-pendulum.biomod-file)
+
 # How to install 
 The preferred way to install for the lay user is using anaconda. 
 Another way, more designed for the core programmers is from the sources. 
