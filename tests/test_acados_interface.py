@@ -312,7 +312,10 @@ def test_acados_one_parameter():
         n_shooting=100,
         min_g=-10,
         max_g=-6,
+        min_m=10,
+        max_m=306,
         target_g=-8,
+        target_m=20,
         use_sx=True,
     )
     model = ocp.nlp[0].model
