@@ -11,13 +11,19 @@ It interfaces the robust [̀`Ipopt`](https://github.com/coin-or/Ipopt) and the f
 | Continuous integration | [![Build Status](https://travis-ci.org/pyomeca/bioptim.svg?branch=master)](https://travis-ci.org/pyomeca/bioptim) |
 | Code coverage | [![codecov](https://codecov.io/gh/pyomeca/bioptim/branch/master/graph/badge.svg?token=NK1V6QE2CK)](https://codecov.io/gh/pyomeca/bioptim) |
 
+# Table of Contents  
+[How to install](#how-to-install)
+- [Anaconda](#installing-from-anaconda-for-windows-linux-and-mac)
+- [Compiling](#installing-from-the-sources-for-windows-linux-and-mac)
+- [Dependencies](#dependencies)
+
 # How to install 
 The preferred way to install for the lay user is using anaconda. 
 Another way, more designed for the core programmers is from the sources. 
 While it is theoretically possible to use `bioptim` from Windows, it is highly discouraged since it will require to manually compile all the dependencies. 
 A great alternative for the Windows users is *Ubuntu* on *Windows supporting Linux*.
 
-## Installing from Anaconda (For Linux and Mac)
+## Installing from Anaconda (For Windows, Linux and Mac)
 The easiest way to install `bioptim` is to download the binaries from [Anaconda](https://anaconda.org/) repositories. 
 The project is hosted on the conda-forge channel (https://anaconda.org/conda-forge/bioptim).
 
