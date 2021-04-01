@@ -24,30 +24,58 @@ The current status of `bioptim` on conda-forge is
 - [Compiling](#installing-from-the-sources-for-windows-linux-and-mac)
 - [Dependencies](#dependencies)
 
-[Getting started](#getting-started)
+[A first practical example](#a-first-practical-example)
 - [The import](#the-import)
 - [Building the ocp](#building-the-ocp)
 - [Solving the ocp](#solving-the-ocp)
 - [Show the results](#show-the-results)
-- [The full files](#the-full-files)
+- [The full example files](#the-full-example-files)
 
 [A more in depth look at the `bioptim` API](#a-more-in-depth-look-at-the-bioptim-api)
 - [The OCP](#the-ocp)
+  - [OptimalControlProgram](#class-optimalcontrolprogram)
+  - [NonLinearProgram](#class-nonlinearprogram)
 - [The dynamics](#the-dynamics)
+  - [Dynamics](#class-dynamics)
+  - [DynamicsList](#class-dynamicslist)
+  - [DynamicsFcn](#class-dynamicsfcn)
 - [The bounds](#the-bounds)
+  - [Bounds](#class-bounds)
+  - [BoundsList](#class-boundslist)
+  - [QAndQDotBounds](#class-qandqdotbounds)
 - [The initial conditions](#the-initial-conditions)
+  - [InitialGuess](#class-initialguess)
+  - [InitialGuessList](#class-initialguesslist)
 - [The constraints](#the-constraints)
+  - [Constraint](#class-constraint)
+  - [ConstraintList](#class-constraintlist)
+  - [ConstraintFcn](#class-constraintfcn)
 - [The objective functions](#the-objective-functions)
+  - [Objective](#class-objective)
+  - [ObjectiveList](#class-objectivelist)
+  - [ObjectiveFcn](#class-objectivefcn)
 - [The parameters](#the-parameters)
+  - [ParameterList](#class-parameterlist)
 - [The phase transitions](#the-phase-transitions)
+  - [PhaseTransitionList](#class-phasetransitionlist)
+  - [PhaseTransitionFcn](#class-phasetransitionfcn)
 - [The results](#the-results)
+  - [Data manipulation](#data-manipulation)
+  - [Data visualization](#data-visualization)
 - [The extra stuff and the Enum](#the-extra-stuff-and-the-enum)
-
-
+  - [The mappings](#The mappings)
+  - [Node](#enum-node)
+  - [OdeSolver](#class-odesolver)
+  - [Solver](#enum-solver)
+  - [ControlType](#enum-controltype)
+  - [PlotType](#enum-plottype)
+  - [InterpolationType](#enum-interpolationtype)
+  - [Shooting](#enum-shooting)
+  - [CostType](#enum-costtype)
+        
 [Examples](#examples)
 - [Getting started](#getting-started)
-- [Muscle driven OCP](#Muscle-driven-ocp)
-- [Getting started](#getting-started)
+- [Muscle driven OCP](#muscle-driven-ocp)
 - [Muscle driven with contact](#muscle-driven-with-contact)
 - [Optimal time OCP](#optimal-time-ocp)
 - [Symmetrical torque driven OCP](#symmetrical-torque-driven-ocp)
@@ -143,7 +171,7 @@ We recommend that you use `ma57` as a default linear solver by calling as such:
 ocp.solve(solver_options={"linear_solver": "ma57"})
 ```
 
-# Getting started
+# A first practical example
 The easiest way to learn `bioptim` is to dive into it.
 So let's do that and build our first optimal control program together.
 Please note that this tutorial is designed to recreate the `examples/getting_started/pendulum.py` file where a pendulum is asked to start in a downward position and to end, balanced, in an upward position while only being able to actively move sideways.
@@ -273,7 +301,7 @@ sol.print()
 And that is all! 
 You have completed your first optimal control program with `bioptim`! 
 
-## The full files
+## The full example files
 If you did not completely follow (or were too lazy to!) you will find in this section the complete files described in the Getting started section.
 You will find that the file is a bit different from the `example/getting_started/pendulum.py`, but it is merely differences on the surface.
 
@@ -935,7 +963,7 @@ The function is expected to return an MX vector of the objective function.
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom objective functions should be at least familiar with this type beforehand. 
 
-### ObjectiveList
+### Class: ObjectiveList
 An ObjectiveList is a list of Objective. 
 The `add()` method can be called exactly as if one was calling the `Objective` constructor. 
 If the `add()` method is used more than one, the `list_index` parameter is automatically incremented for the prescribed `phase`.
