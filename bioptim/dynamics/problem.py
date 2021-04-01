@@ -1,6 +1,7 @@
 from typing import Callable
 
 from casadi import MX, vertcat, horzcat, Function
+import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
 from ..misc.enums import PlotType, ControlType
@@ -578,6 +579,7 @@ class Problem:
 
         nlp.parameters = ocp.v.parameters_in_list
         nlp.p = ocp.v.parameters.cx
+        nlp.p_scaling = np.vstack([p.scaling for p in nlp.parameters])
         nlp.np = sum([p.size for p in nlp.parameters])
         mx_symbolic_params = MX.sym("p", nlp.np, 1)
 
