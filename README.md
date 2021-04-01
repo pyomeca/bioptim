@@ -6,7 +6,6 @@ It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fas
 ## Status
 
 | | |
-|---|---|
 | License | <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-success" alt="License"/></a> |
 
 
