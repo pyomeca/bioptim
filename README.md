@@ -27,6 +27,20 @@ It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fas
         - [The pendulum.py file](#the-pendulumpy-file)
         - [The pendulum.bioMod file](#the-pendulumbiomod-file)
 
+[A more in depth look at the `bioptim` API](#a-more-in-depth-look-at-the-bioptim-api)
+- [The OCP](#the-ocp)
+
+    -[OptimalControlProgram](#class-optimalcontrolprogram)
+    -[NonLinearProgram](#class-nonlinearprogram)
+
+- [The dynamics](#the-dynamics)
+
+    -[Dynamics](#dynamics)
+    -[DynamicsList](#dynamicslist)
+    -[DynamicsFcn](#dynamicsfcn)
+
+        - [TORQUE_DRIVEN](#torque_driven)
+
 # How to install 
 The preferred way to install for the lay user is using anaconda. 
 Another way, more designed for the core programmers is from the sources. 
