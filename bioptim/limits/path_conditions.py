@@ -410,8 +410,8 @@ class Bounds(OptionGeneric):
         scaling: float
             The scaling factor
         """
-        self.min = self.min/scaling
-        self.max = self.max/scaling
+        self.min = self.min / scaling
+        self.max = self.max / scaling
         return self
 
     def __getitem__(self, slice_list: Union[slice, list, tuple]) -> "Bounds":
@@ -709,9 +709,8 @@ class InitialGuess(OptionGeneric):
         scaling: float
             The scaling factor
         """
-        self.init = self.init/scaling
+        self.init = self.init / scaling
         return self
-
 
     def __bool__(self) -> bool:
         """

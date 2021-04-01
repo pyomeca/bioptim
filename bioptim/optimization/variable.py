@@ -261,8 +261,10 @@ class OptimizationVariable:
         if len(data_parameters["all"].shape) == 1:
             data_parameters["all"] = data_parameters["all"][:, np.newaxis]
         for param in self.parameters_in_list:
-            data_parameters[param.name] = v_array[offset : offset + param.size, np.newaxis] \
-                                          * ocp.nlp[0].p_scaling[scaling_offset: scaling_offset+param.size]
+            data_parameters[param.name] = (
+                v_array[offset : offset + param.size, np.newaxis]
+                * ocp.nlp[0].p_scaling[scaling_offset : scaling_offset + param.size]
+            )
             offset += param.size
             scaling_offset += param.size
             if len(data_parameters[param.name].shape) == 1:

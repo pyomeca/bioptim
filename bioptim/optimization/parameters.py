@@ -69,12 +69,11 @@ class Parameter(OptionGeneric):
         if len(scaling.shape) == 1:
             self.scaling = scaling[:, np.newaxis]
         elif len(scaling.shape) == 2:
-            if scaling.shape[1] != 1 :
+            if scaling.shape[1] != 1:
                 raise RuntimeError(
                     f"Invalid ncols for Parameter Scaling "
                     f"(ncols = {scaling.shape[1]}), the expected number of column is 1"
                 )
-
 
         self.initial_guess = initial_guess.scale(self.scaling)
         self.bounds = bounds.scale(self.scaling)

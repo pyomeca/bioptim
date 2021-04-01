@@ -44,6 +44,7 @@ def my_parameter_function(biorbd_model: biorbd.Model, value: MX, extra_value: An
 
     biorbd_model.setGravity(biorbd.Vector3d(value[0], value[1], value[2] * extra_value))
 
+
 def set_mass(biorbd_model: biorbd.Model, value: MX):
     """
     The pre dynamics function is called right before defining the dynamics of the system. If one wants to
@@ -60,6 +61,7 @@ def set_mass(biorbd_model: biorbd.Model, value: MX):
     """
 
     biorbd_model.segment(0).characteristics().setMass(value)
+
 
 def my_target_function(ocp: OptimalControlProgram, value: MX) -> MX:
     """
@@ -178,7 +180,7 @@ def prepare_ocp(
         bound_mass,  # The bounds
         size=1,  # The number of elements this particular parameter vector has
         penalty_list=mass_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
-        scaling=np.array([10.]),
+        scaling=np.array([10.0]),
     )
     return OptimalControlProgram(
         biorbd_model,
@@ -202,8 +204,15 @@ if __name__ == "__main__":
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, min_g=np.array([-1, -1, -10]),
-        max_g=np.array([1, 1, -5]), min_m=10, max_m=30, target_g=np.array([0, 0, -9.81]), target_m=20,
+        biorbd_model_path="pendulum.bioMod",
+        final_time=3,
+        n_shooting=100,
+        min_g=np.array([-1, -1, -10]),
+        max_g=np.array([1, 1, -5]),
+        min_m=10,
+        max_m=30,
+        target_g=np.array([0, 0, -9.81]),
+        target_m=20,
     )
 
     # --- Solve the program --- #
@@ -218,4 +227,3 @@ if __name__ == "__main__":
     # --- Show results --- #
     sol.graphs()
     sol.animate(n_frames=200)
-

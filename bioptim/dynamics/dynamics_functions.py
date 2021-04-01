@@ -680,5 +680,5 @@ class DynamicsFunctions:
         for param in nlp.parameters:
             # Call the pre dynamics function
             if param.function:
-                param.function(nlp.model, parameters[offset:offset + param.size], **param.params)
+                param.function(nlp.model, parameters[offset : offset + param.size], **param.params)
                 offset += param.size
