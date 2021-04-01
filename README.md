@@ -1,15 +1,22 @@
 # `bioptim`
 `Bioptim` is an optimal control program (OCP) framework for biomechanics. 
 It is based on the efficient [biorbd](https://github.com/pyomeca/biorbd) biomechanics library and benefits from the powerful algorithmic diff provided by [CasADi](https://web.casadi.org/).
-It interfaces the robust [̀`Ipopt`](https://github.com/coin-or/Ipopt) and the fast [̀`Acados`](https://github.com/acados/acados) solvers to suit all your needs for solving OCP in biomechanics. 
+It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fast [`Acados`](https://github.com/acados/acados) solvers to suit all your needs for solving OCP in biomechanics. 
 
 ## Status
 
-| | |
+| Type | Status |
 |---|---|
 | License | <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-success" alt="License"/></a> |
 | Continuous integration | [![Build Status](https://travis-ci.org/pyomeca/bioptim.svg?branch=master)](https://travis-ci.org/pyomeca/bioptim) |
 | Code coverage | [![codecov](https://codecov.io/gh/pyomeca/bioptim/branch/master/graph/badge.svg?token=NK1V6QE2CK)](https://codecov.io/gh/pyomeca/bioptim) |
+| DOI | [![DOI](https://zenodo.org/badge/251615517.svg)](https://zenodo.org/badge/latestdoi/251615517) |
+
+The current status of `bioptim` on conda-forge is
+
+| Name | Downloads | Version | Platforms |
+| --- | --- | --- | --- | 
+| [![Conda Recipe](https://img.shields.io/badge/recipe-bioptim-green.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) |
 
 # Table of Contents  
 [How to install](#how-to-install)
@@ -17,14 +24,68 @@ It interfaces the robust [̀`Ipopt`](https://github.com/coin-or/Ipopt) and the f
 - [Compiling](#installing-from-the-sources-for-windows-linux-and-mac)
 - [Dependencies](#dependencies)
 
-[Getting started](#getting-started)
+[A first practical example](#a-first-practical-example)
 - [The import](#the-import)
 - [Building the ocp](#building-the-ocp)
 - [Solving the ocp](#solving-the-ocp)
 - [Show the results](#show-the-results)
-- [The full files](#the-full-files)
-        - [The pendulum.py file](#the-pendulumpy-file)
-        - [The pendulum.bioMod file](#the-pendulumbiomod-file)
+- [The full example files](#the-full-example-files)
+
+[A more in depth look at the `bioptim` API](#a-more-in-depth-look-at-the-bioptim-api)
+- [The OCP](#the-ocp)
+  - [OptimalControlProgram](#class-optimalcontrolprogram)
+  - [NonLinearProgram](#class-nonlinearprogram)
+- [The dynamics](#the-dynamics)
+  - [Dynamics](#class-dynamics)
+  - [DynamicsList](#class-dynamicslist)
+  - [DynamicsFcn](#class-dynamicsfcn)
+- [The bounds](#the-bounds)
+  - [Bounds](#class-bounds)
+  - [BoundsList](#class-boundslist)
+  - [QAndQDotBounds](#class-qandqdotbounds)
+- [The initial conditions](#the-initial-conditions)
+  - [InitialGuess](#class-initialguess)
+  - [InitialGuessList](#class-initialguesslist)
+- [The constraints](#the-constraints)
+  - [Constraint](#class-constraint)
+  - [ConstraintList](#class-constraintlist)
+  - [ConstraintFcn](#class-constraintfcn)
+- [The objective functions](#the-objective-functions)
+  - [Objective](#class-objective)
+  - [ObjectiveList](#class-objectivelist)
+  - [ObjectiveFcn](#class-objectivefcn)
+- [The parameters](#the-parameters)
+  - [ParameterList](#class-parameterlist)
+- [The phase transitions](#the-phase-transitions)
+  - [PhaseTransitionList](#class-phasetransitionlist)
+  - [PhaseTransitionFcn](#class-phasetransitionfcn)
+- [The results](#the-results)
+  - [Data manipulation](#data-manipulation)
+  - [Data visualization](#data-visualization)
+- [The extra stuff and the Enum](#the-extra-stuff-and-the-enum)
+  - [The mappings](#the-mappings)
+  - [Node](#enum-node)
+  - [OdeSolver](#class-odesolver)
+  - [Solver](#enum-solver)
+  - [ControlType](#enum-controltype)
+  - [PlotType](#enum-plottype)
+  - [InterpolationType](#enum-interpolationtype)
+  - [Shooting](#enum-shooting)
+  - [CostType](#enum-costtype)
+        
+[Examples](#examples)
+- [Getting started](#getting-started)
+- [Muscle driven OCP](#muscle-driven-ocp)
+- [Muscle driven with contact](#muscle-driven-with-contact)
+- [Optimal time OCP](#optimal-time-ocp)
+- [Symmetrical torque driven OCP](#symmetrical-torque-driven-ocp)
+- [Torque driven OCP](#torque-driven-ocp)
+- [Track](#track)
+- [Moving estimation horizon](#moving-estimation-horizon)
+- [Acados](#acados)
+
+[Citing](#Citing)
+
 
 # How to install 
 The preferred way to install for the lay user is using anaconda. 
@@ -43,12 +104,6 @@ conda install -c conda-forge bioptim
 This will download and install all the dependencies and install `bioptim`. 
 And that is it! 
 You can already enjoy bioptiming!
-
-The current status of `bioptim` on conda-forge is
-| License | Name | Downloads | Version | Platforms | DOI |
-| --- | --- | --- | --- | --- | --- |
-|   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-success" alt="License"/></a> | [![Conda Recipe](https://img.shields.io/badge/recipe-bioptim-green.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![DOI](https://zenodo.org/badge/251615517.svg)](https://zenodo.org/badge/latestdoi/251615517) |
-
 
 ## Installing from the sources (For Windows, Linux and Mac)
 Installing from the sources is basically as easy as installing from Anaconda, with the difference that you will be required to download and install the dependencies by hand (see section below). 
@@ -86,8 +141,8 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 - [vtk](https://vtk.org/)
 - [PyQt](https://www.riverbankcomputing.com/software/pyqt)
 - [bioviz](https://github.com/pyomeca/bioviz)
-- [̀`Ipopt`](https://github.com/coin-or/Ipopt)
-- [̀`Acados`](https://github.com/acados/acados)
+- [`Ipopt`](https://github.com/coin-or/Ipopt)
+- [`Acados`](https://github.com/acados/acados)
 
 and optionally:
 - [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
@@ -116,7 +171,7 @@ We recommend that you use `ma57` as a default linear solver by calling as such:
 ocp.solve(solver_options={"linear_solver": "ma57"})
 ```
 
-# Getting started
+# A first practical example
 The easiest way to learn `bioptim` is to dive into it.
 So let's do that and build our first optimal control program together.
 Please note that this tutorial is designed to recreate the `examples/getting_started/pendulum.py` file where a pendulum is asked to start in a downward position and to end, balanced, in an upward position while only being able to actively move sideways.
@@ -246,7 +301,7 @@ sol.print()
 And that is all! 
 You have completed your first optimal control program with `bioptim`! 
 
-## The full files
+## The full example files
 If you did not completely follow (or were too lazy to!) you will find in this section the complete files described in the Getting started section.
 You will find that the file is a bit different from the `example/getting_started/pendulum.py`, but it is merely differences on the surface.
 
@@ -908,7 +963,7 @@ The function is expected to return an MX vector of the objective function.
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom objective functions should be at least familiar with this type beforehand. 
 
-### ObjectiveList
+### Class: ObjectiveList
 An ObjectiveList is a list of Objective. 
 The `add()` method can be called exactly as if one was calling the `Objective` constructor. 
 If the `add()` method is used more than one, the `list_index` parameter is automatically incremented for the prescribed `phase`.
