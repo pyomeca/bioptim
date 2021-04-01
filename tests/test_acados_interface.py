@@ -310,11 +310,11 @@ def test_acados_one_parameter():
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         n_shooting=100,
-        min_g=-10,
-        max_g=-6,
+        min_g=np.array([-1, -1, -10]),
+        max_g=np.array([1, 1, -5]),
         min_m=10,
-        max_m=306,
-        target_g=-8,
+        max_m=30,
+        target_g=np.array([0, 0, -9.81]),
         target_m=20,
         use_sx=True,
     )
@@ -332,10 +332,11 @@ def test_acados_one_parameter():
     u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
     ocp.update_bounds(x_bounds, u_bounds)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 1, "nlp_solver_tol_eq": 1e-3})
 
     # Check some of the results
-    q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_z"]
+    q, qdot, tau, gravity, mass = sol.states["q"], sol.states["qdot"], sol.controls["tau"], \
+        sol.parameters["gravity_xyz"], sol.parameters["mass"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
@@ -346,11 +347,12 @@ def test_acados_one_parameter():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((189.674313, 0)), decimal=3)
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-260.150570, 0)), decimal=3)
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-249.5497, 0)), decimal=3)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-163.449919, 0)), decimal=3)
 
-    # gravity parameter
-    np.testing.assert_almost_equal(gravity, np.array([[-8]]), decimal=6)
+    # parameters
+    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.809999]), decimal=6)
+    np.testing.assert_almost_equal(mass, np.array([[20]]), decimal=6)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
