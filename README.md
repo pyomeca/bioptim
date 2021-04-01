@@ -30,7 +30,7 @@ It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fas
 - [The bounds](#the-bounds)
 - [The initial conditions](#the-initial-conditions)
 - [The constraints](#the-constraints)
-- [The constrobjective functionsaints](#the-objective-functions)
+- [The objective functions](#the-objective-functions)
 - [The parameters](#the-parameters)
 - [The phase transitions](#the-phase-transitions)
 - [The results](#the-results)
