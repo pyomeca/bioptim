@@ -94,6 +94,15 @@ class ConstraintList(OptionList):
         # TODO: Print all elements in the console
         raise NotImplementedError("Printing of ConstraintList is not ready yet")
 
+    @staticmethod
+    def get_constraints(nlp):
+        list_constraints = [[{"Constraints": []} for _ in range(NLP.ns + 1)] for NLP in nlp]
+        for NLP in nlp:
+            for g in NLP.g:
+                for n in g:
+                    list_constraints[NLP.phase_idx][n["node_index"]]["Constraints"].append(n["constraint"].name)
+        return list_constraints
+
 
 class ConstraintFunction(PenaltyFunctionAbstract):
     """

@@ -95,6 +95,20 @@ class ObjectiveList(OptionList):
         """
         raise NotImplementedError("Printing of ObjectiveList is not ready yet")
 
+    @staticmethod
+    def get_objectives(nlp):
+        list_objectives = [[{"Mayer": [], "Lagrange": []} for _ in range(NLP.ns + 1)] for NLP in nlp]
+        for NLP in nlp:
+            for J in NLP.J:
+                for n in J:
+                    if isinstance(n["objective"].type, ObjectiveFcn.Lagrange):
+                        list_objectives[NLP.phase_idx][n["node_index"]]["Lagrange"].append(n["objective"].name)
+                    elif isinstance(n["objective"].type, ObjectiveFcn.Mayer):
+                        list_objectives[NLP.phase_idx][n["node_index"]]["Mayer"].append(n["objective"].name)
+                    else:
+                        raise NotImplementedError("Objective function type must be Lagrange or Mayer")
+        return list_objectives
+
 
 class ObjectiveFunction:
     """

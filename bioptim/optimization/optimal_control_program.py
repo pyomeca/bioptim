@@ -716,34 +716,35 @@ class OptimalControlProgram:
         print_to_terminal: bool = False,
     ):
 
+        def merge_dicts(a, b):
+            m = a.copy()
+            m.update(b)
+            return m
+
         n_phase = 0
+        list_nodes = [[{"Mayer": [], "Lagrange": [], "Constraints": []} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
+
+        list_objectives = ObjectiveList.get_objectives(self.nlp)
+        list_constraints = ConstraintList.get_constraints(self.nlp)
+
         for nlp in self.nlp:
             n_phase = n_phase + 1
-
-        list_nodes = [[{"Mayer": [], "Lagrange": [], "Constraints": []} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
-        for nlp in self.nlp:
-            for J in nlp.J:
-                for n in J:
-                    if isinstance(n["objective"].type, ObjectiveFcn.Lagrange):
-                        list_nodes[nlp.phase_idx][n["node_index"]]["Lagrange"].append(n["objective"].name)
-                    elif isinstance(n["objective"].type, ObjectiveFcn.Mayer):
-                        list_nodes[nlp.phase_idx][n["node_index"]]["Mayer"].append(n["objective"].name)
-                    else:
-                        raise NotImplementedError("Objective function type must be Lagrange or Mayer")
-            for g in nlp.g:
-                for n in g:
-                    list_nodes[nlp.phase_idx][n["node_index"]]["Constraints"].append(n["constraint"].name)
+            for node_idx in range(nlp.ns + 1):
+                list_nodes[nlp.phase_idx][node_idx] = merge_dicts(list_objectives[nlp.phase_idx][node_idx],
+                                                                  list_constraints[nlp.phase_idx][node_idx])
 
         if print_to_terminal:
             for phase_idx in range(n_phase):
+                node_idx = 0
                 print(f"PHASE {phase_idx}")
                 for node_dict in list_nodes[phase_idx]:
-                    print(f"NODE {node_dict['Idx']}")
+                    print(f"NODE {node_idx}")
                     print(f"Objectives: ")
                     print(f"*** Mayer: {node_dict['Mayer']}")
                     print(f"*** Lagrange: {node_dict['Lagrange']}")
                     print(f"Constraints: {node_dict['Constraints']}")
                     print("")
+                    node_idx = node_idx + 1
 
     def __define_time(
         self,
