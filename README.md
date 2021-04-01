@@ -23,21 +23,20 @@ It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fas
 - [Solving the ocp](#solving-the-ocp)
 - [Show the results](#show-the-results)
 - [The full files](#the-full-files)
-
-        - [The pendulum.py file](#the-pendulumpy-file)
-        - [The pendulum.bioMod file](#the-pendulumbiomod-file)
+        1. [The pendulum.py file](#the-pendulumpy-file)
+        1. [The pendulum.bioMod file](#the-pendulumbiomod-file)
 
 [A more in depth look at the `bioptim` API](#a-more-in-depth-look-at-the-bioptim-api)
 - [The OCP](#the-ocp)
 
-        -[OptimalControlProgram](#class-optimalcontrolprogram)
-        -[NonLinearProgram](#class-nonlinearprogram)
+        - [OptimalControlProgram](#class-optimalcontrolprogram)
+        - [NonLinearProgram](#class-nonlinearprogram)
 
 - [The dynamics](#the-dynamics)
 
-        -[Dynamics](#dynamics)
-        -[DynamicsList](#dynamicslist)
-        -[DynamicsFcn](#dynamicsfcn)
+        - [Dynamics](#dynamics)
+        - [DynamicsList](#dynamicslist)
+        - [DynamicsFcn](#dynamicsfcn)
 
                 - [TORQUE_DRIVEN](#torque_driven)
 
