@@ -23,8 +23,8 @@ It interfaces the robust [̀`Ipopt`](https://github.com/coin-or/Ipopt) and the f
 - [Solving the ocp](#solving-the-ocp)
 - [Show the results](#show-the-results)
 - [The full files](#the-full-files)
-- [The pendulum.py file](#the-pendulum-py-file)
-- [The pendulum.bioMod file](#the-pendulum.biomod-file)
+        - The pendulum.py file](#the-pendulumpy-file)
+        - The pendulum.bioMod file](#the-pendulumbiomod-file)
 
 # How to install 
 The preferred way to install for the lay user is using anaconda. 
