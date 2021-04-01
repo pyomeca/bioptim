@@ -5,9 +5,12 @@ It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fas
 
 ## Status
 
-| | |
+| Type | Status |
+|---|---|
 | License | <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-success" alt="License"/></a> |
-
+| Continuous integration | [![Build Status](https://travis-ci.org/pyomeca/bioptim.svg?branch=master)](https://travis-ci.org/pyomeca/bioptim) |
+| Code coverage | [![codecov](https://codecov.io/gh/pyomeca/bioptim/branch/master/graph/badge.svg?token=NK1V6QE2CK)](https://codecov.io/gh/pyomeca/bioptim) |
+| [![DOI] | (https://zenodo.org/badge/251615517.svg)](https://zenodo.org/badge/latestdoi/251615517) |
 
 # Table of Contents  
 [How to install](#how-to-install)
