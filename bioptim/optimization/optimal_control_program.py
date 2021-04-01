@@ -721,6 +721,20 @@ class OptimalControlProgram:
             m.update(b)
             return m
 
+        def print_terminal(print_terminal: bool, l_nodes: list, n_phase: int):
+            if print_terminal is True:
+                for phase_idx in range(n_phase):
+                    node_idx = 0
+                    print(f"PHASE {phase_idx}")
+                    for node_dict in l_nodes[phase_idx]:
+                        print(f"NODE {node_idx}")
+                        print(f"Objectives: ")
+                        print(f"*** Mayer: {node_dict['Mayer']}")
+                        print(f"*** Lagrange: {node_dict['Lagrange']}")
+                        print(f"Constraints: {node_dict['Constraints']}")
+                        print("")
+                        node_idx = node_idx + 1
+
         n_phase = 0
         list_nodes = [[{"Mayer": [], "Lagrange": [], "Constraints": []} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
 
@@ -733,18 +747,7 @@ class OptimalControlProgram:
                 list_nodes[nlp.phase_idx][node_idx] = merge_dicts(list_objectives[nlp.phase_idx][node_idx],
                                                                   list_constraints[nlp.phase_idx][node_idx])
 
-        if print_to_terminal:
-            for phase_idx in range(n_phase):
-                node_idx = 0
-                print(f"PHASE {phase_idx}")
-                for node_dict in list_nodes[phase_idx]:
-                    print(f"NODE {node_idx}")
-                    print(f"Objectives: ")
-                    print(f"*** Mayer: {node_dict['Mayer']}")
-                    print(f"*** Lagrange: {node_dict['Lagrange']}")
-                    print(f"Constraints: {node_dict['Constraints']}")
-                    print("")
-                    node_idx = node_idx + 1
+        print_terminal(print_to_terminal, list_nodes, n_phase)
 
     def __define_time(
         self,
