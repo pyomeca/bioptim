@@ -103,7 +103,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     -------
     inter_phase_continuity(ocp: OptimalControlProgram, pt: "PhaseTransition")
         Add phase transition constraints between two phases.
-    add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: Constraint)
+    add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodes, val: Union[MX, SX], penalty: Constraint)
         Add the constraint to the constraint pool
     clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Constraint)
         Resets a penalty. A negative penalty index creates a new empty penalty.
@@ -155,7 +155,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             for i in range(len(pn.u)):
                 ConstraintFunction.add_to_penalty(
                     pn.ocp,
-                    pn.nlp,
                     pn,
                     pn.nlp.contact_forces_func(pn.x[i], pn.u[i], pn.p)[contact_force_idx, 0],
                     constraint,
@@ -204,14 +203,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Since it is non-slipping normal forces are supposed to be greater than zero
                 ConstraintFunction.add_to_penalty(
                     pn.ocp,
-                    pn.nlp,
                     pn,
                     mu * normal_contact_force - tangential_contact_force,
                     constraint,
                 )
                 ConstraintFunction.add_to_penalty(
                     pn.ocp,
-                    pn.nlp,
                     pn,
                     mu * normal_contact_force + tangential_contact_force,
                     constraint,
@@ -261,7 +258,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     max_bound = nlp.mapping["tau"].to_first.map(bound[:, 0])
 
                 ConstraintFunction.add_to_penalty(
-                    pn.ocp, nlp, pn, vertcat(*[pn.u[i] + min_bound, pn.u[i] - max_bound]), constraint
+                    pn.ocp, pn, vertcat(*[pn.u[i] + min_bound, pn.u[i] - max_bound]), constraint
                 )
 
         @staticmethod
@@ -325,7 +322,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if ocp.n_threads > 1:
                 end_nodes = nlp.par_dynamics(horzcat(*nlp.X[:-1]), horzcat(*nlp.U), nlp.p)[0]
                 val = horzcat(*nlp.X[1:]) - end_nodes
-                ConstraintFunction.add_to_penalty(ocp, None, None, val.reshape((nlp.nx * nlp.ns, 1)), penalty)
+                ConstraintFunction.add_to_penalty(ocp, None, val.reshape((nlp.nx * nlp.ns, 1)), penalty)
             else:
                 for k in range(nlp.ns):
                     # Create an evaluation node
@@ -346,7 +343,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                     # Save continuity constraints
                     val = end_node - nlp.X[k + 1]
-                    ConstraintFunction.add_to_penalty(ocp, None, None, val, penalty)
+                    ConstraintFunction.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
     def inter_phase_continuity(ocp, pt):
@@ -375,10 +372,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         pt.casadi_function = Function(
             casadi_name, [pre_nlp.X[-1], pre_nlp.U[-1], post_nlp.X[0], post_nlp.U[0], ocp.v.parameters.cx], [val]
         ).expand()
-        pt.base.add_to_penalty(ocp, None, None, val, penalty)
+        pt.base.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
-    def add_to_penalty(ocp, nlp, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: Constraint):
+    def add_to_penalty(ocp, pn: Union[PenaltyNodes, None], val: Union[MX, SX, float, int], penalty: Constraint):
         """
         Add the constraint to the constraint pool
 
@@ -386,8 +383,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
         pn: PenaltyNodes
             The penalty node elements
         val: Union[MX, SX, float, int]
@@ -423,13 +418,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         else:
             g = {
                 "constraint": penalty,
-                "node_index": pn.t[len(nlp.g[penalty.list_index])],
+                "node_index": pn.t[len(pn.nlp.g[penalty.list_index])],
                 "val": val,
                 "bounds": g_bounds,
                 "target": penalty.sliced_target,
             }
-        if nlp:
-            nlp.g[penalty.list_index].append(g)
+        if pn is not None and pn.nlp:
+            pn.nlp.g[penalty.list_index].append(g)
         else:
             ocp.g[penalty.list_index].append(g)
 
