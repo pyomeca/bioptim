@@ -23,6 +23,7 @@ It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fas
 - [Solving the ocp](#solving-the-ocp)
 - [Show the results](#show-the-results)
 - [The full files](#the-full-files)
+
         1. [The pendulum.py file](#the-pendulumpy-file)
         1. [The pendulum.bioMod file](#the-pendulumbiomod-file)
 
