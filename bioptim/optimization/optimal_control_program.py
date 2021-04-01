@@ -3,6 +3,7 @@ import os
 import pickle
 from copy import deepcopy
 from math import inf
+from graphviz import Digraph
 
 import biorbd
 import casadi
@@ -726,6 +727,7 @@ class OptimalControlProgram:
     def structure_graph(
         self,
         print_to_terminal: bool = False,
+        draw_graph: bool = False,
     ):
 
         def merge_dicts(a, b):
@@ -750,6 +752,15 @@ class OptimalControlProgram:
                         print(f"Constraints: {node_dict['Constraints']}")
                         print("")
                         node_idx = node_idx + 1
+
+        # def draw_graph(draw: bool, l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
+        #     g = Digraph('graph_test', filename='graph_test.gv')
+        #
+        #     for phase_idx in range(n_phase):
+        #         with g.subgraph(name=f"nlp_{phase_idx}") as c:
+        #             c.attr(style='filled', color='lightgrey')
+        #             c.node_attr.update(style='filled', color='white')
+
 
         list_nodes = [[{"Mayer": [], "Lagrange": [], "Constraints": []} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
 
