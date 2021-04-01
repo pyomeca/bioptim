@@ -124,6 +124,9 @@ if __name__ == "__main__":
 
     ocp = prepare_ocp(long_optim=True)
 
+    # --- Print ocp structure --- #
+    ocp.structure_graph(print_to_terminal=True)
+
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 
