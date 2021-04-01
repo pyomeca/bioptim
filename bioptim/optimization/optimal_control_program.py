@@ -233,10 +233,9 @@ class OptimalControlProgram:
         elif not isinstance(dynamics, DynamicsList):
             raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
 
-        ns = n_shooting
-        if not isinstance(ns, int) or ns < 2:
-            if isinstance(ns, (tuple, list)):
-                if sum([True for i in ns if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
+        if not isinstance(n_shooting, int) or n_shooting < 2:
+            if isinstance(n_shooting, (tuple, list)):
+                if sum([True for i in n_shooting if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
                     raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
             else:
                 raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
@@ -714,68 +713,37 @@ class OptimalControlProgram:
 
     def structure_graph(
         self,
-        n_shooting: Union[int, tuple],
         print_to_terminal: bool = False,
     ):
 
-        if isinstance(n_shooting, int):
-            n_phase = 1
-            list_nodes = [{"Idx": 0, "Mayer": [], "Lagrange": [], "Constraints": []} for i in range(n_shooting + 1)]
-            for nlp in self.nlp:
-                for J in nlp.J:
-                    for n in J:
-                        if isinstance(n["objective"], ObjectiveFcn.Lagrange):
-                            list_nodes[n["node_index"]]["Idx"] = n["node_index"]
-                            list_nodes[n["node_index"]]["Lagrange"].append(n["objective"].name)
-                        else:
-                            list_nodes[n["node_index"]]["Idx"] = n["node_index"]
-                            list_nodes[n["node_index"]]["Mayer"].append(n["objective"].name)
-                for g in nlp.g:
-                    for n in g:
-                        list_nodes[n["node_index"]]["Idx"] = n["node_index"]
-                        list_nodes[n["node_index"]]["Constraints"].append(n["constraint"].name)
-        else:
-            n_phase = len(n_shooting)
-            list_nodes = [[{"Idx": 0, "Mayer": [], "Lagrange": [], "Constraints": []} for i in range(n_shooting[j])]
-                          for j in range(len(n_shooting))]
-            for i in range(len(n_shooting)):
-                list_nodes[i].append({"Idx": "Last phase node", "Mayer": [], "Lagrange": [], "Constraints":
-                    []})
-            for nlp in self.nlp:
-                for J in nlp.J:
-                    for n in J:
-                        if isinstance(n["objective"], ObjectiveFcn.Lagrange):
-                            list_nodes[nlp.phase_idx][n["node_index"]]["Idx"] = n["node_index"]
-                            list_nodes[nlp.phase_idx][n["node_index"]]["Lagrange"].append(n["objective"].name)
-                        else:
-                            list_nodes[nlp.phase_idx][n["node_index"]]["Idx"] = n["node_index"]
-                            list_nodes[nlp.phase_idx][n["node_index"]]["Mayer"].append(n["objective"].name)
-                for g in nlp.g:
-                    for n in g:
-                        #list_nodes[nlp.phase_idx][n["node_index"]]["Idx"] = n["node_index"]
-                        list_nodes[nlp.phase_idx][n["node_index"]]["Constraints"].append(n["constraint"].name)
+        n_phase = 0
+        for nlp in self.nlp:
+            n_phase = n_phase + 1
+
+        list_nodes = [[{"Mayer": [], "Lagrange": [], "Constraints": []} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
+        for nlp in self.nlp:
+            for J in nlp.J:
+                for n in J:
+                    if isinstance(n["objective"].type, ObjectiveFcn.Lagrange):
+                        list_nodes[nlp.phase_idx][n["node_index"]]["Lagrange"].append(n["objective"].name)
+                    elif isinstance(n["objective"].type, ObjectiveFcn.Mayer):
+                        list_nodes[nlp.phase_idx][n["node_index"]]["Mayer"].append(n["objective"].name)
+                    else:
+                        raise NotImplementedError("Objective function type must be Lagrange or Mayer")
+            for g in nlp.g:
+                for n in g:
+                    list_nodes[nlp.phase_idx][n["node_index"]]["Constraints"].append(n["constraint"].name)
 
         if print_to_terminal:
-            if isinstance(n_shooting, tuple):
-                for phase_idx in range(n_phase):
-                    print(f"PHASE {phase_idx}")
-                    for node_dict in list_nodes[phase_idx]:
-                        print(f"NODE {node_dict['Idx']}")
-                        print(f"Objectives: ")
-                        print(f"*** Mayer: {node_dict['Mayer']}")
-                        print(f"*** Lagrange: {node_dict['Lagrange']}")
-                        print(f"Constraints: {node_dict['Constraints']}")
-                        print("")
-            else:
-                for phase_idx in range(n_phase):
-                    print(f"PHASE {phase_idx}")
-                    for node_dict in list_nodes:
-                        print(f"NODE {node_dict['Idx']}")
-                        print(f"Objectives: ")
-                        print(f"*** Mayer: {node_dict['Mayer']}")
-                        print(f"*** Lagrange: {node_dict['Lagrange']}")
-                        print(f"Constraints: {node_dict['Constraints']}")
-                        print("")
+            for phase_idx in range(n_phase):
+                print(f"PHASE {phase_idx}")
+                for node_dict in list_nodes[phase_idx]:
+                    print(f"NODE {node_dict['Idx']}")
+                    print(f"Objectives: ")
+                    print(f"*** Mayer: {node_dict['Mayer']}")
+                    print(f"*** Lagrange: {node_dict['Lagrange']}")
+                    print(f"Constraints: {node_dict['Constraints']}")
+                    print("")
 
     def __define_time(
         self,
