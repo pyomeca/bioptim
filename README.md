@@ -1,7 +1,7 @@
 # `bioptim`
 `Bioptim` is an optimal control program (OCP) framework for biomechanics. 
 It is based on the efficient [biorbd](https://github.com/pyomeca/biorbd) biomechanics library and benefits from the powerful algorithmic diff provided by [CasADi](https://web.casadi.org/).
-It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fast [̀`Acados`](https://github.com/acados/acados) solvers to suit all your needs for solving OCP in biomechanics. 
+It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fast [`Acados`](https://github.com/acados/acados) solvers to suit all your needs for solving OCP in biomechanics. 
 
 ## Status
 
@@ -23,7 +23,7 @@ It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fas
 - [Solving the ocp](#solving-the-ocp)
 - [Show the results](#show-the-results)
 - [The full files](#the-full-files)
-- 
+
         - [The pendulum.py file](#the-pendulumpy-file)
         - [The pendulum.bioMod file](#the-pendulumbiomod-file)
 
@@ -87,8 +87,8 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 - [vtk](https://vtk.org/)
 - [PyQt](https://www.riverbankcomputing.com/software/pyqt)
 - [bioviz](https://github.com/pyomeca/bioviz)
-- [̀`Ipopt`](https://github.com/coin-or/Ipopt)
-- [̀`Acados`](https://github.com/acados/acados)
+- [`Ipopt`](https://github.com/coin-or/Ipopt)
+- [`Acados`](https://github.com/acados/acados)
 
 and optionally:
 - [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
