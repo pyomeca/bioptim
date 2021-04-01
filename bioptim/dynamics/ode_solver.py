@@ -227,6 +227,7 @@ class OdeSolver:
                 "tf": nlp.dt,
                 "model": nlp.model,
                 "param": nlp.p,
+                "param_scaling": nlp.p_scaling,
                 "cx": nlp.cx,
                 "idx": 0,
                 "control_type": nlp.control_type,
