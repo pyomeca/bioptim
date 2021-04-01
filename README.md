@@ -63,7 +63,7 @@ The current status of `bioptim` on conda-forge is
   - [Data manipulation](#data-manipulation)
   - [Data visualization](#data-visualization)
 - [The extra stuff and the Enum](#the-extra-stuff-and-the-enum)
-  - [The mappings](#The mappings)
+  - [The mappings](#the-mappings)
   - [Node](#enum-node)
   - [OdeSolver](#class-odesolver)
   - [Solver](#enum-solver)
