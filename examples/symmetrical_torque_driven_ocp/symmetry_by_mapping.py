@@ -6,11 +6,11 @@ properly when computing the dynamics
 
 A BiMapping is used. The way to understand the mapping is that if one is provided with two vectors, what
 would be the correspondence between those vector. For instance, BiMapping([None, 0, 1, 2, -2], [0, 1, 2])
-would mean that the first vector (v1) has 3 component and to create it from the second vector (v2), you would do:
+would mean that the first vector (v1) has 3 components and to create it from the second vector (v2), you would do:
 v1 = [v2[0], v2[1], v2[2]]. Conversely, the second v2 has 5 components and is created from the vector v1 using:
 v2 = [0, v1[0], v1[1], v1[2], -v1[2]]. For the dynamics, it is assumed that v1 is what is to be sent to the dynamic
-functions (the full vector with all the degrees of freedom), while v2 is the one send to the solver (the one with less
-degrees of freedom.
+functions (the full vector with all the degrees of freedom), while v2 is the one sent to the solver (the one with less
+degrees of freedom).
 
 The difference between symmetry_by_mapping and symmetry_by_constraint is that one (mapping) removes the degree of
 freedom from the solver, while the other (constraints) imposes a proportional constraint (equals to -1) so they

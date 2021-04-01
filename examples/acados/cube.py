@@ -1,5 +1,8 @@
 """
-TODO: Cleaning and documentation
+TODO: Cleaning
+This is a basic example on how to use muscle driven to perform an optimal reaching task.
+The arm must reach a marker while minimizing the muscles activity and the states. The problem is solved using both
+ACADOS and Ipotpt.
 """
 
 import biorbd

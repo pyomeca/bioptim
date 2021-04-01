@@ -1,8 +1,7 @@
 """
 This trivial example has two rodes and must superimpose a marker on one rod at the beginning and another marker on the
 same rod at the end, while keeping the degrees of freedom opposed. It does this by imposing the symmetry as a
-mapping, that is by completely removing the degree of freedom from the solver variables but interpreting the numbers
-properly when computing the dynamics
+proportional constraint (equals to -1).
 
 The proportional constraint simply creates a constraint such that: state[i] = coef * state[j], where the coef is the
 proportional constraint.

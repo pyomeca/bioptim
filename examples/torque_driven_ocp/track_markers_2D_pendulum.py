@@ -3,7 +3,7 @@ This example uses the data from the balanced pendulum example to generate the da
 When it optimizes the program, contrary to the vanilla pendulum, it tracks the values instead of 'knowing' that
 it is supposed to balance the pendulum. It is designed to show how to track marker and kinematic data.
 
-Note that the final node is not track
+Note that the final node is not tracked.
 """
 
 from typing import Callable, Union
