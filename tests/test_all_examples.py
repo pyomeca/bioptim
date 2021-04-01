@@ -77,6 +77,8 @@ def test__getting_started__custom_parameters():
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=3,
         n_shooting=100,
+        optim_gravity=True,
+        optim_mass=True,
         min_g=np.array([-1, -1, -10]),
         max_g=np.array([1, 1, -5]),
         min_m=10,
