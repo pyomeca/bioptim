@@ -31,7 +31,7 @@ spec.loader.exec_module(data_to_track)
 
 
 def prepare_ocp(
-    biorbd_model_path, phase_time, n_shooting, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK4
+    biorbd_model_path, phase_time, n_shooting, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK4()
 ):
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
     # Generate data using another optimization that will be feedback in as tracking data
     ocp_to_track = data_to_track.prepare_ocp(
-        model_path=model_path,
+        biorbd_model_path=model_path,
         phase_time=final_time,
         n_shooting=ns,
         min_bound=50,
