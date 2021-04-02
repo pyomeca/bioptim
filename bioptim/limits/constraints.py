@@ -95,13 +95,18 @@ class ConstraintList(OptionList):
         raise NotImplementedError("Printing of ConstraintList is not ready yet")
 
     @staticmethod
-    def get_nlp_constraints(nlp):
-        list_constraints = [[{"Constraints": []} for _ in range(NLP.ns + 1)] for NLP in nlp]
-        for NLP in nlp:
-            for g in NLP.g:
+    def get_ocp_constraints(ocp):
+
+        list_global_constraints = []
+        for g in ocp.g:
+            list_global_constraints.append(g[0]["constraint"].name)
+
+        list_constraints = [[{"Constraints": []} for _ in range(nlp.ns + 1)] for nlp in ocp.nlp]
+        for nlp in ocp.nlp:
+            for g in nlp.g:
                 for n in g:
-                    list_constraints[NLP.phase_idx][n["node_index"]]["Constraints"].append(n["constraint"].name)
-        return list_constraints
+                    list_constraints[nlp.phase_idx][n["node_index"]]["Constraints"].append(n["constraint"].name)
+        return list_global_constraints, list_constraints
 
 
 class ConstraintFunction(PenaltyFunctionAbstract):
