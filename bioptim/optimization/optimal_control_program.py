@@ -3,7 +3,6 @@ import os
 import pickle
 from copy import deepcopy
 from math import inf
-from graphviz import Digraph
 
 import biorbd
 import casadi
@@ -727,7 +726,7 @@ class OptimalControlProgram:
     def print_ocp_structure(
         self,
         to_console: bool = True,
-        draw_graph: bool = False,
+        to_graph: bool = True,
     ):
 
         def merge_dicts(a, b):
@@ -735,7 +734,7 @@ class OptimalControlProgram:
             m.update(b)
             return m
 
-        def print_console(to_console: bool, l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
+        def print_console(l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
             for phase_idx in range(n_phase):
                 node_idx = 0
                 print(f"**********")
@@ -752,14 +751,27 @@ class OptimalControlProgram:
                     print("")
                     node_idx = node_idx + 1
 
-        # def draw_graph(draw: bool, l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
-        #     g = Digraph('graph_test', filename='graph_test.gv')
-        #
-        #     for phase_idx in range(n_phase):
-        #         with g.subgraph(name=f"nlp_{phase_idx}") as c:
-        #             c.attr(style='filled', color='lightgrey')
-        #             c.node_attr.update(style='filled', color='white')
+        def draw_graph(l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
+            from graphviz import Digraph
+            g = Digraph('graph_test', filename='cluster.gv')
 
+            for phase_idx in range(n_phase):
+                with g.subgraph(name=f'cluster_{phase_idx}') as c:
+                    c.attr(style='filled', color='lightgrey')
+                    c.node_attr.update(style='filled', color='white')
+                    node_idx = 0
+                    list_edges = []
+                    for node in l_nodes[phase_idx]:
+                        if node_idx != len(l_nodes[phase_idx]) - 1:
+                            list_edges.append((f"P{phase_idx}_{node_idx}", f"P{phase_idx}_{node_idx + 1}"))
+                        node_idx = node_idx + 1
+                    c.edges(list_edges)
+                    c.attr(label=f'Phase #{phase_idx}')
+                g.edge('OCP', f'P{phase_idx}_0')
+
+            g.node('OCP', shape='Mdiamond')
+
+            g.view()
 
         list_nodes = [[{"Mayer": [], "Lagrange": [], "Constraints": []} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
 
@@ -769,12 +781,17 @@ class OptimalControlProgram:
         list_dynamics = self.__get_dynamics()
         list_ode = self.__get_ode_solver()
 
+        n_phase = 0
         for nlp in self.nlp:
+            n_phase = n_phase + 1
             for node_idx in range(nlp.ns + 1):
                 list_nodes[nlp.phase_idx][node_idx] = merge_dicts(list_objectives[nlp.phase_idx][node_idx],
                                                                   list_constraints[nlp.phase_idx][node_idx])
         if to_console is True:
-            print_console(to_console, list_dynamics, list_ode, list_nodes, self.n_phases)
+            print_console(list_dynamics, list_ode, list_nodes, self.n_phases)
+
+        if to_graph is True:
+            draw_graph(list_dynamics, list_ode, list_nodes, n_phase)
 
     def __define_time(
         self,
