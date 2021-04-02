@@ -712,13 +712,13 @@ class OptimalControlProgram:
             out = [ocp, sol]
         return out
 
-    def get_dynamics(self):
+    def __get_dynamics(self):
         list_dynamics = []
         for nlp in self.nlp:
             list_dynamics.append(nlp.dynamics_type.type.name)
         return list_dynamics
 
-    def get_ode_solver(self):
+    def __get_ode_solver(self):
         list_ode = []
         for nlp in self.nlp:
             list_ode.append(nlp.ode_solver.rk_integrator.__name__)
@@ -767,8 +767,8 @@ class OptimalControlProgram:
         list_objectives = ObjectiveList.get_nlp_objectives(self.nlp)
         list_global_constraints = ConstraintList.get_ocp_constraints(self)[0]
         list_constraints = ConstraintList.get_ocp_constraints(self)[1]
-        list_dynamics = self.get_dynamics()
-        list_ode = self.get_ode_solver()
+        list_dynamics = self.__get_dynamics()
+        list_ode = self.__get_ode_solver()
 
         for nlp in self.nlp:
             for node_idx in range(nlp.ns + 1):
