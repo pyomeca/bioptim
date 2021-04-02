@@ -724,9 +724,9 @@ class OptimalControlProgram:
             list_ode.append(nlp.ode_solver.rk_integrator.__name__)
         return list_ode
 
-    def structure_graph(
+    def print_ocp_structure(
         self,
-        print_to_terminal: bool = True,
+        to_console: bool = True,
         draw_graph: bool = False,
     ):
 
@@ -735,7 +735,7 @@ class OptimalControlProgram:
             m.update(b)
             return m
 
-        def print_terminal(print_terminal: bool, l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
+        def print_console(to_console: bool, l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
             for phase_idx in range(n_phase):
                 node_idx = 0
                 print(f"**********")
@@ -773,8 +773,8 @@ class OptimalControlProgram:
             for node_idx in range(nlp.ns + 1):
                 list_nodes[nlp.phase_idx][node_idx] = merge_dicts(list_objectives[nlp.phase_idx][node_idx],
                                                                   list_constraints[nlp.phase_idx][node_idx])
-        if print_terminal is True:
-            print_terminal(print_to_terminal, list_dynamics, list_ode, list_nodes, self.n_phases)
+        if to_console is True:
+            print_console(to_console, list_dynamics, list_ode, list_nodes, self.n_phases)
 
     def __define_time(
         self,

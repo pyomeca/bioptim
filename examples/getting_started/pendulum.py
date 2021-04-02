@@ -88,7 +88,7 @@ if __name__ == "__main__":
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100)
 
     # --- Print ocp structure --- #
-    ocp.structure_graph()
+    ocp.print_ocp_structure()
 
     # --- Solve the ocp --- #
     sol = ocp.solve(show_online_optim=True)
