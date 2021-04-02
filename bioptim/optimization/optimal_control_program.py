@@ -726,7 +726,7 @@ class OptimalControlProgram:
 
     def structure_graph(
         self,
-        print_to_terminal: bool = False,
+        print_to_terminal: bool = True,
         draw_graph: bool = False,
     ):
 
@@ -736,22 +736,21 @@ class OptimalControlProgram:
             return m
 
         def print_terminal(print_terminal: bool, l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
-            if print_terminal is True:
-                for phase_idx in range(n_phase):
-                    node_idx = 0
-                    print(f"**********")
-                    print(f"PHASE {phase_idx}")
-                    print(f"DYNAMICS: {l_dynamics[phase_idx]}")
-                    print(f"ODE: {l_ode[phase_idx]}")
+            for phase_idx in range(n_phase):
+                node_idx = 0
+                print(f"**********")
+                print(f"PHASE {phase_idx}")
+                print(f"DYNAMICS: {l_dynamics[phase_idx]}")
+                print(f"ODE: {l_ode[phase_idx]}")
+                print("")
+                for node_dict in l_nodes[phase_idx]:
+                    print(f"NODE {node_idx}")
+                    print(f"Objectives: ")
+                    print(f"*** Mayer: {node_dict['Mayer']}")
+                    print(f"*** Lagrange: {node_dict['Lagrange']}")
+                    print(f"Constraints: {node_dict['Constraints']}")
                     print("")
-                    for node_dict in l_nodes[phase_idx]:
-                        print(f"NODE {node_idx}")
-                        print(f"Objectives: ")
-                        print(f"*** Mayer: {node_dict['Mayer']}")
-                        print(f"*** Lagrange: {node_dict['Lagrange']}")
-                        print(f"Constraints: {node_dict['Constraints']}")
-                        print("")
-                        node_idx = node_idx + 1
+                    node_idx = node_idx + 1
 
         # def draw_graph(draw: bool, l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
         #     g = Digraph('graph_test', filename='graph_test.gv')
@@ -774,8 +773,8 @@ class OptimalControlProgram:
             for node_idx in range(nlp.ns + 1):
                 list_nodes[nlp.phase_idx][node_idx] = merge_dicts(list_objectives[nlp.phase_idx][node_idx],
                                                                   list_constraints[nlp.phase_idx][node_idx])
-
-        print_terminal(print_to_terminal, list_dynamics, list_ode, list_nodes, self.n_phases)
+        if print_terminal is True:
+            print_terminal(print_to_terminal, list_dynamics, list_ode, list_nodes, self.n_phases)
 
     def __define_time(
         self,
