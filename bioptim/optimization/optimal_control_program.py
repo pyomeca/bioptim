@@ -773,6 +773,46 @@ class OptimalControlProgram:
 
             g.view()
 
+        def draw_graph_2(l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
+            from graphviz import Digraph
+            G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
+
+            for phase_idx in range(n_phase):
+
+                with G.subgraph(name=f'cluster_{phase_idx}') as g:
+                    g.attr(style='filled', color='lightgrey')
+                    g.node_attr.update(style='filled', color='white')
+                    node_idx = 0
+                    list_edges = []
+
+                    for _ in l_nodes[phase_idx]:
+                        g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
+                        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                            <TR>
+                                <TD COLSPAN="4">n_{phase_idx}{node_idx}</TD>
+                            </TR>
+                            <TR>
+                                <TD>{l_nodes[phase_idx][node_idx]['Mayer']}</TD>
+                            </TR>
+                            <TR>
+                                <TD>{l_nodes[phase_idx][node_idx]['Lagrange']}</TD>
+                            </TR>
+                            <TR>
+                                <TD>{l_nodes[phase_idx][node_idx]['Constraints']}</TD>
+                            </TR>
+                        </TABLE>>''')
+                        list_edges.append((f"node_struct_{phase_idx}{node_idx}", f"node_struct_{phase_idx}"
+                                                                                 f"{node_idx + 1}"))
+                        node_idx = node_idx + 1
+
+                    g.edges(list_edges)
+                    g.attr(label=f'Phase #{phase_idx}')
+
+                G.edge('OCP', f'node_struct_{phase_idx}0')
+                G.node('OCP', shape='Mdiamond')
+
+            G.view()
+
         list_nodes = [[{"Mayer": [], "Lagrange": [], "Constraints": []} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
 
         list_objectives = ObjectiveList.get_nlp_objectives(self.nlp)
@@ -791,7 +831,7 @@ class OptimalControlProgram:
             print_console(list_dynamics, list_ode, list_nodes, self.n_phases)
 
         if to_graph is True:
-            draw_graph(list_dynamics, list_ode, list_nodes, n_phase)
+            draw_graph_2(list_dynamics, list_ode, list_nodes, n_phase)
 
     def __define_time(
         self,
