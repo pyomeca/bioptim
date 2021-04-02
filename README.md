@@ -1329,6 +1329,8 @@ The type of cost
 # Examples
 In this section, you will find the description of all the examples implemented with bioptim. They are ordered in 
 separate files. Each subsection corresponds to the different files, dealing with different examples and topics.
+Please note that the examples from the paper (see [Citing](#citing)) can be found in this repo
+[https://github.com/s2mLab/BioptimPaperExamples](https://github.com/s2mLab/BioptimPaperExamples).
 
 ## Getting started
 In this subsection, all the examples of the getting_started file are described.
