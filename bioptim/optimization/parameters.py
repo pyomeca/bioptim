@@ -37,7 +37,7 @@ class Parameter(OptionGeneric):
         size: int = None,
         penalty_list: Union[Objective, ObjectiveList] = None,
         cx: Union[Callable, MX, SX] = None,
-        scaling: Union[list, np.ndarray] = [1.0],
+        scaling: np.ndarray = np.array([1.0]),
         **params: Any,
     ):
         """
@@ -65,18 +65,33 @@ class Parameter(OptionGeneric):
         self.function = function
 
         if not isinstance(scaling, np.ndarray):
-            scaling = np.asarray(scaling, dtype=float)
-        if len(scaling.shape) == 1:
+            raise ValueError("Parameter scaling must be a numpy array")
+
+        if not (scaling > 0).all():
+            raise ValueError("Parameter scaling must contain only positive values")
+
+        if len(scaling.shape) == 0:
+            raise ValueError("Parameter scaling must be a 1- or 2- dimensional array")
+        elif len(scaling.shape) == 1:
             self.scaling = scaling[:, np.newaxis]
+            if self.scaling.shape[0] != size and self.scaling.shape[0] == 1:
+                self.scaling = np.repeat(self.scaling, size, 0)
+            elif self.scaling.shape[0] != size and self.scaling.shape[0] != 1:
+                raise ValueError(f"The shape ({scaling.shape}) of the scaling of parameter "
+                                 f"{params['name']} does not match the params shape.")
         elif len(scaling.shape) == 2:
             if scaling.shape[1] != 1:
                 raise RuntimeError(
                     f"Invalid ncols for Parameter Scaling "
                     f"(ncols = {scaling.shape[1]}), the expected number of column is 1"
                 )
+        elif len(scaling.shape) > 2:
+            raise ValueError("Parameter scaling must be a 1- or 2- dimensional numpy array")
 
-        self.initial_guess = initial_guess.scale(self.scaling)
-        self.bounds = bounds.scale(self.scaling)
+        initial_guess.scale(self.scaling)
+        self.initial_guess = initial_guess
+        bounds.scale(self.scaling)
+        self.bounds = bounds
         self.quadratic = quadratic
         self.size = size
         self.penalty_list = penalty_list
@@ -144,7 +159,7 @@ class ParameterList(UniquePerProblemOptionList):
             The index of the parameter in the parameters list
         penalty_list: Union[Objective, ObjectiveList]
             The objective function associate with the parameter
-        scaling: Float
+        scaling: float
             The scaling of the parameter
         extra_arguments: dict
             Any argument that should be passed to the user defined functions
