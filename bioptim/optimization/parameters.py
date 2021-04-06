@@ -214,6 +214,22 @@ class ParameterList(UniquePerProblemOptionList):
 
         return self.names.index(item)
 
+    @staticmethod
+    def get_parameters(ocp):
+        list_parameters = []
+        count = 0
+        for parameter in ocp.original_values["parameters"]:
+            list_parameters.append({"Name": parameter.name,
+                                    "Size": parameter.size,
+                                    "Initial_guess": [[parameter.initial_guess.init[i][j] for i in range(parameter.size)
+                                                       ] for j in range(len(parameter.initial_guess.init[count]))],
+                                    "Max_bound": [[parameter.bounds.max[i][j] for i in range(parameter.size)] for j in
+                                                  range(len(parameter.bounds.max[count]))],
+                                    "Min_bound": [[parameter.bounds.min[i][j] for i in range(parameter.size)] for j in
+                                                  range(len(parameter.bounds.min[count]))],
+                                    "Objectives": parameter.penalty_list.type.name})
+        return(list_parameters)
+
 
 class Parameters:
     """
@@ -273,7 +289,7 @@ class Parameters:
             val = func(ocp, parameter.cx, **penalty.params)
             penalty.sliced_target = penalty.target
             ObjectiveFunction.ParameterFunction.clear_penalty(ocp, None, penalty)
-            ObjectiveFunction.ParameterFunction.add_to_penalty(ocp, None, None, val, penalty)
+            ObjectiveFunction.ParameterFunction.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
     def get_type():

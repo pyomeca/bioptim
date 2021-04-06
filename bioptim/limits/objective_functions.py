@@ -476,7 +476,7 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def add_to_penalty(ocp, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: Objective):
+        def add_to_penalty(ocp, pn: Union[PenaltyNodes, None], val: Union[MX, SX, float, int], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -598,15 +598,24 @@ class ObjectiveFunction:
             The time between two nodes for the current phase. If the objective is Mayer, dt should be 1
         """
 
-        J = {
-            "objective": penalty,
-            "node_index": pn.t[len(pn.nlp.J[penalty.list_index])],
-            "val": val,
-            "target": penalty.sliced_target,
-            "dt": dt,
-        }
+        if pn is None:
+            J = {
+                "objective": penalty,
+                "node_index": None,
+                "val": val,
+                "target": penalty.sliced_target,
+                "dt": dt,
+            }
+        else:
+            J = {
+                "objective": penalty,
+                "node_index": pn.t[len(pn.nlp.J[penalty.list_index])],
+                "val": val,
+                "target": penalty.sliced_target,
+                "dt": dt,
+            }
 
-        if pn.nlp:
+        if pn is not None and pn.nlp:
             pn.nlp.J[penalty.list_index].append(J)
         else:
             ocp.J[penalty.list_index].append(J)
