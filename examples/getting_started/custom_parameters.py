@@ -171,6 +171,9 @@ if __name__ == "__main__":
         biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, min_g=-10, max_g=-6, target_g=-8
     )
 
+    # --- Print ocp structure --- #
+    ocp.print_ocp_structure()
+
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 
