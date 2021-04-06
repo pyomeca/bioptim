@@ -53,7 +53,7 @@ class OptimizationVariable:
         Get the parameters in one single Parameter class
     extract_phase_time(self, data: Union[np.array, DM]) -> list
         Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
-    to_dictionaries(self, data: Union[np.array, DM]) -> list
+    to_dictionaries(self, data: Union[np.array, DM]) -> tuple
         Convert a vector of solution in an easy to use dictionary, where are the variables are given their proper names
     define_ocp_shooting_points(self)
         Declare all the casadi variables with the right size to be used during a specific phase
@@ -207,7 +207,7 @@ class OptimizationVariable:
                     cmp += 1
         return phase_time
 
-    def to_dictionaries(self, data: Union[np.array, DM]) -> list:
+    def to_dictionaries(self, data: Union[np.array, DM]) -> tuple:
         """
         Convert a vector of solution in an easy to use dictionary, where are the variables are given their proper names
 
@@ -218,7 +218,7 @@ class OptimizationVariable:
 
         Returns
         -------
-        The solution in a list of dictionaries format (list => each phase)
+        The solution in a tuple of dictionaries format (tuple => each phase)
         """
 
         ocp = self.ocp
