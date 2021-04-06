@@ -56,8 +56,6 @@ def set_mass(biorbd_model: biorbd.Model, value: MX):
         The model to modify by the parameters
     value: MX
         The CasADi variables to modify the model
-    extra_value: Any
-        Any parameters required by the user. The name(s) of the extra_value must match those used in parameter.add
     """
 
     biorbd_model.segment(0).characteristics().setMass(value)
@@ -152,20 +150,17 @@ def prepare_ocp(
     u_init = InitialGuess([tau_init] * n_tau)
 
     # Define the parameter to optimize
-    # Give the parameter some min and max bounds
     parameters = ParameterList()
-    bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
-    bound_mass = Bounds(min_m, max_m, interpolation=InterpolationType.CONSTANT)
-    # and an initial condition
-    initial_gravity = InitialGuess((min_g + max_g) / 2)
-    initial_mass = InitialGuess((min_m + max_m) / 2)
-    parameter_objective_functions = Objective(
-        my_target_function, weight=1000, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
-    )
-    mass_objective_functions = Objective(
-        my_target_function, weight=100, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_m
-    )
+
     if optim_gravity:
+        # Give the parameter some min and max bounds
+        bound_gravity = Bounds(min_g, max_g, interpolation=InterpolationType.CONSTANT)
+        # and an initial condition
+        initial_gravity = InitialGuess((min_g + max_g) / 2)
+        # and an objective function
+        parameter_objective_functions = Objective(
+            my_target_function, weight=1000, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
+        )
         parameters.add(
             "gravity_xyz",  # The name of the parameter
             my_parameter_function,  # The function that modifies the biorbd model
@@ -173,10 +168,16 @@ def prepare_ocp(
             bound_gravity,  # The bounds
             size=3,  # The number of elements this particular parameter vector has
             penalty_list=parameter_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
-            scaling=np.array([1.0, 1.0, 10.0]),
+            scaling=np.array([1, 1, 10.0]),
             extra_value=1,  # You can define as many extra arguments as you want
         )
+
     if optim_mass:
+        bound_mass = Bounds(min_m, max_m, interpolation=InterpolationType.CONSTANT)
+        initial_mass = InitialGuess((min_m + max_m) / 2)
+        mass_objective_functions = Objective(
+            my_target_function, weight=100, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_m
+        )
         parameters.add(
             "mass",  # The name of the parameter
             set_mass,  # The function that modifies the biorbd model
@@ -186,6 +187,7 @@ def prepare_ocp(
             penalty_list=mass_objective_functions,  # ObjectiveFcn of constraint for this particular parameter
             scaling=np.array([10.0]),
         )
+
     return OptimalControlProgram(
         biorbd_model,
         dynamics,
@@ -206,13 +208,14 @@ if __name__ == "__main__":
     """
     Solve and print the optimized value for the gravity and animate the solution
     """
-
+    optim_gravity = True
+    optim_mass = True
     ocp = prepare_ocp(
         biorbd_model_path="pendulum.bioMod",
         final_time=3,
         n_shooting=100,
-        optim_gravity=True,
-        optim_mass=True,
+        optim_gravity=optim_gravity,
+        optim_mass=optim_mass,
         min_g=np.array([-1, -1, -10]),
         max_g=np.array([1, 1, -5]),
         min_m=10,
@@ -225,10 +228,13 @@ if __name__ == "__main__":
     sol = ocp.solve(show_online_optim=False)
 
     # --- Get the results --- #
-    gravity = sol.parameters["gravity_xyz"]
-    mass = sol.parameters["mass"]
-    print(f"Optimized gravity: {gravity}")
-    print(f"Optimized mass: {mass}")
+    if optim_gravity:
+        gravity = sol.parameters["gravity_xyz"]
+        print(f"Optimized gravity: {gravity}")
+
+    if optim_mass:
+        mass = sol.parameters["mass"]
+        print(f"Optimized mass: {mass}")
 
     # --- Show results --- #
     sol.graphs()
