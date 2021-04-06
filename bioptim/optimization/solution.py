@@ -134,6 +134,7 @@ class Solution:
             self.J = nlp.J
             self.g = nlp.g
             self.ns = nlp.ns
+            self.p_scaling = nlp.p_scaling
 
     class SimplifiedOCP:
         """
@@ -511,6 +512,7 @@ class Solution:
         params = self.parameters["all"]
         x0 = self._states[0]["all"][:, 0]
         for p in range(len(self._states)):
+            param_scaling = self.ocp.nlp[p].p_scaling
             shape = self._states[p]["all"].shape
             if continuous:
                 n_steps = ocp.nlp[p].ode_solver.steps
@@ -551,11 +553,11 @@ class Solution:
 
                 if keepdims:
                     integrated = np.concatenate(
-                        (x0[:, np.newaxis], ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xf"]), axis=1
+                        (x0[:, np.newaxis], ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params/param_scaling)["xf"]), axis=1
                     )
                     cols = [n, n + 1]
                 else:
-                    integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
+                    integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params/param_scaling)["xall"])
                     cols = [n * n_steps, (n + 1) * n_steps]
                 cols[1] = cols[1] + 1 if continuous else cols[1]
                 cols = range(cols[0], cols[1])
