@@ -734,13 +734,25 @@ class OptimalControlProgram:
             m.update(b)
             return m
 
-        def print_console(l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
+        def print_console(l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
             for phase_idx in range(n_phase):
                 node_idx = 0
+                print(f"**********")
+                print(f"PARAMETERS: ")
+                for i in range(len(l_parameters)):
+                    print(f"Name: {l_parameters[i]['Name']}")
+                    print(f"Size: {l_parameters[i]['Size']}")
+                    print(f"Initial_guess: {l_parameters[i]['Initial_guess']}")
+                    print(f"Max_bound: {l_parameters[i]['Max_bound']}")
+                    print(f"Min_bound: {l_parameters[i]['Min_bound']}")
+                    print(f"Objectives: {l_parameters[i]['Objectives']}")
+                    print("")
+                print("")
                 print(f"**********")
                 print(f"PHASE {phase_idx}")
                 print(f"DYNAMICS: {l_dynamics[phase_idx]}")
                 print(f"ODE: {l_ode[phase_idx]}")
+                print(f"**********")
                 print("")
                 for node_dict in l_nodes[phase_idx]:
                     print(f"NODE {node_idx}")
@@ -751,7 +763,7 @@ class OptimalControlProgram:
                     print("")
                     node_idx = node_idx + 1
 
-        def draw_graph(l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
+        def draw_graph(l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
             from graphviz import Digraph
             g = Digraph('graph_test', filename='cluster.gv')
 
@@ -773,7 +785,7 @@ class OptimalControlProgram:
 
             g.view()
 
-        def draw_graph_2(l_dynamics: list, l_ode: list, l_nodes: list, n_phase: int):
+        def draw_graph_2(l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
             from graphviz import Digraph
             G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
 
@@ -829,10 +841,10 @@ class OptimalControlProgram:
                 list_nodes[nlp.phase_idx][node_idx] = merge_dicts(list_objectives[nlp.phase_idx][node_idx],
                                                                   list_constraints[nlp.phase_idx][node_idx])
         if to_console is True:
-            print_console(list_dynamics, list_ode, list_nodes, self.n_phases)
+            print_console(list_dynamics, list_ode, list_parameters, list_nodes, self.n_phases)
 
         if to_graph is True:
-            draw_graph_2(list_dynamics, list_ode, list_nodes, n_phase)
+            draw_graph_2(list_dynamics, list_ode, list_parameters, list_nodes, n_phase)
 
     def __define_time(
         self,
