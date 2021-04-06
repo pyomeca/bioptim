@@ -136,7 +136,7 @@ class ParameterList(UniquePerProblemOptionList):
         size: int = None,
         list_index: int = -1,
         penalty_list: Union[Objective, ObjectiveList] = None,
-        scaling: float = 1.0,
+        scaling: np.ndarray = np.array([1.0]),
         **extra_arguments: Any,
     ):
         """
