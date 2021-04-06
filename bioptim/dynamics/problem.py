@@ -583,7 +583,7 @@ class Problem:
         if len(nlp.parameters):
             nlp.p_scaling = np.vstack([p.scaling for p in nlp.parameters])
         else:
-            nlp.p_scaling = np.array([[1.]])
+            nlp.p_scaling = np.array([[1.0]])
         nlp.np = sum([p.size for p in nlp.parameters])
         mx_symbolic_params = MX.sym("p", nlp.np, 1)
 

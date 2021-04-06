@@ -553,11 +553,12 @@ class Solution:
 
                 if keepdims:
                     integrated = np.concatenate(
-                        (x0[:, np.newaxis], ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params/param_scaling)["xf"]), axis=1
+                        (x0[:, np.newaxis], ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params / param_scaling)["xf"]),
+                        axis=1,
                     )
                     cols = [n, n + 1]
                 else:
-                    integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params/param_scaling)["xall"])
+                    integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params / param_scaling)["xall"])
                     cols = [n * n_steps, (n + 1) * n_steps]
                 cols[1] = cols[1] + 1 if continuous else cols[1]
                 cols = range(cols[0], cols[1])

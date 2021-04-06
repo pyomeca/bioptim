@@ -77,8 +77,10 @@ class Parameter(OptionGeneric):
             if self.scaling.shape[0] != size and self.scaling.shape[0] == 1:
                 self.scaling = np.repeat(self.scaling, size, 0)
             elif self.scaling.shape[0] != size and self.scaling.shape[0] != 1:
-                raise ValueError(f"The shape ({scaling.shape}) of the scaling of parameter "
-                                 f"{params['name']} does not match the params shape.")
+                raise ValueError(
+                    f"The shape ({scaling.shape}) of the scaling of parameter "
+                    f"{params['name']} does not match the params shape."
+                )
         elif len(scaling.shape) == 2:
             if scaling.shape[1] != 1:
                 raise RuntimeError(
