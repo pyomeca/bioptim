@@ -841,8 +841,10 @@ class OptimalControlProgram:
                                 <TD>{l_nodes[phase_idx][node_idx]['Constraints']}</TD>
                             </TR>
                         </TABLE>>''')
-                        list_edges.append((f"node_struct_{phase_idx}{node_idx}", f"node_struct_{phase_idx}"
-                                                                                 f"{node_idx + 1}"))
+                        if node_idx!=len(l_nodes[phase_idx]) - 1:
+                            list_edges.append((f"node_struct_{phase_idx}{node_idx}", f"node_struct_{phase_idx}" 
+                                                                                     f"{node_idx + 1}"))
+
                         node_idx = node_idx + 1
 
                     g.edges(list_edges)
