@@ -829,7 +829,10 @@ class OptimalControlProgram:
                         g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD COLSPAN="4">n_{phase_idx}_{node_idx}</TD>
+                                <TD COLSPAN="10">n_{phase_idx}_{node_idx}</TD>
+                            </TR>
+                            <TR>
+                                <TD>***</TD>
                             </TR>
                             <TR>
                                 <TD>{l_nodes[phase_idx][node_idx]['Mayer']}</TD>
@@ -838,7 +841,22 @@ class OptimalControlProgram:
                                 <TD>{l_nodes[phase_idx][node_idx]['Lagrange']}</TD>
                             </TR>
                             <TR>
+                                <TD>***</TD>
+                            </TR>
+                            <TR>
+                                <TD>Constraints:</TD>
+                            </TR>
+                            <TR>
                                 <TD>{l_nodes[phase_idx][node_idx]['Constraints']}</TD>
+                            </TR>
+                            <TR>
+                                <TD>{l_nodes[phase_idx][node_idx]['Max_bound']}</TD>
+                            </TR>
+                            <TR>
+                                <TD>{l_nodes[phase_idx][node_idx]['Min_bound']}</TD>
+                            </TR>
+                            <TR>
+                                <TD>{l_nodes[phase_idx][node_idx]['Sliced_target']}</TD>
                             </TR>
                         </TABLE>>''')
                         if node_idx!=len(l_nodes[phase_idx]) - 1:

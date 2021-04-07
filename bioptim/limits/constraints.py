@@ -101,11 +101,16 @@ class ConstraintList(OptionList):
         for g in ocp.g:
             list_global_constraints.append(g[0]["constraint"].name)
 
-        list_constraints = [[{"Constraints": []} for _ in range(nlp.ns + 1)] for nlp in ocp.nlp]
+        list_constraints = [[{"Constraints": [], "Max_bound": [], "Min_bound": [], "Sliced_target": []} for _ in
+                             range(nlp.ns + 1)] for nlp in ocp.nlp]
         for nlp in ocp.nlp:
             for g in nlp.g:
                 for n in g:
                     list_constraints[nlp.phase_idx][n["node_index"]]["Constraints"].append(n["constraint"].name)
+                    list_constraints[nlp.phase_idx][n["node_index"]]["Max_bound"].append(n["constraint"].max_bound)
+                    list_constraints[nlp.phase_idx][n["node_index"]]["Min_bound"].append(n["constraint"].min_bound)
+                    list_constraints[nlp.phase_idx][n["node_index"]]["Sliced_target"].append(n["constraint"].
+                                                                                             sliced_target)
         return list_global_constraints, list_constraints
 
 
