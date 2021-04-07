@@ -2,6 +2,7 @@ import pytest
 from bioptim import ParameterList
 import numpy as np
 
+
 def test_wrong_parameter():
     param = ParameterList()
 
@@ -16,6 +17,7 @@ def test_wrong_parameter():
     ):
         param.add("gravity_z", my_parameter_function, initial_gravity, bounds, size=1, phase=0)
 
+
 def test_param_scaling():
     param = ParameterList()
 
@@ -27,7 +29,7 @@ def test_param_scaling():
         ValueError,
         match="Parameter scaling must be a numpy array",
     ):
-        param.add("gravity_z", my_parameter_function, initial_gravity, bounds, size=1, scaling='a')
+        param.add("gravity_z", my_parameter_function, initial_gravity, bounds, size=1, scaling="a")
 
     with pytest.raises(
         ValueError,
