@@ -42,7 +42,8 @@ def my_parameter_function(biorbd_model: biorbd.Model, value: MX, extra_value: An
         Any parameters required by the user. The name(s) of the extra_value must match those used in parameter.add
     """
 
-    biorbd_model.setGravity(biorbd.Vector3d(value[0], value[1], value[2] * extra_value))
+    value[2] *= extra_value
+    biorbd_model.setGravity(value)
 
 
 def set_mass(biorbd_model: biorbd.Model, value: MX):
