@@ -789,6 +789,34 @@ class OptimalControlProgram:
             from graphviz import Digraph
             G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
 
+            if len(l_parameters) != 0:
+                with G.subgraph(name=f'cluster_parameters') as g:
+                    g.attr(style='filled', color='lightgrey')
+                    g.node_attr.update(style='filled', color='white')
+                    for param in l_parameters:
+                        g.node(f"param_{param['Name']}", f'''<
+                        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                            <TR>
+                                <TD COLSPAN="6">Name: {param['Name']}</TD>
+                            </TR>
+                            <TR>
+                                <TD>Size: {param['Size']}</TD>
+                            </TR>
+                            <TR>
+                                <TD>Initial guesses: {param['Initial_guess']}</TD>
+                            </TR>
+                            <TR>
+                                <TD>Max bounds: {param['Max_bound']}</TD>
+                            </TR>
+                            <TR>
+                                <TD>Min bounds: {param['Min_bound']}</TD>
+                            </TR>
+                            <TR>
+                                <TD>Objectives: {param['Objectives']}</TD>
+                            </TR>
+                        </TABLE>>''')
+                    g.attr(label=f'Parameters')
+
             for phase_idx in range(n_phase):
 
                 with G.subgraph(name=f'cluster_{phase_idx}') as g:
