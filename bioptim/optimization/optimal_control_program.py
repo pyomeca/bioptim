@@ -842,22 +842,22 @@ class OptimalControlProgram:
                             <TR>
                                 <TD>ODE: {list_ode[phase_idx]}</TD>
                             </TR>
+                            <TR>
+                                <TD>Lagrange: {l_nodes[phase_idx][0]['Lagrange']}</TD>
+                            </TR>
                         </TABLE>>''')
 
                     for _ in l_nodes[phase_idx]:
                         g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD COLSPAN="10">n_{phase_idx}_{node_idx}</TD>
+                                <TD COLSPAN="9">n_{phase_idx}_{node_idx}</TD>
                             </TR>
                             <TR>
                                 <TD>***</TD>
                             </TR>
                             <TR>
                                 <TD>{l_nodes[phase_idx][node_idx]['Mayer']}</TD>
-                            </TR>
-                            <TR>
-                                <TD>{l_nodes[phase_idx][node_idx]['Lagrange']}</TD>
                             </TR>
                             <TR>
                                 <TD>***</TD>
