@@ -734,6 +734,27 @@ class OptimalControlProgram:
             m.update(b)
             return m
 
+        def constraints_to_str(l_nodes: list, phase_idx: int, node_idx: int):
+            constraints_str = ""
+            for count in range(len(l_nodes[phase_idx][node_idx]['Constraints'])):
+                if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
+                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]}≤{l_nodes[phase_idx][node_idx]['Constraints'][count]}-{l_nodes[phase_idx][node_idx]['Sliced_target'][count]}≤{l_nodes[phase_idx][node_idx]['Max_bound'][count]}\n"
+                else:
+                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]}≤{l_nodes[phase_idx][node_idx]['Constraints'][count]}≤{l_nodes[phase_idx][node_idx]['Max_bound'][count]}\n"
+            return constraints_str
+
+        def lagrange_to_str(l_nodes: list, phase_idx: int):
+            lagrange_str = ""
+            for objective in l_nodes[phase_idx][0]['Lagrange']:
+                lagrange_str += f"{objective}\n"
+            return (lagrange_str)
+
+        def mayer_to_str(l_nodes: list, phase_idx: int, node_idx: int):
+            mayer_str = ""
+            for objective in l_nodes[phase_idx][node_idx]['Mayer']:
+                lagrange_str += f"{objective}\n"
+            return (mayer_str)
+
         def print_console(l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
             for phase_idx in range(n_phase):
                 node_idx = 0
@@ -789,35 +810,36 @@ class OptimalControlProgram:
             from graphviz import Digraph
             G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
 
-            if len(l_parameters) != 0:
-                with G.subgraph(name=f'cluster_parameters') as g:
+            #if len(l_parameters) != 0:
+            with G.subgraph(name=f'cluster_parameters') as g:
                     g.attr(style='filled', color='lightgrey')
                     g.node_attr.update(style='filled', color='white')
                     param_idx = 0
-                    for param in l_parameters:
-                        g.node(f"param_{param_idx}", f'''<
-                        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                            <TR>
-                                <TD COLSPAN="6">Name: {param['Name']}</TD>
-                            </TR>
-                            <TR>
-                                <TD>Size: {param['Size']}</TD>
-                            </TR>
-                            <TR>
-                                <TD>Initial guesses: {param['Initial_guess']}</TD>
-                            </TR>
-                            <TR>
-                                <TD>Max bounds: {param['Max_bound']}</TD>
-                            </TR>
-                            <TR>
-                                <TD>Min bounds: {param['Min_bound']}</TD>
-                            </TR>
-                            <TR>
-                                <TD>Objectives: {param['Objectives']}</TD>
-                            </TR>
-                        </TABLE>>''')
-                        param_idx = param_idx + 1
-                    g.attr(label=f'Parameters')
+                    if len(l_parameters) != 0:
+                        for param in l_parameters:
+                            g.node(f"param_{param_idx}", f'''<
+                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                <TR>
+                                    <TD COLSPAN="6">Name: {param['Name']}</TD>
+                                </TR>
+                                <TR>
+                                    <TD>Size: {param['Size']}</TD>
+                                </TR>
+                                <TR>
+                                    <TD>Initial guesses: {param['Initial_guess']}</TD>
+                                </TR>
+                                <TR>
+                                    <TD>Max bounds: {param['Max_bound']}</TD>
+                                </TR>
+                                <TR>
+                                    <TD>Min bounds: {param['Min_bound']}</TD>
+                                </TR>
+                                <TR>
+                                    <TD>Objectives: {param['Objectives']}</TD>
+                                </TR>
+                            </TABLE>>''')
+                            param_idx = param_idx + 1
+                        g.attr(label=f'Parameters')
 
             for phase_idx in range(n_phase):
 
@@ -834,6 +856,8 @@ class OptimalControlProgram:
                         </TABLE>>''', color='lightgrey')
 
                     g.node_attr.update(style='filled', color='white')
+
+                    lagrange_str = lagrange_to_str(l_nodes, phase_idx)
                     g.node(f'dynamics_&_ode_{phase_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
@@ -843,11 +867,13 @@ class OptimalControlProgram:
                                 <TD>ODE: {l_ode[phase_idx]}</TD>
                             </TR>
                             <TR>
-                                <TD>Lagrange: {l_nodes[phase_idx][0]['Lagrange']}</TD>
+                                <TD>Lagrange: {lagrange_str}</TD>
                             </TR>
                         </TABLE>>''')
 
                     for _ in l_nodes[phase_idx]:
+                        constraints_str = constraints_to_str(l_nodes, phase_idx, node_idx)
+                        mayer_str = mayer_to_str(l_nodes, phase_idx, node_idx)
                         g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
@@ -857,7 +883,7 @@ class OptimalControlProgram:
                                 <TD>***</TD>
                             </TR>
                             <TR>
-                                <TD>Mayer: {l_nodes[phase_idx][node_idx]['Mayer']}</TD>
+                                <TD>Mayer: {mayer_str}</TD>
                             </TR>
                             <TR>
                                 <TD>***</TD>
@@ -866,9 +892,7 @@ class OptimalControlProgram:
                                 <TD>Constraints:</TD>
                             </TR>
                             <TR>
-                                <TD>{l_nodes[phase_idx][node_idx]['Min_bound']}&lt;{l_nodes[phase_idx][node_idx]
-                        ['Constraints']}-{l_nodes[phase_idx][node_idx]['Sliced_target']}&lt;{l_nodes[phase_idx][node_idx]
-                        ['Max_bound']}</TD>
+                                <TD>{constraints_str}</TD>
                             </TR>
                         </TABLE>>''')
                         if node_idx != len(l_nodes[phase_idx]) - 1:
