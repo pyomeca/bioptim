@@ -10,7 +10,7 @@ sufficient.
 from typing import Any
 
 import numpy as np
-from casadi import MX, vertcat
+from casadi import MX
 import biorbd
 from bioptim import (
     OptimalControlProgram,
@@ -42,7 +42,8 @@ def my_parameter_function(biorbd_model: biorbd.Model, value: MX, extra_value: An
         Any parameters required by the user. The name(s) of the extra_value must match those used in parameter.add
     """
 
-    biorbd_model.setGravity(biorbd.Vector3d(value[0], value[1], value[2] * extra_value))
+    value[2] *= extra_value
+    biorbd_model.setGravity(value)
 
 
 def set_mass(biorbd_model: biorbd.Model, value: MX):
@@ -88,9 +89,9 @@ def prepare_ocp(
     optim_mass,
     min_g,
     max_g,
+    target_g,
     min_m,
     max_m,
-    target_g,
     target_m,
     ode_solver=OdeSolver.RK4(),
     use_sx=False,
@@ -106,12 +107,22 @@ def prepare_ocp(
         The time at the final node
     n_shooting: int
         The number of shooting points
-    min_g: float
+    optim_gravity: bool
+        If the gravity should be optimized
+    optim_mass: bool
+        If the mass should be optimized
+    min_g: np.ndarray
         The minimal value for the gravity
-    max_g: float
+    max_g: np.ndarray
         The maximal value for the gravity
-    target_g: float
+    target_g: np.ndarray
         The target value for the gravity
+    min_m: float
+        The minimal value for the mass
+    max_m: float
+        The maximal value for the mass
+    target_m: float
+        The target value for the mass
     ode_solver: OdeSolver
         The type of ode solver used
     use_sx: bool
@@ -237,5 +248,4 @@ if __name__ == "__main__":
         print(f"Optimized mass: {mass}")
 
     # --- Show results --- #
-    sol.graphs()
     sol.animate(n_frames=200)
