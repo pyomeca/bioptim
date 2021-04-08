@@ -424,21 +424,25 @@ def test_parameter_optimization(ode_solver):
     ocp = parameter.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=3,
-        n_shooting=20,
-        min_g=-10,
-        max_g=-6,
-        target_g=-8,
-        ode_solver=ode_solver,
+        n_shooting=100,
+        optim_gravity=True,
+        optim_mass=False,
+        min_g=np.array([-1, -1, -10]),
+        max_g=np.array([1, 1, -5]),
+        min_m=10,
+        max_m=30,
+        target_g=np.array([0, 0, -9.81]),
+        target_m=20,
     )
     sol = ocp.solve()
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (80, 1))
-    np.testing.assert_almost_equal(g, np.zeros((80, 1)))
+    np.testing.assert_equal(g.shape, (400, 1))
+    np.testing.assert_almost_equal(g, np.zeros((400, 1)))
 
     # Check some of the results
-    q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_z"]
+    q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_xyz"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -452,40 +456,40 @@ def test_parameter_optimization(ode_solver):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 853.5298104707485, decimal=6)
+        np.testing.assert_almost_equal(f[0, 0], 801.7834735768548, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((8.13135278, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-7.91821551, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.3025795, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-8.8472355, 0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[-9.0988827]]))
+        np.testing.assert_almost_equal(gravity, np.array([[0, 0.0902555, -9.7896801]]).T)
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 853.5348080507781, decimal=6)
+        np.testing.assert_almost_equal(f[0, 0], 801.7834735768548, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((8.1317708, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-7.9180414, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.3025795, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-8.8472355, 0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[-9.0988849]]))
+        np.testing.assert_almost_equal(gravity, np.array([[0, 0.0902555, -9.7896801]]).T)
 
     else:
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 853.5406085230834, decimal=6)
+        np.testing.assert_almost_equal(f[0, 0], 801.7834735768548, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((8.1318336, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-7.91806351, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.3025795, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-8.8472355, 0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[-9.09889371]]))
+        np.testing.assert_almost_equal(gravity, np.array([[0, 0.0902555, -9.7896801]]).T)
 
     # save and load
     with pytest.raises(PicklingError, match="import of module 'custom_parameters' failed"):

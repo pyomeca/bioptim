@@ -1,6 +1,7 @@
 from typing import Callable, Union, Any
 
 from casadi import MX, SX
+import numpy as np
 
 from ..misc.enums import Node
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
@@ -36,6 +37,7 @@ class Parameter(OptionGeneric):
         size: int = None,
         penalty_list: Union[Objective, ObjectiveList] = None,
         cx: Union[Callable, MX, SX] = None,
+        scaling: np.ndarray = np.array([1.0]),
         **params: Any,
     ):
         """
@@ -61,7 +63,36 @@ class Parameter(OptionGeneric):
 
         super(Parameter, self).__init__(type=Parameters, **params)
         self.function = function
+
+        if not isinstance(scaling, np.ndarray):
+            raise ValueError("Parameter scaling must be a numpy array")
+
+        if not (scaling > 0).all():
+            raise ValueError("Parameter scaling must contain only positive values")
+
+        if len(scaling.shape) == 0:
+            raise ValueError("Parameter scaling must be a 1- or 2- dimensional array")
+        elif len(scaling.shape) == 1:
+            self.scaling = scaling[:, np.newaxis]
+            if self.scaling.shape[0] != size and self.scaling.shape[0] == 1:
+                self.scaling = np.repeat(self.scaling, size, 0)
+            elif self.scaling.shape[0] != size and self.scaling.shape[0] != 1:
+                raise ValueError(
+                    f"The shape ({scaling.shape[0]}) of the scaling of parameter {params['name']} "
+                    f"does not match the params shape."
+                )
+        elif len(scaling.shape) == 2:
+            if scaling.shape[1] != 1:
+                raise ValueError(
+                    f"Invalid ncols for Parameter Scaling "
+                    f"(ncols = {scaling.shape[1]}), the expected number of column is 1"
+                )
+        elif len(scaling.shape) > 2:
+            raise ValueError("Parameter scaling must be a 1- or 2- dimensional numpy array")
+
+        initial_guess.scale(self.scaling)
         self.initial_guess = initial_guess
+        bounds.scale(self.scaling)
         self.bounds = bounds
         self.quadratic = quadratic
         self.size = size
@@ -107,6 +138,7 @@ class ParameterList(UniquePerProblemOptionList):
         size: int = None,
         list_index: int = -1,
         penalty_list: Union[Objective, ObjectiveList] = None,
+        scaling: np.ndarray = np.array([1.0]),
         **extra_arguments: Any,
     ):
         """
@@ -129,6 +161,8 @@ class ParameterList(UniquePerProblemOptionList):
             The index of the parameter in the parameters list
         penalty_list: Union[Objective, ObjectiveList]
             The objective function associate with the parameter
+        scaling: float
+            The scaling of the parameter
         extra_arguments: dict
             Any argument that should be passed to the user defined functions
         """
@@ -154,6 +188,7 @@ class ParameterList(UniquePerProblemOptionList):
                 bounds=bounds,
                 size=size,
                 penalty_list=penalty_list,
+                scaling=scaling,
                 **extra_arguments,
             )
 
@@ -270,7 +305,7 @@ class Parameters:
 
             func = penalty.custom_function
 
-            val = func(ocp, parameter.cx, **penalty.params)
+            val = func(ocp, parameter.cx * parameter.scaling, **penalty.params)
             penalty.sliced_target = penalty.target
             ObjectiveFunction.ParameterFunction.clear_penalty(ocp, None, penalty)
             ObjectiveFunction.ParameterFunction.add_to_penalty(ocp, None, val, penalty)
