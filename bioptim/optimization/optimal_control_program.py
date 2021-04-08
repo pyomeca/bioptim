@@ -837,10 +837,10 @@ class OptimalControlProgram:
                     g.node(f'dynamics_&_ode_{phase_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD COLSPAN="2">Dynamic: {list_dynamics[phase_idx]}</TD>
+                                <TD COLSPAN="2">Dynamic: {l_dynamics[phase_idx]}</TD>
                             </TR>
                             <TR>
-                                <TD>ODE: {list_ode[phase_idx]}</TD>
+                                <TD>ODE: {l_ode[phase_idx]}</TD>
                             </TR>
                             <TR>
                                 <TD>Lagrange: {l_nodes[phase_idx][0]['Lagrange']}</TD>
@@ -851,13 +851,13 @@ class OptimalControlProgram:
                         g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD COLSPAN="9">n_{phase_idx}_{node_idx}</TD>
+                                <TD COLSPAN="6">n_{phase_idx}_{node_idx}</TD>
                             </TR>
                             <TR>
                                 <TD>***</TD>
                             </TR>
                             <TR>
-                                <TD>{l_nodes[phase_idx][node_idx]['Mayer']}</TD>
+                                <TD>Mayer: {l_nodes[phase_idx][node_idx]['Mayer']}</TD>
                             </TR>
                             <TR>
                                 <TD>***</TD>
@@ -866,19 +866,12 @@ class OptimalControlProgram:
                                 <TD>Constraints:</TD>
                             </TR>
                             <TR>
-                                <TD>{l_nodes[phase_idx][node_idx]['Constraints']}</TD>
-                            </TR>
-                            <TR>
-                                <TD>{l_nodes[phase_idx][node_idx]['Max_bound']}</TD>
-                            </TR>
-                            <TR>
-                                <TD>{l_nodes[phase_idx][node_idx]['Min_bound']}</TD>
-                            </TR>
-                            <TR>
-                                <TD>{l_nodes[phase_idx][node_idx]['Sliced_target']}</TD>
+                                <TD>{l_nodes[phase_idx][node_idx]['Min_bound']}&lt;{l_nodes[phase_idx][node_idx]
+                        ['Constraints']}-{l_nodes[phase_idx][node_idx]['Sliced_target']}&lt;{l_nodes[phase_idx][node_idx]
+                        ['Max_bound']}</TD>
                             </TR>
                         </TABLE>>''')
-                        if node_idx!=len(l_nodes[phase_idx]) - 1:
+                        if node_idx != len(l_nodes[phase_idx]) - 1:
                             list_edges.append((f"node_struct_{phase_idx}{node_idx}", f"node_struct_{phase_idx}" 
                                                                                      f"{node_idx + 1}"))
 
