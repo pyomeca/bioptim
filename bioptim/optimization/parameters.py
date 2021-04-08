@@ -2,6 +2,7 @@ from typing import Callable, Union, Any
 
 from casadi import MX, SX
 import numpy as np
+import regex as re
 
 from ..misc.enums import Node
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
@@ -78,12 +79,12 @@ class Parameter(OptionGeneric):
                 self.scaling = np.repeat(self.scaling, size, 0)
             elif self.scaling.shape[0] != size and self.scaling.shape[0] != 1:
                 raise ValueError(
-                    f"The shape ({scaling.shape}) of the scaling of parameter "
-                    f"{params['name']} does not match the params shape."
+                    f"The shape ({scaling.shape[0]}) of the scaling of parameter {params['name']} "
+                    f"does not match the params shape."
                 )
         elif len(scaling.shape) == 2:
             if scaling.shape[1] != 1:
-                raise RuntimeError(
+                raise ValueError(
                     f"Invalid ncols for Parameter Scaling "
                     f"(ncols = {scaling.shape[1]}), the expected number of column is 1"
                 )
