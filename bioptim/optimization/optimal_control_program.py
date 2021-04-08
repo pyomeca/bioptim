@@ -890,30 +890,31 @@ class OptimalControlProgram:
                     for _ in l_nodes[phase_idx]:
                         constraints_str = constraints_to_str(l_nodes, phase_idx, node_idx)
                         mayer_str = mayer_to_str(l_nodes, phase_idx, node_idx)
-                        g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
-                        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                            <TR>
-                                <TD COLSPAN="6">n_{phase_idx}_{node_idx}</TD>
-                            </TR>
-                            <TR>
-                                <TD>***</TD>
-                            </TR>
-                            <TR>
-                                <TD>Mayer: {mayer_str}</TD>
-                            </TR>
-                            <TR>
-                                <TD>***</TD>
-                            </TR>
-                            <TR>
-                                <TD>Constraints:</TD>
-                            </TR>
-                            <TR>
-                                <TD>{constraints_str}</TD>
-                            </TR>
-                        </TABLE>>''')
-                        if node_idx != len(l_nodes[phase_idx]) - 1:
-                            list_edges.append((f"node_struct_{phase_idx}{node_idx}", f"node_struct_{phase_idx}" 
-                                                                                     f"{node_idx + 1}"))
+                        if constraints_str or mayer_str != "":
+                            g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
+                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                <TR>
+                                    <TD COLSPAN="6">n_{phase_idx}_{node_idx}</TD>
+                                </TR>
+                                <TR>
+                                    <TD>***</TD>
+                                </TR>
+                                <TR>
+                                    <TD>Mayer: {mayer_str}</TD>
+                                </TR>
+                                <TR>
+                                    <TD>***</TD>
+                                </TR>
+                                <TR>
+                                    <TD>Constraints:</TD>
+                                </TR>
+                                <TR>
+                                    <TD>{constraints_str}</TD>
+                                </TR>
+                            </TABLE>>''')
+                            # if node_idx != len(l_nodes[phase_idx]) - 1:
+                            #     list_edges.append((f"node_struct_{phase_idx}{node_idx}", f"node_struct_{phase_idx}"
+                            #                                                          f"{node_idx + 1}"))
 
                         node_idx = node_idx + 1
 
@@ -921,9 +922,10 @@ class OptimalControlProgram:
                     g.attr(label=f'Phase #{phase_idx}')
 
                 G.node('OCP', shape='Mdiamond')
-                G.edge(f'dynamics_&_ode_{phase_idx}', f'node_struct_{phase_idx}0', color='lightgrey')
-                G.edge('OCP', f'design_{phase_idx}_0')
-                G.edge(f'design_{phase_idx}_0', f'dynamics_&_ode_{phase_idx}', color='lightgrey')
+                # G.edge(f'dynamics_&_ode_{phase_idx}', f'node_struct_{phase_idx}0', color='lightgrey')
+                #G.edge('OCP', f'design_{phase_idx}_0')
+                G.edge('OCP', f'dynamics_&_ode_{phase_idx}')
+                # G.edge(f'design_{phase_idx}_0', f'dynamics_&_ode_{phase_idx}', color='lightgrey')
 
 
 
