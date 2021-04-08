@@ -752,8 +752,23 @@ class OptimalControlProgram:
         def mayer_to_str(l_nodes: list, phase_idx: int, node_idx: int):
             mayer_str = ""
             for objective in l_nodes[phase_idx][node_idx]['Mayer']:
-                lagrange_str += f"{objective}\n"
+                mayer_str += f"{objective}\n"
             return (mayer_str)
+
+        def parameters_to_str(param: Parameter):
+            parameter_str_guess = "Initial_guess: "
+            for var in param['Initial_guess']:
+                for i in range(len(var)):
+                    parameter_str_guess += f"{var[i]} "
+            parameter_str_max_bounds = "Max_bounds: "
+            for bound in param['Max_bound']:
+                for i in range(len(bound)):
+                    parameter_str_max_bounds += f"{bound[i]} "
+            parameter_str_min_bounds = "Min_bounds: "
+            for bound in param['Min_bound']:
+                for i in range(len(bound)):
+                    parameter_str_min_bounds += f"{bound[i]} "
+            return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds
 
         def print_console(l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
             for phase_idx in range(n_phase):
@@ -817,22 +832,23 @@ class OptimalControlProgram:
                     param_idx = 0
                     if len(l_parameters) != 0:
                         for param in l_parameters:
+                            parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds = parameters_to_str(param)
                             g.node(f"param_{param_idx}", f'''<
                             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                 <TR>
-                                    <TD COLSPAN="6">Name: {param['Name']}</TD>
+                                    <TD COLSPAN="6">{param['Name']}</TD>
                                 </TR>
                                 <TR>
                                     <TD>Size: {param['Size']}</TD>
                                 </TR>
                                 <TR>
-                                    <TD>Initial guesses: {param['Initial_guess']}</TD>
+                                    <TD>{parameter_str_guess}</TD>
                                 </TR>
                                 <TR>
-                                    <TD>Max bounds: {param['Max_bound']}</TD>
+                                    <TD>{parameter_str_max_bounds}</TD>
                                 </TR>
                                 <TR>
-                                    <TD>Min bounds: {param['Min_bound']}</TD>
+                                    <TD>{parameter_str_min_bounds}</TD>
                                 </TR>
                                 <TR>
                                     <TD>Objectives: {param['Objectives']}</TD>
