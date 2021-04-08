@@ -793,8 +793,9 @@ class OptimalControlProgram:
                 with G.subgraph(name=f'cluster_parameters') as g:
                     g.attr(style='filled', color='lightgrey')
                     g.node_attr.update(style='filled', color='white')
+                    param_idx = 0
                     for param in l_parameters:
-                        g.node(f"param_{param['Name']}", f'''<
+                        g.node(f"param_{param_idx}", f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
                                 <TD COLSPAN="6">Name: {param['Name']}</TD>
@@ -815,15 +816,33 @@ class OptimalControlProgram:
                                 <TD>Objectives: {param['Objectives']}</TD>
                             </TR>
                         </TABLE>>''')
+                        param_idx = param_idx + 1
                     g.attr(label=f'Parameters')
 
             for phase_idx in range(n_phase):
 
                 with G.subgraph(name=f'cluster_{phase_idx}') as g:
                     g.attr(style='filled', color='lightgrey')
-                    g.node_attr.update(style='filled', color='white')
                     node_idx = 0
                     list_edges = []
+
+                    g.node(f'design_{phase_idx}_0', f'''<
+                        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0">
+                            <TR>
+                                <TD COLSPAN="1"></TD>
+                            </TR>
+                        </TABLE>>''', color='lightgrey')
+
+                    g.node_attr.update(style='filled', color='white')
+                    g.node(f'dynamics_&_ode_{phase_idx}', f'''<
+                        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                            <TR>
+                                <TD COLSPAN="2">Dynamic: {list_dynamics[phase_idx]}</TD>
+                            </TR>
+                            <TR>
+                                <TD>ODE: {list_ode[phase_idx]}</TD>
+                            </TR>
+                        </TABLE>>''')
 
                     for _ in l_nodes[phase_idx]:
                         g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
@@ -868,8 +887,12 @@ class OptimalControlProgram:
                     g.edges(list_edges)
                     g.attr(label=f'Phase #{phase_idx}')
 
-                G.edge('OCP', f'node_struct_{phase_idx}0')
                 G.node('OCP', shape='Mdiamond')
+                G.edge(f'dynamics_&_ode_{phase_idx}', f'node_struct_{phase_idx}0', color='lightgrey')
+                G.edge('OCP', f'design_{phase_idx}_0')
+                G.edge(f'design_{phase_idx}_0', f'dynamics_&_ode_{phase_idx}', color='lightgrey')
+
+
 
             G.view()
 
