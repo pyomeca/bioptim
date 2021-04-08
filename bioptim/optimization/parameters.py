@@ -2,7 +2,6 @@ from typing import Callable, Union, Any
 
 from casadi import MX, SX
 import numpy as np
-import regex as re
 
 from ..misc.enums import Node
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList

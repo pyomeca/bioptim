@@ -1,7 +1,6 @@
 import pytest
 from bioptim import ParameterList
 import numpy as np
-import regex as re
 
 def test_wrong_parameter():
     param = ParameterList()
