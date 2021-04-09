@@ -825,7 +825,6 @@ class OptimalControlProgram:
             from graphviz import Digraph
             G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
 
-            #if len(l_parameters) != 0:
             with G.subgraph(name=f'cluster_parameters') as g:
                     g.attr(style='filled', color='lightgrey')
                     g.node_attr.update(style='filled', color='white')
@@ -856,6 +855,9 @@ class OptimalControlProgram:
                             </TABLE>>''')
                             param_idx = param_idx + 1
                         g.attr(label=f'Parameters')
+                    else:
+                        g.node(name='param_0', label=f"No parameter set")
+
 
             for phase_idx in range(n_phase):
 
@@ -887,10 +889,13 @@ class OptimalControlProgram:
                             </TR>
                         </TABLE>>''')
 
+                    main_nodes = []
                     for _ in l_nodes[phase_idx]:
                         constraints_str = constraints_to_str(l_nodes, phase_idx, node_idx)
                         mayer_str = mayer_to_str(l_nodes, phase_idx, node_idx)
-                        if constraints_str or mayer_str != "":
+
+                        if constraints_str and mayer_str != "":
+                            main_nodes.append(node_idx)
                             g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
                             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                 <TR>
@@ -912,20 +917,60 @@ class OptimalControlProgram:
                                     <TD>{constraints_str}</TD>
                                 </TR>
                             </TABLE>>''')
-                            # if node_idx != len(l_nodes[phase_idx]) - 1:
-                            #     list_edges.append((f"node_struct_{phase_idx}{node_idx}", f"node_struct_{phase_idx}"
-                            #                                                          f"{node_idx + 1}"))
+                        elif constraints_str != "":
+                            main_nodes.append(node_idx)
+                            g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
+                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                <TR>
+                                    <TD COLSPAN="4">n_{phase_idx}_{node_idx}</TD>
+                                </TR>
+                                <TR>
+                                    <TD>***</TD>
+                                </TR>
+                                <TR>
+                                    <TD>Constraints:</TD>
+                                </TR>
+                                <TR>
+                                    <TD>{constraints_str}</TD>
+                                </TR>
+                            </TABLE>>''')
+                        elif mayer_str != "":
+                            main_nodes.append(node_idx)
+                            g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
+                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                <TR>
+                                    <TD COLSPAN="3">n_{phase_idx}_{node_idx}</TD>
+                                </TR>
+                                <TR>
+                                    <TD>***</TD>
+                                </TR>
+                                <TR>
+                                    <TD>Mayer: {mayer_str}</TD>
+                                </TR>
+                            </TABLE>>''')
 
                         node_idx = node_idx + 1
 
                     g.edges(list_edges)
                     g.attr(label=f'Phase #{phase_idx}')
 
+                for idx in range(len(main_nodes)):
+                    if len(main_nodes) != 1:
+                        if main_nodes[idx] == 0:
+                            G.edge(f'dynamics_&_ode_{phase_idx}', f'node_struct_{phase_idx}{main_nodes[idx]}', color='lightgrey')
+                        else:
+                            G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}', f'node_struct_{phase_idx}{main_nodes[idx]}',
+                               color='black')
+                    else:
+                        G.edge(f'dynamics_&_ode_{phase_idx}', f'node_struct_{phase_idx}{main_nodes[idx]}',
+                               color='lightgrey')
+
                 G.node('OCP', shape='Mdiamond')
                 # G.edge(f'dynamics_&_ode_{phase_idx}', f'node_struct_{phase_idx}0', color='lightgrey')
                 #G.edge('OCP', f'design_{phase_idx}_0')
                 G.edge('OCP', f'dynamics_&_ode_{phase_idx}')
                 # G.edge(f'design_{phase_idx}_0', f'dynamics_&_ode_{phase_idx}', color='lightgrey')
+            G.edge('OCP', f'param_0')
 
 
 
