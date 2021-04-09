@@ -42,6 +42,10 @@ class Solution:
         The Lagrange multiplier of the parameters
     lam_x: list
         The Lagrange multiplier of the states and controls
+    inf_pr: list
+        The unscaled constraint violation at each iteration
+    inf_du: list
+        The scaled dual infeasibility at each iteration
     time_to_optimize: float
         The total time to solve the program
     iterations: int
@@ -134,6 +138,8 @@ class Solution:
             self.J = nlp.J
             self.g = nlp.g
             self.ns = nlp.ns
+            self.p_scaling = nlp.p_scaling
+            self.parameters = nlp.parameters
 
     class SimplifiedOCP:
         """
@@ -195,6 +201,8 @@ class Solution:
         self.lam_g = None
         self.lam_p = None
         self.lam_x = None
+        self.inf_pr = None
+        self.inf_du = None
         self.time_to_optimize = None
         self.iterations = None
 
@@ -219,6 +227,8 @@ class Solution:
             self.lam_g = sol["lam_g"] if isinstance(sol, dict) and "lam_g" in sol else None
             self.lam_p = sol["lam_p"] if isinstance(sol, dict) and "lam_p" in sol else None
             self.lam_x = sol["lam_x"] if isinstance(sol, dict) and "lam_x" in sol else None
+            self.inf_pr = sol["inf_pr"] if isinstance(sol, dict) and "inf_pr" in sol else None
+            self.inf_du = sol["inf_du"] if isinstance(sol, dict) and "inf_du" in sol else None
             self.time_to_optimize = sol["time_tot"] if isinstance(sol, dict) and "time_tot" in sol else None
             self.iterations = sol["iter"] if isinstance(sol, dict) and "iter" in sol else None
             self.status = sol["status"] if isinstance(sol, dict) and "status" in sol else None
@@ -406,6 +416,8 @@ class Solution:
         new.lam_g = deepcopy(self.lam_g)
         new.lam_p = deepcopy(self.lam_p)
         new.lam_x = deepcopy(self.lam_x)
+        new.inf_pr = deepcopy(self.inf_pr)
+        new.inf_du = deepcopy(self.inf_du)
         new.time_to_optimize = deepcopy(self.time_to_optimize)
         new.iterations = deepcopy(self.iterations)
 
@@ -511,6 +523,7 @@ class Solution:
         params = self.parameters["all"]
         x0 = self._states[0]["all"][:, 0]
         for p in range(len(self._states)):
+            param_scaling = self.ocp.nlp[p].p_scaling
             shape = self._states[p]["all"].shape
             if continuous:
                 n_steps = ocp.nlp[p].ode_solver.steps
@@ -551,11 +564,12 @@ class Solution:
 
                 if keepdims:
                     integrated = np.concatenate(
-                        (x0[:, np.newaxis], ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xf"]), axis=1
+                        (x0[:, np.newaxis], ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params / param_scaling)["xf"]),
+                        axis=1,
                     )
                     cols = [n, n + 1]
                 else:
-                    integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params)["xall"])
+                    integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params / param_scaling)["xall"])
                     cols = [n * n_steps, (n + 1) * n_steps]
                 cols[1] = cols[1] + 1 if continuous else cols[1]
                 cols = range(cols[0], cols[1])
@@ -822,6 +836,11 @@ class Solution:
 
         all_bioviz = []
         for idx_phase, data in enumerate(states):
+            # Convert parameters to actual values
+            nlp = self.ocp.nlp[idx_phase]
+            for param in nlp.parameters:
+                param.function(nlp.model, self.parameters[param.name], **param.params)
+
             all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].to_second.map(data["q"]))
 

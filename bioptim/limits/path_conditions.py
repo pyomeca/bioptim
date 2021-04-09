@@ -401,6 +401,20 @@ class Bounds(OptionGeneric):
         self.extra_params = self.min.extra_params
         self.n_shooting = self.min.n_shooting
 
+    def scale(self, scaling: Union[float, np.ndarray]):
+        """
+        Scaling a Bound
+
+        Parameters
+        ----------
+        scaling: float
+            The scaling factor
+        """
+
+        self.min /= scaling
+        self.max /= scaling
+        return
+
     def __getitem__(self, slice_list: Union[slice, list, tuple]) -> "Bounds":
         """
         Allows to get from square brackets
@@ -686,6 +700,18 @@ class InitialGuess(OptionGeneric):
             np.concatenate((self.init, other.init)),
             interpolation=self.init.type,
         )
+
+    def scale(self, scaling: float):
+        """
+        Scaling an InitialGuess
+
+        Parameters
+        ----------
+        scaling: float
+            The scaling factor
+        """
+        self.init /= scaling
+        return
 
     def __bool__(self) -> bool:
         """

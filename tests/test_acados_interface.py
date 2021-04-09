@@ -310,9 +310,14 @@ def test_acados_one_parameter():
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
         final_time=2,
         n_shooting=100,
-        min_g=-10,
-        max_g=-6,
-        target_g=-8,
+        optim_gravity=True,
+        optim_mass=False,
+        min_g=np.array([-1, -1, -10]),
+        max_g=np.array([1, 1, -5]),
+        min_m=10,
+        max_m=30,
+        target_g=np.array([0, 0, -9.81]),
+        target_m=20,
         use_sx=True,
     )
     model = ocp.nlp[0].model
@@ -329,10 +334,10 @@ def test_acados_one_parameter():
     u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
     ocp.update_bounds(x_bounds, u_bounds)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"nlp_solver_tol_eq": 1e-3})
 
     # Check some of the results
-    q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_z"]
+    q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_xyz"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
@@ -342,12 +347,67 @@ def test_acados_one_parameter():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)), decimal=6)
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
 
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((189.674313, 0)), decimal=3)
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-260.150570, 0)), decimal=3)
+    # parameters
+    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.81]), decimal=6)
 
-    # gravity parameter
-    np.testing.assert_almost_equal(gravity, np.array([[-8]]), decimal=6)
+    # Clean test folder
+    os.remove(f"./acados_ocp.json")
+    shutil.rmtree(f"./c_generated_code/")
+
+
+def test_acados_several_parameter():
+    bioptim_folder = TestUtils.bioptim_folder()
+    parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
+    ocp = parameters.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
+        final_time=2,
+        n_shooting=100,
+        optim_gravity=True,
+        optim_mass=True,
+        min_g=np.array([-1, -1, -10]),
+        max_g=np.array([1, 1, -5]),
+        min_m=10,
+        max_m=30,
+        target_g=np.array([0, 0, -9.81]),
+        target_m=20,
+        use_sx=True,
+    )
+    model = ocp.nlp[0].model
+    objectives = ObjectiveList()
+    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[0, 1], target=np.array([[0, 3.14]]).T, weight=100000)
+    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[2, 3], target=np.array([[0, 0]]).T, weight=100)
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, index=1, weight=10)
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=[2, 3], weight=0.000000010)
+    ocp.update_objectives(objectives)
+
+    # Path constraint
+    x_bounds = QAndQDotBounds(model)
+    x_bounds[[0, 1, 2, 3], 0] = 0
+    u_bounds = Bounds([-300] * model.nbQ(), [300] * model.nbQ())
+    ocp.update_bounds(x_bounds, u_bounds)
+
+    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"nlp_solver_tol_eq": 1e-3})
+
+    # Check some of the results
+    q, qdot, tau, gravity, mass = (
+        sol.states["q"],
+        sol.states["qdot"],
+        sol.controls["tau"],
+        sol.parameters["gravity_xyz"],
+        sol.parameters["mass"],
+    )
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)), decimal=6)
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)), decimal=6)
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
+
+    # parameters
+    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.81]), decimal=6)
+    np.testing.assert_almost_equal(mass, np.array([[20]]), decimal=6)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -379,7 +439,7 @@ def test_acados_one_end_constraints():
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
     ocp.update_constraints(constraints)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
+    sol = ocp.solve(solver=Solver.ACADOS)
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -410,7 +470,7 @@ def test_acados_constraints_all():
     )
     ocp.update_constraints(constraints)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
+    sol = ocp.solve(solver=Solver.ACADOS)
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -446,7 +506,7 @@ def test_acados_constraints_end_all():
     )
     ocp.update_constraints(constraints)
 
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options={"print_level": 0})
+    sol = ocp.solve(solver=Solver.ACADOS)
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]

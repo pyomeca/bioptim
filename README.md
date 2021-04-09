@@ -1,4 +1,10 @@
-# `bioptim`
+<p align="center">
+    <img
+      src="https://github.com/pyomeca/biorbd_design/blob/main/logo_png/bioptim_full.png"
+      alt="logo"
+    />
+</p>
+
 `Bioptim` is an optimal control program (OCP) framework for biomechanics. 
 It is based on the efficient [biorbd](https://github.com/pyomeca/biorbd) biomechanics library and benefits from the powerful algorithmic diff provided by [CasADi](https://web.casadi.org/).
 It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fast [`Acados`](https://github.com/acados/acados) solvers to suit all your needs for solving OCP in biomechanics. 

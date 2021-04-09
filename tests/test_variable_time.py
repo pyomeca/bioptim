@@ -1,4 +1,5 @@
 import numpy as np
+from casadi import MX
 import pytest
 
 import biorbd
@@ -109,7 +110,9 @@ def prepare_ocp(phase_time_constraint, use_parameter):
             return value - target_value
 
         def my_parameter_function(biorbd_model, value, extra_value):
-            biorbd_model.setGravity(biorbd.Vector3d(0, 0, 2))
+            new_gravity = MX.zeros(3, 1)
+            new_gravity[2] = value + extra_value
+            biorbd_model.setGravity(new_gravity)
 
         min_g = -10
         max_g = -6

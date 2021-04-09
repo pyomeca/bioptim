@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import biorbd
+from casadi import MX
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,
@@ -65,7 +66,9 @@ def test_double_update_bounds_and_init():
 
 def test_update_bounds_and_init_with_param():
     def my_parameter_function(biorbd_model, value, extra_value):
-        biorbd_model.setGravity(biorbd.Vector3d(0, 0, value + extra_value))
+        new_gravity = MX.zeros(3, 1)
+        new_gravity[2] = value + extra_value
+        biorbd_model.setGravity(new_gravity)
 
     def my_target_function(ocp, value, target_value):
         return value + target_value

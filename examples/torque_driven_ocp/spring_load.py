@@ -5,6 +5,7 @@ forces to interact with the body.
 """
 
 from casadi import MX
+import numpy as np
 import biorbd
 from bioptim import (
     OptimalControlProgram,
@@ -71,7 +72,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
 def prepare_ocp(biorbd_model_path: str = "mass_point.bioMod"):
     # Model path
     m = biorbd.Model(biorbd_model_path)
-    m.setGravity(biorbd.Vector3d(0, 0, 0))
+    m.setGravity(np.array((0, 0, 0)))
 
     # Add objective functions (high upward velocity at end point)
     objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=1, weight=-1)
