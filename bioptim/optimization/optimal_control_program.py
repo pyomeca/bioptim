@@ -858,7 +858,6 @@ class OptimalControlProgram:
                     else:
                         g.node(name='param_0', label=f"No parameter set")
 
-
             for phase_idx in range(n_phase):
 
                 with G.subgraph(name=f'cluster_{phase_idx}') as g:
@@ -878,10 +877,13 @@ class OptimalControlProgram:
                     g.node(f'dynamics_&_ode_{phase_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD COLSPAN="2">Dynamic: {l_dynamics[phase_idx]}</TD>
+                                <TD COLSPAN="3">Dynamic: {l_dynamics[phase_idx]}</TD>
                             </TR>
                             <TR>
                                 <TD>ODE: {l_ode[phase_idx]}</TD>
+                            </TR>
+                            <TR>
+                                <TD>Shooting nodes: {len(l_nodes[phase_idx])-1}</TD>
                             </TR>
                         </TABLE>>''')
 
