@@ -135,6 +135,8 @@ class IpoptInterface(SolverInterface):
         self.out = {"sol": solver.call(self.ipopt_limits)}
         self.out["sol"]["time_tot"] = time() - tic
         self.out["sol"]["iter"] = solver.stats()["iter_count"]
+        self.out["sol"]["inf_du"] = solver.stats()["iterations"]["inf_du"]
+        self.out["sol"]["inf_pr"] = solver.stats()["iterations"]["inf_pr"]
         # To match acados convention (0 = success, 1 = error)
         self.out["sol"]["status"] = int(not solver.stats()["success"])
 
