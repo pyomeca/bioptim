@@ -875,7 +875,6 @@ class OptimalControlProgram:
 
                     g.node_attr.update(style='filled', color='white')
 
-                    lagrange_str = lagrange_to_str(l_nodes, phase_idx)
                     g.node(f'dynamics_&_ode_{phase_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
@@ -884,6 +883,11 @@ class OptimalControlProgram:
                             <TR>
                                 <TD>ODE: {l_ode[phase_idx]}</TD>
                             </TR>
+                        </TABLE>>''')
+
+                    lagrange_str = lagrange_to_str(l_nodes, phase_idx)
+                    g.node(f'lagrange_{phase_idx}', f'''<
+                        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
                                 <TD>Lagrange: {lagrange_str}</TD>
                             </TR>
@@ -957,12 +961,12 @@ class OptimalControlProgram:
                 for idx in range(len(main_nodes)):
                     if len(main_nodes) != 1:
                         if main_nodes[idx] == 0:
-                            G.edge(f'dynamics_&_ode_{phase_idx}', f'node_struct_{phase_idx}{main_nodes[idx]}', color='lightgrey')
+                            G.edge(f'lagrange_{phase_idx}', f'node_struct_{phase_idx}{main_nodes[idx]}', color='lightgrey')
                         else:
                             G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}', f'node_struct_{phase_idx}{main_nodes[idx]}',
                                color='black')
                     else:
-                        G.edge(f'dynamics_&_ode_{phase_idx}', f'node_struct_{phase_idx}{main_nodes[idx]}',
+                        G.edge(f'lagrange_{phase_idx}', f'node_struct_{phase_idx}{main_nodes[idx]}',
                                color='lightgrey')
 
                 G.node('OCP', shape='Mdiamond')
@@ -970,6 +974,7 @@ class OptimalControlProgram:
                 #G.edge('OCP', f'design_{phase_idx}_0')
                 G.edge('OCP', f'dynamics_&_ode_{phase_idx}')
                 # G.edge(f'design_{phase_idx}_0', f'dynamics_&_ode_{phase_idx}', color='lightgrey')
+                G.edge(f'dynamics_&_ode_{phase_idx}', f'lagrange_{phase_idx}', color='lightgrey')
             G.edge('OCP', f'param_0')
 
 
