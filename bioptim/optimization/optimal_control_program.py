@@ -836,7 +836,10 @@ class OptimalControlProgram:
                     g.node(f'dynamics_&_ode_{phase_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD COLSPAN="4"><B>Model</B>: {ocp.original_values['biorbd_model'][phase_idx]}</TD>
+                                <TD COLSPAN="5"><B>Model</B>: {ocp.original_values['biorbd_model'][phase_idx]}</TD>
+                            </TR>
+                            <TR>
+                                <TD><B>Phase duration</B>: {round(ocp.nlp[phase_idx].dt*(ocp.nlp[phase_idx].ns-1), 2)} s</TD>
                             </TR>
                             <TR>
                                 <TD><B>Dynamic</B>: {l_dynamics[phase_idx]}</TD>
