@@ -785,7 +785,7 @@ class OptimalControlProgram:
                     parameter_str_min_bounds += f"{bound[i]} "
             return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds
 
-        def print_console(l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
+        def print_console(ocp, l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
             for phase_idx in range(n_phase):
                 node_idx = 0
                 print(f"**********")
@@ -801,6 +801,7 @@ class OptimalControlProgram:
                 print("")
                 print(f"**********")
                 print(f"PHASE {phase_idx}")
+                print(f"MODEL: {ocp.original_values['biorbd_model'][phase_idx]}")
                 print(f"DYNAMICS: {l_dynamics[phase_idx]}")
                 print(f"ODE: {l_ode[phase_idx]}")
                 print(f"**********")
@@ -814,7 +815,7 @@ class OptimalControlProgram:
                     print("")
                     node_idx = node_idx + 1
 
-        def draw_graph(l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
+        def draw_graph(ocp, l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
             from graphviz import Digraph
             G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
 
@@ -834,7 +835,10 @@ class OptimalControlProgram:
                     g.node(f'dynamics_&_ode_{phase_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD COLSPAN="3"><B>Dynamic</B>: {l_dynamics[phase_idx]}</TD>
+                                <TD COLSPAN="4"><B>Model</B>: {ocp.original_values['biorbd_model'][phase_idx]}</TD>
+                            </TR>
+                            <TR>
+                                <TD><B>Dynamic</B>: {l_dynamics[phase_idx]}</TD>
                             </TR>
                             <TR>
                                 <TD><B>ODE</B>: {l_ode[phase_idx]}</TD>
@@ -998,10 +1002,10 @@ class OptimalControlProgram:
                 list_nodes[nlp.phase_idx][node_idx] = merge_dicts(list_objectives[nlp.phase_idx][node_idx],
                                                                   list_constraints[nlp.phase_idx][node_idx])
         if to_console is True:
-            print_console(list_dynamics, list_ode, list_parameters, list_nodes, self.n_phases)
+            print_console(self, list_dynamics, list_ode, list_parameters, list_nodes, self.n_phases)
 
         if to_graph is True:
-            draw_graph(list_dynamics, list_ode, list_parameters, list_nodes, n_phase)
+            draw_graph(self, list_dynamics, list_ode, list_parameters, list_nodes, n_phase)
 
     def __define_time(
         self,
