@@ -802,6 +802,7 @@ class OptimalControlProgram:
                 print(f"**********")
                 print(f"PHASE {phase_idx}")
                 print(f"MODEL: {ocp.original_values['biorbd_model'][phase_idx]}")
+                print(f"PHASE DURATION: {round(ocp.nlp[phase_idx].dt*(ocp.nlp[phase_idx].ns-1), 2)} s")
                 print(f"SHOOTING NODES : {ocp.nlp[phase_idx].ns}")
                 print(f"DYNAMICS: {l_dynamics[phase_idx]}")
                 print(f"ODE: {l_ode[phase_idx]}")
@@ -842,13 +843,13 @@ class OptimalControlProgram:
                                 <TD><B>Phase duration</B>: {round(ocp.nlp[phase_idx].dt*(ocp.nlp[phase_idx].ns-1), 2)} s</TD>
                             </TR>
                             <TR>
+                                <TD><B>Shooting nodes</B>: {len(l_nodes[phase_idx])-1}</TD>
+                            </TR>
+                            <TR>
                                 <TD><B>Dynamic</B>: {l_dynamics[phase_idx]}</TD>
                             </TR>
                             <TR>
                                 <TD><B>ODE</B>: {l_ode[phase_idx]}</TD>
-                            </TR>
-                            <TR>
-                                <TD><B>Shooting nodes</B>: {len(l_nodes[phase_idx])-1}</TD>
                             </TR>
                         </TABLE>>''')
 
