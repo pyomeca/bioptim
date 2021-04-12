@@ -886,12 +886,20 @@ class OptimalControlProgram:
                         g.node(name=f'param_{phase_idx}0', label=f"No parameter set")
 
                     lagrange_str = lagrange_to_str(l_nodes, phase_idx)
-                    g.node(f'lagrange_{phase_idx}', f'''<
-                        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                            <TR>
-                                <TD><B>Lagrange</B>: {lagrange_str}</TD>
-                            </TR>
-                        </TABLE>>''')
+                    if lagrange_str != "":
+                        g.node(f'lagrange_{phase_idx}', f'''<
+                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                <TR>
+                                    <TD><B>Lagrange</B>: {lagrange_str}</TD>
+                                </TR>
+                            </TABLE>>''')
+                    else:
+                        g.node(f'lagrange_{phase_idx}', f'''<
+                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                <TR>
+                                    <TD>No Lagrange set</TD>
+                                </TR>
+                            </TABLE>>''')
 
                     main_nodes = []
                     for _ in l_nodes[phase_idx]:
