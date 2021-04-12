@@ -770,18 +770,33 @@ class OptimalControlProgram:
                     parameter_str_min_bounds += f"{bound[i]} "
             return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds
 
+        def parameters_to_str(param: Parameter):
+            parameter_str_guess = "Initial_guesses: "
+            for var in param['Initial_guess']:
+                for i in range(len(var)):
+                    parameter_str_guess += f"{var[i]} "
+            parameter_str_max_bounds = "Max_bounds: "
+            for bound in param['Max_bound']:
+                for i in range(len(bound)):
+                    parameter_str_max_bounds += f"{bound[i]} "
+            parameter_str_min_bounds = "Min_bounds: "
+            for bound in param['Min_bound']:
+                for i in range(len(bound)):
+                    parameter_str_min_bounds += f"{bound[i]} "
+            return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds
+
         def print_console(l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
             for phase_idx in range(n_phase):
                 node_idx = 0
                 print(f"**********")
                 print(f"PARAMETERS: ")
-                for i in range(len(l_parameters)):
-                    print(f"Name: {l_parameters[i]['Name']}")
-                    print(f"Size: {l_parameters[i]['Size']}")
-                    print(f"Initial_guess: {l_parameters[i]['Initial_guess']}")
-                    print(f"Max_bound: {l_parameters[i]['Max_bound']}")
-                    print(f"Min_bound: {l_parameters[i]['Min_bound']}")
-                    print(f"Objectives: {l_parameters[i]['Objectives']}")
+                for i in range(len(l_parameters[phase_idx])-1):
+                    print(f"Name: {l_parameters[phase_idx][i+1]['Name']}")
+                    print(f"Size: {l_parameters[phase_idx][i+1]['Size']}")
+                    print(f"Initial_guess: {l_parameters[phase_idx][i+1]['Initial_guess']}")
+                    print(f"Max_bound: {l_parameters[phase_idx][i+1]['Max_bound']}")
+                    print(f"Min_bound: {l_parameters[phase_idx][i+1]['Min_bound']}")
+                    print(f"Objectives: {l_parameters[phase_idx][i+1]['Objectives']}")
                     print("")
                 print("")
                 print(f"**********")
@@ -806,35 +821,6 @@ class OptimalControlProgram:
             with G.subgraph(name=f'cluster_parameters') as g:
                     g.attr(style='filled', color='lightgrey')
                     g.node_attr.update(style='filled', color='white')
-                    param_idx = 0
-                    if len(l_parameters) != 0:
-                        for param in l_parameters:
-                            parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds = parameters_to_str(param)
-                            g.node(f"param_{param_idx}", f'''<
-                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                <TR>
-                                    <TD COLSPAN="6">{param['Name']}</TD>
-                                </TR>
-                                <TR>
-                                    <TD>Size: {param['Size']}</TD>
-                                </TR>
-                                <TR>
-                                    <TD>{parameter_str_guess}</TD>
-                                </TR>
-                                <TR>
-                                    <TD>{parameter_str_max_bounds}</TD>
-                                </TR>
-                                <TR>
-                                    <TD>{parameter_str_min_bounds}</TD>
-                                </TR>
-                                <TR>
-                                    <TD>Objectives: {param['Objectives']}</TD>
-                                </TR>
-                            </TABLE>>''')
-                            param_idx = param_idx + 1
-                        g.attr(label=f'Parameters')
-                    else:
-                        g.node(name='param_0', label=f"No parameter set")
 
             for phase_idx in range(n_phase):
 
@@ -842,13 +828,6 @@ class OptimalControlProgram:
                     g.attr(style='filled', color='lightgrey')
                     node_idx = 0
                     list_edges = []
-
-                    g.node(f'design_{phase_idx}_0', f'''<
-                        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0">
-                            <TR>
-                                <TD COLSPAN="1"></TD>
-                            </TR>
-                        </TABLE>>''', color='lightgrey')
 
                     g.node_attr.update(style='filled', color='white')
 
@@ -864,6 +843,38 @@ class OptimalControlProgram:
                                 <TD>Shooting nodes: {len(l_nodes[phase_idx])-1}</TD>
                             </TR>
                         </TABLE>>''')
+
+                    if len(l_parameters[phase_idx]) != 1:
+                        param_idx = 0
+                        lp_parameters = l_parameters[phase_idx]
+                        for param in lp_parameters[1:]:
+                            parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds = parameters_to_str(
+                                param)
+                            g.node(f"param_{phase_idx}{param_idx}", f'''<
+                              <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                  <TR>
+                                      <TD COLSPAN="6">{param['Name']}</TD>
+                                  </TR>
+                                  <TR>
+                                      <TD>Size: {param['Size']}</TD>
+                                  </TR>
+                                  <TR>
+                                      <TD>{parameter_str_guess}</TD>
+                                  </TR>
+                                  <TR>
+                                      <TD>{parameter_str_max_bounds}</TD>
+                                  </TR>
+                                  <TR>
+                                      <TD>{parameter_str_min_bounds}</TD>
+                                  </TR>
+                                  <TR>
+                                      <TD>Objectives: {param['Objectives']}</TD>
+                                  </TR>
+                              </TABLE>>''')
+                            param_idx = param_idx + 1
+                        g.attr(label=f'Parameters')
+                    else:
+                        g.node(name=f'param_{phase_idx}0', label=f"No parameter set")
 
                     lagrange_str = lagrange_to_str(l_nodes, phase_idx)
                     g.node(f'lagrange_{phase_idx}', f'''<
@@ -944,16 +955,25 @@ class OptimalControlProgram:
                             G.edge(f'lagrange_{phase_idx}', f'node_struct_{phase_idx}{main_nodes[idx]}', color='lightgrey')
                         else:
                             G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}', f'node_struct_{phase_idx}{main_nodes[idx]}',
-                               color='black')
+                               color='lightgrey')
                     else:
                         G.edge(f'lagrange_{phase_idx}', f'node_struct_{phase_idx}{main_nodes[idx]}',
                                color='lightgrey')
 
                 G.node('OCP', shape='Mdiamond')
                 G.edge('OCP', f'dynamics_&_ode_{phase_idx}')
-                G.edge(f'dynamics_&_ode_{phase_idx}', f'lagrange_{phase_idx}', color='lightgrey')
-            G.edge('OCP', f'param_0')
-
+                if len(l_parameters[phase_idx]) != 1:
+                    for param_idx in range(len(l_parameters[phase_idx])-1):
+                        if param_idx == 0:
+                            G.edge(f'dynamics_&_ode_{phase_idx}', f'param_{phase_idx}{param_idx}', color='lightgrey')
+                        elif param_idx == len(l_parameters[phase_idx]) - 2:
+                            G.edge(f'param_{phase_idx}{param_idx}', f'lagrange_{phase_idx}', color='lightgrey')
+                            G.edge(f'param_{phase_idx}{param_idx - 1}', f'param_{phase_idx}{param_idx}', color='lightgrey')
+                        else:
+                            G.edge(f'param_{phase_idx}{param_idx-1}', f'param_{phase_idx}{param_idx}', color='lightgrey')
+                else:
+                    G.edge(f'dynamics_&_ode_{phase_idx}', f'param_{phase_idx}0', color='lightgrey')
+                    G.edge(f'param_{phase_idx}0', f'lagrange_{phase_idx}', color='lightgrey')
 
 
             G.view()
@@ -965,7 +985,7 @@ class OptimalControlProgram:
         list_constraints = ConstraintList.get_ocp_constraints(self)[1]
         list_dynamics = self.__get_dynamics()
         list_ode = self.__get_ode_solver()
-        list_parameters = ParameterList.get_parameters(self)
+        list_parameters = ParameterList.get_parameters_2(self)
 
         n_phase = 0
         for nlp in self.nlp:
