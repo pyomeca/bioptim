@@ -834,13 +834,13 @@ class OptimalControlProgram:
                     g.node(f'dynamics_&_ode_{phase_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD COLSPAN="3">Dynamic: {l_dynamics[phase_idx]}</TD>
+                                <TD COLSPAN="3"><B>Dynamic</B>: {l_dynamics[phase_idx]}</TD>
                             </TR>
                             <TR>
-                                <TD>ODE: {l_ode[phase_idx]}</TD>
+                                <TD><B>ODE</B>: {l_ode[phase_idx]}</TD>
                             </TR>
                             <TR>
-                                <TD>Shooting nodes: {len(l_nodes[phase_idx])-1}</TD>
+                                <TD><B>Shooting nodes</B>: {len(l_nodes[phase_idx])-1}</TD>
                             </TR>
                         </TABLE>>''')
 
@@ -853,7 +853,7 @@ class OptimalControlProgram:
                             g.node(f"param_{phase_idx}{param_idx}", f'''<
                               <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                   <TR>
-                                      <TD COLSPAN="6">{param['Name']}</TD>
+                                      <TD COLSPAN="6"><B>{param['Name']}</B></TD>
                                   </TR>
                                   <TR>
                                       <TD>Size: {param['Size']}</TD>
@@ -880,7 +880,7 @@ class OptimalControlProgram:
                     g.node(f'lagrange_{phase_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD>Lagrange: {lagrange_str}</TD>
+                                <TD><B>Lagrange</B>: {lagrange_str}</TD>
                             </TR>
                         </TABLE>>''')
 
@@ -894,19 +894,21 @@ class OptimalControlProgram:
                             g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
                             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                 <TR>
-                                    <TD COLSPAN="6">n_{phase_idx}_{node_idx}</TD>
+                                    <TD COLSPAN="6"><B>Shooting node {node_idx}</B></TD>
                                 </TR>
                                 <TR>
-                                    <TD>***</TD>
+                                    <TD>
+                                    </TD>
                                 </TR>
                                 <TR>
-                                    <TD>Mayer: {mayer_str}</TD>
+                                    <TD><B>Mayer</B>: {mayer_str}</TD>
                                 </TR>
                                 <TR>
-                                    <TD>***</TD>
+                                    <TD>
+                                    </TD>
                                 </TR>
                                 <TR>
-                                    <TD>Constraints:</TD>
+                                    <TD><B>Constraints</B>:</TD>
                                 </TR>
                                 <TR>
                                     <TD>{constraints_str}</TD>
@@ -917,13 +919,14 @@ class OptimalControlProgram:
                             g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
                             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                 <TR>
-                                    <TD COLSPAN="4">n_{phase_idx}_{node_idx}</TD>
+                                    <TD COLSPAN="4"><B>Shooting node {node_idx}</B></TD>
                                 </TR>
                                 <TR>
-                                    <TD>***</TD>
+                                    <TD>
+                                    </TD>
                                 </TR>
                                 <TR>
-                                    <TD>Constraints:</TD>
+                                    <TD><B>Constraints</B>:</TD>
                                 </TR>
                                 <TR>
                                     <TD>{constraints_str}</TD>
@@ -934,13 +937,14 @@ class OptimalControlProgram:
                             g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
                             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                 <TR>
-                                    <TD COLSPAN="3">n_{phase_idx}_{node_idx}</TD>
+                                    <TD COLSPAN="3"><B>Shooting node {node_idx}</B></TD>
                                 </TR>
                                 <TR>
-                                    <TD>***</TD>
+                                    <TD>
+                                    </TD>
                                 </TR>
                                 <TR>
-                                    <TD>Mayer: {mayer_str}</TD>
+                                    <TD><B>Mayer</B>: {mayer_str}</TD>
                                 </TR>
                             </TABLE>>''')
 
