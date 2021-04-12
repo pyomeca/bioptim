@@ -802,6 +802,7 @@ class OptimalControlProgram:
                 print(f"**********")
                 print(f"PHASE {phase_idx}")
                 print(f"MODEL: {ocp.original_values['biorbd_model'][phase_idx]}")
+                print(f"SHOOTING NODES : {ocp.nlp[phase_idx].ns}")
                 print(f"DYNAMICS: {l_dynamics[phase_idx]}")
                 print(f"ODE: {l_ode[phase_idx]}")
                 print(f"**********")
