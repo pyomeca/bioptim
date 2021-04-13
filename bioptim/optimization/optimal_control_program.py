@@ -738,9 +738,9 @@ class OptimalControlProgram:
             constraints_str = ""
             for count in range(len(l_nodes[phase_idx][node_idx]['Constraints'])):
                 if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
-                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]}≤{l_nodes[phase_idx][node_idx]['Constraints'][count]}-{l_nodes[phase_idx][node_idx]['Sliced_target'][count]}≤{l_nodes[phase_idx][node_idx]['Max_bound'][count]}\n"
+                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - {l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} \n"
                 else:
-                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]}≤{l_nodes[phase_idx][node_idx]['Constraints'][count]}≤{l_nodes[phase_idx][node_idx]['Max_bound'][count]}\n"
+                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} \n"
             return constraints_str
 
         def lagrange_to_str(l_nodes: list, phase_idx: int):
@@ -756,33 +756,35 @@ class OptimalControlProgram:
             return (mayer_str)
 
         def parameters_to_str(param: Parameter):
-            parameter_str_guess = "Initial_guesses: "
-            for var in param['Initial_guess']:
-                for i in range(len(var)):
-                    parameter_str_guess += f"{var[i]} "
-            parameter_str_max_bounds = "Max_bounds: "
-            for bound in param['Max_bound']:
-                for i in range(len(bound)):
-                    parameter_str_max_bounds += f"{bound[i]} "
-            parameter_str_min_bounds = "Min_bounds: "
-            for bound in param['Min_bound']:
-                for i in range(len(bound)):
-                    parameter_str_min_bounds += f"{bound[i]} "
-            return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds
-
-        def parameters_to_str(param: Parameter):
-            parameter_str_guess = "Initial_guesses: "
-            for var in param['Initial_guess']:
-                for i in range(len(var)):
-                    parameter_str_guess += f"{var[i]} "
-            parameter_str_max_bounds = "Max_bounds: "
-            for bound in param['Max_bound']:
-                for i in range(len(bound)):
-                    parameter_str_max_bounds += f"{bound[i]} "
-            parameter_str_min_bounds = "Min_bounds: "
-            for bound in param['Min_bound']:
-                for i in range(len(bound)):
-                    parameter_str_min_bounds += f"{bound[i]} "
+            if param['Size'] > 1 :
+                parameter_str_guess = "Initial guesses: [ "
+                for var in param['Initial_guess']:
+                    for i in range(len(var)):
+                        parameter_str_guess += f"{var[i]} "
+                parameter_str_guess += "]<sup>T</sup> "
+                parameter_str_max_bounds = "[ "
+                for bound in param['Max_bound']:
+                    for i in range(len(bound)):
+                        parameter_str_max_bounds += f"{bound[i]} "
+                parameter_str_max_bounds += "]<sup>T</sup> "
+                parameter_str_min_bounds = "[ "
+                for bound in param['Min_bound']:
+                    for i in range(len(bound)):
+                        parameter_str_min_bounds += f"{bound[i]} "
+                parameter_str_min_bounds += "]<sup>T</sup> "
+            else:
+                parameter_str_guess = "Initial guesses: "
+                for var in param['Initial_guess']:
+                    for i in range(len(var)):
+                        parameter_str_guess += f"{var[i]} "
+                parameter_str_max_bounds = ""
+                for bound in param['Max_bound']:
+                    for i in range(len(bound)):
+                        parameter_str_max_bounds += f"{bound[i]} "
+                parameter_str_min_bounds = ""
+                for bound in param['Min_bound']:
+                    for i in range(len(bound)):
+                        parameter_str_min_bounds += f"{bound[i]} "
             return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds
 
         def print_console(ocp, l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
@@ -837,7 +839,7 @@ class OptimalControlProgram:
                     g.node(f'dynamics_&_ode_{phase_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD COLSPAN="5"><B>Model</B>: {ocp.original_values['biorbd_model'][phase_idx]}</TD>
+                                <TD COLSPAN="5"><B>Model</B>: {ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}</TD>
                             </TR>
                             <TR>
                                 <TD><B>Phase duration</B>: {round(ocp.nlp[phase_idx].dt*(ocp.nlp[phase_idx].ns-1), 2)} s</TD>
@@ -862,7 +864,7 @@ class OptimalControlProgram:
                             g.node(f"param_{phase_idx}{param_idx}", f'''<
                               <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                   <TR>
-                                      <TD COLSPAN="6"><B>{param['Name']}</B></TD>
+                                      <TD COLSPAN="9"><B>{param['Name']}</B></TD>
                                   </TR>
                                   <TR>
                                       <TD>Size: {param['Size']}</TD>
@@ -871,13 +873,23 @@ class OptimalControlProgram:
                                       <TD>{parameter_str_guess}</TD>
                                   </TR>
                                   <TR>
-                                      <TD>{parameter_str_max_bounds}</TD>
+                                      <TD>
+                                      </TD>
                                   </TR>
                                   <TR>
                                       <TD>{parameter_str_min_bounds}</TD>
                                   </TR>
                                   <TR>
-                                      <TD>Objectives: {param['Objectives']}</TD>
+                                      <TD>≤</TD>
+                                  </TR>
+                                  <TR>
+                                      <TD>{param['Objectives']}</TD>
+                                  </TR>
+                                  <TR>
+                                      <TD>≤</TD>
+                                  </TR>
+                                  <TR>
+                                      <TD>{parameter_str_max_bounds}</TD>
                                   </TR>
                               </TABLE>>''')
                             param_idx = param_idx + 1
