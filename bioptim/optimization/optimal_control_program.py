@@ -772,6 +772,11 @@ class OptimalControlProgram:
                     for i in range(len(bound)):
                         parameter_str_min_bounds += f"{bound[i]} "
                 parameter_str_min_bounds += "]<sup>T</sup> "
+                parameter_str_target = "[ "
+                for var in param['Sliced_target']:
+                    parameter_str_target += f"{var} "
+                parameter_str_target += "]<sup>T</sup> "
+                parameter_str_target = f"{param['Sliced_target']}<sup>T</sup> "
             else:
                 parameter_str_guess = "<B>Initial guesses</B>: "
                 for var in param['Initial_guess']:
@@ -785,7 +790,8 @@ class OptimalControlProgram:
                 for bound in param['Min_bound']:
                     for i in range(len(bound)):
                         parameter_str_min_bounds += f"{bound[i]} "
-            return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds
+                parameter_str_target = f"{param['Sliced_target']} "
+            return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds, parameter_str_target
 
         def print_console(ocp, l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
             for phase_idx in range(n_phase):
@@ -859,41 +865,82 @@ class OptimalControlProgram:
                         param_idx = 0
                         lp_parameters = l_parameters[phase_idx]
                         for param in lp_parameters[1:]:
-                            parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds = parameters_to_str(
+                            parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds, parameter_str_target = parameters_to_str(
                                 param)
-                            g.node(f"param_{phase_idx}{param_idx}", f'''<
-                              <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                  <TR>
-                                      <TD COLSPAN="9"><U><B>{param['Name']}</B></U></TD>
-                                  </TR>
-                                  <TR>
-                                      <TD ALIGN="LEFT"><B>Size</B>: {param['Size']}</TD>
-                                  </TR>
-                                  <TR>
-                                      <TD ALIGN="LEFT">{parameter_str_guess}</TD>
-                                  </TR>
-                                  <TR>
-                                      <TD>
-                                      </TD>
-                                  </TR>
-                                  <TR>
-                                      <TD>{parameter_str_min_bounds}</TD>
-                                  </TR>
-                                  <TR>
-                                      <TD>≤</TD>
-                                  </TR>
-                                  <TR>
-                                      <TD>{param['Objectives']}</TD>
-                                  </TR>
-                                  <TR>
-                                      <TD>≤</TD>
-                                  </TR>
-                                  <TR>
-                                      <TD>{parameter_str_max_bounds}</TD>
-                                  </TR>
-                              </TABLE>>''')
-                            param_idx = param_idx + 1
-                        g.attr(label=f'Parameters')
+                            if param['Sliced_target'].size == 0:
+                                g.node(f"param_{phase_idx}{param_idx}", f'''<
+                                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                    <TR>
+                                        <TD COLSPAN="9"><U><B>{param['Name']}</B></U></TD>
+                                    </TR>
+                                    <TR>
+                                        <TD ALIGN="LEFT"><B>Size</B>: {param['Size']}</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD ALIGN="LEFT">{parameter_str_guess}</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>
+                                        </TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>{parameter_str_min_bounds}</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>≤</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>{param['Objectives']}</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>≤</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>{parameter_str_max_bounds}</TD>
+                                    </TR>
+                                </TABLE>>''')
+                                param_idx = param_idx + 1
+                                g.attr(label=f'Parameters')
+                            else:
+                                g.node(f"param_{phase_idx}{param_idx}", f'''<
+                                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                    <TR>
+                                        <TD COLSPAN="9"><U><B>{param['Name']}</B></U></TD>
+                                    </TR>
+                                    <TR>
+                                        <TD ALIGN="LEFT"><B>Size</B>: {param['Size']}</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD ALIGN="LEFT">{parameter_str_guess}</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>
+                                        </TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>{parameter_str_min_bounds}</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>≤</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>{param['Objectives']}</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>-</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>{parameter_str_target}</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>≤</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>{parameter_str_max_bounds}</TD>
+                                    </TR>
+                                </TABLE>>''')
+                                param_idx = param_idx + 1
+                                g.attr(label=f'Parameters')
                     else:
                         g.node(name=f'param_{phase_idx}0', label=f"No parameter set")
 
