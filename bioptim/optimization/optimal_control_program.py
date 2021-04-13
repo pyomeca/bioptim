@@ -804,7 +804,7 @@ class OptimalControlProgram:
                 print(f"**********")
                 print(f"PHASE {phase_idx}")
                 print(f"MODEL: {ocp.original_values['biorbd_model'][phase_idx]}")
-                print(f"PHASE DURATION: {round(ocp.nlp[phase_idx].dt*(ocp.nlp[phase_idx].ns-1), 2)} s")
+                print(f"PHASE DURATION: {round(ocp.nlp[phase_idx].tf - ocp.nlp[phase_idx].t0, 2)} s")
                 print(f"SHOOTING NODES : {ocp.nlp[phase_idx].ns}")
                 print(f"DYNAMICS: {l_dynamics[phase_idx]}")
                 print(f"ODE: {l_ode[phase_idx]}")
