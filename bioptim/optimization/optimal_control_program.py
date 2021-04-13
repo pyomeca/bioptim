@@ -745,15 +745,31 @@ class OptimalControlProgram:
 
         def lagrange_to_str(l_nodes: list, phase_idx: int):
             lagrange_str = ""
+            objective_idx = 0
             for objective in l_nodes[phase_idx][0]['Lagrange']:
-                lagrange_str += f"{objective}<br/>"
-            return (lagrange_str)
+                if l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx] is not None:
+                    if l_nodes[phase_idx][0]['Quadratic_Lagrange'][objective_idx] is True:
+                        lagrange_str += f"({objective} - {l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx]})<sup>2</sup><br/>"
+                    else:
+                        lagrange_str += f"{objective} - {l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx]}<br/>"
+                else:
+                    lagrange_str += f"{objective}<br/>"
+            objective_idx += 1
+            return lagrange_str
 
         def mayer_to_str(l_nodes: list, phase_idx: int, node_idx: int):
             mayer_str = ""
+            objective_idx = 0
             for objective in l_nodes[phase_idx][node_idx]['Mayer']:
-                mayer_str += f"{objective}<br/>"
-            return (mayer_str)
+                if l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx] is not None:
+                    if l_nodes[phase_idx][node_idx]['Quadratic_Mayer'][objective_idx] is True:
+                        mayer_str += f"({objective} - {l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx]})<sup>2</sup><br/>"
+                    else:
+                        mayer_str += f"{objective} - {l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx]}<br/>"
+                else:
+                    mayer_str += f"{objective}<br/>"
+            objective_idx += 1
+            return mayer_str
 
         def parameters_to_str(param: Parameter):
             if param['Size'] > 1 :
@@ -977,13 +993,12 @@ class OptimalControlProgram:
                                     </TD>
                                 </TR>
                                 <TR>
-                                    <TD><B>Mayer</B>: {mayer_str}</TD>
+                                    <TD><B>Mayer</B>:<BR/>{mayer_str} </TD>
                                 </TR>
                                 <TR>
                                     <TD>
                                     </TD>
                                 </TR>
-                                <TR>
                                     <TD><B>Constraints</B>:</TD>
                                 </TR>
                                 <TR>
@@ -1020,7 +1035,7 @@ class OptimalControlProgram:
                                     </TD>
                                 </TR>
                                 <TR>
-                                    <TD><B>Mayer</B>: {mayer_str}</TD>
+                                    <TD><B>Mayer</B>:<BR/> {mayer_str}</TD>
                                 </TR>
                             </TABLE>>''')
 
