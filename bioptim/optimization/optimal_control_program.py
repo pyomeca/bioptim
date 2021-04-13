@@ -738,26 +738,26 @@ class OptimalControlProgram:
             constraints_str = ""
             for count in range(len(l_nodes[phase_idx][node_idx]['Constraints'])):
                 if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
-                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - {l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} \n"
+                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - {l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
                 else:
-                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} \n"
+                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
             return constraints_str
 
         def lagrange_to_str(l_nodes: list, phase_idx: int):
             lagrange_str = ""
             for objective in l_nodes[phase_idx][0]['Lagrange']:
-                lagrange_str += f"{objective}\n"
+                lagrange_str += f"{objective}<br/>"
             return (lagrange_str)
 
         def mayer_to_str(l_nodes: list, phase_idx: int, node_idx: int):
             mayer_str = ""
             for objective in l_nodes[phase_idx][node_idx]['Mayer']:
-                mayer_str += f"{objective}\n"
+                mayer_str += f"{objective}<br/>"
             return (mayer_str)
 
         def parameters_to_str(param: Parameter):
             if param['Size'] > 1 :
-                parameter_str_guess = "Initial guesses: [ "
+                parameter_str_guess = "<B>Initial guesses</B>: [ "
                 for var in param['Initial_guess']:
                     for i in range(len(var)):
                         parameter_str_guess += f"{var[i]} "
@@ -773,7 +773,7 @@ class OptimalControlProgram:
                         parameter_str_min_bounds += f"{bound[i]} "
                 parameter_str_min_bounds += "]<sup>T</sup> "
             else:
-                parameter_str_guess = "Initial guesses: "
+                parameter_str_guess = "<B>Initial guesses</B>: "
                 for var in param['Initial_guess']:
                     for i in range(len(var)):
                         parameter_str_guess += f"{var[i]} "
@@ -839,19 +839,19 @@ class OptimalControlProgram:
                     g.node(f'dynamics_&_ode_{phase_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD COLSPAN="5"><B>Model</B>: {ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}</TD>
+                                <TD ALIGN="LEFT" COLSPAN="5"><B>Model</B>: {ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}</TD>
                             </TR>
                             <TR>
-                                <TD><B>Phase duration</B>: {round(ocp.nlp[phase_idx].dt*(ocp.nlp[phase_idx].ns-1), 2)} s</TD>
+                                <TD ALIGN="LEFT"><B>Phase duration</B>: {round(ocp.nlp[phase_idx].dt*(ocp.nlp[phase_idx].ns-1), 2)} s</TD>
                             </TR>
                             <TR>
-                                <TD><B>Shooting nodes</B>: {len(l_nodes[phase_idx])-1}</TD>
+                                <TD ALIGN="LEFT"><B>Shooting nodes</B>: {len(l_nodes[phase_idx])-1}</TD>
                             </TR>
                             <TR>
-                                <TD><B>Dynamic</B>: {l_dynamics[phase_idx]}</TD>
+                                <TD ALIGN="LEFT"><B>Dynamic</B>: {l_dynamics[phase_idx]}</TD>
                             </TR>
                             <TR>
-                                <TD><B>ODE</B>: {l_ode[phase_idx]}</TD>
+                                <TD ALIGN="LEFT"><B>ODE</B>: {l_ode[phase_idx]}</TD>
                             </TR>
                         </TABLE>>''')
 
@@ -864,13 +864,13 @@ class OptimalControlProgram:
                             g.node(f"param_{phase_idx}{param_idx}", f'''<
                               <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                   <TR>
-                                      <TD COLSPAN="9"><B>{param['Name']}</B></TD>
+                                      <TD COLSPAN="9"><U><B>{param['Name']}</B></U></TD>
                                   </TR>
                                   <TR>
-                                      <TD>Size: {param['Size']}</TD>
+                                      <TD ALIGN="LEFT"><B>Size</B>: {param['Size']}</TD>
                                   </TR>
                                   <TR>
-                                      <TD>{parameter_str_guess}</TD>
+                                      <TD ALIGN="LEFT">{parameter_str_guess}</TD>
                                   </TR>
                                   <TR>
                                       <TD>
@@ -902,7 +902,7 @@ class OptimalControlProgram:
                         g.node(f'lagrange_{phase_idx}', f'''<
                             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                 <TR>
-                                    <TD><B>Lagrange</B>: {lagrange_str}</TD>
+                                    <TD><B>Lagrange</B>:<BR/>{lagrange_str}</TD>
                                 </TR>
                             </TABLE>>''')
                     else:
