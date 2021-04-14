@@ -995,13 +995,17 @@ class OptimalControlProgram:
                     for _ in l_nodes[phase_idx]:
                         constraints_str = constraints_to_str(l_nodes, phase_idx, node_idx)
                         mayer_str = mayer_to_str(l_nodes, phase_idx, node_idx)
+                        if node_idx == len(l_nodes[phase_idx])-1:
+                            node_name = f"Final node {node_idx}"
+                        else:
+                            node_name = f"Shooting node {node_idx}"
 
                         if constraints_str and mayer_str != "":
                             main_nodes.append(node_idx)
                             g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
                             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                 <TR>
-                                    <TD COLSPAN="6"><B>Shooting node {node_idx}</B></TD>
+                                    <TD COLSPAN="6"><B>{node_name}</B></TD>
                                 </TR>
                                 <TR>
                                     <TD>
@@ -1025,7 +1029,7 @@ class OptimalControlProgram:
                             g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
                             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                 <TR>
-                                    <TD COLSPAN="4"><B>Shooting node {node_idx}</B></TD>
+                                    <TD COLSPAN="4"><B>{node_name}</B></TD>
                                 </TR>
                                 <TR>
                                     <TD>
@@ -1043,7 +1047,7 @@ class OptimalControlProgram:
                             g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
                             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                 <TR>
-                                    <TD COLSPAN="3"><B>Shooting node {node_idx}</B></TD>
+                                    <TD COLSPAN="3"><B>{node_name}</B></TD>
                                 </TR>
                                 <TR>
                                     <TD>
@@ -1072,6 +1076,7 @@ class OptimalControlProgram:
 
                 G.node('OCP', shape='Mdiamond')
                 G.edge('OCP', f'dynamics_&_ode_{phase_idx}')
+
                 if len(l_parameters[phase_idx]) != 1:
                     for param_idx in range(len(l_parameters[phase_idx])-1):
                         if param_idx == 0:
@@ -1084,6 +1089,11 @@ class OptimalControlProgram:
                 else:
                     G.edge(f'dynamics_&_ode_{phase_idx}', f'param_{phase_idx}0', color='lightgrey')
                     G.edge(f'param_{phase_idx}0', f'lagrange_{phase_idx}', color='lightgrey')
+
+
+            for phase_idx in range(self.n_phases):
+                if phase_idx != self.n_phases-1:
+                    G.edge(f'Phase #{phase_idx}', f'Phase #{phase_idx + 1}', label=list_phase_transitions[phase_idx])
 
 
             G.view()
