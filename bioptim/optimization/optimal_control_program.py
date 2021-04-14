@@ -1096,6 +1096,7 @@ class OptimalControlProgram:
         list_dynamics = self.__get_dynamics()
         list_ode = self.__get_ode_solver()
         list_parameters = ParameterList.get_parameters_2(self)
+        list_phase_transitions = PhaseTransitionList.get_phase_transitions(self)
 
         n_phase = 0
         for nlp in self.nlp:
