@@ -787,24 +787,54 @@ class OptimalControlProgram:
         def parameters_to_str(param: Parameter):
             if param['Size'] > 1:
                 parameter_str_guess = "<B>Initial guesses</B>: [ "
+                count = 0
                 for var in param['Initial_guess']:
+                    count += 1
                     for i in range(len(var)):
                         parameter_str_guess += f"{var[i]} "
+                        if count == 5:
+                            parameter_str_guess += f"... <br/>... "
+                            count = 0
                 parameter_str_guess += "]<sup>T</sup> "
                 parameter_str_max_bounds = "[ "
+                count = 0
                 for bound in param['Max_bound']:
                     for i in range(len(bound)):
+                        count += 1
                         parameter_str_max_bounds += f"{bound[i]} "
+                        if count == 5:
+                            parameter_str_guess += f"... <br/>... "
+                            count = 0
                 parameter_str_max_bounds += "]<sup>T</sup> "
                 parameter_str_min_bounds = "[ "
+                count = 0
                 for bound in param['Min_bound']:
                     for i in range(len(bound)):
+                        count += 1
                         parameter_str_min_bounds += f"{bound[i]} "
+                        if count == 5:
+                            parameter_str_guess += f"... <br/>... "
+                            count = 0
                 parameter_str_min_bounds += "]<sup>T</sup> "
                 if param['Quadratic'] is True:
-                    parameter_str_target = f"({param['Sliced_target']}<sup>T</sup>)<sup>2</sup> "
+                    parameter_str_target = "([ "
+                    count = 0
+                    for var in param['Sliced_target']:
+                        count += 1
+                        parameter_str_target += f"{var} "
+                        if count == 5:
+                            parameter_str_target += f"... <br/>... "
+                            count = 0
+                    parameter_str_target += "]<sup>T</sup>)<sup>2</sup> "
                 else:
-                    parameter_str_target = f"{param['Sliced_target']}<sup>T</sup> "
+                    parameter_str_target = "[ "
+                    for var in param['Sliced_target']:
+                        count += 1
+                        parameter_str_target += f"{var} "
+                        if count == 5:
+                            parameter_str_target += f"... <br/>... "
+                            count = 0
+                    parameter_str_target += "]<sup>T</sup> "
             else:
                 parameter_str_guess = "<B>Initial guesses</B>: "
                 for var in param['Initial_guess']:
