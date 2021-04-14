@@ -737,10 +737,23 @@ class OptimalControlProgram:
         def constraints_to_str(l_nodes: list, phase_idx: int, node_idx: int):
             constraints_str = ""
             for count in range(len(l_nodes[phase_idx][node_idx]['Constraints'])):
-                if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
-                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - {l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
+                if l_nodes[phase_idx][node_idx]['Constraints'][count] == "SUPERIMPOSE_MARKERS":
+                    if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
+                        if l_nodes[phase_idx][node_idx]['Quadratic'][count] == True:
+                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - ({l_nodes[phase_idx][node_idx]['Sliced_target'][count]})<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>First marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']} <br/>Second marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']} <br/><br/>"
+                        else:
+                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - {l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>First marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']} <br/>Second marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']} <br/><br/>"
+                    else:
+                        constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>First marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']} <br/>Second marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']} <br/><br/>"
                 else:
-                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
+                    if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
+                        if l_nodes[phase_idx][node_idx]['Quadratic'][count] == True:
+                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - ({l_nodes[phase_idx][node_idx]['Sliced_target'][count]})<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
+                        else:
+                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - {l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
+                    else:
+                        constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
+
             return constraints_str
 
         def lagrange_to_str(l_nodes: list, phase_idx: int):
@@ -1002,7 +1015,7 @@ class OptimalControlProgram:
                                     <TD><B>Constraints</B>:</TD>
                                 </TR>
                                 <TR>
-                                    <TD>{constraints_str}</TD>
+                                    <TD ALIGN="LEFT">{constraints_str}</TD>
                                 </TR>
                             </TABLE>>''')
                         elif constraints_str != "":
