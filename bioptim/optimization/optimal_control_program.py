@@ -785,7 +785,7 @@ class OptimalControlProgram:
             return mayer_str
 
         def parameters_to_str(param: Parameter):
-            if param['Size'] > 1 :
+            if param['Size'] > 1:
                 parameter_str_guess = "<B>Initial guesses</B>: [ "
                 for var in param['Initial_guess']:
                     for i in range(len(var)):
@@ -801,11 +801,10 @@ class OptimalControlProgram:
                     for i in range(len(bound)):
                         parameter_str_min_bounds += f"{bound[i]} "
                 parameter_str_min_bounds += "]<sup>T</sup> "
-                parameter_str_target = "[ "
-                for var in param['Sliced_target']:
-                    parameter_str_target += f"{var} "
-                parameter_str_target += "]<sup>T</sup> "
-                parameter_str_target = f"{param['Sliced_target']}<sup>T</sup> "
+                if param['Quadratic'] is True:
+                    parameter_str_target = f"({param['Sliced_target']}<sup>T</sup>)<sup>2</sup> "
+                else:
+                    parameter_str_target = f"{param['Sliced_target']}<sup>T</sup> "
             else:
                 parameter_str_guess = "<B>Initial guesses</B>: "
                 for var in param['Initial_guess']:
@@ -819,7 +818,10 @@ class OptimalControlProgram:
                 for bound in param['Min_bound']:
                     for i in range(len(bound)):
                         parameter_str_min_bounds += f"{bound[i]} "
-                parameter_str_target = f"{param['Sliced_target']} "
+                if param['Quadratic'] is True:
+                    parameter_str_target = f"({param['Sliced_target']})<sup>2</sup> "
+                else:
+                    parameter_str_target = f"{param['Sliced_target']} "
             return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds, parameter_str_target
 
         def print_console(ocp, l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):

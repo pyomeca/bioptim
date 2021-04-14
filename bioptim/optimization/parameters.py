@@ -283,7 +283,8 @@ class ParameterList(UniquePerProblemOptionList):
                                                        range(parameter.size) for j in
                                                       range(len(parameter.bounds.min[0]))],
                                         "Objectives": function,
-                                        "Sliced_target": parameter.penalty_list.sliced_target})
+                                        "Sliced_target": parameter.penalty_list.sliced_target,
+                                        "Quadratic": parameter.penalty_list.quadratic})
                 else:
                     list_parameters[nlp_idx].append({"Name": parameter.name,
                                                      "Size": parameter.size,
@@ -297,7 +298,8 @@ class ParameterList(UniquePerProblemOptionList):
                                                                     range(parameter.size) for j in
                                                                    range(len(parameter.bounds.min[0]))],
                                                      "Objectives": parameter.penalty_list.type.name,
-                                                     "Sliced_target": parameter.penalty_list.sliced_target})
+                                                     "Sliced_target": parameter.penalty_list.sliced_target,
+                                                     "Quadratic": parameter.penalty_list.quadratic})
         return list_parameters
 
 
