@@ -738,21 +738,55 @@ class OptimalControlProgram:
             constraints_str = ""
             for count in range(len(l_nodes[phase_idx][node_idx]['Constraints'])):
                 if l_nodes[phase_idx][node_idx]['Constraints'][count] == "SUPERIMPOSE_MARKERS":
+                    target_str = "" if l_nodes[phase_idx][node_idx]['Sliced_target'][count] is None else f"- {l_nodes[phase_idx][node_idx]['Sliced_target'][count]}"
                     if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
                         if l_nodes[phase_idx][node_idx]['Quadratic'][count] == True:
-                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - ({l_nodes[phase_idx][node_idx]['Sliced_target'][count]})<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>First marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']} <br/>Second marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']} <br/><br/>"
+                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
+                                               f"{l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
+                                               f"({l_nodes[phase_idx][node_idx]['Sliced_target'][count]})" \
+                                               f"<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} " \
+                                               f"<br/>First marker idx: " \
+                                               f"{l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']}" \
+                                               f" <br/>Second marker idx: " \
+                                               f"{l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']}" \
+                                               f" <br/><br/>"
                         else:
-                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - {l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>First marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']} <br/>Second marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']} <br/><br/>"
+                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
+                                               f"{l_nodes[phase_idx][node_idx]['Constraints'][count]}"
+                            constraints_str += target_str
+                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤" \
+                                               f" {l_nodes[phase_idx][node_idx]['Max_bound'][count]} " \
+                                               f"<br/>First marker idx: " \
+                                               f"{l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']}" \
+                                               f" <br/>Second marker idx: " \
+                                               f"{l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']}" \
+                                               f" <br/><br/>"
                     else:
-                        constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>First marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']} <br/>Second marker idx: {l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']} <br/><br/>"
+                        constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤" \
+                                           f" {l_nodes[phase_idx][node_idx]['Constraints'][count]} ≤" \
+                                           f" {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>" \
+                                           f"First marker idx:" \
+                                           f" {l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']} " \
+                                           f"<br/>Second marker idx: " \
+                                           f"{l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']} " \
+                                           f"<br/><br/>"
                 else:
                     if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
                         if l_nodes[phase_idx][node_idx]['Quadratic'][count] == True:
-                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - ({l_nodes[phase_idx][node_idx]['Sliced_target'][count]})<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
+                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
+                                               f"{l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
+                                               f"({l_nodes[phase_idx][node_idx]['Sliced_target'][count]})" \
+                                               f"<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} " \
+                                               f"<br/>"
                         else:
-                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - {l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
+                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} " \
+                                               f"≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
+                                               f"{l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤ " \
+                                               f"{l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
                     else:
-                        constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
+                        constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} " \
+                                           f"≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} " \
+                                           f"≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
 
             return constraints_str
 
@@ -762,9 +796,12 @@ class OptimalControlProgram:
             for objective in l_nodes[phase_idx][0]['Lagrange']:
                 if l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx] is not None:
                     if l_nodes[phase_idx][0]['Quadratic_Lagrange'][objective_idx] is True:
-                        lagrange_str += f"({objective} - {l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx]})<sup>2</sup><br/>"
+                        lagrange_str += f"({objective} - " \
+                                        f"{l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx]})" \
+                                        f"<sup>2</sup><br/>"
                     else:
-                        lagrange_str += f"{objective} - {l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx]}<br/>"
+                        lagrange_str += f"{objective} - " \
+                                        f"{l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx]}<br/>"
                 else:
                     lagrange_str += f"{objective}<br/>"
             objective_idx += 1
@@ -776,9 +813,13 @@ class OptimalControlProgram:
             for objective in l_nodes[phase_idx][node_idx]['Mayer']:
                 if l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx] is not None:
                     if l_nodes[phase_idx][node_idx]['Quadratic_Mayer'][objective_idx] is True:
-                        mayer_str += f"({objective} - {l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx]})<sup>2</sup><br/>"
+                        mayer_str += f"({objective} - " \
+                                     f"{l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx]})" \
+                                     f"<sup>2</sup><br/>"
                     else:
-                        mayer_str += f"{objective} - {l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx]}<br/>"
+                        mayer_str += f"{objective} - " \
+                                     f"{l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx]}" \
+                                     f"<br/>"
                 else:
                     mayer_str += f"{objective}<br/>"
             objective_idx += 1
@@ -848,10 +889,12 @@ class OptimalControlProgram:
                 for bound in param['Min_bound']:
                     for i in range(len(bound)):
                         parameter_str_min_bounds += f"{bound[i]} "
-                if param['Quadratic'] is True:
-                    parameter_str_target = f"({param['Sliced_target']})<sup>2</sup> "
-                else:
-                    parameter_str_target = f"{param['Sliced_target']} "
+                parameter_str_target = ""
+                if 'Sliced_target' in param:
+                    if 'Quadratic' in param and param['Quadratic']:
+                        parameter_str_target = f"({param['Sliced_target']})<sup>2</sup> "
+                    else:
+                        parameter_str_target = f"{param['Sliced_target']} "
             return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds, parameter_str_target
 
         def print_console(ocp, l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
@@ -865,13 +908,14 @@ class OptimalControlProgram:
                     print(f"Initial_guess: {l_parameters[phase_idx][i+1]['Initial_guess']}")
                     print(f"Max_bound: {l_parameters[phase_idx][i+1]['Max_bound']}")
                     print(f"Min_bound: {l_parameters[phase_idx][i+1]['Min_bound']}")
-                    print(f"Objectives: {l_parameters[phase_idx][i+1]['Objectives']}")
+                    if 'Objectives' in l_parameters[phase_idx][i+1] :
+                        print(f"Objectives: {l_parameters[phase_idx][i+1]['Objectives']}")
                     print("")
                 print("")
                 print(f"**********")
                 print(f"PHASE {phase_idx}")
                 print(f"MODEL: {ocp.original_values['biorbd_model'][phase_idx]}")
-                print(f"PHASE DURATION: {round(ocp.nlp[phase_idx].tf - ocp.nlp[phase_idx].t0, 2)} s")
+                print(f"PHASE DURATION: {round(ocp.nlp[phase_idx].t_initial_guess, 2)} s")
                 print(f"SHOOTING NODES : {ocp.nlp[phase_idx].ns}")
                 print(f"DYNAMICS: {l_dynamics[phase_idx]}")
                 print(f"ODE: {l_ode[phase_idx]}")
@@ -906,10 +950,12 @@ class OptimalControlProgram:
                     g.node(f'dynamics_&_ode_{phase_idx}', f'''<
                         <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                             <TR>
-                                <TD ALIGN="LEFT" COLSPAN="5"><B>Model</B>: {ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}</TD>
+                                <TD ALIGN="LEFT" COLSPAN="5"><B>Model</B>: 
+{ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}</TD>
                             </TR>
                             <TR>
-                                <TD ALIGN="LEFT"><B>Phase duration</B>: {round(ocp.nlp[phase_idx].dt*(ocp.nlp[phase_idx].ns-1), 2)} s</TD>
+                                <TD ALIGN="LEFT"><B>Phase duration</B>: 
+{round(ocp.nlp[phase_idx].t_initial_guess, 2)} s</TD>
                             </TR>
                             <TR>
                                 <TD ALIGN="LEFT"><B>Shooting nodes</B>: {len(l_nodes[phase_idx])-1}</TD>
@@ -926,9 +972,9 @@ class OptimalControlProgram:
                         param_idx = 0
                         lp_parameters = l_parameters[phase_idx]
                         for param in lp_parameters[1:]:
-                            parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds, parameter_str_target = parameters_to_str(
-                                param)
-                            if param['Sliced_target'].size == 0:
+                            parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds, \
+                            parameter_str_target = parameters_to_str(param)
+                            if 'Sliced_target' in param and param['Sliced_target'].size == 0:
                                 g.node(f"param_{phase_idx}{param_idx}", f'''<
                                 <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                     <TR>
@@ -985,7 +1031,7 @@ class OptimalControlProgram:
                                         <TD>≤</TD>
                                     </TR>
                                     <TR>
-                                        <TD>{param['Objectives']}</TD>
+                                        <TD>{param['Objectives'] if 'Objectives' in param else ''}</TD>
                                     </TR>
                                     <TR>
                                         <TD>-</TD>
@@ -1025,10 +1071,8 @@ class OptimalControlProgram:
                     for _ in l_nodes[phase_idx]:
                         constraints_str = constraints_to_str(l_nodes, phase_idx, node_idx)
                         mayer_str = mayer_to_str(l_nodes, phase_idx, node_idx)
-                        if node_idx == len(l_nodes[phase_idx])-1:
-                            node_name = f"Final node {node_idx}"
-                        else:
-                            node_name = f"Shooting node {node_idx}"
+                        node_name = f"Shooting node {node_idx}" if node_idx < len(l_nodes[phase_idx]) -1 else\
+                            f"Final node ({node_idx})"
 
                         if constraints_str and mayer_str != "":
                             main_nodes.append(node_idx)
@@ -1096,12 +1140,16 @@ class OptimalControlProgram:
                 for idx in range(len(main_nodes)):
                     if len(main_nodes) != 1:
                         if main_nodes[idx] == 0:
-                            G.edge(f'lagrange_{phase_idx}', f'node_struct_{phase_idx}{main_nodes[idx]}', color='lightgrey')
+                            G.edge(f'lagrange_{phase_idx}',
+                                   f'node_struct_{phase_idx}{main_nodes[idx]}',
+                                   color='lightgrey')
                         else:
-                            G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}', f'node_struct_{phase_idx}{main_nodes[idx]}',
-                               color='lightgrey')
+                            G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}',
+                                   f'node_struct_{phase_idx}{main_nodes[idx]}',
+                                   color='lightgrey')
                     else:
-                        G.edge(f'lagrange_{phase_idx}', f'node_struct_{phase_idx}{main_nodes[idx]}',
+                        G.edge(f'lagrange_{phase_idx}',
+                               f'node_struct_{phase_idx}{main_nodes[idx]}',
                                color='lightgrey')
 
                 G.node('OCP', shape='Mdiamond')
@@ -1110,28 +1158,39 @@ class OptimalControlProgram:
                 if len(l_parameters[phase_idx]) != 1:
                     for param_idx in range(len(l_parameters[phase_idx])-1):
                         if param_idx == 0:
-                            G.edge(f'dynamics_&_ode_{phase_idx}', f'param_{phase_idx}{param_idx}', color='lightgrey')
+                            G.edge(f'dynamics_&_ode_{phase_idx}',
+                                   f'param_{phase_idx}{param_idx}',
+                                   color='lightgrey')
                         elif param_idx == len(l_parameters[phase_idx]) - 2:
-                            G.edge(f'param_{phase_idx}{param_idx}', f'lagrange_{phase_idx}', color='lightgrey')
-                            G.edge(f'param_{phase_idx}{param_idx - 1}', f'param_{phase_idx}{param_idx}', color='lightgrey')
+                            G.edge(f'param_{phase_idx}{param_idx}',
+                                   f'lagrange_{phase_idx}',
+                                   color='lightgrey')
+                            G.edge(f'param_{phase_idx}{param_idx - 1}',
+                                   f'param_{phase_idx}{param_idx}',
+                                   color='lightgrey')
                         else:
-                            G.edge(f'param_{phase_idx}{param_idx-1}', f'param_{phase_idx}{param_idx}', color='lightgrey')
+                            G.edge(f'param_{phase_idx}{param_idx-1}',
+                                   f'param_{phase_idx}{param_idx}',
+                                   color='lightgrey')
                 else:
-                    G.edge(f'dynamics_&_ode_{phase_idx}', f'param_{phase_idx}0', color='lightgrey')
-                    G.edge(f'param_{phase_idx}0', f'lagrange_{phase_idx}', color='lightgrey')
-
+                    G.edge(f'dynamics_&_ode_{phase_idx}',
+                           f'param_{phase_idx}0',
+                           color='lightgrey')
+                    G.edge(f'param_{phase_idx}0',
+                           f'lagrange_{phase_idx}',
+                           color='lightgrey')
 
             for phase_idx in range(self.n_phases):
                 if phase_idx != self.n_phases-1:
-                    G.edge(f'Phase #{phase_idx}', f'Phase #{phase_idx + 1}', label=list_phase_transitions[phase_idx])
-
+                    G.edge(f'Phase #{phase_idx}',
+                           f'Phase #{phase_idx + 1}',
+                           label=list_phase_transitions[phase_idx])
 
             G.view()
 
         list_nodes = [[{"Mayer": [], "Lagrange": [], "Constraints": []} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
 
         list_objectives = ObjectiveList.get_nlp_objectives(self.nlp)
-        list_global_constraints = ConstraintList.get_ocp_constraints(self)[0]
         list_constraints = ConstraintList.get_ocp_constraints(self)[1]
         list_dynamics = self.__get_dynamics()
         list_ode = self.__get_ode_solver()
@@ -1231,6 +1290,7 @@ class OptimalControlProgram:
                             time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
             return has_penalty
 
+        NLP.add(self, "t_initial_guess", phase_time, False)
         self.original_phase_time = phase_time
         if isinstance(phase_time, (int, float)):
             phase_time = [phase_time]
