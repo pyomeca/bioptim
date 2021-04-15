@@ -91,9 +91,8 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
     @ staticmethod
     def get_phase_transitions(ocp):
         list_phase_transitions = []
-        for g in ocp.g:
-            if "PHASE_TRANSITION" in g[0]['constraint'].name:
-                list_phase_transitions.append(g[0]['bounds'].type.name)
+        for transition in ocp.phase_transitions:
+                list_phase_transitions.append(transition.type.name)
         return list_phase_transitions
 
 
