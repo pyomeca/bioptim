@@ -737,54 +737,31 @@ class OptimalControlProgram:
         def constraints_to_str(l_nodes: list, phase_idx: int, node_idx: int):
             constraints_str = ""
             for count in range(len(l_nodes[phase_idx][node_idx]['Constraints'])):
-                if l_nodes[phase_idx][node_idx]['Constraints'][count] != "":
-                    target_str = "" if l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count] is None else f"- {l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count]}"
-                    if l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count] != None:
-                        if l_nodes[phase_idx][node_idx]['Constraint_quadratic'][count] == True:
-                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
-                                               f"({l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
-                                               f"{l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count]})" \
-                                               f"<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} " \
-                                               f"Parameters:<br/>"
-                            for param in l_nodes[phase_idx][node_idx]['Constraint_params'][count]:
-                                constraints_str += f"{param}: {l_nodes[phase_idx][node_idx]['Constraint_params'][count][f'{param}']}<br/>"
-                            constraints_str += f"<br/>"
-                        else:
-                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
-                                               f"{l_nodes[phase_idx][node_idx]['Constraints'][count]}"
-                            constraints_str += target_str
-                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count]} ≤" \
-                                               f" {l_nodes[phase_idx][node_idx]['Max_bound'][count]} " \
-                                               f"Parameters:<br/>"
-                            for param in l_nodes[phase_idx][node_idx]['Constraint_params'][count]:
-                                constraints_str += f"{param}: {l_nodes[phase_idx][node_idx]['Constraint_params'][count][f'{param}']}<br/>"
-                            constraints_str += f"<br/>"
-                    else:
-                        constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤" \
-                                           f" {l_nodes[phase_idx][node_idx]['Constraints'][count]} ≤" \
-                                           f" {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>" \
-                                           f"Parameters:<br/>"
-                        for param in l_nodes[phase_idx][node_idx]['Constraint_params'][count]:
-                            constraints_str += f"{param}: {l_nodes[phase_idx][node_idx]['Constraint_params'][count][f'{param}']}<br/>"
-                        constraints_str += f"<br/>"
+                target_str = "" if l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count] is None else \
+                    f"{l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count]}"
+                if l_nodes[phase_idx][node_idx]['Constraint_quadratic'][count]:
+                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ "
+                    constraints_str += f"({l_nodes[phase_idx][node_idx]['Constraints'][count]}" \
+                        if target_str is not "" else f"{l_nodes[phase_idx][node_idx]['Constraints'][count]}"
+                    constraints_str += f" - {target_str})<sup>2</sup>" if target_str is not "" else ""
+                    constraints_str += f" ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]}<br/>" \
+                                       f"Parameters:<br/>"
+                    for param in l_nodes[phase_idx][node_idx]['Constraint_params'][count]:
+                        constraints_str += f"{param}: " \
+                                           f"{l_nodes[phase_idx][node_idx]['Constraint_params'][count][f'{param}']}" \
+                                           f"<br/>"
+                    constraints_str += f"<br/>"
                 else:
-                    if l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count] != None:
-                        if l_nodes[phase_idx][node_idx]['Constraint_quadratic'][count] == True:
-                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
-                                               f"({l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
-                                               f"{l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count]})" \
-                                               f"<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} " \
-                                               f"<br/>"
-                        else:
-                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} " \
-                                               f"≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
-                                               f"{l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count]} ≤ " \
-                                               f"{l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
-                    else:
-                        constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} " \
-                                           f"≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} " \
-                                           f"≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
-
+                    constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
+                                       f"{l_nodes[phase_idx][node_idx]['Constraints'][count]}"
+                    constraints_str += f" - {target_str}" if target_str is not "" else "" \
+                                       f" ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]}<br/>" \
+                                       f"Parameters:<br/>"
+                    for param in l_nodes[phase_idx][node_idx]['Constraint_params'][count]:
+                        constraints_str += f"{param}:" \
+                                           f" {l_nodes[phase_idx][node_idx]['Constraint_params'][count][f'{param}']}" \
+                                           f"<br/>"
+                    constraints_str += f"<br/>"
             return constraints_str
 
         def lagrange_to_str(l_nodes: list, phase_idx: int):
