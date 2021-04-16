@@ -737,51 +737,48 @@ class OptimalControlProgram:
         def constraints_to_str(l_nodes: list, phase_idx: int, node_idx: int):
             constraints_str = ""
             for count in range(len(l_nodes[phase_idx][node_idx]['Constraints'])):
-                if l_nodes[phase_idx][node_idx]['Constraints'][count] == "SUPERIMPOSE_MARKERS":
-                    target_str = "" if l_nodes[phase_idx][node_idx]['Sliced_target'][count] is None else f"- {l_nodes[phase_idx][node_idx]['Sliced_target'][count]}"
-                    if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
-                        if l_nodes[phase_idx][node_idx]['Quadratic'][count] == True:
+                if l_nodes[phase_idx][node_idx]['Constraints'][count] != "":
+                    target_str = "" if l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count] is None else f"- {l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count]}"
+                    if l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count] != None:
+                        if l_nodes[phase_idx][node_idx]['Constraint_quadratic'][count] == True:
                             constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
                                                f"({l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
-                                               f"{l_nodes[phase_idx][node_idx]['Sliced_target'][count]})" \
+                                               f"{l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count]})" \
                                                f"<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} " \
-                                               f"<br/>First marker idx: " \
-                                               f"{l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']}" \
-                                               f" <br/>Second marker idx: " \
-                                               f"{l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']}" \
-                                               f" <br/><br/>"
+                                               f"Parameters:<br/>"
+                            for param in l_nodes[phase_idx][node_idx]['Constraint_params'][count]:
+                                constraints_str += f"{param}: {l_nodes[phase_idx][node_idx]['Constraint_params'][count][f'{param}']}<br/>"
+                            constraints_str += f"<br/>"
                         else:
                             constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
                                                f"{l_nodes[phase_idx][node_idx]['Constraints'][count]}"
                             constraints_str += target_str
-                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤" \
+                            constraints_str += f"{l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count]} ≤" \
                                                f" {l_nodes[phase_idx][node_idx]['Max_bound'][count]} " \
-                                               f"<br/>First marker idx: " \
-                                               f"{l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']}" \
-                                               f" <br/>Second marker idx: " \
-                                               f"{l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']}" \
-                                               f" <br/><br/>"
+                                               f"Parameters:<br/>"
+                            for param in l_nodes[phase_idx][node_idx]['Constraint_params'][count]:
+                                constraints_str += f"{param}: {l_nodes[phase_idx][node_idx]['Constraint_params'][count][f'{param}']}<br/>"
+                            constraints_str += f"<br/>"
                     else:
                         constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤" \
                                            f" {l_nodes[phase_idx][node_idx]['Constraints'][count]} ≤" \
                                            f" {l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>" \
-                                           f"First marker idx:" \
-                                           f" {l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']} " \
-                                           f"<br/>Second marker idx: " \
-                                           f"{l_nodes[phase_idx][node_idx]['Params'][count]['second_marker_idx']} " \
-                                           f"<br/><br/>"
+                                           f"Parameters:<br/>"
+                        for param in l_nodes[phase_idx][node_idx]['Constraint_params'][count]:
+                            constraints_str += f"{param}: {l_nodes[phase_idx][node_idx]['Constraint_params'][count][f'{param}']}<br/>"
+                        constraints_str += f"<br/>"
                 else:
-                    if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
-                        if l_nodes[phase_idx][node_idx]['Quadratic'][count] == True:
+                    if l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count] != None:
+                        if l_nodes[phase_idx][node_idx]['Constraint_quadratic'][count] == True:
                             constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
                                                f"({l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
-                                               f"{l_nodes[phase_idx][node_idx]['Sliced_target'][count]})" \
+                                               f"{l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count]})" \
                                                f"<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} " \
                                                f"<br/>"
                         else:
                             constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} " \
                                                f"≤ {l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
-                                               f"{l_nodes[phase_idx][node_idx]['Sliced_target'][count]} ≤ " \
+                                               f"{l_nodes[phase_idx][node_idx]['Constraint_sliced_target'][count]} ≤ " \
                                                f"{l_nodes[phase_idx][node_idx]['Max_bound'][count]} <br/>"
                     else:
                         constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} " \
@@ -1038,7 +1035,7 @@ class OptimalControlProgram:
                         node_idx = node_idx + 1
 
                     g.edges(list_edges)
-                    g.attr(label=f'Phase #{phase_idx}')
+                    g.attr(label=f"Phase #{phase_idx}")
 
                 for idx in range(len(main_nodes)):
                     if len(main_nodes) != 1:
@@ -1091,7 +1088,7 @@ class OptimalControlProgram:
 
             G.view()
 
-        list_nodes = [[{"Mayer": [], "Lagrange": [], "Constraints": []} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
+        list_nodes = [[{} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
 
         list_objectives = ObjectiveList.get_nlp_objectives(self.nlp)
         list_constraints = ConstraintList.get_ocp_constraints(self)[1]

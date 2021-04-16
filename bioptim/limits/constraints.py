@@ -101,7 +101,7 @@ class ConstraintList(OptionList):
         for g in ocp.g:
             list_global_constraints.append(g[0]["constraint"].name)
 
-        list_constraints = [[{"Constraints": [], "Max_bound": [], "Min_bound": [], "Sliced_target": [], "Quadratic": [], "Params": []} for _ in
+        list_constraints = [[{"Constraints": [], "Max_bound": [], "Min_bound": [], "Constraint_sliced_target": [], "Constraint_quadratic": [], "Constraint_params": []} for _ in
                              range(nlp.ns + 1)] for nlp in ocp.nlp]
         for nlp in ocp.nlp:
             for g in nlp.g:
@@ -109,11 +109,11 @@ class ConstraintList(OptionList):
                     list_constraints[nlp.phase_idx][n["node_index"]]["Constraints"].append(n["constraint"].name)
                     list_constraints[nlp.phase_idx][n["node_index"]]["Max_bound"].append(n["constraint"].max_bound)
                     list_constraints[nlp.phase_idx][n["node_index"]]["Min_bound"].append(n["constraint"].min_bound)
-                    list_constraints[nlp.phase_idx][n["node_index"]]["Sliced_target"].append(n["constraint"].
+                    list_constraints[nlp.phase_idx][n["node_index"]]["Constraint_sliced_target"].append(n["constraint"].
                                                                                              sliced_target)
-                    list_constraints[nlp.phase_idx][n["node_index"]]["Quadratic"].append(n["constraint"].
+                    list_constraints[nlp.phase_idx][n["node_index"]]["Constraint_quadratic"].append(n["constraint"].
                                                                                              quadratic)
-                    list_constraints[nlp.phase_idx][n["node_index"]]["Params"].append(n["constraint"].
+                    list_constraints[nlp.phase_idx][n["node_index"]]["Constraint_params"].append(n["constraint"].
                                                                                          params)
         return list_global_constraints, list_constraints
 
