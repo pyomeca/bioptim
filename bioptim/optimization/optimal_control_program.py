@@ -742,8 +742,8 @@ class OptimalControlProgram:
                     if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
                         if l_nodes[phase_idx][node_idx]['Quadratic'][count] == True:
                             constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
-                                               f"{l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
-                                               f"({l_nodes[phase_idx][node_idx]['Sliced_target'][count]})" \
+                                               f"({l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
+                                               f"{l_nodes[phase_idx][node_idx]['Sliced_target'][count]})" \
                                                f"<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} " \
                                                f"<br/>First marker idx: " \
                                                f"{l_nodes[phase_idx][node_idx]['Params'][count]['first_marker_idx']}" \
@@ -774,8 +774,8 @@ class OptimalControlProgram:
                     if l_nodes[phase_idx][node_idx]['Sliced_target'][count] != None:
                         if l_nodes[phase_idx][node_idx]['Quadratic'][count] == True:
                             constraints_str += f"{l_nodes[phase_idx][node_idx]['Min_bound'][count]} ≤ " \
-                                               f"{l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
-                                               f"({l_nodes[phase_idx][node_idx]['Sliced_target'][count]})" \
+                                               f"({l_nodes[phase_idx][node_idx]['Constraints'][count]} - " \
+                                               f"{l_nodes[phase_idx][node_idx]['Sliced_target'][count]})" \
                                                f"<sup>2</sup> ≤ {l_nodes[phase_idx][node_idx]['Max_bound'][count]} " \
                                                f"<br/>"
                         else:
@@ -858,7 +858,7 @@ class OptimalControlProgram:
                             count = 0
                 parameter_str_min_bounds += "]<sup>T</sup> "
                 if param['Quadratic'] is True:
-                    parameter_str_target = "([ "
+                    parameter_str_target = "[ "
                     count = 0
                     for var in param['Sliced_target']:
                         count += 1
@@ -866,7 +866,7 @@ class OptimalControlProgram:
                         if count == 5:
                             parameter_str_target += f"... <br/>... "
                             count = 0
-                    parameter_str_target += "]<sup>T</sup>)<sup>2</sup> "
+                    parameter_str_target += "]<sup>T</sup>"
                 else:
                     parameter_str_target = "[ "
                     for var in param['Sliced_target']:
@@ -875,7 +875,7 @@ class OptimalControlProgram:
                         if count == 5:
                             parameter_str_target += f"... <br/>... "
                             count = 0
-                    parameter_str_target += "]<sup>T</sup> "
+                    parameter_str_target += "]<sup>T</sup>"
             else:
                 parameter_str_guess = "<B>Initial guesses</B>: "
                 for var in param['Initial_guess']:
@@ -891,10 +891,7 @@ class OptimalControlProgram:
                         parameter_str_min_bounds += f"{bound[i]} "
                 parameter_str_target = ""
                 if 'Sliced_target' in param:
-                    if 'Quadratic' in param and param['Quadratic']:
-                        parameter_str_target = f"({param['Sliced_target']})<sup>2</sup> "
-                    else:
-                        parameter_str_target = f"{param['Sliced_target']} "
+                    parameter_str_target = f"{param['Sliced_target']}"
             return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds, parameter_str_target
 
         def print_console(ocp, l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
@@ -974,80 +971,36 @@ class OptimalControlProgram:
                         for param in lp_parameters[1:]:
                             parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds, \
                             parameter_str_target = parameters_to_str(param)
-                            if 'Sliced_target' in param and param['Sliced_target'].size == 0:
-                                g.node(f"param_{phase_idx}{param_idx}", f'''<
-                                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                    <TR>
-                                        <TD COLSPAN="9"><U><B>{param['Name']}</B></U></TD>
-                                    </TR>
-                                    <TR>
-                                        <TD ALIGN="LEFT"><B>Size</B>: {param['Size']}</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD ALIGN="LEFT">{parameter_str_guess}</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>
-                                        </TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>{parameter_str_min_bounds}</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>≤</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>{param['Objectives']}</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>≤</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>{parameter_str_max_bounds}</TD>
-                                    </TR>
-                                </TABLE>>''')
-                                param_idx = param_idx + 1
-                                g.attr(label=f'Parameters')
-                            else:
-                                g.node(f"param_{phase_idx}{param_idx}", f'''<
-                                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                    <TR>
-                                        <TD COLSPAN="9"><U><B>{param['Name']}</B></U></TD>
-                                    </TR>
-                                    <TR>
-                                        <TD ALIGN="LEFT"><B>Size</B>: {param['Size']}</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD ALIGN="LEFT">{parameter_str_guess}</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>
-                                        </TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>{parameter_str_min_bounds}</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>≤</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>{param['Objectives'] if 'Objectives' in param else ''}</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>-</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>{parameter_str_target}</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>≤</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>{parameter_str_max_bounds}</TD>
-                                    </TR>
-                                </TABLE>>''')
-                                param_idx = param_idx + 1
-                                g.attr(label=f'Parameters')
+                            g.node(f"param_{phase_idx}{param_idx}", f'''<
+                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                <TR>
+                                    <TD COLSPAN="9"><U><B>{param['Name']}</B></U></TD>
+                                </TR>
+                                <TR>
+                                    <TD ALIGN="LEFT"><B>Size</B>: {param['Size']}</TD>
+                                </TR>
+                                <TR>
+                                    <TD ALIGN="LEFT">{parameter_str_guess}</TD>
+                                </TR>
+                                <TR>
+                                    <TD>
+                                    </TD>
+                                </TR>
+                                <TR>
+                                    <TD>{parameter_str_min_bounds} ≤</TD>
+                                </TR>
+                                <TR>
+                                    <TD>{"(" if 'Objectives' in param else ""}{param['Objectives'] if 'Objectives' in param else ''} -</TD>
+                                </TR>
+                                <TR>
+                                    <TD>{parameter_str_target}{")" if 'Objectives' in param else ""}{"<sup>2</sup>" if 'Quadratic' in param and param['Quadratic'] else ""} ≤</TD>
+                                </TR>
+                                <TR>
+                                    <TD>{parameter_str_max_bounds}</TD>
+                                </TR>
+                            </TABLE>>''')
+                            param_idx = param_idx + 1
+                            g.attr(label=f'Parameters')
                     else:
                         g.node(name=f'param_{phase_idx}0', label=f"No parameter set")
 
