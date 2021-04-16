@@ -825,74 +825,20 @@ class OptimalControlProgram:
             objective_idx += 1
             return mayer_str
 
-        def parameters_to_str(param: Parameter):
-            if param['Size'] > 1:
-                parameter_str_guess = "<B>Initial guesses</B>: [ "
+        def vector_layout(vector: list, size: int):
+            if size > 1:
+                condensed_vector = "[ "
                 count = 0
-                for var in param['Initial_guess']:
+                for var in vector:
                     count += 1
-                    for i in range(len(var)):
-                        parameter_str_guess += f"{var[i]} "
-                        if count == 5:
-                            parameter_str_guess += f"... <br/>... "
-                            count = 0
-                parameter_str_guess += "]<sup>T</sup> "
-                parameter_str_max_bounds = "[ "
-                count = 0
-                for bound in param['Max_bound']:
-                    for i in range(len(bound)):
-                        count += 1
-                        parameter_str_max_bounds += f"{bound[i]} "
-                        if count == 5:
-                            parameter_str_guess += f"... <br/>... "
-                            count = 0
-                parameter_str_max_bounds += "]<sup>T</sup> "
-                parameter_str_min_bounds = "[ "
-                count = 0
-                for bound in param['Min_bound']:
-                    for i in range(len(bound)):
-                        count += 1
-                        parameter_str_min_bounds += f"{bound[i]} "
-                        if count == 5:
-                            parameter_str_guess += f"... <br/>... "
-                            count = 0
-                parameter_str_min_bounds += "]<sup>T</sup> "
-                if param['Quadratic'] is True:
-                    parameter_str_target = "[ "
-                    count = 0
-                    for var in param['Sliced_target']:
-                        count += 1
-                        parameter_str_target += f"{var} "
-                        if count == 5:
-                            parameter_str_target += f"... <br/>... "
-                            count = 0
-                    parameter_str_target += "]<sup>T</sup>"
-                else:
-                    parameter_str_target = "[ "
-                    for var in param['Sliced_target']:
-                        count += 1
-                        parameter_str_target += f"{var} "
-                        if count == 5:
-                            parameter_str_target += f"... <br/>... "
-                            count = 0
-                    parameter_str_target += "]<sup>T</sup>"
+                    condensed_vector += f"{float(var)} "
+                    if count == 5:
+                        condensed_vector += f"... <br/>... "
+                        count = 0
+                condensed_vector += "]<sup>T</sup>"
             else:
-                parameter_str_guess = "<B>Initial guesses</B>: "
-                for var in param['Initial_guess']:
-                    for i in range(len(var)):
-                        parameter_str_guess += f"{var[i]} "
-                parameter_str_max_bounds = ""
-                for bound in param['Max_bound']:
-                    for i in range(len(bound)):
-                        parameter_str_max_bounds += f"{bound[i]} "
-                parameter_str_min_bounds = ""
-                for bound in param['Min_bound']:
-                    for i in range(len(bound)):
-                        parameter_str_min_bounds += f"{bound[i]} "
-                parameter_str_target = ""
-                if 'Sliced_target' in param:
-                    parameter_str_target = f"{param['Sliced_target']}"
-            return parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds, parameter_str_target
+                condensed_vector = f"{float(vector[0])}"
+            return condensed_vector
 
         def print_console(ocp, l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
             for phase_idx in range(n_phase):
@@ -969,8 +915,6 @@ class OptimalControlProgram:
                         param_idx = 0
                         lp_parameters = l_parameters[phase_idx]
                         for param in lp_parameters[1:]:
-                            parameter_str_guess, parameter_str_max_bounds, parameter_str_min_bounds, \
-                            parameter_str_target = parameters_to_str(param)
                             g.node(f"param_{phase_idx}{param_idx}", f'''<
                             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                 <TR>
@@ -980,23 +924,23 @@ class OptimalControlProgram:
                                     <TD ALIGN="LEFT"><B>Size</B>: {param['Size']}</TD>
                                 </TR>
                                 <TR>
-                                    <TD ALIGN="LEFT">{parameter_str_guess}</TD>
+                                    <TD ALIGN="LEFT"><B>Initial guesses</B>: {vector_layout(param['Initial_guess'], param['Size'])}</TD>
                                 </TR>
                                 <TR>
                                     <TD>
                                     </TD>
                                 </TR>
                                 <TR>
-                                    <TD>{parameter_str_min_bounds} ≤</TD>
+                                    <TD>{vector_layout(param['Min_bound'], param['Size'])} ≤</TD>
                                 </TR>
                                 <TR>
-                                    <TD>{"(" if 'Objectives' in param else ""}{param['Objectives'] if 'Objectives' in param else ''} -</TD>
+                                    <TD>{"(" if 'Quadratic' in param and param['Quadratic'] else ""}{param['Objectives'] if 'Objectives' in param else ''} -</TD>
                                 </TR>
                                 <TR>
-                                    <TD>{parameter_str_target}{")" if 'Objectives' in param else ""}{"<sup>2</sup>" if 'Quadratic' in param and param['Quadratic'] else ""} ≤</TD>
+                                    <TD>{vector_layout(param['Sliced_target'], param['Size']) if 'Sliced_target' in param else ""}{")<sup>2</sup>" if 'Quadratic' in param and param['Quadratic'] else ""} ≤</TD>
                                 </TR>
                                 <TR>
-                                    <TD>{parameter_str_max_bounds}</TD>
+                                    <TD>{vector_layout(param['Max_bound'], param['Size'])}</TD>
                                 </TR>
                             </TABLE>>''')
                             param_idx = param_idx + 1
