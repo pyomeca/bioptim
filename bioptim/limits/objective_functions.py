@@ -97,7 +97,7 @@ class ObjectiveList(OptionList):
 
     @staticmethod
     def get_nlp_objectives(all_nlp):
-        list_objectives = [[{"Mayer": [], "Lagrange": [], "Quadratic_Mayer": [], "Quadratic_Lagrange": [], "Sliced_target_Mayer": [], "Sliced_target_Lagrange": []} for _ in range(nlp.ns + 1)] for nlp in all_nlp]
+        list_objectives = [[{"Mayer": [], "Lagrange": [], "Quadratic_Mayer": [], "Quadratic_Lagrange": [], "Sliced_target_Mayer": [], "Sliced_target_Lagrange": [], "Parameters_Mayer": [], "Parameters_Lagrange": []} for _ in range(nlp.ns + 1)] for nlp in all_nlp]
         for nlp in all_nlp:
             for J in nlp.J:
                 for n in J:
@@ -106,11 +106,15 @@ class ObjectiveList(OptionList):
                         list_objectives[nlp.phase_idx][n["node_index"]]["Quadratic_Lagrange"].append(n["objective"].quadratic)
                         list_objectives[nlp.phase_idx][n["node_index"]]["Sliced_target_Lagrange"].append(
                             n["objective"].sliced_target)
+                        list_objectives[nlp.phase_idx][n["node_index"]]["Parameters_Lagrange"].append(
+                            n["objective"].params)
                     elif isinstance(n["objective"].type, ObjectiveFcn.Mayer):
                         list_objectives[nlp.phase_idx][n["node_index"]]["Mayer"].append(n["objective"].name)
                         list_objectives[nlp.phase_idx][n["node_index"]]["Quadratic_Mayer"].append(n["objective"].quadratic)
                         list_objectives[nlp.phase_idx][n["node_index"]]["Sliced_target_Mayer"].append(
                             n["objective"].sliced_target)
+                        list_objectives[nlp.phase_idx][n["node_index"]]["Parameters_Mayer"].append(
+                            n["objective"].params)
                     else:
                         raise NotImplementedError("Objective function type must be Lagrange or Mayer")
         return list_objectives

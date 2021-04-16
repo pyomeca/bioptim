@@ -764,6 +764,14 @@ class OptimalControlProgram:
                     constraints_str += f"<br/>"
             return constraints_str
 
+        def add_parameters_to_str(list_constraints: list, string: str):
+            for param in list_constraints:
+                string += f"{param}: " \
+                                   f"{list_constraints[f'{param}']}" \
+                                   f"<br/>"
+            string += f"<br/>"
+            return string
+
         def lagrange_to_str(l_nodes: list, phase_idx: int):
             lagrange_str = ""
             objective_idx = 0
@@ -773,11 +781,16 @@ class OptimalControlProgram:
                         lagrange_str += f"({objective} - " \
                                         f"{l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx]})" \
                                         f"<sup>2</sup><br/>"
+                        lagrange_str = add_parameters_to_str(l_nodes[phase_idx][0]['Parameters_Lagrange'][objective_idx], lagrange_str)
                     else:
                         lagrange_str += f"{objective} - " \
                                         f"{l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx]}<br/>"
+                        lagrange_str = add_parameters_to_str(
+                            l_nodes[phase_idx][0]['Parameters_Lagrange'][objective_idx], lagrange_str)
                 else:
                     lagrange_str += f"{objective}<br/>"
+                    lagrange_str = add_parameters_to_str(l_nodes[phase_idx][0]['Parameters_Lagrange'][objective_idx],
+                                                         lagrange_str)
             objective_idx += 1
             return lagrange_str
 
