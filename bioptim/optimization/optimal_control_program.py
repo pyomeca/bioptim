@@ -803,10 +803,14 @@ class OptimalControlProgram:
                         mayer_str += f"({objective} - " \
                                      f"{l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx]})" \
                                      f"<sup>2</sup><br/>"
+                        mayer_str = add_parameters_to_str(
+                            l_nodes[phase_idx][0]['Parameters_Mayer'][objective_idx], mayer_str)
                     else:
                         mayer_str += f"{objective} - " \
                                      f"{l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx]}" \
                                      f"<br/>"
+                        mayer_str = add_parameters_to_str(
+                            l_nodes[phase_idx][0]['Parameters_Lagrange'][objective_idx], mayer_str)
                 else:
                     mayer_str += f"{objective}<br/>"
             objective_idx += 1
