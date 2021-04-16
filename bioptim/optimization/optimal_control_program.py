@@ -874,8 +874,40 @@ class OptimalControlProgram:
                     node_idx = node_idx + 1
 
         def draw_graph(ocp, l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
+
             from graphviz import Digraph
             G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
+
+            def draw_parameter_node(g: G.subgraph(), phase_idx: int, param_idx: int, parameter: Parameter):
+                g.node(f"param_{phase_idx}{param_idx}", f'''<
+                    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                        <TR>
+                            <TD COLSPAN="9"><U><B>{parameter['Name']}</B></U></TD>
+                        </TR>
+                        <TR>
+                            <TD ALIGN="LEFT"><B>Size</B>: {parameter['Size']}</TD>
+                        </TR>
+                        <TR>
+                            <TD ALIGN="LEFT"><B>Initial guesses</B>: {vector_layout(parameter['Initial_guess'], parameter['Size'])}</TD>
+                        </TR>
+                        <TR>
+                            <TD>
+                            </TD>
+                        </TR>
+                        <TR>
+                            <TD>{vector_layout(param['Min_bound'], parameter['Size'])} ≤</TD>
+                        </TR>
+                        <TR>
+                            <TD>{"(" if 'Quadratic' in parameter and parameter['Quadratic'] else ""}{parameter['Objectives'] if 'Objectives' in parameter else ''} -</TD>
+                        </TR>
+                        <TR>
+                            <TD>{vector_layout(parameter['Sliced_target'], parameter['Size']) if 'Sliced_target' in parameter else ""}{")<sup>2</sup>" if 'Quadratic' in parameter and parameter['Quadratic'] else ""} ≤</TD>
+                        </TR>
+                        <TR>
+                            <TD>{vector_layout(parameter['Max_bound'], parameter['Size'])}</TD>
+                        </TR>
+                    </TABLE>>''')
+                g.attr(label=f'Parameters')
 
             with G.subgraph(name=f'cluster_parameters') as g:
                     g.attr(style='filled', color='lightgrey')
@@ -915,38 +947,12 @@ class OptimalControlProgram:
                         param_idx = 0
                         lp_parameters = l_parameters[phase_idx]
                         for param in lp_parameters[1:]:
-                            g.node(f"param_{phase_idx}{param_idx}", f'''<
-                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                <TR>
-                                    <TD COLSPAN="9"><U><B>{param['Name']}</B></U></TD>
-                                </TR>
-                                <TR>
-                                    <TD ALIGN="LEFT"><B>Size</B>: {param['Size']}</TD>
-                                </TR>
-                                <TR>
-                                    <TD ALIGN="LEFT"><B>Initial guesses</B>: {vector_layout(param['Initial_guess'], param['Size'])}</TD>
-                                </TR>
-                                <TR>
-                                    <TD>
-                                    </TD>
-                                </TR>
-                                <TR>
-                                    <TD>{vector_layout(param['Min_bound'], param['Size'])} ≤</TD>
-                                </TR>
-                                <TR>
-                                    <TD>{"(" if 'Quadratic' in param and param['Quadratic'] else ""}{param['Objectives'] if 'Objectives' in param else ''} -</TD>
-                                </TR>
-                                <TR>
-                                    <TD>{vector_layout(param['Sliced_target'], param['Size']) if 'Sliced_target' in param else ""}{")<sup>2</sup>" if 'Quadratic' in param and param['Quadratic'] else ""} ≤</TD>
-                                </TR>
-                                <TR>
-                                    <TD>{vector_layout(param['Max_bound'], param['Size'])}</TD>
-                                </TR>
-                            </TABLE>>''')
-                            param_idx = param_idx + 1
-                            g.attr(label=f'Parameters')
+                            draw_parameter_node(g, phase_idx, param_idx, param)
+                            param_idx += 1
                     else:
                         g.node(name=f'param_{phase_idx}0', label=f"No parameter set")
+
+
 
                     lagrange_str = lagrange_to_str(l_nodes, phase_idx)
                     if lagrange_str != "":
