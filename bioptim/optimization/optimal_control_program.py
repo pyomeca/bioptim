@@ -1076,7 +1076,7 @@ class OptimalControlProgram:
 
             with G.subgraph(name=f'cluster_phase_transitions') as g:
                 g.attr(style='', color='black')
-                g.node_attr.update(style='filled', color='grey', shape='circle')
+                g.node_attr.update(style='filled', color='grey')
                 for phase_idx in range(self.n_phases):
                     if phase_idx != self.n_phases - 1:
                         g.node(f'Phase #{phase_idx}')
@@ -1085,6 +1085,9 @@ class OptimalControlProgram:
                                f'Phase #{phase_idx + 1}',
                                label=list_phase_transitions[phase_idx])
                 g.attr(label=f"Phase transitions")
+
+            G.node(' ', color='invis')
+            G.edge(' ', f'Phase #{0}', color='invis')
 
             G.view()
 
