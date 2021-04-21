@@ -756,7 +756,7 @@ class OptimalControlProgram:
             return (mayer_str)
 
         def parameters_to_str(param: Parameter):
-            parameter_str_guess = "Initial_guess: "
+            parameter_str_guess = "Initial_guesses: "
             for var in param['Initial_guess']:
                 for i in range(len(var)):
                     parameter_str_guess += f"{var[i]} "
@@ -800,28 +800,6 @@ class OptimalControlProgram:
                     node_idx = node_idx + 1
 
         def draw_graph(l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
-            from graphviz import Digraph
-            g = Digraph('graph_test', filename='cluster.gv')
-
-            for phase_idx in range(n_phase):
-                with g.subgraph(name=f'cluster_{phase_idx}') as c:
-                    c.attr(style='filled', color='lightgrey')
-                    c.node_attr.update(style='filled', color='white')
-                    node_idx = 0
-                    list_edges = []
-                    for node in l_nodes[phase_idx]:
-                        if node_idx != len(l_nodes[phase_idx]) - 1:
-                            list_edges.append((f"P{phase_idx}_{node_idx}", f"P{phase_idx}_{node_idx + 1}"))
-                        node_idx = node_idx + 1
-                    c.edges(list_edges)
-                    c.attr(label=f'Phase #{phase_idx}')
-                g.edge('OCP', f'P{phase_idx}_0')
-
-            g.node('OCP', shape='Mdiamond')
-
-            g.view()
-
-        def draw_graph_2(l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
             from graphviz import Digraph
             G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
 
@@ -972,10 +950,7 @@ class OptimalControlProgram:
                                color='lightgrey')
 
                 G.node('OCP', shape='Mdiamond')
-                # G.edge(f'dynamics_&_ode_{phase_idx}', f'node_struct_{phase_idx}0', color='lightgrey')
-                #G.edge('OCP', f'design_{phase_idx}_0')
                 G.edge('OCP', f'dynamics_&_ode_{phase_idx}')
-                # G.edge(f'design_{phase_idx}_0', f'dynamics_&_ode_{phase_idx}', color='lightgrey')
                 G.edge(f'dynamics_&_ode_{phase_idx}', f'lagrange_{phase_idx}', color='lightgrey')
             G.edge('OCP', f'param_0')
 
@@ -1002,7 +977,7 @@ class OptimalControlProgram:
             print_console(list_dynamics, list_ode, list_parameters, list_nodes, self.n_phases)
 
         if to_graph is True:
-            draw_graph_2(list_dynamics, list_ode, list_parameters, list_nodes, n_phase)
+            draw_graph(list_dynamics, list_ode, list_parameters, list_nodes, n_phase)
 
     def __define_time(
         self,
