@@ -137,7 +137,7 @@ class NonLinearProgram:
         self.ode_solver = OdeSolver.RK4()
         self.p = None
         self.p_scaling = None
-        self.parameters = ParameterList()
+        self.parameters = None
         self.par_dynamics = None
         self.phase_idx = None
         self.plot = {}

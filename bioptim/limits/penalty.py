@@ -847,7 +847,7 @@ class PenaltyFunctionAbstract:
                         penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
-        def custom(penalty: PenaltyOption, pn: PenaltyNodes, **parameters: Any):
+        def custom(penalty: PenaltyOption, nodes: PenaltyNodes, **parameters: Any):
             """
             A user defined penalty function
 
@@ -855,7 +855,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            nodes: PenaltyNodes
                 The penalty node elements
             parameters: dict
                 Any parameters that should be pass to the custom function
@@ -881,17 +881,23 @@ class PenaltyFunctionAbstract:
                 if keyword in inspect.signature(penalty.custom_function).parameters:
                     raise TypeError(f"{keyword} is a reserved word and cannot be used in a custom function signature")
 
-            val = penalty.custom_function(pn, **parameters)
-            if isinstance(val, tuple):
-                if penalty.min_bound is not None or penalty.max_bound is not None:
-                    raise RuntimeError(
-                        "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined"
-                    )
-                penalty.min_bound = val[0]
-                penalty.max_bound = val[2]
-                val = val[1]
+            has_bound = True if penalty.min_bound is not None or penalty.max_bound is not None else False
+            for pn in nodes:
+                val = penalty.custom_function(pn, **parameters)
+                if val is None:
+                    continue
 
-            penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                if isinstance(val, tuple):
+                    if has_bound:
+                        raise RuntimeError(
+                            "You cannot have non linear bounds for custom constraints "
+                            "and min_bound or max_bound defined"
+                        )
+                    penalty.min_bound = val[0]
+                    penalty.max_bound = val[2]
+                    val = val[1]
+
+                penalty.type.get_type().add_to_penalty(pn.ocp, nodes, val, penalty)
 
     @staticmethod
     def add(ocp, nlp):
