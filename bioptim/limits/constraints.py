@@ -1,5 +1,4 @@
 from typing import Callable, Union, Any
-from math import inf
 from enum import Enum
 
 import numpy as np
@@ -9,7 +8,7 @@ import biorbd
 from .path_conditions import Bounds
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption, PenaltyNodes
 from ..dynamics.ode_solver import OdeSolver
-from ..misc.enums import Node, InterpolationType, ControlType
+from ..misc.enums import Node, ControlType, InterpolationType
 from ..misc.options import OptionList, OptionGeneric
 
 
@@ -170,7 +169,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ):
             """
             Add a constraint of static friction at contact points constraining for small tangential forces.
-            This constraint assumes that the normal forces is positive
+            This function make the assumption that normal_force is always positive
+            That is mu*normal_force = tangential_force. To prevent from using a square root, the previous
+            equation is squared
 
             Parameters
             ----------
@@ -186,32 +187,30 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Static friction coefficient
             """
 
-            if not isinstance(tangential_component_idx, int):
-                raise RuntimeError("tangential_component_idx must be a unique integer")
+            if isinstance(tangential_component_idx, int):
+                tangential_component_idx = [tangential_component_idx]
+            elif not isinstance(tangential_component_idx, (tuple, list)):
+                raise RuntimeError("tangential_component_idx must be a unique integer or a list of integer")
 
             if isinstance(normal_component_idx, int):
                 normal_component_idx = [normal_component_idx]
+            elif not isinstance(normal_component_idx, (tuple, list)):
+                raise RuntimeError("normal_component_idx must be a unique integer or a list of integer")
 
-            mu = static_friction_coefficient
-            constraint.min_bound = 0
-            constraint.max_bound = inf
+            mu_squared = static_friction_coefficient ** 2
+            constraint.min_bound = np.array([0, 0])
+            constraint.max_bound = np.array([np.inf, np.inf])
             for i in range(len(pn.u)):
                 contact = pn.nlp.contact_forces_func(pn.x[i], pn.u[i], pn.p)
-                normal_contact_force = sum1(contact[normal_component_idx, 0])
-                tangential_contact_force = contact[tangential_component_idx, 0]
+                normal_contact_force_squared = sum1(contact[normal_component_idx, 0])**2
+                tangential_contact_force_squared = sum1(contact[tangential_component_idx, 0]**2)
 
                 # Since it is non-slipping normal forces are supposed to be greater than zero
                 ConstraintFunction.add_to_penalty(
-                    pn.ocp,
-                    pn.nlp,
-                    mu * normal_contact_force - tangential_contact_force,
-                    constraint,
-                )
-                ConstraintFunction.add_to_penalty(
-                    pn.ocp,
-                    pn.nlp,
-                    mu * normal_contact_force + tangential_contact_force,
-                    constraint,
+                    pn.ocp, pn, vertcat(
+                        mu_squared * normal_contact_force_squared - tangential_contact_force_squared,
+                        mu_squared * normal_contact_force_squared + tangential_contact_force_squared
+                    ), constraint,
                 )
 
         @staticmethod
