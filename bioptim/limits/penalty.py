@@ -7,40 +7,10 @@ import numpy as np
 import biorbd
 from casadi import vertcat, horzcat, MX, SX
 
+from .penalty_node import PenaltyNodes
 from ..misc.enums import Node, Axis, PlotType, ControlType
 from ..misc.mapping import Mapping
 from ..misc.options import OptionGeneric
-
-
-class PenaltyNodes:
-    """
-    A placeholder for the required elements to compute a penalty
-    """
-
-    def __init__(self, ocp, nlp, t: list, x: list, u: list, p: Union[MX, SX, list]):
-        """
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        t: list
-            Time indices, maximum value being the number of shooting point + 1
-        x: list
-            References to the state variables
-        u: list
-            References to the control variables
-        p: Union[MX, SX]
-            References to the parameter variables
-        """
-
-        self.ocp: Any = ocp
-        self.nlp: Any = nlp
-        self.t = t
-        self.x = x
-        self.u = u
-        self.p = vertcat(p)
 
 
 class PenaltyOption(OptionGeneric):
