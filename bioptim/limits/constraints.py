@@ -207,7 +207,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                 # Since it is non-slipping normal forces are supposed to be greater than zero
                 ConstraintFunction.add_to_penalty(
-                    pn.ocp, pn, vertcat(
+                    pn.ocp, pn.nlp, vertcat(
                         mu_squared * normal_contact_force_squared - tangential_contact_force_squared,
                         mu_squared * normal_contact_force_squared + tangential_contact_force_squared
                     ), constraint,

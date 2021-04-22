@@ -261,7 +261,7 @@ class PenaltyFunctionAbstract:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
                     penalty.target, (3, len(markers_idx), len(pn.x))
                 )
-            pn.nlp.add_casadi_func(pn.nlp, "biorbd_markers", pn.nlp.model.markers, pn.nlp.q)
+            pn.nlp.add_casadi_func("biorbd_markers", pn.nlp.model.markers, pn.nlp.q)
             nq = pn.nlp.mapping["q"].to_first.len
             for i, v in enumerate(pn.x):
                 q = pn.nlp.mapping["q"].to_second.map(v[:nq])
@@ -881,7 +881,7 @@ class PenaltyFunctionAbstract:
                 if keyword in inspect.signature(penalty.custom_function).parameters:
                     raise TypeError(f"{keyword} is a reserved word and cannot be used in a custom function signature")
 
-            has_bound = True if penalty.min_bound is not None or penalty.max_bound is not None else False
+            has_bound = True if (hasattr(penalty, "min_bound") and penalty.min_bound is not None) or (hasattr(penalty, "max_bound") and penalty.max_bound is not None) else False
             for pn in nodes:
                 val = penalty.custom_function(pn, **parameters)
                 if val is None:
@@ -897,7 +897,7 @@ class PenaltyFunctionAbstract:
                     penalty.max_bound = val[2]
                     val = val[1]
 
-                penalty.type.get_type().add_to_penalty(pn.ocp, nodes, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, nodes.nlp, val, penalty)
 
     @staticmethod
     def add(ocp, nlp):

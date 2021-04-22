@@ -20,18 +20,18 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     OdeSolver,
-    PenaltyNodes,
+    PenaltyNode,
 )
 
 
-def custom_func_track_markers(pn: PenaltyNodes, first_marker_idx: int, second_marker_idx: int) -> MX:
+def custom_func_track_markers(pn: PenaltyNode, first_marker_idx: int, second_marker_idx: int) -> MX:
     """
     The used-defined objective function (This particular one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
 
     Parameters
     ----------
-    pn: PenaltyNodes
+    pn: PenaltyNode
         The penalty node elements
     first_marker_idx: int
         The index of the first marker in the bioMod
@@ -45,15 +45,12 @@ def custom_func_track_markers(pn: PenaltyNodes, first_marker_idx: int, second_ma
     """
 
     nq = pn.nlp.shape["q"]
-    val = []
-    markers_func = biorbd.to_casadi_func("markers", pn.nlp.model.markers, pn.nlp.q)
-    for v in pn.x:
-        q = v[:nq]
-        markers = markers_func(q)
-        first_marker = markers[:, first_marker_idx]
-        second_marker = markers[:, second_marker_idx]
-        val = vertcat(val, first_marker - second_marker)
-    return val
+    markers_func = pn.nlp.add_casadi_func("markers", pn.nlp.model.markers, pn.nlp.q)
+    q = pn.x[:nq]
+    markers = markers_func(q)
+    first_marker = markers[:, first_marker_idx]
+    second_marker = markers[:, second_marker_idx]
+    return first_marker - second_marker
 
 
 def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControlProgram:
