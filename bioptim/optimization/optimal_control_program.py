@@ -1095,8 +1095,8 @@ class OptimalControlProgram:
 
         list_nodes = [[{} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
 
-        list_objectives = ObjectiveList.get_nlp_objectives(self.nlp)
-        list_constraints = ConstraintList.get_ocp_constraints(self)[1]
+        list_objectives = ObjectiveList.to_dict(self.nlp)
+        list_constraints = ConstraintList.to_dict(self)[1]
         list_dynamics = self.__get_dynamics()
         list_ode = self.__get_ode_solver()
         list_parameters = ParameterList.get_parameters_2(self)

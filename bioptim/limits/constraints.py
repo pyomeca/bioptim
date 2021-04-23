@@ -95,7 +95,7 @@ class ConstraintList(OptionList):
         raise NotImplementedError("Printing of ConstraintList is not ready yet")
 
     @staticmethod
-    def get_ocp_constraints(ocp):
+    def to_dict(ocp):
 
         list_global_constraints = []
         for g in ocp.g:
