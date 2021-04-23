@@ -88,14 +88,6 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         """
         raise NotImplementedError("Printing of PhaseTransitionList is not ready yet")
 
-    @ staticmethod
-    def get_phase_transitions(ocp):
-        list_phase_transitions = []
-        for transition in ocp.phase_transitions:
-                list_phase_transitions.append(transition.type.name)
-        return list_phase_transitions
-
-
 class PhaseTransitionFunctions:
     """
     Internal implementation of the phase transitions

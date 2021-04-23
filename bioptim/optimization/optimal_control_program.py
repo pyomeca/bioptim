@@ -1085,7 +1085,7 @@ class OptimalControlProgram:
                         g.node(f'Phase #{phase_idx + 1}')
                         g.edge(f'Phase #{phase_idx}',
                                f'Phase #{phase_idx + 1}',
-                               label=list_phase_transitions[phase_idx])
+                               label=ocp.phase_transitions[phase_idx].type.name)
                 g.attr(label=f"Phase transitions")
 
             G.node(' ', color='invis')
@@ -1100,7 +1100,6 @@ class OptimalControlProgram:
         list_dynamics = self.__get_dynamics()
         list_ode = self.__get_ode_solver()
         list_parameters = ParameterList.get_parameters_2(self)
-        list_phase_transitions = PhaseTransitionList.get_phase_transitions(self)
 
         n_phase = 0
         for nlp in self.nlp:
