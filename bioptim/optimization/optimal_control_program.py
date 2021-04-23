@@ -775,21 +775,21 @@ class OptimalControlProgram:
         def lagrange_to_str(l_nodes: list, phase_idx: int):
             lagrange_str = ""
             objective_idx = 0
-            for objective in l_nodes[phase_idx][0]['Lagrange']:
-                if l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx] is not None:
-                    if l_nodes[phase_idx][0]['Quadratic_Lagrange'][objective_idx] is True:
+            for objective in l_nodes[phase_idx][0]['lagrange']:
+                if l_nodes[phase_idx][0]['sliced_target_lagrange'][objective_idx] is not None:
+                    if l_nodes[phase_idx][0]['quadratic_lagrange'][objective_idx] is True:
                         lagrange_str += f"({objective} - " \
-                                        f"{l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx]})" \
+                                        f"{l_nodes[phase_idx][0]['sliced_target_lagrange'][objective_idx]})" \
                                         f"<sup>2</sup><br/>"
-                        lagrange_str = add_parameters_to_str(l_nodes[phase_idx][0]['Parameters_Lagrange'][objective_idx], lagrange_str)
+                        lagrange_str = add_parameters_to_str(l_nodes[phase_idx][0]['parameters_lagrange'][objective_idx], lagrange_str)
                     else:
                         lagrange_str += f"{objective} - " \
-                                        f"{l_nodes[phase_idx][0]['Sliced_target_Lagrange'][objective_idx]}<br/>"
+                                        f"{l_nodes[phase_idx][0]['sliced_target_lagrange'][objective_idx]}<br/>"
                         lagrange_str = add_parameters_to_str(
-                            l_nodes[phase_idx][0]['Parameters_Lagrange'][objective_idx], lagrange_str)
+                            l_nodes[phase_idx][0]['parameters_lagrange'][objective_idx], lagrange_str)
                 else:
                     lagrange_str += f"{objective}<br/>"
-                    lagrange_str = add_parameters_to_str(l_nodes[phase_idx][0]['Parameters_Lagrange'][objective_idx],
+                    lagrange_str = add_parameters_to_str(l_nodes[phase_idx][0]['parameters_lagrange'][objective_idx],
                                                          lagrange_str)
             objective_idx += 1
             return lagrange_str
@@ -797,20 +797,20 @@ class OptimalControlProgram:
         def mayer_to_str(l_nodes: list, phase_idx: int, node_idx: int):
             mayer_str = ""
             objective_idx = 0
-            for objective in l_nodes[phase_idx][node_idx]['Mayer']:
-                if l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx] is not None:
-                    if l_nodes[phase_idx][node_idx]['Quadratic_Mayer'][objective_idx] is True:
+            for objective in l_nodes[phase_idx][node_idx]['mayer']:
+                if l_nodes[phase_idx][node_idx]['sliced_target_Mayer'][objective_idx] is not None:
+                    if l_nodes[phase_idx][node_idx]['quadratic_Mayer'][objective_idx] is True:
                         mayer_str += f"({objective} - " \
-                                     f"{l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx]})" \
+                                     f"{l_nodes[phase_idx][node_idx]['sliced_target_mayer'][objective_idx]})" \
                                      f"<sup>2</sup><br/>"
                         mayer_str = add_parameters_to_str(
-                            l_nodes[phase_idx][0]['Parameters_Mayer'][objective_idx], mayer_str)
+                            l_nodes[phase_idx][0]['parameters_mayer'][objective_idx], mayer_str)
                     else:
                         mayer_str += f"{objective} - " \
-                                     f"{l_nodes[phase_idx][node_idx]['Sliced_target_Mayer'][objective_idx]}" \
+                                     f"{l_nodes[phase_idx][node_idx]['sliced_target_mayer'][objective_idx]}" \
                                      f"<br/>"
                         mayer_str = add_parameters_to_str(
-                            l_nodes[phase_idx][0]['Parameters_Lagrange'][objective_idx], mayer_str)
+                            l_nodes[phase_idx][0]['parameters_lagrange'][objective_idx], mayer_str)
                 else:
                     mayer_str += f"{objective}<br/>"
             objective_idx += 1
@@ -858,8 +858,8 @@ class OptimalControlProgram:
                 for node_dict in l_nodes[phase_idx]:
                     print(f"NODE {node_idx}")
                     print(f"Objectives: ")
-                    print(f"*** Mayer: {node_dict['Mayer']}")
-                    print(f"*** Lagrange: {node_dict['Lagrange']}")
+                    print(f"*** Mayer: {node_dict['mayer']}")
+                    print(f"*** Lagrange: {node_dict['lagrange']}")
                     print(f"Constraints: {node_dict['constraints']}")
                     print("")
                     node_idx = node_idx + 1
