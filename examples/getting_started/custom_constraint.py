@@ -8,7 +8,7 @@ More specifically this example reproduces the behavior of the SUPERIMPOSE_MARKER
 """
 
 import biorbd
-from casadi import vertcat, MX
+from casadi import MX
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -17,7 +17,7 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     ConstraintList,
-    PenaltyNodes,
+    PenaltyNode,
     Bounds,
     QAndQDotBounds,
     InitialGuess,
@@ -25,14 +25,14 @@ from bioptim import (
 )
 
 
-def custom_func_track_markers(pn: PenaltyNodes, first_marker_idx: int, second_marker_idx: int) -> MX:
+def custom_func_track_markers(pn: PenaltyNode, first_marker_idx: int, second_marker_idx: int) -> MX:
     """
     The used-defined constraint function (This particular one mimics the ConstraintFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
 
     Parameters
     ----------
-    pn: PenaltyNodes
+    pn: PenaltyNode
         The penalty node elements
     first_marker_idx: int
         The index of the first marker in the bioMod
@@ -45,14 +45,11 @@ def custom_func_track_markers(pn: PenaltyNodes, first_marker_idx: int, second_ma
     """
 
     nq = pn.nlp.shape["q"]
-    val = []
-    markers = biorbd.to_casadi_func("markers", pn.nlp.model.markers, pn.nlp.q)
-    for v in pn.x:
-        q = v[:nq]
-        first_marker = markers(q)[:, first_marker_idx]
-        second_marker = markers(q)[:, second_marker_idx]
-        val = vertcat(val, first_marker - second_marker)
-    return val
+    markers = pn.nlp.add_casadi_func("markers", pn.nlp.model.markers, pn.nlp.q)
+    q = pn.x[:nq]
+    first_marker = markers(q)[:, first_marker_idx]
+    second_marker = markers(q)[:, second_marker_idx]
+    return first_marker - second_marker
 
 
 def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.RK4()) -> OptimalControlProgram:

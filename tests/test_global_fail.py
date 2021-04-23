@@ -15,7 +15,9 @@ from .utils import TestUtils
 
 def test_custom_constraint_mx_fail():
     def custom_mx_fail(pn):
-        return MX(0), vertcat(*pn.u), MX(0)
+        if pn.u is None:
+            return None
+        return MX.zeros(pn.u.shape), pn.u, MX.zeros(pn.u.shape)
 
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"

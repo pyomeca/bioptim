@@ -1,13 +1,12 @@
-from typing import Callable, Union
+from typing import Callable, Union, Any
 import multiprocessing as mp
 from copy import copy
 import tkinter
-import pickle
-import os
 from itertools import accumulate
 
 import numpy as np
 from matplotlib import pyplot as plt, lines
+from matplotlib.ticker import StrMethodFormatter
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
@@ -53,6 +52,7 @@ class CustomPlot:
         linestyle: str = None,
         ylim: Union[tuple, list] = None,
         bounds: Bounds = None,
+        **parameters: Any,
     ):
         """
         Parameters
@@ -93,6 +93,7 @@ class CustomPlot:
         self.linestyle = linestyle
         self.ylim = ylim
         self.bounds = bounds
+        self.parameters = parameters
 
 
 class PlotOcp:
@@ -202,7 +203,7 @@ class PlotOcp:
         self.ocp = ocp
         self.plot_options = {
             "general_options": {"use_tight_layout": False},
-            "non_integrated_plots": {"linestyle": "-.", "markersize": 3},
+            "non_integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
             "integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
             "bounds": {"color": "k", "linewidth": 0.4, "linestyle": "-"},
             "grid": {"color": "k", "linestyle": "-", "linewidth": 0.15},
@@ -301,7 +302,12 @@ class PlotOcp:
                     if nlp.plot[key].phase_mappings is None:
                         size = (
                             nlp.plot[key]
-                            .function(np.zeros((nlp.nx, 1)), np.zeros((nlp.nu, 1)), np.zeros((nlp.np, 1)))
+                            .function(
+                                np.zeros((nlp.nx, 1)),
+                                np.zeros((nlp.nu, 1)),
+                                np.zeros((nlp.np, 1)),
+                                **nlp.plot[key].parameters,
+                            )
                             .shape[0]
                         )
                         nlp.plot[key].phase_mappings = Mapping(range(size))
@@ -456,6 +462,8 @@ class PlotOcp:
         axes[idx_center].set_xlabel("time (s)")
 
         self.all_figures[-1].tight_layout()
+        for ax in axes:
+            ax.yaxis.set_major_formatter(StrMethodFormatter("{x:,.1f}"))  # 1 decimal places
         return axes
 
     def _organize_windows(self, n_windows: int):
@@ -549,6 +557,7 @@ class PlotOcp:
                             state[:, step_size * idx : step_size * (idx + 1)],
                             control[:, idx : idx + u_mod],
                             data_params_in_dyn,
+                            **self.plot_func[key][i].parameters,
                         )
                         all_y.append(y_tp)
 
@@ -561,11 +570,13 @@ class PlotOcp:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
                     try:
-                        y[:, :] = self.plot_func[key][i].function(state[:, ::step_size], control, data_params_in_dyn)
+                        y[:, :] = self.plot_func[key][i].function(
+                            state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                        )
                     except ValueError:
                         raise ValueError(
                             f"Wrong dimensions for plot {key}. Got "
-                            f"{self.plot_func[key][i].function(state[:, ::step_size], control, data_params_in_dyn).shape}"
+                            f"{self.plot_func[key][i].function(state[:, ::step_size], control, data_params_in_dyn, ** self.plot_func[key][i].parameters).shape}"
                             f", but expected {y.shape}"
                         )
                     self.__append_to_ydata(y)
@@ -654,6 +665,9 @@ class PlotOcp:
 
         for p in self.plots_vertical_lines:
             p.set_ydata((0, 1))
+
+        for fig in self.all_figures:
+            fig.set_tight_layout(True)
 
     @staticmethod
     def __compute_ylim(min_val: Union[np.ndarray, DM], max_val: Union[np.ndarray, DM], factor: float) -> tuple:

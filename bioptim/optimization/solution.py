@@ -839,7 +839,8 @@ class Solution:
             # Convert parameters to actual values
             nlp = self.ocp.nlp[idx_phase]
             for param in nlp.parameters:
-                param.function(nlp.model, self.parameters[param.name], **param.params)
+                if param.function:
+                    param.function(nlp.model, self.parameters[param.name], **param.params)
 
             all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].to_second.map(data["q"]))

@@ -1,6 +1,8 @@
 from typing import Callable, Any, Union
 
-from .parameters import ParameterList
+import biorbd
+import casadi
+
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
@@ -107,6 +109,8 @@ class NonLinearProgram:
         Set a parameter to their respective nlp
     add_path_condition(ocp: OptimalControlProgram, var: Any, path_name: str, type_option: Any, type_list: Any)
         Interface to add for PathCondition classes
+    def add_casadi_func(self, name: str, function: Callable, *all_param: Any) -> casadi.Function:
+        Add to the pool of declared casadi function. If the function already exists, it is skipped
     """
 
     def __init__(self):
@@ -133,7 +137,7 @@ class NonLinearProgram:
         self.ode_solver = OdeSolver.RK4()
         self.p = None
         self.p_scaling = None
-        self.parameters = ParameterList()
+        self.parameters = []
         self.par_dynamics = None
         self.phase_idx = None
         self.plot = {}
@@ -285,3 +289,22 @@ class NonLinearProgram:
         elif not isinstance(var, type_list):
             raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
         NonLinearProgram.add(ocp, path_name, var, False)
+
+    def add_casadi_func(self, name: str, function: Callable, *all_param: Any) -> casadi.Function:
+        """
+        Add to the pool of declared casadi function. If the function already exists, it is skipped
+
+        Parameters
+        ----------
+        name: str
+            The unique name of the function to add to the casadi functions pool
+        function: Callable
+            The biorbd function to add
+        all_param: dict
+            Any parameters to pass to the biorbd function
+        """
+        if name in self.casadi_func:
+            return self.casadi_func[name]
+        else:
+            self.casadi_func[name] = biorbd.to_casadi_func(name, function, *all_param)
+        return self.casadi_func[name]
