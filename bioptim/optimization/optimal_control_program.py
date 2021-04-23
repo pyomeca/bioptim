@@ -888,13 +888,13 @@ class OptimalControlProgram:
                             </TD>
                         </TR>
                         <TR>
-                            <TD>{vector_layout(param['Min_bound'], parameter['Size'])} ≤</TD>
+                            <TD>{vector_layout(parameter['Min_bound'], parameter['Size'])} ≤</TD>
                         </TR>
                         <TR>
                             <TD>{"(" if 'Quadratic' in parameter and parameter['Quadratic'] else ""}{parameter['Objectives'] if 'Objectives' in parameter else ''} -</TD>
                         </TR>
                         <TR>
-                            <TD>{vector_layout(parameter['Sliced_target'], parameter['Size']) if 'Sliced_target' in parameter else ""}{")<sup>2</sup>" if 'Quadratic' in parameter and parameter['Quadratic'] else ""} ≤</TD>
+                            <TD>{parameter['Sliced_target'] if 'Sliced_target' in parameter else ""}{")<sup>2</sup>" if 'Quadratic' in parameter and parameter['Quadratic'] else ""} ≤</TD>
                         </TR>
                         <TR>
                             <TD>{vector_layout(parameter['Max_bound'], parameter['Size'])}</TD>
