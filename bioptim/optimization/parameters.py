@@ -250,22 +250,7 @@ class ParameterList(UniquePerProblemOptionList):
         return self.names.index(item)
 
     @staticmethod
-    def get_parameters(ocp):
-        list_parameters = []
-        for parameter in ocp.original_values["parameters"]:
-            list_parameters.append({"Name": parameter.name,
-                                    "Size": parameter.size,
-                                    "Initial_guess": [[parameter.initial_guess.init[i][j] for i in range(parameter.size)
-                                                       ] for j in range(len(parameter.initial_guess.init[0]))],
-                                    "Max_bound": [[parameter.bounds.max[i][j] for i in range(parameter.size)] for j in
-                                                  range(len(parameter.bounds.max[0]))],
-                                    "Min_bound": [[parameter.bounds.min[i][j] for i in range(parameter.size)] for j in
-                                                  range(len(parameter.bounds.min[0]))],
-                                    "Objectives": parameter.penalty_list.type.name})
-        return list_parameters
-
-    @staticmethod
-    def get_parameters_2(ocp):
+    def to_dict(ocp):
         list_parameters = [[len(ocp.nlp[nlp_idx].parameters)] for nlp_idx in range(ocp.n_phases)]
         for nlp_idx in range(ocp.n_phases):
             for parameter in ocp.nlp[nlp_idx].parameters:

@@ -1099,7 +1099,7 @@ class OptimalControlProgram:
         list_constraints = ConstraintList.to_dict(self)[1]
         list_dynamics = self.__get_dynamics()
         list_ode = self.__get_ode_solver()
-        list_parameters = ParameterList.get_parameters_2(self)
+        list_parameters = ParameterList.to_dict(self)
 
         n_phase = 0
         for nlp in self.nlp:
