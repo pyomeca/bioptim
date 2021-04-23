@@ -300,7 +300,16 @@ class PlotOcp:
                     if isinstance(nlp.plot[key], tuple):
                         nlp.plot[key] = nlp.plot[key][0]
                     if nlp.plot[key].phase_mappings is None:
-                        size = nlp.plot[key].function(np.zeros((nlp.nx, 1)), np.zeros((nlp.nu, 1)), np.zeros((nlp.np, 1)), **nlp.plot[key].parameters).shape[0]
+                        size = (
+                            nlp.plot[key]
+                            .function(
+                                np.zeros((nlp.nx, 1)),
+                                np.zeros((nlp.nu, 1)),
+                                np.zeros((nlp.np, 1)),
+                                **nlp.plot[key].parameters,
+                            )
+                            .shape[0]
+                        )
                         nlp.plot[key].phase_mappings = Mapping(range(size))
                     else:
                         size = len(nlp.plot[key].phase_mappings.map_idx)
@@ -454,7 +463,7 @@ class PlotOcp:
 
         self.all_figures[-1].tight_layout()
         for ax in axes:
-            ax.yaxis.set_major_formatter(StrMethodFormatter('{x:,.1f}'))  # 1 decimal places
+            ax.yaxis.set_major_formatter(StrMethodFormatter("{x:,.1f}"))  # 1 decimal places
         return axes
 
     def _organize_windows(self, n_windows: int):
@@ -561,7 +570,9 @@ class PlotOcp:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
                     try:
-                        y[:, :] = self.plot_func[key][i].function(state[:, ::step_size], control, data_params_in_dyn, ** self.plot_func[key][i].parameters)
+                        y[:, :] = self.plot_func[key][i].function(
+                            state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                        )
                     except ValueError:
                         raise ValueError(
                             f"Wrong dimensions for plot {key}. Got "

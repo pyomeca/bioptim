@@ -202,15 +202,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint.max_bound = np.array([np.inf, np.inf])
             for i in range(len(pn.u)):
                 contact = pn.nlp.contact_forces_func(pn.x[i], pn.u[i], pn.p)
-                normal_contact_force_squared = sum1(contact[normal_component_idx, 0])**2
-                tangential_contact_force_squared = sum1(contact[tangential_component_idx, 0]**2)
+                normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
+                tangential_contact_force_squared = sum1(contact[tangential_component_idx, 0] ** 2)
 
                 # Since it is non-slipping normal forces are supposed to be greater than zero
                 ConstraintFunction.add_to_penalty(
-                    pn.ocp, pn.nlp, vertcat(
+                    pn.ocp,
+                    pn.nlp,
+                    vertcat(
                         mu_squared * normal_contact_force_squared - tangential_contact_force_squared,
-                        mu_squared * normal_contact_force_squared + tangential_contact_force_squared
-                    ), constraint,
+                        mu_squared * normal_contact_force_squared + tangential_contact_force_squared,
+                    ),
+                    constraint,
                 )
 
         @staticmethod

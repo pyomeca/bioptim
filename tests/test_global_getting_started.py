@@ -737,7 +737,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.89054233,  0.47700932,  2.02049847, -2.02049847)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.89054233, 0.47700932, 2.02049847, -2.02049847)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-24.36641199)))
     np.testing.assert_almost_equal(tau[:, -1], np.array((-23.53987687)))

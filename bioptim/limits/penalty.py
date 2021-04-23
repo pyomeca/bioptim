@@ -881,9 +881,14 @@ class PenaltyFunctionAbstract:
                 if keyword in inspect.signature(penalty.custom_function).parameters:
                     raise TypeError(f"{keyword} is a reserved word and cannot be used in a custom function signature")
 
-            has_bound = True if (hasattr(penalty, "min_bound") and penalty.min_bound is not None) or (hasattr(penalty, "max_bound") and penalty.max_bound is not None) else False
-            for pn in nodes:
-                val = penalty.custom_function(pn, **parameters)
+            has_bound = (
+                True
+                if (hasattr(penalty, "min_bound") and penalty.min_bound is not None)
+                or (hasattr(penalty, "max_bound") and penalty.max_bound is not None)
+                else False
+            )
+            for node in nodes:
+                val = penalty.custom_function(node, **parameters)
                 if val is None:
                     continue
 
@@ -897,7 +902,7 @@ class PenaltyFunctionAbstract:
                     penalty.max_bound = val[2]
                     val = val[1]
 
-                penalty.type.get_type().add_to_penalty(pn.ocp, nodes.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(node.ocp, nodes.nlp, val, penalty)
 
     @staticmethod
     def add(ocp, nlp):
