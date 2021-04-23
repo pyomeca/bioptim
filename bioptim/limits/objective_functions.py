@@ -607,22 +607,15 @@ class ObjectiveFunction:
             The time between two nodes for the current phase. If the objective is Mayer, dt should be 1
         """
 
-        if pn is None:
-            J = {
-                "objective": penalty,
-                "node_index": None,
-                "val": val,
-                "target": penalty.sliced_target,
-                "dt": dt,
-            }
-        else:
-            J = {
-                "objective": penalty,
-                "node_index": pn.t[len(pn.nlp.J[penalty.list_index])],
-                "val": val,
-                "target": penalty.sliced_target,
-                "dt": dt,
-            }
+        node_index = pn.t[len(pn.nlp.J[penalty.list_index])] if pn else None
+
+        J = {
+            "objective": penalty,
+            "node_index": node_index,
+            "val": val,
+            "target": penalty.sliced_target,
+            "dt": dt,
+        }
 
         if pn is not None and pn.nlp:
             pn.nlp.J[penalty.list_index].append(J)
