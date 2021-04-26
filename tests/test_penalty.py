@@ -15,9 +15,9 @@ from bioptim import (
     ConstraintFcn,
     Constraint,
     Node,
-    PenaltyNodes,
 )
 from bioptim.interfaces.ipopt_interface import IpoptInterface
+from bioptim.limits.penalty_node import PenaltyNodes
 
 from .utils import TestUtils
 
@@ -864,13 +864,14 @@ def test_penalty_contact_force_inequality(penalty_origin, value, direction):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_non_slipping(value):
     ocp = prepare_test_ocp(with_contact=True)
+    t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
     penalty_type = ConstraintFcn.NON_SLIPPING
     penalty = Constraint(penalty_type)
     penalty_type.value[0](
         penalty,
-        PenaltyNodes(ocp, ocp.nlp[0], [], x, u, []),
+        PenaltyNodes(ocp, ocp.nlp[0], t, x, u, []),
         tangential_component_idx=0,
         normal_component_idx=1,
         static_friction_coefficient=2,
@@ -881,15 +882,15 @@ def test_penalty_non_slipping(value):
         res.append(ocp.nlp[0].g[0][i]["val"])
 
     if value == 0.1:
-        expected = [[264.1400764, 244.8040553], 0, np.inf]
+        expected = [[64662.56185612, 64849.5027121], [0, 0], [np.inf, np.inf]]
     elif value == -10:
-        expected = [[899.9319451, 951.2573773], 0, np.inf]
+        expected = [[856066.90177734, 857384.05177395], [0, 0], [np.inf, np.inf]]
 
     np.testing.assert_almost_equal(np.concatenate(res)[:, 0], np.array(expected[0]))
 
     if isinstance(penalty_type, ConstraintFcn):
-        np.testing.assert_almost_equal(ocp.nlp[0].g[0][0]["bounds"].min, np.array([[expected[1]]]))
-        np.testing.assert_almost_equal(ocp.nlp[0].g[0][0]["bounds"].max, np.array([[expected[2]]]))
+        np.testing.assert_almost_equal(ocp.nlp[0].g[0][0]["bounds"].min, np.array([expected[1]]).T)
+        np.testing.assert_almost_equal(ocp.nlp[0].g[0][0]["bounds"].max, np.array([expected[2]]).T)
 
 
 @pytest.mark.parametrize("value", [2])
@@ -938,6 +939,7 @@ def test_penalty_custom(penalty_origin, value):
         return my_values
 
     ocp = prepare_test_ocp()
+    t = [0]
     x = [DM.ones((12, 1)) * value]
     penalty_type = penalty_origin.CUSTOM
 
@@ -948,7 +950,7 @@ def test_penalty_custom(penalty_origin, value):
 
     penalty.custom_function = custom
     mult = 2
-    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []), mult=mult)
+    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], t, x, [], []), mult=mult)
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         res = ocp.nlp[0].J[0][0]["val"]
@@ -1024,13 +1026,14 @@ def test_penalty_custom_with_bounds(value):
         return -10, my_values, 10
 
     ocp = prepare_test_ocp()
+    t = [0]
     x = [DM.ones((12, 1)) * value]
 
     penalty_type = ConstraintFcn.CUSTOM
     penalty = Constraint(penalty_type)
 
     penalty.custom_function = custom_with_bounds
-    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []))
+    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], t, x, [], []))
 
     res = ocp.nlp[0].g[0][0]["val"]
 
@@ -1046,6 +1049,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value):
         return -10, my_values, 10
 
     ocp = prepare_test_ocp()
+    t = [0]
     x = [DM.ones((12, 1)) * value]
 
     penalty_type = ConstraintFcn.CUSTOM
@@ -1055,7 +1059,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value):
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(RuntimeError):
-        penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []))
+        penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], t, x, [], []))
 
 
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -1065,6 +1069,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
         return -10, my_values, 10
 
     ocp = prepare_test_ocp()
+    t = [0]
     x = [DM.ones((12, 1)) * value]
 
     penalty_type = ConstraintFcn.CUSTOM
@@ -1074,7 +1079,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(RuntimeError):
-        penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []))
+        penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], t, x, [], []))
 
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])

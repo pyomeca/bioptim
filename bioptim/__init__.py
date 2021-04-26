@@ -151,7 +151,7 @@ from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
-from .limits.penalty import PenaltyNodes
+from .limits.penalty_node import PenaltyNode
 from .misc.enums import Axis, Node, InterpolationType, PlotType, Solver, ControlType, CostType, Shooting
 from .misc.mapping import BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram

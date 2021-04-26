@@ -3,7 +3,8 @@ from enum import Enum
 
 from casadi import MX, SX
 
-from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption, PenaltyNodes
+from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
+from .penalty_node import PenaltyNodes
 from ..misc.enums import Node
 from ..misc.options import OptionList, OptionGeneric
 
