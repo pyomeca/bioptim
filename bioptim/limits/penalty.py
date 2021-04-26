@@ -902,7 +902,7 @@ class PenaltyFunctionAbstract:
                     penalty.max_bound = val[2]
                     val = val[1]
 
-                penalty.type.get_type().add_to_penalty(node.ocp, nodes.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(node.ocp, nodes, val, penalty)
 
     @staticmethod
     def add(ocp, nlp):
