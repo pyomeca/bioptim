@@ -781,41 +781,40 @@ class OptimalControlProgram:
                         lagrange_str += f"({objective} - " \
                                         f"{l_nodes[phase_idx][0]['sliced_target_lagrange'][objective_idx]})" \
                                         f"<sup>2</sup><br/>"
-                        lagrange_str = add_parameters_to_str(l_nodes[phase_idx][0]['parameters_lagrange'][objective_idx], lagrange_str)
                     else:
                         lagrange_str += f"{objective} - " \
                                         f"{l_nodes[phase_idx][0]['sliced_target_lagrange'][objective_idx]}<br/>"
-                        lagrange_str = add_parameters_to_str(
-                            l_nodes[phase_idx][0]['parameters_lagrange'][objective_idx], lagrange_str)
                 else:
-                    lagrange_str += f"{objective}<br/>"
-                    lagrange_str = add_parameters_to_str(l_nodes[phase_idx][0]['parameters_lagrange'][objective_idx],
-                                                         lagrange_str)
-            objective_idx += 1
+                    if l_nodes[phase_idx][0]['quadratic_lagrange'][objective_idx] is True:
+                        lagrange_str += f"({objective})<sup>2</sup><br/>"
+                    else:
+                        lagrange_str += f"{objective}<br/>"
+                lagrange_str = add_parameters_to_str(l_nodes[phase_idx][0]['parameters_lagrange'][objective_idx],
+                                                     lagrange_str)
+                objective_idx += 1
             return lagrange_str
 
         def mayer_to_str(l_nodes: list, phase_idx: int, node_idx: int):
             mayer_str = ""
             objective_idx = 0
             for objective in l_nodes[phase_idx][node_idx]['mayer']:
-                if l_nodes[phase_idx][node_idx]['sliced_target_Mayer'][objective_idx] is not None:
-                    if l_nodes[phase_idx][node_idx]['quadratic_Mayer'][objective_idx] is True:
+                if l_nodes[phase_idx][node_idx]['sliced_target_mayer'][objective_idx] is not None:
+                    if l_nodes[phase_idx][node_idx]['quadratic_mayer'][objective_idx] is True:
                         mayer_str += f"({objective} - " \
                                      f"{l_nodes[phase_idx][node_idx]['sliced_target_mayer'][objective_idx]})" \
                                      f"<sup>2</sup><br/>"
-                        mayer_str = add_parameters_to_str(
-                            l_nodes[phase_idx][node_idx]['parameters_mayer'][objective_idx], mayer_str)
                     else:
                         mayer_str += f"{objective} - " \
                                      f"{l_nodes[phase_idx][node_idx]['sliced_target_mayer'][objective_idx]}" \
                                      f"<br/>"
-                        mayer_str = add_parameters_to_str(
-                            l_nodes[phase_idx][node_idx]['parameters_lagrange'][objective_idx], mayer_str)
                 else:
-                    mayer_str += f"{objective}<br/>"
-                    mayer_str = add_parameters_to_str(
-                        l_nodes[phase_idx][node_idx]['parameters_lagrange'][objective_idx], mayer_str)
-            objective_idx += 1
+                    if l_nodes[phase_idx][node_idx]['quadratic_mayer'][objective_idx] is True:
+                        mayer_str += f"({objective})<sup>2</sup><br/>"
+                    else:
+                        mayer_str += f"{objective}<br/>"
+                mayer_str = add_parameters_to_str(
+                    l_nodes[phase_idx][node_idx]['parameters_mayer'][objective_idx], mayer_str)
+                objective_idx += 1
             return mayer_str
 
         def vector_layout(vector: list, size: int):
@@ -929,7 +928,7 @@ class OptimalControlProgram:
                                 <TD ALIGN="LEFT"><B>Shooting nodes</B>: {len(l_nodes[phase_idx])-1}</TD>
                             </TR>
                             <TR>
-                                <TD ALIGN="LEFT"><B>Dynamic</B>: {l_dynamics[phase_idx]}</TD>
+                                <TD ALIGN="LEFT"><B>Dynamics</B>: {l_dynamics[phase_idx]}</TD>
                             </TR>
                             <TR>
                                 <TD ALIGN="LEFT"><B>ODE</B>: {l_ode[phase_idx]}</TD>
