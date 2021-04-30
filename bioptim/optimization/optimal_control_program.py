@@ -764,6 +764,36 @@ class OptimalControlProgram:
                     constraints_str += f"<br/>"
             return constraints_str
 
+        def constraints_to_str_reduced(constraints: ConstraintList):
+            constraints_str = ""
+            for constraint in ConstraintList:
+                target_str = "" if constraint.sliced_target is None else \
+                    f"{constraint.sliced_target}"
+                if constraint.quadratic:
+                    constraints_str += f"{constraint.min_bound} ≤ "
+                    constraints_str += f"({constraint.name}" \
+                        if target_str is not "" else f"{constraint.name}"
+                    constraints_str += f" - {target_str})<sup>2</sup>" if target_str is not "" else ""
+                    constraints_str += f" ≤ {constraint.max_bound}<br/>" \
+                                       f"Parameters:<br/>"
+                    for param in constraint.params:
+                        constraints_str += f"{param.name}: " \
+                                           f"{param}" \
+                                           f"<br/>"
+                    constraints_str += f"<br/>"
+                else:
+                    constraints_str += f"{constraint.min_bound} ≤ " \
+                                       f"{constraint.name}"
+                    constraints_str += f" - {target_str}" if target_str is not "" else "" \
+                                       f" ≤ {constraint.max_bound}<br/>" \
+                                       f"Parameters:<br/>"
+                    for param in constraint.params:
+                        constraints_str += f"{param.name}:" \
+                                           f" {param}" \
+                                           f"<br/>"
+                    constraints_str += f"<br/>"
+            return constraints_str
+
         def add_parameters_to_str(list_constraints: list, string: str):
             for param in list_constraints:
                 string += f"{param}: " \
