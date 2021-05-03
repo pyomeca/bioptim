@@ -618,6 +618,8 @@ class AcadosInterface(SolverInterface):
         options: dict
             The dictionary of options
         """
+        if not options:
+            return
 
         if "acados_dir" in options:
             del options["acados_dir"]
