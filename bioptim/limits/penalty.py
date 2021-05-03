@@ -506,6 +506,27 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
+        def minimize_qddot(penalty: PenaltyOption, pn: PenaltyNodes):
+            """
+            Minimize the states velocity by comparing the state at a node and at the next node.
+            By default this function is quadratic, meaning that it minimizes the difference.
+            Indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            pn: PenaltyNodes
+                The penalty node elements
+            """
+            nq = pn.nlp.shape["q"]
+            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, nq, "states_idx")
+
+            for i in range(len(pn) - 1):
+                val = pn.nlp.dynamics_func(pn.x[i], pn.u[i], pn.p)[nq+states_idx, :]
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+
+        @staticmethod
         def minimize_torque_derivative(penalty: PenaltyOption, pn: PenaltyNodes):
             """
             Minimize the joint torque velocity by comparing the torque at a node and at the next node.
@@ -1234,9 +1255,6 @@ class PenaltyFunctionAbstract:
             The index of the matplotlib axes
         """
 
-        if (isinstance(data, np.ndarray) and not data.any()) or (not isinstance(data, np.ndarray) and not data):
-            return
-
         if data.shape[1] == pn.nlp.ns:
             data = np.c_[data, data[:, -1]]
         pn.ocp.add_plot(
@@ -1268,6 +1286,7 @@ class PenaltyType(Enum):
     MINIMIZE_TORQUE = PenaltyFunctionAbstract.Functions.minimize_torque
     TRACK_TORQUE = MINIMIZE_TORQUE
     MINIMIZE_STATE_DERIVATIVE = PenaltyFunctionAbstract.Functions.minimize_state_derivative
+    MINIMIZE_QDDOT = PenaltyFunctionAbstract.Functions.minimize_qddot
     MINIMIZE_TORQUE_DERIVATIVE = PenaltyFunctionAbstract.Functions.minimize_torque_derivative
     MINIMIZE_MUSCLES_CONTROL = PenaltyFunctionAbstract.Functions.minimize_muscles_control
     TRACK_MUSCLES_CONTROL = MINIMIZE_MUSCLES_CONTROL

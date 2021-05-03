@@ -93,6 +93,28 @@ def test_penalty_minimize_state(penalty_origin, value):
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_qddot(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    t = [0, 1]
+    x = [DM.ones((8, 1)) * value, DM.ones((8, 1)) * value]
+    u = [DM.ones((4, 1)) * value]
+    if penalty_origin == ObjectiveFcn.Mayer or penalty_origin == ConstraintFcn:
+        with pytest.raises(AttributeError, match="MINIMIZE_QDDOT"):
+            _ = penalty_origin.MINIMIZE_QDDOT
+        return
+    else:
+        penalty_type = penalty_origin.MINIMIZE_QDDOT
+    penalty = Objective(penalty_type)
+    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], t, x, u, []))
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[0].J[0][0]["val"].T,
+        [[value, -9.81 + value, value, value]],
+    )
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_track_state(penalty_origin, value):
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
