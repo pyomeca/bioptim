@@ -907,6 +907,8 @@ def test_penalty_non_slipping(value):
         expected = [[64662.56185612, 64849.5027121], [0, 0], [np.inf, np.inf]]
     elif value == -10:
         expected = [[856066.90177734, 857384.05177395], [0, 0], [np.inf, np.inf]]
+    else:
+        raise RuntimeError("Test not ready")
 
     np.testing.assert_almost_equal(np.concatenate(res)[:, 0], np.array(expected[0]))
 
@@ -1119,6 +1121,8 @@ def test_penalty_track_markers_with_nan(penalty_origin, value):
     elif isinstance(penalty_type, ObjectiveFcn.Mayer):
         penalty = Objective(penalty_type, node=Node.END, target=target[:, :, -1:])
         X = ocp.nlp[0].X[10]
+    else:
+        raise RuntimeError("Test not ready")
     ocp.update_objectives(penalty)
     res = Function("res", [X], [IpoptInterface.finalize_objective_value(ocp.nlp[0].J[0][0])]).expand()()["o0"]
 

@@ -1,13 +1,15 @@
 """
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement and
 a the at different marker at the end of each phase. Moreover a constraint on the rotation is imposed on the cube.
+Finally, an objective for the transition continuity on the control is added. Please note that the "last" control
+of the previous phase is the last shooting node (and not the node arrival).
 It is designed to show how one can define a multiphase optimal control program
 """
 
 
 import biorbd
 from bioptim import (
-    Node,
+    PenaltyNode,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
@@ -19,7 +21,12 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
+    Node,
 )
+
+
+def minimize_difference(all_pn: PenaltyNode):
+    return all_pn[0].u[0] - all_pn[1].u[0]
 
 
 def prepare_ocp(
@@ -57,6 +64,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
+    objective_functions.add(minimize_difference, custom_type=ObjectiveFcn.Mayer, node=Node.TRANSITION, weight=100, phase=1, get_all_nodes_at_once=True, quadratic=True)
 
     # Dynamics
     dynamics = DynamicsList()
