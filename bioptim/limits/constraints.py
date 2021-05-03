@@ -207,11 +207,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 if len(tangential_component_idx) == 1:
                     tangential_contact_force_squared = sum1(contact[tangential_component_idx[0], 0]) ** 2
                 elif len(tangential_component_idx) == 2:
-                    tangential_contact_force_squared = \
-                        sum1(contact[tangential_component_idx[0], 0]) ** 2 + \
-                        sum1(contact[tangential_component_idx[1], 0]) ** 2
+                    tangential_contact_force_squared = (
+                        sum1(contact[tangential_component_idx[0], 0]) ** 2
+                        + sum1(contact[tangential_component_idx[1], 0]) ** 2
+                    )
                 else:
-                    raise(ValueError("tangential_component_idx should either be x and y or only one component"))
+                    raise (ValueError("tangential_component_idx should either be x and y or only one component"))
 
                 # Since it is non-slipping normal forces are supposed to be greater than zero
                 ConstraintFunction.add_to_penalty(

@@ -64,7 +64,15 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
-    objective_functions.add(minimize_difference, custom_type=ObjectiveFcn.Mayer, node=Node.TRANSITION, weight=100, phase=1, get_all_nodes_at_once=True, quadratic=True)
+    objective_functions.add(
+        minimize_difference,
+        custom_type=ObjectiveFcn.Mayer,
+        node=Node.TRANSITION,
+        weight=100,
+        phase=1,
+        get_all_nodes_at_once=True,
+        quadratic=True,
+    )
 
     # Dynamics
     dynamics = DynamicsList()

@@ -525,7 +525,7 @@ class PenaltyFunctionAbstract:
             states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, nq, "states_idx")
 
             for i in range(len(pn) - 1):
-                val = pn.nlp.dynamics_func(pn.x[i], pn.u[i], pn.p)[nq+states_idx, :]
+                val = pn.nlp.dynamics_func(pn.x[i], pn.u[i], pn.p)[nq + states_idx, :]
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
@@ -899,7 +899,7 @@ class PenaltyFunctionAbstract:
                 "max_bound",
                 "custom_function",
                 "weight",
-                "get_all_nodes_at_once"
+                "get_all_nodes_at_once",
             ]
             for keyword in keywords:
                 if keyword in inspect.signature(penalty.custom_function).parameters:
