@@ -37,7 +37,7 @@ class Mapping:
         """
         self.map_idx = map_idx
 
-    def map(self, obj: Union[np.ndarray, MX, SX, DM]) -> Union[np.ndarray, MX, SX, DM]:
+    def map(self, obj: Union[tuple, list, np.ndarray, MX, SX, DM]) -> Union[np.ndarray, MX, SX, DM]:
         """
         Apply the mapping to an matrix object. The rows are mapped while the columns are preserved as is
 
@@ -51,7 +51,12 @@ class Mapping:
         The list mapped
         """
         # Declare a zero filled object
+        if isinstance(obj, (tuple, list)):
+            obj = np.array(obj)
+
         if isinstance(obj, np.ndarray):
+            if len(obj.shape) == 1:
+                obj = obj[:, np.newaxis]
             mapped_obj = np.zeros((len(self.map_idx), obj.shape[1]))
         elif isinstance(obj, (MX, SX, DM)):
             mapped_obj = type(obj).zeros(len(self.map_idx), obj.shape[1])

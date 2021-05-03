@@ -909,6 +909,8 @@ class Solution:
             has_global = False
             running_total = 0
             for J in ocp.J:
+                if not J:
+                    continue
                 has_global = True
                 val = []
                 val_weighted = []

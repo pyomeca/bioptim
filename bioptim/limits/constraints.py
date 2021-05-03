@@ -180,7 +180,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             pn: PenaltyNodes
                 The penalty node elements
             tangential_component_idx: int
-                Index of the tangential component of the contact force
+                Index of the tangential component of the contact force.
+                [0] = x_indices, [1] = y_indices / or [0] = component
             normal_component_idx: int
                 Index of the normal component of the contact force
             static_friction_coefficient: float
@@ -203,7 +204,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             for i in range(len(pn.u)):
                 contact = pn.nlp.contact_forces_func(pn.x[i], pn.u[i], pn.p)
                 normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
-                tangential_contact_force_squared = sum1(contact[tangential_component_idx, 0] ** 2)
+                if len(tangential_component_idx) == 1:
+                    tangential_contact_force_squared = sum1(contact[tangential_component_idx[0], 0]) ** 2
+                elif len(tangential_component_idx) == 2:
+                    tangential_contact_force_squared = (
+                        sum1(contact[tangential_component_idx[0], 0]) ** 2
+                        + sum1(contact[tangential_component_idx[1], 0]) ** 2
+                    )
+                else:
+                    raise (ValueError("tangential_component_idx should either be x and y or only one component"))
 
                 # Since it is non-slipping normal forces are supposed to be greater than zero
                 ConstraintFunction.add_to_penalty(

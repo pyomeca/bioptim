@@ -1,6 +1,7 @@
 """
 Test for file IO
 """
+import pickle
 from pickle import PicklingError
 import re
 
@@ -610,7 +611,7 @@ def test_example_multiphase(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 106084.82631762947)
+    np.testing.assert_almost_equal(f[0, 0], 106088.01707867868)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -622,8 +623,8 @@ def test_example_multiphase(ode_solver):
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array((2, 0, 0)))
-    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array((2, 0, 0)))
+    np.testing.assert_almost_equal(states[0]["q"][:, -1], np.array((2, 0, 0.0078695)))
+    np.testing.assert_almost_equal(states[1]["q"][:, 0], np.array((2, 0, 0.0078695)))
     np.testing.assert_almost_equal(states[1]["q"][:, -1], np.array((1, 0, 0)))
     np.testing.assert_almost_equal(states[2]["q"][:, 0], np.array((1, 0, 0)))
     np.testing.assert_almost_equal(states[2]["q"][:, -1], np.array((2, 0, 1.57)))
@@ -637,15 +638,16 @@ def test_example_multiphase(ode_solver):
     np.testing.assert_almost_equal(states[2]["qdot"][:, -1], np.array((0, 0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((1.42857142, 9.81, 0)))
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -1], np.array((-1.42857144, 9.81, 0)))
-    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array((-0.2322581, 9.81, 0.0)))
-    np.testing.assert_almost_equal(controls[1]["tau"][:, -1], np.array((0.2322581, 9.81, -0.0)))
-    np.testing.assert_almost_equal(controls[2]["tau"][:, 0], np.array((0.35714285, 9.81, 0.56071428)))
-    np.testing.assert_almost_equal(controls[2]["tau"][:, -1], np.array((-0.35714285, 9.81, -0.56071428)))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((1.42857142, 9.81, 0.01124212)))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -1], np.array((-1.42857144, 9.81, -0.01124212)))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array((-0.22788183, 9.81, 0.01775688)))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, -1], np.array((0.2957136, 9.81, 0.285805)))
+    np.testing.assert_almost_equal(controls[2]["tau"][:, 0], np.array((0.3078264, 9.81, 0.34001243)))
+    np.testing.assert_almost_equal(controls[2]["tau"][:, -1], np.array((-0.36233407, 9.81, -0.58394606)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, False)
+    with pytest.raises(pickle.PickleError):
+        TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)

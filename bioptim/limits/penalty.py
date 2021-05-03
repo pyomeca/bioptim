@@ -38,6 +38,7 @@ class PenaltyOption(OptionGeneric):
         penalty: Any,
         phase: int = 0,
         node: Node = Node.DEFAULT,
+        get_all_nodes_at_once: bool = False,
         target: np.ndarray = None,
         quadratic: bool = None,
         index: int = None,
@@ -67,6 +68,7 @@ class PenaltyOption(OptionGeneric):
 
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
         self.node = node
+        self.get_all_nodes_at_once = get_all_nodes_at_once
         self.quadratic = quadratic
 
         self.index = index
@@ -506,6 +508,27 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
+        def minimize_qddot(penalty: PenaltyOption, pn: PenaltyNodes):
+            """
+            Minimize the states velocity by comparing the state at a node and at the next node.
+            By default this function is quadratic, meaning that it minimizes the difference.
+            Indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            pn: PenaltyNodes
+                The penalty node elements
+            """
+            nq = pn.nlp.shape["q"]
+            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, nq, "states_idx")
+
+            for i in range(len(pn) - 1):
+                val = pn.nlp.dynamics_func(pn.x[i], pn.u[i], pn.p)[nq + states_idx, :]
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+
+        @staticmethod
         def minimize_torque_derivative(penalty: PenaltyOption, pn: PenaltyNodes):
             """
             Minimize the joint torque velocity by comparing the torque at a node and at the next node.
@@ -847,7 +870,7 @@ class PenaltyFunctionAbstract:
                         penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
-        def custom(penalty: PenaltyOption, nodes: PenaltyNodes, **parameters: Any):
+        def custom(penalty: PenaltyOption, nodes: Union[PenaltyNodes, list], **parameters: Any):
             """
             A user defined penalty function
 
@@ -876,6 +899,7 @@ class PenaltyFunctionAbstract:
                 "max_bound",
                 "custom_function",
                 "weight",
+                "get_all_nodes_at_once",
             ]
             for keyword in keywords:
                 if keyword in inspect.signature(penalty.custom_function).parameters:
@@ -887,6 +911,10 @@ class PenaltyFunctionAbstract:
                 or (hasattr(penalty, "max_bound") and penalty.max_bound is not None)
                 else False
             )
+
+            if penalty.get_all_nodes_at_once:
+                nodes = [nodes]  # Trick the next for loop into sending everything at once
+
             for node in nodes:
                 val = penalty.custom_function(node, **parameters)
                 if val is None:
@@ -901,8 +929,10 @@ class PenaltyFunctionAbstract:
                     penalty.min_bound = val[0]
                     penalty.max_bound = val[2]
                     val = val[1]
-
-                penalty.type.get_type().add_to_penalty(node.ocp, nodes.nlp, val, penalty)
+                if penalty.get_all_nodes_at_once:
+                    penalty.type.get_type().add_to_penalty(node[0].ocp, None, val, penalty)
+                else:
+                    penalty.type.get_type().add_to_penalty(node.ocp, nodes.nlp, val, penalty)
 
     @staticmethod
     def add(ocp, nlp):
@@ -938,14 +968,33 @@ class PenaltyFunctionAbstract:
             else:
                 penalty.name = penalty.type.name
 
-        t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
-        pn = PenaltyNodes(ocp, nlp, t, x, u, nlp.p)
         penalty_type = penalty.type.get_type()
-
-        penalty_type._span_checker(penalty, pn)
         penalty_type._parameter_modifier(penalty)
+        if penalty.node == Node.TRANSITION:
+            pn = []
+            penalty.node = Node.END
+            t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
+            u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
+            pn.append(PenaltyNodes(ocp, nlp, t, x, u, nlp.p))
 
-        penalty_type.clear_penalty(pn.ocp, pn.nlp, penalty)
+            nlp = ocp.nlp[(nlp.phase_idx + 1) % ocp.n_phases]
+            penalty.node = Node.START
+            t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
+            pn.append(PenaltyNodes(ocp, nlp, t, x, u, nlp.p))
+
+            penalty.node = Node.TRANSITION
+            penalty.get_all_nodes_at_once = True
+
+            penalty_type._span_checker(penalty, pn[0])
+            penalty_type._span_checker(penalty, pn[1])
+            penalty_type.clear_penalty(ocp, None, penalty)
+        else:
+            t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
+            pn = PenaltyNodes(ocp, nlp, t, x, u, nlp.p)
+
+            penalty_type._span_checker(penalty, pn)
+            penalty_type.clear_penalty(pn.ocp, pn.nlp, penalty)
+
         penalty.type.value[0](penalty, pn, **penalty.params)
 
     @staticmethod
@@ -1234,9 +1283,6 @@ class PenaltyFunctionAbstract:
             The index of the matplotlib axes
         """
 
-        if (isinstance(data, np.ndarray) and not data.any()) or (not isinstance(data, np.ndarray) and not data):
-            return
-
         if data.shape[1] == pn.nlp.ns:
             data = np.c_[data, data[:, -1]]
         pn.ocp.add_plot(
@@ -1268,6 +1314,7 @@ class PenaltyType(Enum):
     MINIMIZE_TORQUE = PenaltyFunctionAbstract.Functions.minimize_torque
     TRACK_TORQUE = MINIMIZE_TORQUE
     MINIMIZE_STATE_DERIVATIVE = PenaltyFunctionAbstract.Functions.minimize_state_derivative
+    MINIMIZE_QDDOT = PenaltyFunctionAbstract.Functions.minimize_qddot
     MINIMIZE_TORQUE_DERIVATIVE = PenaltyFunctionAbstract.Functions.minimize_torque_derivative
     MINIMIZE_MUSCLES_CONTROL = PenaltyFunctionAbstract.Functions.minimize_muscles_control
     TRACK_MUSCLES_CONTROL = MINIMIZE_MUSCLES_CONTROL
