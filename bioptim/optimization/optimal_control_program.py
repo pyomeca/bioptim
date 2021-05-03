@@ -197,6 +197,14 @@ class OptimalControlProgram:
         self.n_phases = len(biorbd_model)
 
         biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
+
+        if isinstance(dynamics, Dynamics):
+            dynamics_type_tp = DynamicsList()
+            dynamics_type_tp.add(dynamics)
+            dynamics = dynamics_type_tp
+        elif not isinstance(dynamics, DynamicsList):
+            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
+
         self.original_values = {
             "biorbd_model": biorbd_model_path,
             "dynamics": dynamics,
@@ -225,13 +233,6 @@ class OptimalControlProgram:
         # Check integrity of arguments
         if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
             raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
-
-        if isinstance(dynamics, Dynamics):
-            dynamics_type_tp = DynamicsList()
-            dynamics_type_tp.add(dynamics)
-            dynamics = dynamics_type_tp
-        elif not isinstance(dynamics, DynamicsList):
-            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
 
         ns = n_shooting
         if not isinstance(ns, int) or ns < 2:
