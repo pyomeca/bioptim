@@ -35,12 +35,12 @@ from bioptim import (
 )
 
 
-def to_markers(states):
+def states_to_markers(states):
     nq = biorbd_model.nbQ()
     n_mark = biorbd_model.nbMarkers()
     q = cas.MX.sym("q", nq)
     markers_func = biorbd.to_casadi_func("makers_kyn", biorbd_model.markers, q)
-    return np.array(markers_func(states[:nq, :])).reshape((3, n_mark, -1), order='F')
+    return np.array(markers_func(states[:nq, :])).reshape((3, n_mark, -1), order="F")
 
 
 def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False):
@@ -63,7 +63,7 @@ def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=Fa
         states[:, n] = x0
         x0 = sol["y"][:, -1]
     states[:, -1] = x0
-    markers = to_markers(states[: biorbd_model.nbQ(), :])
+    markers = states_to_markers(states[: biorbd_model.nbQ(), :])
 
     # Simulated noise
     np.random.seed(42)
@@ -71,8 +71,8 @@ def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=Fa
     markers_noised = markers + noise
 
     if show_plots:
-        q_plot = plt.plot(states[: nq, :].T)
-        dq_plot = plt.plot(states[nq :, :].T, "--")
+        q_plot = plt.plot(states[:nq, :].T)
+        dq_plot = plt.plot(states[nq:, :].T, "--")
         name_dof = [name.to_string() for name in biorbd_model.nameDof()]
         plt.legend(q_plot + dq_plot, name_dof + ["d" + name for name in name_dof])
         plt.title("Real position and velocity trajectories")
@@ -142,10 +142,35 @@ def prepare_ocp(
     )
 
 
+def get_solver_options(use_ipopt):
+    if use_ipopt:
+        options = {
+            "hessian_approximation": "limited-memory",
+            "limited_memory_max_history": 50,
+            "max_iter": 5,
+            "print_level": 0,
+            "tol": 1e-1,
+            "linear_solver": "ma57",
+            "bound_frac": 1e-10,
+            "bound_push": 1e-10,
+        }
+        options_first_iter = copy(options)
+        options_first_iter["max_iter"] = 50
+        options_first_iter["tol"] = 1e-6
+    else:
+        options_first_iter = {
+            "nlp_solver_max_iter": 1000,
+            "integrator_type": "ERK",
+        }
+        options = {}
+    return options_first_iter, options
+
+
 if __name__ == "__main__":
     biorbd_model_path = "./cart_pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
 
+    use_ipopt = False
     tf = 5  # duration of the simulation
     x0 = np.array([0, np.pi / 2, 0, 0])
     n_shoot = tf * 100  # number of shooting nodes per sec
@@ -154,7 +179,9 @@ if __name__ == "__main__":
     window_size = 10  # size of MHE window
     tf_mhe = tf / n_shoot * window_size  # duration of MHE window
 
-    states, markers, markers_noised, controls = generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False)
+    states, markers, markers_noised, controls = generate_data(
+        biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False
+    )
 
     x0 = np.zeros((biorbd_model.nbQ() * 2, window_size + 1))
     x0[:, 0] = np.array([0, np.pi / 2, 0, 0])
@@ -162,8 +189,8 @@ if __name__ == "__main__":
     x_est = np.zeros((biorbd_model.nbQ() * 2, n_shoot - window_size))
     t_max = 5  # Give a bit of slack on the max torque
 
-    def get_markers(i: int):
-        return markers_noised[:, :, i: i + window_size + 1]
+    def get_target(i: int):
+        return markers_noised[:, :, i : i + window_size + 1]
 
     ocp = prepare_ocp(
         biorbd_model_path,
@@ -172,40 +199,30 @@ if __name__ == "__main__":
         max_torque=t_max,
         x0=x0,
         u0=u0,
-        target=get_markers(0),
+        target=get_target(0),
     )
-    options_ipopt = {
-        "hessian_approximation": "limited-memory",
-        "limited_memory_max_history": 50,
-        "max_iter": 5,
-        "print_level": 0,
-        "tol": 1e-1,
-        "linear_solver": "ma57",
-        "bound_frac": 1e-10,
-        "bound_push": 1e-10,
-    }
-    first_ipopt = copy(options_ipopt)
-    first_ipopt["max_iter"] = 50
-    first_ipopt["tol"] = 1e-6
 
-    options_acados = {
-        "nlp_solver_max_iter": 1000,
-        "integrator_type": "ERK",
-    }
-
-    def update_objective_functions(ocp, t, _):
+    def update_functions(ocp, t, _):
         if t == 1:
-            # Start the timer after the compiling
+            # Start the timer after having compiled
             timer.append(time.time())
         new_objectives = ObjectiveList()
-        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, target=get_markers(t), list_index=0)
+        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, target=get_target(t), list_index=0)
         new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=100, target=x0, phase=0, list_index=1)
         ocp.update_objectives(new_objectives)
         return t < n_shoot - window_size - 1
 
+    options_first_iter, solver_options = get_solver_options(use_ipopt)
     timer = []
-    # sol = ocp.solve(update_objective_functions, solver=Solver.IPOPT, solver_options_first_iter=first_ipopt, solver_options=options_ipopt)
-    sol = ocp.solve_mhe(update_objective_functions, solver=Solver.ACADOS, solver_options_first_iter=options_acados)
+    if use_ipopt:
+        sol = ocp.solve_mhe(
+            update_functions,
+            solver=Solver.IPOPT,
+            solver_options_first_iter=options_first_iter,
+            solver_options=solver_options,
+        )
+    else:
+        sol = ocp.solve_mhe(update_functions, solver=Solver.ACADOS, solver_options_first_iter=options_first_iter)
 
     timer.append(time.time())
     n_frames = n_shoot - window_size - 1
@@ -215,11 +232,11 @@ if __name__ == "__main__":
     print(f"Average time per iteration of MHE : {(timer[1]-timer[0])/(n_shoot-window_size-2)} s.")
     print(f"Norm of the error on state = {np.linalg.norm(states[:,:n_frames] - sol.states['all'])}")
 
-    markers_estimated = to_markers(sol.states['all'])
+    markers_estimated = states_to_markers(sol.states["all"])
 
-    plt.plot(markers_noised[1, :, : n_frames].T, markers_noised[2, :, : n_frames].T, "x", label="markers traj noise")
+    plt.plot(markers_noised[1, :, :n_frames].T, markers_noised[2, :, :n_frames].T, "x", label="markers traj noise")
     plt.gca().set_prop_cycle(None)
-    plt.plot(markers[1, :, : n_frames].T, markers[2, :, : n_frames].T, label="markers traj truth")
+    plt.plot(markers[1, :, :n_frames].T, markers[2, :, :n_frames].T, label="markers traj truth")
     plt.gca().set_prop_cycle(None)
     plt.plot(markers_estimated[1, :, :].T, markers_estimated[2, :, :].T, "o", label="markers traj est")
     plt.legend()
@@ -229,3 +246,5 @@ if __name__ == "__main__":
     plt.plot(states[:, :n_frames].T, label="x truth")
     plt.legend()
     plt.show()
+
+    sol.animate()

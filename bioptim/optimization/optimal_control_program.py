@@ -647,12 +647,12 @@ class OptimalControlProgram:
         return Solution(self, self.solver.get_optimized_value())
 
     def solve_mhe(
-            self,
-            update_function: Callable,
-            solver: Solver = Solver.ACADOS,
-            solver_options: dict = None,
-            solver_options_first_iter: dict = None,
-        ) -> Solution:
+        self,
+        update_function: Callable,
+        solver: Solver = Solver.ACADOS,
+        solver_options: dict = None,
+        solver_options_first_iter: dict = None,
+    ) -> Solution:
         if len(self.nlp) != 1:
             raise NotImplementedError("MHE is only available for 1 phase program")
 

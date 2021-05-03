@@ -180,6 +180,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_mhe(cost_type):
+    raise NotImplementedError("Make the proper MHE test")
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     n_shooting = 5
