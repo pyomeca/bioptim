@@ -476,6 +476,8 @@ class AcadosInterface(SolverInterface):
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
             for i in range(ocp.n_phases):
                 for j, J in enumerate(ocp.nlp[i].J):
+                    if not J:
+                        continue
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
                         self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"].reshape((-1, 1)))
                         self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * J[0]["val"].numel()))
