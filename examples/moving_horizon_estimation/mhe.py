@@ -22,7 +22,7 @@ import casadi as cas
 import numpy as np
 import biorbd
 from bioptim import (
-    OptimalControlProgram,
+    MovingHorizonEstimator,
     DynamicsList,
     DynamicsFcn,
     ObjectiveList,
@@ -35,7 +35,7 @@ from bioptim import (
 )
 
 
-def states_to_markers(states):
+def states_to_markers(biorbd_model, states):
     nq = biorbd_model.nbQ()
     n_mark = biorbd_model.nbMarkers()
     q = cas.MX.sym("q", nq)
@@ -44,13 +44,14 @@ def states_to_markers(states):
 
 
 def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False):
+    def pendulum_ode(t, x, u):
+        return np.concatenate((x[nq:, np.newaxis], qddot_func(x[:nq], x[nq:], u)))[:, 0]
+
     nq = biorbd_model.nbQ()
     q = cas.MX.sym("q", nq)
     qdot = cas.MX.sym("qdot", nq)
     tau = cas.MX.sym("tau", nq)
-
     qddot_func = biorbd.to_casadi_func("forw_dyn", biorbd_model.ForwardDynamics, q, qdot, tau)
-    pendulum_ode = lambda t, x, u: np.concatenate((x[nq:, np.newaxis], qddot_func(x[:nq], x[nq:], u)))[:, 0]
 
     # Simulated data
     dt = tf / n_shoot
@@ -63,7 +64,7 @@ def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=Fa
         states[:, n] = x0
         x0 = sol["y"][:, -1]
     states[:, -1] = x0
-    markers = states_to_markers(states[: biorbd_model.nbQ(), :])
+    markers = states_to_markers(biorbd_model, states[: biorbd_model.nbQ(), :])
 
     # Simulated noise
     np.random.seed(42)
@@ -88,23 +89,17 @@ def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=Fa
     return states, markers, markers_noised, controls
 
 
-def prepare_ocp(
+def prepare_mhe(
     biorbd_model_path,
-    n_shooting,
-    final_time,
+    window_len,
+    window_duration,
     max_torque,
     x0,
     u0,
-    target=None,
     interpolation=InterpolationType.EACH_FRAME,
 ):
     biorbd_model = biorbd.Model(biorbd_model_path)
     tau_min, tau_max, tau_init = -max_torque, max_torque, 0
-
-    # Add objective functions
-    objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, target=target)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=100, target=x0)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -127,24 +122,30 @@ def prepare_ocp(
     u_init = InitialGuessList()
     u_init.add(u0, interpolation=interpolation)
 
-    return OptimalControlProgram(
+    return MovingHorizonEstimator(
         biorbd_model,
         dynamics,
-        n_shooting,
-        final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        window_len,
+        window_duration,
+        x_init=x_init,
+        u_init=u_init,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
         n_threads=4,
-        use_sx=True,
     )
 
 
-def get_solver_options(use_ipopt):
-    if use_ipopt:
-        options = {
+def get_solver_options(solver):
+    mhe_dict = {"solver": None, "solver_options": None, "solver_options_first_iter": None}
+    if solver == Solver.ACADOS:
+        mhe_dict["solver"] = Solver.ACADOS
+        mhe_dict["solver_options"] = {
+            "nlp_solver_max_iter": 1000,
+            "integrator_type": "ERK",
+        }
+    elif solver == Solver.IPOPT:
+        mhe_dict["solver"] = Solver.IPOPT
+        mhe_dict["solver_options"] = {
             "hessian_approximation": "limited-memory",
             "limited_memory_max_history": 50,
             "max_iter": 5,
@@ -154,97 +155,88 @@ def get_solver_options(use_ipopt):
             "bound_frac": 1e-10,
             "bound_push": 1e-10,
         }
-        options_first_iter = copy(options)
-        options_first_iter["max_iter"] = 50
-        options_first_iter["tol"] = 1e-6
+        mhe_dict["solver_options_first_iter"] = copy(mhe_dict["solver_options"])
+        mhe_dict["solver_options_first_iter"]["max_iter"] = 50
+        mhe_dict["solver_options_first_iter"]["tol"] = 1e-6
     else:
-        options_first_iter = {
-            "nlp_solver_max_iter": 1000,
-            "integrator_type": "ERK",
-        }
-        options = {}
-    return options_first_iter, options
+        raise NotImplementedError("Solver not recognized")
+
+    return mhe_dict
 
 
-if __name__ == "__main__":
+def main():
     biorbd_model_path = "./cart_pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
 
-    use_ipopt = False
-    tf = 5  # duration of the simulation
-    x0 = np.array([0, np.pi / 2, 0, 0])
-    n_shoot = tf * 100  # number of shooting nodes per sec
-    noise_std = 0.05  # STD of noise added to measurements
-    t_max = 2  # Max torque applied to the model
-    window_size = 10  # size of MHE window
-    tf_mhe = tf / n_shoot * window_size  # duration of MHE window
+    solver = Solver.ACADOS
+    final_time = 5
+    n_shoot_per_second = 100
+    window_len = 10
+    window_duration = 1 / n_shoot_per_second * window_len
+    n_frames_total = final_time * n_shoot_per_second - window_len - 1
 
+    x0 = np.array([0, np.pi / 2, 0, 0])
+    noise_std = 0.05  # STD of noise added to measurements
+    torque_max = 2  # Max torque applied to the model
     states, markers, markers_noised, controls = generate_data(
-        biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False
+        biorbd_model, final_time, x0, torque_max, n_shoot_per_second * final_time, noise_std, show_plots=False
     )
 
-    x0 = np.zeros((biorbd_model.nbQ() * 2, window_size + 1))
+    x0 = np.zeros((biorbd_model.nbQ() * 2, window_len + 1))
     x0[:, 0] = np.array([0, np.pi / 2, 0, 0])
-    u0 = np.zeros((biorbd_model.nbQ(), window_size))
-    x_est = np.zeros((biorbd_model.nbQ() * 2, n_shoot - window_size))
+    u0 = np.zeros((biorbd_model.nbQ(), window_len))
     t_max = 5  # Give a bit of slack on the max torque
 
-    def get_target(i: int):
-        return markers_noised[:, :, i : i + window_size + 1]
-
-    ocp = prepare_ocp(
+    mhe = prepare_mhe(
         biorbd_model_path,
-        n_shooting=window_size,
-        final_time=tf_mhe,
+        window_len=window_len,
+        window_duration=window_duration,
         max_torque=t_max,
         x0=x0,
         u0=u0,
-        target=get_target(0),
     )
 
-    def update_functions(ocp, t, _):
+    def update_functions(mhe, t, _):
+        def get_target(i: int):
+            return markers_noised[:, :, i: i + window_len + 1]
+
         if t == 1:
             # Start the timer after having compiled
             timer.append(time.time())
         new_objectives = ObjectiveList()
         new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, target=get_target(t), list_index=0)
         new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=100, target=x0, phase=0, list_index=1)
-        ocp.update_objectives(new_objectives)
-        return t < n_shoot - window_size - 1
+        mhe.update_objectives(new_objectives)
+        return t < n_frames_total
 
-    options_first_iter, solver_options = get_solver_options(use_ipopt)
-    timer = []
-    if use_ipopt:
-        sol = ocp.solve_mhe(
-            update_functions,
-            solver=Solver.IPOPT,
-            solver_options_first_iter=options_first_iter,
-            solver_options=solver_options,
-        )
-    else:
-        sol = ocp.solve_mhe(update_functions, solver=Solver.ACADOS, solver_options_first_iter=options_first_iter)
+    # Solve the program
+    timer = []  # Do not start timer yet (because of ACADOS compilation
+    sol = mhe.solve(update_functions, **get_solver_options(solver))
 
     timer.append(time.time())
-    n_frames = n_shoot - window_size - 1
     print("ACADOS with BiorbdOptim")
-    print(f"Window size of MHE : {tf_mhe} s.")
-    print(f"New measurement every : {tf/n_shoot} s.")
-    print(f"Average time per iteration of MHE : {(timer[1]-timer[0])/(n_shoot-window_size-2)} s.")
-    print(f"Norm of the error on state = {np.linalg.norm(states[:,:n_frames] - sol.states['all'])}")
+    print(f"Window size of MHE : {window_duration} s.")
+    print(f"New measurement every : {1/n_shoot_per_second} s.")
+    print(f"Average time per iteration of MHE : {(timer[1]-timer[0])/(n_frames_total - 1)} s.")
+    print(f"Norm of the error on state = {np.linalg.norm(states[:,:n_frames_total] - sol.states['all'])}")
 
-    markers_estimated = states_to_markers(sol.states["all"])
+    markers_estimated = states_to_markers(biorbd_model, sol.states["all"])
 
-    plt.plot(markers_noised[1, :, :n_frames].T, markers_noised[2, :, :n_frames].T, "x", label="markers traj noise")
+    plt.plot(markers_noised[1, :, :n_frames_total].T, markers_noised[2, :, :n_frames_total].T, "x", label="Noised markers trajectory")
     plt.gca().set_prop_cycle(None)
-    plt.plot(markers[1, :, :n_frames].T, markers[2, :, :n_frames].T, label="markers traj truth")
+    plt.plot(markers[1, :, :n_frames_total].T, markers[2, :, :n_frames_total].T, label="True markers trajectory")
     plt.gca().set_prop_cycle(None)
-    plt.plot(markers_estimated[1, :, :].T, markers_estimated[2, :, :].T, "o", label="markers traj est")
+    plt.plot(markers_estimated[1, :, :].T, markers_estimated[2, :, :].T, "o", label="Estimated marker trajectory")
     plt.legend()
 
     plt.figure()
     plt.plot(sol.states["all"].T, "--", label="x estimate")
-    plt.plot(states[:, :n_frames].T, label="x truth")
+    plt.plot(states[:, :n_frames_total].T, label="x truth")
     plt.legend()
     plt.show()
 
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

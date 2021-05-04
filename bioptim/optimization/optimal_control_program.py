@@ -104,7 +104,7 @@ class OptimalControlProgram:
     @staticmethod
     load(file_path: str) -> list
         Reload a previous optimization (*.bo) saved using save
-    __define_time(self, phase_time: Union[float, tuple], objective_functions: ObjectiveList, constraints: ConstraintList)
+    _define_time(self, phase_time: Union[float, tuple], objective_functions: ObjectiveList, constraints: ConstraintList)
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
         a sanity check is perform and the values of initial guess and bounds for these particular phases
     __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter])
@@ -358,7 +358,7 @@ class OptimalControlProgram:
             self.update_parameters(parameters)
 
         # Declare the time to optimize
-        self.__define_time(phase_time, objective_functions, constraints)
+        self._define_time(phase_time, objective_functions, constraints)
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
@@ -646,54 +646,6 @@ class OptimalControlProgram:
 
         return Solution(self, self.solver.get_optimized_value())
 
-    def solve_mhe(
-        self,
-        update_function: Callable,
-        solver: Solver = Solver.ACADOS,
-        solver_options: dict = None,
-        solver_options_first_iter: dict = None,
-    ) -> Solution:
-        if len(self.nlp) != 1:
-            raise NotImplementedError("MHE is only available for 1 phase program")
-
-        x_bounds = Bounds(self.nlp[0].x_bounds.min, self.nlp[0].x_bounds.max)
-
-        t = 0
-        sol = None
-        states = []
-        controls = []
-        solver_option_current = solver_options_first_iter if solver_options_first_iter else solver_options
-        while update_function(self, t, sol):
-            sol = self.solve(solver=solver, solver_options=solver_option_current)
-            solver_option_current = solver_options
-
-            # Solve and save the current window
-            states.append(sol.states["all"][:, 0:1])
-            controls.append(sol.controls["all"][:, 0:1])
-
-            # Update the initial frame bounds
-            x_bounds[:, 0] = sol.states["all"][:, 1]
-            self.update_bounds(x_bounds)
-
-            # Update the initial guess to shifted previous solution
-            new_x_init = np.concatenate((sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1)
-            x_init = InitialGuess(new_x_init, interpolation=InterpolationType.EACH_FRAME)
-            self.update_initial_guess(x_init)
-
-            t += 1
-
-        # Prepare the modified ocp that fits the solution dimension
-        solution_ocp = OptimalControlProgram(
-            biorbd_model=self.original_values["biorbd_model"][0],
-            dynamics=self.original_values["dynamics"][0],
-            n_shooting=t - 1,
-            phase_time=t * self.nlp[0].dt,
-        )
-
-        states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        return Solution(solution_ocp, [states, controls])
-
     def save(self, sol: Solution, file_path: str, stand_alone: bool = False):
         """
         Save the ocp and solution structure to the hard drive. It automatically create the required
@@ -762,7 +714,7 @@ class OptimalControlProgram:
             out = [ocp, sol]
         return out
 
-    def __define_time(
+    def _define_time(
         self,
         phase_time: Union[int, float, list, tuple],
         objective_functions: ObjectiveList,
