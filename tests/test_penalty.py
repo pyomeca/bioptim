@@ -93,6 +93,28 @@ def test_penalty_minimize_state(penalty_origin, value):
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_qddot(penalty_origin, value):
+    ocp = prepare_test_ocp()
+    t = [0, 1]
+    x = [DM.ones((8, 1)) * value, DM.ones((8, 1)) * value]
+    u = [DM.ones((4, 1)) * value]
+    if penalty_origin == ObjectiveFcn.Mayer or penalty_origin == ConstraintFcn:
+        with pytest.raises(AttributeError, match="MINIMIZE_QDDOT"):
+            _ = penalty_origin.MINIMIZE_QDDOT
+        return
+    else:
+        penalty_type = penalty_origin.MINIMIZE_QDDOT
+    penalty = Objective(penalty_type)
+    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], t, x, u, []))
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[0].J[0][0]["val"].T,
+        [[value, -9.81 + value, value, value]],
+    )
+
+
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_track_state(penalty_origin, value):
     ocp = prepare_test_ocp()
     x = [DM.ones((12, 1)) * value]
@@ -885,6 +907,8 @@ def test_penalty_non_slipping(value):
         expected = [[64662.56185612, 64849.5027121], [0, 0], [np.inf, np.inf]]
     elif value == -10:
         expected = [[856066.90177734, 857384.05177395], [0, 0], [np.inf, np.inf]]
+    else:
+        raise RuntimeError("Test not ready")
 
     np.testing.assert_almost_equal(np.concatenate(res)[:, 0], np.array(expected[0]))
 
@@ -1097,6 +1121,8 @@ def test_penalty_track_markers_with_nan(penalty_origin, value):
     elif isinstance(penalty_type, ObjectiveFcn.Mayer):
         penalty = Objective(penalty_type, node=Node.END, target=target[:, :, -1:])
         X = ocp.nlp[0].X[10]
+    else:
+        raise RuntimeError("Test not ready")
     ocp.update_objectives(penalty)
     res = Function("res", [X], [IpoptInterface.finalize_objective_value(ocp.nlp[0].J[0][0])]).expand()()["o0"]
 

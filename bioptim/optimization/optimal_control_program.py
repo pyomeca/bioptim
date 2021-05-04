@@ -197,6 +197,14 @@ class OptimalControlProgram:
         self.n_phases = len(biorbd_model)
 
         biorbd_model_path = [m.path().relativePath().to_string() for m in biorbd_model]
+
+        if isinstance(dynamics, Dynamics):
+            dynamics_type_tp = DynamicsList()
+            dynamics_type_tp.add(dynamics)
+            dynamics = dynamics_type_tp
+        elif not isinstance(dynamics, DynamicsList):
+            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
+
         self.original_values = {
             "biorbd_model": biorbd_model_path,
             "dynamics": dynamics,
@@ -226,16 +234,10 @@ class OptimalControlProgram:
         if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
             raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
 
-        if isinstance(dynamics, Dynamics):
-            dynamics_type_tp = DynamicsList()
-            dynamics_type_tp.add(dynamics)
-            dynamics = dynamics_type_tp
-        elif not isinstance(dynamics, DynamicsList):
-            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
-
-        if not isinstance(n_shooting, int) or n_shooting < 2:
-            if isinstance(n_shooting, (tuple, list)):
-                if sum([True for i in n_shooting if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
+        ns = n_shooting
+        if not isinstance(ns, int) or ns < 2:
+            if isinstance(ns, (tuple, list)):
+                if sum([True for i in ns if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
                     raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
             else:
                 raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
