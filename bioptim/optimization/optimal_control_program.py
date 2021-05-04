@@ -603,7 +603,7 @@ class OptimalControlProgram:
         self,
         solver: Solver = Solver.IPOPT,
         show_online_optim: bool = False,
-        solver_options: dict = {},
+        solver_options: dict = None,
     ) -> Solution:
         """
         Call the solver to actually solve the ocp
@@ -632,6 +632,8 @@ class OptimalControlProgram:
         elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
             from ..interfaces.acados_interface import AcadosInterface
 
+            if solver_options is None:
+                solver_options = {}
             self.solver = AcadosInterface(self, **solver_options)
 
         elif self.solver_type == Solver.NONE:

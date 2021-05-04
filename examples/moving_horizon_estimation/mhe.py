@@ -198,7 +198,7 @@ def main():
 
     def update_functions(mhe, t, _):
         def get_target(i: int):
-            return markers_noised[:, :, i: i + window_len + 1]
+            return markers_noised[:, :, i : i + window_len + 1]
 
         if t == 1:
             # Start the timer after having compiled
@@ -222,7 +222,12 @@ def main():
 
     markers_estimated = states_to_markers(biorbd_model, sol.states["all"])
 
-    plt.plot(markers_noised[1, :, :n_frames_total].T, markers_noised[2, :, :n_frames_total].T, "x", label="Noised markers trajectory")
+    plt.plot(
+        markers_noised[1, :, :n_frames_total].T,
+        markers_noised[2, :, :n_frames_total].T,
+        "x",
+        label="Noised markers trajectory",
+    )
     plt.gca().set_prop_cycle(None)
     plt.plot(markers[1, :, :n_frames_total].T, markers[2, :, :n_frames_total].T, label="True markers trajectory")
     plt.gca().set_prop_cycle(None)

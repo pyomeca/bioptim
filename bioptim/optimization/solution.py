@@ -927,6 +927,8 @@ class Solution:
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
                 for J in nlp.J:
+                    if not J:
+                        continue
                     val = []
                     val_weighted = []
                     for j in J:
