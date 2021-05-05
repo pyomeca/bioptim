@@ -191,7 +191,7 @@ def test_acados_mhe(solver):
     window_len = 5
     window_duration = 0.2
 
-    final_time = window_duration/window_len * n_cycles * n_frame_by_cycle
+    final_time = window_duration / window_len * n_cycles * n_frame_by_cycle
     x_init = np.zeros((nq * 2, window_len + 1))
     u_init = np.zeros((nq, window_len))
 
@@ -203,6 +203,7 @@ def test_acados_mhe(solver):
     def update_functions(mhe, t, _):
         def target_func(i: int):
             return target[:, :, i : i + window_len + 1]
+
         mhe.update_objectives_target(target=target_func(t), list_index=0)
         return t < n_frame_by_cycle * n_cycles - window_len - 1
 
@@ -220,7 +221,7 @@ def test_acados_mhe(solver):
     if solver == Solver.ACADOS:
         # Compare the position on the first few frames (only ACADOS, since IPOPT is not precise with current options)
         np.testing.assert_almost_equal(
-            sol.states["q"][:, :-2 * window_len], target_q[:nq, :-3 * window_len - 1], decimal=3
+            sol.states["q"][:, : -2 * window_len], target_q[:nq, : -3 * window_len - 1], decimal=3
         )
         os.remove(f"./acados_ocp.json")
         shutil.rmtree(f"./c_generated_code/")

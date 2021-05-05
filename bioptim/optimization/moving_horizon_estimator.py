@@ -117,7 +117,9 @@ class MovingHorizonEstimator(OptimalControlProgram):
 
             # Update the initial frame bounds
             self.nlp[0].x_bounds[:, 0] = sol.states["all"][:, 1]
-            self.nlp[0].x_init.init[:, :] = np.concatenate((sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1)
+            self.nlp[0].x_init.init[:, :] = np.concatenate(
+                (sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1
+            )
 
             t += 1
         real_time = time() - real_time
