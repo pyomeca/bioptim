@@ -38,7 +38,7 @@ def states_to_markers(biorbd_model, states):
     nq = biorbd_model.nbQ()
     n_mark = biorbd_model.nbMarkers()
     q = cas.MX.sym("q", nq)
-    markers_func = biorbd.to_casadi_func("makers_kyn", biorbd_model.markers, q)
+    markers_func = biorbd.to_casadi_func("makers", biorbd_model.markers, q)
     return np.array(markers_func(states[:nq, :])).reshape((3, n_mark, -1), order="F")
 
 
@@ -88,26 +88,17 @@ def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=Fa
     return states, markers, markers_noised, controls
 
 
-def prepare_mhe(
-    biorbd_model_path,
-    window_len,
-    window_duration,
-    max_torque,
-    x_init,
-    u_init,
-    interpolation=InterpolationType.EACH_FRAME,
-):
+def prepare_mhe(biorbd_model, window_len, window_duration, max_torque, x_init, u_init):
     new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, list_index=0)
 
-    biorbd_model = biorbd.Model(biorbd_model_path)
     return MovingHorizonEstimator(
         biorbd_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,
         objective_functions=new_objectives,
-        x_init=InitialGuess(x_init, interpolation=interpolation),
-        u_init=InitialGuess(u_init, interpolation=interpolation),
+        x_init=InitialGuess(x_init, interpolation=InterpolationType.EACH_FRAME),
+        u_init=InitialGuess(u_init, interpolation=InterpolationType.EACH_FRAME),
         x_bounds=QAndQDotBounds(biorbd_model),
         u_bounds=Bounds([-max_torque, 0.0], [max_torque, 0.0]),
         n_threads=4,
@@ -166,8 +157,9 @@ def main():
     u_init = np.zeros((biorbd_model.nbQ(), window_len))
     torque_max = 5  # Give a bit of slack on the max torque
 
+    biorbd_model = biorbd.Model(biorbd_model_path)
     mhe = prepare_mhe(
-        biorbd_model_path,
+        biorbd_model,
         window_len=window_len,
         window_duration=window_duration,
         max_torque=torque_max,

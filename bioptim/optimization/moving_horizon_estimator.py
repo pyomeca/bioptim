@@ -74,13 +74,8 @@ class MovingHorizonEstimator(OptimalControlProgram):
             previous_solution is None the first call and then is the Solution structure for the last solving of the MHE.
             The function 'update_function' is called before each solve. If it returns true, the next frame is solve.
             Otherwise, it finishes the MHE and the solution is returned. The `update_function` callback can also
-            be used to modify the program (usually the targets of some objective functions).
-        warm_start_function: Callable
-            A function with the signature: warm_start_function(mhe, current_time_index, previous_solution) (see
-            'update_function' for details). It leaves the user the capability to set the bounds and initial_guess by
-            themselves. Otherwise the initial guess is the solution of the previous frame bue where the first frame
-            is dropped and the last frame is duplicated. Moreover, the bounds at first frame is set to the new
-            first frame of the initial guess
+            be used to modify the program (usually the targets of some objective functions) and initial condition and
+            bounds.
         solver: Solver
             The Solver to use (default being ACADOS)
         solver_options: dict
@@ -91,8 +86,9 @@ class MovingHorizonEstimator(OptimalControlProgram):
 
         Returns
         -------
-
+        The solution of the MHE
         """
+
         if len(self.nlp) != 1:
             raise NotImplementedError("MHE is only available for 1 phase program")
 
