@@ -28,7 +28,7 @@ class MovingHorizonEstimator(OptimalControlProgram):
         self,
         biorbd_model: Union[str, biorbd.Model, list, tuple],
         dynamics: Union[Dynamics, DynamicsList],
-        window_length: Union[int, list, tuple],
+        window_len: Union[int, list, tuple],
         window_duration: Union[int, float, list, tuple],
         use_sx=True,
         **kwargs,
@@ -46,7 +46,7 @@ class MovingHorizonEstimator(OptimalControlProgram):
         super(MovingHorizonEstimator, self).__init__(
             biorbd_model=biorbd_model,
             dynamics=dynamics,
-            n_shooting=window_length,
+            n_shooting=window_len,
             phase_time=window_duration,
             use_sx=use_sx,
             **kwargs,
@@ -55,7 +55,6 @@ class MovingHorizonEstimator(OptimalControlProgram):
     def solve(
         self,
         update_function: Callable,
-        warm_start_function: Callable = None,
         solver: Solver = Solver.ACADOS,
         solver_options: dict = None,
         solver_options_first_iter: dict = None,
@@ -97,6 +96,8 @@ class MovingHorizonEstimator(OptimalControlProgram):
             raise NotImplementedError("MHE is only available for 1 phase program")
 
         x_bounds = Bounds(self.nlp[0].x_bounds.min, self.nlp[0].x_bounds.max)
+        # Make init here
+        x_init = InitialGuess(self.nlp[0].x_init.init, interpolation=InterpolationType.EACH_FRAME)
 
         t = 0
         sol = None
@@ -115,16 +116,8 @@ class MovingHorizonEstimator(OptimalControlProgram):
             controls.append(sol.controls["all"][:, 0:1])
 
             # Update the initial frame bounds
-            if warm_start_function:
-                warm_start_function(self, t, sol)
-            else:
-                x_bounds[:, 0] = sol.states["all"][:, 1]
-                self.update_bounds(x_bounds)
-
-                # Update the initial guess to shifted previous solution
-                new_x_init = np.concatenate((sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1)
-                x_init = InitialGuess(new_x_init, interpolation=InterpolationType.EACH_FRAME)
-                self.update_initial_guess(x_init)
+            self.nlp[0].x_bounds[:, 0] = sol.states["all"][:, 1]
+            self.nlp[0].x_init.init[:, :] = np.concatenate((sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1)
 
             t += 1
 

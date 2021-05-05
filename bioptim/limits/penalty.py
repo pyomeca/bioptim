@@ -920,7 +920,7 @@ class PenaltyFunctionAbstract:
                 if val is None:
                     continue
 
-                if isinstance(val, tuple):
+                if isinstance(val, (list, tuple)):
                     if has_bound:
                         raise RuntimeError(
                             "You cannot have non linear bounds for custom constraints "

@@ -557,7 +557,7 @@ class AcadosInterface(SolverInterface):
 
         param_init = []
         for n in range(self.acados_ocp.dims.N):
-            if self.y_ref:
+            if self.y_ref:  # Target
                 self.ocp_solver.cost_set(n, "yref", np.vstack([data[n] for data in self.y_ref])[:, 0])
             # check following line
             # self.ocp_solver.cost_set(n, "W", self.W)

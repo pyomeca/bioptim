@@ -23,13 +23,13 @@ import numpy as np
 import biorbd
 from bioptim import (
     MovingHorizonEstimator,
-    DynamicsList,
+    Dynamics,
     DynamicsFcn,
-    ObjectiveList,
+    Objective,
     ObjectiveFcn,
-    BoundsList,
+    Bounds,
     QAndQDotBounds,
-    InitialGuessList,
+    InitialGuess,
     InterpolationType,
     Solver,
 )
@@ -94,43 +94,20 @@ def prepare_mhe(
     window_len,
     window_duration,
     max_torque,
-    x0,
-    u0,
+    x_init,
+    u_init,
     interpolation=InterpolationType.EACH_FRAME,
 ):
     biorbd_model = biorbd.Model(biorbd_model_path)
-    tau_min, tau_max, tau_init = -max_torque, max_torque, 0
-
-    # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-
-    # Path constraint
-    x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds[0].min[:, 0] = -10000  # inf
-    x_bounds[0].max[:, 0] = 10000  # inf
-
-    # Define control path constraint
-    u_bounds = BoundsList()
-    u_bounds.add([tau_min, 0.0], [tau_max, 0.0])
-
-    # Initial guesses
-    x_init = InitialGuessList()
-    x_init.add(x0, interpolation=interpolation)
-
-    u_init = InitialGuessList()
-    u_init.add(u0, interpolation=interpolation)
-
     return MovingHorizonEstimator(
         biorbd_model,
-        dynamics,
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,
-        x_init=x_init,
-        u_init=u_init,
-        x_bounds=x_bounds,
-        u_bounds=u_bounds,
+        x_init=InitialGuess(x_init, interpolation=interpolation),
+        u_init=InitialGuess(u_init, interpolation=interpolation),
+        x_bounds=QAndQDotBounds(biorbd_model),
+        u_bounds=Bounds([-max_torque, 0.0], [max_torque, 0.0]),
         n_threads=4,
     )
 
@@ -183,31 +160,34 @@ def main():
     )
 
     x0 = np.zeros((biorbd_model.nbQ() * 2, window_len + 1))
-    x0[:, 0] = np.array([0, np.pi / 2, 0, 0])
     u0 = np.zeros((biorbd_model.nbQ(), window_len))
-    t_max = 5  # Give a bit of slack on the max torque
+    torque_max = 5  # Give a bit of slack on the max torque
 
     mhe = prepare_mhe(
         biorbd_model_path,
         window_len=window_len,
         window_duration=window_duration,
-        max_torque=t_max,
-        x0=x0,
-        u0=u0,
+        max_torque=torque_max,
+        x_init=x0,
+        u_init=u0,
     )
 
+    new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, list_index=0)
+    mhe.update_objectives(new_objectives)
+
     def update_functions(mhe, t, _):
-        def get_target(i: int):
+        def target(i: int):
             return markers_noised[:, :, i : i + window_len + 1]
 
         if t == 1:
             # Start the timer after having compiled
             timer.append(time.time())
-        new_objectives = ObjectiveList()
-        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, target=get_target(t), list_index=0)
-        new_objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=100, target=x0, phase=0, list_index=1)
+
+        new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, target=target(t), list_index=0)
         mhe.update_objectives(new_objectives)
-        return t < n_frames_total
+        # mhe.update_objectives_target(list_index=0, target=target(t))
+
+        return t < n_frames_total  # True if there are still some frames to reconstruct
 
     # Solve the program
     timer = []  # Do not start timer yet (because of ACADOS compilation
@@ -235,8 +215,8 @@ def main():
     plt.legend()
 
     plt.figure()
-    plt.plot(sol.states["all"].T, "--", label="x estimate")
-    plt.plot(states[:, :n_frames_total].T, label="x truth")
+    plt.plot(sol.states["all"].T, "--", label="States estimate")
+    plt.plot(states[:, :n_frames_total].T, label="State truth")
     plt.legend()
     plt.show()
 
