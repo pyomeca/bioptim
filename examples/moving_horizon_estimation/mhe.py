@@ -13,7 +13,6 @@ the oldest frame is discarded with the warm_start_mhe function, and it is saved.
 estimated data can be compared to real data.
 """
 
-import time
 from copy import copy
 
 import matplotlib.pyplot as plt
@@ -98,12 +97,15 @@ def prepare_mhe(
     u_init,
     interpolation=InterpolationType.EACH_FRAME,
 ):
+    new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, list_index=0)
+
     biorbd_model = biorbd.Model(biorbd_model_path)
     return MovingHorizonEstimator(
         biorbd_model,
         Dynamics(DynamicsFcn.TORQUE_DRIVEN),
         window_len,
         window_duration,
+        objective_functions=new_objectives,
         x_init=InitialGuess(x_init, interpolation=interpolation),
         u_init=InitialGuess(u_init, interpolation=interpolation),
         x_bounds=QAndQDotBounds(biorbd_model),
@@ -119,6 +121,7 @@ def get_solver_options(solver):
         mhe_dict["solver_options"] = {
             "nlp_solver_max_iter": 1000,
             "integrator_type": "ERK",
+            "print_level": 0,
         }
     elif solver == Solver.IPOPT:
         mhe_dict["solver"] = Solver.IPOPT
@@ -145,7 +148,7 @@ def main():
     biorbd_model_path = "./cart_pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
 
-    solver = Solver.ACADOS
+    solver = Solver.ACADOS  # or Solver.IPOPT
     final_time = 5
     n_shoot_per_second = 100
     window_len = 10
@@ -159,8 +162,8 @@ def main():
         biorbd_model, final_time, x0, torque_max, n_shoot_per_second * final_time, noise_std, show_plots=False
     )
 
-    x0 = np.zeros((biorbd_model.nbQ() * 2, window_len + 1))
-    u0 = np.zeros((biorbd_model.nbQ(), window_len))
+    x_init = np.zeros((biorbd_model.nbQ() * 2, window_len + 1))
+    u_init = np.zeros((biorbd_model.nbQ(), window_len))
     torque_max = 5  # Give a bit of slack on the max torque
 
     mhe = prepare_mhe(
@@ -168,36 +171,24 @@ def main():
         window_len=window_len,
         window_duration=window_duration,
         max_torque=torque_max,
-        x_init=x0,
-        u_init=u0,
+        x_init=x_init,
+        u_init=u_init,
     )
-
-    new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, list_index=0)
-    mhe.update_objectives(new_objectives)
 
     def update_functions(mhe, t, _):
         def target(i: int):
             return markers_noised[:, :, i : i + window_len + 1]
-
-        if t == 1:
-            # Start the timer after having compiled
-            timer.append(time.time())
-
-        new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, target=target(t), list_index=0)
-        mhe.update_objectives(new_objectives)
-        # mhe.update_objectives_target(list_index=0, target=target(t))
-
+        mhe.update_objectives_target(target=target(t), list_index=0)
         return t < n_frames_total  # True if there are still some frames to reconstruct
 
     # Solve the program
-    timer = []  # Do not start timer yet (because of ACADOS compilation
     sol = mhe.solve(update_functions, **get_solver_options(solver))
 
-    timer.append(time.time())
     print("ACADOS with BiorbdOptim")
     print(f"Window size of MHE : {window_duration} s.")
     print(f"New measurement every : {1/n_shoot_per_second} s.")
-    print(f"Average time per iteration of MHE : {(timer[1]-timer[0])/(n_frames_total - 1)} s.")
+    print(f"Average time per iteration of MHE : {sol.time_to_optimize/(n_frames_total - 1)} s.")
+    print(f"Average real time per iteration of MHE : {sol.real_time_to_optimize/(n_frames_total - 1)} s.")
     print(f"Norm of the error on state = {np.linalg.norm(states[:,:n_frames_total] - sol.states['all'])}")
 
     markers_estimated = states_to_markers(biorbd_model, sol.states["all"])

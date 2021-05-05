@@ -1,4 +1,5 @@
 from typing import Union, Callable
+from time import time
 
 import numpy as np
 import biorbd
@@ -95,10 +96,6 @@ class MovingHorizonEstimator(OptimalControlProgram):
         if len(self.nlp) != 1:
             raise NotImplementedError("MHE is only available for 1 phase program")
 
-        x_bounds = Bounds(self.nlp[0].x_bounds.min, self.nlp[0].x_bounds.max)
-        # Make init here
-        x_init = InitialGuess(self.nlp[0].x_init.init, interpolation=InterpolationType.EACH_FRAME)
-
         t = 0
         sol = None
         states = []
@@ -107,9 +104,16 @@ class MovingHorizonEstimator(OptimalControlProgram):
             solver_options_first_iter = solver_options
             solver_options = None
         solver_option_current = solver_options_first_iter if solver_options_first_iter else solver_options
+
+        total_time = 0
+        real_time = 0
         while update_function(self, t, sol):
             sol = super(MovingHorizonEstimator, self).solve(solver=solver, solver_options=solver_option_current)
             solver_option_current = solver_options if t == 0 else None
+
+            total_time += sol.time_to_optimize
+            if t == 0:
+                real_time = time()  # Skip the compile time (so skip the first call to solve)
 
             # Solve and save the current window
             states.append(sol.states["all"][:, 0:1])
@@ -120,6 +124,7 @@ class MovingHorizonEstimator(OptimalControlProgram):
             self.nlp[0].x_init.init[:, :] = np.concatenate((sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1)
 
             t += 1
+        real_time = time() - real_time
 
         # Prepare the modified ocp that fits the solution dimension
         solution_ocp = OptimalControlProgram(
@@ -131,7 +136,10 @@ class MovingHorizonEstimator(OptimalControlProgram):
 
         states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
         controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        return Solution(solution_ocp, [states, controls])
+        sol = Solution(solution_ocp, [states, controls])
+        sol.time_to_optimize = total_time
+        sol.real_time_to_optimize = real_time
+        return sol
 
     def _define_time(
         self,
