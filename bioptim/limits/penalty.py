@@ -930,7 +930,8 @@ class PenaltyFunctionAbstract:
                     penalty.max_bound = val[2]
                     val = val[1]
                 if penalty.get_all_nodes_at_once:
-                    penalty.type.get_type().add_to_penalty(node[0].ocp, node[0].nlp, val, penalty)
+                    nlp = nodes[0].nlp if penalty.node != Node.TRANSITION else None
+                    penalty.type.get_type().add_to_penalty(node[0].ocp, nlp, val, penalty)
                 else:
                     penalty.type.get_type().add_to_penalty(node.ocp, nodes.nlp, val, penalty)
 
