@@ -93,28 +93,6 @@ class ConstraintList(OptionList):
         # TODO: Print all elements in the console
         raise NotImplementedError("Printing of ConstraintList is not ready yet")
 
-    @staticmethod
-    def to_dict(ocp):
-
-        list_global_constraints = []
-        for g in ocp.g:
-            list_global_constraints.append(g[0]["constraint"].name)
-
-        list_constraints = [[{"constraints": [], "max_bound": [], "min_bound": [], "constraint_sliced_target": [],
-                              "constraint_quadratic": [], "constraint_params": []}
-                             for _ in range(nlp.ns + 1)] for nlp in ocp.nlp]
-        for nlp in ocp.nlp:
-            for g in nlp.g:
-                for n in g:
-                    l_constraints = list_constraints[nlp.phase_idx][n["node_index"]]
-                    l_constraints["constraints"].append(n["constraint"].name)
-                    l_constraints["max_bound"].append(n["constraint"].max_bound)
-                    l_constraints["min_bound"].append(n["constraint"].min_bound)
-                    l_constraints["constraint_sliced_target"].append(n["constraint"].sliced_target)
-                    l_constraints["constraint_quadratic"].append(n["constraint"].quadratic)
-                    l_constraints["constraint_params"].append(n["constraint"].params)
-        return list_global_constraints, list_constraints
-
 
 class ConstraintFunction(PenaltyFunctionAbstract):
     """
