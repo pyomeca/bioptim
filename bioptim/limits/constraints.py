@@ -451,13 +451,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         else:
             g = {
                 "constraint": penalty,
-                "node_index": pn.t[len(pn.nlp.g[penalty.list_index])],
+                # "node_index": pn.t[len(pn.nlp.g[penalty.list_index])],
                 "val": val,
                 "bounds": g_bounds,
                 "target": penalty.sliced_target,
             }
-        if pn is not None and pn.nlp:
-            pn.nlp.g[penalty.list_index].append(g)
+        if pn is not None: # and pn.nlp:
+            # pn.nlp.g[penalty.list_index].append(g)
         else:
             ocp.g[penalty.list_index].append(g)
 

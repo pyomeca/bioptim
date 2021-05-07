@@ -736,65 +736,33 @@ class OptimalControlProgram:
             m.update(b)
             return m
 
-        def constraints_to_str(l_nodes: list, phase_idx: int, node_idx: int):
-            constraints_str = ""
-            for count in range(len(l_nodes[phase_idx][node_idx]['constraints'])):
-                target_str = "" if l_nodes[phase_idx][node_idx]['constraint_sliced_target'][count] is None else \
-                    f"{l_nodes[phase_idx][node_idx]['constraint_sliced_target'][count]}"
-                if l_nodes[phase_idx][node_idx]['constraint_quadratic'][count]:
-                    constraints_str += f"{l_nodes[phase_idx][node_idx]['min_bound'][count]} ≤ "
-                    constraints_str += f"({l_nodes[phase_idx][node_idx]['constraints'][count]}" \
-                        if target_str is not "" else f"{l_nodes[phase_idx][node_idx]['constraints'][count]}"
-                    constraints_str += f" - {target_str})<sup>2</sup>" if target_str is not "" else ""
-                    constraints_str += f" ≤ {l_nodes[phase_idx][node_idx]['max_bound'][count]}<br/>" \
-                                       f"Parameters:<br/>"
-                    for param in l_nodes[phase_idx][node_idx]['constraint_params'][count]:
-                        constraints_str += f"{param}: " \
-                                           f"{l_nodes[phase_idx][node_idx]['constraint_params'][count][f'{param}']}" \
-                                           f"<br/>"
-                    constraints_str += f"<br/>"
-                else:
-                    constraints_str += f"{l_nodes[phase_idx][node_idx]['min_bound'][count]} ≤ " \
-                                       f"{l_nodes[phase_idx][node_idx]['constraints'][count]}"
-                    constraints_str += f" - {target_str}" if target_str is not "" else "" \
-                                       f" ≤ {l_nodes[phase_idx][node_idx]['max_bound'][count]}<br/>" \
-                                       f"Parameters:<br/>"
-                    for param in l_nodes[phase_idx][node_idx]['constraint_params'][count]:
-                        constraints_str += f"{param}:" \
-                                           f" {l_nodes[phase_idx][node_idx]['constraint_params'][count][f'{param}']}" \
-                                           f"<br/>"
-                    constraints_str += f"<br/>"
-            return constraints_str
+        def constraint_to_str(constraint: Constraint):
 
-        def constraints_to_str_reduced(constraints: ConstraintList):
-            constraints_str = ""
-            for constraint in ConstraintList:
-                target_str = "" if constraint.sliced_target is None else \
-                    f"{constraint.sliced_target}"
-                if constraint.quadratic:
-                    constraints_str += f"{constraint.min_bound} ≤ "
-                    constraints_str += f"({constraint.name}" \
-                        if target_str is not "" else f"{constraint.name}"
-                    constraints_str += f" - {target_str})<sup>2</sup>" if target_str is not "" else ""
-                    constraints_str += f" ≤ {constraint.max_bound}<br/>" \
-                                       f"Parameters:<br/>"
-                    for param in constraint.params:
-                        constraints_str += f"{param.name}: " \
-                                           f"{param}" \
-                                           f"<br/>"
-                    constraints_str += f"<br/>"
-                else:
-                    constraints_str += f"{constraint.min_bound} ≤ " \
-                                       f"{constraint.name}"
-                    constraints_str += f" - {target_str}" if target_str is not "" else "" \
-                                       f" ≤ {constraint.max_bound}<br/>" \
-                                       f"Parameters:<br/>"
-                    for param in constraint.params:
-                        constraints_str += f"{param.name}:" \
-                                           f" {param}" \
-                                           f"<br/>"
-                    constraints_str += f"<br/>"
-            return constraints_str
+            def add_param_constraint_to_str(param_dict: ParameterList):
+                str_to_add = ""
+                for param in param_dict.keys():
+                    str_to_add += f"{param}: {param_dict.get(f'{param}')}<br/>"
+                return str_to_add
+
+            constraint_str = ""
+            target_str = "" if constraint.sliced_target is None else \
+                f"{constraint.sliced_target}"
+            if constraint.quadratic:
+                constraint_str += f"{constraint.min_bound} ≤ "
+                constraint_str += f"({constraint.name}" \
+                    if target_str is not "" else f"{constraint.name}"
+                constraint_str += f" - {target_str})<sup>2</sup>" if target_str is not "" else ""
+                constraint_str += f" ≤ {constraint.max_bound}<br/>" \
+                                   f"Parameters:<br/>"
+            else:
+                constraint_str += f"{constraint.min_bound} ≤ " \
+                                   f"{constraint.name}"
+                constraint_str += f" - {target_str}" if target_str is not "" else "" \
+                                   f" ≤ {constraint.max_bound}<br/>" \
+                                   f"Parameters:<br/>"
+            constraint_str += add_param_constraint_to_str(constraint.params)
+            constraint_str += f"<br/>"
+            return constraint_str
 
         def add_parameters_to_str(list_constraints: list, string: str):
             for param in list_constraints:
@@ -893,7 +861,7 @@ class OptimalControlProgram:
                     print(f"Objectives: ")
                     print(f"*** Mayer: {node_dict['mayer']}")
                     print(f"*** Lagrange: {node_dict['lagrange']}")
-                    print(f"Constraints: {node_dict['constraints']}")
+                    # print(f"Constraints: {node_dict['constraints']}")
                     print("")
                     node_idx = node_idx + 1
 
@@ -995,8 +963,14 @@ class OptimalControlProgram:
                             </TABLE>>''')
 
                     main_nodes = []
+
                     for _ in l_nodes[phase_idx]:
-                        constraints_str = constraints_to_str(l_nodes, phase_idx, node_idx)
+
+                        constraints_str = ""
+                        for constraint in self.nlp[phase_idx].g:
+                            if constraint[0]['node_index'] == node_idx:
+                                constraints_str += constraint_to_str(constraint[0]['constraint'])
+
                         mayer_str = mayer_to_str(l_nodes, phase_idx, node_idx)
                         node_name = f"Shooting node {node_idx}" if node_idx < len(l_nodes[phase_idx]) -1 else\
                             f"Final node ({node_idx})"
@@ -1127,7 +1101,6 @@ class OptimalControlProgram:
         list_nodes = [[{} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
 
         list_objectives = ObjectiveList.to_dict(self.nlp)
-        list_constraints = ConstraintList.to_dict(self)[1]
         list_dynamics = self.__get_dynamics()
         list_ode = self.__get_ode_solver()
         list_parameters = ParameterList.to_dict(self)
@@ -1136,8 +1109,7 @@ class OptimalControlProgram:
         for nlp in self.nlp:
             n_phase = n_phase + 1
             for node_idx in range(nlp.ns + 1):
-                list_nodes[nlp.phase_idx][node_idx] = merge_dicts(list_objectives[nlp.phase_idx][node_idx],
-                                                                  list_constraints[nlp.phase_idx][node_idx])
+                list_nodes[nlp.phase_idx][node_idx] = list_objectives[nlp.phase_idx][node_idx]
         if to_console is True:
             print_console(self, list_dynamics, list_ode, list_parameters, list_nodes, self.n_phases)
 
