@@ -807,6 +807,27 @@ class OptimalControlProgram:
                 objective_idx += 1
             return mayer_str
 
+        def mayer_to_str_reduced(objective_list: ObjectiveList):
+            mayer_str = ""
+            for objective in objective_list:
+                obj = objective[0]['objective']
+                if isinstance(obj.type, ObjectiveFcn.Mayer):
+                    if obj.sliced_target is not None:
+                        if obj.quadratic is True:
+                            mayer_str += f"({obj.name} - " \
+                                            f"{obj.sliced_target})" \
+                                            f"<sup>2</sup><br/>"
+                        else:
+                            mayer_str += f"{obj.name} - " \
+                                            f"{obj.sliced_target}<br/>"
+                    else:
+                        if obj.quadratic is True:
+                            mayer_str += f"({obj.name})<sup>2</sup><br/>"
+                        else:
+                            mayer_str += f"{obj.name}<br/>"
+                    mayer_str = add_parameters_to_str(obj.params, mayer_str)
+                return mayer_str
+
         def vector_layout(vector: list, size: int):
             if size > 1:
                 condensed_vector = "[ "
@@ -960,7 +981,8 @@ class OptimalControlProgram:
                             if constraint[0]['node_index'] == node_idx:
                                 constraints_str += constraint_to_str(constraint[0]['constraint'])
 
-                        mayer_str = mayer_to_str(l_nodes, phase_idx, node_idx)
+                        # mayer_str = mayer_to_str(l_nodes, phase_idx, node_idx)
+                        mayer_str = mayer_to_str_reduced(self.nlp[phase_idx].J)
                         node_name = f"Shooting node {node_idx}" if node_idx < len(l_nodes[phase_idx]) -1 else\
                             f"Final node ({node_idx})"
 
