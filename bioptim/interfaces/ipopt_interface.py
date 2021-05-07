@@ -85,6 +85,11 @@ class IpoptInterface(SolverInterface):
         solver_options: dict
             The dictionary of options
         """
+        if solver_options is None:
+            if self.opts:
+                return
+            else:
+                solver_options = {}
 
         options = {
             "ipopt.tol": 1e-6,

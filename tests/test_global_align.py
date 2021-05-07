@@ -1,9 +1,6 @@
 """
 Test for file IO
 """
-import importlib.util
-from pathlib import Path
-
 import pytest
 import numpy as np
 from bioptim import OdeSolver

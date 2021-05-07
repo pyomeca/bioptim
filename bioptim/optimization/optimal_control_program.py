@@ -22,6 +22,7 @@ from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
+from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
 from ..misc.enums import ControlType, Solver, Shooting
 from ..misc.mapping import BiMapping, Mapping
@@ -78,6 +79,9 @@ class OptimalControlProgram:
     -------
     update_objectives(self, new_objective_function: Union[Objective, ObjectiveList])
         The main user interface to add or modify objective functions in the ocp
+    update_objectives_target(self, target, phase=None, list_index=None)
+        Fast accessor to update the target of a specific objective function. To update target of global objective
+        (usually defined by parameters), one can pass 'phase=-1
     update_constraints(self, new_constraint: Union[Constraint, ConstraintList])
         The main user interface to add or modify constraint in the ocp
     update_parameters(self, new_parameters: Union[Parameter, ParameterList])
@@ -103,7 +107,7 @@ class OptimalControlProgram:
     @staticmethod
     load(file_path: str) -> list
         Reload a previous optimization (*.bo) saved using save
-    __define_time(self, phase_time: Union[float, tuple], objective_functions: ObjectiveList, constraints: ConstraintList)
+    _define_time(self, phase_time: Union[float, tuple], objective_functions: ObjectiveList, constraints: ConstraintList)
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
         a sanity check is perform and the values of initial guess and bounds for these particular phases
     __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter])
@@ -357,7 +361,7 @@ class OptimalControlProgram:
             self.update_parameters(parameters)
 
         # Declare the time to optimize
-        self.__define_time(phase_time, objective_functions, constraints)
+        self._define_time(phase_time, objective_functions, constraints)
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
@@ -417,6 +421,30 @@ class OptimalControlProgram:
 
         else:
             raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
+
+    def update_objectives_target(self, target, phase=None, list_index=None):
+        """
+        Fast accessor to update the target of a specific objective function. To update target of global objective
+        (usually defined by parameters), one can pass 'phase=-1'
+
+        Parameters
+        ----------
+        target: np.ndarray
+            The new target of the objective function. The last dimension must be the number of frames
+        phase: int
+            The phase the objective is in. None is interpreted as zero if the program has one phase. The value -1
+            changes the values of ocp.J
+        list_index: int
+            The objective index
+        """
+
+        if phase is None and len(self.nlp) == 1:
+            phase = 0
+
+        if list_index is None:
+            raise ValueError("'phase' must be defined")
+
+        ObjectiveFunction.update_target(self.nlp[phase] if phase >= 0 else self, list_index, target)
 
     def update_constraints(self, new_constraint: Union[Constraint, ConstraintList]):
         """
@@ -602,7 +630,7 @@ class OptimalControlProgram:
         self,
         solver: Solver = Solver.IPOPT,
         show_online_optim: bool = False,
-        solver_options: dict = {},
+        solver_options: dict = None,
     ) -> Solution:
         """
         Call the solver to actually solve the ocp
@@ -631,6 +659,8 @@ class OptimalControlProgram:
         elif solver == Solver.ACADOS and self.solver_type != Solver.ACADOS:
             from ..interfaces.acados_interface import AcadosInterface
 
+            if solver_options is None:
+                solver_options = {}
             self.solver = AcadosInterface(self, **solver_options)
 
         elif self.solver_type == Solver.NONE:
@@ -713,7 +743,7 @@ class OptimalControlProgram:
             out = [ocp, sol]
         return out
 
-    def __define_time(
+    def _define_time(
         self,
         phase_time: Union[int, float, list, tuple],
         objective_functions: ObjectiveList,

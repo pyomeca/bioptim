@@ -1,7 +1,7 @@
 import pytest
 
 import biorbd
-from casadi import vertcat, MX
+from casadi import MX
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -33,4 +33,4 @@ def test_custom_constraint_mx_fail():
     )
 
     with pytest.raises(RuntimeError, match="Ipopt doesn't support SX/MX types in constraints bounds"):
-        sol = ocp.solve(show_online_optim=True)
+        ocp.solve()
