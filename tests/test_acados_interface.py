@@ -178,7 +178,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     shutil.rmtree(f"./c_generated_code/")
 
 
-@pytest.mark.parametrize("solver", [Solver.ACADOS, Solver.IPOPT])
+@pytest.mark.parametrize("solver", [Solver.ACADOS])
 def test_acados_mhe(solver):
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     pendulum = TestUtils.load_module(root_folder + "mhe.py")

@@ -120,8 +120,8 @@ def test_console_objective_functions():
     sol.graphs(automatically_organize=False)
 
     sol.constraints = np.array([range(sol.constraints.shape[0])]).T / 10
-    sol.real_time_to_optimize = 5.4321
     sol.time_to_optimize = 1.2345
+    sol.real_time_to_optimize = 5.4321
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
     sol.print()
