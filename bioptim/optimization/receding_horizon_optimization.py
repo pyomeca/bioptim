@@ -9,12 +9,11 @@ from .solution import Solution
 from ..dynamics.dynamics_type import Dynamics, DynamicsList
 from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
-from ..limits.path_conditions import Bounds, InitialGuess
+from ..limits.path_conditions import InitialGuess
 from ..misc.enums import Solver, InterpolationType
 
 
-# RecedingHorizon?
-class MovingHorizonEstimator(OptimalControlProgram):
+class RecedingHorizonOptimization(OptimalControlProgram):
     """
     The main class to define an MHE. This class prepares the full program and gives all
     the needed interface to modify and solve the program
@@ -42,9 +41,9 @@ class MovingHorizonEstimator(OptimalControlProgram):
         """
 
         if isinstance(biorbd_model, (list, tuple)) and len(biorbd_model) > 1:
-            raise ValueError("Moving horizon estimator must be defined using only one biorbd_model")
+            raise ValueError("Receding horizon optimization must be defined using only one biorbd_model")
 
-        super(MovingHorizonEstimator, self).__init__(
+        super(RecedingHorizonOptimization, self).__init__(
             biorbd_model=biorbd_model,
             dynamics=dynamics,
             n_shooting=window_len,
@@ -104,7 +103,7 @@ class MovingHorizonEstimator(OptimalControlProgram):
         total_time = 0
         real_time = 0
         while update_function(self, t, sol):
-            sol = super(MovingHorizonEstimator, self).solve(solver=solver, solver_options=solver_option_current)
+            sol = super(RecedingHorizonOptimization, self).solve(solver=solver, solver_options=solver_option_current)
             solver_option_current = solver_options if t == 0 else None
 
             total_time += sol.time_to_optimize
@@ -179,9 +178,39 @@ class MovingHorizonEstimator(OptimalControlProgram):
                         or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
                         or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
                     ):
-                        raise ValueError("Time cannot be optimized in Moving Horizon Estimator")
+                        raise ValueError("Time cannot be optimized in Receding Horizon Optimization")
 
         check_for_time_optimization(objective_functions)
         check_for_time_optimization(constraints)
 
-        super(MovingHorizonEstimator, self)._define_time(phase_time, objective_functions, constraints)
+        super(RecedingHorizonOptimization, self)._define_time(phase_time, objective_functions, constraints)
+
+
+class NonlinearModelPredictiveControl(RecedingHorizonOptimization):
+    def __init__(
+        self,
+        biorbd_model: Union[str, biorbd.Model, list, tuple],
+        dynamics: Union[Dynamics, DynamicsList],
+        window_len: Union[int, list, tuple],
+        window_duration: Union[int, float, list, tuple],
+        use_sx=True,
+        **kwargs,
+    ):
+        super(NonlinearModelPredictiveControl, self).__init__(
+            biorbd_model, dynamics, window_len, window_duration, use_sx, **kwargs
+        )
+
+
+class MovingHorizonEstimator(RecedingHorizonOptimization):
+    def __init__(
+        self,
+        biorbd_model: Union[str, biorbd.Model, list, tuple],
+        dynamics: Union[Dynamics, DynamicsList],
+        window_len: Union[int, list, tuple],
+        window_duration: Union[int, float, list, tuple],
+        use_sx=True,
+        **kwargs,
+    ):
+        super(MovingHorizonEstimator, self).__init__(
+            biorbd_model, dynamics, window_len, window_duration, use_sx, **kwargs
+        )

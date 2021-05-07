@@ -156,6 +156,6 @@ from .misc.enums import Axis, Node, InterpolationType, PlotType, Solver, Control
 from .misc.mapping import BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
-from .optimization.receding_horizon_optimization import MovingHorizonEstimator
+from .optimization.receding_horizon_optimization import MovingHorizonEstimator, NonlinearModelPredictiveControl
 from .optimization.parameters import ParameterList
 from .optimization.solution import Solution
