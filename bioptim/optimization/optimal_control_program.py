@@ -735,8 +735,8 @@ class OptimalControlProgram:
 
             def add_param_constraint_to_str(param_dict: ParameterList):
                 str_to_add = ""
-                for param in param_dict.keys():
-                    str_to_add += f"{param}: {param_dict.get(f'{param}')}<br/>"
+                for param in param_dict:
+                    str_to_add += f"{param}: {param_dict[param]}<br/>"
                 return str_to_add
 
             constraint_str = ""
@@ -755,35 +755,34 @@ class OptimalControlProgram:
             constraint_str += f"<br/>"
             return constraint_str
 
-        def add_parameters_to_str(list_constraints: list, string: str):
+        def add_parameters_to_str(list_constraints: Union[list, ParameterList], string: str):
             for param in list_constraints:
                 string += f"{param}: " \
-                                   f"{list_constraints[f'{param}']}" \
+                                   f"{list_constraints[param]}" \
                                    f"<br/>"
             string += f"<br/>"
             return string
 
-        def lagrange_to_str(l_nodes: list, phase_idx: int):
+        def lagrange_to_str(objective_list: ObjectiveList):
             lagrange_str = ""
-            objective_idx = 0
-            for objective in l_nodes[phase_idx][0]['lagrange']:
-                if l_nodes[phase_idx][0]['sliced_target_lagrange'][objective_idx] is not None:
-                    if l_nodes[phase_idx][0]['quadratic_lagrange'][objective_idx] is True:
-                        lagrange_str += f"({objective} - " \
-                                        f"{l_nodes[phase_idx][0]['sliced_target_lagrange'][objective_idx]})" \
-                                        f"<sup>2</sup><br/>"
+            for objective in objective_list:
+                obj = objective[0]['objective']
+                if isinstance(obj.type, ObjectiveFcn.Lagrange):
+                    if obj.sliced_target is not None:
+                        if obj.quadratic is True:
+                            lagrange_str += f"({obj.name} - " \
+                                            f"{obj.sliced_target})" \
+                                            f"<sup>2</sup><br/>"
+                        else:
+                            lagrange_str += f"{obj.name} - " \
+                                            f"{obj.sliced_target}<br/>"
                     else:
-                        lagrange_str += f"{objective} - " \
-                                        f"{l_nodes[phase_idx][0]['sliced_target_lagrange'][objective_idx]}<br/>"
-                else:
-                    if l_nodes[phase_idx][0]['quadratic_lagrange'][objective_idx] is True:
-                        lagrange_str += f"({objective})<sup>2</sup><br/>"
-                    else:
-                        lagrange_str += f"{objective}<br/>"
-                lagrange_str = add_parameters_to_str(l_nodes[phase_idx][0]['parameters_lagrange'][objective_idx],
-                                                     lagrange_str)
-                objective_idx += 1
-            return lagrange_str
+                        if obj.quadratic is True:
+                            lagrange_str += f"({obj.name})<sup>2</sup><br/>"
+                        else:
+                            lagrange_str += f"{obj.name}<br/>"
+                    lagrange_str = add_parameters_to_str(obj.params, lagrange_str)
+                return lagrange_str
 
         def mayer_to_str(l_nodes: list, phase_idx: int, node_idx: int):
             mayer_str = ""
@@ -935,9 +934,8 @@ class OptimalControlProgram:
                     else:
                         g.node(name=f'param_{phase_idx}0', label=f"No parameter set")
 
+                    lagrange_str = lagrange_to_str(self.nlp[phase_idx].J)
 
-
-                    lagrange_str = lagrange_to_str(l_nodes, phase_idx)
                     if lagrange_str != "":
                         g.node(f'lagrange_{phase_idx}', f'''<
                             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
