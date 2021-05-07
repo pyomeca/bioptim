@@ -62,27 +62,38 @@ REPLACE_PYTHON_REQUIRED_BY="# python_requires"
 TO_REPLACE_CASADI_DEP="'casadi"
 REPLACE_CASADI_DEP_BY="# 'casadi"
 
+# Add the simulink file
+TO_REPLACE_JSON_DEP="'acados_sim_layout.json',"
+REPLACE_JSON_DEP_BY="'acados_sim_layout.json',\n       'simulink_default_opts.json',"
+
 # Modify relative path of acados_template is install doesn't have the 
 # same structure as the source folder
 TO_REPLACE_PATH="'..\/..\/..\/'"
 REPLACE_PATH_BY="'..\/..\/..\/..\/'"
 
+# Changed simulink path
+TO_REPLACE_JSON="json_path = os.path.join(acados_path, 'interfaces\/acados_template\/acados_template')"
+REPLACE_JSON_BY="import site\n            acados_path = site.getsitepackages()\n            json_path = os.path.join(acados_path[0], 'acados_template')"
+
 # Perform the modifications
 sed -i "s/$TO_REPLACE_PYTHON_REQUIRED/$REPLACE_PYTHON_REQUIRED_BY/" setup.py
 sed -i "s/$TO_REPLACE_CASADI_DEP/$REPLACE_CASADI_DEP_BY/" setup.py
+sed -i "s/$TO_REPLACE_JSON_DEP/$REPLACE_JSON_DEP_BY/" setup.py
 sed -i "s/$TO_REPLACE_PATH/$REPLACE_PATH_BY/" acados_template/utils.py
+sed -i "s/$TO_REPLACE_JSON/$REPLACE_JSON_BY/" acados_template/acados_ocp_solver.py
 
 # Install the Python interface
 pip install .
-
-# Undo the modifications to the files (so it is not pick up by Git)
-sed -i "s/$REPLACE_PYTHON_REQUIRED_BY/$TO_REPLACE_PYTHON_REQUIRED/" setup.py
-sed -i "s/$REPLACE_CASADI_DEP_BY/$TO_REPLACE_CASADI_DEP/" setup.py
-sed -i "s/$REPLACE_PATH_BY/$TO_REPLACE_PATH/" acados_template/utils.py
+cd ../..
 
 # Automatically download Tera 
-TERA_INSTALL_SCRIPT=$(pwd)/../../ci/linux/install_t_renderer.sh
+TERA_INSTALL_SCRIPT=$(pwd)/ci/linux/install_t_renderer.sh
 pushd $ARG1;
   chmod +x $TERA_INSTALL_SCRIPT;
-  exec $TERA_INSTALL_SCRIPT;
+  $TERA_INSTALL_SCRIPT;
 popd;
+
+# Undo the modifications to the files (so it is not picked up by Git)
+git reset --hard
+
+
