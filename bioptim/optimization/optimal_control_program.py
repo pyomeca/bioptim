@@ -731,11 +731,6 @@ class OptimalControlProgram:
         to_graph: bool = True,
     ):
 
-        def merge_dicts(a, b):
-            m = a.copy()
-            m.update(b)
-            return m
-
         def constraint_to_str(constraint: Constraint):
 
             def add_param_constraint_to_str(param_dict: ParameterList):
@@ -749,17 +744,13 @@ class OptimalControlProgram:
                 f"{constraint.sliced_target}"
             if constraint.quadratic:
                 constraint_str += f"{constraint.min_bound} ≤ "
-                constraint_str += f"({constraint.name}" \
-                    if target_str is not "" else f"{constraint.name}"
+                constraint_str += f"({constraint.name}" if target_str is not "" else f"{constraint.name}"
                 constraint_str += f" - {target_str})<sup>2</sup>" if target_str is not "" else ""
-                constraint_str += f" ≤ {constraint.max_bound}<br/>" \
-                                   f"Parameters:<br/>"
+                constraint_str += f" ≤ {constraint.max_bound}<br/>Parameters:<br/>"
             else:
-                constraint_str += f"{constraint.min_bound} ≤ " \
-                                   f"{constraint.name}"
-                constraint_str += f" - {target_str}" if target_str is not "" else "" \
-                                   f" ≤ {constraint.max_bound}<br/>" \
-                                   f"Parameters:<br/>"
+                constraint_str += f"{constraint.min_bound} ≤ {constraint.name}"
+                constraint_str += f" - {target_str}" if target_str is not "" else ""
+                constraint_str += f" ≤ {constraint.max_bound}<br/>Parameters:<br/>"
             constraint_str += add_param_constraint_to_str(constraint.params)
             constraint_str += f"<br/>"
             return constraint_str
