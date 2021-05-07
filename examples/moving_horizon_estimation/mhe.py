@@ -122,7 +122,6 @@ def get_solver_options(solver):
             "max_iter": 5,
             "print_level": 0,
             "tol": 1e-1,
-            "linear_solver": "ma57",
             "bound_frac": 1e-10,
             "bound_push": 1e-10,
         }
