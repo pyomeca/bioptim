@@ -120,35 +120,47 @@ def test_console_objective_functions():
     sol.graphs(automatically_organize=False)
 
     sol.constraints = np.array([range(sol.constraints.shape[0])]).T / 10
+    sol.real_time_to_optimize = 5.4321
     sol.time_to_optimize = 1.2345
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
     sol.print()
     expected_output = (
-        "TIME TO SOLVE: 1.2345 sec\n\n"
+        "Solving time: 1.2345 sec\n"
+        "Elapsed time: 5.4321 sec\n"
+        "\n"
         "---- COST FUNCTION VALUES ----\n"
-        "minimize_difference: 0.003085170339981944 (weighted 0.308517)\n\n"
+        "minimize_difference: 0.003085170339981944 (weighted 0.308517)\n"
+        "\n"
         "PHASE 0\n"
-        "MINIMIZE_TORQUE: 1939.7605252449728 (weighted 19397.6)\n\n"
+        "MINIMIZE_TORQUE: 1939.7605252449728 (weighted 19397.6)\n"
+        "\n"
         "PHASE 1\n"
-        "MINIMIZE_TORQUE: 2887.7566502922946 (weighted 48129.3)\n\n"
+        "MINIMIZE_TORQUE: 2887.7566502922946 (weighted 48129.3)\n"
+        "\n"
         "PHASE 2\n"
-        "MINIMIZE_TORQUE: 1928.0412902161684 (weighted 38560.8)\n\n"
+        "MINIMIZE_TORQUE: 1928.0412902161684 (weighted 38560.8)\n"
+        "\n"
         "Sum cost functions: 106088\n"
-        "------------------------------\n\n"
+        "------------------------------\n"
+        "\n"
         "--------- CONSTRAINTS ---------\n"
         "CONTINUITY 0: 1.5\n"
         "CONTINUITY 1: 5.1\n"
         "CONTINUITY 2: 8.7\n"
         "PHASE_TRANSITION 0->1: 12.3\n"
-        "PHASE_TRANSITION 1->2: 15.9\n\n"
+        "PHASE_TRANSITION 1->2: 15.9\n"
+        "\n"
         "PHASE 0\n"
         "SUPERIMPOSE_MARKERS: 9.3\n"
-        "SUPERIMPOSE_MARKERS: 10.2\n\n"
+        "SUPERIMPOSE_MARKERS: 10.2\n"
+        "\n"
         "PHASE 1\n"
-        "SUPERIMPOSE_MARKERS: 11.100000000000001\n\n"
+        "SUPERIMPOSE_MARKERS: 11.100000000000001\n"
+        "\n"
         "PHASE 2\n"
-        "SUPERIMPOSE_MARKERS: 12.0\n\n"
+        "SUPERIMPOSE_MARKERS: 12.0\n"
+        "\n"
         "------------------------------\n"
     )
 

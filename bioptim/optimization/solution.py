@@ -985,7 +985,7 @@ class Solution:
         elif cost_type == CostType.CONSTRAINTS:
             print_constraints(self.ocp, self)
         elif cost_type == CostType.ALL:
-            print(f"TIME TO SOLVE: {self.real_time_to_optimize} sec")
+            print(f"Solving time: {self.time_to_optimize} sec\nElapsed time: {self.real_time_to_optimize} sec")
             self.print(CostType.OBJECTIVES)
             self.print(CostType.CONSTRAINTS)
         else:
