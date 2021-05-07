@@ -930,7 +930,7 @@ class PenaltyFunctionAbstract:
                     penalty.max_bound = val[2]
                     val = val[1]
                 if penalty.get_all_nodes_at_once:
-                    penalty.type.get_type().add_to_penalty(node[0].ocp, None, val, penalty)
+                    penalty.type.get_type().add_to_penalty(node[0].ocp, node[0].nlp, val, penalty)
                 else:
                     penalty.type.get_type().add_to_penalty(node.ocp, nodes.nlp, val, penalty)
 
@@ -1004,9 +1004,9 @@ class PenaltyFunctionAbstract:
 
         Parameters
         ----------
-        penalty: PenaltyOption
             The actual penalty to declare
         """
+        penalty: PenaltyOption
 
         func = penalty.type.value[0]
         # Everything that should change the entry parameters depending on the penalty can be added here
