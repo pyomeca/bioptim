@@ -5,10 +5,10 @@ It tests the results of an optimal control problem with acados regarding the pro
 """
 import os
 import shutil
-
 import pytest
-import numpy as np
+
 import biorbd
+import numpy as np
 from bioptim import (
     Axis,
     Solver,
@@ -20,6 +20,11 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Node,
+    MovingHorizonEstimator,
+    Dynamics,
+    DynamicsFcn,
+    InitialGuess,
+    InterpolationType,
 )
 
 from .utils import TestUtils
@@ -535,3 +540,45 @@ def test_acados_constraints_end_all():
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226, 0)), decimal=6)
     np.testing.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226, 0)), decimal=6)
+
+
+@pytest.mark.parametrize("failing", ["u_bounds", "x_bounds"])
+def test_acados_bounds_not_implemented(failing):
+    root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
+    biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
+    nq = biorbd_model.nbQ()
+    ntau = biorbd_model.nbGeneralizedTorque()
+
+    n_cycles = 3
+    window_len = 5
+    window_duration = 0.2
+    x_init = InitialGuess(np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
+    u_init = InitialGuess(np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
+    if failing == "u_bounds":
+        x_bounds = Bounds(np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1)))
+        u_bounds = Bounds(np.zeros((ntau, 1)),  np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
+    elif failing == "x_bounds":
+        x_bounds = Bounds(np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
+        u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)))
+    else:
+        raise ValueError("Wrong value for failing")
+
+    mhe = MovingHorizonEstimator(
+        biorbd_model,
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN),
+        window_len,
+        window_duration,
+        x_init=x_init,
+        u_init=u_init,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        n_threads=4,
+    )
+
+    def update_functions(mhe, t, _):
+        return t < n_cycles
+
+    with pytest.raises(
+            NotImplementedError,
+            match=f"ACADOS must declare an InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT for the {failing}"):
+        mhe.solve(update_functions, Solver.ACADOS)
