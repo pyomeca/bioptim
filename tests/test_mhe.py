@@ -4,7 +4,16 @@ import shutil
 
 import numpy as np
 import biorbd
-from bioptim import Solver, MovingHorizonEstimator, Dynamics, DynamicsFcn, InterpolationType, InitialGuess, Bounds, QAndQDotBounds
+from bioptim import (
+    Solver,
+    MovingHorizonEstimator,
+    Dynamics,
+    DynamicsFcn,
+    InterpolationType,
+    InitialGuess,
+    Bounds,
+    QAndQDotBounds,
+)
 
 from .utils import TestUtils
 
@@ -70,7 +79,7 @@ def test_mhe_redim_xbounds_and_init():
     x_init = InitialGuess(np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
     u_init = InitialGuess(np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
     x_bounds = Bounds(np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
-    u_bounds = Bounds(np.zeros((ntau, 1)),  np.zeros((ntau, 1)))
+    u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)))
 
     mhe = MovingHorizonEstimator(
         biorbd_model,
@@ -101,8 +110,12 @@ def test_mhe_redim_xbounds_not_implemented():
     window_duration = 0.2
     x_init = InitialGuess(np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
     u_init = InitialGuess(np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
-    x_bounds = Bounds(np.zeros((nq * 2, window_len + 1)), np.zeros((nq * 2, window_len + 1)), interpolation=InterpolationType.EACH_FRAME)
-    u_bounds = Bounds(np.zeros((ntau, 1)),  np.zeros((ntau, 1)))
+    x_bounds = Bounds(
+        np.zeros((nq * 2, window_len + 1)),
+        np.zeros((nq * 2, window_len + 1)),
+        interpolation=InterpolationType.EACH_FRAME,
+    )
+    u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)))
 
     mhe = MovingHorizonEstimator(
         biorbd_model,
@@ -120,7 +133,8 @@ def test_mhe_redim_xbounds_not_implemented():
         return t < n_cycles
 
     with pytest.raises(
-            NotImplementedError,
-            match="The MHE is not implemented yet for x_bounds not being "
-                  "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"):
+        NotImplementedError,
+        match="The MHE is not implemented yet for x_bounds not being "
+        "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT",
+    ):
         mhe.solve(update_functions, Solver.IPOPT)

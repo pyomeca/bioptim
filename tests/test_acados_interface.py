@@ -507,7 +507,7 @@ def test_acados_bounds_not_implemented(failing):
     u_init = InitialGuess(np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
     if failing == "u_bounds":
         x_bounds = Bounds(np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1)))
-        u_bounds = Bounds(np.zeros((ntau, 1)),  np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
+        u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
     elif failing == "x_bounds":
         x_bounds = Bounds(np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
         u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)))
@@ -530,6 +530,7 @@ def test_acados_bounds_not_implemented(failing):
         return t < n_cycles
 
     with pytest.raises(
-            NotImplementedError,
-            match=f"ACADOS must declare an InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT for the {failing}"):
+        NotImplementedError,
+        match=f"ACADOS must declare an InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT for the {failing}",
+    ):
         mhe.solve(update_functions, Solver.ACADOS)

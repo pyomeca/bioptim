@@ -225,11 +225,13 @@ class AcadosInterface(SolverInterface):
 
         # constraints handling in self.acados_ocp
         if ocp.nlp[0].x_bounds.type != InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-            raise NotImplementedError("ACADOS must declare an InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT "
-                                      "for the x_bounds")
+            raise NotImplementedError(
+                "ACADOS must declare an InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT " "for the x_bounds"
+            )
         if ocp.nlp[0].u_bounds.type != InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-            raise NotImplementedError("ACADOS must declare an InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT "
-                                      "for the u_bounds")
+            raise NotImplementedError(
+                "ACADOS must declare an InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT " "for the u_bounds"
+            )
         u_min = np.array(ocp.nlp[0].u_bounds.min)
         u_max = np.array(ocp.nlp[0].u_bounds.max)
         x_min = np.array(ocp.nlp[0].x_bounds.min)
