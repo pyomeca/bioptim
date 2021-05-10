@@ -657,7 +657,6 @@ class DynamicsFunctions:
         nq = nlp.mapping["q"].to_first.len
         q = nlp.mapping["q"].to_second.map(states[:nq])
         qdot = nlp.mapping["qdot"].to_second.map(states[nq:])
-
         return q, qdot
 
     @staticmethod
@@ -684,11 +683,8 @@ class DynamicsFunctions:
             tau, the generalized torques
         """
 
-        nq = nlp.mapping["q"].to_first.len
-        q = nlp.mapping["q"].to_second.map(states[:nq])
-        qdot = nlp.mapping["qdot"].to_second.map(states[nq:])
+        q, qdot = DynamicsFunctions.dispatch_q_qdot_data(states, controls, nlp)
         tau = nlp.mapping["tau"].to_second.map(controls[: nlp.shape["tau"]])
-
         return q, qdot, tau
 
     @staticmethod
