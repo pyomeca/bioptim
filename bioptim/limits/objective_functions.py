@@ -624,6 +624,14 @@ class ObjectiveFunction:
             ocp.J[penalty.list_index].append(J)
 
     @staticmethod
+    def update_target(ocp_or_nlp, list_index, new_target):
+        if list_index >= len(ocp_or_nlp.J) or list_index < 0:
+            raise ValueError("'list_index' must be defined properly")
+
+        for i, j in enumerate(ocp_or_nlp.J[list_index]):
+            j["target"] = new_target[..., i]
+
+    @staticmethod
     def clear_penalty(ocp, nlp, penalty: Objective):
         """
         Resets a objective function. A negative penalty index creates a new empty objective function.

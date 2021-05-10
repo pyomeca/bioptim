@@ -164,7 +164,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     objective_functions.add(
         ObjectiveFcn.Lagrange.MINIMIZE_ALL_CONTROLS,
     )
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target, weight=1000)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -178,39 +178,53 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     shutil.rmtree(f"./c_generated_code/")
 
 
-@pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
-def test_acados_mhe(cost_type):
-    bioptim_folder = TestUtils.bioptim_folder()
-    cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
-    n_shooting = 5
-    n_shootingample = 20
-    target = np.expand_dims(np.cos(np.arange(0, n_shootingample + 1)), axis=0)
+@pytest.mark.parametrize("solver", [Solver.ACADOS, Solver.IPOPT])
+def test_acados_mhe(solver):
+    root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
+    pendulum = TestUtils.load_module(root_folder + "mhe.py")
+    biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
+    nq = biorbd_model.nbQ()
+    torque_max = 5  # Give a bit of slack on the max torque
 
-    ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/acados/cube.bioMod",
-        n_shooting=n_shooting,
-        tf=2,
+    n_cycles = 5 if solver == Solver.ACADOS else 1
+    n_frame_by_cycle = 20
+    window_len = 5
+    window_duration = 0.2
+
+    final_time = window_duration / window_len * n_cycles * n_frame_by_cycle
+    x_init = np.zeros((nq * 2, window_len + 1))
+    u_init = np.zeros((nq, window_len))
+
+    target_q, _, _, _ = pendulum.generate_data(
+        biorbd_model, final_time, [0, np.pi / 2, 0, 0], torque_max, n_cycles * n_frame_by_cycle, 0
     )
+    target = pendulum.states_to_markers(biorbd_model, target_q)
 
-    model = biorbd.Model(bioptim_folder + "/examples/acados/cube.bioMod")
-    for i in range(n_shootingample - n_shooting):
-        objective_functions = ObjectiveList()
-        objective_functions.add(
-            ObjectiveFcn.Lagrange.TRACK_STATE, weight=10, index=[0], target=target[:, i : i + n_shooting + 1]
-        )
-        objective_functions.add(
-            ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target[:, i + n_shooting : i + n_shooting + 1]
-        )
-        ocp.update_objectives(objective_functions)
-        sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
+    def update_functions(mhe, t, _):
+        def target_func(i: int):
+            return target[:, :, i : i + window_len + 1]
 
-        # Check end state value
-        q = sol.states["q"]
-        np.testing.assert_almost_equal(q[0, :], target[0, i : i + n_shooting + 1].squeeze())
+        mhe.update_objectives_target(target=target_func(t), list_index=0)
+        return t < n_frame_by_cycle * n_cycles - window_len - 1
+
+    biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
+    sol = pendulum.prepare_mhe(
+        biorbd_model=biorbd_model,
+        window_len=window_len,
+        window_duration=window_duration,
+        max_torque=torque_max,
+        x_init=x_init,
+        u_init=u_init,
+    ).solve(update_functions, **pendulum.get_solver_options(solver))
 
     # Clean test folder
-    os.remove(f"./acados_ocp.json")
-    shutil.rmtree(f"./c_generated_code/")
+    if solver == Solver.ACADOS:
+        # Compare the position on the first few frames (only ACADOS, since IPOPT is not precise with current options)
+        np.testing.assert_almost_equal(
+            sol.states["q"][:, : -2 * window_len], target_q[:nq, : -3 * window_len - 1], decimal=3
+        )
+        os.remove(f"./acados_ocp.json")
+        shutil.rmtree(f"./c_generated_code/")
 
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])

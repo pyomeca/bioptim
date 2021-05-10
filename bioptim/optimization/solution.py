@@ -10,7 +10,6 @@ from matplotlib import pyplot as plt
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import ControlType, CostType, Shooting, InterpolationType
 from ..misc.utils import check_version
-from ..limits.phase_transition import PhaseTransitionFunctions
 from ..optimization.non_linear_program import NonLinearProgram
 
 
@@ -204,6 +203,7 @@ class Solution:
         self.inf_pr = None
         self.inf_du = None
         self.time_to_optimize = None
+        self.real_time_to_optimize = None
         self.iterations = None
 
         # Extract the data now for further use
@@ -230,6 +230,7 @@ class Solution:
             self.inf_pr = sol["inf_pr"] if isinstance(sol, dict) and "inf_pr" in sol else None
             self.inf_du = sol["inf_du"] if isinstance(sol, dict) and "inf_du" in sol else None
             self.time_to_optimize = sol["time_tot"] if isinstance(sol, dict) and "time_tot" in sol else None
+            self.real_time_to_optimize = self.time_to_optimize
             self.iterations = sol["iter"] if isinstance(sol, dict) and "iter" in sol else None
             self.status = sol["status"] if isinstance(sol, dict) and "status" in sol else None
 
@@ -419,6 +420,7 @@ class Solution:
         new.inf_pr = deepcopy(self.inf_pr)
         new.inf_du = deepcopy(self.inf_du)
         new.time_to_optimize = deepcopy(self.time_to_optimize)
+        new.real_time_to_optimize = deepcopy(self.real_time_to_optimize)
         new.iterations = deepcopy(self.iterations)
 
         new.is_interpolated = deepcopy(self.is_interpolated)
@@ -927,6 +929,8 @@ class Solution:
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
                 for J in nlp.J:
+                    if not J:
+                        continue
                     val = []
                     val_weighted = []
                     for j in J:
@@ -981,7 +985,7 @@ class Solution:
         elif cost_type == CostType.CONSTRAINTS:
             print_constraints(self.ocp, self)
         elif cost_type == CostType.ALL:
-            print(f"TIME TO SOLVE: {self.time_to_optimize} sec")
+            print(f"Solving time: {self.time_to_optimize} sec\nElapsed time: {self.real_time_to_optimize} sec")
             self.print(CostType.OBJECTIVES)
             self.print(CostType.CONSTRAINTS)
         else:
