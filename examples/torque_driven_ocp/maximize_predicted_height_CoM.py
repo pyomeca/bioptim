@@ -139,7 +139,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Prepares and solves a maximal velocity at center of mass program and animates it
     """
@@ -161,3 +161,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate(n_frames=40)
+
+
+if __name__ == "__main__":
+    main()

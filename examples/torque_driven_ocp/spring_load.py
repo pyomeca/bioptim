@@ -108,7 +108,7 @@ def prepare_ocp(biorbd_model_path: str = "mass_point.bioMod"):
     )
 
 
-if __name__ == "__main__":
+def main():
     ocp = prepare_ocp()
 
     # --- Solve the program --- #
@@ -116,3 +116,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

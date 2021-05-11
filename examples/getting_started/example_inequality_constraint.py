@@ -106,7 +106,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
     )
 
 
-if __name__ == "__main__":
+def main():
     model_path = "../torque_driven_ocp/2segments_4dof_2contacts.bioMod"
     t = 0.3
     ns = 10
@@ -125,3 +125,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

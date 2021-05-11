@@ -132,7 +132,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Solve and animate the solution
     """
@@ -145,3 +145,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

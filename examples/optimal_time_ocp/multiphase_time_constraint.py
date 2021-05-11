@@ -154,7 +154,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Run a multiphase problem with free time phases and animate the results
     """
@@ -172,3 +172,7 @@ if __name__ == "__main__":
     param = sol.parameters
     print(f"The optimized phase time are: {param['time'][0, 0]}s, {param['time'][1, 0]}s and {param['time'][2, 0]}s.")
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

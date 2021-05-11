@@ -100,7 +100,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Prepare and solve and animate a reaching task ocp
     """
@@ -113,3 +113,7 @@ if __name__ == "__main__":
     # --- Show results --- #
     sol.animate(show_meshes=False)
     sol.graphs()
+
+
+if __name__ == "__main__":
+    main()

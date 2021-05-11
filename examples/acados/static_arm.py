@@ -81,7 +81,7 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
     )
 
 
-if __name__ == "__main__":
+def main():
     # Options
     warm_start_ipopt_from_acados_solution = False
 
@@ -155,3 +155,7 @@ if __name__ == "__main__":
                 b.update()
             else:
                 should_continue = False
+
+
+if __name__ == "__main__":
+    main()

@@ -137,7 +137,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Firstly, it solves the getting_started/pendulum.py example. Afterward, it gets the marker positions and joint
     torque from the solution and uses them to track. It then creates and solves this ocp and show the results
@@ -211,3 +211,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

@@ -240,7 +240,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Show all the InterpolationType implemented in bioptim
     """
@@ -263,3 +263,7 @@ if __name__ == "__main__":
 
         # Print the last solution
         sol.graphs(adapt_graph_size_to_bounds=False)
+
+
+if __name__ == "__main__":
+    main()

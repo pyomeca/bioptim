@@ -158,11 +158,12 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Solve the program for all the InterpolationType available
     """
 
+    sol = None
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
         ocp = prepare_ocp("cube.bioMod", n_shooting=30, final_time=2, initial_guess=initial_guess)
@@ -171,3 +172,7 @@ if __name__ == "__main__":
 
     # Print the last solution
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

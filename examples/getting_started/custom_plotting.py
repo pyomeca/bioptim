@@ -84,7 +84,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Create multiple new plot and add new stuff to them using a custom defined function
     """
@@ -109,3 +109,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.graphs()
+
+
+if __name__ == "__main__":
+    main()

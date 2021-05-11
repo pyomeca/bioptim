@@ -118,7 +118,7 @@ def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.RK4())
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Solve and animate the solution
     """
@@ -131,3 +131,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()
