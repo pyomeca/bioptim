@@ -633,6 +633,33 @@ class DynamicsFunctions:
         return cs.getForce().to_mx()
 
     @staticmethod
+    def dispatch_q_qdot_data(states: MX.sym, controls: MX.sym, nlp) -> tuple:
+        """
+        Extracting q and qdot from states and controls, assuming state, state and control, respectively.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            q, the generalized coordinates
+        MX.sym
+            qdot, the generalized velocities
+        """
+
+        nq = nlp.mapping["q"].to_first.len
+        q = nlp.mapping["q"].to_second.map(states[:nq])
+        qdot = nlp.mapping["qdot"].to_second.map(states[nq:])
+        return q, qdot
+
+    @staticmethod
     def dispatch_q_qdot_tau_data(states: MX.sym, controls: MX.sym, nlp) -> tuple:
         """
         Extracting q, qdot and tau from states and controls, assuming state, state and control, respectively.
@@ -656,11 +683,8 @@ class DynamicsFunctions:
             tau, the generalized torques
         """
 
-        nq = nlp.mapping["q"].to_first.len
-        q = nlp.mapping["q"].to_second.map(states[:nq])
-        qdot = nlp.mapping["qdot"].to_second.map(states[nq:])
+        q, qdot = DynamicsFunctions.dispatch_q_qdot_data(states, controls, nlp)
         tau = nlp.mapping["tau"].to_second.map(controls[: nlp.shape["tau"]])
-
         return q, qdot, tau
 
     @staticmethod
