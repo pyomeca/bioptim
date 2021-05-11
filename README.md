@@ -162,7 +162,7 @@ Equivalently for mac osX:
 conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' -cconda-forge
 ```
 
-Since there isn't any `Anaconda` nor `pip3` package of ̀`Acados`, a convenient installer is provided with `bioptim`. 
+Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`. 
 The installer can be found and run at `[ROOT_BIOPTIM]/external/acados_install.sh`.
 However, the installer requires an `Anaconda` environment.
 If you have an `Anaconda` environment loaded, the installer should find itself where to install. 
@@ -170,6 +170,10 @@ If you want to install elsewhere, you can provide the script with a first argume
 The second argument that can be passed to the script is the `$BLASFEO_TARGET`. 
 If you don't know what it is, it is probably better to keep the default. 
 Please note that depending on your computer architecture, ̀`Acados` may or may not work properly.
+Concerning Mac OS, the `Acados` installation script is `[ROOT_BIOPTIM]/external/acados_install_mac.sh`.
+Please note that it requires gnu-sed to be installed thanks to the following line :
+`brew install gnu-sed`
+See [here](https://brew.sh/index_fr) for installing the `brew` package manager.
 
 HSL is a collection of state-of-the-art packages for large-scale scientific computation. 
 Among its best known packages are those for the solution of sparse linear systems (`ma27`, `ma57`, etc.), compatible with ̀`Ipopt`.
