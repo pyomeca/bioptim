@@ -153,9 +153,13 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 and optionally:
 - [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
 
-All these (except for ̀`Acados` and the HSL lib) can manually be installed using (assuming the anaconda environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
+All these (except for ̀`Acados` and the HSL lib) can manually be installed using (assuming the anaconda environment is loaded if needed) the `pip3` command, or the Anaconda's following command (ubuntu):
 ```bash
 conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* [bioviz=*=*casadi*] -cconda-forge
+```
+Equivalently for mac osX:
+```bash
+conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' -cconda-forge
 ```
 
 Since there isn't any `Anaconda` nor `pip3` package of ̀`Acados`, a convenient installer is provided with `bioptim`. 
