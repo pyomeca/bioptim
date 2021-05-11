@@ -729,14 +729,8 @@ def test_penalty_minimize_predicted_com_height(value):
     penalty = Objective(penalty_type)
     penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []))
 
-    res = np.array(0.0501274)
-    if value == -10:
-        res = np.array([[-3.72579]])
-
-    np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0][0]["val"],
-        res,
-    )
+    res = np.array(0.0501274 if value == 0.1 else -3.72579)
+    np.testing.assert_almost_equal(ocp.nlp[0].J[0][0]["val"], res)
 
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])

@@ -630,7 +630,8 @@ class PenaltyFunctionAbstract:
             """
 
             nlp = pn.nlp
-            g = -9.81  # Todo: Get the gravity from biorbd
+            nlp.add_casadi_func("gravity", nlp.model.getGravity)
+            g = float(nlp.casadi_func["gravity"]()["o0"][2])
             nlp.add_casadi_func("biorbd_CoM", nlp.model.CoM, nlp.q)
             nlp.add_casadi_func("biorbd_CoM_dot", nlp.model.CoMdot, nlp.q, nlp.qdot)
             for i, v in enumerate(pn.x):
