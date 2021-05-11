@@ -34,7 +34,7 @@ data_to_track = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data_to_track)
 
 
-def get_markers_pos(x: Union[DM, np.ndarray], idx_marker: int, fun: Callable) -> Union[DM, np.ndarray]:
+def get_markers_pos(x: Union[DM, np.ndarray], idx_marker: int, fun: Callable, n_q: int) -> Union[DM, np.ndarray]:
     """
     Get the position of a specific marker from the states
 
@@ -178,14 +178,14 @@ def main():
 
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda x, u, p: get_markers_pos(x, 0, markers_fun),
+        update_function=lambda x, u, p: get_markers_pos(x, 0, markers_fun, n_q),
         linestyle=".-",
         plot_type=PlotType.STEP,
         color=marker_color[0],
     )
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda x, u, p: get_markers_pos(x, 1, markers_fun),
+        update_function=lambda x, u, p: get_markers_pos(x, 1, markers_fun, n_q),
         linestyle=".-",
         plot_type=PlotType.STEP,
         color=marker_color[1],
