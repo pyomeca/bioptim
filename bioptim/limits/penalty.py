@@ -180,7 +180,7 @@ class PenaltyFunctionAbstract:
             Minimize the contact forces computed from dynamics with contact
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        track_segment_with_custom_rt(penalty: PenaltyOption, pn: PenaltyNodes, segment_idx: int, rt_idx: int)
+        track_segment_with_custom_rt(penalty: PenaltyOption, pn: PenaltyNodes, segment: int, rt_idx: int)
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
             and a RT (e.g. IMU). By default this function is quadratic, meaning that it minimizes the difference.
         track_marker_with_segment_axis(penalty: PenaltyOption, pn: PenaltyNodes,
@@ -755,10 +755,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def track_segment_with_custom_rt(
-            penalty: PenaltyOption,
-            pn: PenaltyNodes,
-            segment_idx: int,
-            rt_idx: int,
+            penalty: PenaltyOption, pn: PenaltyNodes, segment: Union[int, str], rt_idx: int
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
@@ -770,13 +767,15 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             pn: PenaltyNodes
                 The penalty node elements
-            segment_idx: int
-                The index of the segment
+            segment: Union[int, str]
+                The name or index of the segment
             rt_idx: int
                 The index of the RT
             """
 
             nlp = pn.nlp
+            segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
+
             PenaltyFunctionAbstract._check_idx("segment", segment_idx, nlp.model.nbSegment())
             PenaltyFunctionAbstract._check_idx("rt", rt_idx, nlp.model.nbRTs())
 

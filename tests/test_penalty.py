@@ -784,7 +784,7 @@ def test_penalty_track_segment_with_custom_rt(penalty_origin, value):
     else:
         penalty = Constraint(penalty_type)
 
-    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []), segment_idx=1, rt_idx=0)
+    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []), segment="ground", rt_idx=0)
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         res = ocp.nlp[0].J[0][0]["val"]
