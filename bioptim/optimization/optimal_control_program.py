@@ -361,7 +361,7 @@ class OptimalControlProgram:
             self.update_parameters(parameters)
 
         # Declare the time to optimize
-        self._define_time(phase_time, objective_functions, constraints)
+        self.__define_time(phase_time, objective_functions, constraints)
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
