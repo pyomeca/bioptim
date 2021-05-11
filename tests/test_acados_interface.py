@@ -253,7 +253,7 @@ def test_acados_custom_dynamics(problem_type_custom):
         use_sx=True,
     )
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
     ocp.update_constraints(constraints)
     sol = ocp.solve(solver=Solver.ACADOS)
 
@@ -406,7 +406,7 @@ def test_acados_one_end_constraints():
     ocp.update_bounds(x_bounds=x_bounds)
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
     ocp.update_constraints(constraints)
 
     sol = ocp.solve(solver=Solver.ACADOS)
@@ -470,7 +470,7 @@ def test_acados_constraints_end_all():
     )
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m5")
     constraints.add(
         ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axis.X)
     )

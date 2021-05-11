@@ -340,9 +340,7 @@ def test_penalty_track_markers(penalty_origin, value):
     else:
         penalty = Constraint(penalty_type)
 
-    penalty_type.value[0](
-        penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []), first_marker_idx=0, second_marker_idx=1
-    )
+    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []), first_marker="m0", second_marker="m1")
 
     expected = np.array(
         [
