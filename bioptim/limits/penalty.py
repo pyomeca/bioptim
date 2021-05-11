@@ -183,8 +183,7 @@ class PenaltyFunctionAbstract:
         track_segment_with_custom_rt(penalty: PenaltyOption, pn: PenaltyNodes, segment: int, rt_idx: int)
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
             and a RT (e.g. IMU). By default this function is quadratic, meaning that it minimizes the difference.
-        track_marker_with_segment_axis(penalty: PenaltyOption, pn: PenaltyNodes,
-                marker_idx: int, segment_idx: int, axis: Axis)
+        track_marker_with_segment_axis(penalty: PenaltyOption, pn: PenaltyNodes, marker: str, segment: str, axis: Axis)
             Track a marker using a segment, that is aligning an axis toward the marker
             By default this function is quadratic, meaning that it minimizes the difference.
         custom(penalty: PenaltyOption, pn: PenaltyNodes, **parameters: dict)
@@ -814,8 +813,8 @@ class PenaltyFunctionAbstract:
         def track_marker_with_segment_axis(
             penalty: PenaltyOption,
             pn: PenaltyNodes,
-            marker_idx: int,
-            segment_idx: int,
+            marker: Union[int, str],
+            segment: Union[int, str],
             axis: Axis,
         ):
             """
@@ -828,10 +827,10 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             pn: PenaltyNodes
                 The penalty node elements
-            marker_idx: int
-                Index of the marker to be tracked
-            segment_idx: int
-                Index of the segment to align with the marker
+            marker: int
+                Name or index of the marker to be tracked
+            segment: int
+                Name or index of the segment to align with the marker
             axis: Axis
                 The axis that should be tracking the marker
             """
@@ -840,6 +839,8 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("axis must be a bioptim.Axis")
 
             nlp = pn.nlp
+            marker_idx = biorbd.marker_index(nlp.model, marker) if isinstance(marker, str) else marker
+            segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
 
             def biorbd_meta_func(q, segment_idx, marker_idx):
                 r_rt = nlp.model.globalJCS(q, segment_idx)
