@@ -670,6 +670,7 @@ class InitialGuess(OptionGeneric):
             self.init = PathCondition(initial_guess, interpolation=interpolation, **parameters)
 
         super(InitialGuess, self).__init__(**parameters)
+        self.type = interpolation
 
     def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int):
         """
