@@ -31,6 +31,11 @@ if [ -z "$2" ]; then
   echo ""
 fi
 
+# Preparing environment
+if [ "$CONDA_PREFIX" ]; then
+  conda install git cmake -cconda-forge -y
+fi
+
 # Move to the build folder
 echo "Compiling ACADOS"
 echo ""
