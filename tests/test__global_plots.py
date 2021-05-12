@@ -117,11 +117,32 @@ def test_console_objective_functions():
     graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
     ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod")
     sol = ocp.solve()
-    sol.graphs(automatically_organize=False)
+    ocp = sol.ocp
 
     sol.constraints = np.array([range(sol.constraints.shape[0])]).T / 10
+    # Create some consistent answer
     sol.time_to_optimize = 1.2345
     sol.real_time_to_optimize = 5.4321
+    cmp = 1
+    for j in range(len(ocp.J)):
+        for i in range(len(ocp.J[j])):
+            if ocp.J[j][i]:
+                ocp.J[j][i]["val"] = np.array([range(cmp, ocp.J[j][i]["val"].shape[0] + cmp)]).T
+    for k in range(len(ocp.nlp)):
+        for j in range(len(ocp.nlp[k].J)):
+            for i in range(len(ocp.nlp[k].J[j])):
+                if ocp.nlp[k].J[j][i]:
+                    ocp.nlp[k].J[j][i]["val"] = np.array([range(cmp, ocp.nlp[k].J[j][i]["val"].shape[0] + cmp)]).T
+    for j in range(len(ocp.g)):
+        for i in range(len(ocp.g[j])):
+            if ocp.g[j][i]:
+                ocp.g[j][i]["val"] = np.array([range(cmp, ocp.g[j][i]["val"].shape[0] + cmp)]).T
+    for k in range(len(ocp.nlp)):
+        for j in range(len(ocp.nlp[k].g)):
+            for i in range(len(ocp.nlp[k].g[j])):
+                if ocp.nlp[k].g[j][i]:
+                    ocp.nlp[k].g[j][i]["val"] = np.array([range(cmp, ocp.nlp[k].g[j][i]["val"].shape[0] + cmp)]).T
+
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
     sol.print()
@@ -130,18 +151,18 @@ def test_console_objective_functions():
         "Elapsed time: 5.4321 sec\n"
         "\n"
         "---- COST FUNCTION VALUES ----\n"
-        "minimize_difference: 0.003085170339981944 (weighted 0.308517)\n"
+        "minimize_difference: 14.0 (weighted 1400)\n"
         "\n"
         "PHASE 0\n"
-        "MINIMIZE_TORQUE: 1939.7605252449728 (weighted 19397.6)\n"
+        "MINIMIZE_TORQUE: 280.0 (weighted 2800)\n"
         "\n"
         "PHASE 1\n"
-        "MINIMIZE_TORQUE: 2887.7566502922946 (weighted 48129.3)\n"
+        "MINIMIZE_TORQUE: 420.0 (weighted 7000)\n"
         "\n"
         "PHASE 2\n"
-        "MINIMIZE_TORQUE: 1928.0412902161684 (weighted 38560.8)\n"
+        "MINIMIZE_TORQUE: 280.0 (weighted 5600)\n"
         "\n"
-        "Sum cost functions: 106088\n"
+        "Sum cost functions: 16800\n"
         "------------------------------\n"
         "\n"
         "--------- CONSTRAINTS ---------\n"
