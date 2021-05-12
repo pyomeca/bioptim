@@ -31,11 +31,6 @@ if [ -z "$2" ]; then
   echo ""
 fi
 
-# Preparing environment
-if [ "$CONDA_PREFIX" ]; then
-  conda install git cmake -cconda-forge -y
-fi
-
 # Move to the build folder
 echo "Compiling ACADOS"
 echo ""
@@ -57,6 +52,9 @@ make install -j$CPU_COUNT
 
 # Prepare the Python interface
 cd ../interfaces/acados_template
+
+# Use gnu-sed instead of osx native sed
+export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
 
 # Prepare some modification on the files so it works with biorbd
 # Allow for any python
@@ -87,12 +85,17 @@ sed -i "s/$TO_REPLACE_JSON_DEP/$REPLACE_JSON_DEP_BY/" setup.py
 sed -i "s/$TO_REPLACE_PATH/$REPLACE_PATH_BY/" acados_template/utils.py
 sed -i "s/$TO_REPLACE_JSON/$REPLACE_JSON_BY/" acados_template/acados_ocp_solver.py
 
+# Remove back-up files
+#rm setup.pybk
+#rm acados_template/utils.pybk
+#rm acados_template/acados_ocp_solver.pybk
+
 # Install the Python interface
 pip install .
 cd ../..
 
 # Automatically download Tera 
-TERA_INSTALL_SCRIPT=$(pwd)/ci/linux/install_t_renderer.sh
+TERA_INSTALL_SCRIPT=$(pwd)/ci/osx/install_t_renderer.sh
 pushd $ARG1;
   chmod +x $TERA_INSTALL_SCRIPT;
   $TERA_INSTALL_SCRIPT;

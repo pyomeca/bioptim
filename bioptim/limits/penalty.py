@@ -1005,9 +1005,9 @@ class PenaltyFunctionAbstract:
 
         Parameters
         ----------
+        penalty: PenaltyOption
             The actual penalty to declare
         """
-        penalty: PenaltyOption
 
         func = penalty.type.value[0]
         # Everything that should change the entry parameters depending on the penalty can be added here
