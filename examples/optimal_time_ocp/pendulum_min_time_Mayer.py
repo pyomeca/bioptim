@@ -106,7 +106,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Prepare, solve and animate a time minimizer ocp using a Mayer criteria
     """
@@ -120,3 +120,7 @@ if __name__ == "__main__":
     print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}, good job Mayer!")
 
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

@@ -168,8 +168,8 @@ def prepare_ocp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraints
     if interpolation_type == InterpolationType.CONSTANT:
@@ -240,7 +240,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Show all the InterpolationType implemented in bioptim
     """
@@ -263,3 +263,7 @@ if __name__ == "__main__":
 
         # Print the last solution
         sol.graphs(adapt_graph_size_to_bounds=False)
+
+
+if __name__ == "__main__":
+    main()

@@ -340,9 +340,7 @@ def test_penalty_track_markers(penalty_origin, value):
     else:
         penalty = Constraint(penalty_type)
 
-    penalty_type.value[0](
-        penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []), first_marker_idx=0, second_marker_idx=1
-    )
+    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []), first_marker="m0", second_marker="m1")
 
     expected = np.array(
         [
@@ -731,14 +729,8 @@ def test_penalty_minimize_predicted_com_height(value):
     penalty = Objective(penalty_type)
     penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []))
 
-    res = np.array(0.0501274)
-    if value == -10:
-        res = np.array([[-3.72579]])
-
-    np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0][0]["val"],
-        res,
-    )
+    res = np.array(0.0501274 if value == 0.1 else -3.72579)
+    np.testing.assert_almost_equal(ocp.nlp[0].J[0][0]["val"], res)
 
 
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
@@ -786,7 +778,7 @@ def test_penalty_track_segment_with_custom_rt(penalty_origin, value):
     else:
         penalty = Constraint(penalty_type)
 
-    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []), segment_idx=1, rt_idx=0)
+    penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []), segment="ground", rt_idx=0)
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         res = ocp.nlp[0].J[0][0]["val"]
@@ -820,7 +812,7 @@ def test_penalty_track_marker_with_segment_axis(penalty_origin, value):
         penalty = Constraint(penalty_type)
 
     penalty_type.value[0](
-        penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []), marker_idx=0, segment_idx=1, axis=Axis.X
+        penalty, PenaltyNodes(ocp, ocp.nlp[0], [], x, [], []), marker="m0", segment="ground", axis=Axis.X
     )
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
