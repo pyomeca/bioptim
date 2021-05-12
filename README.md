@@ -26,9 +26,9 @@ The current status of `bioptim` on conda-forge is
 
 # Table of Contents  
 [How to install](#how-to-install)
-- [Anaconda](#installing-from-anaconda-for-windows-linux-and-mac)
-- [Compiling](#installing-from-the-sources-for-windows-linux-and-mac)
-- [Dependencies](#dependencies)
+- [From anaconda](#installing-from-anaconda-for-windows-linux-and-mac)
+- [From the sources](#installing-from-the-sources-for-linux-mac-and-windows)
+- [Installation complete](#installation-complete)
 
 [A first practical example](#a-first-practical-example)
 - [The import](#the-import)
@@ -111,21 +111,10 @@ This will download and install all the dependencies and install `bioptim`.
 And that is it! 
 You can already enjoy bioptiming!
 
-## Installing from the sources (For Windows, Linux and Mac)
+## Installing from the sources (For Linux, Mac and Windows)
 Installing from the sources is basically as easy as installing from Anaconda, with the difference that you will be required to download and install the dependencies by hand (see section below). 
 
-Once you have downloaded `bioptim`, navigate to the root folder and (assuming your conda environment is loaded if needed), you can type the following command:
-```bash 
-python setup.py install
-```
-Assuming everything went well, that is it! 
-You can already enjoy bioptiming!
-
-Please note that Windows is shown here as a possible OS. 
-As stated before, while this is theoretically possible, it will require that you compile `CasADi`, `RBDL` and `biorbd` by hand since the Anaconda packages are not built for Windows.
-This is therefore highly discouraged. 
-
-## Dependencies
+### Dependencies
 `bioptim` relies on several libraries. 
 The most obvious one is the `biorbd` suite (including indeed `biorbd` and `bioviz`), but some extra more are required.
 Due to the amount of different dependencies, it would be tedious to show how to install them all here. 
@@ -153,29 +142,59 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 and optionally:
 - [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
 
-All these (except for ̀`Acados` and the HSL lib) can manually be installed using (assuming the anaconda environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
+#### Linux - Installing dependencies with conda
+All these (except for ̀`Acados` and the HSL lib) can easily be installed using (assuming the anaconda3 environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
 ```bash
 conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* [bioviz=*=*casadi*] -cconda-forge
 ```
-
-Since there isn't any `Anaconda` nor `pip3` package of ̀`Acados`, a convenient installer is provided with `bioptim`. 
-The installer can be found and run at `[ROOT_BIOPTIM]/external/acados_install.sh`.
-However, the installer requires an `Anaconda` environment.
-If you have an `Anaconda` environment loaded, the installer should find itself where to install. 
+Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`. 
+The installer can be found and run at `[ROOT_BIOPTIM]/external/acados_install_linux.sh`.
+However, the installer requires an `Anaconda3` environment.
+If you have an `Anaconda3` environment loaded, the installer should find itself where to install. 
 If you want to install elsewhere, you can provide the script with a first argument which is the `$CONDA_PREFIX`. 
 The second argument that can be passed to the script is the `$BLASFEO_TARGET`. 
 If you don't know what it is, it is probably better to keep the default. 
-Please note that depending on your computer architecture, ̀`Acados` may or may not work properly.
+Please note that depending on your computer architecture, `Acados` may or may not work properly.
 
+#### Mac - Installing dependencies with conda
+Equivalently for MacOSX:
+```bash
+conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' -cconda-forge
+```
+Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`.
+The `Acados` installation script is `[ROOT_BIOPTIM]/external/acados_install_mac.sh`.
+However, the installer requires an `Anaconda3` environment.
+If you have an `Anaconda3` environment loaded, the installer should find itself where to install. 
+If you want to install elsewhere, you can provide the script with a first argument which is the `$CONDA_PREFIX`. 
+The second argument that can be passed to the script is the `$BLASFEO_TARGET`. 
+If you don't know what it is, it is probably better to keep the default. 
+Please note that depending on your computer architecture, `Acados` may or may not work properly.
+
+#### Windows - Installing dependencies with conda
+Equivalently for Windows:
+```bash
+conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' -cconda-forge
+```
+There isn't any `Anaconda` nor `pip3` package of `Acados`.
+If one wants to use the `Acados` solver on Windows, they must compile it by themselves.
+
+#### The case of HSL solvers
 HSL is a collection of state-of-the-art packages for large-scale scientific computation. 
 Among its best known packages are those for the solution of sparse linear systems (`ma27`, `ma57`, etc.), compatible with ̀`Ipopt`.
 HSL packages are [available](http://www.hsl.rl.ac.uk/download/coinhsl-archive-linux-x86_64/2014.01.17/) at no cost for academic research and teaching. 
-Once you obtain the HSL dynamic library (libhsl.so), you just have place it in your `Anaconda` environment into the `lib/` folder.
-You are now able to use all the options of `bioptim`, including the HSL linear solvers with `Acados`.
+Once you obtain the HSL dynamic library (precompiled `libhsl.so` for Linux, to be compiled `libhsl.dylib` for MacOSX, `libhsl.dll` for Windows), you just have place it in your `Anaconda3` environment into the `lib/` folder.
+You are now able to use all the options of `bioptim`, including the HSL linear solvers with `Ipopt`.
 We recommend that you use `ma57` as a default linear solver by calling as such:
 ```python
 ocp.solve(solver_options={"linear_solver": "ma57"})
 ```
+## Installation complete
+Once you have downloaded `bioptim`, navigate to the root folder and (assuming your conda environment is loaded if needed), you can type the following command:
+```bash 
+python setup.py install
+```
+Assuming everything went well, that is it! 
+You can already enjoy bioptimizing!
 
 # A first practical example
 The easiest way to learn `bioptim` is to dive into it.
@@ -1993,3 +2012,4 @@ If you use `bioptim`, we would be grateful if you could cite it as follows:
 	eprint = {https://www.biorxiv.org/content/10.1101/2021.02.27.432868v2.full.pdf},
 	journal = {bioRxiv}
 }
+

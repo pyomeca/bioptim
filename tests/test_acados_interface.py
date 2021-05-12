@@ -6,6 +6,7 @@ It tests the results of an optimal control problem with acados regarding the pro
 import os
 import shutil
 import pytest
+from sys import platform
 
 import biorbd
 import numpy as np
@@ -32,6 +33,8 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_no_obj(cost_type):
+    if platform == "win32":
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
@@ -49,6 +52,8 @@ def test_acados_no_obj(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_mayer(cost_type):
+    if platform == "win32":
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
 
@@ -74,6 +79,9 @@ def test_acados_one_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_several_mayer(cost_type):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
@@ -101,6 +109,9 @@ def test_acados_several_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_lagrange(cost_type):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     n_shooting = 10
@@ -128,6 +139,9 @@ def test_acados_one_lagrange(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_lagrange_and_one_mayer(cost_type):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     n_shooting = 10
@@ -156,6 +170,9 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_control_lagrange_and_state_mayer(cost_type):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     n_shooting = 10
@@ -185,6 +202,9 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_options(cost_type):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/acados/pendulum.py")
     ocp = pendulum.prepare_ocp(
@@ -210,6 +230,9 @@ def test_acados_options(cost_type):
 
 
 def test_acados_fail_external():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/acados/pendulum.py")
     ocp = pendulum.prepare_ocp(
@@ -225,6 +248,9 @@ def test_acados_fail_external():
 
 
 def test_acados_fail_lls():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     arm = TestUtils.load_module(bioptim_folder + "/examples/acados/static_arm.py")
     ocp = arm.prepare_ocp(
@@ -244,6 +270,9 @@ def test_acados_fail_lls():
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])
 def test_acados_custom_dynamics(problem_type_custom):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_dynamics.py")
     ocp = cube.prepare_ocp(
@@ -274,6 +303,9 @@ def test_acados_custom_dynamics(problem_type_custom):
 
 
 def test_acados_one_parameter():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
     ocp = parameters.prepare_ocp(
@@ -326,6 +358,9 @@ def test_acados_one_parameter():
 
 
 def test_acados_several_parameter():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
     ocp = parameters.prepare_ocp(
@@ -385,6 +420,9 @@ def test_acados_several_parameter():
 
 
 def test_acados_one_end_constraints():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
@@ -423,6 +461,9 @@ def test_acados_one_end_constraints():
 
 
 def test_acados_constraints_all():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/track/track_marker_on_segment.py")
     ocp = track.prepare_ocp(
@@ -458,6 +499,9 @@ def test_acados_constraints_all():
 
 
 def test_acados_constraints_end_all():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/track/track_marker_on_segment.py")
     ocp = track.prepare_ocp(
@@ -495,6 +539,9 @@ def test_acados_constraints_end_all():
 
 @pytest.mark.parametrize("failing", ["u_bounds", "x_bounds"])
 def test_acados_bounds_not_implemented(failing):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
     nq = biorbd_model.nbQ()
