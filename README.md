@@ -111,7 +111,7 @@ This will download and install all the dependencies and install `bioptim`.
 And that is it! 
 You can already enjoy bioptiming!
 
-## Installing from the sources (For Linux, Mac and ~~Windows~~)
+## Installing from the sources (For Linux, Mac and Windows)
 Installing from the sources is basically as easy as installing from Anaconda, with the difference that you will be required to download and install the dependencies by hand (see section below). 
 
 ### Dependencies
@@ -142,8 +142,8 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 and optionally:
 - [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
 
-### Linux - Installing dependencies with conda
-All these (except for ̀`Acados` and the HSL lib) can manually be installed using (assuming the anaconda3 environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
+#### Linux - Installing dependencies with conda
+All these (except for ̀`Acados` and the HSL lib) can easily be installed using (assuming the anaconda3 environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
 ```bash
 conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* [bioviz=*=*casadi*] -cconda-forge
 ```
@@ -156,28 +156,33 @@ The second argument that can be passed to the script is the `$BLASFEO_TARGET`.
 If you don't know what it is, it is probably better to keep the default. 
 Please note that depending on your computer architecture, `Acados` may or may not work properly.
 
-### Mac - Installing dependencies with conda
-Equivalently for Mac osX:
+#### Mac - Installing dependencies with conda
+Equivalently for MacOSX:
 ```bash
 conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' -cconda-forge
 ```
+Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`.
 The `Acados` installation script is `[ROOT_BIOPTIM]/external/acados_install_mac.sh`.
-Please note that it requires `gnu-sed` and `wget` to be installed.
-If you don't have the `brew` package manager installed, just do it by running:
-`/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)`
-and then, install the required packages:
-`brew install gnu-sed wget`
+However, the installer requires an `Anaconda3` environment.
+If you have an `Anaconda3` environment loaded, the installer should find itself where to install. 
+If you want to install elsewhere, you can provide the script with a first argument which is the `$CONDA_PREFIX`. 
+The second argument that can be passed to the script is the `$BLASFEO_TARGET`. 
+If you don't know what it is, it is probably better to keep the default. 
+Please note that depending on your computer architecture, `Acados` may or may not work properly.
 
-### Windows - Installing dependencies by yourself
-Please note that Windows is shown here as a possible OS. 
-As stated before, while this is theoretically possible, it will require that you compile `CasADi`, `RBDL` and `biorbd` by hand since the Anaconda packages are not built for Windows.
-This is therefore highly discouraged. 
+#### Windows - Installing dependencies with conda
+Equivalently for Windows:
+```bash
+conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' -cconda-forge
+```
+There isn't any `Anaconda` nor `pip3` package of `Acados`.
+If one wants to use the `Acados` solver on Windows, they must compile it by themselves.
 
-### The case of HSL solvers
+#### The case of HSL solvers
 HSL is a collection of state-of-the-art packages for large-scale scientific computation. 
 Among its best known packages are those for the solution of sparse linear systems (`ma27`, `ma57`, etc.), compatible with ̀`Ipopt`.
 HSL packages are [available](http://www.hsl.rl.ac.uk/download/coinhsl-archive-linux-x86_64/2014.01.17/) at no cost for academic research and teaching. 
-Once you obtain the HSL dynamic library (precompiled `libhsl.so` for linux, to be compiled `libhsl.dylib` for mac), you just have place it in your `Anaconda3` environment into the `lib/` folder.
+Once you obtain the HSL dynamic library (precompiled `libhsl.so` for Linux, to be compiled `libhsl.dylib` for MacOSX, `libhsl.dll` for Windows), you just have place it in your `Anaconda3` environment into the `lib/` folder.
 You are now able to use all the options of `bioptim`, including the HSL linear solvers with `Ipopt`.
 We recommend that you use `ma57` as a default linear solver by calling as such:
 ```python

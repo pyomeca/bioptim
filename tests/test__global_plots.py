@@ -117,31 +117,26 @@ def test_console_objective_functions():
     graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
     ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod")
     sol = ocp.solve()
-    ocp = sol.ocp
+    ocp = sol.ocp  # We will override ocp with known and controlled values for the test
 
     sol.constraints = np.array([range(sol.constraints.shape[0])]).T / 10
     # Create some consistent answer
     sol.time_to_optimize = 1.2345
     sol.real_time_to_optimize = 5.4321
     cmp = 1
-    for j in range(len(ocp.J)):
-        for i in range(len(ocp.J[j])):
-            if ocp.J[j][i]:
-                ocp.J[j][i]["val"] = np.array([range(cmp, ocp.J[j][i]["val"].shape[0] + cmp)]).T
-    for k in range(len(ocp.nlp)):
-        for j in range(len(ocp.nlp[k].J)):
-            for i in range(len(ocp.nlp[k].J[j])):
-                if ocp.nlp[k].J[j][i]:
-                    ocp.nlp[k].J[j][i]["val"] = np.array([range(cmp, ocp.nlp[k].J[j][i]["val"].shape[0] + cmp)]).T
-    for j in range(len(ocp.g)):
-        for i in range(len(ocp.g[j])):
-            if ocp.g[j][i]:
-                ocp.g[j][i]["val"] = np.array([range(cmp, ocp.g[j][i]["val"].shape[0] + cmp)]).T
-    for k in range(len(ocp.nlp)):
-        for j in range(len(ocp.nlp[k].g)):
-            for i in range(len(ocp.nlp[k].g[j])):
-                if ocp.nlp[k].g[j][i]:
-                    ocp.nlp[k].g[j][i]["val"] = np.array([range(cmp, ocp.nlp[k].g[j][i]["val"].shape[0] + cmp)]).T
+
+    def override_penalty(pen, cmp):
+        for P in pen:
+            for p in P:
+                if p:
+                    p["val"] = np.array([range(cmp, p["val"].shape[0] + cmp)]).T
+
+    override_penalty(ocp.g, cmp)  # Override constraints in the ocp
+    override_penalty(ocp.J, cmp)  # Override objectives in the ocp
+
+    for nlp in ocp.nlp:
+        override_penalty(nlp.g, cmp)  # Override constraints in the nlp
+        override_penalty(nlp.J, cmp)  # Override objectives in the nlp
 
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
