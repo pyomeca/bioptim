@@ -140,8 +140,8 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
 
     if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((24.34465091, 0)), decimal=3)
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-53.24135804, 0)), decimal=3)
+        np.testing.assert_almost_equal(tau[:, 0], np.array((24.34465091, 0)), decimal=2)
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-53.24135804, 0)), decimal=2)
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # initial and final controls
@@ -219,7 +219,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    TestUtils.simulate(sol)
+    TestUtils.simulate(sol, decimal_value=6)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
