@@ -787,9 +787,7 @@ class OptimalControlProgram:
 
         def add_parameters_to_str(list_constraints: Union[list, ParameterList], string: str):
             for param in list_constraints:
-                string += f"{param}: " \
-                                   f"{list_constraints[param]}" \
-                                   f"<br/>"
+                string += f"{param}: {list_constraints[param]}<br/>"
             string += f"<br/>"
             return string
 
@@ -799,15 +797,13 @@ class OptimalControlProgram:
                 obj = objective[0]['objective']
                 if isinstance(obj.type, ObjectiveFcn.Lagrange):
                     if obj.sliced_target is not None:
-                        if obj.quadratic is True:
-                            lagrange_str += f"({obj.name} - " \
-                                            f"{obj.sliced_target})" \
-                                            f"<sup>2</sup><br/>"
+                        if obj.quadratic:
+                            lagrange_str += f"({obj.name} - {obj.sliced_target})<sup>2</sup><br/>"
                         else:
                             lagrange_str += f"{obj.name} - " \
                                             f"{obj.sliced_target}<br/>"
                     else:
-                        if obj.quadratic is True:
+                        if obj.quadratic:
                             lagrange_str += f"({obj.name})<sup>2</sup><br/>"
                         else:
                             lagrange_str += f"{obj.name}<br/>"
@@ -843,15 +839,12 @@ class OptimalControlProgram:
                 obj = objective[0]['objective']
                 if isinstance(obj.type, ObjectiveFcn.Mayer):
                     if obj.sliced_target is not None:
-                        if obj.quadratic is True:
-                            mayer_str += f"({obj.name} - " \
-                                            f"{obj.sliced_target})" \
-                                            f"<sup>2</sup><br/>"
+                        if obj.quadratic:
+                            mayer_str += f"({obj.name} - {obj.sliced_target})<sup>2</sup><br/>"
                         else:
-                            mayer_str += f"{obj.name} - " \
-                                            f"{obj.sliced_target}<br/>"
+                            mayer_str += f"{obj.name} - {obj.sliced_target}<br/>"
                     else:
-                        if obj.quadratic is True:
+                        if obj.quadratic:
                             mayer_str += f"({obj.name})<sup>2</sup><br/>"
                         else:
                             mayer_str += f"{obj.name}<br/>"
@@ -1011,9 +1004,9 @@ class OptimalControlProgram:
                             if constraint[0]['node_index'] == node_idx:
                                 constraints_str += constraint_to_str(constraint[0]['constraint'])
 
-                        # mayer_str = mayer_to_str(l_nodes, phase_idx, node_idx)
-                        mayer_str = mayer_to_str_reduced(self.nlp[phase_idx].J)
-                        node_name = f"Shooting node {node_idx}" if node_idx < len(l_nodes[phase_idx]) -1 else\
+                        mayer_str = mayer_to_str(l_nodes, phase_idx, node_idx)
+                        # mayer_str = mayer_to_str_reduced(self.nlp[phase_idx].J)
+                        node_name = f"Shooting node {node_idx}" if node_idx < len(l_nodes[phase_idx]) - 1 else\
                             f"Final node ({node_idx})"
 
                         if constraints_str and mayer_str != "":
@@ -1151,10 +1144,10 @@ class OptimalControlProgram:
             n_phase = n_phase + 1
             for node_idx in range(nlp.ns + 1):
                 list_nodes[nlp.phase_idx][node_idx] = list_objectives[nlp.phase_idx][node_idx]
-        if to_console is True:
+        if to_console:
             print_console(self, list_dynamics, list_ode, list_parameters, list_nodes, self.n_phases)
 
-        if to_graph is True:
+        if to_graph:
             draw_graph(self, list_dynamics, list_ode, list_parameters, list_nodes, n_phase)
 
     def __define_time(
