@@ -54,7 +54,9 @@ make install -j$CPU_COUNT
 cd ../interfaces/acados_template
 
 # Use gnu-sed instead of osx native sed
-export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
+if [ "$CONDA_PREFIX" ]; then
+  conda install sed wget git cmake -cconda-forge -y
+fi
 
 # Prepare some modification on the files so it works with biorbd
 # Allow for any python
