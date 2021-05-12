@@ -37,7 +37,7 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=10)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10)
     objective_functions.add(
-        ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, weight=100000, first_marker_idx=0, second_marker_idx=1
+        ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, weight=100000, first_marker="target", second_marker="COM_hand"
     )
 
     # Dynamics
@@ -81,7 +81,7 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
     )
 
 
-if __name__ == "__main__":
+def main():
     # Options
     warm_start_ipopt_from_acados_solution = False
 
@@ -155,3 +155,7 @@ if __name__ == "__main__":
                 b.update()
             else:
                 should_continue = False
+
+
+if __name__ == "__main__":
+    main()

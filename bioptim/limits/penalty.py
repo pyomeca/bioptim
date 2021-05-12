@@ -135,7 +135,7 @@ class PenaltyFunctionAbstract:
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        track_markers(penalty: PenaltyOption, pn: PenaltyNodes, first_marker_idx: int, second_marker_idx: int):
+        superimpose_markers(penalty: PenaltyOption, pn: PenaltyNodes, first_marker: Union[int, str], second_marker: Union[int, str]):
             Minimize the distance between two markers
             By default this function is quadratic, meaning that it minimizes distance between them.
         proportional_variable(penalty: PenaltyOption, pn: PenaltyNodes,
@@ -180,11 +180,10 @@ class PenaltyFunctionAbstract:
             Minimize the contact forces computed from dynamics with contact
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        track_segment_with_custom_rt(penalty: PenaltyOption, pn: PenaltyNodes, segment_idx: int, rt_idx: int)
+        track_segment_with_custom_rt(penalty: PenaltyOption, pn: PenaltyNodes, segment: int, rt_idx: int)
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
             and a RT (e.g. IMU). By default this function is quadratic, meaning that it minimizes the difference.
-        track_marker_with_segment_axis(penalty: PenaltyOption, pn: PenaltyNodes,
-                marker_idx: int, segment_idx: int, axis: Axis)
+        track_marker_with_segment_axis(penalty: PenaltyOption, pn: PenaltyNodes, marker: str, segment: str, axis: Axis)
             Track a marker using a segment, that is aligning an axis toward the marker
             By default this function is quadratic, meaning that it minimizes the difference.
         custom(penalty: PenaltyOption, pn: PenaltyNodes, **parameters: dict)
@@ -235,11 +234,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
-        def minimize_markers(
-            penalty: PenaltyOption,
-            pn: PenaltyNodes,
-            axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z),
-        ):
+        def minimize_markers(penalty: PenaltyOption, pn: PenaltyNodes, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)):
             """
             Minimize a marker set.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -267,16 +262,13 @@ class PenaltyFunctionAbstract:
             nq = pn.nlp.mapping["q"].to_first.len
             for i, v in enumerate(pn.x):
                 q = pn.nlp.mapping["q"].to_second.map(v[:nq])
+                # TODO move the axis_to_track into a row (?) option of penalty
                 val = pn.nlp.casadi_func["biorbd_markers"](q)[axis_to_track, markers_idx]
                 penalty.sliced_target = target[axis_to_track, :, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
-        def minimize_markers_displacement(
-            penalty: PenaltyOption,
-            pn: PenaltyNodes,
-            coordinates_system_idx: int = -1,
-        ):
+        def minimize_markers_displacement(penalty: PenaltyOption, pn: PenaltyNodes, coordinates_system_idx: int = -1):
             """
             Minimize a marker set velocity by comparing the position at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -377,7 +369,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def superimpose_markers(
-            penalty: PenaltyOption, pn: PenaltyNodes, first_marker_idx: int, second_marker_idx: int
+            penalty: PenaltyOption, pn: PenaltyNodes, first_marker: Union[str, int], second_marker: Union[str, int]
         ):
             """
             Minimize the distance between two markers
@@ -389,22 +381,29 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             pn: PenaltyNodes
                 The penalty node elements
-            first_marker_idx: int
-                The index of one of the two markers
-            second_marker_idx: int
-                The index of one of the two markers
+            first_marker: Union[str, int]
+                The name or index of one of the two markers
+            second_marker: Union[str, int]
+                The name or index of one of the two markers
             """
 
             nlp = pn.nlp
+            first_marker_idx = (
+                biorbd.marker_index(nlp.model, first_marker) if isinstance(first_marker, str) else first_marker
+            )
+            second_marker_idx = (
+                biorbd.marker_index(nlp.model, second_marker) if isinstance(second_marker, str) else second_marker
+            )
+
             PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nbMarkers())
             nlp.add_casadi_func("markers", nlp.model.markers, nlp.q)
             nq = nlp.mapping["q"].to_first.len
             for v in pn.x:
                 q = nlp.mapping["q"].to_second.map(v[:nq])
-                first_marker = nlp.casadi_func["markers"](q)[:, first_marker_idx]
-                second_marker = nlp.casadi_func["markers"](q)[:, second_marker_idx]
+                first_marker_func = nlp.casadi_func["markers"](q)[:, first_marker_idx]
+                second_marker_func = nlp.casadi_func["markers"](q)[:, second_marker_idx]
 
-                val = first_marker - second_marker
+                val = first_marker_func - second_marker_func
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
 
         @staticmethod
@@ -631,7 +630,8 @@ class PenaltyFunctionAbstract:
             """
 
             nlp = pn.nlp
-            g = -9.81  # Todo: Get the gravity from biorbd
+            nlp.add_casadi_func("gravity", nlp.model.getGravity)
+            g = float(nlp.casadi_func["gravity"]()["o0"][2])
             nlp.add_casadi_func("biorbd_CoM", nlp.model.CoM, nlp.q)
             nlp.add_casadi_func("biorbd_CoM_dot", nlp.model.CoMdot, nlp.q, nlp.qdot)
             for i, v in enumerate(pn.x):
@@ -681,11 +681,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, CoM_proj, penalty)
 
         @staticmethod
-        def minimize_com_velocity(
-            penalty: PenaltyOption,
-            pn: PenaltyNodes,
-            axis: Axis = None,
-        ):
+        def minimize_com_velocity(penalty: PenaltyOption, pn: PenaltyNodes, axis: Axis = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's velocity is minimized.
@@ -759,10 +755,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def track_segment_with_custom_rt(
-            penalty: PenaltyOption,
-            pn: PenaltyNodes,
-            segment_idx: int,
-            rt_idx: int,
+            penalty: PenaltyOption, pn: PenaltyNodes, segment: Union[int, str], rt_idx: int
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
@@ -774,13 +767,15 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             pn: PenaltyNodes
                 The penalty node elements
-            segment_idx: int
-                The index of the segment
+            segment: Union[int, str]
+                The name or index of the segment
             rt_idx: int
                 The index of the RT
             """
 
             nlp = pn.nlp
+            segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
+
             PenaltyFunctionAbstract._check_idx("segment", segment_idx, nlp.model.nbSegment())
             PenaltyFunctionAbstract._check_idx("rt", rt_idx, nlp.model.nbRTs())
 
@@ -819,8 +814,8 @@ class PenaltyFunctionAbstract:
         def track_marker_with_segment_axis(
             penalty: PenaltyOption,
             pn: PenaltyNodes,
-            marker_idx: int,
-            segment_idx: int,
+            marker: Union[int, str],
+            segment: Union[int, str],
             axis: Axis,
         ):
             """
@@ -833,10 +828,10 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             pn: PenaltyNodes
                 The penalty node elements
-            marker_idx: int
-                Index of the marker to be tracked
-            segment_idx: int
-                Index of the segment to align with the marker
+            marker: int
+                Name or index of the marker to be tracked
+            segment: int
+                Name or index of the segment to align with the marker
             axis: Axis
                 The axis that should be tracking the marker
             """
@@ -845,6 +840,8 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("axis must be a bioptim.Axis")
 
             nlp = pn.nlp
+            marker_idx = biorbd.marker_index(nlp.model, marker) if isinstance(marker, str) else marker
+            segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
 
             def biorbd_meta_func(q, segment_idx, marker_idx):
                 r_rt = nlp.model.globalJCS(q, segment_idx)

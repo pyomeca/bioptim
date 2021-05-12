@@ -223,7 +223,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Generate random data, then create a tracking problem, and finally solve it and plot some relevant information
     """
@@ -283,3 +283,7 @@ if __name__ == "__main__":
 
     # --- Plot --- #
     plt.show()
+
+
+if __name__ == "__main__":
+    main()

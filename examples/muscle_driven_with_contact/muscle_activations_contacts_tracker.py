@@ -89,7 +89,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     # Define the problem
     model_path = "2segments_4dof_2contacts_1muscle.bioMod"
     final_time = 0.7
@@ -124,3 +124,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

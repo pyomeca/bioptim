@@ -105,7 +105,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     If pendulum is run as a script, it will perform the optimization using ACADOS and animates it
     """
@@ -117,3 +117,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.graphs()
+
+
+if __name__ == "__main__":
+    main()

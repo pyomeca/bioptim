@@ -121,7 +121,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Create and solve a program. Then it saves it using the .bo method, and then using te stand_alone option.
     """
@@ -154,3 +154,7 @@ if __name__ == "__main__":
     # --- Load the solution saved with stand_alone = True --- #
     with open(f"pendulum_sa.bo", "rb") as file:
         states, controls, parameters = pickle.load(file)
+
+
+if __name__ == "__main__":
+    main()

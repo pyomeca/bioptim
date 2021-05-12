@@ -130,7 +130,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Prepares and solves an ocp that has quaternion in it. Animates the results
     """
@@ -145,3 +145,7 @@ if __name__ == "__main__":
 
     # Print the last solution
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()
