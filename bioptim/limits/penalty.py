@@ -404,7 +404,7 @@ class PenaltyFunctionAbstract:
                 second_marker_func = nlp.casadi_func["markers"](q)[:, second_marker_idx]
 
                 val = first_marker_func - second_marker_func
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def proportional_variable(
