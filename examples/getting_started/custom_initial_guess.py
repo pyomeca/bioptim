@@ -100,8 +100,8 @@ def prepare_ocp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=1)
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraint and control path constraints
     x_bounds = QAndQDotBounds(biorbd_model)
@@ -158,11 +158,12 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Solve the program for all the InterpolationType available
     """
 
+    sol = None
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
         ocp = prepare_ocp("cube.bioMod", n_shooting=30, final_time=2, initial_guess=initial_guess)
@@ -175,3 +176,7 @@ if __name__ == "__main__":
 
     # Print the last solution
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

@@ -24,7 +24,7 @@ from bioptim import (
 )
 
 
-def custom_func_track_markers(pn: PenaltyNode, first_marker_idx: int, second_marker_idx: int) -> MX:
+def custom_func_track_markers(pn: PenaltyNode, first_marker: str, second_marker: str) -> MX:
     """
     The used-defined objective function (This particular one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
@@ -33,9 +33,9 @@ def custom_func_track_markers(pn: PenaltyNode, first_marker_idx: int, second_mar
     ----------
     pn: PenaltyNode
         The penalty node elements
-    first_marker_idx: int
+    first_marker: str
         The index of the first marker in the bioMod
-    second_marker_idx: int
+    second_marker: str
         The index of the second marker in the bioMod
 
     Returns
@@ -44,13 +44,18 @@ def custom_func_track_markers(pn: PenaltyNode, first_marker_idx: int, second_mar
     the square here, but use the quadratic=True parameter instead
     """
 
-    nq = pn.nlp.shape["q"]
+    # Get the index of the markers
+    marker_0_idx = biorbd.marker_index(pn.nlp.model, first_marker)
+    marker_1_idx = biorbd.marker_index(pn.nlp.model, second_marker)
+
+    # Store the casadi function. Using add_casadi_func allow to skip if the function already exists
     markers_func = pn.nlp.add_casadi_func("markers", pn.nlp.model.markers, pn.nlp.q)
+
+    # Get the marker positions and compute the difference
+    nq = pn.nlp.shape["q"]
     q = pn.x[:nq]
     markers = markers_func(q)
-    first_marker = markers[:, first_marker_idx]
-    second_marker = markers[:, second_marker_idx]
-    return first_marker - second_marker
+    return markers[:, marker_0_idx] - markers[:, marker_1_idx]
 
 
 def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControlProgram:
@@ -86,8 +91,8 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
         custom_type=ObjectiveFcn.Mayer,
         node=Node.START,
         quadratic=True,
-        first_marker_idx=0,
-        second_marker_idx=1,
+        first_marker="m0",
+        second_marker="m1",
         weight=1000,
     )
     objective_functions.add(
@@ -95,8 +100,8 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
         custom_type=ObjectiveFcn.Mayer,
         node=Node.END,
         quadratic=True,
-        first_marker_idx=0,
-        second_marker_idx=2,
+        first_marker="m0",
+        second_marker="m2",
         weight=1000,
     )
 
@@ -132,7 +137,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Solve and animate the solution
     """
@@ -145,3 +150,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

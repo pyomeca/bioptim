@@ -14,7 +14,7 @@ import numpy as np
 import pendulum
 
 
-if __name__ == "__main__":
+def main():
     # --- Load pendulum --- #
     ocp = pendulum.prepare_ocp(
         biorbd_model_path="pendulum.bioMod",
@@ -60,3 +60,7 @@ if __name__ == "__main__":
     # Uncomment the following lines to graph the solution from the actual solution
     # sol.graphs(shooting_type=Shooting.SINGLE_CONTINUOUS)
     # sol.graphs(shooting_type=Shooting.MULTIPLE)
+
+
+if __name__ == "__main__":
+    main()

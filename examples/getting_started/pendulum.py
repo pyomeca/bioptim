@@ -79,7 +79,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     If pendulum is run as a script, it will perform the optimization and animates it
     """
@@ -96,3 +96,7 @@ if __name__ == "__main__":
     # --- Show the results in a bioviz animation --- #
     sol.print()
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

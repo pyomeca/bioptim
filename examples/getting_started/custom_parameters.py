@@ -215,7 +215,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Solve and print the optimized value for the gravity and animate the solution
     """
@@ -252,3 +252,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate(n_frames=200)
+
+
+if __name__ == "__main__":
+    main()

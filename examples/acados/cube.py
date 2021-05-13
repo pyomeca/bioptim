@@ -51,7 +51,7 @@ def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), u
     )
 
 
-if __name__ == "__main__":
+def main():
     model_path = "cube.bioMod"
     nbs = 30
     tf = 2
@@ -89,3 +89,7 @@ if __name__ == "__main__":
     # --- Show results --- #
     sol.graphs()
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()
