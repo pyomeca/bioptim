@@ -77,7 +77,7 @@ def test_track_markers_changing_constraints(ode_solver):
     # Add a new constraint and reoptimize
     new_constraints = ConstraintList()
     new_constraints.add(
-        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=2, list_index=2
+        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.MID, first_marker="m0", second_marker="m2", list_index=2
     )
     ocp.update_constraints(new_constraints)
     sol = ocp.solve()
@@ -114,10 +114,10 @@ def test_track_markers_changing_constraints(ode_solver):
     # Replace constraints and reoptimize
     new_constraints = ConstraintList()
     new_constraints.add(
-        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=2, list_index=0
+        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m2", list_index=0
     )
     new_constraints.add(
-        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.MID, first_marker_idx=0, second_marker_idx=3, list_index=2
+        ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.MID, first_marker="m0", second_marker="m3", list_index=2
     )
     ocp.update_constraints(new_constraints)
     sol = ocp.solve()

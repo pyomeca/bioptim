@@ -1,6 +1,7 @@
 import pytest
 import os
 import shutil
+from sys import platform
 
 import numpy as np
 import biorbd
@@ -12,7 +13,6 @@ from bioptim import (
     InterpolationType,
     InitialGuess,
     Bounds,
-    QAndQDotBounds,
 )
 
 from .utils import TestUtils
@@ -20,6 +20,9 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("solver", [Solver.ACADOS, Solver.IPOPT])
 def test_mhe(solver):
+    if platform == "win32" and solver == Solver.ACADOS:
+        print("Test for ACADOS on Windows is skipped")
+        return
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     pendulum = TestUtils.load_module(root_folder + "mhe.py")
     biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")

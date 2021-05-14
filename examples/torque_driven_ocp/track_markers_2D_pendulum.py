@@ -34,7 +34,7 @@ data_to_track = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(data_to_track)
 
 
-def get_markers_pos(x: Union[DM, np.ndarray], idx_marker: int, fun: Callable) -> Union[DM, np.ndarray]:
+def get_markers_pos(x: Union[DM, np.ndarray], idx_marker: int, fun: Callable, n_q: int) -> Union[DM, np.ndarray]:
     """
     Get the position of a specific marker from the states
 
@@ -137,7 +137,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Firstly, it solves the getting_started/pendulum.py example. Afterward, it gets the marker positions and joint
     torque from the solution and uses them to track. It then creates and solves this ocp and show the results
@@ -178,14 +178,14 @@ if __name__ == "__main__":
 
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda x, u, p: get_markers_pos(x, 0, markers_fun),
+        update_function=lambda x, u, p: get_markers_pos(x, 0, markers_fun, n_q),
         linestyle=".-",
         plot_type=PlotType.STEP,
         color=marker_color[0],
     )
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda x, u, p: get_markers_pos(x, 1, markers_fun),
+        update_function=lambda x, u, p: get_markers_pos(x, 1, markers_fun, n_q),
         linestyle=".-",
         plot_type=PlotType.STEP,
         color=marker_color[1],
@@ -211,3 +211,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

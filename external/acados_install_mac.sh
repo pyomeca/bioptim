@@ -54,7 +54,9 @@ make install -j$CPU_COUNT
 cd ../interfaces/acados_template
 
 # Use gnu-sed instead of osx native sed
-export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
+if [ "$CONDA_PREFIX" ]; then
+  conda install sed wget git cmake -cconda-forge -y
+fi
 
 # Prepare some modification on the files so it works with biorbd
 # Allow for any python
@@ -74,9 +76,13 @@ REPLACE_JSON_DEP_BY="'acados_sim_layout.json',\n       'simulink_default_opts.js
 TO_REPLACE_PATH="'..\/..\/..\/'"
 REPLACE_PATH_BY="'..\/..\/..\/..\/'"
 
-# Changed simulink path
+# Change simulink path
 TO_REPLACE_JSON="json_path = os.path.join(acados_path, 'interfaces\/acados_template\/acados_template')"
 REPLACE_JSON_BY="import site\n            acados_path = site.getsitepackages()\n            json_path = os.path.join(acados_path[0], 'acados_template')"
+
+# Change acados external library linking at run time
+TO_REPLACE_LIB_PATH="self.shared_lib_name = f'{code_export_dir}\/libacados_ocp_solver_{model.name}.so'"
+REPLACE_LIB_PATH_BY="self.shared_lib_name = f'{code_export_dir}\/libacados_ocp_solver_{model.name}.so'\n        # Relink macos lib\n        acados_ext_lib_path = os.path.abspath(acados_path[0]+'\/..\/..')\n        os.system(\n            f'install_name_tool -change libhpipm.dylib {acados_ext_lib_path}\/libhpipm.dylib {self.shared_lib_name}')\n        os.system(\n            f'install_name_tool -change libblasfeo.dylib {acados_ext_lib_path}\/libblasfeo.dylib {self.shared_lib_name}')"
 
 # Perform the modifications
 sed -i "s/$TO_REPLACE_PYTHON_REQUIRED/$REPLACE_PYTHON_REQUIRED_BY/" setup.py
@@ -84,11 +90,13 @@ sed -i "s/$TO_REPLACE_CASADI_DEP/$REPLACE_CASADI_DEP_BY/" setup.py
 sed -i "s/$TO_REPLACE_JSON_DEP/$REPLACE_JSON_DEP_BY/" setup.py
 sed -i "s/$TO_REPLACE_PATH/$REPLACE_PATH_BY/" acados_template/utils.py
 sed -i "s/$TO_REPLACE_JSON/$REPLACE_JSON_BY/" acados_template/acados_ocp_solver.py
+sed -i "s/$TO_REPLACE_LIB_PATH/$REPLACE_LIB_PATH_BY/" acados_template/acados_ocp_solver.py
 
-# Remove back-up files
-#rm setup.pybk
-#rm acados_template/utils.pybk
-#rm acados_template/acados_ocp_solver.pybk
+# Change acados external lib linking permanently
+install_name_tool -change libqpOASES_e.3.1.dylib $CONDA_PREFIX/lib/libqpOASES_e.3.1.dylib $CONDA_PREFIX/lib/libacados.dylib
+install_name_tool -change libhpipm.dylib $CONDA_PREFIX/lib/libhpipm.dylib $CONDA_PREFIX/lib/libacados.dylib
+install_name_tool -change libblasfeo.dylib $CONDA_PREFIX/lib/libblasfeo.dylib $CONDA_PREFIX/lib/libacados.dylib
+install_name_tool -change libblasfeo.dylib $CONDA_PREFIX/lib/libblasfeo.dylib $CONDA_PREFIX/lib/libhpipm.dylib
 
 # Install the Python interface
 pip install .

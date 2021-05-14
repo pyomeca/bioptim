@@ -69,10 +69,10 @@ def prepare_ocp(
     # Constraints
     if constr:
         constraints = ConstraintList()
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker_idx=0, second_marker_idx=4)
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
+        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m4")
+        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m5")
         constraints.add(
-            ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=Axis.X
+            ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker="m1", segment="seg_rt", axis=Axis.X
         )
     else:
         constraints = ConstraintList()
@@ -123,7 +123,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Prepares, solves and animate the program
     """
@@ -140,3 +140,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate()
+
+
+if __name__ == "__main__":
+    main()

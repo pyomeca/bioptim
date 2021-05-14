@@ -117,11 +117,27 @@ def test_console_objective_functions():
     graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
     ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod")
     sol = ocp.solve()
-    sol.graphs(automatically_organize=False)
+    ocp = sol.ocp  # We will override ocp with known and controlled values for the test
 
     sol.constraints = np.array([range(sol.constraints.shape[0])]).T / 10
+    # Create some consistent answer
     sol.time_to_optimize = 1.2345
     sol.real_time_to_optimize = 5.4321
+    cmp = 1
+
+    def override_penalty(pen, cmp):
+        for P in pen:
+            for p in P:
+                if p:
+                    p["val"] = np.array([range(cmp, p["val"].shape[0] + cmp)]).T
+
+    override_penalty(ocp.g, cmp)  # Override constraints in the ocp
+    override_penalty(ocp.J, cmp)  # Override objectives in the ocp
+
+    for nlp in ocp.nlp:
+        override_penalty(nlp.g, cmp)  # Override constraints in the nlp
+        override_penalty(nlp.J, cmp)  # Override objectives in the nlp
+
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
     sol.print()
@@ -130,18 +146,18 @@ def test_console_objective_functions():
         "Elapsed time: 5.4321 sec\n"
         "\n"
         "---- COST FUNCTION VALUES ----\n"
-        "minimize_difference: 0.003085170339981944 (weighted 0.308517)\n"
+        "minimize_difference: 14.0 (weighted 1400)\n"
         "\n"
         "PHASE 0\n"
-        "MINIMIZE_TORQUE: 1939.7605252449728 (weighted 19397.6)\n"
+        "MINIMIZE_TORQUE: 280.0 (weighted 2800)\n"
         "\n"
         "PHASE 1\n"
-        "MINIMIZE_TORQUE: 2887.7566502922946 (weighted 48129.3)\n"
+        "MINIMIZE_TORQUE: 420.0 (weighted 7000)\n"
         "\n"
         "PHASE 2\n"
-        "MINIMIZE_TORQUE: 1928.0412902161684 (weighted 38560.8)\n"
+        "MINIMIZE_TORQUE: 280.0 (weighted 5600)\n"
         "\n"
-        "Sum cost functions: 106088\n"
+        "Sum cost functions: 16800\n"
         "------------------------------\n"
         "\n"
         "--------- CONSTRAINTS ---------\n"
