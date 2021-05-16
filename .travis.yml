@@ -45,7 +45,9 @@ install:
 
 script:
   - bioptim_folder=`pwd`
-  - black . -l120 --exclude "external/*" --check
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      black . -l120 --exclude "external/*" --check;
+    fi
   - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
   - python setup.py install
   - cd

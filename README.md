@@ -1282,6 +1282,7 @@ The accepted values are:
 - INTERMEDIATES: All the nodes but the first and the last one
 - END: The last node
 - ALL: All the nodes
+- TRANSITION: The last node of a phase and the first node of the next phase
 
 ### Class: OdeSolver
 The ordinary differential equation (ode) solver to solve the dynamics of the system. 
