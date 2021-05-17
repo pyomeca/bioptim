@@ -9,7 +9,7 @@ from .solution import Solution
 from ..dynamics.dynamics_type import Dynamics, DynamicsList
 from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
-from ..limits.path_conditions import InitialGuess
+from ..limits.path_conditions import InitialGuess, Bounds
 from ..misc.enums import Solver, InterpolationType
 
 
@@ -115,7 +115,24 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             controls.append(sol.controls["all"][:, 0:1])
 
             # Update the initial frame bounds
+            if self.nlp[0].x_bounds.type != InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+                if self.nlp[0].x_bounds.type == InterpolationType.CONSTANT:
+                    x_min = np.repeat(self.nlp[0].x_bounds.min[:, 0:1], 3, axis=1)
+                    x_max = np.repeat(self.nlp[0].x_bounds.max[:, 0:1], 3, axis=1)
+                    self.nlp[0].x_bounds = Bounds(x_min, x_max)
+                else:
+                    raise NotImplementedError(
+                        "The MHE is not implemented yet for x_bounds not being "
+                        "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
+                    )
+                self.nlp[0].x_bounds.check_and_adjust_dimensions(self.nlp[0].nx, 3)
             self.nlp[0].x_bounds[:, 0] = sol.states["all"][:, 1]
+
+            if self.nlp[0].x_init.type != InterpolationType.EACH_FRAME:
+                self.nlp[0].x_init = InitialGuess(
+                    np.ndarray(sol.states["all"].shape), interpolation=InterpolationType.EACH_FRAME
+                )
+                self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].nx, self.nlp[0].ns)
             self.nlp[0].x_init.init[:, :] = np.concatenate(
                 (sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1
             )

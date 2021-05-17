@@ -30,7 +30,7 @@ from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
-check_version(biorbd, "1.5.2", "1.6.0")
+check_version(biorbd, "1.5.3", "1.6.0")
 
 
 class OptimalControlProgram:

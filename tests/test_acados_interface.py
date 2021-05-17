@@ -5,10 +5,11 @@ It tests the results of an optimal control problem with acados regarding the pro
 """
 import os
 import shutil
-
 import pytest
-import numpy as np
+from sys import platform
+
 import biorbd
+import numpy as np
 from bioptim import (
     Axis,
     Solver,
@@ -20,6 +21,11 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Node,
+    MovingHorizonEstimator,
+    Dynamics,
+    DynamicsFcn,
+    InitialGuess,
+    InterpolationType,
 )
 
 from .utils import TestUtils
@@ -27,6 +33,8 @@ from .utils import TestUtils
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_no_obj(cost_type):
+    if platform == "win32":
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
@@ -44,6 +52,8 @@ def test_acados_no_obj(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_mayer(cost_type):
+    if platform == "win32":
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
 
@@ -69,6 +79,9 @@ def test_acados_one_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_several_mayer(cost_type):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
@@ -96,6 +109,9 @@ def test_acados_several_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_lagrange(cost_type):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     n_shooting = 10
@@ -123,6 +139,9 @@ def test_acados_one_lagrange(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_one_lagrange_and_one_mayer(cost_type):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     n_shooting = 10
@@ -151,6 +170,9 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_control_lagrange_and_state_mayer(cost_type):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     n_shooting = 10
@@ -178,57 +200,11 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     shutil.rmtree(f"./c_generated_code/")
 
 
-@pytest.mark.parametrize("solver", [Solver.ACADOS, Solver.IPOPT])
-def test_acados_mhe(solver):
-    root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    pendulum = TestUtils.load_module(root_folder + "mhe.py")
-    biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
-    nq = biorbd_model.nbQ()
-    torque_max = 5  # Give a bit of slack on the max torque
-
-    n_cycles = 5 if solver == Solver.ACADOS else 1
-    n_frame_by_cycle = 20
-    window_len = 5
-    window_duration = 0.2
-
-    final_time = window_duration / window_len * n_cycles * n_frame_by_cycle
-    x_init = np.zeros((nq * 2, window_len + 1))
-    u_init = np.zeros((nq, window_len))
-
-    target_q, _, _, _ = pendulum.generate_data(
-        biorbd_model, final_time, [0, np.pi / 2, 0, 0], torque_max, n_cycles * n_frame_by_cycle, 0
-    )
-    target = pendulum.states_to_markers(biorbd_model, target_q)
-
-    def update_functions(mhe, t, _):
-        def target_func(i: int):
-            return target[:, :, i : i + window_len + 1]
-
-        mhe.update_objectives_target(target=target_func(t), list_index=0)
-        return t < n_frame_by_cycle * n_cycles - window_len - 1
-
-    biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
-    sol = pendulum.prepare_mhe(
-        biorbd_model=biorbd_model,
-        window_len=window_len,
-        window_duration=window_duration,
-        max_torque=torque_max,
-        x_init=x_init,
-        u_init=u_init,
-    ).solve(update_functions, **pendulum.get_solver_options(solver))
-
-    # Clean test folder
-    if solver == Solver.ACADOS:
-        # Compare the position on the first few frames (only ACADOS, since IPOPT is not precise with current options)
-        np.testing.assert_almost_equal(
-            sol.states["q"][:, : -2 * window_len], target_q[:nq, : -3 * window_len - 1], decimal=3
-        )
-        os.remove(f"./acados_ocp.json")
-        shutil.rmtree(f"./c_generated_code/")
-
-
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_options(cost_type):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/acados/pendulum.py")
     ocp = pendulum.prepare_ocp(
@@ -254,6 +230,9 @@ def test_acados_options(cost_type):
 
 
 def test_acados_fail_external():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/acados/pendulum.py")
     ocp = pendulum.prepare_ocp(
@@ -269,6 +248,9 @@ def test_acados_fail_external():
 
 
 def test_acados_fail_lls():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     arm = TestUtils.load_module(bioptim_folder + "/examples/acados/static_arm.py")
     ocp = arm.prepare_ocp(
@@ -288,6 +270,9 @@ def test_acados_fail_lls():
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])
 def test_acados_custom_dynamics(problem_type_custom):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_dynamics.py")
     ocp = cube.prepare_ocp(
@@ -297,7 +282,7 @@ def test_acados_custom_dynamics(problem_type_custom):
         use_sx=True,
     )
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
     ocp.update_constraints(constraints)
     sol = ocp.solve(solver=Solver.ACADOS)
 
@@ -318,6 +303,9 @@ def test_acados_custom_dynamics(problem_type_custom):
 
 
 def test_acados_one_parameter():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
     ocp = parameters.prepare_ocp(
@@ -370,6 +358,9 @@ def test_acados_one_parameter():
 
 
 def test_acados_several_parameter():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
     ocp = parameters.prepare_ocp(
@@ -429,6 +420,9 @@ def test_acados_several_parameter():
 
 
 def test_acados_one_end_constraints():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
@@ -450,7 +444,7 @@ def test_acados_one_end_constraints():
     ocp.update_bounds(x_bounds=x_bounds)
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
     ocp.update_constraints(constraints)
 
     sol = ocp.solve(solver=Solver.ACADOS)
@@ -467,6 +461,9 @@ def test_acados_one_end_constraints():
 
 
 def test_acados_constraints_all():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/track/track_marker_on_segment.py")
     ocp = track.prepare_ocp(
@@ -480,7 +477,7 @@ def test_acados_constraints_all():
 
     constraints = ConstraintList()
     constraints.add(
-        ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axis.X)
+        ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker="m1", segment="seg_rt", axis=(Axis.X)
     )
     ocp.update_constraints(constraints)
 
@@ -502,6 +499,9 @@ def test_acados_constraints_all():
 
 
 def test_acados_constraints_end_all():
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
     bioptim_folder = TestUtils.bioptim_folder()
     track = TestUtils.load_module(bioptim_folder + "/examples/track/track_marker_on_segment.py")
     ocp = track.prepare_ocp(
@@ -514,9 +514,9 @@ def test_acados_constraints_end_all():
     )
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=5)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m5")
     constraints.add(
-        ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=(Axis.X)
+        ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker="m1", segment="seg_rt", axis=(Axis.X)
     )
     ocp.update_constraints(constraints)
 
@@ -535,3 +535,49 @@ def test_acados_constraints_end_all():
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226, 0)), decimal=6)
     np.testing.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226, 0)), decimal=6)
+
+
+@pytest.mark.parametrize("failing", ["u_bounds", "x_bounds"])
+def test_acados_bounds_not_implemented(failing):
+    if platform == "win32":
+        print("Test for ACADOS on Windows is skipped")
+        return
+    root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
+    biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
+    nq = biorbd_model.nbQ()
+    ntau = biorbd_model.nbGeneralizedTorque()
+
+    n_cycles = 3
+    window_len = 5
+    window_duration = 0.2
+    x_init = InitialGuess(np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
+    u_init = InitialGuess(np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
+    if failing == "u_bounds":
+        x_bounds = Bounds(np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1)))
+        u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)), interpolation=InterpolationType.CONSTANT)
+    elif failing == "x_bounds":
+        x_bounds = Bounds(np.zeros((nq * 2, 1)), np.zeros((nq * 2, 1)), interpolation=InterpolationType.CONSTANT)
+        u_bounds = Bounds(np.zeros((ntau, 1)), np.zeros((ntau, 1)))
+    else:
+        raise ValueError("Wrong value for failing")
+
+    mhe = MovingHorizonEstimator(
+        biorbd_model,
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN),
+        window_len,
+        window_duration,
+        x_init=x_init,
+        u_init=u_init,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        n_threads=4,
+    )
+
+    def update_functions(mhe, t, _):
+        return t < n_cycles
+
+    with pytest.raises(
+        NotImplementedError,
+        match=f"ACADOS must declare an InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT for the {failing}",
+    ):
+        mhe.solve(update_functions, Solver.ACADOS)

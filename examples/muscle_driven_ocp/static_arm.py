@@ -56,7 +56,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL)
     objective_functions.add(
-        ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, first_marker_idx=0, second_marker_idx=5, weight=weight
+        ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, first_marker="target", second_marker="COM_hand", weight=weight
     )
 
     # Dynamics
@@ -99,7 +99,7 @@ def prepare_ocp(
     )
 
 
-if __name__ == "__main__":
+def main():
     """
     Prepare and solve and animate a reaching task ocp
     """
@@ -111,3 +111,7 @@ if __name__ == "__main__":
 
     # --- Show results --- #
     sol.animate(show_meshes=True)
+
+
+if __name__ == "__main__":
+    main()
