@@ -626,7 +626,8 @@ class AcadosInterface(SolverInterface):
         options: dict
             The dictionary of options
         """
-
+        if options is None:
+            options = []
         if "acados_dir" in options:
             del options["acados_dir"]
         if "cost_type" in options:
