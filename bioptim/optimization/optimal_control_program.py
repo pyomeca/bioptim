@@ -1090,30 +1090,18 @@ class OptimalControlProgram:
                 G.node('OCP', shape='Mdiamond')
                 G.edge('OCP', f'dynamics_&_ode_{phase_idx}')
 
-                if len(l_parameters[phase_idx]) != 1:
-                    for param_idx in range(len(l_parameters[phase_idx])-1):
-                        if param_idx == 0:
-                            G.edge(f'dynamics_&_ode_{phase_idx}',
-                                   f'param_{phase_idx}{param_idx}',
-                                   color='lightgrey')
-                        elif param_idx == len(l_parameters[phase_idx]) - 2:
-                            G.edge(f'param_{phase_idx}{param_idx}',
-                                   f'lagrange_{phase_idx}',
-                                   color='lightgrey')
-                            G.edge(f'param_{phase_idx}{param_idx - 1}',
-                                   f'param_{phase_idx}{param_idx}',
-                                   color='lightgrey')
-                        else:
-                            G.edge(f'param_{phase_idx}{param_idx-1}',
-                                   f'param_{phase_idx}{param_idx}',
-                                   color='lightgrey')
-                else:
-                    G.edge(f'dynamics_&_ode_{phase_idx}',
-                           f'param_{phase_idx}0',
-                           color='lightgrey')
-                    G.edge(f'param_{phase_idx}0',
-                           f'lagrange_{phase_idx}',
-                           color='lightgrey')
+                for param_idx in range(l_parameters[phase_idx][0]):  # l_parameters[phase_idx][0] = len(l_parameters[phase_idx])
+                    if param_idx == 0:
+                        G.edge(f'dynamics_&_ode_{phase_idx}',
+                               f'param_{phase_idx}{param_idx}',
+                               color='lightgrey')
+                    elif param_idx == l_parameters[phase_idx][0] - 1:
+                        G.edge(f'param_{phase_idx}{param_idx - 1}',
+                               f'param_{phase_idx}{param_idx}',
+                               color='lightgrey')
+                G.edge(f'param_{phase_idx}{param_idx}',
+                       f'lagrange_{phase_idx}',
+                       color='lightgrey')
 
             with G.subgraph(name=f'cluster_phase_transitions') as g:
                 g.attr(style='', color='black')
