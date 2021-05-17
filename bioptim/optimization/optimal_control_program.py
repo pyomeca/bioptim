@@ -810,46 +810,28 @@ class OptimalControlProgram:
                     lagrange_str = add_parameters_to_str(obj.params, lagrange_str)
                 return lagrange_str
 
-        def mayer_to_str(l_nodes: list, phase_idx: int, node_idx: int):
-            mayer_str = ""
-            objective_idx = 0
-            for objective in l_nodes[phase_idx][node_idx]['mayer']:
-                if l_nodes[phase_idx][node_idx]['sliced_target_mayer'][objective_idx] is not None:
-                    if l_nodes[phase_idx][node_idx]['quadratic_mayer'][objective_idx] is True:
-                        mayer_str += f"({objective} - " \
-                                     f"{l_nodes[phase_idx][node_idx]['sliced_target_mayer'][objective_idx]})" \
-                                     f"<sup>2</sup><br/>"
-                    else:
-                        mayer_str += f"{objective} - " \
-                                     f"{l_nodes[phase_idx][node_idx]['sliced_target_mayer'][objective_idx]}" \
-                                     f"<br/>"
-                else:
-                    if l_nodes[phase_idx][node_idx]['quadratic_mayer'][objective_idx] is True:
-                        mayer_str += f"({objective})<sup>2</sup><br/>"
-                    else:
-                        mayer_str += f"{objective}<br/>"
-                mayer_str = add_parameters_to_str(
-                    l_nodes[phase_idx][node_idx]['parameters_mayer'][objective_idx], mayer_str)
-                objective_idx += 1
-            return mayer_str
-
-        def mayer_to_str_reduced(objective_list: ObjectiveList):
-            mayer_str = ""
+        def mayer_to_str(objective_list: ObjectiveList):
+            list_mayer_objectives = []
             for objective in objective_list:
-                obj = objective[0]['objective']
-                if isinstance(obj.type, ObjectiveFcn.Mayer):
-                    if obj.sliced_target is not None:
-                        if obj.quadratic:
-                            mayer_str += f"({obj.name} - {obj.sliced_target})<sup>2</sup><br/>"
+                for obj_index in objective:
+                    obj = obj_index['objective']
+                    if isinstance(obj.type, ObjectiveFcn.Mayer):
+                        mayer_str = ""
+                        mayer_objective = [obj.node[0]]
+                        if obj.sliced_target is not None:
+                            if obj.quadratic:
+                                mayer_str += f"({obj.name} - {obj.sliced_target})<sup>2</sup><br/>"
+                            else:
+                                mayer_str += f"{obj.name} - {obj.sliced_target}<br/>"
                         else:
-                            mayer_str += f"{obj.name} - {obj.sliced_target}<br/>"
-                    else:
-                        if obj.quadratic:
-                            mayer_str += f"({obj.name})<sup>2</sup><br/>"
-                        else:
-                            mayer_str += f"{obj.name}<br/>"
-                    mayer_str = add_parameters_to_str(obj.params, mayer_str)
-                return mayer_str
+                            if obj.quadratic:
+                                mayer_str += f"({obj.name})<sup>2</sup><br/>"
+                            else:
+                                mayer_str += f"{obj.name}<br/>"
+                        mayer_str = add_parameters_to_str(obj.params, mayer_str)
+                        mayer_objective.append(mayer_str)
+                        list_mayer_objectives.append(mayer_objective)
+            return list_mayer_objectives
 
         def vector_layout(vector: list, size: int):
             if size > 1:
@@ -997,6 +979,7 @@ class OptimalControlProgram:
 
                     main_nodes = []
 
+                    list_mayer_objectives = mayer_to_str(self.nlp[phase_idx].J)
                     for _ in l_nodes[phase_idx]:
 
                         constraints_str = ""
@@ -1004,8 +987,11 @@ class OptimalControlProgram:
                             if constraint[0]['node_index'] == node_idx:
                                 constraints_str += constraint_to_str(constraint[0]['constraint'])
 
-                        mayer_str = mayer_to_str(l_nodes, phase_idx, node_idx)
-                        # mayer_str = mayer_to_str_reduced(self.nlp[phase_idx].J)
+                        mayer_str = ""
+                        for objective in list_mayer_objectives:
+                            if objective[0] == node_idx:
+                                mayer_str += objective[1]
+
                         node_name = f"Shooting node {node_idx}" if node_idx < len(l_nodes[phase_idx]) - 1 else\
                             f"Final node ({node_idx})"
 
