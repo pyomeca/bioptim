@@ -1058,6 +1058,7 @@ class OptimalControlProgram:
                     g.edges(list_edges)
                     g.attr(label=f"Phase #{phase_idx}")
 
+                # Draw edges between shooting nodes
                 G.edge(f'lagrange_{phase_idx}',
                        f'node_struct_{phase_idx}{main_nodes[0]}',
                        color='lightgrey')
@@ -1070,7 +1071,7 @@ class OptimalControlProgram:
                 G.node('OCP', shape='Mdiamond')
                 G.edge('OCP', f'dynamics_&_ode_{phase_idx}')
 
-
+                # Draw edges between dynamics node and parameters
                 G.edge(f'dynamics_&_ode_{phase_idx}',
                        f'param_{phase_idx}0',
                        color='lightgrey')
@@ -1088,6 +1089,7 @@ class OptimalControlProgram:
                            f'lagrange_{phase_idx}',
                            color='lightgrey')
 
+            # Display phase transitions
             with G.subgraph(name=f'cluster_phase_transitions') as g:
                 g.attr(style='', color='black')
                 g.node_attr.update(style='filled', color='grey')
@@ -1106,7 +1108,6 @@ class OptimalControlProgram:
             G.view()
 
         list_nodes = [[{} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
-
         list_objectives = ObjectiveList.to_dict(self.nlp)
         list_dynamics = self.__get_dynamics()
         list_ode = self.__get_ode_solver()
