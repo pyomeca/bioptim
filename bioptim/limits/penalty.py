@@ -930,7 +930,7 @@ class PenaltyFunctionAbstract:
                     nlp = nodes[0].nlp if penalty.node != Node.TRANSITION else None
                     penalty.type.get_type().add_to_penalty(node[0].ocp, nlp, val, penalty)
                 else:
-                    penalty.type.get_type().add_to_penalty(node.ocp, nodes.nlp, val, penalty)
+                    penalty.type.get_type().add_to_penalty(node.ocp, nodes, val, penalty)
 
     @staticmethod
     def add(ocp, nlp):
