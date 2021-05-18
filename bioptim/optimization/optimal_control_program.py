@@ -792,6 +792,7 @@ class OptimalControlProgram:
             return string
 
         def lagrange_to_str(objective_list: ObjectiveList):
+            objective_names = []
             lagrange_str = ""
             for objective in objective_list:
                 obj = objective[0]['objective']
@@ -808,7 +809,8 @@ class OptimalControlProgram:
                         else:
                             lagrange_str += f"{obj.name}<br/>"
                     lagrange_str = add_parameters_to_str(obj.params, lagrange_str)
-            return lagrange_str
+                    objective_names.append(obj.name)
+            return lagrange_str, objective_names
 
         def mayer_to_str(objective_list: ObjectiveList):
             list_mayer_objectives = []
@@ -848,9 +850,10 @@ class OptimalControlProgram:
                 condensed_vector = f"{float(vector[0])}"
             return condensed_vector
 
-        def print_console(ocp, l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
+        def print_console(ocp, l_dynamics: list, l_ode: list, l_parameters: list, n_phase: int):
             for phase_idx in range(n_phase):
                 node_idx = 0
+                print(f"PHASE {phase_idx}")
                 print(f"**********")
                 print(f"PARAMETERS: ")
                 for i in range(len(l_parameters[phase_idx])-1):
@@ -864,7 +867,6 @@ class OptimalControlProgram:
                     print("")
                 print("")
                 print(f"**********")
-                print(f"PHASE {phase_idx}")
                 print(f"MODEL: {ocp.original_values['biorbd_model'][phase_idx]}")
                 print(f"PHASE DURATION: {round(ocp.nlp[phase_idx].t_initial_guess, 2)} s")
                 print(f"SHOOTING NODES : {ocp.nlp[phase_idx].ns}")
@@ -872,16 +874,25 @@ class OptimalControlProgram:
                 print(f"ODE: {l_ode[phase_idx]}")
                 print(f"**********")
                 print("")
-                for node_dict in l_nodes[phase_idx]:
+
+                mayer_objectives = mayer_to_str(ocp.nlp[phase_idx].J)
+                lagrange_objectives = lagrange_to_str(ocp.nlp[phase_idx].J)[1]
+                print(f"*** Lagrange: ")
+                for name in lagrange_objectives:
+                    print(name)
+                print("")
+                for node_idx in range(ocp.nlp[phase_idx].ns):
                     print(f"NODE {node_idx}")
-                    print(f"Objectives: ")
-                    print(f"*** Mayer: {node_dict['mayer']}")
-                    print(f"*** Lagrange: {node_dict['lagrange']}")
+                    print(f"*** Mayer: ")
+                    for mayer in mayer_objectives:
+                        if mayer[0] == node_idx:
+                            print(mayer[1])
+                    print("")
                     # print(f"Constraints: {node_dict['constraints']}")
                     print("")
-                    node_idx = node_idx + 1
 
-        def draw_graph(ocp, l_dynamics: list, l_ode: list, l_parameters: list, l_nodes: list, n_phase: int):
+
+        def draw_graph(ocp, l_dynamics: list, l_ode: list, l_parameters: list, n_phase: int):
 
             from graphviz import Digraph
             G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
@@ -941,7 +952,7 @@ class OptimalControlProgram:
 {round(ocp.nlp[phase_idx].t_initial_guess, 2)} s</TD>
                             </TR>
                             <TR>
-                                <TD ALIGN="LEFT"><B>Shooting nodes</B>: {len(l_nodes[phase_idx])-1}</TD>
+                                <TD ALIGN="LEFT"><B>Shooting nodes</B>: {ocp.nlp[phase_idx].ns}</TD>
                             </TR>
                             <TR>
                                 <TD ALIGN="LEFT"><B>Dynamics</B>: {l_dynamics[phase_idx]}</TD>
@@ -960,7 +971,7 @@ class OptimalControlProgram:
                     else:
                         g.node(name=f'param_{phase_idx}0', label=f"No parameter set")
 
-                    lagrange_str = lagrange_to_str(self.nlp[phase_idx].J)
+                    lagrange_str = lagrange_to_str(self.nlp[phase_idx].J)[0]
 
                     if lagrange_str != "":
                         g.node(f'lagrange_{phase_idx}', f'''<
@@ -980,7 +991,7 @@ class OptimalControlProgram:
                     main_nodes = []
 
                     list_mayer_objectives = mayer_to_str(self.nlp[phase_idx].J)
-                    for _ in l_nodes[phase_idx]:
+                    for _ in range(ocp.nlp[phase_idx].ns + 1):
 
                         constraints_str = ""
                         for constraint in self.nlp[phase_idx].g:
@@ -992,7 +1003,7 @@ class OptimalControlProgram:
                             if objective[0] == node_idx:
                                 mayer_str += objective[1]
 
-                        node_name = f"Shooting node {node_idx}" if node_idx < len(l_nodes[phase_idx]) - 1 else\
+                        node_name = f"Shooting node {node_idx}" if node_idx < ocp.nlp[phase_idx].ns else\
                             f"Final node ({node_idx})"
 
                         if constraints_str and mayer_str != "":
@@ -1107,22 +1118,15 @@ class OptimalControlProgram:
 
             G.view()
 
-        list_nodes = [[{} for _ in range(nlp.ns + 1)] for nlp in self.nlp]
-        list_objectives = ObjectiveList.to_dict(self.nlp)
         list_dynamics = self.__get_dynamics()
         list_ode = self.__get_ode_solver()
         list_parameters = ParameterList.to_dict(self)
 
-        n_phase = 0
-        for nlp in self.nlp:
-            n_phase = n_phase + 1
-            for node_idx in range(nlp.ns + 1):
-                list_nodes[nlp.phase_idx][node_idx] = list_objectives[nlp.phase_idx][node_idx]
         if to_console:
-            print_console(self, list_dynamics, list_ode, list_parameters, list_nodes, self.n_phases)
+            print_console(self, list_dynamics, list_ode, list_parameters, self.n_phases)
 
         if to_graph:
-            draw_graph(self, list_dynamics, list_ode, list_parameters, list_nodes, n_phase)
+            draw_graph(self, list_dynamics, list_ode, list_parameters, self.n_phases)
 
     def __define_time(
         self,
