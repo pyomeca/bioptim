@@ -525,7 +525,7 @@ class PenaltyFunctionAbstract:
 
             for i in range(len(pn) - 1):
                 val = pn.nlp.dynamics_func(pn.x[i], pn.u[i], pn.p)[nq + states_idx, :]
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def minimize_torque_derivative(penalty: PenaltyOption, pn: PenaltyNodes):
