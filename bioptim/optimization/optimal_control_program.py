@@ -808,7 +808,7 @@ class OptimalControlProgram:
                         else:
                             lagrange_str += f"{obj.name}<br/>"
                     lagrange_str = add_parameters_to_str(obj.params, lagrange_str)
-                return lagrange_str
+            return lagrange_str
 
         def mayer_to_str(objective_list: ObjectiveList):
             list_mayer_objectives = []
