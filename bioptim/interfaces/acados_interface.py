@@ -627,11 +627,13 @@ class AcadosInterface(SolverInterface):
             The dictionary of options
         """
         if options is None:
-            options = []
+            options = {}
+
         if "acados_dir" in options:
             del options["acados_dir"]
         if "cost_type" in options:
             del options["cost_type"]
+
         if self.ocp_solver is None:
             self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
             self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
