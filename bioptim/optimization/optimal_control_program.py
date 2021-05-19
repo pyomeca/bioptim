@@ -892,38 +892,47 @@ class OptimalControlProgram:
                     print("")
 
 
-        def draw_graph(ocp, l_dynamics: list, l_ode: list, l_parameters: list, n_phase: int):
+        def draw_graph(ocp, l_dynamics: list, l_ode: list, n_phase: int):
 
             from graphviz import Digraph
             G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
 
             def draw_parameter_node(g: G.subgraph(), phase_idx: int, param_idx: int, parameter: Parameter):
+                initial_guess = [parameter.initial_guess.init[i][j]*parameter.scaling[i] for i in
+                                                           range(parameter.size) for j in
+                                                          range(len(parameter.initial_guess.init[0]))]
+                min_bound = [parameter.bounds.min[i][j]*parameter.scaling[i] for i in
+                                                       range(parameter.size) for j in
+                                                      range(len(parameter.bounds.min[0]))]
+                max_bound = [parameter.bounds.max[i][j]*parameter.scaling[i] for i in
+                                                       range(parameter.size) for j in
+                                                      range(len(parameter.bounds.max[0]))]
                 g.node(f"param_{phase_idx}{param_idx}", f'''<
                     <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                         <TR>
-                            <TD COLSPAN="9"><U><B>{parameter['Name']}</B></U></TD>
+                            <TD COLSPAN="9"><U><B>{parameter.name}</B></U></TD>
                         </TR>
                         <TR>
-                            <TD ALIGN="LEFT"><B>Size</B>: {parameter['Size']}</TD>
+                            <TD ALIGN="LEFT"><B>Size</B>: {parameter.size}</TD>
                         </TR>
                         <TR>
-                            <TD ALIGN="LEFT"><B>Initial guesses</B>: {vector_layout(parameter['Initial_guess'], parameter['Size'])}</TD>
+                            <TD ALIGN="LEFT"><B>Initial guesses</B>: {vector_layout(initial_guess, parameter.size)}</TD>
                         </TR>
                         <TR>
                             <TD>
                             </TD>
                         </TR>
                         <TR>
-                            <TD>{vector_layout(parameter['Min_bound'], parameter['Size'])} ≤</TD>
+                            <TD>{vector_layout(min_bound, parameter.size)} ≤</TD>
                         </TR>
                         <TR>
-                            <TD>{"(" if 'Quadratic' in parameter and parameter['Quadratic'] else ""}{parameter['Objectives'] if 'Objectives' in parameter else ''} -</TD>
+                            <TD>{"(" if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ""}{parameter.penalty_list.custom_function.__name__ if parameter.penalty_list is not None and parameter.penalty_list.type.name == "CUSTOM" else parameter.name} -</TD>
                         </TR>
                         <TR>
-                            <TD>{parameter['Sliced_target'] if 'Sliced_target' in parameter else ""}{")<sup>2</sup>" if 'Quadratic' in parameter and parameter['Quadratic'] else ""} ≤</TD>
+                            <TD>{parameter.penalty_list.sliced_target if parameter.penalty_list is not None else ""}{")<sup>2</sup>" if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ""} ≤</TD>
                         </TR>
                         <TR>
-                            <TD>{vector_layout(parameter['Max_bound'], parameter['Size'])}</TD>
+                            <TD>{vector_layout(max_bound, parameter.size)}</TD>
                         </TR>
                     </TABLE>>''')
                 g.attr(label=f'Parameters')
@@ -962,10 +971,9 @@ class OptimalControlProgram:
                             </TR>
                         </TABLE>>''')
 
-                    if len(l_parameters[phase_idx]) != 1:
+                    if len(ocp.nlp[phase_idx].parameters) > 0:
                         param_idx = 0
-                        lp_parameters = l_parameters[phase_idx]
-                        for param in lp_parameters[1:]:
+                        for param in ocp.nlp[phase_idx].parameters:
                             draw_parameter_node(g, phase_idx, param_idx, param)
                             param_idx += 1
                     else:
@@ -1070,35 +1078,37 @@ class OptimalControlProgram:
                     g.attr(label=f"Phase #{phase_idx}")
 
                 # Draw edges between shooting nodes
-                G.edge(f'lagrange_{phase_idx}',
-                       f'node_struct_{phase_idx}{main_nodes[0]}',
-                       color='lightgrey')
-                if len(main_nodes) > 1:
-                    for idx in range(len(main_nodes)):
-                            G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}',
-                                   f'node_struct_{phase_idx}{main_nodes[idx]}',
-                                   color='lightgrey')
+                if len(main_nodes) > 0:
+                    G.edge(f'lagrange_{phase_idx}',
+                           f'node_struct_{phase_idx}{main_nodes[0]}',
+                           color='black')
+                    if len(main_nodes) > 1:
+                        for idx in range(1, len(main_nodes)):
+                                G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}',
+                                       f'node_struct_{phase_idx}{main_nodes[idx]}',
+                                       color='black')
 
                 G.node('OCP', shape='Mdiamond')
                 G.edge('OCP', f'dynamics_&_ode_{phase_idx}')
 
                 # Draw edges between dynamics node and parameters
+                nb_parameters = len(ocp.nlp[phase_idx].parameters)
                 G.edge(f'dynamics_&_ode_{phase_idx}',
                        f'param_{phase_idx}0',
-                       color='lightgrey')
-                for param_idx in range(l_parameters[phase_idx][0]):
+                       color='black')
+                for param_idx in range(nb_parameters):
                     if param_idx >= 1:
                         G.edge(f'param_{phase_idx}{param_idx - 1}',
                                f'param_{phase_idx}{param_idx}',
-                               color='lightgrey')
-                if l_parameters[phase_idx][0] > 1:
-                    G.edge(f'param_{phase_idx}{l_parameters[phase_idx][0]}',
+                               color='black')
+                if nb_parameters > 1:
+                    G.edge(f'param_{phase_idx}{nb_parameters-1}',
                            f'lagrange_{phase_idx}',
-                           color='lightgrey')
+                           color='black')
                 else:
                     G.edge(f'param_{phase_idx}0',
                            f'lagrange_{phase_idx}',
-                           color='lightgrey')
+                           color='black')
 
             # Display phase transitions
             with G.subgraph(name=f'cluster_phase_transitions') as g:
@@ -1126,7 +1136,7 @@ class OptimalControlProgram:
             print_console(self, list_dynamics, list_ode, list_parameters, self.n_phases)
 
         if to_graph:
-            draw_graph(self, list_dynamics, list_ode, list_parameters, self.n_phases)
+            draw_graph(self, list_dynamics, list_ode, self.n_phases)
 
     def __define_time(
         self,
