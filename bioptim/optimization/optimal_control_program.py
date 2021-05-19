@@ -848,7 +848,7 @@ class OptimalControlProgram:
             max_bound = [parameter.bounds.max[i][j] * parameter.scaling[i] for i in
                          range(parameter.size) for j in
                          range(len(parameter.bounds.max[0]))]
-            return(initial_guess, min_bound, max_bound)
+            return initial_guess, min_bound, max_bound
 
         def get_parameter_objective(parameter: Parameter):
             name = ""
@@ -906,7 +906,7 @@ class OptimalControlProgram:
 
             n_phase = ocp.n_phases
             from graphviz import Digraph
-            G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
+            G = Digraph('ocp_graph', node_attr={'shape': 'plaintext'})
 
             def draw_parameter_node(g: G.subgraph(), phase_idx: int, param_idx: int, parameter: Parameter):
                 initial_guess, min_bound, max_bound = scaling_parameter(parameter)
@@ -940,39 +940,46 @@ class OptimalControlProgram:
                     </TABLE>>''')
                 g.attr(label=f'Parameters')
 
-            with G.subgraph(name=f'cluster_parameters') as g:
-                    g.attr(style='filled', color='lightgrey')
-                    g.node_attr.update(style='filled', color='white')
+            def draw_dynamics_ode_node(g: G.subgraph(), phase_idx: int):
+                g.node(f'dynamics_&_ode_{phase_idx}', f'''<
+                                                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                                    <TR>
+                                                        <TD ALIGN="LEFT" COLSPAN="5"><B>Model</B>: 
+                        {ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}</TD>
+                                                    </TR>
+                                                    <TR>
+                                                        <TD ALIGN="LEFT"><B>Phase duration</B>: 
+                        {round(ocp.nlp[phase_idx].t_initial_guess, 2)} s</TD>
+                                                    </TR>
+                                                    <TR>
+                                                        <TD ALIGN="LEFT"><B>Shooting nodes</B>: {ocp.nlp[phase_idx].ns}</TD>
+                                                    </TR>
+                                                    <TR>
+                                                        <TD ALIGN="LEFT"><B>Dynamics</B>: {ocp.nlp[phase_idx].dynamics_type.type.name}</TD>
+                                                    </TR>
+                                                    <TR>
+                                                        <TD ALIGN="LEFT"><B>ODE</B>: {ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}</TD>
+                                                    </TR>
+                                                </TABLE>>''')
 
-            for phase_idx in range(n_phase):
+            def draw_lagrange_node(g: G.subgraph(), phase_idx: int):
+                lagrange_str = lagrange_to_str(self.nlp[phase_idx].J)[0]
+                g.node(f'lagrange_{phase_idx}', f'''<
+                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                <TR>
+                                    <TD><B>Lagrange</B>:<BR/>{lagrange_str}</TD>
+                                </TR>
+                            </TABLE>>''')
+
+            def draw_nlp_cluster(phase_idx: int):
 
                 with G.subgraph(name=f'cluster_{phase_idx}') as g:
                     g.attr(style='filled', color='lightgrey')
                     node_idx = 0
                     list_edges = []
-
                     g.node_attr.update(style='filled', color='white')
 
-                    g.node(f'dynamics_&_ode_{phase_idx}', f'''<
-                        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                            <TR>
-                                <TD ALIGN="LEFT" COLSPAN="5"><B>Model</B>: 
-{ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}</TD>
-                            </TR>
-                            <TR>
-                                <TD ALIGN="LEFT"><B>Phase duration</B>: 
-{round(ocp.nlp[phase_idx].t_initial_guess, 2)} s</TD>
-                            </TR>
-                            <TR>
-                                <TD ALIGN="LEFT"><B>Shooting nodes</B>: {ocp.nlp[phase_idx].ns}</TD>
-                            </TR>
-                            <TR>
-                                <TD ALIGN="LEFT"><B>Dynamics</B>: {ocp.nlp[phase_idx].dynamics_type.type.name}</TD>
-                            </TR>
-                            <TR>
-                                <TD ALIGN="LEFT"><B>ODE</B>: {ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}</TD>
-                            </TR>
-                        </TABLE>>''')
+                    draw_dynamics_ode_node(g, phase_idx)
 
                     if len(ocp.nlp[phase_idx].parameters) > 0:
                         param_idx = 0
@@ -982,22 +989,10 @@ class OptimalControlProgram:
                     else:
                         g.node(name=f'param_{phase_idx}0', label=f"No parameter set")
 
-                    lagrange_str = lagrange_to_str(self.nlp[phase_idx].J)[0]
-
-                    if lagrange_str != "":
-                        g.node(f'lagrange_{phase_idx}', f'''<
-                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                <TR>
-                                    <TD><B>Lagrange</B>:<BR/>{lagrange_str}</TD>
-                                </TR>
-                            </TABLE>>''')
+                    if len(self.nlp[phase_idx].J) > 0:
+                        draw_lagrange_node(g, phase_idx)
                     else:
-                        g.node(f'lagrange_{phase_idx}', f'''<
-                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                <TR>
-                                    <TD>No Lagrange set</TD>
-                                </TR>
-                            </TABLE>>''')
+                        g.node(name=f'lagrange_{phase_idx}', label=f"No Lagrange set")
 
                     main_nodes = []
 
@@ -1014,71 +1009,83 @@ class OptimalControlProgram:
                             if objective[0] == node_idx:
                                 mayer_str += objective[1]
 
-                        node_name = f"Shooting node {node_idx}" if node_idx < ocp.nlp[phase_idx].ns else\
+                        node_name = f"Shooting node {node_idx}" if node_idx < ocp.nlp[phase_idx].ns else \
                             f"Final node ({node_idx})"
 
                         if constraints_str and mayer_str != "":
                             main_nodes.append(node_idx)
                             g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
-                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                <TR>
-                                    <TD COLSPAN="6"><B>{node_name}</B></TD>
-                                </TR>
-                                <TR>
-                                    <TD>
-                                    </TD>
-                                </TR>
-                                <TR>
-                                    <TD><B>Mayer</B>:<BR/>{mayer_str} </TD>
-                                </TR>
-                                <TR>
-                                    <TD>
-                                    </TD>
-                                </TR>
-                                    <TD><B>Constraints</B>:</TD>
-                                </TR>
-                                <TR>
-                                    <TD ALIGN="LEFT">{constraints_str}</TD>
-                                </TR>
-                            </TABLE>>''')
+                                    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                        <TR>
+                                            <TD COLSPAN="6"><B>{node_name}</B></TD>
+                                        </TR>
+                                        <TR>
+                                            <TD>
+                                            </TD>
+                                        </TR>
+                                        <TR>
+                                            <TD><B>Mayer</B>:<BR/>{mayer_str} </TD>
+                                        </TR>
+                                        <TR>
+                                            <TD>
+                                            </TD>
+                                        </TR>
+                                            <TD><B>Constraints</B>:</TD>
+                                        </TR>
+                                        <TR>
+                                            <TD ALIGN="LEFT">{constraints_str}</TD>
+                                        </TR>
+                                    </TABLE>>''')
                         elif constraints_str != "":
                             main_nodes.append(node_idx)
                             g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
-                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                <TR>
-                                    <TD COLSPAN="4"><B>{node_name}</B></TD>
-                                </TR>
-                                <TR>
-                                    <TD>
-                                    </TD>
-                                </TR>
-                                <TR>
-                                    <TD><B>Constraints</B>:</TD>
-                                </TR>
-                                <TR>
-                                    <TD>{constraints_str}</TD>
-                                </TR>
-                            </TABLE>>''')
+                                    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                        <TR>
+                                            <TD COLSPAN="4"><B>{node_name}</B></TD>
+                                        </TR>
+                                        <TR>
+                                            <TD>
+                                            </TD>
+                                        </TR>
+                                        <TR>
+                                            <TD><B>Constraints</B>:</TD>
+                                        </TR>
+                                        <TR>
+                                            <TD>{constraints_str}</TD>
+                                        </TR>
+                                    </TABLE>>''')
                         elif mayer_str != "":
                             main_nodes.append(node_idx)
                             g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
-                            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                <TR>
-                                    <TD COLSPAN="3"><B>{node_name}</B></TD>
-                                </TR>
-                                <TR>
-                                    <TD>
-                                    </TD>
-                                </TR>
-                                <TR>
-                                    <TD><B>Mayer</B>:<BR/> {mayer_str}</TD>
-                                </TR>
-                            </TABLE>>''')
+                                    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                        <TR>
+                                            <TD COLSPAN="3"><B>{node_name}</B></TD>
+                                        </TR>
+                                        <TR>
+                                            <TD>
+                                            </TD>
+                                        </TR>
+                                        <TR>
+                                            <TD><B>Mayer</B>:<BR/> {mayer_str}</TD>
+                                        </TR>
+                                    </TABLE>>''')
 
                         node_idx = node_idx + 1
 
                     g.edges(list_edges)
                     g.attr(label=f"Phase #{phase_idx}")
+                return main_nodes
+
+
+
+            with G.subgraph(name=f'cluster_parameters') as g:
+                    g.attr(style='filled', color='lightgrey')
+                    g.node_attr.update(style='filled', color='white')
+
+            for phase_idx in range(n_phase):
+                main_nodes = draw_nlp_cluster(phase_idx)
+
+
 
                 # Draw edges between shooting nodes
                 if len(main_nodes) > 0:
