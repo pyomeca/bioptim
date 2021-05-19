@@ -138,9 +138,6 @@ def main():
 
     ocp = prepare_ocp(long_optim=True)
 
-    # --- Print ocp structure --- #
-    ocp.print_ocp_structure(to_console=True)
-
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 
