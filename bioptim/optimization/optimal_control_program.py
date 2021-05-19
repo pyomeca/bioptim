@@ -871,8 +871,8 @@ class OptimalControlProgram:
                     name = parameter.penalty_list.name
             return name
 
-        def print_console(ocp, l_dynamics: list, l_ode: list, n_phase: int):
-            for phase_idx in range(n_phase):
+        def print_console(ocp):
+            for phase_idx in range(ocp.n_phases):
                 print(f"PHASE {phase_idx}")
                 print(f"**********")
                 print(f"PARAMETERS: ")
@@ -892,8 +892,8 @@ class OptimalControlProgram:
                 print(f"MODEL: {ocp.original_values['biorbd_model'][phase_idx]}")
                 print(f"PHASE DURATION: {round(ocp.nlp[phase_idx].t_initial_guess, 2)} s")
                 print(f"SHOOTING NODES : {ocp.nlp[phase_idx].ns}")
-                print(f"DYNAMICS: {l_dynamics[phase_idx]}")
-                print(f"ODE: {l_ode[phase_idx]}")
+                print(f"DYNAMICS: {ocp.nlp[phase_idx].dynamics_type.type.name}")
+                print(f"ODE: {ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}")
                 print(f"**********")
                 print("")
 
@@ -1143,7 +1143,7 @@ class OptimalControlProgram:
         list_ode = self.__get_ode_solver()
 
         if to_console:
-            print_console(self, list_dynamics, list_ode, self.n_phases)
+            print_console(self)
 
         if to_graph:
             draw_graph(self, list_dynamics, list_ode, self.n_phases)
