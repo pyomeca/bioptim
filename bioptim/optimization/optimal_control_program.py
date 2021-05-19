@@ -897,10 +897,10 @@ class OptimalControlProgram:
                     for mayer in mayer_objectives:
                         if mayer[0] == node_idx:
                             print(mayer[1])
+                    for i in range(ocp.nlp[phase_idx].g.__len__()):
+                        if ocp.nlp[phase_idx].g[i][0]['node_index'] == node_idx:
+                            print(f"*** Constraint {i}: {ocp.nlp[phase_idx].g[phase_idx][i]['constraint'].name}")
                     print("")
-                    # print(f"Constraints: {node_dict['constraints']}")
-                    print("")
-
 
         def draw_graph(ocp):
 
