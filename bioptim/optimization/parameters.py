@@ -249,43 +249,6 @@ class ParameterList(UniquePerProblemOptionList):
 
         return self.names.index(item)
 
-    @staticmethod
-    def to_dict(ocp):
-        list_parameters = [[len(ocp.nlp[nlp_idx].parameters)] for nlp_idx in range(ocp.n_phases)]
-        for nlp_idx in range(ocp.n_phases):
-            for parameter in ocp.nlp[nlp_idx].parameters:
-                if parameter.penalty_list is not None and parameter.penalty_list.type.name == "CUSTOM":
-                    configuration_function = parameter.function.__name__
-                    penalty_function = parameter.penalty_list.custom_function.__name__
-                    list_parameters[nlp_idx].append({"Name": parameter.name,
-                                        "Size": parameter.size,
-                                        "Initial_guess": [parameter.initial_guess.init[i][j]*parameter.scaling[i] for i in
-                                                           range(parameter.size) for j in
-                                                          range(len(parameter.initial_guess.init[0]))],
-                                        "Max_bound": [parameter.bounds.max[i][j]*parameter.scaling[i] for i in
-                                                       range(parameter.size) for j in
-                                                      range(len(parameter.bounds.max[0]))],
-                                        "Min_bound": [parameter.bounds.min[i][j]*parameter.scaling[i] for i in
-                                                       range(parameter.size) for j in
-                                                      range(len(parameter.bounds.min[0]))],
-                                        "Objectives": penalty_function,
-                                        "Sliced_target": parameter.penalty_list.sliced_target,
-                                        "Quadratic": parameter.penalty_list.quadratic})
-                else:
-                    list_parameters[nlp_idx].append({"Name": parameter.name,
-                                                     "Size": parameter.size,
-                                                     "Initial_guess": [parameter.initial_guess.init[i][j]*parameter.scaling[j] for i in
-                                                                        range(parameter.size) for j in
-                                                                       range(len(parameter.initial_guess.init[0]))],
-                                                     "Max_bound": [parameter.bounds.max[i][j]*parameter.scaling[j] for i in
-                                                                    range(parameter.size) for j in
-                                                                   range(len(parameter.bounds.max[0]))],
-                                                     "Min_bound": [parameter.bounds.min[i][j]*parameter.scaling[j] for i in
-                                                                    range(parameter.size) for j in
-                                                                   range(len(parameter.bounds.min[0]))]})
-        return list_parameters
-
-
 class Parameters:
     """
     Emulation of the base class PenaltyFunctionAbstract so Parameters can be used as Objective and Constraints
