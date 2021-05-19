@@ -1084,51 +1084,65 @@ class OptimalControlProgram:
             for phase_idx in range(n_phase):
                 main_nodes = draw_nlp_cluster(phase_idx)
 
+
+            def draw_edges(G: Digraph):
+
                 # Draw edges between shooting nodes
-                if len(main_nodes) > 0:
-                    G.edge(f'lagrange_{phase_idx}',
-                           f'node_struct_{phase_idx}{main_nodes[0]}',
+                def draw_shooting_nodes_edges(G: Digraph):
+                    if len(main_nodes) > 0:
+                        G.edge(f'lagrange_{phase_idx}',
+                               f'node_struct_{phase_idx}{main_nodes[0]}',
+                               color='black')
+                        if len(main_nodes) > 1:
+                            for idx in range(1, len(main_nodes)):
+                                    G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}',
+                                           f'node_struct_{phase_idx}{main_nodes[idx]}',
+                                           color='black')
+
+                # Draw edges between dynamics node and parameters
+                def draw_dynamics_to_parameters_edges(G: Digraph):
+                    nb_parameters = len(ocp.nlp[phase_idx].parameters)
+                    G.edge(f'dynamics_&_ode_{phase_idx}',
+                           f'param_{phase_idx}0',
                            color='black')
-                    if len(main_nodes) > 1:
-                        for idx in range(1, len(main_nodes)):
-                                G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}',
-                                       f'node_struct_{phase_idx}{main_nodes[idx]}',
-                                       color='black')
+                    for param_idx in range(nb_parameters):
+                        if param_idx >= 1:
+                            G.edge(f'param_{phase_idx}{param_idx - 1}',
+                                   f'param_{phase_idx}{param_idx}',
+                                   color='black')
+                    if nb_parameters > 1:
+                        G.edge(f'param_{phase_idx}{nb_parameters-1}',
+                               f'lagrange_{phase_idx}',
+                               color='black')
+                    else:
+                        G.edge(f'param_{phase_idx}0',
+                               f'lagrange_{phase_idx}',
+                               color='black')
+
+                draw_shooting_nodes_edges(G)
+                draw_dynamics_to_parameters_edges(G)
 
                 G.node('OCP', shape='Mdiamond')
                 G.edge('OCP', f'dynamics_&_ode_{phase_idx}')
 
-                # Draw edges between dynamics node and parameters
-                nb_parameters = len(ocp.nlp[phase_idx].parameters)
-                G.edge(f'dynamics_&_ode_{phase_idx}',
-                       f'param_{phase_idx}0',
-                       color='black')
-                for param_idx in range(nb_parameters):
-                    if param_idx >= 1:
-                        G.edge(f'param_{phase_idx}{param_idx - 1}',
-                               f'param_{phase_idx}{param_idx}',
-                               color='black')
-                if nb_parameters > 1:
-                    G.edge(f'param_{phase_idx}{nb_parameters-1}',
-                           f'lagrange_{phase_idx}',
-                           color='black')
-                else:
-                    G.edge(f'param_{phase_idx}0',
-                           f'lagrange_{phase_idx}',
-                           color='black')
+            draw_edges(G)
+
 
             # Display phase transitions
-            with G.subgraph(name=f'cluster_phase_transitions') as g:
-                g.attr(style='', color='black')
-                g.node_attr.update(style='filled', color='grey')
-                for phase_idx in range(self.n_phases):
-                    if phase_idx != self.n_phases - 1:
-                        g.node(f'Phase #{phase_idx}')
-                        g.node(f'Phase #{phase_idx + 1}')
-                        g.edge(f'Phase #{phase_idx}',
-                               f'Phase #{phase_idx + 1}',
-                               label=ocp.phase_transitions[phase_idx].type.name)
-                g.attr(label=f"Phase transitions")
+            def display_phase_transitions(G: Digraph):
+                with G.subgraph(name=f'cluster_phase_transitions') as g:
+                    g.attr(style='', color='black')
+                    g.node_attr.update(style='filled', color='grey')
+                    for phase_idx in range(self.n_phases):
+                        if phase_idx != self.n_phases - 1:
+                            g.node(f'Phase #{phase_idx}')
+                            g.node(f'Phase #{phase_idx + 1}')
+                            g.edge(f'Phase #{phase_idx}',
+                                   f'Phase #{phase_idx + 1}',
+                                   label=ocp.phase_transitions[phase_idx].type.name)
+                    g.attr(label=f"Phase transitions")
+
+            display_phase_transitions(G)
 
             G.view()
 
