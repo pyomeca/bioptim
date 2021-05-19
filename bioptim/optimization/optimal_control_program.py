@@ -1137,9 +1137,6 @@ class OptimalControlProgram:
                                label=ocp.phase_transitions[phase_idx].type.name)
                 g.attr(label=f"Phase transitions")
 
-            G.node(' ', color='invis')
-            G.edge(' ', f'Phase #{0}', color='invis')
-
             G.view()
 
         list_dynamics = self.__get_dynamics()
