@@ -850,20 +850,42 @@ class OptimalControlProgram:
                 condensed_vector = f"{float(vector[0])}"
             return condensed_vector
 
-        def print_console(ocp, l_dynamics: list, l_ode: list, l_parameters: list, n_phase: int):
+        def scaling_parameter(parameter: Parameter):
+            initial_guess = [parameter.initial_guess.init[i][j] * parameter.scaling[i] for i in
+                             range(parameter.size) for j in
+                             range(len(parameter.initial_guess.init[0]))]
+            min_bound = [parameter.bounds.min[i][j] * parameter.scaling[i] for i in
+                         range(parameter.size) for j in
+                         range(len(parameter.bounds.min[0]))]
+            max_bound = [parameter.bounds.max[i][j] * parameter.scaling[i] for i in
+                         range(parameter.size) for j in
+                         range(len(parameter.bounds.max[0]))]
+            return(initial_guess, min_bound, max_bound)
+
+        def get_parameter_objective(parameter: Parameter):
+            name = ""
+            if parameter.penalty_list is not None:
+                if parameter.penalty_list.type.name == "CUSTOM":
+                    name = parameter.penalty_list.custom_function.__name__
+                else:
+                    name = parameter.penalty_list.name
+            return name
+
+        def print_console(ocp, l_dynamics: list, l_ode: list, n_phase: int):
             for phase_idx in range(n_phase):
-                node_idx = 0
                 print(f"PHASE {phase_idx}")
                 print(f"**********")
                 print(f"PARAMETERS: ")
-                for i in range(len(l_parameters[phase_idx])-1):
-                    print(f"Name: {l_parameters[phase_idx][i+1]['Name']}")
-                    print(f"Size: {l_parameters[phase_idx][i+1]['Size']}")
-                    print(f"Initial_guess: {l_parameters[phase_idx][i+1]['Initial_guess']}")
-                    print(f"Max_bound: {l_parameters[phase_idx][i+1]['Max_bound']}")
-                    print(f"Min_bound: {l_parameters[phase_idx][i+1]['Min_bound']}")
-                    if 'Objectives' in l_parameters[phase_idx][i+1] :
-                        print(f"Objectives: {l_parameters[phase_idx][i+1]['Objectives']}")
+                print("")
+                for parameter in ocp.nlp[phase_idx].parameters:
+                    initial_guess, min_bound, max_bound = scaling_parameter(parameter)
+                    objective_name = get_parameter_objective(parameter)
+                    print(f"Name: {parameter.name}")
+                    print(f"Size: {parameter.size}")
+                    print(f"Initial_guess: {initial_guess}")
+                    print(f"Min_bound: {min_bound}")
+                    print(f"Max_bound: {max_bound}")
+                    print(f"Objectives: {objective_name}")
                     print("")
                 print("")
                 print(f"**********")
@@ -898,15 +920,7 @@ class OptimalControlProgram:
             G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
 
             def draw_parameter_node(g: G.subgraph(), phase_idx: int, param_idx: int, parameter: Parameter):
-                initial_guess = [parameter.initial_guess.init[i][j]*parameter.scaling[i] for i in
-                                                           range(parameter.size) for j in
-                                                          range(len(parameter.initial_guess.init[0]))]
-                min_bound = [parameter.bounds.min[i][j]*parameter.scaling[i] for i in
-                                                       range(parameter.size) for j in
-                                                      range(len(parameter.bounds.min[0]))]
-                max_bound = [parameter.bounds.max[i][j]*parameter.scaling[i] for i in
-                                                       range(parameter.size) for j in
-                                                      range(len(parameter.bounds.max[0]))]
+                initial_guess, min_bound, max_bound = scaling_parameter(parameter)
                 g.node(f"param_{phase_idx}{param_idx}", f'''<
                     <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                         <TR>
@@ -926,7 +940,7 @@ class OptimalControlProgram:
                             <TD>{vector_layout(min_bound, parameter.size)} ≤</TD>
                         </TR>
                         <TR>
-                            <TD>{"(" if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ""}{parameter.penalty_list.custom_function.__name__ if parameter.penalty_list is not None and parameter.penalty_list.type.name == "CUSTOM" else parameter.name} -</TD>
+                            <TD>{"(" if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ""}{get_parameter_objective(parameter)} -</TD>
                         </TR>
                         <TR>
                             <TD>{parameter.penalty_list.sliced_target if parameter.penalty_list is not None else ""}{")<sup>2</sup>" if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ""} ≤</TD>
@@ -1130,10 +1144,9 @@ class OptimalControlProgram:
 
         list_dynamics = self.__get_dynamics()
         list_ode = self.__get_ode_solver()
-        list_parameters = ParameterList.to_dict(self)
 
         if to_console:
-            print_console(self, list_dynamics, list_ode, list_parameters, self.n_phases)
+            print_console(self, list_dynamics, list_ode, self.n_phases)
 
         if to_graph:
             draw_graph(self, list_dynamics, list_ode, self.n_phases)
