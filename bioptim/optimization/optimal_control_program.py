@@ -944,12 +944,10 @@ class OptimalControlProgram:
                 g.node(f'dynamics_&_ode_{phase_idx}', f'''<
                                                 <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
                                                     <TR>
-                                                        <TD ALIGN="LEFT" COLSPAN="5"><B>Model</B>: 
-                        {ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}</TD>
+                                                        <TD ALIGN="LEFT" COLSPAN="5"><B>Model</B>: {ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}</TD>
                                                     </TR>
                                                     <TR>
-                                                        <TD ALIGN="LEFT"><B>Phase duration</B>: 
-                        {round(ocp.nlp[phase_idx].t_initial_guess, 2)} s</TD>
+                                                        <TD ALIGN="LEFT"><B>Phase duration</B>: {round(ocp.nlp[phase_idx].t_initial_guess, 2)} s</TD>
                                                     </TR>
                                                     <TR>
                                                         <TD ALIGN="LEFT"><B>Shooting nodes</B>: {ocp.nlp[phase_idx].ns}</TD>
@@ -971,12 +969,93 @@ class OptimalControlProgram:
                                 </TR>
                             </TABLE>>''')
 
+            def draw_shooting_nodes(g: G.subgraph(), phase_idx: int):
+                main_nodes = []
+                node_idx = 0
+
+                list_mayer_objectives = mayer_to_str(self.nlp[phase_idx].J)
+                for _ in range(ocp.nlp[phase_idx].ns + 1):
+
+                    constraints_str = ""
+                    for constraint in self.nlp[phase_idx].g:
+                        if constraint[0]['node_index'] == node_idx:
+                            constraints_str += constraint_to_str(constraint[0]['constraint'])
+
+                    mayer_str = ""
+                    for objective in list_mayer_objectives:
+                        if objective[0] == node_idx:
+                            mayer_str += objective[1]
+
+                    node_name = f"Shooting node {node_idx}" if node_idx < ocp.nlp[phase_idx].ns else \
+                        f"Final node ({node_idx})"
+
+                    if constraints_str and mayer_str != "":
+                        main_nodes.append(node_idx)
+                        g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
+                                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                    <TR>
+                                        <TD COLSPAN="6"><B>{node_name}</B></TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>
+                                        </TD>
+                                    </TR>
+                                    <TR>
+                                        <TD><B>Mayer</B>:<BR/>{mayer_str} </TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>
+                                        </TD>
+                                    </TR>
+                                        <TD><B>Constraints</B>:</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD ALIGN="LEFT">{constraints_str}</TD>
+                                    </TR>
+                                </TABLE>>''')
+                    elif constraints_str != "":
+                        main_nodes.append(node_idx)
+                        g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
+                                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                    <TR>
+                                        <TD COLSPAN="4"><B>{node_name}</B></TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>
+                                        </TD>
+                                    </TR>
+                                    <TR>
+                                        <TD><B>Constraints</B>:</TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>{constraints_str}</TD>
+                                    </TR>
+                                </TABLE>>''')
+                    elif mayer_str != "":
+                        main_nodes.append(node_idx)
+                        g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
+                                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
+                                    <TR>
+                                        <TD COLSPAN="3"><B>{node_name}</B></TD>
+                                    </TR>
+                                    <TR>
+                                        <TD>
+                                        </TD>
+                                    </TR>
+                                    <TR>
+                                        <TD><B>Mayer</B>:<BR/> {mayer_str}</TD>
+                                    </TR>
+                                </TABLE>>''')
+
+                    node_idx = node_idx + 1
+
+                return main_nodes
+
             def draw_nlp_cluster(phase_idx: int):
 
                 with G.subgraph(name=f'cluster_{phase_idx}') as g:
                     g.attr(style='filled', color='lightgrey')
-                    node_idx = 0
-                    list_edges = []
+                    g.attr(label=f"Phase #{phase_idx}")
                     g.node_attr.update(style='filled', color='white')
 
                     draw_dynamics_ode_node(g, phase_idx)
@@ -994,89 +1073,9 @@ class OptimalControlProgram:
                     else:
                         g.node(name=f'lagrange_{phase_idx}', label=f"No Lagrange set")
 
-                    main_nodes = []
+                    main_nodes = draw_shooting_nodes(g, phase_idx)
 
-                    list_mayer_objectives = mayer_to_str(self.nlp[phase_idx].J)
-                    for _ in range(ocp.nlp[phase_idx].ns + 1):
-
-                        constraints_str = ""
-                        for constraint in self.nlp[phase_idx].g:
-                            if constraint[0]['node_index'] == node_idx:
-                                constraints_str += constraint_to_str(constraint[0]['constraint'])
-
-                        mayer_str = ""
-                        for objective in list_mayer_objectives:
-                            if objective[0] == node_idx:
-                                mayer_str += objective[1]
-
-                        node_name = f"Shooting node {node_idx}" if node_idx < ocp.nlp[phase_idx].ns else \
-                            f"Final node ({node_idx})"
-
-                        if constraints_str and mayer_str != "":
-                            main_nodes.append(node_idx)
-                            g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
-                                    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                        <TR>
-                                            <TD COLSPAN="6"><B>{node_name}</B></TD>
-                                        </TR>
-                                        <TR>
-                                            <TD>
-                                            </TD>
-                                        </TR>
-                                        <TR>
-                                            <TD><B>Mayer</B>:<BR/>{mayer_str} </TD>
-                                        </TR>
-                                        <TR>
-                                            <TD>
-                                            </TD>
-                                        </TR>
-                                            <TD><B>Constraints</B>:</TD>
-                                        </TR>
-                                        <TR>
-                                            <TD ALIGN="LEFT">{constraints_str}</TD>
-                                        </TR>
-                                    </TABLE>>''')
-                        elif constraints_str != "":
-                            main_nodes.append(node_idx)
-                            g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
-                                    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                        <TR>
-                                            <TD COLSPAN="4"><B>{node_name}</B></TD>
-                                        </TR>
-                                        <TR>
-                                            <TD>
-                                            </TD>
-                                        </TR>
-                                        <TR>
-                                            <TD><B>Constraints</B>:</TD>
-                                        </TR>
-                                        <TR>
-                                            <TD>{constraints_str}</TD>
-                                        </TR>
-                                    </TABLE>>''')
-                        elif mayer_str != "":
-                            main_nodes.append(node_idx)
-                            g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
-                                    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                        <TR>
-                                            <TD COLSPAN="3"><B>{node_name}</B></TD>
-                                        </TR>
-                                        <TR>
-                                            <TD>
-                                            </TD>
-                                        </TR>
-                                        <TR>
-                                            <TD><B>Mayer</B>:<BR/> {mayer_str}</TD>
-                                        </TR>
-                                    </TABLE>>''')
-
-                        node_idx = node_idx + 1
-
-                    g.edges(list_edges)
-                    g.attr(label=f"Phase #{phase_idx}")
-                return main_nodes
-
-
+                    return main_nodes
 
             with G.subgraph(name=f'cluster_parameters') as g:
                     g.attr(style='filled', color='lightgrey')
@@ -1084,8 +1083,6 @@ class OptimalControlProgram:
 
             for phase_idx in range(n_phase):
                 main_nodes = draw_nlp_cluster(phase_idx)
-
-
 
                 # Draw edges between shooting nodes
                 if len(main_nodes) > 0:
