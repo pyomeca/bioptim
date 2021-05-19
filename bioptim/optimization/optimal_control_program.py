@@ -743,18 +743,6 @@ class OptimalControlProgram:
             out = [ocp, sol]
         return out
 
-    def __get_dynamics(self):
-        list_dynamics = []
-        for nlp in self.nlp:
-            list_dynamics.append(nlp.dynamics_type.type.name)
-        return list_dynamics
-
-    def __get_ode_solver(self):
-        list_ode = []
-        for nlp in self.nlp:
-            list_ode.append(nlp.ode_solver.rk_integrator.__name__)
-        return list_ode
-
     def print_ocp_structure(
         self,
         to_console: bool = True,
@@ -914,8 +902,9 @@ class OptimalControlProgram:
                     print("")
 
 
-        def draw_graph(ocp, l_dynamics: list, l_ode: list, n_phase: int):
+        def draw_graph(ocp):
 
+            n_phase = ocp.n_phases
             from graphviz import Digraph
             G = Digraph('graph_test', node_attr={'shape': 'plaintext'})
 
@@ -978,10 +967,10 @@ class OptimalControlProgram:
                                 <TD ALIGN="LEFT"><B>Shooting nodes</B>: {ocp.nlp[phase_idx].ns}</TD>
                             </TR>
                             <TR>
-                                <TD ALIGN="LEFT"><B>Dynamics</B>: {l_dynamics[phase_idx]}</TD>
+                                <TD ALIGN="LEFT"><B>Dynamics</B>: {ocp.nlp[phase_idx].dynamics_type.type.name}</TD>
                             </TR>
                             <TR>
-                                <TD ALIGN="LEFT"><B>ODE</B>: {l_ode[phase_idx]}</TD>
+                                <TD ALIGN="LEFT"><B>ODE</B>: {ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}</TD>
                             </TR>
                         </TABLE>>''')
 
@@ -1146,7 +1135,7 @@ class OptimalControlProgram:
             print_console(self)
 
         if to_graph:
-            draw_graph(self, list_dynamics, list_ode, self.n_phases)
+            draw_graph(self)
 
     def __define_time(
         self,
