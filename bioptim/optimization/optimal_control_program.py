@@ -1128,9 +1128,6 @@ class OptimalControlProgram:
 
             G.view()
 
-        list_dynamics = self.__get_dynamics()
-        list_ode = self.__get_ode_solver()
-
         if to_console:
             print_console(self)
 
