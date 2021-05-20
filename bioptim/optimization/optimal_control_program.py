@@ -919,7 +919,7 @@ class OptimalControlProgram:
                     node_str += f"{'(' if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ''}{get_parameter_function_name(parameter)} -<br/>"
                     node_str += f"{parameter.penalty_list.sliced_target if parameter.penalty_list is not None else ''}{')<sup>2</sup>' if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ''} ≤<br/>"
                     node_str += f"{vector_layout(max_bound, parameter.size)}"
-                    g.node(f"param_{phase_idx}{param_idx}", node_str)
+                    g.node(f"param_{phase_idx}{param_idx}", f'''<{node_str}>''')
 
                 def draw_nlp_node():
                     node_str = f"<b>Model</b>: {ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}<br/>"
