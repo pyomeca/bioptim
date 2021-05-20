@@ -783,20 +783,21 @@ class OptimalControlProgram:
             objective_names = []
             lagrange_str = ""
             for objective in objective_list:
-                obj = objective[0]['objective']
-                if isinstance(obj.type, ObjectiveFcn.Lagrange):
-                    if obj.sliced_target is not None:
-                        if obj.quadratic:
-                            lagrange_str += f"({obj.name} - {obj.sliced_target})<sup>2</sup><br/>"
+                if len(objective)>0:
+                    obj = objective[0]['objective']
+                    if isinstance(obj.type, ObjectiveFcn.Lagrange):
+                        if obj.sliced_target is not None:
+                            if obj.quadratic:
+                                lagrange_str += f"({obj.name} - {obj.sliced_target})<sup>2</sup><br/>"
+                            else:
+                                lagrange_str += f"{obj.name} - {obj.sliced_target}<br/>"
                         else:
-                            lagrange_str += f"{obj.name} - {obj.sliced_target}<br/>"
-                    else:
-                        if obj.quadratic:
-                            lagrange_str += f"({obj.name})<sup>2</sup><br/>"
-                        else:
-                            lagrange_str += f"{obj.name}<br/>"
-                    lagrange_str = add_extra_parameters_to_str(obj.params, lagrange_str)
-                    objective_names.append(obj.name)
+                            if obj.quadratic:
+                                lagrange_str += f"({obj.name})<sup>2</sup><br/>"
+                            else:
+                                lagrange_str += f"{obj.name}<br/>"
+                        lagrange_str = add_extra_parameters_to_str(obj.params, lagrange_str)
+                        objective_names.append(obj.name)
             return lagrange_str, objective_names
 
         def mayer_to_str(objective_list: ObjectiveList):
@@ -936,15 +937,16 @@ class OptimalControlProgram:
 
                 def draw_shooting_nodes():
                     main_nodes = []
-                    node_idx = 0
 
                     list_mayer_objectives = mayer_to_str(self.nlp[phase_idx].J)
-                    for _ in range(ocp.nlp[phase_idx].ns + 1):
+                    for node_idx in range(ocp.nlp[phase_idx].ns + 1):
 
                         constraints_str = ""
                         for constraint in self.nlp[phase_idx].g:
-                            if constraint[0]['node_index'] == node_idx:
-                                constraints_str += constraint_to_str(constraint[0]['constraint'])
+                            nb_constraint_nodes = len(constraint)
+                            for i in range(nb_constraint_nodes):
+                                if constraint[i]['node_index'] == node_idx:
+                                    constraints_str += constraint_to_str(constraint[0]['constraint'])
 
                         mayer_str = ""
                         for objective in list_mayer_objectives:
@@ -959,8 +961,6 @@ class OptimalControlProgram:
                             node_str += f"No Mayer set<br/><br/>" if mayer_str == "" else f"{mayer_str}<br/><br/>"
                             node_str += f"No constraint set" if constraint == "" else f"<b>Constraints:</b><br/>{constraints_str}"
                             g.node(f'node_struct_{phase_idx}{node_idx}', f'''<{node_str}>''')
-
-                        node_idx += 1
 
                     return main_nodes
 
