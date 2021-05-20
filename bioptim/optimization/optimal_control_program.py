@@ -912,63 +912,27 @@ class OptimalControlProgram:
 
                 def draw_parameter_node(param_idx: int, parameter: Parameter):
                     initial_guess, min_bound, max_bound = scaling_parameter(parameter)
-                    g.node(f"param_{phase_idx}{param_idx}", f'''<
-                        <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                            <TR>
-                                <TD COLSPAN="9"><U><B>{parameter.name}</B></U></TD>
-                            </TR>
-                            <TR>
-                                <TD ALIGN="LEFT"><B>Size</B>: {parameter.size}</TD>
-                            </TR>
-                            <TR>
-                                <TD ALIGN="LEFT"><B>Initial guesses</B>: {vector_layout(initial_guess, parameter.size)}</TD>
-                            </TR>
-                            <TR>
-                                <TD>
-                                </TD>
-                            </TR>
-                            <TR>
-                                <TD>{vector_layout(min_bound, parameter.size)} ≤</TD>
-                            </TR>
-                            <TR>
-                                <TD>{"(" if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ""}{get_parameter_function_name(parameter)} -</TD>
-                            </TR>
-                            <TR>
-                                <TD>{parameter.penalty_list.sliced_target if parameter.penalty_list is not None else ""}{")<sup>2</sup>" if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ""} ≤</TD>
-                            </TR>
-                            <TR>
-                                <TD>{vector_layout(max_bound, parameter.size)}</TD>
-                            </TR>
-                        </TABLE>>''')
+                    node_str = f"<u><b>{parameter.name}</b></u><br/>"
+                    node_str += f"<b>Size</b>: {parameter.size}<br/>"
+                    node_str += f"<b>Initial guesses</b>: {vector_layout(initial_guess, parameter.size)}<br/><br/>"
+                    node_str += f"{vector_layout(min_bound, parameter.size)} ≤<br/>"
+                    node_str += f"{'(' if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ''}{get_parameter_function_name(parameter)} -<br/>"
+                    node_str += f"{parameter.penalty_list.sliced_target if parameter.penalty_list is not None else ''}{')<sup>2</sup>' if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ''} ≤<br/>"
+                    node_str += f"{vector_layout(max_bound, parameter.size)}"
+                    g.node(f"param_{phase_idx}{param_idx}", node_str)
 
                 def draw_nlp_node():
-                    g.node(f'nlp_node_{phase_idx}', f'''<
-                                                    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                                        <TR>
-                                                            <TD ALIGN="LEFT" COLSPAN="5"><B>Model</B>: {ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}</TD>
-                                                        </TR>
-                                                        <TR>
-                                                            <TD ALIGN="LEFT"><B>Phase duration</B>: {round(ocp.nlp[phase_idx].t_initial_guess, 2)} s</TD>
-                                                        </TR>
-                                                        <TR>
-                                                            <TD ALIGN="LEFT"><B>Shooting nodes</B>: {ocp.nlp[phase_idx].ns}</TD>
-                                                        </TR>
-                                                        <TR>
-                                                            <TD ALIGN="LEFT"><B>Dynamics</B>: {ocp.nlp[phase_idx].dynamics_type.type.name}</TD>
-                                                        </TR>
-                                                        <TR>
-                                                            <TD ALIGN="LEFT"><B>ODE</B>: {ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}</TD>
-                                                        </TR>
-                                                    </TABLE>>''')
+                    node_str = f"<b>Model</b>: {ocp.nlp[phase_idx].model.path().filename().to_string()}.{ocp.nlp[phase_idx].model.path().extension().to_string()}<br/>"
+                    node_str += f"<b>Phase duration</b>: {round(ocp.nlp[phase_idx].t_initial_guess, 2)} s<br/>"
+                    node_str += f"<b>Shooting nodes</b>: {ocp.nlp[phase_idx].ns}<br/>"
+                    node_str += f"<b>Dynamics</b>: {ocp.nlp[phase_idx].dynamics_type.type.name}<br/>"
+                    node_str += f"<b>ODE</b>: {ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}"
+                    g.node(f'nlp_node_{phase_idx}', f'''<{node_str}>''')
 
                 def draw_lagrange_node():
                     lagrange_str = lagrange_to_str(self.nlp[phase_idx].J)[0]
-                    g.node(f'lagrange_{phase_idx}', f'''<
-                                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                    <TR>
-                                        <TD><B>Lagrange</B>:<BR/>{lagrange_str}</TD>
-                                    </TR>
-                                </TABLE>>''')
+                    node_str = f"<b>Lagrange</b>:<br/>{lagrange_str}"
+                    g.node(f'lagrange_{phase_idx}', f'''<{node_str}>''')
 
                 def draw_shooting_nodes():
                     main_nodes = []
@@ -991,26 +955,10 @@ class OptimalControlProgram:
                             node_name = f"Shooting node index {node_idx}" if node_idx < ocp.nlp[phase_idx].ns else \
                                 f"Final node (index {node_idx})"
                             main_nodes.append(node_idx)
-                            g.node(f'node_struct_{phase_idx}{node_idx}', f'''<
-                                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="0">
-                                    <TR>
-                                        <TD COLSPAN="4"><B>{node_name}</B></TD>
-                                    </TR>
-                                                                            <TR>
-                                        <TD>
-                                        </TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>{"No Mayer set" if mayer_str =="" else mayer_str}</TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>
-                                        </TD>
-                                    </TR>
-                                    <TR>
-                                        <TD>{"No constraint set" if constraint =="" else f"<b>Constraints:</b>{constraints_str}"}</TD>
-                                    </TR>
-                                </TABLE>>''')
+                            node_str = f"<b>{node_name}</b><br/><br/>"
+                            node_str += f"No Mayer set<br/><br/>" if mayer_str == "" else f"{mayer_str}<br/><br/>"
+                            node_str += f"No constraint set" if constraint == "" else f"<b>Constraints:</b><br/>{constraints_str}"
+                            g.node(f'node_struct_{phase_idx}{node_idx}', f'''<{node_str}>''')
 
                         node_idx += 1
 
