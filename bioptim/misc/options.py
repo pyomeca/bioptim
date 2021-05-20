@@ -46,7 +46,7 @@ class OptionGeneric:
         self.name = name
         self.type = type
 
-        self.params = params
+        self.params = params  # TODO: change parameters to extra-parameters (differentiate from parameters)
 
     @property
     def shape(self):
