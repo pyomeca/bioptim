@@ -743,7 +743,10 @@ class OptimalControlProgram:
             out = [ocp, sol]
         return out
 
-    def print_ocp_structure(
+    def __print__(self):
+        self.print(to_console=True, to_graph=True)
+
+    def print(
         self,
         to_console: bool = True,
         to_graph: bool = True,
