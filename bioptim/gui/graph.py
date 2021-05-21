@@ -1,3 +1,5 @@
+from graphviz import Digraph
+
 from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
 from ..optimization.parameters import Parameter
@@ -11,15 +13,14 @@ class OCPToConsole:
 
         self.ocp = ocp
 
-    @staticmethod
-    def print_to_console():
-        for phase_idx in range(ocp.n_phases):
+    def print_to_console(self):
+        for phase_idx in range(self.ocp.n_phases):
             print(f"PHASE {phase_idx}")
             print(f"**********")
             print(f"PARAMETERS: ")
             print("")
-            for parameter in ocp.nlp[phase_idx].parameters:
-                initial_guess, min_bound, max_bound = scaling_parameter(parameter)
+            for parameter in self.ocp.nlp[phase_idx].parameters:
+                initial_guess, min_bound, max_bound = self.scaling_parameter(parameter)
                 objective_name = self.get_parameter_function_name(parameter)
                 print(f"Name: {parameter.name}")
                 print(f"Size: {parameter.size}")
@@ -181,10 +182,8 @@ class OCPToGraph:
 
         self.ocp = ocp
 
-    @staticmethod
-    def print_to_graph():
-        # Initialize graph with graphviz
-        from graphviz import Digraph
+    def print_to_graph(self):
+        # Initialize graph with graphviv
         G = Digraph('ocp_graph', node_attr={'shape': 'plaintext'})
 
         # Draw OCP node
@@ -192,17 +191,17 @@ class OCPToGraph:
 
         # Draw nlp clusters and edges
         for phase_idx in range(self.ocp.n_phases):
-            main_nodes = self.draw_nlp_cluster(phase_idx)
-            self.draw_edges(main_nodes, phase_idx)
+            main_nodes = self.draw_nlp_cluster(phase_idx, G)
+            self.draw_edges(main_nodes, phase_idx, G)
 
         # Draw phase_transitions
-        self.display_phase_transitions()
+        self.display_phase_transitions(G)
 
         # Display graph
         G.view()
 
     # Draw nlp clusters composed of different nodes
-    def draw_nlp_cluster(self, phase_idx: int):
+    def draw_nlp_cluster(self, phase_idx: int, G: Digraph):
 
         def draw_parameter_node(param_idx: int, parameter: Parameter):
             initial_guess, min_bound, max_bound = OCPToConsole.scaling_parameter(parameter)
@@ -257,7 +256,7 @@ class OCPToGraph:
 
             return main_nodes
 
-        with self.G.subgraph(name=f'cluster_{phase_idx}') as g:
+        with G.subgraph(name=f'cluster_{phase_idx}') as g:
             g.attr(style='filled', color='lightgrey')
             g.attr(label=f"Phase #{phase_idx}")
             g.node_attr.update(style='filled', color='white')
@@ -281,49 +280,49 @@ class OCPToGraph:
 
             return main_nodes
 
-    def draw_edges(self, main_nodes: list, phase_idx: int):
+    def draw_edges(self, main_nodes: list, phase_idx: int, G:Digraph):
 
         # Draw edges between shooting nodes
         def draw_shooting_nodes_edges():
             if len(main_nodes) > 0:
-                self.G.edge(f'lagrange_{phase_idx}',
+                G.edge(f'lagrange_{phase_idx}',
                        f'node_struct_{phase_idx}{main_nodes[0]}',
                        color='black')
                 if len(main_nodes) > 1:
                     for idx in range(1, len(main_nodes)):
-                        self.G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}',
+                        G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}',
                                f'node_struct_{phase_idx}{main_nodes[idx]}',
                                color='black')
 
         # Draw edges between nlp node and parameters
         def draw_nlp_to_parameters_edges():
             nb_parameters = len(self.ocp.nlp[phase_idx].parameters)
-            self.G.edge(f'nlp_node_{phase_idx}',
+            G.edge(f'nlp_node_{phase_idx}',
                    f'param_{phase_idx}0',
                    color='black')
             for param_idx in range(nb_parameters):
                 if param_idx >= 1:
-                    self.G.edge(f'param_{phase_idx}{param_idx - 1}',
+                    G.edge(f'param_{phase_idx}{param_idx - 1}',
                            f'param_{phase_idx}{param_idx}',
                            color='black')
             if nb_parameters > 1:
-                self.G.edge(f'param_{phase_idx}{nb_parameters-1}',
+                G.edge(f'param_{phase_idx}{nb_parameters-1}',
                        f'lagrange_{phase_idx}',
                        color='black')
             else:
-                self.G.edge(f'param_{phase_idx}0',
+                G.edge(f'param_{phase_idx}0',
                        f'lagrange_{phase_idx}',
                        color='black')
 
         # Draw edges between OCP node and each nlp cluster
-        self.G.edge('OCP', f'nlp_node_{phase_idx}')
+        G.edge('OCP', f'nlp_node_{phase_idx}')
 
         draw_nlp_to_parameters_edges()
         draw_shooting_nodes_edges()
 
     # Display phase transitions
-    def display_phase_transitions(self):
-        with self.G.subgraph(name=f'cluster_phase_transitions') as g:
+    def display_phase_transitions(self, G:Digraph):
+        with G.subgraph(name=f'cluster_phase_transitions') as g:
             g.attr(style='', color='black')
             g.node_attr.update(style='filled', color='grey')
             for phase_idx in range(self.ocp.n_phases):
