@@ -269,7 +269,7 @@ class OCPToGraph:
                     draw_parameter_node(param_idx, param)
                     param_idx += 1
             else:
-                g.node(name=f'param_{phase_idx}0', label=f"No extra-parameter set")
+                g.node(name=f'param_{phase_idx}0', label=f"No parameter set")
 
             if len(self.ocp.nlp[phase_idx].J) > 0:
                 draw_lagrange_node()
