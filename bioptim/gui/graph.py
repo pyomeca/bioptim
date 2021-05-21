@@ -78,7 +78,6 @@ class OCPToConsole:
             constraint_str += f" - {target_str}" if target_str is not "" else ""
             constraint_str += f" ≤ {constraint.max_bound}<br/>"
         constraint_str += add_param_constraint_to_str(constraint.params)
-        constraint_str += f"<br/>"
         return constraint_str
 
     @staticmethod
@@ -121,14 +120,14 @@ class OCPToConsole:
                     mayer_objective = [obj.node[0]]
                     if obj.sliced_target is not None:
                         if obj.quadratic:
-                            mayer_str += f"({obj.name} - {obj.sliced_target})<sup>2</sup><br/>"
+                            mayer_str += f"({obj.name} - {obj.sliced_target})<sup>2</sup>"
                         else:
-                            mayer_str += f"{obj.name} - {obj.sliced_target}<br/>"
+                            mayer_str += f"{obj.name} - {obj.sliced_target}"
                     else:
                         if obj.quadratic:
-                            mayer_str += f"({obj.name})<sup>2</sup><br/>"
+                            mayer_str += f"({obj.name})<sup>2</sup>"
                         else:
-                            mayer_str += f"{obj.name}<br/>"
+                            mayer_str += f"{obj.name}"
                     mayer_str = OCPToConsole.add_extra_parameters_to_str(obj.params, mayer_str)
                     mayer_objective.append(mayer_str)
                     list_mayer_objectives.append(mayer_objective)
@@ -191,8 +190,8 @@ class OCPToGraph:
 
         # Draw nlp clusters and edges
         for phase_idx in range(self.ocp.n_phases):
-            main_nodes = self.draw_nlp_cluster(phase_idx, G)
-            self.draw_edges(main_nodes, phase_idx, G)
+            self.draw_nlp_cluster(phase_idx, G)
+            self.draw_edges(phase_idx, G)
 
         # Draw phase_transitions
         self.display_phase_transitions(G)
@@ -227,12 +226,21 @@ class OCPToGraph:
             node_str = f"<b>Lagrange</b>:<br/>{lagrange_str}"
             g.node(f'lagrange_{phase_idx}', f'''<{node_str}>''')
 
-        def draw_shooting_nodes():
-            main_nodes = []
+        def draw_mayer_node():
 
             list_mayer_objectives = OCPToConsole.mayer_to_str(self.ocp.nlp[phase_idx].J)
-            for node_idx in range(self.ocp.nlp[phase_idx].ns + 1):
+            all_mayer_str = "<b>Mayer:</b><br/>"
+            if len(list_mayer_objectives) != 0:
+                for objective in list_mayer_objectives:
+                    all_mayer_str += objective[1]
+                    all_mayer_str += f"Shooting nodes index: {objective[0]}<br/><br/>"
+            else:
+                all_mayer_str = "No Mayer set"
+            g.node(f'mayer_node_{phase_idx}', f'''<{all_mayer_str}>''')
 
+        def draw_constraints_node():
+            list_constraints = []
+            for node_idx in range(self.ocp.nlp[phase_idx].ns + 1):
                 constraints_str = ""
                 for constraint in self.ocp.nlp[phase_idx].g:
                     nb_constraint_nodes = len(constraint)
@@ -240,21 +248,25 @@ class OCPToGraph:
                         if constraint[i]['node_index'] == node_idx:
                             constraints_str += OCPToConsole.constraint_to_str(constraint[0]['constraint'])
 
-                mayer_str = ""
-                for objective in list_mayer_objectives:
-                    if objective[0] == node_idx:
-                        mayer_str += objective[1]
+                if constraints_str != "":
+                    found = False
+                    for constraint in list_constraints:
+                        if constraints_str == constraint[0]:
+                            found = True
+                            constraint[1].append(node_idx)
+                    if not found:
+                        list_constraints.append([constraints_str, [node_idx]])
 
-                if constraints_str != "" or mayer_str != "":
-                    node_name = f"Shooting node index {node_idx}" if node_idx < self.ocp.nlp[phase_idx].ns else \
-                        f"Final node (index {node_idx})"
-                    main_nodes.append(node_idx)
-                    node_str = f"<b>{node_name}</b><br/><br/>"
-                    node_str += f"No Mayer set<br/><br/>" if mayer_str == "" else f"{mayer_str}<br/><br/>"
-                    node_str += f"No constraint set" if constraints_str == "" else f"<b>Constraints:</b><br/>{constraints_str}"
-                    g.node(f'node_struct_{phase_idx}{node_idx}', f'''<{node_str}>''')
-
-            return main_nodes
+            all_constraints_str = "<b>Constraints:</b><br/>"
+            if len(list_constraints) != 0:
+                for constraint in list_constraints:
+                    all_constraints_str += constraint[0]
+                    if len(constraint[1]) == self.ocp.nlp[phase_idx].ns:
+                        constraint[1] = 'all'
+                    all_constraints_str += f"Shooting nodes index: {constraint[1]}<br/><br/>"
+            else:
+                all_constraints_str = "No constraint set"
+            g.node(f'constraints_node_{phase_idx}', f'''<{all_constraints_str}>''')
 
         with G.subgraph(name=f'cluster_{phase_idx}') as g:
             g.attr(style='filled', color='lightgrey')
@@ -276,23 +288,22 @@ class OCPToGraph:
             else:
                 g.node(name=f'lagrange_{phase_idx}', label=f"No Lagrange set")
 
-            main_nodes = draw_shooting_nodes()
+            draw_mayer_node()
+            draw_constraints_node()
 
-            return main_nodes
+    def draw_edges(self, phase_idx: int, G:Digraph):
 
-    def draw_edges(self, main_nodes: list, phase_idx: int, G:Digraph):
+        # Draw edge between Lagrange node and Mayer node
+        def draw_lagrange_to_mayer_edge():
+            G.edge(f'lagrange_{phase_idx}',
+                   f'mayer_node_{phase_idx}',
+                   color='black')
 
-        # Draw edges between shooting nodes
-        def draw_shooting_nodes_edges():
-            if len(main_nodes) > 0:
-                G.edge(f'lagrange_{phase_idx}',
-                       f'node_struct_{phase_idx}{main_nodes[0]}',
-                       color='black')
-                if len(main_nodes) > 1:
-                    for idx in range(1, len(main_nodes)):
-                        G.edge(f'node_struct_{phase_idx}{main_nodes[idx-1]}',
-                               f'node_struct_{phase_idx}{main_nodes[idx]}',
-                               color='black')
+        # Draw edge between Mayer node and constraints node
+        def draw_mayer_to_constraints_edge():
+            G.edge(f'mayer_node_{phase_idx}',
+                   f'constraints_node_{phase_idx}',
+                   color='black')
 
         # Draw edges between nlp node and parameters
         def draw_nlp_to_parameters_edges():
@@ -318,7 +329,8 @@ class OCPToGraph:
         G.edge('OCP', f'nlp_node_{phase_idx}')
 
         draw_nlp_to_parameters_edges()
-        draw_shooting_nodes_edges()
+        draw_lagrange_to_mayer_edge()
+        draw_mayer_to_constraints_edge()
 
     # Display phase transitions
     def display_phase_transitions(self, G:Digraph):
