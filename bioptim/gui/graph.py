@@ -129,8 +129,13 @@ class OCPToConsole:
                         else:
                             mayer_str += f"{obj.name}"
                     mayer_str = OCPToConsole.add_extra_parameters_to_str(obj.params, mayer_str)
-                    mayer_objective.append(mayer_str)
-                    list_mayer_objectives.append(mayer_objective)
+                    found = False
+                    for mayer in list_mayer_objectives:
+                        if mayer[1] == mayer_str:
+                            found = True
+                    if not found:
+                        mayer_objective.append(mayer_str)
+                        list_mayer_objectives.append(mayer_objective)
         return list_mayer_objectives
 
     @staticmethod
@@ -227,7 +232,6 @@ class OCPToGraph:
             g.node(f'lagrange_{phase_idx}', f'''<{node_str}>''')
 
         def draw_mayer_node():
-
             list_mayer_objectives = OCPToConsole.mayer_to_str(self.ocp.nlp[phase_idx].J)
             all_mayer_str = "<b>Mayer:</b><br/>"
             if len(list_mayer_objectives) != 0:
@@ -261,8 +265,8 @@ class OCPToGraph:
             if len(list_constraints) != 0:
                 for constraint in list_constraints:
                     all_constraints_str += constraint[0]
-                    if len(constraint[1]) == self.ocp.nlp[phase_idx].ns:
-                        constraint[1] = 'all'
+                    if len(constraint[1]) == self.ocp.nlp[phase_idx].ns + 1:
+                        constraint[1] = 'ALL'
                     all_constraints_str += f"Shooting nodes index: {constraint[1]}<br/><br/>"
             else:
                 all_constraints_str = "No constraint set"
