@@ -5,15 +5,50 @@ from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
 from ..optimization.parameters import Parameter
 
 class OCPToConsole:
+    """
+    Attributes
+    ----------
+    ocp: OptimalControlProgram
+        A reference to the full ocp
+
+    Methods
+    -------
+    print_to_console(self)
+        Print ocp structure in the console
+    constraint_to_str(constraint: Constraint)
+        Convert constraint information into an easy-to-read string
+    add_extra_parameters_to_str(list_constraints: list, string: str)
+        Simple method to add extra-parameters to a string
+    lagrange_to_str(objective_list: ObjectiveList)
+        Convert Lagrange objective into an easy-to-read string
+    mayer_to_str(objective_list: ObjectiveList)
+        Convert Mayer objective into an easy-to-read string
+    vector_layout(vector: list, size: int)
+        Resize vector content for display task
+    scaling_parameter(parameter: Parameter)
+        Take scaling into account for display task
+    get_parameter_function_name(parameter: Parameter)
+        Get parameter function name (whether or not it is a custom function)
+    """
 
     def __init__(
         self,
         ocp,
     ):
+        """
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the full ocp
+        """
 
         self.ocp = ocp
 
     def print_to_console(self):
+        """
+        Print ocp structure in the console
+        """
+
         for phase_idx in range(self.ocp.n_phases):
             print(f"PHASE {phase_idx}")
             print(f"**********")
@@ -58,6 +93,14 @@ class OCPToConsole:
 
     @staticmethod
     def constraint_to_str(constraint: Constraint):
+        """
+        Convert constraint information into an easy-to-read string
+
+        Parameters
+        ----------
+        constraint: Constraint
+            The constraint to be converted
+        """
 
         def add_param_constraint_to_str(param_dict: dict):
             str_to_add = ""
@@ -66,8 +109,7 @@ class OCPToConsole:
             return str_to_add
 
         constraint_str = ""
-        target_str = "" if constraint.sliced_target is None else \
-            f"{constraint.sliced_target}"
+        target_str = "" if constraint.sliced_target is None else f"{constraint.sliced_target}"
         if constraint.quadratic:
             constraint_str += f"{constraint.min_bound} ≤ "
             constraint_str += f"({constraint.name}" if target_str is not "" else f"{constraint.name}"
@@ -81,14 +123,34 @@ class OCPToConsole:
         return constraint_str
 
     @staticmethod
-    def add_extra_parameters_to_str(list_constraints: list, string: str):
-        for param in list_constraints:
-            string += f"{param}: {list_constraints[param]}<br/>"
+    def add_extra_parameters_to_str(list_params: list, string: str):
+        """
+        Simple method to add extra-parameters to a string
+
+        Parameters
+        ----------
+        list_params: list
+            The list of parameters to add to the string
+        string: str
+            The string to be completed
+        """
+
+        for param in list_params:
+            string += f"{param}: {list_params[param]}<br/>"
         string += f"<br/>"
         return string
 
     @staticmethod
     def lagrange_to_str(objective_list: ObjectiveList):
+        """
+        Convert Lagrange objective into an easy-to-read string
+
+        Parameters
+        ----------
+        objective_list: ObjectiveList
+            The list of Lagrange objectives
+        """
+
         objective_names = []
         lagrange_str = ""
         for objective in objective_list:
@@ -111,6 +173,15 @@ class OCPToConsole:
 
     @staticmethod
     def mayer_to_str(objective_list: ObjectiveList):
+        """
+        Convert Mayer objective into an easy-to-read string
+
+        Parameters
+        ----------
+        objective_list: ObjectiveList
+            The list of Mayer objectives
+        """
+
         list_mayer_objectives = []
         for objective in objective_list:
             for obj_index in objective:
@@ -140,6 +211,17 @@ class OCPToConsole:
 
     @staticmethod
     def vector_layout(vector: list, size: int):
+        """
+        Resize vector content for display task
+
+        Parameters
+        ----------
+        vector: list
+            The vector to be condensed
+        size: int
+            The size of the vector
+        """
+
         if size > 1:
             condensed_vector = "[ "
             count = 0
@@ -156,6 +238,15 @@ class OCPToConsole:
 
     @staticmethod
     def scaling_parameter(parameter: Parameter):
+        """
+        Take scaling into account for display task
+
+        Parameters
+        ----------
+        parameter: Parameter
+            The unscaled parameter
+        """
+
         initial_guess = [parameter.initial_guess.init[i][j] * parameter.scaling[i] for i in
                          range(parameter.size) for j in
                          range(len(parameter.initial_guess.init[0]))]
@@ -169,6 +260,14 @@ class OCPToConsole:
 
     @staticmethod
     def get_parameter_function_name(parameter: Parameter):
+        """
+        Get parameter function name (whether or not it is a custom function)
+
+        Parameters
+        ----------
+        parameter: Parameter
+            The parameter to which the function is linked
+        """
         name = ""
         if parameter.penalty_list is not None:
             if parameter.penalty_list.type.name == "CUSTOM":
@@ -178,15 +277,42 @@ class OCPToConsole:
         return name
 
 class OCPToGraph:
+    """
+    Attributes
+    ----------
+    ocp: OptimalControlProgram
+        A reference to the full ocp
+
+    Methods
+    -------
+    print_to_graph(self)
+        Display ocp structure in a graph
+    draw_nlp_cluster(self, phase_idx: int, G: Digraph)
+        Draw clusters for each nlp
+    draw_edges(self, phase_idx: int, G:Digraph)
+        Draw edges between each node of a cluster
+    display_phase_transitions(self, G:Digraph)
+        Draw a cluster including all the information about the phase transitions of the problem
+    """
 
     def __init__(
             self,
             ocp,
     ):
+        """
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the full ocp
+        """
 
         self.ocp = ocp
 
     def print_to_graph(self):
+        """
+        Display ocp structure in a graph
+        """
+
         # Initialize graph with graphviv
         G = Digraph('ocp_graph', node_attr={'shape': 'plaintext'})
 
@@ -204,8 +330,17 @@ class OCPToGraph:
         # Display graph
         G.view()
 
-    # Draw nlp clusters composed of different nodes
     def draw_nlp_cluster(self, phase_idx: int, G: Digraph):
+        """
+        Draw clusters for each nlp
+
+        Parameters
+        ----------
+        phase_idx: int
+            The index of the current phase
+        G: Digraph
+            The graph to be completed
+        """
 
         def draw_parameter_node(param_idx: int, parameter: Parameter):
             initial_guess, min_bound, max_bound = OCPToConsole.scaling_parameter(parameter)
@@ -296,6 +431,16 @@ class OCPToGraph:
             draw_constraints_node()
 
     def draw_edges(self, phase_idx: int, G:Digraph):
+        """
+        Draw edges between each node of a cluster
+
+        Parameters
+        ----------
+        phase_idx: int
+            The index of the current phase
+        G: Digraph
+            The graph to be completed
+        """
 
         # Draw edge between Lagrange node and Mayer node
         def draw_lagrange_to_mayer_edge():
@@ -338,6 +483,15 @@ class OCPToGraph:
 
     # Display phase transitions
     def display_phase_transitions(self, G:Digraph):
+        """
+        Draw a cluster including all the information about the phase transitions of the problem
+
+        Parameters
+        ----------
+        G: Digraph
+            The graph to be completed
+        """
+
         with G.subgraph(name=f'cluster_phase_transitions') as g:
             g.attr(style='', color='black')
             g.node_attr.update(style='filled', color='grey')
