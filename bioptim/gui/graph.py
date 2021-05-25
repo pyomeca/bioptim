@@ -301,33 +301,33 @@ class OCPToGraph:
         def draw_lagrange_to_mayer_edge():
             G.edge(f'lagrange_{phase_idx}',
                    f'mayer_node_{phase_idx}',
-                   color='black')
+                   color='lightgrey')
 
         # Draw edge between Mayer node and constraints node
         def draw_mayer_to_constraints_edge():
             G.edge(f'mayer_node_{phase_idx}',
                    f'constraints_node_{phase_idx}',
-                   color='black')
+                   color='lightgrey')
 
         # Draw edges between nlp node and parameters
         def draw_nlp_to_parameters_edges():
             nb_parameters = len(self.ocp.nlp[phase_idx].parameters)
             G.edge(f'nlp_node_{phase_idx}',
                    f'param_{phase_idx}0',
-                   color='black')
+                   color='lightgrey')
             for param_idx in range(nb_parameters):
                 if param_idx >= 1:
                     G.edge(f'param_{phase_idx}{param_idx - 1}',
                            f'param_{phase_idx}{param_idx}',
-                           color='black')
+                           color='lightgrey')
             if nb_parameters > 1:
                 G.edge(f'param_{phase_idx}{nb_parameters-1}',
                        f'lagrange_{phase_idx}',
-                       color='black')
+                       color='lightgrey')
             else:
                 G.edge(f'param_{phase_idx}0',
                        f'lagrange_{phase_idx}',
-                       color='black')
+                       color='lightgrey')
 
         # Draw edges between OCP node and each nlp cluster
         G.edge('OCP', f'nlp_node_{phase_idx}')
