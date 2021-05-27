@@ -22,6 +22,7 @@ from bioptim import (
 
 from .utils import TestUtils
 
+
 def prepare_ocp_phase_transitions(
     biorbd_model_path: str,
     ode_solver: OdeSolver = OdeSolver.RK4(),
@@ -76,11 +77,21 @@ def prepare_ocp_phase_transitions(
     # Constraints
     constraints = ConstraintList()
     if with_constraints:
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1", phase=0)
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=0)
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m1", phase=1)
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2)
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m1", phase=3)
+        constraints.add(
+            ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1", phase=0
+        )
+        constraints.add(
+            ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=0
+        )
+        constraints.add(
+            ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m1", phase=1
+        )
+        constraints.add(
+            ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2
+        )
+        constraints.add(
+            ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m1", phase=3
+        )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -136,11 +147,13 @@ def prepare_ocp_phase_transitions(
         phase_transitions=phase_transitions,
     )
 
+
 def test_simple_phase_transitions():
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
     ocp = prepare_ocp_phase_transitions(model_path)
     ocp.print(to_console=True, to_graph=True)
+
 
 def test_mayer_phase_transitions():
     bioptim_folder = TestUtils.bioptim_folder()
@@ -148,11 +161,13 @@ def test_mayer_phase_transitions():
     ocp = prepare_ocp_phase_transitions(model_path, with_mayer=True)
     ocp.print(to_console=True, to_graph=True)
 
+
 def test_lagrange_phase_transitions():
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
     ocp = prepare_ocp_phase_transitions(model_path, with_lagrange=True)
     ocp.print(to_console=True, to_graph=True)
+
 
 def test_constraints_phase_transitions():
     bioptim_folder = TestUtils.bioptim_folder()

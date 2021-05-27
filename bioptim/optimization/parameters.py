@@ -249,6 +249,7 @@ class ParameterList(UniquePerProblemOptionList):
 
         return self.names.index(item)
 
+
 class Parameters:
     """
     Emulation of the base class PenaltyFunctionAbstract so Parameters can be used as Objective and Constraints

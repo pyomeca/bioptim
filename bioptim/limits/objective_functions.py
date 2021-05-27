@@ -98,9 +98,22 @@ class ObjectiveList(OptionList):
 
     @staticmethod
     def to_dict(all_nlp):
-        list_objectives = [[{"mayer": [], "lagrange": [], "quadratic_mayer": [], "quadratic_lagrange": [],
-                             "sliced_target_mayer": [], "sliced_target_lagrange": [], "parameters_mayer": [],
-                             "parameters_lagrange": []} for _ in range(nlp.ns + 1)] for nlp in all_nlp]
+        list_objectives = [
+            [
+                {
+                    "mayer": [],
+                    "lagrange": [],
+                    "quadratic_mayer": [],
+                    "quadratic_lagrange": [],
+                    "sliced_target_mayer": [],
+                    "sliced_target_lagrange": [],
+                    "parameters_mayer": [],
+                    "parameters_lagrange": [],
+                }
+                for _ in range(nlp.ns + 1)
+            ]
+            for nlp in all_nlp
+        ]
         for nlp in all_nlp:
             for J in nlp.J:
                 for n in J:

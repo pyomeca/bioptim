@@ -88,6 +88,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         """
         raise NotImplementedError("Printing of PhaseTransitionList is not ready yet")
 
+
 class PhaseTransitionFunctions:
     """
     Internal implementation of the phase transitions
