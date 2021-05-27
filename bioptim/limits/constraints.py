@@ -418,22 +418,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
 
-        if pn is None:
-            g = {
-                "constraint": penalty,
-                "node_index": None,
-                "val": val,
-                "bounds": g_bounds,
-                "target": penalty.sliced_target,
-            }
-        else:
-            g = {
-                "constraint": penalty,
-                "node_index": pn.t[len(pn.nlp.g[penalty.list_index])],
-                "val": val,
-                "bounds": g_bounds,
-                "target": penalty.sliced_target,
-            }
+        node_index = len(pn.nlp.g[penalty.list_index]) - 1 if pn else None
+        g = {
+            "constraint": penalty,
+            "node_index": node_index,
+            "val": val,
+            "bounds": g_bounds,
+            "target": penalty.sliced_target,
+        }
+
         if pn is not None and pn.nlp:
             pn.nlp.g[penalty.list_index].append(g)
         else:
