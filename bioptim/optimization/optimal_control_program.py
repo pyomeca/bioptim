@@ -744,9 +744,6 @@ class OptimalControlProgram:
             out = [ocp, sol]
         return out
 
-    def __print__(self):
-        self.print(to_console=True, to_graph=True)
-
     def print(
         self,
         to_console: bool = True,
