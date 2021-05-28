@@ -5,7 +5,7 @@ from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
 from ..optimization.parameters import Parameter
 
 
-class GraphAbstratc:
+class GraphAbstract:
     _return_line: ""
     _squared: ""
 
@@ -177,7 +177,7 @@ class GraphAbstratc:
         return name
 
 
-class OcpToConsole(GraphAbstratc):
+class OcpToConsole(GraphAbstract):
     _return_line = "\n"
     _squared = "²"
     """
@@ -249,7 +249,7 @@ class OcpToConsole(GraphAbstratc):
                 print("")
 
 
-class OcpToGraph(GraphAbstratc):
+class OcpToGraph(GraphAbstract):
     _return_line = "<br/>"
     _squared = "<sup>2</sup>"
     """
