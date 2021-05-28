@@ -139,20 +139,23 @@ class GraphAbstratc:
             The unscaled parameter
         """
 
+        size_initial_guess = len(parameter.initial_guess.init[0])
         initial_guess = [
             parameter.initial_guess.init[i][j] * parameter.scaling[i]
             for i in range(parameter.size)
-            for j in range(len(parameter.initial_guess.init[0]))
+            for j in range(size_initial_guess)
         ]
+        size_min_bound = len(parameter.bounds.min[0])
         min_bound = [
             parameter.bounds.min[i][j] * parameter.scaling[i]
             for i in range(parameter.size)
-            for j in range(len(parameter.bounds.min[0]))
+            for j in range(size_min_bound)
         ]
+        size_max_bound = len(parameter.bounds.max[0])
         max_bound = [
             parameter.bounds.max[i][j] * parameter.scaling[i]
             for i in range(parameter.size)
-            for j in range(len(parameter.bounds.max[0]))
+            for j in range(size_max_bound)
         ]
         return initial_guess, min_bound, max_bound
 
