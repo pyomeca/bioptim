@@ -1,6 +1,3 @@
-import pytest
-import numpy as np
-
 import biorbd
 from bioptim import (
     OptimalControlProgram,
@@ -11,7 +8,6 @@ from bioptim import (
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
-    ControlType,
     OdeSolver,
     ConstraintList,
     ConstraintFcn,
