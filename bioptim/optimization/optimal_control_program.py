@@ -362,7 +362,7 @@ class OptimalControlProgram:
             self.update_parameters(parameters)
 
         # Declare the time to optimize
-        self.__define_time(phase_time, objective_functions, constraints)
+        self._define_time(phase_time, objective_functions, constraints)
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
@@ -761,7 +761,7 @@ class OptimalControlProgram:
             display_graph = OcpToGraph(self)
             display_graph.print_to_graph()
 
-    def __define_time(
+    def _define_time(
         self,
         phase_time: Union[int, float, list, tuple],
         objective_functions: ObjectiveList,
