@@ -21,10 +21,10 @@ from .utils import TestUtils
 
 def prepare_ocp_phase_transitions(
     biorbd_model_path: str,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
-    with_constraints: bool = False,
-    with_mayer: bool = False,
-    with_lagrange: bool = False,
+    with_constraints: bool,
+    with_mayer: bool,
+    with_lagrange: bool,
+
 ) -> OptimalControlProgram:
     """
     Parameters
@@ -139,7 +139,6 @@ def prepare_ocp_phase_transitions(
         u_bounds,
         objective_functions,
         constraints,
-        ode_solver=ode_solver,
         phase_transitions=phase_transitions,
     )
 
@@ -147,21 +146,21 @@ def prepare_ocp_phase_transitions(
 def test_simple_phase_transitions():
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
-    ocp = prepare_ocp_phase_transitions(model_path)
+    ocp = prepare_ocp_phase_transitions(model_path, with_mayer=False, with_lagrange=False, with_constraints=False)
     ocp.print(to_console=True, to_graph=True)
 
 
 def test_mayer_phase_transitions():
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
-    ocp = prepare_ocp_phase_transitions(model_path, with_mayer=True)
+    ocp = prepare_ocp_phase_transitions(model_path, with_mayer=True, with_lagrange=False, with_constraints=False)
     ocp.print(to_console=True, to_graph=True)
 
 
 def test_lagrange_phase_transitions():
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
-    ocp = prepare_ocp_phase_transitions(model_path, with_lagrange=True)
+    ocp = prepare_ocp_phase_transitions(model_path, with_lagrange=True, with_mayer=False, with_constraints=False)
     ocp.print(to_console=True, to_graph=True)
 
 
