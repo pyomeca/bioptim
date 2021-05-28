@@ -14,7 +14,7 @@ from ..dynamics.dynamics_type import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.problem import Problem
 from ..gui.plot import CustomPlot, PlotOcp
-from ..gui.graph import OCPToConsole, OCPToGraph
+from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionFunctions, PhaseTransitionList
@@ -754,11 +754,11 @@ class OptimalControlProgram:
     ):
 
         if to_console:
-            display_console = OCPToConsole(self)
+            display_console = OcpToConsole(self)
             display_console.print_to_console()
 
         if to_graph:
-            display_graph = OCPToGraph(self)
+            display_graph = OcpToGraph(self)
             display_graph.print_to_graph()
 
     def __define_time(
