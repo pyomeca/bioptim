@@ -755,11 +755,11 @@ class OptimalControlProgram:
 
         if to_console:
             display_console = OcpToConsole(self)
-            display_console.print_to_console()
+            display_console.print()
 
         if to_graph:
             display_graph = OcpToGraph(self)
-            display_graph.print_to_graph()
+            display_graph.print()
 
     def _define_time(
         self,

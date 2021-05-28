@@ -201,7 +201,7 @@ class OcpToConsole(GraphAbstratc):
         Get parameter function name (whether or not it is a custom function)
     """
 
-    def print_to_console(self):
+    def print(self):
         """
         Print ocp structure in the console
         """
@@ -265,7 +265,7 @@ class OcpToGraph(GraphAbstratc):
         Draw a cluster including all the information about the phase transitions of the problem
     """
 
-    def print_to_graph(self):
+    def print(self):
         """
         Display ocp structure in a graph
         """
