@@ -168,9 +168,6 @@ def main():
         print(f"Solving problem using {initial_guess} initial guess")
         ocp = prepare_ocp("cube.bioMod", n_shooting=30, final_time=2, initial_guess=initial_guess)
 
-        # --- Print ocp structure --- #
-        ocp.print_ocp_structure()
-
         sol = ocp.solve()
         print("\n")
 

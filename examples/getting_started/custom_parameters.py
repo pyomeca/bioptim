@@ -235,9 +235,6 @@ def main():
         target_m=20,
     )
 
-    # --- Print ocp structure --- #
-    ocp.print_ocp_structure()
-
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=False)
 
