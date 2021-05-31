@@ -1,4 +1,5 @@
 from time import time
+from sys import platform
 
 from casadi import vertcat, sum1, nlpsol, SX, MX
 
@@ -73,7 +74,8 @@ class IpoptInterface(SolverInterface):
         ocp: OptimalControlProgram
             A reference to the current OptimalControlProgram
         """
-
+        if platform == "win32":
+            raise RuntimeError("Online graphics are not available on Windows")
         self.options_common["iteration_callback"] = OnlineCallback(ocp)
 
     def configure(self, solver_options: dict):
