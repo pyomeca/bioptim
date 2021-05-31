@@ -35,12 +35,12 @@ class GraphAbstract:
         target_str = "" if constraint.sliced_target is None else f"{constraint.sliced_target}"
         if constraint.quadratic:
             constraint_str += f"{constraint.min_bound} ≤ "
-            constraint_str += f"({constraint.name}" if target_str is not "" else f"{constraint.name}"
-            constraint_str += f" - {target_str}){self._squared}" if target_str is not "" else ""
+            constraint_str += f"({constraint.name}" if target_str != "" else f"{constraint.name}"
+            constraint_str += f" - {target_str}){self._squared}" if target_str != "" else ""
             constraint_str += f" ≤ {constraint.max_bound}{self._return_line}"
         else:
             constraint_str += f"{constraint.min_bound} ≤ {constraint.name}"
-            constraint_str += f" - {target_str}" if target_str is not "" else ""
+            constraint_str += f" - {target_str}" if target_str != "" else ""
             constraint_str += f" ≤ {constraint.max_bound}{self._return_line}"
         constraint_str += self._add_dict_to_str(constraint.params)
         return constraint_str
@@ -177,7 +177,10 @@ class GraphAbstract:
         return name
 
     def _analyze_nodes(self, phase_idx: int, constraint: Constraint):
-        node = self.ocp.nlp[phase_idx].ns if constraint["constraint"].node[0].value == 'end' else 0
+        if constraint["constraint"].node[0].value != 'all':
+            node = self.ocp.nlp[phase_idx].ns if constraint["constraint"].node[0].value == 'end' else 0
+        else:
+            node = "all"
         return node
 
 
@@ -290,7 +293,7 @@ class OcpToGraph(GraphAbstract):
             self._draw_edges(G, phase_idx)
 
         # Draw phase_transitions
-        self._display_phase_transitions(G)
+        self._draw_phase_transitions(G)
 
         # Display graph
         G.view()
@@ -323,7 +326,7 @@ class OcpToGraph(GraphAbstract):
 
     def _draw_parameter_node(self, g: Digraph.subgraph, phase_idx: int, param_idx: int, parameter: Parameter):
         initial_guess, min_bound, max_bound = self._scaling_parameter(parameter)
-        node_str = f"<u><b>{parameter.name}</b></u><br/>"
+        node_str = f"<u><b>{parameter.name[0].upper() + parameter.name[1:]}</b></u><br/>"
         node_str += f"<b>Size</b>: {parameter.size}<br/>"
         node_str += f"<b>Initial guesses</b>: {self._vector_layout(initial_guess, parameter.size)}<br/><br/>"
         node_str += f"{self._vector_layout(min_bound, parameter.size)} ≤<br/>"
@@ -342,50 +345,39 @@ class OcpToGraph(GraphAbstract):
 
     def _draw_lagrange_node(self, g: Digraph.subgraph, phase_idx: int):
         lagrange_str = self._lagrange_to_str(self.ocp.nlp[phase_idx].J)[0]
-        node_str = f"<b>Lagrange</b>:<br/>{lagrange_str}"
+        node_str = f"<b>Lagrange</b><br/>{lagrange_str}"
         g.node(f"lagrange_{phase_idx}", f"""<{node_str}>""")
 
     def _draw_mayer_node(self, g: Digraph.subgraph, phase_idx: int):
         list_mayer_objectives = self._mayer_to_str(self.ocp.nlp[phase_idx].J)
-        all_mayer_str = "<b>Mayer:</b><br/>"
+        all_mayer_str = "<b>Mayer</b><br/>"
         if len(list_mayer_objectives) != 0:
             for objective in list_mayer_objectives:
                 all_mayer_str += objective[1]
                 all_mayer_str += f"Shooting nodes index: {objective[0]}<br/><br/>"
         else:
-            all_mayer_str = "No Mayer set"
+            all_mayer_str = "<b>Mayer</b><br/> No Mayer set"
         g.node(f"mayer_node_{phase_idx}", f"""<{all_mayer_str}>""")
 
     def _draw_constraints_node(self, g: Digraph.subgraph, phase_idx: int):
         list_constraints = []
-        for node_idx in range(self.ocp.nlp[phase_idx].ns + 1):
+
+        for constraint in self.ocp.nlp[phase_idx].g:
             constraints_str = ""
-            for constraint in self.ocp.nlp[phase_idx].g:
-                if constraint[0]["node_index"] == -1:
-                    node_index = self._analyze_nodes(phase_idx, constraint[0])
-                else:
-                    node_index = constraint[0]["node_index"]
-                if node_index == node_idx:
-                    constraints_str += self._constraint_to_str(constraint[0]["constraint"])
+            if constraint[0]["node_index"] == -1:
+                node_index = self._analyze_nodes(phase_idx, constraint[0])
+            else:
+                node_index = constraint[0]["node_index"]
+            constraints_str += self._constraint_to_str(constraint[0]["constraint"])
+            list_constraints.append([constraints_str, node_index])
 
-            if constraints_str != "":
-                found = False
-                for constraint in list_constraints:
-                    if constraints_str == constraint[0]:
-                        found = True
-                        constraint[1].append(node_idx)
-                if not found:
-                    list_constraints.append([constraints_str, [node_idx]])
-
-        all_constraints_str = "<b>Constraints:</b><br/>"
+        all_constraints_str = "<b>Constraints</b><br/>"
         if len(list_constraints) != 0:
             for constraint in list_constraints:
                 all_constraints_str += constraint[0]
-                if len(constraint[1]) == self.ocp.nlp[phase_idx].ns + 1:
-                    constraint[1] = "ALL"
                 all_constraints_str += f"Shooting nodes index: {constraint[1]}<br/><br/>"
         else:
-            all_constraints_str = "No constraint set"
+            all_constraints_str = "<b>Constraints</b><br/> No constraint set"
         g.node(f"constraints_node_{phase_idx}", f"""<{all_constraints_str}>""")
 
     def _draw_nlp_cluster(self, G: Digraph, phase_idx: int):
@@ -402,7 +394,8 @@ class OcpToGraph(GraphAbstract):
 
         with G.subgraph(name=f"cluster_{phase_idx}") as g:
             g.attr(style="filled", color="lightgrey")
-            g.attr(label=f"Phase #{phase_idx}")
+            nlp_title = f"<u><b>Phase #{phase_idx}</b></u>"
+            g.attr(label=f"<{nlp_title}>")
             g.node_attr.update(style="filled", color="white")
 
             self._draw_nlp_node(g, phase_idx)
@@ -413,12 +406,14 @@ class OcpToGraph(GraphAbstract):
                     self._draw_parameter_node(g, phase_idx, param_idx, param)
                     param_idx += 1
             else:
-                g.node(name=f"param_{phase_idx}0", label=f"No parameter set")
+                node_str = "<b>Parameters</b><br/> No parameter set"
+                g.node(f"param_{phase_idx}0", f"""<{node_str}>""")
 
             if len(self.ocp.nlp[phase_idx].J) > 0:
                 self._draw_lagrange_node(g, phase_idx)
             else:
-                g.node(name=f"lagrange_{phase_idx}", label=f"No Lagrange set")
+                node_str = "<b>Lagrange</b><br/> No Lagrange set"
+                g.node(f"lagrange_{phase_idx}", f"""<{node_str}>""")
 
             self._draw_mayer_node(g, phase_idx)
             self._draw_constraints_node(g, phase_idx)
@@ -463,7 +458,7 @@ class OcpToGraph(GraphAbstract):
         self._draw_mayer_to_constraints_edge(G, phase_idx)
 
     # Display phase transitions
-    def _display_phase_transitions(self, G: Digraph):
+    def _draw_phase_transitions(self, G: Digraph):
         """
         Draw a cluster including all the information about the phase transitions of the problem
 
@@ -474,7 +469,7 @@ class OcpToGraph(GraphAbstract):
         """
 
         with G.subgraph(name=f"cluster_phase_transitions") as g:
-            g.attr(style="", color="black")
+            g.attr(style="", color="invis")
             g.node_attr.update(style="filled", color="grey")
             for phase_idx in range(self.ocp.n_phases):
                 if phase_idx != self.ocp.n_phases - 1:
@@ -485,4 +480,5 @@ class OcpToGraph(GraphAbstract):
                         f"Phase #{phase_idx + 1}",
                         label=self.ocp.phase_transitions[phase_idx].type.name,
                     )
-            g.attr(label=f"Phase transitions")
+            title = f"<u><b>Phase transitions</b></u>"
+            g.attr(label=f"<{title}>")
