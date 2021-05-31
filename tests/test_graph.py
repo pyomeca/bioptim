@@ -1,3 +1,5 @@
+from sys import platform
+
 import biorbd
 from bioptim import (
     OptimalControlProgram,
@@ -143,6 +145,9 @@ def prepare_ocp_phase_transitions(
 
 
 def test_simple_phase_transitions():
+    if platform == "win32":
+        return
+
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
     ocp = prepare_ocp_phase_transitions(model_path, with_mayer=False, with_lagrange=False, with_constraints=False)
@@ -150,6 +155,9 @@ def test_simple_phase_transitions():
 
 
 def test_mayer_phase_transitions():
+    if platform == "win32":
+        return
+
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
     ocp = prepare_ocp_phase_transitions(model_path, with_mayer=True, with_lagrange=False, with_constraints=False)
@@ -157,14 +165,20 @@ def test_mayer_phase_transitions():
 
 
 def test_lagrange_phase_transitions():
+    if platform == "win32":
+        return
+
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
-    ocp = prepare_ocp_phase_transitions(model_path, with_lagrange=True, with_mayer=False, with_constraints=False)
+    ocp = prepare_ocp_phase_transitions(model_path, with_mayer=False, with_lagrange=True, with_constraints=False)
     ocp.print(to_console=True, to_graph=True)
 
 
 def test_constraints_phase_transitions():
+    if platform == "win32":
+        return
+
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
-    ocp = prepare_ocp_phase_transitions(model_path, with_lagrange=True, with_mayer=True, with_constraints=True)
+    ocp = prepare_ocp_phase_transitions(model_path, with_mayer=True, with_lagrange=True, with_constraints=True)
     ocp.print(to_console=True, to_graph=True)
