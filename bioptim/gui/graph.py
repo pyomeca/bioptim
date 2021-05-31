@@ -36,7 +36,7 @@ class GraphAbstract:
         if constraint.quadratic:
             constraint_str += f"{constraint.min_bound} ≤ "
             constraint_str += f"({constraint.name}" if target_str is not "" else f"{constraint.name}"
-            constraint_str += f" - {target_str})<sup>2</sup>" if target_str is not "" else ""
+            constraint_str += f" - {target_str}){self._squared}" if target_str is not "" else ""
             constraint_str += f" ≤ {constraint.max_bound}{self._return_line}"
         else:
             constraint_str += f"{constraint.min_bound} ≤ {constraint.name}"
@@ -80,12 +80,12 @@ class GraphAbstract:
                 if isinstance(obj.type, ObjectiveFcn.Lagrange):
                     if obj.sliced_target is not None:
                         if obj.quadratic:
-                            lagrange_str += f"({obj.name} - {obj.sliced_target})<sup>2</sup>{self._return_line}"
+                            lagrange_str += f"({obj.name} - {obj.sliced_target}){self._squared}{self._return_line}"
                         else:
                             lagrange_str += f"{obj.name} - {obj.sliced_target}{self._return_line}"
                     else:
                         if obj.quadratic:
-                            lagrange_str += f"({obj.name})<sup>2</sup>{self._return_line}"
+                            lagrange_str += f"({obj.name}){self._squared}{self._return_line}"
                         else:
                             lagrange_str += f"{obj.name}{self._return_line}"
                     lagrange_str = self._add_extra_parameters_to_str(obj.params, lagrange_str)
@@ -111,12 +111,12 @@ class GraphAbstract:
                     mayer_objective = [obj.node[0]]
                     if obj.sliced_target is not None:
                         if obj.quadratic:
-                            mayer_str += f"({obj.name} - {obj.sliced_target})<sup>2</sup>"
+                            mayer_str += f"({obj.name} - {obj.sliced_target}){self._squared}"
                         else:
                             mayer_str += f"{obj.name} - {obj.sliced_target}"
                     else:
                         if obj.quadratic:
-                            mayer_str += f"({obj.name})<sup>2</sup>"
+                            mayer_str += f"({obj.name}){self._squared}"
                         else:
                             mayer_str += f"{obj.name}"
                     mayer_str = self._add_extra_parameters_to_str(obj.params, mayer_str)
@@ -328,7 +328,7 @@ class OcpToGraph(GraphAbstract):
         node_str += f"<b>Initial guesses</b>: {self._vector_layout(initial_guess, parameter.size)}<br/><br/>"
         node_str += f"{self._vector_layout(min_bound, parameter.size)} ≤<br/>"
         node_str += f"{'(' if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ''}{self._get_parameter_function_name(parameter)} -<br/>"
-        node_str += f"{parameter.penalty_list.sliced_target if parameter.penalty_list is not None else ''}{')<sup>2</sup>' if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ''} ≤<br/>"
+        node_str += f"{parameter.penalty_list.sliced_target if parameter.penalty_list is not None else ''}{f'){self._squared}' if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ''} ≤<br/>"
         node_str += f"{self._vector_layout(max_bound, parameter.size)}"
         g.node(f"param_{phase_idx}{param_idx}", f"""<{node_str}>""")
 
