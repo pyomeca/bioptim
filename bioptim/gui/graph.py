@@ -176,6 +176,10 @@ class GraphAbstract:
                 name = parameter.penalty_list.name
         return name
 
+    def _analyze_nodes(self, phase_idx: int, constraint: Constraint):
+        node = self.ocp.nlp[phase_idx].ns if constraint["constraint"].node[0].value == 'end' else 0
+        return node
+
 
 class OcpToConsole(GraphAbstract):
     _return_line = "\n"
@@ -243,9 +247,13 @@ class OcpToConsole(GraphAbstract):
                 for mayer in mayer_objectives:
                     if mayer[0] == node_idx:
                         print(mayer[1])
-                for i in range(self.ocp.nlp[phase_idx].g.__len__()):
-                    if self.ocp.nlp[phase_idx].g[i][0]["node_index"] == node_idx:
-                        print(f"*** Constraint {i}: {self.ocp.nlp[phase_idx].g[phase_idx][i]['constraint'].name}")
+                for constraint in self.ocp.nlp[phase_idx].g:
+                    if constraint[0]["node_index"] == -1:
+                        node_index = self._analyze_nodes(phase_idx, constraint[0])
+                    else:
+                        node_index = constraint["node_index"]
+                    if node_index == node_idx:
+                        print(f"*** Constraint: {constraint[0]['constraint'].name}")
                 print("")
 
 
@@ -353,10 +361,12 @@ class OcpToGraph(GraphAbstract):
         for node_idx in range(self.ocp.nlp[phase_idx].ns + 1):
             constraints_str = ""
             for constraint in self.ocp.nlp[phase_idx].g:
-                nb_constraint_nodes = len(constraint)
-                for i in range(nb_constraint_nodes):
-                    if constraint[i]["node_index"] == node_idx:
-                        constraints_str += self._constraint_to_str(constraint[0]["constraint"])
+                if constraint[0]["node_index"] == -1:
+                    node_index = self._analyze_nodes(phase_idx, constraint[0])
+                else:
+                    node_index = constraint[0]["node_index"]
+                if node_index == node_idx:
+                    constraints_str += self._constraint_to_str(constraint[0]["constraint"])
 
             if constraints_str != "":
                 found = False
