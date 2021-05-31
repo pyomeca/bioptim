@@ -24,7 +24,6 @@ def prepare_ocp_phase_transitions(
     with_constraints: bool,
     with_mayer: bool,
     with_lagrange: bool,
-
 ) -> OptimalControlProgram:
     """
     Parameters
