@@ -177,8 +177,8 @@ class GraphAbstract:
         return name
 
     def _analyze_nodes(self, phase_idx: int, constraint: Constraint):
-        if constraint["constraint"].node[0].value != 'all':
-            node = self.ocp.nlp[phase_idx].ns if constraint["constraint"].node[0].value == 'end' else 0
+        if constraint["constraint"].node[0].value != "all":
+            node = self.ocp.nlp[phase_idx].ns if constraint["constraint"].node[0].value == "end" else 0
         else:
             node = "all"
         return node
