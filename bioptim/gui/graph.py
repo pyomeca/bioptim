@@ -8,14 +8,52 @@ from ..optimization.parameters import Parameter
 class GraphAbstract:
     _return_line: ""
     _squared: ""
+    """
+    Methods
+    -------
+    _add_dict_to_str(self, _dict: dict)
+        Convert information contained in a dict to string
+    _constraint_to_str(self, constraint: Constraint)
+        Convert constraint information into an easy-to-read string
+    _add_extra_parameters_to_str(self, list_params: list, string: str)
+        Simple method to add extra-parameters to a string
+    _lagrange_to_str(self, objective_list: ObjectiveList)
+        Convert Lagrange objective into an easy-to-read string
+    _mayer_to_str(self, objective_list: ObjectiveList)
+        Convert Mayer objective into an easy-to-read string
+    _global_objectives_to_str(self, objective_list: ObjectiveList)
+        Convert global objectives of the ocp to string  
+    _scaling_parameter(self, parameter: Parameter)
+        Take scaling into account for display task
+    _get_parameter_function_name(self, parameter: Parameter)
+        Get parameter function name (whether or not it is a custom function)
+    _analyze_nodes(self, phase_idx: int, constraint: Constraint)
+        Determine node index
+    """
 
     def __init__(
         self,
         ocp,
     ):
+        """
+         Parameters
+         ----------
+         ocp: OptimalControlProgram
+             A reference to the ocp
+         """
+
         self.ocp = ocp
 
     def _add_dict_to_str(self, _dict: dict):
+        """
+        Convert information contained in a dict to string
+
+        Parameters
+        ----------
+        _dict: dict
+            The dict to be converted
+        """
+
         str_to_add = ""
         for d in _dict:
             str_to_add += f"{d}: {_dict[d]}{self._return_line}"
@@ -130,6 +168,15 @@ class GraphAbstract:
         return list_mayer_objectives
 
     def _global_objectives_to_str(self, objective_list: ObjectiveList):
+        """
+        Convert global objectives of the ocp to string
+
+        Parameters
+        ----------
+        objective_list: ObjectiveList
+            The list of global objectives to be converted
+        """
+
         global_objectives = ""
         global_objectives_names = []
         for list_objective in objective_list:
@@ -181,6 +228,7 @@ class GraphAbstract:
         parameter: Parameter
             The parameter to which the function is linked
         """
+
         name = ""
         if parameter.penalty_list is not None:
             if parameter.penalty_list.type.name == "CUSTOM":
@@ -190,6 +238,17 @@ class GraphAbstract:
         return name
 
     def _analyze_nodes(self, phase_idx: int, constraint: Constraint):
+        """
+        Determine node index
+
+        Parameters
+        ----------
+        phase_idx: int
+            The index of the current phase
+        constraint: Constraint
+            The constraint to which the nodes to analyze is attached
+        """
+
         if constraint["constraint"].node[0].value != "all":
             node = self.ocp.nlp[phase_idx].ns if constraint["constraint"].node[0].value == "end" else 0
         else:
@@ -203,22 +262,8 @@ class OcpToConsole(GraphAbstract):
     """
     Methods
     -------
-    print_to_console(self)
+    print(self)
         Print ocp structure in the console
-    constraint_to_str(constraint: Constraint)
-        Convert constraint information into an easy-to-read string
-    add_extra_parameters_to_str(list_constraints: list, string: str)
-        Simple method to add extra-parameters to a string
-    lagrange_to_str(objective_list: ObjectiveList)
-        Convert Lagrange objective into an easy-to-read string
-    mayer_to_str(objective_list: ObjectiveList)
-        Convert Mayer objective into an easy-to-read string
-    vector_layout(vector: list, size: int)
-        Resize vector content for display task
-    scaling_parameter(parameter: Parameter)
-        Take scaling into account for display task
-    get_parameter_function_name(parameter: Parameter)
-        Get parameter function name (whether or not it is a custom function)
     """
 
     def print(self):
@@ -279,14 +324,35 @@ class OcpToGraph(GraphAbstract):
     """
     Methods
     -------
-    print_to_graph(self)
-        Display ocp structure in a graph
-    draw_nlp_cluster(self, phase_idx: int, G: Digraph)
+     _vector_layout(self, vector: list, size: int)
+        Resize vector content for display task
+    _draw_parameter_node(self, g: Digraph.subgraph, phase_idx: int, param_idx: int, parameter: Parameter)
+        Draw the node which contains the information related to the parameters
+    _draw_nlp_node(self, g: Digraph.subgraph, phase_idx: int)
+        Draw the node which contains the information related to one of the phases (ie. the name of the model,
+        the phase duration, the number of shooting nodes, the dynamics, the ODE)
+    _draw_lagrange_node(self, g: Digraph.subgraph, phase_idx: int)
+        Draw the node which contains the information related to the Lagrange objectives
+    _draw_mayer_node(self, g: Digraph.subgraph, phase_idx: int)
+        Draw the node which contains the information related to the Mayer objectives
+    _draw_constraints_node(self, g: Digraph.subgraph, phase_idx: int)
+        Draw the node which contains the information related to the constraints
+    _draw_nlp_cluster(self, G: Digraph, phase_idx: int)
         Draw clusters for each nlp
-    draw_edges(self, phase_idx: int, G:Digraph)
+    _draw_lagrange_to_mayer_edge(self, G: Digraph, phase_idx: int)
+        Draw edge between Lagrange node and Mayer node
+    _draw_mayer_to_constraints_edge(self, G: Digraph, phase_idx: int)
+        Draw edge between Mayer node and constraints node
+    _draw_nlp_to_parameters_edges(self, G: Digraph, phase_idx: int)
+        Draw edges between nlp node and parameters
+    _draw_phase_trans_to_phaseless_edge(self, G: Digraph, phaseless_objectives: str, nb_phase: int)
+        Draw edge between phaseless objectives and phase transitions
+    _draw_edges(self, G: Digraph, phase_idx: int)
         Draw edges between each node of a cluster
-    display_phase_transitions(self, G:Digraph)
+    _draw_phase_transitions(self, G: Digraph)
         Draw a cluster including all the information about the phase transitions of the problem
+    _draw_phaseless_cluster(self, G:Digraph)
+        Draw a cluster including all the information about the phaseless objectives of the problem
     """
 
     def print(self):
@@ -309,7 +375,7 @@ class OcpToGraph(GraphAbstract):
         self._draw_phase_transitions(G)
 
         # Draw phaseless objectives
-        self._draw_phase_less_cluster(G)
+        self._draw_phaseless_cluster(G)
         self._draw_phase_trans_to_phaseless_edge(G, self._global_objectives_to_str(self.ocp.J)[0], self.ocp.n_phases)
 
         # Display graph
@@ -342,6 +408,21 @@ class OcpToGraph(GraphAbstract):
         return condensed_vector
 
     def _draw_parameter_node(self, g: Digraph.subgraph, phase_idx: int, param_idx: int, parameter: Parameter):
+        """
+        Draw the node which contains the information related to the parameters
+
+        Parameters
+        ----------
+        g: Digraph.subgraph
+            The subgraph to which the node is attached
+        phase_idx: int
+            The index of the current phase
+        param_idx: int
+            The index of the parameter
+        parameter: Parameter
+            The parameter containing all the information to display
+        """
+
         initial_guess, min_bound, max_bound = self._scaling_parameter(parameter)
         node_str = f"<u><b>{parameter.name[0].upper() + parameter.name[1:]}</b></u><br/>"
         node_str += f"<b>Size</b>: {parameter.size}<br/>"
@@ -355,6 +436,18 @@ class OcpToGraph(GraphAbstract):
         g.node(f"param_{phase_idx}{param_idx}", f"""<{node_str}>""")
 
     def _draw_nlp_node(self, g: Digraph.subgraph, phase_idx: int):
+        """
+        Draw the node which contains the information related to one of the phases (ie. the name of the model,
+        the phase duration, the number of shooting nodes, the dynamics, the ODE)
+
+        Parameters
+        ----------
+        g: Digraph.subgraph
+            The subgraph to which the node is attached
+        phase_idx: int
+            The index of the current phase
+        """
+
         node_str = f"<b>Model</b>: {self.ocp.nlp[phase_idx].model.path().filename().to_string()}.{self.ocp.nlp[phase_idx].model.path().extension().to_string()}<br/>"
         node_str += f"<b>Phase duration</b>: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"
@@ -363,11 +456,33 @@ class OcpToGraph(GraphAbstract):
         g.node(f"nlp_node_{phase_idx}", f"""<{node_str}>""")
 
     def _draw_lagrange_node(self, g: Digraph.subgraph, phase_idx: int):
+        """
+        Draw the node which contains the information related to the Lagrange objectives
+
+        Parameters
+        ----------
+        g: Digraph.subgraph
+            The subgraph to which the node is attached
+        phase_idx: int
+            The index of the current phase
+        """
+
         lagrange_str = self._lagrange_to_str(self.ocp.nlp[phase_idx].J)[0]
         node_str = f"<b>Lagrange</b><br/>{lagrange_str}"
         g.node(f"lagrange_{phase_idx}", f"""<{node_str}>""")
 
     def _draw_mayer_node(self, g: Digraph.subgraph, phase_idx: int):
+        """
+        Draw the node which contains the information related to the Mayer objectives
+
+        Parameters
+        ----------
+        g: Digraph.subgraph
+            The subgraph to which the node is attached
+        phase_idx: int
+            The index of the current phase
+        """
+
         list_mayer_objectives = self._mayer_to_str(self.ocp.nlp[phase_idx].J)
         all_mayer_str = "<b>Mayer</b><br/>"
         if len(list_mayer_objectives) != 0:
@@ -379,6 +494,17 @@ class OcpToGraph(GraphAbstract):
         g.node(f"mayer_node_{phase_idx}", f"""<{all_mayer_str}>""")
 
     def _draw_constraints_node(self, g: Digraph.subgraph, phase_idx: int):
+        """
+        Draw the node which contains the information related to the constraints
+
+        Parameters
+        ----------
+        g: Digraph.subgraph
+            The subgraph to which the node is attached
+        phase_idx: int
+            The index of the current phase
+        """
+
         list_constraints = []
 
         for constraint in self.ocp.nlp[phase_idx].g:
@@ -437,16 +563,45 @@ class OcpToGraph(GraphAbstract):
             self._draw_mayer_node(g, phase_idx)
             self._draw_constraints_node(g, phase_idx)
 
-    # Draw edge between Lagrange node and Mayer node
     def _draw_lagrange_to_mayer_edge(self, G: Digraph, phase_idx: int):
+        """
+        Draw edge between Lagrange node and Mayer node
+
+        Parameters
+        ----------
+        G: Digraph
+            The graph to be modified
+        phase_idx: int
+            The index of the current phase
+        """
+
         G.edge(f"lagrange_{phase_idx}", f"mayer_node_{phase_idx}", color="lightgrey")
 
-    # Draw edge between Mayer node and constraints node
     def _draw_mayer_to_constraints_edge(self, G: Digraph, phase_idx: int):
+        """
+        Draw edge between Mayer node and constraints node
+
+        Parameters
+        ----------
+        G: Digraph
+            The graph to be modified
+        phase_idx: int
+            The index of the current phase
+        """
         G.edge(f"mayer_node_{phase_idx}", f"constraints_node_{phase_idx}", color="lightgrey")
 
-    # Draw edges between nlp node and parameters
     def _draw_nlp_to_parameters_edges(self, G: Digraph, phase_idx: int):
+        """
+        Draw edges between nlp node and parameters
+
+        Parameters
+        ----------
+        G: Digraph
+            The graph to be modified
+        phase_idx: int
+            The index of the current phase
+        """
+
         nb_parameters = len(self.ocp.nlp[phase_idx].parameters)
         G.edge(f"nlp_node_{phase_idx}", f"param_{phase_idx}0", color="lightgrey")
         for param_idx in range(nb_parameters):
@@ -458,6 +613,19 @@ class OcpToGraph(GraphAbstract):
             G.edge(f"param_{phase_idx}0", f"lagrange_{phase_idx}", color="lightgrey")
 
     def _draw_phase_trans_to_phaseless_edge(self, G: Digraph, phaseless_objectives: str, nb_phase: int):
+        """
+        Draw edge between phaseless objectives and phase transitions
+
+        Parameters
+        ----------
+        G: Digraph
+            The graph to be modified
+        phaseless_objectives: str
+           The phaseless objectives converted to string
+        nb_phase: int
+            The number of phases
+        """
+
         if nb_phase>1 and phaseless_objectives != "":
             G.edge(f"phaseless_objectives", f"Phase #0", color="invis")
 
@@ -480,7 +648,6 @@ class OcpToGraph(GraphAbstract):
         self._draw_lagrange_to_mayer_edge(G, phase_idx)
         self._draw_mayer_to_constraints_edge(G, phase_idx)
 
-    # Display phase transitions
     def _draw_phase_transitions(self, G: Digraph):
         """
         Draw a cluster including all the information about the phase transitions of the problem
@@ -506,7 +673,16 @@ class OcpToGraph(GraphAbstract):
             title = f"<u><b>Phase transitions</b></u>"
             g.attr(label=f"<{title}>")
 
-    def _draw_phase_less_cluster(self, G:Digraph):
+    def _draw_phaseless_cluster(self, G:Digraph):
+        """
+        Draw a cluster including all the information about the phaseless objectives of the problem
+
+        Parameters
+        ----------
+        G: Digraph
+            The graph to be completed
+        """
+
         phaseless_objectives = self._global_objectives_to_str(self.ocp.J)[0]
         if phaseless_objectives != "":
             with G.subgraph(name=f"cluster_phaseless_objectives") as g:
