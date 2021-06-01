@@ -13,16 +13,12 @@ class GraphAbstract:
     -------
     _add_dict_to_str(self, _dict: dict)
         Convert information contained in a dict to string
-    _constraint_to_str(self, constraint: Constraint)
-        Convert constraint information into an easy-to-read string
     _add_extra_parameters_to_str(self, list_params: list, string: str)
         Simple method to add extra-parameters to a string
     _lagrange_to_str(self, objective_list: ObjectiveList)
         Convert Lagrange objective into an easy-to-read string
     _mayer_to_str(self, objective_list: ObjectiveList)
-        Convert Mayer objective into an easy-to-read string
-    _global_objectives_to_str(self, objective_list: ObjectiveList)
-        Convert global objectives of the ocp to string  
+        Convert Mayer objective into an easy-to-read string  
     _scaling_parameter(self, parameter: Parameter)
         Take scaling into account for display task
     _get_parameter_function_name(self, parameter: Parameter)
@@ -58,30 +54,6 @@ class GraphAbstract:
         for d in _dict:
             str_to_add += f"{d}: {_dict[d]}{self._return_line}"
         return str_to_add
-
-    def _constraint_to_str(self, constraint: Constraint):
-        """
-        Convert constraint information into an easy-to-read string
-
-        Parameters
-        ----------
-        constraint: Constraint
-            The constraint to be converted
-        """
-
-        constraint_str = ""
-        target_str = "" if constraint.sliced_target is None else f"{constraint.sliced_target}"
-        if constraint.quadratic:
-            constraint_str += f"{constraint.min_bound} ≤ "
-            constraint_str += f"({constraint.name}" if target_str != "" else f"{constraint.name}"
-            constraint_str += f" - {target_str}){self._squared}" if target_str != "" else ""
-            constraint_str += f" ≤ {constraint.max_bound}{self._return_line}"
-        else:
-            constraint_str += f"{constraint.min_bound} ≤ {constraint.name}"
-            constraint_str += f" - {target_str}" if target_str != "" else ""
-            constraint_str += f" ≤ {constraint.max_bound}{self._return_line}"
-        constraint_str += self._add_dict_to_str(constraint.params)
-        return constraint_str
 
     def _add_extra_parameters_to_str(self, list_params: list, string: str):
         """
@@ -166,28 +138,6 @@ class GraphAbstract:
                         mayer_objective.append(mayer_str)
                         list_mayer_objectives.append(mayer_objective)
         return list_mayer_objectives
-
-    def _global_objectives_to_str(self, objective_list: ObjectiveList):
-        """
-        Convert global objectives of the ocp to string
-
-        Parameters
-        ----------
-        objective_list: ObjectiveList
-            The list of global objectives to be converted
-        """
-
-        global_objectives = ""
-        global_objectives_names = []
-        for list_objective in objective_list:
-            if len(list_objective) > 0 and isinstance(list_objective[0]['objective'].type, ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange):
-                objective = list_objective[0]['objective']
-                global_objectives += f"<b>Objective:</b> {objective.name} <br/>"
-                global_objectives += f"<b>Type:</b> {objective.type} <br/>"
-                global_objectives_names += objective.name
-                global_objectives += f"{f'<b>Sliced target</b>: {objective.sliced_target} <br/>'}" if objective.sliced_target is not None else ''
-                global_objectives += f"<b>Quadratic</b>: {objective.quadratic} <br/><br/>"
-        return global_objectives, global_objectives_names
 
     def _scaling_parameter(self, parameter: Parameter):
         """
@@ -326,6 +276,10 @@ class OcpToGraph(GraphAbstract):
     -------
      _vector_layout(self, vector: list, size: int)
         Resize vector content for display task
+    _constraint_to_str(self, constraint: Constraint)
+        Convert constraint information into an easy-to-read string
+    _global_objectives_to_str(self, objective_list: ObjectiveList)
+        Convert global objectives of the ocp to string
     _draw_parameter_node(self, g: Digraph.subgraph, phase_idx: int, param_idx: int, parameter: Parameter)
         Draw the node which contains the information related to the parameters
     _draw_nlp_node(self, g: Digraph.subgraph, phase_idx: int)
@@ -402,10 +356,50 @@ class OcpToGraph(GraphAbstract):
                 if count == 5:
                     condensed_vector += f"... <br/>... "
                     count = 0
-            condensed_vector += "]<sup>T</sup>"
+            condensed_vector += "]"
         else:
             condensed_vector = f"{float(vector[0])}"
         return condensed_vector
+
+    def _constraint_to_str(self, constraint: Constraint):
+        """
+        Convert constraint information into an easy-to-read string
+
+        Parameters
+        ----------
+        constraint: Constraint
+            The constraint to be converted
+        """
+
+        constraint_str = ""
+        constraint_str += f"{constraint.name}<br/>"
+        constraint_str += f"Min bound: {constraint.min_bound}<br/>"
+        constraint_str += f"Max bound: {constraint.max_bound}<br/>"
+        constraint_str += f"{f'Target: {constraint.sliced_target} <br/><br/>'}" if constraint.sliced_target is not None else ''
+        constraint_str += self._add_dict_to_str(constraint.params)
+        return constraint_str
+
+    def _global_objectives_to_str(self, objective_list: ObjectiveList):
+        """
+        Convert global objectives of the ocp to string
+
+        Parameters
+        ----------
+        objective_list: ObjectiveList
+            The list of global objectives to be converted
+        """
+
+        global_objectives = ""
+        global_objectives_names = []
+        for list_objective in objective_list:
+            if len(list_objective) > 0 and isinstance(list_objective[0]['objective'].type, ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange):
+                objective = list_objective[0]['objective']
+                global_objectives += f"<b>Objective:</b> {objective.name} <br/>"
+                global_objectives += f"<b>Type:</b> {objective.type} <br/>"
+                global_objectives_names += objective.name
+                global_objectives += f"{f'<b>Target</b>: {objective.sliced_target} <br/>'}" if objective.sliced_target is not None else ''
+                global_objectives += f"<b>Quadratic</b>: {objective.quadratic} <br/><br/>"
+        return global_objectives, global_objectives_names
 
     def _draw_parameter_node(self, g: Digraph.subgraph, phase_idx: int, param_idx: int, parameter: Parameter):
         """
@@ -431,7 +425,7 @@ class OcpToGraph(GraphAbstract):
             node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
             node_str += f"<b>Min bound</b>: {self._vector_layout(min_bound, parameter.size)} <br/>"
             node_str += f"<b>Max bound</b>: {self._vector_layout(max_bound, parameter.size)} <br/>"
-            node_str += f"{f'<b>Sliced target</b>: {parameter.penalty_list.sliced_target} <br/>'}" if parameter.penalty_list.sliced_target is not None else ''
+            node_str += f"{f'<b>Target</b>: {parameter.penalty_list.sliced_target} <br/>'}" if parameter.penalty_list.sliced_target is not None else ''
             node_str += f"<b>Quadratic</b>: {parameter.penalty_list.quadratic} <br/>"
         g.node(f"param_{phase_idx}{param_idx}", f"""<{node_str}>""")
 
@@ -621,7 +615,7 @@ class OcpToGraph(GraphAbstract):
         G: Digraph
             The graph to be modified
         phaseless_objectives: str
-           The phaseless objectives converted to string
+            The phaseless objectives converted to string
         nb_phase: int
             The number of phases
         """
