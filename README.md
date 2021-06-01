@@ -1280,6 +1280,7 @@ The accepted values are:
 - START: The first node
 - MID: The middle node
 - INTERMEDIATES: All the nodes but the first and the last one
+- PENULTIMATE: The second to last node of the phase
 - END: The last node
 - ALL: All the nodes
 - TRANSITION: The last node of a phase and the first node of the next phase

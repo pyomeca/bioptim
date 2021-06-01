@@ -1244,6 +1244,11 @@ class PenaltyFunctionAbstract:
                     x.append(nlp.X[i])
                     u.append(nlp.U[i])
 
+            elif node == Node.PENULTIMATE:
+                t.append(nlp.ns - 1)
+                x.append(nlp.X[-2])
+                u.append(nlp.U[-1])
+
             elif node == Node.END:
                 t.append(nlp.ns)
                 x.append(nlp.X[nlp.ns])
