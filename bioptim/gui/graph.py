@@ -1,7 +1,7 @@
 from graphviz import Digraph
 
 from ..limits.constraints import Constraint
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..optimization.parameters import Parameter
 
 
@@ -128,6 +128,19 @@ class GraphAbstract:
                         mayer_objective.append(mayer_str)
                         list_mayer_objectives.append(mayer_objective)
         return list_mayer_objectives
+
+    def _global_objectives_to_str(self, objective_list: ObjectiveList):
+        global_objectives = ""
+        global_objectives_names = []
+        for list_objective in objective_list:
+            if len(list_objective) > 0 and isinstance(list_objective[0]['objective'].type, ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange):
+                objective = list_objective[0]['objective']
+                global_objectives += f"<b>Objective:</b> {objective.name} <br/>"
+                global_objectives += f"<b>Type:</b> {objective.type} <br/>"
+                global_objectives_names += objective.name
+                global_objectives += f"{f'<b>Sliced target</b>: {objective.sliced_target} <br/>'}" if objective.sliced_target is not None else ''
+                global_objectives += f"<b>Quadratic</b>: {objective.quadratic} <br/><br/>"
+        return global_objectives, global_objectives_names
 
     def _scaling_parameter(self, parameter: Parameter):
         """
@@ -295,6 +308,10 @@ class OcpToGraph(GraphAbstract):
         # Draw phase_transitions
         self._draw_phase_transitions(G)
 
+        # Draw phaseless objectives
+        self._draw_phase_less_cluster(G)
+        self._draw_phase_trans_to_phaseless_edge(G, self._global_objectives_to_str(self.ocp.J)[0], self.ocp.n_phases)
+
         # Display graph
         G.view()
 
@@ -329,10 +346,12 @@ class OcpToGraph(GraphAbstract):
         node_str = f"<u><b>{parameter.name[0].upper() + parameter.name[1:]}</b></u><br/>"
         node_str += f"<b>Size</b>: {parameter.size}<br/>"
         node_str += f"<b>Initial guesses</b>: {self._vector_layout(initial_guess, parameter.size)}<br/><br/>"
-        node_str += f"{self._vector_layout(min_bound, parameter.size)} ≤<br/>"
-        node_str += f"{'(' if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ''}{self._get_parameter_function_name(parameter)} -<br/>"
-        node_str += f"{parameter.penalty_list.sliced_target if parameter.penalty_list is not None else ''}{f'){self._squared}' if parameter.penalty_list is not None and parameter.penalty_list.quadratic else ''} ≤<br/>"
-        node_str += f"{self._vector_layout(max_bound, parameter.size)}"
+        if parameter.penalty_list is not None:
+            node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
+            node_str += f"<b>Min bound</b>: {self._vector_layout(min_bound, parameter.size)} <br/>"
+            node_str += f"<b>Max bound</b>: {self._vector_layout(max_bound, parameter.size)} <br/>"
+            node_str += f"{f'<b>Sliced target</b>: {parameter.penalty_list.sliced_target} <br/>'}" if parameter.penalty_list.sliced_target is not None else ''
+            node_str += f"<b>Quadratic</b>: {parameter.penalty_list.quadratic} <br/>"
         g.node(f"param_{phase_idx}{param_idx}", f"""<{node_str}>""")
 
     def _draw_nlp_node(self, g: Digraph.subgraph, phase_idx: int):
@@ -438,6 +457,10 @@ class OcpToGraph(GraphAbstract):
         else:
             G.edge(f"param_{phase_idx}0", f"lagrange_{phase_idx}", color="lightgrey")
 
+    def _draw_phase_trans_to_phaseless_edge(self, G: Digraph, phaseless_objectives: str, nb_phase: int):
+        if nb_phase>1 and phaseless_objectives != "":
+            G.edge(f"phaseless_objectives", f"Phase #0", color="invis")
+
     def _draw_edges(self, G: Digraph, phase_idx: int):
         """
         Draw edges between each node of a cluster
@@ -482,3 +505,14 @@ class OcpToGraph(GraphAbstract):
                     )
             title = f"<u><b>Phase transitions</b></u>"
             g.attr(label=f"<{title}>")
+
+    def _draw_phase_less_cluster(self, G:Digraph):
+        phaseless_objectives = self._global_objectives_to_str(self.ocp.J)[0]
+        if phaseless_objectives != "":
+            with G.subgraph(name=f"cluster_phaseless_objectives") as g:
+                g.attr(style="filled", color="lightgrey")
+                nlp_title = f"<u><b>Phaseless objectives</b></u>"
+                g.attr(label=f"<{nlp_title}>")
+                g.node_attr.update(style="filled", color="white")
+                g.node(f"phaseless_objectives", f"""<{phaseless_objectives}>""")
+            G.edge("OCP", f"phaseless_objectives", color="invis")
