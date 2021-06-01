@@ -32,11 +32,11 @@ class GraphAbstract:
         ocp,
     ):
         """
-         Parameters
-         ----------
-         ocp: OptimalControlProgram
-             A reference to the ocp
-         """
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        """
 
         self.ocp = ocp
 
@@ -375,7 +375,9 @@ class OcpToGraph(GraphAbstract):
         constraint_str += f"{constraint.name}<br/>"
         constraint_str += f"Min bound: {constraint.min_bound}<br/>"
         constraint_str += f"Max bound: {constraint.max_bound}<br/>"
-        constraint_str += f"{f'Target: {constraint.sliced_target} <br/><br/>'}" if constraint.sliced_target is not None else ''
+        constraint_str += (
+            f"{f'Target: {constraint.sliced_target} <br/><br/>'}" if constraint.sliced_target is not None else ""
+        )
         constraint_str += self._add_dict_to_str(constraint.params)
         return constraint_str
 
@@ -392,12 +394,18 @@ class OcpToGraph(GraphAbstract):
         global_objectives = ""
         global_objectives_names = []
         for list_objective in objective_list:
-            if len(list_objective) > 0 and isinstance(list_objective[0]['objective'].type, ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange):
-                objective = list_objective[0]['objective']
+            if len(list_objective) > 0 and isinstance(
+                list_objective[0]["objective"].type, ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange
+            ):
+                objective = list_objective[0]["objective"]
                 global_objectives += f"<b>Objective:</b> {objective.name} <br/>"
                 global_objectives += f"<b>Type:</b> {objective.type} <br/>"
                 global_objectives_names += objective.name
-                global_objectives += f"{f'<b>Target</b>: {objective.sliced_target} <br/>'}" if objective.sliced_target is not None else ''
+                global_objectives += (
+                    f"{f'<b>Target</b>: {objective.sliced_target} <br/>'}"
+                    if objective.sliced_target is not None
+                    else ""
+                )
                 global_objectives += f"<b>Quadratic</b>: {objective.quadratic} <br/><br/>"
         return global_objectives, global_objectives_names
 
@@ -425,7 +433,11 @@ class OcpToGraph(GraphAbstract):
             node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
             node_str += f"<b>Min bound</b>: {self._vector_layout(min_bound, parameter.size)} <br/>"
             node_str += f"<b>Max bound</b>: {self._vector_layout(max_bound, parameter.size)} <br/>"
-            node_str += f"{f'<b>Target</b>: {parameter.penalty_list.sliced_target} <br/>'}" if parameter.penalty_list.sliced_target is not None else ''
+            node_str += (
+                f"{f'<b>Target</b>: {parameter.penalty_list.sliced_target} <br/>'}"
+                if parameter.penalty_list.sliced_target is not None
+                else ""
+            )
             node_str += f"<b>Quadratic</b>: {parameter.penalty_list.quadratic} <br/>"
         g.node(f"param_{phase_idx}{param_idx}", f"""<{node_str}>""")
 
@@ -620,7 +632,7 @@ class OcpToGraph(GraphAbstract):
             The number of phases
         """
 
-        if nb_phase>1 and phaseless_objectives != "":
+        if nb_phase > 1 and phaseless_objectives != "":
             G.edge(f"phaseless_objectives", f"Phase #0", color="invis")
 
     def _draw_edges(self, G: Digraph, phase_idx: int):
@@ -667,7 +679,7 @@ class OcpToGraph(GraphAbstract):
             title = f"<u><b>Phase transitions</b></u>"
             g.attr(label=f"<{title}>")
 
-    def _draw_phaseless_cluster(self, G:Digraph):
+    def _draw_phaseless_cluster(self, G: Digraph):
         """
         Draw a cluster including all the information about the phaseless objectives of the problem
 
