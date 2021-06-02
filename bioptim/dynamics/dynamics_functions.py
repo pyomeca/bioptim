@@ -12,6 +12,8 @@ class DynamicsFunctions:
         Interface to custom dynamic function provided by the user
     forward_dynamics_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by joint torques, optional external forces can be declared.
+    forward_dynamics_torque_derivative_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by joint torques derivatives, optional external forces can be declared.
     forward_dynamics_torque_driven_with_contact(
             states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by joint torques with contact constraints.
@@ -53,6 +55,9 @@ class DynamicsFunctions:
         Contact forces of a forward dynamics driven by muscle excitations and joint torques with contact constraints.
     dispatch_q_qdot_tau_data(states: MX.sym, controls: MX.sym, nlp: NonLinearProgram) -> tuple[MX.sym, MX.sym, MX.sym]
         Extracting q, qdot and tau from states and controls, assuming state, state and control, respectively.
+    dispatch_q_qdot_tau_taudot_data(states: MX.sym, controls: MX.sym, nlp: NonLinearProgram) -> tuple[MX.sym, MX.sym, MX.sym]
+        Extracting q, qdot, tau and taudot from states and controls, assuming state, state, state and control,
+        respectively.
     apply_parameters(parameters: MX.sym, nlp: NonLinearProgram)
         Apply the parameter variables to the model. This should be called before calling the dynamics
     """
@@ -119,6 +124,47 @@ class DynamicsFunctions:
             qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
             qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
             dxdt = vertcat(qdot_reduced, qddot_reduced)
+
+        return dxdt
+
+    @staticmethod
+    def forward_dynamics_torque_derivative_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+        """
+        Forward dynamics driven by joint torques, optional external forces can be declared.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
+        """
+
+        DynamicsFunctions.apply_parameters(parameters, nlp)
+        q, qdot, tau, taudot = DynamicsFunctions.dispatch_q_qdot_tau_taudot_data(states, controls, nlp)
+
+        qdot_reduced = nlp.mapping["q"].to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
+        taudot_reduced = nlp.mapping["taudot"].to_first.map(taudot)
+
+        if nlp.external_forces:
+            dxdt = MX(nlp.nx, nlp.ns)
+            for i, f_ext in enumerate(nlp.external_forces):
+                qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
+                qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
+                dxdt[:, i] = vertcat(qdot_reduced, qddot_reduced, taudot_reduced)
+        else:
+            qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
+            qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
+            dxdt = vertcat(qdot_reduced, qddot_reduced, taudot_reduced)
 
         return dxdt
 
@@ -686,6 +732,40 @@ class DynamicsFunctions:
         q, qdot = DynamicsFunctions.dispatch_q_qdot_data(states, controls, nlp)
         tau = nlp.mapping["tau"].to_second.map(controls[: nlp.shape["tau"]])
         return q, qdot, tau
+
+    @staticmethod
+    def dispatch_q_qdot_tau_taudot_data(states: MX.sym, controls: MX.sym, nlp) -> tuple:
+        """
+        Extracting q, qdot, tau, taudot, from states and controls, assuming state, state and control, respectively.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            q, the generalized coordinates
+        MX.sym
+            qdot, the generalized velocities
+        MX.sym
+            tau, the generalized torques
+        MX.sym
+            taudot, the generalized torque derivatives
+        """
+
+        nq = nlp.mapping["q"].to_first.len
+        q = nlp.mapping["q"].to_second.map(states[:nq])
+        qdot = nlp.mapping["qdot"].to_second.map(states[nq:2*nq])
+        tau = nlp.mapping["tau"].to_second.map(states[2*nq:])
+        taudot = nlp.mapping["taudot"].to_second.map(controls[:nlp.shape["taudot"]])
+
+        return q, qdot, tau, taudot
 
     @staticmethod
     def apply_parameters(parameters: MX.sym, nlp):

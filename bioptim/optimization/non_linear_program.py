@@ -145,6 +145,7 @@ class NonLinearProgram:
         self.qdot = None
         self.shape = {}
         self.tau = None
+        self.taudot = None
         self.t0 = None
         self.tf = None
         self.u = None
@@ -168,7 +169,7 @@ class NonLinearProgram:
             The type of casadi variable
 
         """
-        self.shape = {"q": 0, "qdot": 0, "tau": 0, "muscle": 0}
+        self.shape = {"q": 0, "qdot": 0, "tau": 0, "taudot": 0, "muscle": 0}
         self.plot = {}
         self.var_states = {}
         self.var_controls = {}

@@ -135,6 +135,7 @@ class OptimalControlProgram:
         q_mapping: Union[BiMapping, list, tuple] = None,
         qdot_mapping: Union[BiMapping, list, tuple] = None,
         tau_mapping: Union[BiMapping, list, tuple] = None,
+        taudot_mapping: Union[BiMapping, list, tuple] = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = PhaseTransitionList(),
         n_threads: int = 1,
@@ -179,6 +180,8 @@ class OptimalControlProgram:
             The mapping to apply on qdot
         tau_mapping: BiMapping
             The mapping to apply on tau
+        taudot_mapping: BiMapping
+            The mapping to apply on taudot
         plot_mappings: Mapping
             The mapping to apply on the plots
         phase_transitions: PhaseTransitionList
@@ -228,6 +231,7 @@ class OptimalControlProgram:
             "q_mapping": q_mapping,
             "qdot_mapping": qdot_mapping,
             "tau_mapping": tau_mapping,
+            "taudot_mapping": taudot_mapping,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "n_threads": n_threads,
@@ -347,6 +351,7 @@ class OptimalControlProgram:
         NLP.add(self, "q", q_mapping, q_mapping is None, BiMapping, name="mapping")
         NLP.add(self, "qdot", qdot_mapping, qdot_mapping is None, BiMapping, name="mapping")
         NLP.add(self, "tau", tau_mapping, tau_mapping is None, BiMapping, name="mapping")
+        NLP.add(self, "taudot", taudot_mapping, taudot_mapping is None, BiMapping, name="mapping")
         plot_mappings = plot_mappings if plot_mappings is not None else {}
         reshaped_plot_mappings = []
         for i in range(self.n_phases):

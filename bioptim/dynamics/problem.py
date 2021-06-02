@@ -69,6 +69,28 @@ class Problem:
             Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven)
 
     @staticmethod
+    def torque_derivative_driven(ocp, nlp):
+        """
+        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, True, False)
+        Problem.configure_taudot(nlp, False, True)
+
+        if nlp.dynamics_type.dynamic_function:
+            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+        else:
+            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_derivative_driven)
+
+    @staticmethod
     def torque_driven_with_contact(ocp, nlp):
         """
         Configure the dynamics for a torque driven with contact program (states are q and qdot, controls are tau)
@@ -391,7 +413,7 @@ class Problem:
         if as_states:
             nlp.x = vertcat(nlp.x, qdot)
             nlp.var_states["qdot"] = nlp.shape["qdot"]
-            qdot_bounds = nlp.x_bounds[nlp.shape["q"] :]
+            qdot_bounds = nlp.x_bounds[nlp.shape["q"]:]
 
             nlp.plot["qdot"] = CustomPlot(
                 lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["qdot"]],
@@ -465,7 +487,16 @@ class Problem:
         if as_states:
             nlp.x = vertcat(nlp.x, all_tau[0])
             nlp.var_states["tau"] = nlp.shape["tau"]
-            # Add plot if it happens
+
+            tau_bounds = nlp.x_bounds[nlp.shape["q"] + nlp.shape["qdot"]: nlp.shape["tau"]]  # tau as a state with q
+            # and qdot
+            nq_qdot = nlp.shape["q"] + nlp.shape["qdot"]
+            nlp.plot["tau"] = CustomPlot(
+                lambda x, u, p: x[nq_qdot: nq_qdot + nlp.shape["tau"]],
+                plot_type=PlotType.INTEGRATED,
+                legend=legend_tau,
+                bounds=tau_bounds,
+            )
 
         if as_controls:
             nlp.u = vertcat(nlp.u, horzcat(*all_tau))
@@ -480,6 +511,65 @@ class Problem:
                 CustomPlot(
                     lambda x, u, p: u[: nlp.shape["tau"]], plot_type=plot_type, legend=legend_tau, bounds=tau_bounds
                 ),
+            )
+
+        nlp.nx = nlp.x.rows()
+        nlp.nu = nlp.u.rows()
+
+    @staticmethod
+    def configure_taudot(nlp, as_states: bool, as_controls: bool):
+        """
+        Configure the generalized forces
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized forces should be a state
+        as_controls: bool
+            If the generalized forces should be a control
+        """
+
+        if nlp.mapping["taudot"] is None:
+            nlp.mapping["taudot"] = BiMapping(
+                range(nlp.model.nbGeneralizedTorque()), range(nlp.model.nbGeneralizedTorque())
+            )
+
+        dof_names = nlp.model.nameDof()
+
+        n_col = nlp.control_type.value
+        taudot_mx = MX()
+        all_taudot = [nlp.cx() for _ in range(n_col)]  # cx ?
+
+        for i in nlp.mapping["taudot"].to_first.map_idx:
+            for j in range(len(all_taudot)):
+                all_taudot[j] = vertcat(all_taudot[j], nlp.cx.sym(f"Taudot_{dof_names[i].to_string()}_{j}", 1, 1))
+        for i, _ in enumerate(nlp.mapping["q"].to_second.map_idx):
+            taudot_mx = vertcat(taudot_mx, MX.sym("Taudot_" + dof_names[i].to_string(), 1, 1))
+
+        nlp.shape["taudot"] = nlp.mapping["taudot"].to_first.len
+        legend_taudot = ["taudot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["taudot"].to_first.map_idx]
+        nlp.taudot = taudot_mx
+
+        if as_states:
+            nlp.x = vertcat(nlp.x, all_taudot[0])
+            nlp.var_states["taudot"] = nlp.shape["taudot"]
+            # Add plot if it happens, not sure it would
+
+        if as_controls:
+            nlp.u = vertcat(nlp.u, horzcat(*all_taudot))
+            nlp.var_controls["taudot"] = nlp.shape["taudot"]
+            taudot_bounds = nlp.u_bounds[:nlp.shape["taudot"]]  # taudot as the only control.
+
+            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                plot_type = PlotType.PLOT
+            else:
+                plot_type = PlotType.STEP
+            nlp.plot["taudot"] = (
+                CustomPlot(
+                    lambda x, u, p: u[:nlp.shape["taudot"]], plot_type=plot_type, legend=legend_taudot,
+                    bounds=taudot_bounds),
             )
 
         nlp.nx = nlp.x.rows()
@@ -637,5 +727,5 @@ class Problem:
             phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
 
         nlp.plot["contact_forces"] = CustomPlot(
-            nlp.contact_forces_func, axes_idx=phase_mappings, legend=all_contact_names
+            nlp.contact_forces_func, plot_type=PlotType.INTEGRATED, axes_idx=phase_mappings, legend=all_contact_names
         )
