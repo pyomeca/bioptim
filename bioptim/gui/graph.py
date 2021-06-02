@@ -560,7 +560,12 @@ class OcpToGraph(GraphAbstract):
                 node_str = "<b>Parameters</b><br/> No parameter set"
                 g.node(f"param_{phase_idx}0", f"""<{node_str}>""")
 
-            if len(self.ocp.nlp[phase_idx].J) > 0:
+            only_mayer = True
+            for objective in self.ocp.nlp[phase_idx].J:
+                if isinstance(objective[0]['objective'].type, ObjectiveFcn.Lagrange):
+                    only_mayer = False
+
+            if len(self.ocp.nlp[phase_idx].J) > 0 and not only_mayer:
                 self._draw_lagrange_node(g, phase_idx)
             else:
                 node_str = "<b>Lagrange</b><br/> No Lagrange set"

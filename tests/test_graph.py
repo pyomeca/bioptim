@@ -86,6 +86,8 @@ def prepare_ocp_phase_transitions(
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=1)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=3)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, weight=0, phase=3, axis=None)
+
     if with_mayer:
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, phase=0, node=1)
