@@ -1245,6 +1245,8 @@ class PenaltyFunctionAbstract:
                     u.append(nlp.U[i])
 
             elif node == Node.PENULTIMATE:
+                if nlp.ns < 2:
+                    raise (ValueError("Number of shooting points must be superior than 1, at least 2"))
                 t.append(nlp.ns - 1)
                 x.append(nlp.X[-2])
                 u.append(nlp.U[-1])
