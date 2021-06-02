@@ -114,6 +114,30 @@ class Problem:
         )
 
     @staticmethod
+    def torque_derivative_driven_with_contact(ocp, nlp):
+        """
+        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        Problem.configure_q_qdot(nlp, True, False)
+        Problem.configure_tau(nlp, True, False)
+        Problem.configure_taudot(nlp, False, True)
+        if nlp.dynamics_type.dynamic_function:
+            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+        else:
+            Problem.configure_dynamics_function(
+                ocp, nlp, DynamicsFunctions.forward_dynamics_torque_derivative_driven_with_contact)
+        Problem.configure_contact(
+            ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact_for_torque_derivative_driven_problem
+        )
+
+    @staticmethod
     def torque_activations_driven(ocp, nlp):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).

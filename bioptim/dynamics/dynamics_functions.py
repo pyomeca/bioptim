@@ -17,6 +17,12 @@ class DynamicsFunctions:
     forward_dynamics_torque_driven_with_contact(
             states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Forward dynamics driven by joint torques with contact constraints.
+    forward_dynamics_torque_derivative_driven_with_contact(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Forward dynamics driven by joint torque derivatives with contact constraints.
+    forces_from_forward_dynamics_with_contact_for_torque_driven_problem(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+        Contact forces of a forward dynamics driven by joint torque derivatives with contact constraints.
     forces_from_forward_dynamics_with_contact_for_torque_driven_problem(
             states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -201,6 +207,40 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
+    def forward_dynamics_torque_derivative_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+        """
+        Forward dynamics driven by joint torques with contact constraints.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
+        """
+
+        DynamicsFunctions.apply_parameters(parameters, nlp)
+        q, qdot, tau, taudot = DynamicsFunctions.dispatch_q_qdot_tau_taudot_data(states, controls, nlp)
+
+        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau).to_mx()
+
+        qdot = nlp.model.computeQdot(q, qdot).to_mx()
+        qdot_reduced = nlp.mapping["q"].to_first.map(qdot)
+        qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
+        taudot_reduced = nlp.mapping["taudot"].to_first.map(taudot)
+
+        return vertcat(qdot_reduced, qddot_reduced, taudot_reduced)
+
+    @staticmethod
     def forces_from_forward_dynamics_with_contact_for_torque_driven_problem(
         states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
     ) -> MX:
@@ -226,6 +266,38 @@ class DynamicsFunctions:
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
+
+        cs = nlp.model.getConstraints()
+        biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau, cs)
+
+        return cs.getForce().to_mx()
+
+    @staticmethod
+    def forces_from_forward_dynamics_with_contact_for_torque_derivative_driven_problem(
+            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
+    ) -> MX:
+        """
+        Contact forces of a forward dynamics driven by joint torques with contact constraints.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The contact forces that ensure no acceleration at these contact points
+        """
+
+        DynamicsFunctions.apply_parameters(parameters, nlp)
+        q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_taudot_data(states, controls, nlp)
 
         cs = nlp.model.getConstraints()
         biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau, cs)
@@ -736,7 +808,8 @@ class DynamicsFunctions:
     @staticmethod
     def dispatch_q_qdot_tau_taudot_data(states: MX.sym, controls: MX.sym, nlp) -> tuple:
         """
-        Extracting q, qdot, tau, taudot, from states and controls, assuming state, state and control, respectively.
+        Extracting q, qdot, tau, taudot, from states and controls, assuming state, state, state and control,
+         respectively.
 
         Parameters
         ----------

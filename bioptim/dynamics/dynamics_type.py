@@ -14,7 +14,7 @@ class DynamicsFcn(Enum):
     TORQUE_DRIVEN_WITH_CONTACT = (Problem.torque_driven_with_contact,)
 
     TORQUE_DERIVATIVE_DRIVEN = (Problem.torque_derivative_driven,)
-    # TORQUE_DERIVATIVE_DRIVEN_WITH_CONTACT = (Problem.torque_derivative_driven_with_contact,) TODO
+    TORQUE_DERIVATIVE_DRIVEN_WITH_CONTACT = (Problem.torque_derivative_driven_with_contact,)
 
     TORQUE_ACTIVATIONS_DRIVEN = (Problem.torque_activations_driven,)
     TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT = (Problem.torque_activations_driven_with_contact,)
