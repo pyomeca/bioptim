@@ -11,6 +11,8 @@ class GraphAbstract:
     """
     Methods
     -------
+    _vector_layout(self, vector: list, size: int)
+        Resize vector content for display task
     _add_dict_to_str(self, _dict: dict)
         Convert information contained in a dict to string
     _add_extra_parameters_to_str(self, list_params: list, string: str)
@@ -39,6 +41,32 @@ class GraphAbstract:
         """
 
         self.ocp = ocp
+
+    def _vector_layout(self, vector: list, size: int, param: bool = False):
+        """
+        Resize vector content for display task
+
+        Parameters
+        ----------
+        vector: list
+            The vector to be condensed
+        size: int
+            The size of the vector
+        """
+
+        if size > 1:
+            condensed_vector = "[ "
+            count = 0
+            for var in vector:
+                count += 1
+                condensed_vector += f"{float(var)} "
+                if count == 5:
+                    condensed_vector += f"... {self._return_line}... "
+                    count = 0
+            condensed_vector += "]"
+        else:
+            condensed_vector = f"{vector}" if param else f"{float(vector[0])}"
+        return condensed_vector
 
     def _add_dict_to_str(self, _dict: dict):
         """
@@ -69,7 +97,6 @@ class GraphAbstract:
 
         for param in list_params:
             string += f"{param}: {list_params[param]}{self._return_line}"
-        string += f"{self._return_line}"
         return string
 
     def _lagrange_to_str(self, objective_list: ObjectiveList):
@@ -90,15 +117,16 @@ class GraphAbstract:
                 if isinstance(obj.type, ObjectiveFcn.Lagrange):
                     if obj.sliced_target is not None:
                         if obj.quadratic:
-                            lagrange_str += f"({obj.name} - {obj.sliced_target}){self._squared}{self._return_line}"
+                            lagrange_str += f"({obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}){self._squared}{self._return_line}"
                         else:
-                            lagrange_str += f"{obj.name} - {obj.sliced_target}{self._return_line}"
+                            lagrange_str += f"{obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}{self._return_line}"
                     else:
                         if obj.quadratic:
                             lagrange_str += f"({obj.name}){self._squared}{self._return_line}"
                         else:
                             lagrange_str += f"{obj.name}{self._return_line}"
                     lagrange_str = self._add_extra_parameters_to_str(obj.params, lagrange_str)
+                    lagrange_str += f"{self._return_line}"
                     objective_names.append(obj.name)
         return lagrange_str, objective_names
 
@@ -121,14 +149,14 @@ class GraphAbstract:
                     mayer_objective = [obj.node[0]]
                     if obj.sliced_target is not None:
                         if obj.quadratic:
-                            mayer_str += f"({obj.name} - {obj.sliced_target}){self._squared}"
+                            mayer_str += f"({obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}){self._squared}{self._return_line}"
                         else:
-                            mayer_str += f"{obj.name} - {obj.sliced_target}"
+                            mayer_str += f"{obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}{self._return_line}"
                     else:
                         if obj.quadratic:
-                            mayer_str += f"({obj.name}){self._squared}"
+                            mayer_str += f"({obj.name}){self._squared}{self._return_line}"
                         else:
-                            mayer_str += f"{obj.name}"
+                            mayer_str += f"{obj.name}{self._return_line}"
                     mayer_str = self._add_extra_parameters_to_str(obj.params, mayer_str)
                     found = False
                     for mayer in list_mayer_objectives:
@@ -181,7 +209,7 @@ class GraphAbstract:
 
         name = ""
         if parameter.penalty_list is not None:
-            if parameter.penalty_list.type.name == "CUSTOM":
+            if parameter.penalty_list.type is not None and parameter.penalty_list.type.name == "CUSTOM":
                 name = parameter.penalty_list.custom_function.__name__
             else:
                 name = parameter.penalty_list.name
@@ -199,10 +227,13 @@ class GraphAbstract:
             The constraint to which the nodes to analyze is attached
         """
 
-        if constraint["constraint"].node[0].value != "all":
-            node = self.ocp.nlp[phase_idx].ns if constraint["constraint"].node[0].value == "end" else 0
+        if len(constraint["constraint"].node) > 1:
+            if constraint["constraint"].node[0].value != "all":
+                node = self.ocp.nlp[phase_idx].ns if constraint["constraint"].node[0].value == "end" else 0
+            else:
+                node = "all"
         else:
-            node = "all"
+            node = constraint["constraint"].node[0]
         return node
 
 
@@ -259,10 +290,7 @@ class OcpToConsole(GraphAbstract):
                     if mayer[0] == node_idx:
                         print(mayer[1])
                 for constraint in self.ocp.nlp[phase_idx].g:
-                    if constraint[0]["node_index"] == -1:
-                        node_index = self._analyze_nodes(phase_idx, constraint[0])
-                    else:
-                        node_index = constraint["node_index"]
+                    node_index = self._analyze_nodes(phase_idx, constraint[0])
                     if node_index == node_idx:
                         print(f"*** Constraint: {constraint[0]['constraint'].name}")
                 print("")
@@ -274,8 +302,6 @@ class OcpToGraph(GraphAbstract):
     """
     Methods
     -------
-     _vector_layout(self, vector: list, size: int)
-        Resize vector content for display task
     _constraint_to_str(self, constraint: Constraint)
         Convert constraint information into an easy-to-read string
     _global_objectives_to_str(self, objective_list: ObjectiveList)
@@ -335,32 +361,6 @@ class OcpToGraph(GraphAbstract):
         # Display graph
         G.view()
 
-    def _vector_layout(self, vector: list, size: int):
-        """
-        Resize vector content for display task
-
-        Parameters
-        ----------
-        vector: list
-            The vector to be condensed
-        size: int
-            The size of the vector
-        """
-
-        if size > 1:
-            condensed_vector = "[ "
-            count = 0
-            for var in vector:
-                count += 1
-                condensed_vector += f"{float(var)} "
-                if count == 5:
-                    condensed_vector += f"... <br/>... "
-                    count = 0
-            condensed_vector += "]"
-        else:
-            condensed_vector = f"{float(vector[0])}"
-        return condensed_vector
-
     def _constraint_to_str(self, constraint: Constraint):
         """
         Convert constraint information into an easy-to-read string
@@ -376,7 +376,9 @@ class OcpToGraph(GraphAbstract):
         constraint_str += f"Min bound: {constraint.min_bound}<br/>"
         constraint_str += f"Max bound: {constraint.max_bound}<br/>"
         constraint_str += (
-            f"{f'Target: {constraint.sliced_target} <br/><br/>'}" if constraint.sliced_target is not None else ""
+            f"{f'Target: {self._vector_layout(constraint.sliced_target, len(constraint.sliced_target))} <br/><br/>'}"
+            if constraint.sliced_target is not None
+            else ""
         )
         constraint_str += self._add_dict_to_str(constraint.params)
         return constraint_str
@@ -402,7 +404,7 @@ class OcpToGraph(GraphAbstract):
                 global_objectives += f"<b>Type:</b> {objective.type} <br/>"
                 global_objectives_names += objective.name
                 global_objectives += (
-                    f"{f'<b>Target</b>: {objective.sliced_target} <br/>'}"
+                    f"{f'<b>Target</b>: {self.vector_layout(objective.sliced_target)} <br/>'}"
                     if objective.sliced_target is not None
                     else ""
                 )
@@ -434,7 +436,7 @@ class OcpToGraph(GraphAbstract):
             node_str += f"<b>Min bound</b>: {self._vector_layout(min_bound, parameter.size)} <br/>"
             node_str += f"<b>Max bound</b>: {self._vector_layout(max_bound, parameter.size)} <br/>"
             node_str += (
-                f"{f'<b>Target</b>: {parameter.penalty_list.sliced_target} <br/>'}"
+                f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.sliced_target, parameter.size, param=True)} <br/>'}"
                 if parameter.penalty_list.sliced_target is not None
                 else ""
             )
@@ -515,10 +517,7 @@ class OcpToGraph(GraphAbstract):
 
         for constraint in self.ocp.nlp[phase_idx].g:
             constraints_str = ""
-            if constraint[0]["node_index"] == -1:
-                node_index = self._analyze_nodes(phase_idx, constraint[0])
-            else:
-                node_index = constraint[0]["node_index"]
+            node_index = self._analyze_nodes(phase_idx, constraint[0])
             constraints_str += self._constraint_to_str(constraint[0]["constraint"])
             list_constraints.append([constraints_str, node_index])
 
@@ -562,7 +561,7 @@ class OcpToGraph(GraphAbstract):
 
             only_mayer = True
             for objective in self.ocp.nlp[phase_idx].J:
-                if isinstance(objective[0]['objective'].type, ObjectiveFcn.Lagrange):
+                if isinstance(objective[0]["objective"].type, ObjectiveFcn.Lagrange):
                     only_mayer = False
 
             if len(self.ocp.nlp[phase_idx].J) > 0 and not only_mayer:

@@ -1,5 +1,5 @@
-from sys import platform
 from typing import Any
+from sys import platform
 
 import pytest
 import numpy as np
@@ -32,6 +32,10 @@ from bioptim import (
 )
 
 from .utils import TestUtils
+
+
+def minimize_difference(all_pn: PenaltyNode):
+    return all_pn[0].u[0] - all_pn[1].u[0]
 
 
 def custom_func_track_markers(pn: PenaltyNode, first_marker: str, second_marker: str) -> MX:
@@ -91,6 +95,15 @@ def prepare_ocp_phase_transitions(
     if with_mayer:
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, phase=0, node=1)
+        objective_functions.add(
+            minimize_difference,
+            custom_type=ObjectiveFcn.Mayer,
+            node=Node.TRANSITION,
+            weight=100,
+            phase=1,
+            get_all_nodes_at_once=True,
+            quadratic=True,
+        )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -105,6 +118,7 @@ def prepare_ocp_phase_transitions(
         constraints.add(
             ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1", phase=0
         )
+        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=2, first_marker="m0", second_marker="m1", phase=0)
         constraints.add(
             ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=0
         )
@@ -319,6 +333,88 @@ def prepare_ocp_parameters(
     )
 
 
+def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControlProgram:
+    """
+    Prepare the program
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path of the biorbd model
+    ode_solver: OdeSolver
+        The type of ode solver used
+
+    Returns
+    -------
+    The ocp ready to be solved
+    """
+
+    # --- Options --- #
+    # Model path
+    biorbd_model = biorbd.Model(biorbd_model_path)
+
+    # Problem parameters
+    n_shooting = 30
+    final_time = 2
+    tau_min, tau_max, tau_init = -100, 100, 0
+
+    # Add objective functions
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=2)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=3)
+    objective_functions.add(
+        custom_func_track_markers,
+        custom_type=ObjectiveFcn.Mayer,
+        node=Node.START,
+        quadratic=True,
+        first_marker="m0",
+        second_marker="m1",
+        weight=1000,
+    )
+    objective_functions.add(
+        custom_func_track_markers,
+        custom_type=ObjectiveFcn.Mayer,
+        node=Node.END,
+        quadratic=True,
+        first_marker="m0",
+        second_marker="m2",
+        weight=1000,
+    )
+
+    # Dynamics
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+
+    # Path constraint
+    x_bounds = QAndQDotBounds(biorbd_model)
+    x_bounds[1:6, [0, -1]] = 0
+    x_bounds[2, -1] = 1.57
+
+    # Initial guess
+    x_init = InitialGuess([0] * (biorbd_model.nbQ() + biorbd_model.nbQdot()))
+
+    # Define control path constraint
+    u_bounds = Bounds([tau_min] * biorbd_model.nbGeneralizedTorque(), [tau_max] * biorbd_model.nbGeneralizedTorque())
+
+    u_init = InitialGuess([tau_init] * biorbd_model.nbGeneralizedTorque())
+
+    # ------------- #
+
+    return OptimalControlProgram(
+        biorbd_model,
+        dynamics,
+        n_shooting,
+        final_time,
+        x_init,
+        u_init,
+        x_bounds,
+        u_bounds,
+        objective_functions,
+        ode_solver=ode_solver,
+    )
+
+
 @pytest.mark.parametrize("with_mayer", [True, False])
 @pytest.mark.parametrize("with_lagrange", [True, False])
 @pytest.mark.parametrize("with_constraints", [True, False])
@@ -355,4 +451,18 @@ def test_parameters():
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
     )
+    ocp.nlp[0].parameters.options[0][0].penalty_list.type = None
+    ocp.nlp[0].parameters.options[0][0].penalty_list.name = "custom_gravity"
     ocp.print(to_console=True, to_graph=True)
+
+
+def test_objectives_target():
+    if platform == "win32":
+        return
+
+    bioptim_folder = TestUtils.bioptim_folder()
+    model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
+    ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path)
+    ocp.nlp[0].J[0][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ocp.nlp[0].J[1][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ocp.print()
