@@ -654,6 +654,19 @@ The torque driven defines the states (x) as *q* and *qdot* and the controls (u) 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = biorbd_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
 
+#### TORQUE_DERIVATIVE_DRIVEN
+The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. 
+The derivative of *q* is trivially *qdot*.
+The derivative of *qdot* is given by the biorbd function: `qddot = biorbd_model.ForwardDynamics(q, qdot, tau)`.
+The derivative of *tau* is trivially *taudot*.
+If external forces are provided, they are added to the ForwardDynamics function. 
+
+#### TORQUE_DERIVATIVE_DRIVEN_WITH_CONTACT
+The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. 
+The derivative of *q* is trivially *qdot*.
+The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = biorbd_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
+The derivative of *tau* is trivially *taudot*.
+
 #### TORQUE_ACTIVATIONS_DRIVEN
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. 
 The derivative of *q* is trivially *qdot*.

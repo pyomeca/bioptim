@@ -297,7 +297,7 @@ class DynamicsFunctions:
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_taudot_data(states, controls, nlp)
+        q, qdot, tau, taudot = DynamicsFunctions.dispatch_q_qdot_tau_taudot_data(states, controls, nlp)
 
         cs = nlp.model.getConstraints()
         biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau, cs)
