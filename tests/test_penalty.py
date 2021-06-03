@@ -18,8 +18,7 @@ from bioptim import (
 )
 from bioptim.interfaces.ipopt_interface import IpoptInterface
 from bioptim.limits.penalty_node import PenaltyNodes
-from bioptim.limits.penalty import PenaltyFunctionAbstract
-from bioptim.limits.penalty import PenaltyOption
+from bioptim.limits.penalty import PenaltyFunctionAbstract, PenaltyOption
 from bioptim.optimization.non_linear_program import NonLinearProgram as nlp
 from .utils import TestUtils
 
@@ -1133,8 +1132,8 @@ def test_penalty_track_markers_with_nan(penalty_origin, value):
 
 @pytest.mark.parametrize("node", [Node.ALL, Node.INTERMEDIATES, Node.START, Node.MID, Node.PENULTIMATE, Node.END,
                                   Node.TRANSITION])
-@pytest.mark.parametrize("ns", [10, 11])
-def test__get_node(node, ns):
+@pytest.mark.parametrize("ns", [1, 10, 11])
+def test_PenaltyFunctionAbstract_get_node(node, ns):
 
     NLP = nlp()
     NLP.ns = ns
@@ -1148,9 +1147,15 @@ def test__get_node(node, ns):
     if node == Node.MID and ns % 2 != 0:
         with pytest.raises(ValueError, match="Number of shooting points must be even to use MID"):
             t, x, u = PenaltyFunctionAbstract._get_node(NLP, penalty)
+        return
     elif node == Node.TRANSITION:
         with pytest.raises(RuntimeError, match=" is not a valid node"):
             t, x, u = PenaltyFunctionAbstract._get_node(NLP, penalty)
+        return
+    elif ns == 1 and node == Node.PENULTIMATE:
+        with pytest.raises(ValueError, match="Number of shooting points must be greater than 1"):
+            t, x, u = PenaltyFunctionAbstract._get_node(NLP, penalty)
+        return
     else:
         t, x, u = PenaltyFunctionAbstract._get_node(NLP, penalty)
 
@@ -1169,7 +1174,7 @@ def test__get_node(node, ns):
         np.testing.assert_almost_equal(t, [0])
         np.testing.assert_almost_equal(np.array(x), x_expected[0])
         np.testing.assert_almost_equal(np.array(u), u_expected[0])
-    elif node == Node.MID and ns % 2 == 0:
+    elif node == Node.MID:
         np.testing.assert_almost_equal(t, [ns // 2])
         np.testing.assert_almost_equal(np.array(x), x_expected[ns // 2])
         np.testing.assert_almost_equal(np.array(u), u_expected[ns // 2])
@@ -1181,4 +1186,6 @@ def test__get_node(node, ns):
         np.testing.assert_almost_equal(t, [ns])
         np.testing.assert_almost_equal(np.array(x), x_expected[ns])
         np.testing.assert_almost_equal(u, [])
+    else:
+        raise RuntimeError("Something went wrong")
 
