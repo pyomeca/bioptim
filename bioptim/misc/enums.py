@@ -30,6 +30,7 @@ class Node(Enum):
     START = "start"  # The first node of the phase
     MID = "mid"  # The middle node of the phase
     INTERMEDIATES = "intermediates"  # All the nodes but the first and last
+    PENULTIMATE = "penultimate"  # The second to last node of the phase
     END = "end"  # The last node of the phase
     ALL = "all"  # All the nodes
     TRANSITION = "transition"  # The last node of a phase and the first node of the next phase

@@ -637,5 +637,5 @@ class Problem:
             phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
 
         nlp.plot["contact_forces"] = CustomPlot(
-            nlp.contact_forces_func, axes_idx=phase_mappings, legend=all_contact_names
+            nlp.contact_forces_func, plot_type=PlotType.INTEGRATED, axes_idx=phase_mappings, legend=all_contact_names
         )
