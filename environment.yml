@@ -9,3 +9,4 @@ dependencies:
 - scipy
 - numpy
 - packaging
+- python-graphviz

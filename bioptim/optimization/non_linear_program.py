@@ -148,6 +148,7 @@ class NonLinearProgram:
         self.taudot = None
         self.t0 = None
         self.tf = None
+        self.t_initial_guess = None
         self.u = None
         self.U = None
         self.u_bounds = Bounds()

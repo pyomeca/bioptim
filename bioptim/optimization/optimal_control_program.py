@@ -14,6 +14,7 @@ from ..dynamics.dynamics_type import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.problem import Problem
 from ..gui.plot import CustomPlot, PlotOcp
+from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionFunctions, PhaseTransitionList
@@ -748,6 +749,20 @@ class OptimalControlProgram:
             out = [ocp, sol]
         return out
 
+    def print(
+        self,
+        to_console: bool = True,
+        to_graph: bool = True,
+    ):
+
+        if to_console:
+            display_console = OcpToConsole(self)
+            display_console.print()
+
+        if to_graph:
+            display_graph = OcpToGraph(self)
+            display_graph.print()
+
     def _define_time(
         self,
         phase_time: Union[int, float, list, tuple],
@@ -829,6 +844,7 @@ class OptimalControlProgram:
                             time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
             return has_penalty
 
+        NLP.add(self, "t_initial_guess", phase_time, False)
         self.original_phase_time = phase_time
         if isinstance(phase_time, (int, float)):
             phase_time = [phase_time]
