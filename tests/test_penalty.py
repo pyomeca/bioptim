@@ -1130,14 +1130,15 @@ def test_penalty_track_markers_with_nan(penalty_origin, value):
     )
 
 
-@pytest.mark.parametrize("node", [Node.ALL, Node.INTERMEDIATES, Node.START, Node.MID, Node.PENULTIMATE, Node.END,
-                                  Node.TRANSITION])
+@pytest.mark.parametrize(
+    "node", [Node.ALL, Node.INTERMEDIATES, Node.START, Node.MID, Node.PENULTIMATE, Node.END, Node.TRANSITION]
+)
 @pytest.mark.parametrize("ns", [1, 10, 11])
 def test_PenaltyFunctionAbstract_get_node(node, ns):
 
     NLP = nlp()
     NLP.ns = ns
-    NLP.X = np.linspace(0, -10, ns+1)
+    NLP.X = np.linspace(0, -10, ns + 1)
     NLP.U = np.linspace(10, 19, ns)
 
     pn = []
@@ -1167,9 +1168,9 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
         np.testing.assert_almost_equal(np.array(x), np.linspace(0, -10, ns + 1))
         np.testing.assert_almost_equal(np.array(u), np.linspace(10, 19, ns))
     elif node == Node.INTERMEDIATES:
-        np.testing.assert_almost_equal(t, [i for i in range(1, ns-1)])
-        np.testing.assert_almost_equal(np.array(x), x_expected[1:ns-1])
-        np.testing.assert_almost_equal(np.array(u), u_expected[1:ns-1])
+        np.testing.assert_almost_equal(t, [i for i in range(1, ns - 1)])
+        np.testing.assert_almost_equal(np.array(x), x_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(u), u_expected[1 : ns - 1])
     elif node == Node.START:
         np.testing.assert_almost_equal(t, [0])
         np.testing.assert_almost_equal(np.array(x), x_expected[0])
@@ -1188,4 +1189,3 @@ def test_PenaltyFunctionAbstract_get_node(node, ns):
         np.testing.assert_almost_equal(u, [])
     else:
         raise RuntimeError("Something went wrong")
-
