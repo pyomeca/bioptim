@@ -3,6 +3,7 @@ from graphviz import Digraph
 from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..optimization.parameters import Parameter
+from ..misc.enums import Node
 
 
 class GraphAbstract:
@@ -227,7 +228,7 @@ class GraphAbstract:
             The constraint to which the nodes to analyze is attached
         """
 
-        if len(constraint["constraint"].node) > 1:
+        if isinstance(constraint["constraint"].node[0], Node):
             if constraint["constraint"].node[0].value != "all":
                 node = self.ocp.nlp[phase_idx].ns if constraint["constraint"].node[0].value == "end" else 0
             else:

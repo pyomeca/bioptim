@@ -427,6 +427,8 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
     ocp = prepare_ocp_phase_transitions(
         model_path, with_mayer=with_mayer, with_lagrange=with_lagrange, with_constraints=with_constraints
     )
+    if with_lagrange and with_mayer is not False:
+        ocp.nlp[0].J[0][0]["objective"].quadratic = False
     ocp.print(to_console=True, to_graph=True)
 
 
@@ -456,13 +458,16 @@ def test_parameters():
     ocp.print(to_console=True, to_graph=True)
 
 
-def test_objectives_target():
+@pytest.mark.parametrize("quadratic", [True, False])
+def test_objectives_target(quadratic):
     if platform == "win32":
         return
 
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
     ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path)
+    ocp.nlp[0].J[0][0]["objective"].quadratic = quadratic
+    ocp.nlp[0].J[1][0]["objective"].quadratic = quadratic
     ocp.nlp[0].J[0][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     ocp.nlp[0].J[1][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     ocp.print()
