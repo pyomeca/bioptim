@@ -100,7 +100,7 @@ class PenaltyFunctionAbstract:
     _check_idx(name: str, elements: Union[list, tuple, int], max_n_elements: int = inf, min_n_elements: int = 0)
         Generic sanity check for requested dimensions.
         If the function returns, everything is okay
-    add_to_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, val: Union[MX, SX], penalty: PenaltyOption)
+    add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: PenaltyOption)
         Add the constraint to the penalty pool (abstract)
     clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: PenaltyOption)
         Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
@@ -231,7 +231,7 @@ class PenaltyFunctionAbstract:
             for i, v in enumerate(pn.x):
                 val = v[states_idx]
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def minimize_markers(penalty: PenaltyOption, pn: PenaltyNodes, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)):
@@ -265,7 +265,7 @@ class PenaltyFunctionAbstract:
                 # TODO move the axis_to_track into a row (?) option of penalty
                 val = pn.nlp.casadi_func["biorbd_markers"](q)[axis_to_track, markers_idx]
                 penalty.sliced_target = target[axis_to_track, :, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def minimize_markers_displacement(penalty: PenaltyOption, pn: PenaltyNodes, coordinates_system_idx: int = -1):
@@ -328,7 +328,7 @@ class PenaltyFunctionAbstract:
                 ) - jcs_0_T @ vertcat(
                     nlp.casadi_func["biorbd_markers"](q_0)[:, markers_idx], nlp.cx.ones(1, markers_idx.shape[0])
                 )
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val[:3, :], penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val[:3, :], penalty)
 
         @staticmethod
         def minimize_markers_velocity(penalty: PenaltyOption, pn: PenaltyNodes):
@@ -365,7 +365,7 @@ class PenaltyFunctionAbstract:
                 for m in markers_idx:
                     val = nlp.casadi_func[f"biorbd_markerVelocity_{m}"](v[:n_q], v[n_q : n_q + n_qdot])
                     penalty.sliced_target = target[:, m, i] if target is not None else None
-                    penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                    penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def superimpose_markers(
@@ -404,7 +404,7 @@ class PenaltyFunctionAbstract:
                 second_marker_func = nlp.casadi_func["markers"](q)[:, second_marker_idx]
 
                 val = first_marker_func - second_marker_func
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def proportional_variable(
@@ -451,7 +451,7 @@ class PenaltyFunctionAbstract:
             for v in ux:
                 v = pn.nlp.mapping["q"].to_second.map(v)
                 val = v[first_dof] - coef * v[second_dof]
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def minimize_torque(penalty: PenaltyOption, pn: PenaltyNodes):
@@ -483,7 +483,7 @@ class PenaltyFunctionAbstract:
             for i, v in enumerate(pn.u):
                 val = v[controls_idx]
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def minimize_state_derivative(penalty: PenaltyOption, pn: PenaltyNodes):
@@ -504,7 +504,7 @@ class PenaltyFunctionAbstract:
 
             for i in range(len(pn.x) - 1):
                 val = pn.x[i + 1][states_idx] - pn.x[i][states_idx]
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def minimize_qddot(penalty: PenaltyOption, pn: PenaltyNodes):
@@ -525,7 +525,7 @@ class PenaltyFunctionAbstract:
 
             for i in range(len(pn) - 1):
                 val = pn.nlp.dynamics_func(pn.x[i], pn.u[i], pn.p)[nq + states_idx, :]
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def minimize_torque_derivative(penalty: PenaltyOption, pn: PenaltyNodes):
@@ -547,7 +547,7 @@ class PenaltyFunctionAbstract:
 
             for i in range(len(pn.u) - 1):
                 val = pn.u[i + 1][controls_idx] - pn.u[i][controls_idx]
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def minimize_muscles_control(penalty: PenaltyOption, pn: PenaltyNodes):
@@ -583,7 +583,7 @@ class PenaltyFunctionAbstract:
             for i, v in enumerate(pn.u):
                 val = v[muscles_idx_plus_tau]
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def minimize_all_controls(penalty: PenaltyOption, pn: PenaltyNodes):
@@ -612,7 +612,7 @@ class PenaltyFunctionAbstract:
             for i, v in enumerate(pn.u):
                 val = v[controls_idx]
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def minimize_predicted_com_height(penalty: PenaltyOption, pn: PenaltyNodes):
@@ -640,7 +640,7 @@ class PenaltyFunctionAbstract:
                 CoM = nlp.casadi_func["biorbd_CoM"](q)
                 CoM_dot = nlp.casadi_func["biorbd_CoM_dot"](q, qdot)
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, CoM_height, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, CoM_height, penalty)
 
         @staticmethod
         def minimize_com_position(penalty: PenaltyOption, pn: PenaltyNodes, axis: Axis = None):
@@ -678,7 +678,7 @@ class PenaltyFunctionAbstract:
                     CoM_proj = CoM[axis]
 
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, CoM_proj, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, CoM_proj, penalty)
 
         @staticmethod
         def minimize_com_velocity(penalty: PenaltyOption, pn: PenaltyNodes, axis: Axis = None):
@@ -717,7 +717,7 @@ class PenaltyFunctionAbstract:
                     CoM_dot_proj = CoM_dot[axis]
 
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, CoM_dot_proj, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, CoM_dot_proj, penalty)
 
         @staticmethod
         def minimize_contact_forces(penalty: PenaltyOption, pn: PenaltyNodes):
@@ -751,7 +751,7 @@ class PenaltyFunctionAbstract:
                 force = pn.nlp.contact_forces_func(pn.x[i], pn.u[i], pn.p)
                 val = force[contacts_idx]
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def track_segment_with_custom_rt(
@@ -808,7 +808,7 @@ class PenaltyFunctionAbstract:
             for v in pn.x:
                 q = nlp.mapping["q"].to_second.map(v[:nq])
                 val = nlp.casadi_func[f"track_segment_with_custom_rt_{segment_idx}"](q)
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def track_marker_with_segment_axis(
@@ -864,7 +864,7 @@ class PenaltyFunctionAbstract:
                     if axe != axis:
                         # To align an axis, the other must be equal to 0
                         val = marker[axe, 0]
-                        penalty.type.get_type().add_to_penalty(pn.ocp, pn.nlp, val, penalty)
+                        penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
         def custom(penalty: PenaltyOption, nodes: Union[PenaltyNodes, list], **parameters: Any):
@@ -930,7 +930,7 @@ class PenaltyFunctionAbstract:
                     nlp = nodes[0].nlp if penalty.node != Node.TRANSITION else None
                     penalty.type.get_type().add_to_penalty(node[0].ocp, nlp, val, penalty)
                 else:
-                    penalty.type.get_type().add_to_penalty(node.ocp, nodes.nlp, val, penalty)
+                    penalty.type.get_type().add_to_penalty(node.ocp, nodes, val, penalty)
 
     @staticmethod
     def add(ocp, nlp):
@@ -1150,7 +1150,7 @@ class PenaltyFunctionAbstract:
                 )
 
     @staticmethod
-    def add_to_penalty(ocp, nlp, val: Union[MX, SX, float, int], penalty: PenaltyOption):
+    def add_to_penalty(ocp, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: PenaltyOption):
         """
         Add the constraint to the penalty pool (abstract)
 
@@ -1158,8 +1158,8 @@ class PenaltyFunctionAbstract:
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
+        pn: PenaltyNodes
+            The penalty node elements
         val: Union[MX, SX, float, int]
             The actual constraint to add
         penalty: PenaltyOption
