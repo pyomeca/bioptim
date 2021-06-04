@@ -550,9 +550,9 @@ class Problem:
         nlp: NonLinearProgram
             A reference to the phase
         as_states: bool
-            If the generalized forces should be a state
+            If the generalized force derivatives should be a state
         as_controls: bool
-            If the generalized forces should be a control
+            If the generalized force derivatives should be a control
         """
 
         if nlp.mapping["taudot"] is None:
