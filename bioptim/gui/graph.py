@@ -54,19 +54,31 @@ class GraphAbstract:
         size: int
             The size of the vector
         """
-
-        if size > 1:
-            condensed_vector = "[ "
+        if size > 1 and isinstance(vector, list):
+            condensed_vector = "["
             count = 0
             for var in vector:
                 count += 1
-                condensed_vector += f"{float(var)} "
+                condensed_vector += f"{round(float(var), 1)} "
                 if count == 5:
                     condensed_vector += f"... {self._return_line}... "
                     count = 0
             condensed_vector += "]"
+        elif size > 1 and len(vector.shape) > 1:
+            condensed_vector = "["
+            count = 0
+            for var in vector:
+                condensed_vector += "["
+                for subvar in var:
+                    count += 1
+                    condensed_vector += f"{round(float(subvar), 1)} "
+                    if count == 5:
+                        condensed_vector += f"... {self._return_line}... "
+                        count = 0
+                condensed_vector += "]"
+            condensed_vector += "]"
         else:
-            condensed_vector = f"{vector}" if param else f"{float(vector[0])}"
+            condensed_vector = f"{vector}" if param else f"{round(float(vector[0]), 1)}"
         return condensed_vector
 
     def _add_dict_to_str(self, _dict: dict):
