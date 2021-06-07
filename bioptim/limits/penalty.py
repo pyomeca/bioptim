@@ -73,6 +73,11 @@ class PenaltyOption(OptionGeneric):
 
         self.index = index
         self.target = np.array(target) if np.any(target) else None
+        if self.target is not None:
+            if len(self.target.shape) == 0:
+                self.target = self.target[np.newaxis]
+            if len(self.target.shape) == 1:
+                self.target = self.target[:, np.newaxis]
         self.sliced_target = None  # This one is the sliced node from the target. This is what is actually tracked
 
         self.custom_function = custom_function

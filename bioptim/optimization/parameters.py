@@ -89,6 +89,8 @@ class Parameter(OptionGeneric):
                 )
         elif len(scaling.shape) > 2:
             raise ValueError("Parameter scaling must be a 1- or 2- dimensional numpy array")
+        else:
+            raise RuntimeError("Unknown error in Parameter declaration")
 
         initial_guess.scale(self.scaling)
         self.initial_guess = initial_guess

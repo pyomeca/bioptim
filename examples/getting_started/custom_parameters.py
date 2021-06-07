@@ -241,11 +241,11 @@ def main():
     # --- Get the results --- #
     if optim_gravity:
         gravity = sol.parameters["gravity_xyz"]
-        print(f"Optimized gravity: {gravity}")
+        print(f"Optimized gravity: {gravity[:, 0]}")
 
     if optim_mass:
         mass = sol.parameters["mass"]
-        print(f"Optimized mass: {mass}")
+        print(f"Optimized mass: {mass[0, 0]}")
 
     # --- Show results --- #
     sol.animate(n_frames=200)
