@@ -1,4 +1,7 @@
 from graphviz import Digraph
+from typing import Union
+
+import numpy as np
 
 from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
@@ -43,42 +46,50 @@ class GraphAbstract:
 
         self.ocp = ocp
 
-    def _vector_layout(self, vector: list, size: int, param: bool = False):
+    def _vector_layout_structure(self, vector: Union[list, np.array], count: int):
+        """
+        Main structure of the next method _vector_layout(self, vector: Union[list, np.array], size: int, param: bool)
+
+        Parameters
+        ----------
+        vector: Union[list, np.array]
+            The vector to be condensed
+        count: int
+            A counter
+        """
+        condensed_vector = ""
+        for var in vector:
+            count += 1
+            condensed_vector += f"{round(float(var), 1)} "
+            if count == 5:
+                condensed_vector += f"... {self._return_line}... "
+                count = 0
+        return condensed_vector
+
+    def _vector_layout(self, vector: Union[list, np.array], size: int):
         """
         Resize vector content for display task
 
         Parameters
         ----------
-        vector: list
+        vector: Union[list, np.array]
             The vector to be condensed
         size: int
             The size of the vector
         """
+        condensed_vector = "["
+        count = 0
         if size > 1 and isinstance(vector, list):
-            condensed_vector = "["
-            count = 0
-            for var in vector:
-                count += 1
-                condensed_vector += f"{round(float(var), 1)} "
-                if count == 5:
-                    condensed_vector += f"... {self._return_line}... "
-                    count = 0
+            condensed_vector += self._vector_layout_structure(vector, count)
             condensed_vector += "]"
         elif size > 1 and len(vector.shape) > 1:
-            condensed_vector = "["
-            count = 0
             for var in vector:
                 condensed_vector += "["
-                for subvar in var:
-                    count += 1
-                    condensed_vector += f"{round(float(subvar), 1)} "
-                    if count == 5:
-                        condensed_vector += f"... {self._return_line}... "
-                        count = 0
+                condensed_vector += self._vector_layout_structure(var, count)
                 condensed_vector += "]"
             condensed_vector += "]"
         else:
-            condensed_vector = f"{vector}" if param else f"{round(float(vector[0]), 1)}"
+            condensed_vector = f"{round(float(vector[0]), 1)}"
         return condensed_vector
 
     def _add_dict_to_str(self, _dict: dict):
