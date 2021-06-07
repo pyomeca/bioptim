@@ -63,6 +63,17 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     return ocp
 
 
+def test_penalty_targets_shapes():
+    p = ObjectiveFcn.Parameter
+    np.testing.assert_equal(Objective([], custom_type=p, target=1).target.shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=np.array(1)).target.shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[1]).target.shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[1, 2]).target.shape, (2, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target.shape, (2, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target.shape, (1, 2))
+    np.testing.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target.shape, (1, 2))
+
+
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_time(penalty_origin, value):
@@ -1095,7 +1106,10 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
     penalty.max_bound = 0
     penalty.custom_function = custom_with_bounds
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(
+        RuntimeError,
+        match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined",
+    ):
         penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], t, x, [], []))
 
 
