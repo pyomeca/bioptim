@@ -437,10 +437,10 @@ class Problem:
         if as_states:
             nlp.x = vertcat(nlp.x, qdot)
             nlp.var_states["qdot"] = nlp.shape["qdot"]
-            qdot_bounds = nlp.x_bounds[nlp.shape["q"]:]
+            qdot_bounds = nlp.x_bounds[nlp.shape["q"]: nlp.shape["q"] + nlp.shape["qdot"]]
 
             nlp.plot["qdot"] = CustomPlot(
-                lambda x, u, p: x[nlp.shape["q"] : nlp.shape["q"] + nlp.shape["qdot"]],
+                lambda x, u, p: x[nlp.shape["q"]: nlp.shape["q"] + nlp.shape["qdot"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
                 bounds=qdot_bounds,
@@ -512,9 +512,10 @@ class Problem:
             nlp.x = vertcat(nlp.x, all_tau[0])
             nlp.var_states["tau"] = nlp.shape["tau"]
 
-            tau_bounds = nlp.x_bounds[nlp.shape["q"] + nlp.shape["qdot"]: nlp.shape["tau"]]  # tau as a state with q
-            # and qdot
             nq_qdot = nlp.shape["q"] + nlp.shape["qdot"]
+            tau_bounds = nlp.x_bounds[nq_qdot: nq_qdot + nlp.shape["tau"]]
+            # tau as a state with q and qdot
+
             nlp.plot["tau"] = CustomPlot(
                 lambda x, u, p: x[nq_qdot: nq_qdot + nlp.shape["tau"]],
                 plot_type=PlotType.INTEGRATED,

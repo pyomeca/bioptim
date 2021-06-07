@@ -833,9 +833,10 @@ class DynamicsFunctions:
         """
 
         nq = nlp.mapping["q"].to_first.len
+        nqdot = nlp.mapping["qdot"].to_first.len
         q = nlp.mapping["q"].to_second.map(states[:nq])
-        qdot = nlp.mapping["qdot"].to_second.map(states[nq:2*nq])
-        tau = nlp.mapping["tau"].to_second.map(states[2*nq:])
+        qdot = nlp.mapping["qdot"].to_second.map(states[nq:nq + nqdot])
+        tau = nlp.mapping["tau"].to_second.map(states[nq + nqdot:])
         taudot = nlp.mapping["taudot"].to_second.map(controls[:nlp.shape["taudot"]])
 
         return q, qdot, tau, taudot
