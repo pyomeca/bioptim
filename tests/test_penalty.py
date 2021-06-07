@@ -1095,7 +1095,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
     penalty.max_bound = 0
     penalty.custom_function = custom_with_bounds
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined"):
         penalty_type.value[0](penalty, PenaltyNodes(ocp, ocp.nlp[0], t, x, [], []))
 
 
