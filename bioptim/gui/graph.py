@@ -46,7 +46,7 @@ class GraphAbstract:
 
         self.ocp = ocp
 
-    def _vector_layout_structure(self, vector: Union[list, np.array], count: int):
+    def _vector_layout_structure(self, vector: Union[list, np.array], decimal: int):
         """
         Main structure of the next method _vector_layout(self, vector: Union[list, np.array], size: int, param: bool)
 
@@ -58,15 +58,13 @@ class GraphAbstract:
             A counter
         """
         condensed_vector = ""
-        for var in vector:
-            count += 1
-            condensed_vector += f"{round(float(var), 1)} "
-            if count == 5:
+        for i, var in enumerate(vector):
+            condensed_vector += f"{round(float(var), decimal):.{decimal}f} "
+            if i % 7 == 0 and i!=0:
                 condensed_vector += f"... {self._return_line}... "
-                count = 0
         return condensed_vector
 
-    def _vector_layout(self, vector: Union[list, np.array], size: int):
+    def _vector_layout(self, vector: Union[list, np.array]):
         """
         Resize vector content for display task
 
@@ -77,19 +75,23 @@ class GraphAbstract:
         size: int
             The size of the vector
         """
-        condensed_vector = "["
-        count = 0
-        if size > 1 and isinstance(vector, list):
-            condensed_vector += self._vector_layout_structure(vector, count)
+        condensed_vector = ""
+        vector = np.array(vector)
+        if len(vector.shape) == 1:
+            vector = vector[:, np.newaxis]
+
+        if vector.shape[1] != 1:
+            condensed_vector += f"{self._return_line}"
+            condensed_vector += "["
+        for i in range(vector.shape[1]):
+            if i != 0:
+                condensed_vector += f"{self._return_line}"
+            condensed_vector += "["
+            condensed_vector += self._vector_layout_structure(vector[:, i], 3)
             condensed_vector += "]"
-        elif size > 1 and len(vector.shape) > 1:
-            for var in vector:
-                condensed_vector += "["
-                condensed_vector += self._vector_layout_structure(var, count)
-                condensed_vector += "]"
+        if vector.shape[1] != 1:
             condensed_vector += "]"
-        else:
-            condensed_vector = f"{round(float(vector[0]), 1)}"
+
         return condensed_vector
 
     def _add_dict_to_str(self, _dict: dict):
@@ -141,9 +143,9 @@ class GraphAbstract:
                 if isinstance(obj.type, ObjectiveFcn.Lagrange):
                     if obj.sliced_target is not None:
                         if obj.quadratic:
-                            lagrange_str += f"({obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}){self._squared}{self._return_line}"
+                            lagrange_str += f"({obj.name} - {self._vector_layout(obj.sliced_target)}){self._squared}{self._return_line}"
                         else:
-                            lagrange_str += f"{obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}{self._return_line}"
+                            lagrange_str += f"{obj.name} - {self._vector_layout(obj.sliced_target)}{self._return_line}"
                     else:
                         if obj.quadratic:
                             lagrange_str += f"({obj.name}){self._squared}{self._return_line}"
@@ -173,9 +175,9 @@ class GraphAbstract:
                     mayer_objective = [obj.node[0]]
                     if obj.sliced_target is not None:
                         if obj.quadratic:
-                            mayer_str += f"({obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}){self._squared}{self._return_line}"
+                            mayer_str += f"({obj.name} - {self._vector_layout(obj.sliced_target)}){self._squared}{self._return_line}"
                         else:
-                            mayer_str += f"{obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}{self._return_line}"
+                            mayer_str += f"{obj.name} - {self._vector_layout(obj.sliced_target)}{self._return_line}"
                     else:
                         if obj.quadratic:
                             mayer_str += f"({obj.name}){self._squared}{self._return_line}"
@@ -400,7 +402,7 @@ class OcpToGraph(GraphAbstract):
         constraint_str += f"Min bound: {constraint.min_bound}<br/>"
         constraint_str += f"Max bound: {constraint.max_bound}<br/>"
         constraint_str += (
-            f"{f'Target: {self._vector_layout(constraint.sliced_target, len(constraint.sliced_target))} <br/><br/>'}"
+            f"{f'Target: {self._vector_layout(constraint.sliced_target)} <br/><br/>'}"
             if constraint.sliced_target is not None
             else ""
         )
@@ -454,13 +456,13 @@ class OcpToGraph(GraphAbstract):
         initial_guess, min_bound, max_bound = self._scaling_parameter(parameter)
         node_str = f"<u><b>{parameter.name[0].upper() + parameter.name[1:]}</b></u><br/>"
         node_str += f"<b>Size</b>: {parameter.size}<br/>"
-        node_str += f"<b>Initial guesses</b>: {self._vector_layout(initial_guess, parameter.size)}<br/><br/>"
+        node_str += f"<b>Initial guesses</b>: {self._vector_layout(initial_guess)}<br/><br/>"
         if parameter.penalty_list is not None:
             node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
-            node_str += f"<b>Min bound</b>: {self._vector_layout(min_bound, parameter.size)} <br/>"
-            node_str += f"<b>Max bound</b>: {self._vector_layout(max_bound, parameter.size)} <br/>"
+            node_str += f"<b>Min bound</b>: {self._vector_layout(min_bound)} <br/>"
+            node_str += f"<b>Max bound</b>: {self._vector_layout(max_bound)} <br/>"
             node_str += (
-                f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.sliced_target, parameter.size, param=True)} <br/>'}"
+                f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.sliced_target)} <br/>'}"
                 if parameter.penalty_list.sliced_target is not None
                 else ""
             )
