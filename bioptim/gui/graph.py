@@ -4,10 +4,10 @@ from typing import Union
 import numpy as np
 
 from ..limits.constraints import Constraint
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
+from ..limits.path_conditions import PathCondition
 from ..optimization.parameters import Parameter
 from ..misc.enums import Node
-
 
 class GraphAbstract:
     _return_line: ""
@@ -15,6 +15,8 @@ class GraphAbstract:
     """
     Methods
     -------
+    _vector_layout_structure(self, vector: Union[list, np.array], decimal: int)
+        Main structure of the method _vector_layout()
     _vector_layout(self, vector: list, size: int)
         Resize vector content for display task
     _add_dict_to_str(self, _dict: dict)
@@ -24,7 +26,9 @@ class GraphAbstract:
     _lagrange_to_str(self, objective_list: ObjectiveList)
         Convert Lagrange objective into an easy-to-read string
     _mayer_to_str(self, objective_list: ObjectiveList)
-        Convert Mayer objective into an easy-to-read string  
+        Convert Mayer objective into an easy-to-read string 
+    _structure_scaling_parameter(self, el: PathCondition, parameter: Parameter)
+        Main structure of the method _scaling_parameter()
     _scaling_parameter(self, parameter: Parameter)
         Take scaling into account for display task
     _get_parameter_function_name(self, parameter: Parameter)
@@ -54,8 +58,8 @@ class GraphAbstract:
         ----------
         vector: Union[list, np.array]
             The vector to be condensed
-        count: int
-            A counter
+        decimal: int
+            Number of decimals
         """
         condensed_vector = ""
         for i, var in enumerate(vector):
@@ -193,6 +197,27 @@ class GraphAbstract:
                         list_mayer_objectives.append(mayer_objective)
         return list_mayer_objectives
 
+    def _structure_scaling_parameter(self, el: PathCondition, parameter: Parameter):
+        """
+        Main structure of the next method _scaling_parameter(self, parameter: Parameter)
+
+        Parameters
+        ----------
+        el: PathCondition
+            The PathCondition to be converted in a string
+        parameter: Parameter
+            The unscaled parameter
+        """
+
+        size_el = len(el[0])
+        el_list = [
+            el[i][j]
+            for i in range(parameter.size)
+            for j in range(size_el)
+        ]
+        el_str = f"{self._vector_layout(el_list)}"
+        return el_str
+
     def _scaling_parameter(self, parameter: Parameter):
         """
         Take scaling into account for display task
@@ -203,25 +228,17 @@ class GraphAbstract:
             The unscaled parameter
         """
 
-        size_initial_guess = len(parameter.initial_guess.init[0])
-        initial_guess = [
-            parameter.initial_guess.init[i][j] * parameter.scaling[i]
+        initial_guess_str = self._structure_scaling_parameter(parameter.initial_guess.init, parameter)
+        min_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
+        max_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
+
+        scaling = [
+            parameter.scaling[i][0]
             for i in range(parameter.size)
-            for j in range(size_initial_guess)
         ]
-        size_min_bound = len(parameter.bounds.min[0])
-        min_bound = [
-            parameter.bounds.min[i][j] * parameter.scaling[i]
-            for i in range(parameter.size)
-            for j in range(size_min_bound)
-        ]
-        size_max_bound = len(parameter.bounds.max[0])
-        max_bound = [
-            parameter.bounds.max[i][j] * parameter.scaling[i]
-            for i in range(parameter.size)
-            for j in range(size_max_bound)
-        ]
-        return initial_guess, min_bound, max_bound
+        scaling_str = f"{self._vector_layout(scaling)}"
+
+        return initial_guess_str, min_bound_str, max_bound_str, scaling_str
 
     def _get_parameter_function_name(self, parameter: Parameter):
         """
@@ -284,11 +301,12 @@ class OcpToConsole(GraphAbstract):
             print(f"PARAMETERS: ")
             print("")
             for parameter in self.ocp.nlp[phase_idx].parameters:
-                initial_guess, min_bound, max_bound = self._scaling_parameter(parameter)
+                initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter)
                 objective_name = self._get_parameter_function_name(parameter)
                 print(f"Name: {parameter.name}")
                 print(f"Size: {parameter.size}")
                 print(f"Initial_guess: {initial_guess}")
+                print(f"Scaling: {scaling}")
                 print(f"Min_bound: {min_bound}")
                 print(f"Max_bound: {max_bound}")
                 print(f"Objectives: {objective_name}")
@@ -453,14 +471,15 @@ class OcpToGraph(GraphAbstract):
             The parameter containing all the information to display
         """
 
-        initial_guess, min_bound, max_bound = self._scaling_parameter(parameter)
+        initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter)
         node_str = f"<u><b>{parameter.name[0].upper() + parameter.name[1:]}</b></u><br/>"
         node_str += f"<b>Size</b>: {parameter.size}<br/>"
-        node_str += f"<b>Initial guesses</b>: {self._vector_layout(initial_guess)}<br/><br/>"
+        node_str += f"<b>Initial guesses</b>: {initial_guess}<br/>"
+        node_str += f"<b>Scaling</b>: {scaling}<br/><br/>"
         if parameter.penalty_list is not None:
             node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
-            node_str += f"<b>Min bound</b>: {self._vector_layout(min_bound)} <br/>"
-            node_str += f"<b>Max bound</b>: {self._vector_layout(max_bound)} <br/>"
+            node_str += f"<b>Min bound</b>: {min_bound} <br/>"
+            node_str += f"<b>Max bound</b>: {max_bound} <br/>"
             node_str += (
                 f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.sliced_target)} <br/>'}"
                 if parameter.penalty_list.sliced_target is not None
