@@ -87,10 +87,8 @@ class Parameter(OptionGeneric):
                     f"Invalid ncols for Parameter Scaling "
                     f"(ncols = {scaling.shape[1]}), the expected number of column is 1"
                 )
-        elif len(scaling.shape) > 2:
-            raise ValueError("Parameter scaling must be a 1- or 2- dimensional numpy array")
         else:
-            raise RuntimeError("Unknown error in Parameter declaration")
+            raise ValueError("Parameter scaling must be a 1- or 2- dimensional numpy array")
 
         initial_guess.scale(self.scaling)
         self.initial_guess = initial_guess
