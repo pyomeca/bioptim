@@ -9,6 +9,7 @@ from ..limits.path_conditions import PathCondition
 from ..optimization.parameters import Parameter
 from ..misc.enums import Node
 
+
 class GraphAbstract:
     _return_line: ""
     _squared: ""
@@ -64,7 +65,7 @@ class GraphAbstract:
         condensed_vector = ""
         for i, var in enumerate(vector):
             condensed_vector += f"{round(float(var), decimal):.{decimal}f} "
-            if i % 7 == 0 and i!=0:
+            if i % 7 == 0 and i != 0:
                 condensed_vector += f"... {self._return_line}... "
         return condensed_vector
 
@@ -211,11 +212,7 @@ class GraphAbstract:
         """
 
         size_el = len(el[0])
-        el_list = [
-            el[i][j]
-            for i in range(parameter.size)
-            for j in range(size_el)
-        ]
+        el_list = [el[i][j] for i in range(parameter.size) for j in range(size_el)]
         el_str = f"{self._vector_layout(el_list)}"
         return el_str
 
@@ -233,10 +230,7 @@ class GraphAbstract:
         min_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
         max_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
 
-        scaling = [
-            parameter.scaling[i][0]
-            for i in range(parameter.size)
-        ]
+        scaling = [parameter.scaling[i][0] for i in range(parameter.size)]
         scaling_str = f"{self._vector_layout(scaling)}"
 
         return initial_guess_str, min_bound_str, max_bound_str, scaling_str
@@ -335,6 +329,8 @@ class OcpToConsole(GraphAbstract):
                     if mayer[0] == node_idx:
                         print(mayer[1])
                 for constraint in self.ocp.nlp[phase_idx].g:
+                    if not constraint:
+                        continue
                     node_index = self._analyze_nodes(phase_idx, constraint[0])
                     if node_index == node_idx:
                         print(f"*** Constraint: {constraint[0]['constraint'].name}")
@@ -563,6 +559,8 @@ class OcpToGraph(GraphAbstract):
         list_constraints = []
 
         for constraint in self.ocp.nlp[phase_idx].g:
+            if not constraint:
+                continue
             constraints_str = ""
             node_index = self._analyze_nodes(phase_idx, constraint[0])
             constraints_str += self._constraint_to_str(constraint[0]["constraint"])
@@ -608,6 +606,8 @@ class OcpToGraph(GraphAbstract):
 
             only_mayer = True
             for objective in self.ocp.nlp[phase_idx].J:
+                if not objective:
+                    continue
                 if isinstance(objective[0]["objective"].type, ObjectiveFcn.Lagrange):
                     only_mayer = False
 
