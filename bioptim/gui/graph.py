@@ -4,7 +4,7 @@ from typing import Union
 import numpy as np
 
 from ..limits.constraints import Constraint
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
+from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import PathCondition
 from ..optimization.parameters import Parameter
 from ..misc.enums import Node
@@ -76,8 +76,6 @@ class GraphAbstract:
         ----------
         vector: Union[list, np.array]
             The vector to be condensed
-        size: int
-            The size of the vector
         """
         condensed_vector = ""
         vector = np.array(vector)
@@ -110,23 +108,26 @@ class GraphAbstract:
 
         str_to_add = ""
         for d in _dict:
-            str_to_add += f"{d}: {_dict[d]}{self._return_line}"
+            str_to_add += f"<b>{d}</b>: {_dict[d]}{self._return_line}"
         return str_to_add
 
-    def _add_extra_parameters_to_str(self, list_params: list, string: str):
+    def _add_extra_parameters_to_str(self, objective: Objective, string: str):
         """
         Simple method to add extra-parameters to a string
 
         Parameters
         ----------
-        list_params: list
-            The list of parameters to add to the string
+        objective: Objective
+            The current objective
         string: str
             The string to be completed
         """
 
-        for param in list_params:
-            string += f"{param}: {list_params[param]}{self._return_line}"
+        if hasattr(objective, "weight"):
+            string += f"<b>Weight</b>: {objective.weight}{self._return_line}"
+        for param in objective.params:
+            string += f"<b>{param}</b>: {objective.params[param]}{self._return_line}"
+        string += f"<b>Index in list</b>: {objective.list_index}{self._return_line}"
         return string
 
     def _lagrange_to_str(self, objective_list: ObjectiveList):
@@ -155,7 +156,7 @@ class GraphAbstract:
                             lagrange_str += f"({obj.name}){self._squared}{self._return_line}"
                         else:
                             lagrange_str += f"{obj.name}{self._return_line}"
-                    lagrange_str = self._add_extra_parameters_to_str(obj.params, lagrange_str)
+                    lagrange_str = self._add_extra_parameters_to_str(obj, lagrange_str)
                     lagrange_str += f"{self._return_line}"
                     objective_names.append(obj.name)
         return lagrange_str, objective_names
@@ -187,7 +188,7 @@ class GraphAbstract:
                             mayer_str += f"({obj.name}){self._squared}{self._return_line}"
                         else:
                             mayer_str += f"{obj.name}{self._return_line}"
-                    mayer_str = self._add_extra_parameters_to_str(obj.params, mayer_str)
+                    mayer_str = self._add_extra_parameters_to_str(obj, mayer_str)
                     found = False
                     for mayer in list_mayer_objectives:
                         if mayer[1] == mayer_str:
@@ -417,14 +418,15 @@ class OcpToGraph(GraphAbstract):
 
         constraint_str = ""
         constraint_str += f"{constraint.name}<br/>"
-        constraint_str += f"Min bound: {constraint.min_bound}<br/>"
-        constraint_str += f"Max bound: {constraint.max_bound}<br/>"
+        constraint_str += f"<b>Min bound</b>: {constraint.min_bound}<br/>"
+        constraint_str += f"<b>Max bound</b>: {constraint.max_bound}<br/>"
         constraint_str += (
-            f"{f'Target: {self._vector_layout(constraint.sliced_target)} <br/><br/>'}"
+            f"{f'<b>Target</b>: {self._vector_layout(constraint.sliced_target)} <br/>'}"
             if constraint.sliced_target is not None
             else ""
         )
         constraint_str += self._add_dict_to_str(constraint.params)
+        constraint_str += f"<b>Index in list</b>: {constraint.list_index}<br/>"
         return constraint_str
 
     def _global_objectives_to_str(self, objective_list: ObjectiveList):
@@ -521,7 +523,7 @@ class OcpToGraph(GraphAbstract):
         """
 
         lagrange_str = self._lagrange_to_str(self.ocp.nlp[phase_idx].J)[0]
-        node_str = f"<b>Lagrange</b><br/>{lagrange_str}"
+        node_str = f"<u><b>Lagrange</b></u><br/>{lagrange_str}"
         g.node(f"lagrange_{phase_idx}", f"""<{node_str}>""")
 
     def _draw_mayer_node(self, g: Digraph.subgraph, phase_idx: int):
@@ -537,13 +539,13 @@ class OcpToGraph(GraphAbstract):
         """
 
         list_mayer_objectives = self._mayer_to_str(self.ocp.nlp[phase_idx].J)
-        all_mayer_str = "<b>Mayer</b><br/>"
+        all_mayer_str = "<u><b>Mayer</b></u><br/>"
         if len(list_mayer_objectives) != 0:
             for objective in list_mayer_objectives:
                 all_mayer_str += objective[1]
-                all_mayer_str += f"Shooting nodes index: {objective[0]}<br/><br/>"
+                all_mayer_str += f"<b>Shooting nodes index</b>: {objective[0]}<br/><br/>"
         else:
-            all_mayer_str = "<b>Mayer</b><br/> No Mayer set"
+            all_mayer_str += "No Mayer set"
         g.node(f"mayer_node_{phase_idx}", f"""<{all_mayer_str}>""")
 
     def _draw_constraints_node(self, g: Digraph.subgraph, phase_idx: int):
@@ -566,13 +568,13 @@ class OcpToGraph(GraphAbstract):
             constraints_str += self._constraint_to_str(constraint[0]["constraint"])
             list_constraints.append([constraints_str, node_index])
 
-        all_constraints_str = "<b>Constraints</b><br/>"
+        all_constraints_str = "<u><b>Constraints</b></u><br/>"
         if len(list_constraints) != 0:
             for constraint in list_constraints:
                 all_constraints_str += constraint[0]
-                all_constraints_str += f"Shooting nodes index: {constraint[1]}<br/><br/>"
+                all_constraints_str += f"<b>Shooting nodes index</b>: {constraint[1]}<br/><br/>"
         else:
-            all_constraints_str = "<b>Constraints</b><br/> No constraint set"
+            all_constraints_str += "No constraint set"
         g.node(f"constraints_node_{phase_idx}", f"""<{all_constraints_str}>""")
 
     def _draw_nlp_cluster(self, G: Digraph, phase_idx: int):
@@ -601,7 +603,7 @@ class OcpToGraph(GraphAbstract):
                     self._draw_parameter_node(g, phase_idx, param_idx, param)
                     param_idx += 1
             else:
-                node_str = "<b>Parameters</b><br/> No parameter set"
+                node_str = "<u><b>Parameters</b></u><br/> No parameter set"
                 g.node(f"param_{phase_idx}0", f"""<{node_str}>""")
 
             only_mayer = True
@@ -612,7 +614,7 @@ class OcpToGraph(GraphAbstract):
             if len(self.ocp.nlp[phase_idx].J) > 0 and not only_mayer:
                 self._draw_lagrange_node(g, phase_idx)
             else:
-                node_str = "<b>Lagrange</b><br/> No Lagrange set"
+                node_str = "<u><b>Lagrange</b></u><br/> No Lagrange set"
                 g.node(f"lagrange_{phase_idx}", f"""<{node_str}>""")
 
             self._draw_mayer_node(g, phase_idx)
