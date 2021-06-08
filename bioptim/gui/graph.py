@@ -479,8 +479,8 @@ class OcpToGraph(GraphAbstract):
         if parameter.penalty_list is not None:
             node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
             node_str += (
-                f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.sliced_target)} <br/>'}"
-                if parameter.penalty_list.sliced_target is not None
+                f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.target)} <br/>'}"
+                if parameter.penalty_list.target is not None
                 else ""
             )
             node_str += f"<b>Quadratic</b>: {parameter.penalty_list.quadratic} <br/>"
