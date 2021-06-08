@@ -21,6 +21,20 @@ class VariableInformationList:
     def append(self, name: str, n: int, index: Union[list, tuple]):
         self.elements.append(VariableInformation(name, n, index))
 
+    def ismember(self, item):
+
+        for elt in self.elements:
+            if item == elt.name:
+                return True
+        else:
+            return False
+
+    def names(self):
+        NameList = []
+        for elt in self.elements:
+            NameList.append(elt.name)
+        return NameList
+
     def __len__(self):
         return len(self.elements)
 

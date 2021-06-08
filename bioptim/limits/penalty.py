@@ -221,10 +221,10 @@ class PenaltyFunctionAbstract:
 
                 # Prepare the plot
                 prev_idx = 0  # offset due to previous states
-                for s in nlp.var_states:
+                for s in nlp.var_states.names():
                     state_idx = []
                     for i, idx in enumerate(states_idx):
-                        if prev_idx <= idx < nlp.var_states[s] + prev_idx:
+                        if prev_idx <= idx < nlp.var_states[s].n + prev_idx:
                             state_idx.append([idx - prev_idx, i])
                     state_idx = np.array(state_idx)
                     if state_idx.shape[0] > 0:
@@ -232,7 +232,7 @@ class PenaltyFunctionAbstract:
                         PenaltyFunctionAbstract._add_track_data_to_plot(
                             pn, target[state_idx[:, 1], :], combine_to=s, axes_idx=mapping
                         )
-                    prev_idx += nlp.var_states[s]
+                    prev_idx += nlp.var_states[s].n
 
             for i, v in enumerate(pn.x):
                 val = v[states_idx]
@@ -480,14 +480,15 @@ class PenaltyFunctionAbstract:
             target = None
             if penalty.target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (len(tau_idx), all_pn.nlp.shape['tau'])
+                    penalty.target, (len(tau_idx), len(all_pn.u))
                 )
                 PenaltyFunctionAbstract._add_track_data_to_plot(
                     all_pn, target, combine_to="tau", axes_idx=Mapping(tau_idx)
                 )
 
-            for i, pn in enumerate(all_pn):
-                val = pn["tau", :, 2][tau_idx]
+            for i in range(len(all_pn) - 1):
+                pn = all_pn[i]
+                val = pn["tau"]
                 penalty.sliced_target = target[:, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
@@ -534,7 +535,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_torque_derivative(penalty: PenaltyOption, pn: PenaltyNodeList):
+        def minimize_torque_derivative(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the joint torque velocity by comparing the torque at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -544,42 +545,41 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             """
 
-            n_tau = pn.nlp.shape["tau"]
-            n_taudot = pn.nlp.shape["taudot"]
+            n_tau = all_pn.nlp.shape["tau"]
+            n_taudot = all_pn.nlp.shape["taudot"]
 
             if n_taudot > 0:
 
-                V, first_idx, idx = PenaltyFunctionAbstract._get_states_or_controls_with_specified_var(pn, 'taudot')
                 controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_taudot, "controls_idx")
-                controls_idx += first_idx
 
                 target = None
                 if penalty.target is not None:
                     target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                        penalty.target, (len(controls_idx), pn.nlp.shape['taudot'])
+                        penalty.target, (len(controls_idx), len(all_pn.u))
                     )
                     PenaltyFunctionAbstract._add_track_data_to_plot(
-                        pn, target, combine_to="taudot", axes_idx=Mapping(controls_idx)
+                        all_pn, target, combine_to="taudot", axes_idx=Mapping(controls_idx)
                     )
 
-                for i, v in enumerate(V):
-                    val = v[controls_idx]
+                for i in range(len(all_pn) - 1):
+                    pn = all_pn[i]
+                    val = pn["taudot"]
                     penalty.sliced_target = target[:, i] if target is not None else None
                     penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
             else:
                 controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_tau, "controls_idx")
 
-                for i in range(len(pn.u) - 1):
-                    val = pn.u[i + 1][controls_idx] - pn.u[i][controls_idx]
-                    penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+                for i in range(len(all_pn.u) - 1):
+                    val = all_pn.u[i + 1][controls_idx] - all_pn.u[i][controls_idx]
+                    penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
-        def minimize_muscles_control(penalty: PenaltyOption, pn: PenaltyNodeList):
+        def minimize_muscles_control(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the muscles part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -589,33 +589,32 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             """
 
             muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                penalty.index, pn.nlp.shape["muscle"], "muscles_idx"
+                penalty.index, all_pn.nlp.shape["muscle"], "muscles_idx"
             )
 
             target = None
             if penalty.target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (len(muscles_idx), len(pn.u))
+                    penalty.target, (len(muscles_idx), len(all_pn.u))
                 )
 
                 PenaltyFunctionAbstract._add_track_data_to_plot(
-                    pn, target, combine_to="muscles_control", axes_idx=Mapping(muscles_idx)
+                    all_pn, target, combine_to="muscles_control", axes_idx=Mapping(muscles_idx)
                 )
 
-            V, first_idx, idx = PenaltyFunctionAbstract._get_states_or_controls_with_specified_var(pn, 'muscles')
-            muscles_idx += first_idx
-            for i, v in enumerate(V):
-                val = v[muscles_idx]
+            for i in range(len(all_pn) - 1):
+                pn = all_pn[i]
+                val = pn["muscle"]
                 penalty.sliced_target = target[:, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_all_controls(penalty: PenaltyOption, pn: PenaltyNodeList):
+        def minimize_all_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -625,26 +624,26 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             """
 
-            n_u = pn.nlp.nu
+            n_u = all_pn.nlp.nu
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_u, "muscles_idx")
 
             target = None
             if penalty.target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (len(controls_idx), len(pn.u))
+                    penalty.target, (len(controls_idx), len(all_pn.u))
                 )
 
-            for i, v in enumerate(pn.u):
+            for i, v in enumerate(all_pn.u):
                 val = v[controls_idx]
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
-        def minimize_control_derivatives(penalty: PenaltyOption, pn: PenaltyNodeList):
+        def minimize_control_derivatives(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the control derivatives by comparing the controls at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -654,15 +653,15 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             """
 
-            n_u = pn.nlp.nu
+            n_u = all_pn.nlp.nu
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_u, "controls_idx")
-            for i in range(len(pn.u) - 1):
-                val = pn.u[i + 1][controls_idx] - pn.u[i][controls_idx]
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+            for i in range(len(all_pn.u) - 1):
+                val = all_pn.u[i + 1][controls_idx] - all_pn.u[i][controls_idx]
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
         def minimize_predicted_com_height(penalty: PenaltyOption, pn: PenaltyNodeList):

@@ -57,7 +57,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((36, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
+    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscle"]
 
     if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final position
@@ -165,7 +165,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((36, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, mus = sol.states["q"], sol.states["qdot"], sol.controls["muscles"]
+    q, qdot, mus = sol.states["q"], sol.states["qdot"], sol.controls["muscle"]
 
     if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final position
@@ -259,9 +259,9 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
     q, qdot, mus_states, tau, mus_controls = (
         sol.states["q"],
         sol.states["qdot"],
-        sol.states["muscles"],
+        sol.states["muscle"],
         sol.controls["tau"],
-        sol.controls["muscles"],
+        sol.controls["muscle"],
     )
 
     if isinstance(ode_solver, OdeSolver.IRK):
@@ -398,8 +398,8 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     q, qdot, mus_states, mus_controls = (
         sol.states["q"],
         sol.states["qdot"],
-        sol.states["muscles"],
-        sol.controls["muscles"],
+        sol.states["muscle"],
+        sol.controls["muscle"],
     )
 
     if isinstance(ode_solver, OdeSolver.IRK):
@@ -533,7 +533,7 @@ def test_muscle_activation_and_contacts_tracking(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau, mus_controls = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
+    q, qdot, tau, mus_controls = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscle"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 0.0, -0.75, 0.75]))

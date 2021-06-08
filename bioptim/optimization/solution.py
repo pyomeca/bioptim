@@ -588,9 +588,9 @@ class Solution:
 
             # Dispatch the integrated values to all the keys
             off = 0
-            for key in ocp.nlp[p].var_states:
-                out._states[p][key] = out._states[p]["all"][off : off + ocp.nlp[p].var_states[key], :]
-                off += ocp.nlp[p].var_states[key]
+            for key in ocp.nlp[p].var_states.names():
+                out._states[p][key] = out._states[p]["all"][off : off + ocp.nlp[p].var_states[key].n, :]
+                off += ocp.nlp[p].var_states[key].n
 
         if merge_phases:
             if continuous:

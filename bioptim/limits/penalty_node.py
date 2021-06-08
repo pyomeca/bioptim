@@ -3,6 +3,7 @@ from typing import Union, Any
 from casadi import MX, SX, vertcat
 
 from ..optimization.non_linear_program import NonLinearProgram
+from ..optimization.variable_information import VariableInformationList, VariableInformation
 
 
 class PenaltyNodeList:
@@ -92,14 +93,13 @@ class PenaltyNode:
 
     def __getitem__(self, item):
         if isinstance(item, str):
-            if item in self.nlp.var_states:
-                idx_item = list(self.nlp.var_states.keys()).index(item)
-                idx = range(sum(list(self.nlp.var_states.values())[0:idx_item]), self.nlp.var_states[item])
-                v = self.x[idx, :]
-            elif item in self.nlp.var_controls:
-                idx_item = list(self.nlp.var_controls.keys()).index(item)
-                idx = range(sum(list(self.nlp.var_controls.values())[0:idx_item]), self.nlp.var_controls[item])
-                v = self.u[idx, :]
+            if self.nlp.var_states.ismember(item):
+                v = self.x[self.nlp.var_states[item].index, :]
+            elif self.nlp.var_controls.ismember(item):
+                if self.u is None:
+                    v = None
+                else:
+                    v = self.u[self.nlp.var_controls[item].index, :]
             else:
                 raise RuntimeError(f"{item} is not considered in both controls and states")
 

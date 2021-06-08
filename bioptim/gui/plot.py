@@ -528,13 +528,13 @@ class PlotOcp:
             n_elements = nlp.ns * step_size + 1
 
             state = np.ndarray((0, n_elements))
-            for s in nlp.var_states:
+            for s in nlp.var_states.names():
                 if isinstance(data_states, (list, tuple)):
                     state = np.concatenate((state, data_states[i][s]))
                 else:
                     state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
-            for s in nlp.var_controls:
+            for s in nlp.var_controls.names():
                 if isinstance(data_controls, (list, tuple)):
                     control = np.concatenate((control, data_controls[i][s]))
                 else:

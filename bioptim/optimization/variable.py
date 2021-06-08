@@ -237,9 +237,9 @@ class OptimizationVariable:
             x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].nx, -1), order="F")
             data_states[p_idx]["all"] = x_array
             offset_var = 0
-            for var in ocp.nlp[p].var_states:
-                data_states[p_idx][var] = x_array[offset_var : offset_var + ocp.nlp[p].var_states[var], :]
-                offset_var += ocp.nlp[p].var_states[var]
+            for var in ocp.nlp[p].var_states.names():
+                data_states[p_idx][var] = x_array[offset_var : offset_var + ocp.nlp[p].var_states[var].n, :]
+                offset_var += ocp.nlp[p].var_states[var].n
             p_idx += 1
             offset += self.n_phase_x[p]
 
@@ -249,9 +249,9 @@ class OptimizationVariable:
             u_array = v_array[offset : offset + self.n_phase_u[p]].reshape((ocp.nlp[p].nu, -1), order="F")
             data_controls[p_idx]["all"] = u_array
             offset_var = 0
-            for var in ocp.nlp[p].var_controls:
-                data_controls[p_idx][var] = u_array[offset_var : offset_var + ocp.nlp[p].var_controls[var], :]
-                offset_var += ocp.nlp[p].var_controls[var]
+            for var in ocp.nlp[p].var_controls.names():
+                data_controls[p_idx][var] = u_array[offset_var : offset_var + ocp.nlp[p].var_controls[var].n, :]
+                offset_var += ocp.nlp[p].var_controls[var].n
             p_idx += 1
             offset += self.n_phase_u[p]
 

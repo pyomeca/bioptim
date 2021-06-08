@@ -395,8 +395,8 @@ class Problem:
             )
 
         if as_controls:
+            nlp.var_controls.append("q", nlp.shape["q"], list(range(nlp.x.shape[0], q.shape[0])))
             nlp.u = vertcat(nlp.u, q)
-            nlp.var_controls["q"] = nlp.shape["q"]
             # Add plot (and retrieving bounds if plots of bounds) if this problem is ever added
 
         nlp.nx = nlp.x.rows()
@@ -435,7 +435,8 @@ class Problem:
 
         nlp.qdot = qdot_mx
         if as_states:
-            nlp.var_states.append("qdot", nlp.shape["qdot"], list(range(nlp.x.shape[0], qdot.shape[0])))
+            nlp.var_states.append("qdot", nlp.shape["qdot"],
+                                  list(range(nlp.shape["q"], nlp.shape["q"] + nlp.shape["qdot"])))
             nlp.x = vertcat(nlp.x, qdot)
             qdot_bounds = nlp.x_bounds[nlp.shape["q"]: nlp.shape["q"] + nlp.shape["qdot"]]
 
@@ -447,8 +448,8 @@ class Problem:
             )
 
         if as_controls:
+            nlp.var_controls.append("qdot", nlp.shape["qdot"], list(range(nlp.x.shape[0], qdot.shape[0])))
             nlp.u = vertcat(nlp.u, qdot)
-            nlp.var_controls["qdot"] = nlp.shape["qdot"]
             # Add plot (and retrieving bounds if plots of bounds) if this problem is ever added
 
         nlp.nx = nlp.x.rows()
@@ -509,10 +510,11 @@ class Problem:
         nlp.tau = tau_mx
 
         if as_states:
-            nlp.x = vertcat(nlp.x, all_tau[0])
-            nlp.var_states["tau"] = nlp.shape["tau"]
-
             nq_qdot = nlp.shape["q"] + nlp.shape["qdot"]
+
+            nlp.var_states.append("tau", nlp.shape["tau"], list(range(nq_qdot, nq_qdot + nlp.shape["tau"])))
+            nlp.x = vertcat(nlp.x, all_tau[0])
+
             tau_bounds = nlp.x_bounds[nq_qdot: nq_qdot + nlp.shape["tau"]]
             # tau as a state with q and qdot
 
@@ -524,9 +526,9 @@ class Problem:
             )
 
         if as_controls:
+            nlp.var_controls.append("tau", nlp.shape["tau"], list(range(0, nlp.shape["tau"])))
             nlp.u = vertcat(nlp.u, horzcat(*all_tau))
-            nlp.var_controls["tau"] = nlp.shape["tau"]
-            tau_bounds = nlp.u_bounds[: nlp.shape["tau"]]
+            tau_bounds = nlp.u_bounds[:nlp.shape["tau"]]
 
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.PLOT
@@ -578,13 +580,13 @@ class Problem:
         nlp.taudot = taudot_mx
 
         if as_states:
+            nlp.var_states.append("taudot", nlp.shape["taudot"], list(range(0, nlp.shape["taudot"])))
             nlp.x = vertcat(nlp.x, all_taudot[0])
-            nlp.var_states["taudot"] = nlp.shape["taudot"]
             # Add plot if it happens, not sure it would
 
         if as_controls:
+            nlp.var_controls.append("taudot", nlp.shape["taudot"], list(range(0, nlp.shape["taudot"])))
             nlp.u = vertcat(nlp.u, horzcat(*all_taudot))
-            nlp.var_controls["taudot"] = nlp.shape["taudot"]
             taudot_bounds = nlp.u_bounds[:nlp.shape["taudot"]]  # taudot as the only control.
 
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -629,13 +631,13 @@ class Problem:
             for name in nlp.muscleNames:
                 muscles = vertcat(muscles, nlp.cx.sym(f"Muscle_{name}_activation_{nlp.phase_idx}"))
 
-            nlp.x = vertcat(nlp.x, muscles)
-            nlp.var_states["muscles"] = nlp.shape["muscle"]
-
             nx_q = nlp.shape["q"] + nlp.shape["qdot"]
-            muscles_bounds = nlp.x_bounds[nx_q : nx_q + nlp.shape["muscle"]]
+            nlp.var_states.append("muscle", nlp.shape["muscle"], list(range(nx_q, nx_q + nlp.shape["muscle"])))
+            nlp.x = vertcat(nlp.x, muscles)
+
+            muscles_bounds = nlp.x_bounds[nx_q: nx_q + nlp.shape["muscle"]]
             nlp.plot["muscles_states"] = CustomPlot(
-                lambda x, u, p: x[nx_q : nx_q + nlp.shape["muscle"]],
+                lambda x, u, p: x[nx_q: nx_q + nlp.shape["muscle"]],
                 plot_type=PlotType.INTEGRATED,
                 legend=nlp.muscleNames,
                 ylim=[0, 1],
@@ -651,17 +653,18 @@ class Problem:
                     all_muscles[j] = vertcat(
                         all_muscles[j], nlp.cx.sym(f"Muscle_{name}_excitation_{j}_{nlp.phase_idx}", 1, 1)
                     )
-
+            nlp.var_controls.append("muscle", nlp.shape["muscle"],
+                                    list(range(nlp.shape["tau"], nlp.shape["tau"] + nlp.shape["muscle"])))
             nlp.u = vertcat(nlp.u, horzcat(*all_muscles))
-            nlp.var_controls["muscles"] = nlp.shape["muscle"]
-            muscles_bounds = nlp.u_bounds[nlp.shape["tau"] : nlp.shape["tau"] + nlp.shape["muscle"]]
+
+            muscles_bounds = nlp.u_bounds[nlp.shape["tau"]: nlp.shape["tau"] + nlp.shape["muscle"]]
 
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.LINEAR
             else:
                 plot_type = PlotType.STEP
             nlp.plot["muscles_control"] = CustomPlot(
-                lambda x, u, p: u[nlp.shape["tau"] : nlp.shape["tau"] + nlp.shape["muscle"]],
+                lambda x, u, p: u[nlp.shape["tau"]: nlp.shape["tau"] + nlp.shape["muscle"]],
                 plot_type=plot_type,
                 legend=nlp.muscleNames,
                 combine_to=combine,
