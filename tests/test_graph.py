@@ -408,6 +408,8 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
         weight=1000,
         list_index=6,
     )
+    target = np.array([[1, 2, 3], [4, 5, 6]]).T[:, :, np.newaxis]
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, list_index=7, index=[1, 2], target=target)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
