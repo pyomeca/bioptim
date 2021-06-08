@@ -1,7 +1,11 @@
 from graphviz import Digraph
+from typing import Union
+
+import numpy as np
 
 from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
+from ..limits.path_conditions import PathCondition
 from ..optimization.parameters import Parameter
 from ..misc.enums import Node
 
@@ -12,6 +16,8 @@ class GraphAbstract:
     """
     Methods
     -------
+    _vector_layout_structure(self, vector: Union[list, np.array], decimal: int)
+        Main structure of the method _vector_layout()
     _vector_layout(self, vector: list, size: int)
         Resize vector content for display task
     _add_dict_to_str(self, _dict: dict)
@@ -21,7 +27,9 @@ class GraphAbstract:
     _lagrange_to_str(self, objective_list: ObjectiveList)
         Convert Lagrange objective into an easy-to-read string
     _mayer_to_str(self, objective_list: ObjectiveList)
-        Convert Mayer objective into an easy-to-read string  
+        Convert Mayer objective into an easy-to-read string 
+    _structure_scaling_parameter(self, el: PathCondition, parameter: Parameter)
+        Main structure of the method _scaling_parameter()
     _scaling_parameter(self, parameter: Parameter)
         Take scaling into account for display task
     _get_parameter_function_name(self, parameter: Parameter)
@@ -43,30 +51,50 @@ class GraphAbstract:
 
         self.ocp = ocp
 
-    def _vector_layout(self, vector: list, size: int, param: bool = False):
+    def _vector_layout_structure(self, vector: Union[list, np.array], decimal: int):
+        """
+        Main structure of the next method _vector_layout(self, vector: Union[list, np.array], size: int, param: bool)
+
+        Parameters
+        ----------
+        vector: Union[list, np.array]
+            The vector to be condensed
+        decimal: int
+            Number of decimals
+        """
+        condensed_vector = ""
+        for i, var in enumerate(vector):
+            condensed_vector += f"{round(float(var), decimal):.{decimal}f} "
+            if i % 7 == 0 and i != 0:
+                condensed_vector += f"... {self._return_line}... "
+        return condensed_vector
+
+    def _vector_layout(self, vector: Union[list, np.array]):
         """
         Resize vector content for display task
 
         Parameters
         ----------
-        vector: list
+        vector: Union[list, np.array]
             The vector to be condensed
-        size: int
-            The size of the vector
         """
+        condensed_vector = ""
+        vector = np.array(vector)
+        if len(vector.shape) == 1:
+            vector = vector[:, np.newaxis]
 
-        if size > 1:
-            condensed_vector = "[ "
-            count = 0
-            for var in vector:
-                count += 1
-                condensed_vector += f"{float(var)} "
-                if count == 5:
-                    condensed_vector += f"... {self._return_line}... "
-                    count = 0
+        if vector.shape[1] != 1:
+            condensed_vector += f"{self._return_line}"
+            condensed_vector += "["
+        for i in range(vector.shape[1]):
+            if i != 0:
+                condensed_vector += f"{self._return_line}"
+            condensed_vector += "[" if vector.size > 1 else ""
+            condensed_vector += self._vector_layout_structure(vector[:, i], 3)
+            condensed_vector += "]" if vector.size > 1 else ""
+        if vector.shape[1] != 1:
             condensed_vector += "]"
-        else:
-            condensed_vector = f"{vector}" if param else f"{float(vector[0])}"
+
         return condensed_vector
 
     def _add_dict_to_str(self, _dict: dict):
@@ -81,23 +109,26 @@ class GraphAbstract:
 
         str_to_add = ""
         for d in _dict:
-            str_to_add += f"{d}: {_dict[d]}{self._return_line}"
+            str_to_add += f"<b>{d}</b>: {_dict[d]}{self._return_line}"
         return str_to_add
 
-    def _add_extra_parameters_to_str(self, list_params: list, string: str):
+    def _add_extra_parameters_to_str(self, objective: Objective, string: str):
         """
         Simple method to add extra-parameters to a string
 
         Parameters
         ----------
-        list_params: list
-            The list of parameters to add to the string
+        objective: Objective
+            The current objective
         string: str
             The string to be completed
         """
 
-        for param in list_params:
-            string += f"{param}: {list_params[param]}{self._return_line}"
+        if hasattr(objective, "weight"):
+            string += f"<b>Weight</b>: {objective.weight}{self._return_line}"
+        for param in objective.params:
+            string += f"<b>{param}</b>: {objective.params[param]}{self._return_line}"
+        string += f"<b>Index in list</b>: {objective.list_index}{self._return_line}"
         return string
 
     def _lagrange_to_str(self, objective_list: ObjectiveList):
@@ -118,15 +149,15 @@ class GraphAbstract:
                 if isinstance(obj.type, ObjectiveFcn.Lagrange):
                     if obj.sliced_target is not None:
                         if obj.quadratic:
-                            lagrange_str += f"({obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}){self._squared}{self._return_line}"
+                            lagrange_str += f"({obj.name} - {self._vector_layout(obj.sliced_target)}){self._squared}{self._return_line}"
                         else:
-                            lagrange_str += f"{obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}{self._return_line}"
+                            lagrange_str += f"{obj.name} - {self._vector_layout(obj.sliced_target)}{self._return_line}"
                     else:
                         if obj.quadratic:
                             lagrange_str += f"({obj.name}){self._squared}{self._return_line}"
                         else:
                             lagrange_str += f"{obj.name}{self._return_line}"
-                    lagrange_str = self._add_extra_parameters_to_str(obj.params, lagrange_str)
+                    lagrange_str = self._add_extra_parameters_to_str(obj, lagrange_str)
                     lagrange_str += f"{self._return_line}"
                     objective_names.append(obj.name)
         return lagrange_str, objective_names
@@ -150,15 +181,15 @@ class GraphAbstract:
                     mayer_objective = [obj.node[0]]
                     if obj.sliced_target is not None:
                         if obj.quadratic:
-                            mayer_str += f"({obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}){self._squared}{self._return_line}"
+                            mayer_str += f"({obj.name} - {self._vector_layout(obj.sliced_target)}){self._squared}{self._return_line}"
                         else:
-                            mayer_str += f"{obj.name} - {self._vector_layout(obj.sliced_target, len(obj.sliced_target))}{self._return_line}"
+                            mayer_str += f"{obj.name} - {self._vector_layout(obj.sliced_target)}{self._return_line}"
                     else:
                         if obj.quadratic:
                             mayer_str += f"({obj.name}){self._squared}{self._return_line}"
                         else:
                             mayer_str += f"{obj.name}{self._return_line}"
-                    mayer_str = self._add_extra_parameters_to_str(obj.params, mayer_str)
+                    mayer_str = self._add_extra_parameters_to_str(obj, mayer_str)
                     found = False
                     for mayer in list_mayer_objectives:
                         if mayer[1] == mayer_str:
@@ -167,6 +198,23 @@ class GraphAbstract:
                         mayer_objective.append(mayer_str)
                         list_mayer_objectives.append(mayer_objective)
         return list_mayer_objectives
+
+    def _structure_scaling_parameter(self, el: PathCondition, parameter: Parameter):
+        """
+        Main structure of the next method _scaling_parameter(self, parameter: Parameter)
+
+        Parameters
+        ----------
+        el: PathCondition
+            The PathCondition to be converted in a string
+        parameter: Parameter
+            The unscaled parameter
+        """
+
+        size_el = len(el[0])
+        el_list = [el[i][j] for i in range(parameter.size) for j in range(size_el)]
+        el_str = f"{self._vector_layout(el_list)}"
+        return el_str
 
     def _scaling_parameter(self, parameter: Parameter):
         """
@@ -178,25 +226,14 @@ class GraphAbstract:
             The unscaled parameter
         """
 
-        size_initial_guess = len(parameter.initial_guess.init[0])
-        initial_guess = [
-            parameter.initial_guess.init[i][j] * parameter.scaling[i]
-            for i in range(parameter.size)
-            for j in range(size_initial_guess)
-        ]
-        size_min_bound = len(parameter.bounds.min[0])
-        min_bound = [
-            parameter.bounds.min[i][j] * parameter.scaling[i]
-            for i in range(parameter.size)
-            for j in range(size_min_bound)
-        ]
-        size_max_bound = len(parameter.bounds.max[0])
-        max_bound = [
-            parameter.bounds.max[i][j] * parameter.scaling[i]
-            for i in range(parameter.size)
-            for j in range(size_max_bound)
-        ]
-        return initial_guess, min_bound, max_bound
+        initial_guess_str = self._structure_scaling_parameter(parameter.initial_guess.init, parameter)
+        min_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
+        max_bound_str = self._structure_scaling_parameter(parameter.bounds.min, parameter)
+
+        scaling = [parameter.scaling[i][0] for i in range(parameter.size)]
+        scaling_str = f"{self._vector_layout(scaling)}"
+
+        return initial_guess_str, min_bound_str, max_bound_str, scaling_str
 
     def _get_parameter_function_name(self, parameter: Parameter):
         """
@@ -259,11 +296,12 @@ class OcpToConsole(GraphAbstract):
             print(f"PARAMETERS: ")
             print("")
             for parameter in self.ocp.nlp[phase_idx].parameters:
-                initial_guess, min_bound, max_bound = self._scaling_parameter(parameter)
+                initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter)
                 objective_name = self._get_parameter_function_name(parameter)
                 print(f"Name: {parameter.name}")
                 print(f"Size: {parameter.size}")
                 print(f"Initial_guess: {initial_guess}")
+                print(f"Scaling: {scaling}")
                 print(f"Min_bound: {min_bound}")
                 print(f"Max_bound: {max_bound}")
                 print(f"Objectives: {objective_name}")
@@ -291,6 +329,8 @@ class OcpToConsole(GraphAbstract):
                     if mayer[0] == node_idx:
                         print(mayer[1])
                 for constraint in self.ocp.nlp[phase_idx].g:
+                    if not constraint:
+                        continue
                     node_index = self._analyze_nodes(phase_idx, constraint[0])
                     if node_index == node_idx:
                         print(f"*** Constraint: {constraint[0]['constraint'].name}")
@@ -374,14 +414,15 @@ class OcpToGraph(GraphAbstract):
 
         constraint_str = ""
         constraint_str += f"{constraint.name}<br/>"
-        constraint_str += f"Min bound: {constraint.min_bound}<br/>"
-        constraint_str += f"Max bound: {constraint.max_bound}<br/>"
+        constraint_str += f"<b>Min bound</b>: {constraint.min_bound}<br/>"
+        constraint_str += f"<b>Max bound</b>: {constraint.max_bound}<br/>"
         constraint_str += (
-            f"{f'Target: {self._vector_layout(constraint.sliced_target, len(constraint.sliced_target))} <br/><br/>'}"
+            f"{f'<b>Target</b>: {self._vector_layout(constraint.sliced_target)} <br/>'}"
             if constraint.sliced_target is not None
             else ""
         )
         constraint_str += self._add_dict_to_str(constraint.params)
+        constraint_str += f"<b>Index in list</b>: {constraint.list_index}<br/>"
         return constraint_str
 
     def _global_objectives_to_str(self, objective_list: ObjectiveList):
@@ -428,16 +469,17 @@ class OcpToGraph(GraphAbstract):
             The parameter containing all the information to display
         """
 
-        initial_guess, min_bound, max_bound = self._scaling_parameter(parameter)
+        initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter)
         node_str = f"<u><b>{parameter.name[0].upper() + parameter.name[1:]}</b></u><br/>"
         node_str += f"<b>Size</b>: {parameter.size}<br/>"
-        node_str += f"<b>Initial guesses</b>: {self._vector_layout(initial_guess, parameter.size)}<br/><br/>"
+        node_str += f"<b>Scaling</b>: {scaling}<br/>"
+        node_str += f"<b>Initial guess</b>: {initial_guess}<br/>"
+        node_str += f"<b>Min bound</b>: {min_bound} <br/>"
+        node_str += f"<b>Max bound</b>: {max_bound} <br/><br/>"
         if parameter.penalty_list is not None:
             node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
-            node_str += f"<b>Min bound</b>: {self._vector_layout(min_bound, parameter.size)} <br/>"
-            node_str += f"<b>Max bound</b>: {self._vector_layout(max_bound, parameter.size)} <br/>"
             node_str += (
-                f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.sliced_target, parameter.size, param=True)} <br/>'}"
+                f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.sliced_target)} <br/>'}"
                 if parameter.penalty_list.sliced_target is not None
                 else ""
             )
@@ -477,7 +519,7 @@ class OcpToGraph(GraphAbstract):
         """
 
         lagrange_str = self._lagrange_to_str(self.ocp.nlp[phase_idx].J)[0]
-        node_str = f"<b>Lagrange</b><br/>{lagrange_str}"
+        node_str = f"<u><b>Lagrange</b></u><br/>{lagrange_str}"
         g.node(f"lagrange_{phase_idx}", f"""<{node_str}>""")
 
     def _draw_mayer_node(self, g: Digraph.subgraph, phase_idx: int):
@@ -493,13 +535,13 @@ class OcpToGraph(GraphAbstract):
         """
 
         list_mayer_objectives = self._mayer_to_str(self.ocp.nlp[phase_idx].J)
-        all_mayer_str = "<b>Mayer</b><br/>"
+        all_mayer_str = "<u><b>Mayer</b></u><br/>"
         if len(list_mayer_objectives) != 0:
             for objective in list_mayer_objectives:
                 all_mayer_str += objective[1]
-                all_mayer_str += f"Shooting nodes index: {objective[0]}<br/><br/>"
+                all_mayer_str += f"<b>Shooting nodes index</b>: {objective[0]}<br/><br/>"
         else:
-            all_mayer_str = "<b>Mayer</b><br/> No Mayer set"
+            all_mayer_str += "No Mayer set"
         g.node(f"mayer_node_{phase_idx}", f"""<{all_mayer_str}>""")
 
     def _draw_constraints_node(self, g: Digraph.subgraph, phase_idx: int):
@@ -517,18 +559,20 @@ class OcpToGraph(GraphAbstract):
         list_constraints = []
 
         for constraint in self.ocp.nlp[phase_idx].g:
+            if not constraint:
+                continue
             constraints_str = ""
             node_index = self._analyze_nodes(phase_idx, constraint[0])
             constraints_str += self._constraint_to_str(constraint[0]["constraint"])
             list_constraints.append([constraints_str, node_index])
 
-        all_constraints_str = "<b>Constraints</b><br/>"
+        all_constraints_str = "<u><b>Constraints</b></u><br/>"
         if len(list_constraints) != 0:
             for constraint in list_constraints:
                 all_constraints_str += constraint[0]
-                all_constraints_str += f"Shooting nodes index: {constraint[1]}<br/><br/>"
+                all_constraints_str += f"<b>Shooting nodes index</b>: {constraint[1]}<br/><br/>"
         else:
-            all_constraints_str = "<b>Constraints</b><br/> No constraint set"
+            all_constraints_str += "No constraint set"
         g.node(f"constraints_node_{phase_idx}", f"""<{all_constraints_str}>""")
 
     def _draw_nlp_cluster(self, G: Digraph, phase_idx: int):
@@ -557,18 +601,20 @@ class OcpToGraph(GraphAbstract):
                     self._draw_parameter_node(g, phase_idx, param_idx, param)
                     param_idx += 1
             else:
-                node_str = "<b>Parameters</b><br/> No parameter set"
+                node_str = "<u><b>Parameters</b></u><br/> No parameter set"
                 g.node(f"param_{phase_idx}0", f"""<{node_str}>""")
 
             only_mayer = True
             for objective in self.ocp.nlp[phase_idx].J:
+                if not objective:
+                    continue
                 if isinstance(objective[0]["objective"].type, ObjectiveFcn.Lagrange):
                     only_mayer = False
 
             if len(self.ocp.nlp[phase_idx].J) > 0 and not only_mayer:
                 self._draw_lagrange_node(g, phase_idx)
             else:
-                node_str = "<b>Lagrange</b><br/> No Lagrange set"
+                node_str = "<u><b>Lagrange</b></u><br/> No Lagrange set"
                 g.node(f"lagrange_{phase_idx}", f"""<{node_str}>""")
 
             self._draw_mayer_node(g, phase_idx)
