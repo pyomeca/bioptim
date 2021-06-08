@@ -90,9 +90,9 @@ class GraphAbstract:
         for i in range(vector.shape[1]):
             if i != 0:
                 condensed_vector += f"{self._return_line}"
-            condensed_vector += "["
+            condensed_vector += "[" if vector.size > 1 else ""
             condensed_vector += self._vector_layout_structure(vector[:, i], 3)
-            condensed_vector += "]"
+            condensed_vector += "]" if vector.size > 1 else ""
         if vector.shape[1] != 1:
             condensed_vector += "]"
 
@@ -474,12 +474,12 @@ class OcpToGraph(GraphAbstract):
         initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter)
         node_str = f"<u><b>{parameter.name[0].upper() + parameter.name[1:]}</b></u><br/>"
         node_str += f"<b>Size</b>: {parameter.size}<br/>"
-        node_str += f"<b>Initial guesses</b>: {initial_guess}<br/>"
-        node_str += f"<b>Scaling</b>: {scaling}<br/><br/>"
+        node_str += f"<b>Scaling</b>: {scaling}<br/>"
+        node_str += f"<b>Initial guess</b>: {initial_guess}<br/>"
+        node_str += f"<b>Min bound</b>: {min_bound} <br/>"
+        node_str += f"<b>Max bound</b>: {max_bound} <br/><br/>"
         if parameter.penalty_list is not None:
             node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
-            node_str += f"<b>Min bound</b>: {min_bound} <br/>"
-            node_str += f"<b>Max bound</b>: {max_bound} <br/>"
             node_str += (
                 f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.sliced_target)} <br/>'}"
                 if parameter.penalty_list.sliced_target is not None
