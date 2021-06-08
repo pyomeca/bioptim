@@ -7,7 +7,7 @@ import numpy as np
 import biorbd
 from casadi import vertcat, horzcat, MX, SX
 
-from .penalty_node import PenaltyNodes
+from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, Axis, PlotType, ControlType
 from ..misc.mapping import Mapping
 from ..misc.options import OptionGeneric
@@ -90,7 +90,7 @@ class PenaltyFunctionAbstract:
         Doing some configuration on the penalty and add it to the list of penalty
     _parameter_modifier(penalty: PenaltyOption)
         Apply some default parameters
-    _span_checker(penalty: PenaltyOption, pn: PenaltyNodes)
+    _span_checker(penalty: PenaltyOption, pn: PenaltyNodeList)
         Check for any non sense in the requested times for the constraint. Raises an error if so
     _check_and_fill_index(var_idx: Union[list, int], target_size: int, var_name: str = "var")
         Checks if the variable index is consistent with the requested variable.
@@ -100,7 +100,7 @@ class PenaltyFunctionAbstract:
     _check_idx(name: str, elements: Union[list, tuple, int], max_n_elements: int = inf, min_n_elements: int = 0)
         Generic sanity check for requested dimensions.
         If the function returns, everything is okay
-    add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: PenaltyOption)
+    add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodeList, val: Union[MX, SX, float, int], penalty: PenaltyOption)
         Add the constraint to the penalty pool (abstract)
     clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: PenaltyOption)
         Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
@@ -108,10 +108,10 @@ class PenaltyFunctionAbstract:
         Returns the type of the penalty (abstract)
     _get_node(nlp: NonLinearProgram, penalty: PenaltyOption)
         Get the actual node (time, X and U) specified in the penalty
-    _add_track_data_to_plot(pn: PenaltyNodes, data: np.ndarray, combine_to: str,
+    _add_track_data_to_plot(pn: PenaltyNodeList, data: np.ndarray, combine_to: str,
             axes_idx: Union[Mapping, tuple, list] = None)
         Interface to the plot so it can be properly added to the proper plot
-    _get_states_or_controls_with_specified_var(pn: PenaltyNodes, s: str)
+    _get_states_or_controls_with_specified_var(pn: PenaltyNodeList, s: str)
         Extracting controls or states depending on if the selected optimisation variables s are defined as states or controls
     """
 
@@ -121,83 +121,83 @@ class PenaltyFunctionAbstract:
 
         Methods
         -------
-        minimize_states(penalty: PenaltyOption, pn: PenaltyNodes)
+        minimize_states(penalty: PenaltyOption, pn: PenaltyNodeList)
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_markers(penalty: PenaltyOption, , pn: PenaltyNodes, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z))
+        minimize_markers(penalty: PenaltyOption, , pn: PenaltyNodeList, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z))
             Minimize a marker set.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_markers_displacement(penalty: PenaltyOption, pn: PenaltyNodes, coordinates_system_idx: int = -1)
+        minimize_markers_displacement(penalty: PenaltyOption, pn: PenaltyNodeList, coordinates_system_idx: int = -1)
             Minimize a marker set velocity by comparing the position at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
             Indices (default=all_idx) can be specified.
-        minimize_markers_velocity(penalty: PenaltyOption, pn: PenaltyNodes)
+        minimize_markers_velocity(penalty: PenaltyOption, pn: PenaltyNodeList)
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        superimpose_markers(penalty: PenaltyOption, pn: PenaltyNodes, first_marker: Union[int, str], second_marker: Union[int, str]):
+        superimpose_markers(penalty: PenaltyOption, pn: PenaltyNodeList, first_marker: Union[int, str], second_marker: Union[int, str]):
             Minimize the distance between two markers
             By default this function is quadratic, meaning that it minimizes distance between them.
-        proportional_variable(penalty: PenaltyOption, pn: PenaltyNodes,
+        proportional_variable(penalty: PenaltyOption, pn: PenaltyNodeList,
                 which_var: str, first_dof: int, second_dof: int, coef: float)
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
             By default this function is quadratic, meaning that it minimizes the difference of this proportion.
-        minimize_torque(penalty: PenaltyOption, pn: PenaltyNodes)
+        minimize_torque(penalty: PenaltyOption, pn: PenaltyNodeList)
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_state_derivative(penalty: PenaltyOption, pn: PenaltyNodes)
+        minimize_state_derivative(penalty: PenaltyOption, pn: PenaltyNodeList)
             Minimize the states velocity by comparing the state at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
             Indices (default=all_idx) can be specified.
-        minimize_torque_derivative(penalty: PenaltyOption, pn: PenaltyNodes)
+        minimize_torque_derivative(penalty: PenaltyOption, pn: PenaltyNodeList)
             Minimize the joint torque velocity by comparing the torque at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
             Indices (default=all_idx) can be specified.
-        minimize_muscles_control(penalty: PenaltyOption, pn: PenaltyNodes)
+        minimize_muscles_control(penalty: PenaltyOption, pn: PenaltyNodeList)
             Minimize the muscles part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_all_controls(penalty: PenaltyOption, pn: PenaltyNodes)
+        minimize_all_controls(penalty: PenaltyOption, pn: PenaltyNodeList)
             Minimize the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_controls_derivatives(penalty: PenaltyOption, pn: PenaltyNodes)
+        minimize_controls_derivatives(penalty: PenaltyOption, pn: PenaltyNodeList)
             Minimize the control derivatives by comparing the control at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_predicted_com_height(penalty: PenaltyOption, pn: PenaltyNodes)
+        minimize_predicted_com_height(penalty: PenaltyOption, pn: PenaltyNodeList)
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
             assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]
             By default this function is not quadratic, meaning that it minimizes towards infinity.
-        minimize_com_position(penalty: PenaltyOption, pn: PenaltyNodes, axis: Axis = None)
+        minimize_com_position(penalty: PenaltyOption, pn: PenaltyNodeList, axis: Axis = None)
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's position is minimized.
             Otherwise, the projection of the CoM's position on the specified axis is minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
-        minimize_com_velocity(penalty: PenaltyOption, pn: PenaltyNodes, axis: Axis = None)
+        minimize_com_velocity(penalty: PenaltyOption, pn: PenaltyNodeList, axis: Axis = None)
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's velocity is minimized.
             Otherwise, the projection of the CoM's velocity on the specified axis is minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
-        minimize_contact_forces(penalty: PenaltyOption, pn: PenaltyNodes)
+        minimize_contact_forces(penalty: PenaltyOption, pn: PenaltyNodeList)
             Minimize the contact forces computed from dynamics with contact
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        track_segment_with_custom_rt(penalty: PenaltyOption, pn: PenaltyNodes, segment: int, rt_idx: int)
+        track_segment_with_custom_rt(penalty: PenaltyOption, pn: PenaltyNodeList, segment: int, rt_idx: int)
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
             and a RT (e.g. IMU). By default this function is quadratic, meaning that it minimizes the difference.
-        track_marker_with_segment_axis(penalty: PenaltyOption, pn: PenaltyNodes, marker: str, segment: str, axis: Axis)
+        track_marker_with_segment_axis(penalty: PenaltyOption, pn: PenaltyNodeList, marker: str, segment: str, axis: Axis)
             Track a marker using a segment, that is aligning an axis toward the marker
             By default this function is quadratic, meaning that it minimizes the difference.
-        custom(penalty: PenaltyOption, pn: PenaltyNodes, **parameters: dict)
+        custom(penalty: PenaltyOption, pn: PenaltyNodeList, **parameters: dict)
             A user defined penalty function
         """
 
         @staticmethod
-        def minimize_states(penalty: PenaltyOption, pn: PenaltyNodes):
+        def minimize_states(penalty: PenaltyOption, pn: PenaltyNodeList):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -207,7 +207,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -240,7 +240,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_markers(penalty: PenaltyOption, pn: PenaltyNodes, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)):
+        def minimize_markers(penalty: PenaltyOption, pn: PenaltyNodeList, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)):
             """
             Minimize a marker set.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -250,7 +250,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             axis_to_track: Axis
                 The axis the penalty is acting on
@@ -274,7 +274,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_markers_displacement(penalty: PenaltyOption, pn: PenaltyNodes, coordinates_system_idx: int = -1):
+        def minimize_markers_displacement(penalty: PenaltyOption, pn: PenaltyNodeList, coordinates_system_idx: int = -1):
             """
             Minimize a marker set velocity by comparing the position at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -284,7 +284,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             coordinates_system_idx: int
                 The index of the segment to use as reference. Default [-1] is the global coordinate system
@@ -337,7 +337,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val[:3, :], penalty)
 
         @staticmethod
-        def minimize_markers_velocity(penalty: PenaltyOption, pn: PenaltyNodes):
+        def minimize_markers_velocity(penalty: PenaltyOption, pn: PenaltyNodeList):
             """
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -347,7 +347,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -375,7 +375,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def superimpose_markers(
-            penalty: PenaltyOption, pn: PenaltyNodes, first_marker: Union[str, int], second_marker: Union[str, int]
+            penalty: PenaltyOption, pn: PenaltyNodeList, first_marker: Union[str, int], second_marker: Union[str, int]
         ):
             """
             Minimize the distance between two markers
@@ -385,7 +385,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             first_marker: Union[str, int]
                 The name or index of one of the two markers
@@ -415,7 +415,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def proportional_variable(
             penalty: PenaltyOption,
-            pn: PenaltyNodes,
+            pn: PenaltyNodeList,
             which_var: str,
             first_dof: int,
             second_dof: int,
@@ -429,7 +429,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             which_var: str
                 If the proportion is on 'states' or on 'controls'
@@ -460,7 +460,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_torque(penalty: PenaltyOption, pn: PenaltyNodes):
+        def minimize_torque(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -470,31 +470,29 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            all_pn: PenaltyNodeList
                 The penalty node elements
             """
-            V, first_idx, idx = PenaltyFunctionAbstract._get_states_or_controls_with_specified_var(pn, 'tau')
 
-            n_tau = pn.nlp.shape["tau"]
-            controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_tau, "controls_idx")
-            controls_idx += first_idx
+            n_tau = all_pn.nlp.shape["tau"]
+            tau_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_tau, "controls_idx")
 
             target = None
             if penalty.target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (len(controls_idx), pn.nlp.shape['tau'])
+                    penalty.target, (len(tau_idx), all_pn.nlp.shape['tau'])
                 )
                 PenaltyFunctionAbstract._add_track_data_to_plot(
-                    pn, target, combine_to="tau", axes_idx=Mapping(controls_idx)
+                    all_pn, target, combine_to="tau", axes_idx=Mapping(tau_idx)
                 )
 
-            for i, v in enumerate(V):
-                val = v[controls_idx]
+            for i, pn in enumerate(all_pn):
+                val = pn["tau", :, 2][tau_idx]
                 penalty.sliced_target = target[:, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_state_derivative(penalty: PenaltyOption, pn: PenaltyNodes):
+        def minimize_state_derivative(penalty: PenaltyOption, pn: PenaltyNodeList):
             """
             Minimize the states velocity by comparing the state at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -504,7 +502,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -515,7 +513,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_qddot(penalty: PenaltyOption, pn: PenaltyNodes):
+        def minimize_qddot(penalty: PenaltyOption, pn: PenaltyNodeList):
             """
             Minimize the states velocity by comparing the state at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -525,7 +523,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
             nq = pn.nlp.shape["q"]
@@ -536,7 +534,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_torque_derivative(penalty: PenaltyOption, pn: PenaltyNodes):
+        def minimize_torque_derivative(penalty: PenaltyOption, pn: PenaltyNodeList):
             """
             Minimize the joint torque velocity by comparing the torque at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -546,7 +544,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -581,7 +579,7 @@ class PenaltyFunctionAbstract:
                     penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_muscles_control(penalty: PenaltyOption, pn: PenaltyNodes):
+        def minimize_muscles_control(penalty: PenaltyOption, pn: PenaltyNodeList):
             """
             Minimize the muscles part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -591,7 +589,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -617,7 +615,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_all_controls(penalty: PenaltyOption, pn: PenaltyNodes):
+        def minimize_all_controls(penalty: PenaltyOption, pn: PenaltyNodeList):
             """
             Minimize the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -627,7 +625,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -646,7 +644,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_control_derivatives(penalty: PenaltyOption, pn: PenaltyNodes):
+        def minimize_control_derivatives(penalty: PenaltyOption, pn: PenaltyNodeList):
             """
             Minimize the control derivatives by comparing the controls at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -656,7 +654,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -667,7 +665,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_predicted_com_height(penalty: PenaltyOption, pn: PenaltyNodes):
+        def minimize_predicted_com_height(penalty: PenaltyOption, pn: PenaltyNodeList):
             """
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
             assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]
@@ -677,7 +675,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -695,7 +693,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, CoM_height, penalty)
 
         @staticmethod
-        def minimize_com_position(penalty: PenaltyOption, pn: PenaltyNodes, axis: Axis = None):
+        def minimize_com_position(penalty: PenaltyOption, pn: PenaltyNodeList, axis: Axis = None):
             """
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's position is minimized.
@@ -706,7 +704,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             axis: Axis
                 The axis to project on. Default is all axes
@@ -733,7 +731,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, CoM_proj, penalty)
 
         @staticmethod
-        def minimize_com_velocity(penalty: PenaltyOption, pn: PenaltyNodes, axis: Axis = None):
+        def minimize_com_velocity(penalty: PenaltyOption, pn: PenaltyNodeList, axis: Axis = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's velocity is minimized.
@@ -744,7 +742,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             axis: Axis
                 The axis to project on. Default is all axes
@@ -772,7 +770,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, CoM_dot_proj, penalty)
 
         @staticmethod
-        def minimize_contact_forces(penalty: PenaltyOption, pn: PenaltyNodes):
+        def minimize_contact_forces(penalty: PenaltyOption, pn: PenaltyNodeList):
             """
             Minimize the contact forces computed from dynamics with contact
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -782,7 +780,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -807,7 +805,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def track_segment_with_custom_rt(
-            penalty: PenaltyOption, pn: PenaltyNodes, segment: Union[int, str], rt_idx: int
+            penalty: PenaltyOption, pn: PenaltyNodeList, segment: Union[int, str], rt_idx: int
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
@@ -817,7 +815,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             segment: Union[int, str]
                 The name or index of the segment
@@ -865,7 +863,7 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def track_marker_with_segment_axis(
             penalty: PenaltyOption,
-            pn: PenaltyNodes,
+            pn: PenaltyNodeList,
             marker: Union[int, str],
             segment: Union[int, str],
             axis: Axis,
@@ -878,7 +876,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             marker: int
                 Name or index of the marker to be tracked
@@ -919,7 +917,7 @@ class PenaltyFunctionAbstract:
                         penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def custom(penalty: PenaltyOption, nodes: Union[PenaltyNodes, list], **parameters: Any):
+        def custom(penalty: PenaltyOption, nodes: Union[PenaltyNodeList, list], **parameters: Any):
             """
             A user defined penalty function
 
@@ -927,7 +925,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            nodes: PenaltyNodes
+            nodes: PenaltyNodeList
                 The penalty node elements
             parameters: dict
                 Any parameters that should be pass to the custom function
@@ -1025,12 +1023,12 @@ class PenaltyFunctionAbstract:
             penalty.node = Node.END
             t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
             u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
-            pn.append(PenaltyNodes(ocp, nlp, t, x, u, nlp.p))
+            pn.append(PenaltyNodeList(ocp, nlp, t, x, u, nlp.p))
 
             nlp = ocp.nlp[(nlp.phase_idx + 1) % ocp.n_phases]
             penalty.node = Node.START
             t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
-            pn.append(PenaltyNodes(ocp, nlp, t, x, u, nlp.p))
+            pn.append(PenaltyNodeList(ocp, nlp, t, x, u, nlp.p))
 
             penalty.node = Node.TRANSITION
             penalty.get_all_nodes_at_once = True
@@ -1040,7 +1038,7 @@ class PenaltyFunctionAbstract:
             penalty_type.clear_penalty(ocp, None, penalty)
         else:
             t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
-            pn = PenaltyNodes(ocp, nlp, t, x, u, nlp.p)
+            pn = PenaltyNodeList(ocp, nlp, t, x, u, nlp.p)
 
             penalty_type._span_checker(penalty, pn)
             penalty_type.clear_penalty(pn.ocp, pn.nlp, penalty)
@@ -1090,7 +1088,7 @@ class PenaltyFunctionAbstract:
             penalty.params["which_var"] = "controls"
 
     @staticmethod
-    def _span_checker(penalty: PenaltyOption, pn: PenaltyNodes):
+    def _span_checker(penalty: PenaltyOption, pn: PenaltyNodeList):
         """
         Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -1098,7 +1096,7 @@ class PenaltyFunctionAbstract:
         ----------
         penalty: PenaltyOption
             The actual penalty to declare
-        pn: PenaltyNodes
+        pn: PenaltyNodeList
             The penalty node elements
         """
 
@@ -1202,7 +1200,7 @@ class PenaltyFunctionAbstract:
                 )
 
     @staticmethod
-    def add_to_penalty(ocp, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: PenaltyOption):
+    def add_to_penalty(ocp, pn: PenaltyNodeList, val: Union[MX, SX, float, int], penalty: PenaltyOption):
         """
         Add the constraint to the penalty pool (abstract)
 
@@ -1210,7 +1208,7 @@ class PenaltyFunctionAbstract:
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp
-        pn: PenaltyNodes
+        pn: PenaltyNodeList
             The penalty node elements
         val: Union[MX, SX, float, int]
             The actual constraint to add
@@ -1320,7 +1318,7 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def _add_track_data_to_plot(
-        pn: PenaltyNodes,
+        pn: PenaltyNodeList,
         data: np.ndarray,
         combine_to: str,
         axes_idx: Union[Mapping, tuple, list] = None,
@@ -1330,7 +1328,7 @@ class PenaltyFunctionAbstract:
 
         Parameters
         ----------
-        pn: PenaltyNodes
+        pn: PenaltyNodeList
             The penalty node elements
         data: np.ndarray
             The actual tracking data to plot

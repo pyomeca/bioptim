@@ -5,7 +5,7 @@ from casadi import MX, SX, vertcat
 from ..optimization.non_linear_program import NonLinearProgram
 
 
-class PenaltyNodes:
+class PenaltyNodeList:
     """
     A placeholder for the required elements to compute a penalty (all time)
     """
@@ -73,11 +73,11 @@ class PenaltyNode:
     A placeholder for the required elements to compute a penalty (single time)
     """
 
-    def __init__(self, nodes: PenaltyNodes, shooting_index: int):
+    def __init__(self, nodes: PenaltyNodeList, shooting_index: int):
         """
         Parameters
         ----------
-        nodes: PenaltyNodes
+        nodes: PenaltyNodeList
             The penalty node for all the time
         shooting_index: int
             The index of the penalty node

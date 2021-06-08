@@ -6,7 +6,7 @@ from casadi import sum1, horzcat, if_else, vertcat, lt, MX, SX, Function
 import biorbd
 
 from .path_conditions import Bounds
-from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption, PenaltyNodes
+from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
 from ..dynamics.ode_solver import OdeSolver
 from ..misc.enums import Node, ControlType, InterpolationType
 from ..misc.options import OptionList, OptionGeneric
@@ -102,7 +102,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     -------
     inter_phase_continuity(ocp: OptimalControlProgram, pt: "PhaseTransition")
         Add phase transition constraints between two phases.
-    add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodes, val: Union[MX, SX], penalty: Constraint)
+    add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodeList, val: Union[MX, SX], penalty: Constraint)
         Add the constraint to the constraint pool
     clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Constraint)
         Resets a penalty. A negative penalty index creates a new empty penalty.
@@ -120,22 +120,22 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         Methods
         -------
-        time_constraint(constraint: Constraint, pn: PenaltyNodes)
+        time_constraint(constraint: Constraint, pn: PenaltyNodeList)
             The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
-        torque_max_from_actuators(constraint: Constraint, pn: PenaltyNodes, min_torque=None)
+        torque_max_from_actuators(constraint: Constraint, pn: PenaltyNodeList, min_torque=None)
             Non linear maximal values of joint torques computed from the torque-position-velocity relationship
-        non_slipping(constraint: Constraint, pn: PenaltyNodes,
+        non_slipping(constraint: Constraint, pn: PenaltyNodeList,
                 tangential_component_idx: int, normal_component_idx: int, static_friction_coefficient: float)
             Add a constraint of static friction at contact points allowing for small tangential forces. This constraint
             assumes that the normal forces is positive
-        contact_force(constraint: Constraint, pn: PenaltyNodes, contact_force_idx: int)
+        contact_force(constraint: Constraint, pn: PenaltyNodeList, contact_force_idx: int)
             Add a constraint of contact forces given by any forward dynamics with contact
         """
 
         @staticmethod
         def contact_force(
             constraint: Constraint,
-            pn: PenaltyNodes,
+            pn: PenaltyNodeList,
             contact_force_idx: int,
         ):
             """
@@ -145,7 +145,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             contact_force_idx: int
                 The index of the contact force to add to the constraint set
@@ -162,7 +162,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def non_slipping(
             constraint: Constraint,
-            pn: PenaltyNodes,
+            pn: PenaltyNodeList,
             tangential_component_idx: int,
             normal_component_idx: int,
             static_friction_coefficient: float,
@@ -177,7 +177,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             tangential_component_idx: int
                 Index of the tangential component of the contact force.
@@ -228,7 +228,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def torque_max_from_actuators(
             constraint: Constraint,
-            pn: PenaltyNodes,
+            pn: PenaltyNodeList,
             min_torque=None,
         ):
             """
@@ -238,7 +238,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             min_torque: float
                 Minimum joint torques. This prevent from having too small torques, but introduces an if statement
@@ -275,7 +275,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def time_constraint(
             constraint: Constraint,
-            pn: PenaltyNodes,
+            pn: PenaltyNodeList,
             **unused_param,
         ):
             """
@@ -285,7 +285,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
@@ -386,7 +386,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         pt.base.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
-    def add_to_penalty(ocp, pn: Union[PenaltyNodes, None], val: Union[MX, SX, float, int], penalty: Constraint):
+    def add_to_penalty(ocp, pn: Union[PenaltyNodeList, None], val: Union[MX, SX, float, int], penalty: Constraint):
         """
         Add the constraint to the constraint pool
 
@@ -394,7 +394,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp
-        pn: PenaltyNodes
+        pn: PenaltyNodeList
             The penalty node elements
         val: Union[MX, SX, float, int]
             The actual constraint to add
@@ -480,7 +480,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         super(ConstraintFunction, ConstraintFunction)._parameter_modifier(constraint)
 
     @staticmethod
-    def _span_checker(constraint: Constraint, pn: PenaltyNodes):
+    def _span_checker(constraint: Constraint, pn: PenaltyNodeList):
         """
         Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -488,7 +488,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ----------
         constraint: Constraint
             The actual constraint to declare
-        pn: PenaltyNodes
+        pn: PenaltyNodeList
             The penalty node elements
         """
 
