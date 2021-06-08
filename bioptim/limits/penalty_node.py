@@ -89,3 +89,20 @@ class PenaltyNode:
         self.x = nodes.x[shooting_index]
         self.u = nodes.u[shooting_index] if shooting_index < len(nodes.u) else None
         self.p = nodes.p
+
+    def __getitem__(self, item):
+        if isinstance(item, str):
+            if item in self.nlp.var_states:
+                idx_item = list(self.nlp.var_states.keys()).index(item)
+                idx = range(sum(list(self.nlp.var_states.values())[0:idx_item]), self.nlp.var_states[item])
+                v = self.x[idx, :]
+            elif item in self.nlp.var_controls:
+                idx_item = list(self.nlp.var_controls.keys()).index(item)
+                idx = range(sum(list(self.nlp.var_controls.values())[0:idx_item]), self.nlp.var_controls[item])
+                v = self.u[idx, :]
+            else:
+                raise RuntimeError(f"{item} is not considered in both controls and states")
+
+            return v
+        else:
+            raise NotImplementedError("Slicing for penalty node is implemented only for str")

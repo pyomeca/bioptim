@@ -3,6 +3,7 @@ from typing import Callable, Any, Union
 import biorbd
 import casadi
 
+from .variable_information import VariableInformationList
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
@@ -153,8 +154,8 @@ class NonLinearProgram:
         self.U = None
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
-        self.var_controls = {}
-        self.var_states = {}
+        self.var_controls = VariableInformationList()
+        self.var_states = VariableInformationList()
         self.x = None
         self.X = None
         self.x_bounds = Bounds()
@@ -172,8 +173,6 @@ class NonLinearProgram:
         """
         self.shape = {"q": 0, "qdot": 0, "tau": 0, "taudot": 0, "muscle": 0}
         self.plot = {}
-        self.var_states = {}
-        self.var_controls = {}
         self.cx = cx
         self.x = self.cx()
         self.u = self.cx()

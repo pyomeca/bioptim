@@ -383,8 +383,8 @@ class Problem:
 
         nlp.q = q_mx
         if as_states:
+            nlp.var_states.append("q", nlp.shape["q"], list(range(nlp.x.shape[0], q.shape[0])))
             nlp.x = vertcat(nlp.x, q)
-            nlp.var_states["q"] = nlp.shape["q"]
             q_bounds = nlp.x_bounds[: nlp.shape["q"]]
 
             nlp.plot["q"] = CustomPlot(
@@ -435,8 +435,8 @@ class Problem:
 
         nlp.qdot = qdot_mx
         if as_states:
+            nlp.var_states.append("qdot", nlp.shape["qdot"], list(range(nlp.x.shape[0], qdot.shape[0])))
             nlp.x = vertcat(nlp.x, qdot)
-            nlp.var_states["qdot"] = nlp.shape["qdot"]
             qdot_bounds = nlp.x_bounds[nlp.shape["q"]: nlp.shape["q"] + nlp.shape["qdot"]]
 
             nlp.plot["qdot"] = CustomPlot(

@@ -1350,38 +1350,6 @@ class PenaltyFunctionAbstract:
             axes_idx=axes_idx,
         )
 
-    @staticmethod
-    def _get_states_or_controls_with_specified_var(pn: PenaltyNodes, s: str):
-        """
-        Extracting controls or states depending on if the selected optimisation variables s are defined as states or controls
-
-        Parameters
-        ----------
-        pn: PenaltyNodes
-                The penalty node elements
-        Returns
-        ----------
-        MX.sym
-            states or control, with the selected optimisation variables s in it.
-        scalar
-            first_idx, the index of the first component in the control or state vector with the selected optimisation variables s
-        scalar
-            idx, the position of the vector in the controls or states vector of the selected optimisation variables s
-        """
-
-        if s in pn.nlp.var_states:
-            idx = list(pn.nlp.var_states.keys()).index(s)
-            first_idx = np.sum(list(pn.nlp.var_states.values())[0:idx])
-            v = pn.x
-        elif s in pn.nlp.var_controls:
-            idx = list(pn.nlp.var_controls.keys()).index(s)
-            first_idx = np.sum(list(pn.nlp.var_controls.values())[0:idx])
-            v = pn.u
-        else:
-            raise RuntimeError(s, ' is not considered in both controls and states')
-
-        return v, int(first_idx), idx
-
 
 class PenaltyType(Enum):
     """
