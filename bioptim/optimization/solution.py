@@ -859,7 +859,7 @@ class Solution:
         else:
             return all_bioviz
 
-    def print(self, cost_type: CostType = CostType.ALL):
+    def print(self, cost_type: CostType = CostType.ALL, to_console: bool = True, to_graph: bool = True,):
         """
         Print the objective functions and/or constraints to the console
 
@@ -907,7 +907,11 @@ class Solution:
                 val_weighted = pen["objective"].weight * val * dt
                 return val, val_weighted
 
-            print(f"\n---- COST FUNCTION VALUES ----")
+            if to_console:
+                print(f"\n---- COST FUNCTION VALUES ----")
+            if to_graph:
+                fig = plt.figure("Solution Objective Values")
+
             has_global = False
             running_total = 0
             for J in ocp.J:
@@ -921,13 +925,22 @@ class Solution:
                     val.append(out[0])
                     val_weighted.append(out[1])
                 sum_val_weighted = sum(val_weighted)
-                print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
+                if to_graph:
+                    # TODO : Attention à la taille des Mayeur !
+                    plt.plot(np.arange(0, len(val_weighted)), val_weighted)
+                    plt.draw()
+
+                if to_console == True:
+                    print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
+
                 running_total += sum_val_weighted
             if has_global:
                 print("")
 
+            idx_phase_start = 0
             for idx_phase, nlp in enumerate(ocp.nlp):
-                print(f"PHASE {idx_phase}")
+                if to_console == True:
+                    print(f"PHASE {idx_phase}")
                 for J in nlp.J:
                     if not J:
                         continue
@@ -938,12 +951,25 @@ class Solution:
                         val.append(out[0])
                         val_weighted.append(out[1])
                     sum_val_weighted = sum(val_weighted)
-                    print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
+                    if to_console == True:
+                        print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
+                    if to_graph:
+                        # TODO : Attention à la taille des Mayeur !
+                        plt.plot(np.arange(idx_phase_start, idx_phase_start+nlp.ns), np.reshape(val_weighted, np.shape(np.arange(idx_phase_start, idx_phase_start+nlp.ns))), label=J[0]['objective'].name, marker='.', linestyle='-')
+                        plt.draw()
                     running_total += sum_val_weighted
                 print("")
+                idx_phase_start += nlp.ns
+                if to_graph:
+                    plt.axvline(idx_phase_start, color='k', linewidth=0.5)
 
-            print(f"Sum cost functions: {running_total}")
-            print(f"------------------------------")
+            if to_console:
+                print(f"Sum cost functions: {running_total}")
+                print(f"------------------------------")
+            if to_graph:
+                plt.legend()
+                plt.xlabel('Nodes')
+                plt.show()
 
         def print_constraints(ocp, sol):
             """
@@ -954,31 +980,69 @@ class Solution:
                 return
 
             # Todo, min/mean/max
-            print(f"\n--------- CONSTRAINTS ---------")
+            if to_console:
+                print(f"\n--------- CONSTRAINTS ---------")
+            if to_graph:
+                fig = plt.figure("Solution Constraints Values")
             idx = 0
             has_global = False
+
+            # continuity
+            idx_phase_start = 0
             for G in ocp.g:
+                g_values = []
                 has_global = True
                 g, next_idx = None, None
                 for g in G:
                     next_idx = idx + g["val"].shape[0]
-                if g:
-                    print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
-                idx = next_idx
+                    if to_graph:
+                        g_values += [np.sum(np.sqrt(sol.constraints[next_idx-g["val"].shape[0]:next_idx]**2))]
+                    if g:
+                        if to_console:
+                            print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
+                    idx = next_idx
+                if to_graph:
+                    plt.plot(np.arange(idx_phase_start, idx_phase_start+len(g_values)), g_values, '-', label=g['constraint'].name, marker='.')
+                    plt.draw()
+                idx_phase_start += len(g_values)
             if has_global:
                 print("")
 
+            # other constraints
+            idx_phase_start = 0
             for idx_phase, nlp in enumerate(ocp.nlp):
-                print(f"PHASE {idx_phase}")
+                if to_console:
+                    print(f"PHASE {idx_phase}")
                 for G in nlp.g:
+                    g_values = []
                     g, next_idx = None, idx
                     for g in G:
                         next_idx += g["val"].shape[0]
                     if g:
-                        print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
+                        if to_console:
+                            print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
+                        if to_graph:
+                            g_values += [np.sum(np.sqrt(sol.constraints[idx:next_idx]**2))]
                     idx = next_idx
+                if to_graph:
+                    if type(g["node_index"]) == int:
+                        if g["node_index"] < 0:
+                            plt.plot(idx_phase_start+nlp.ns-g["node_index"], g_values, '-', label=g['constraint'].name, marker='.')
+                        else:
+                            plt.plot(idx_phase_start+g["node_index"], g_values, '-', label=g['constraint'].name, marker='.')
+                    else:
+                        plt.plot(np.arange(idx_phase_start, idx_phase_start+nlp.ns), g_values, label=g['constraint'].name, marker='.', line='-')
+                    plt.draw()
                 print("")
-            print(f"------------------------------")
+                idx_phase_start += nlp.ns
+                if to_graph:
+                    plt.axvline(idx_phase_start, color='k', linewidth=0.5)
+
+            if to_console:
+                print(f"------------------------------")
+            if to_graph:
+                plt.legend()
+                plt.show()
 
         if cost_type == CostType.OBJECTIVES:
             print_objective_functions(self.ocp, self)
