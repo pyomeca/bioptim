@@ -207,7 +207,9 @@ class DynamicsFunctions:
         return vertcat(qdot_reduced, qddot_reduced)
 
     @staticmethod
-    def forward_dynamics_torque_derivative_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+    def forward_dynamics_torque_derivative_driven_with_contact(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
+    ) -> MX:
         """
         Forward dynamics driven by joint torques with contact constraints.
 
@@ -274,7 +276,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_forward_dynamics_with_contact_for_torque_derivative_driven_problem(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -832,9 +834,9 @@ class DynamicsFunctions:
         nq = len(nlp.mapping["q"].to_first)
         nqdot = len(nlp.mapping["qdot"].to_first)
         q = nlp.mapping["q"].to_second.map(states[:nq])
-        qdot = nlp.mapping["qdot"].to_second.map(states[nq:nq + nqdot])
-        tau = nlp.mapping["tau"].to_second.map(states[nq + nqdot:])
-        taudot = nlp.mapping["taudot"].to_second.map(controls[:nlp.shape["taudot"]])
+        qdot = nlp.mapping["qdot"].to_second.map(states[nq : nq + nqdot])
+        tau = nlp.mapping["tau"].to_second.map(states[nq + nqdot :])
+        taudot = nlp.mapping["taudot"].to_second.map(controls[: nlp.shape["taudot"]])
 
         return q, qdot, tau, taudot
 

@@ -388,9 +388,7 @@ class AcadosInterface(SolverInterface):
                 for j, J in enumerate(ocp.nlp[i].J):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
                         if J[0]["objective"].type.value[0] in ctrl_objs:
-                            index = (
-                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_controls))
-                            )
+                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_controls))
                             vu = np.zeros(n_controls)
                             vu[index] = 1.0
                             self.Vu = np.vstack((self.Vu, np.diag(vu)))
@@ -406,9 +404,7 @@ class AcadosInterface(SolverInterface):
                             else:
                                 self.y_ref.append([np.zeros((n_controls, 1)) for _ in J])
                         elif J[0]["objective"].type.value[0] in state_objs:
-                            index = (
-                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
-                            )
+                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
                             vx = np.zeros(n_states)
                             vx[index] = 1.0
                             self.Vx = np.vstack((self.Vx, np.diag(vx)))
@@ -431,9 +427,7 @@ class AcadosInterface(SolverInterface):
 
                         # Deal with last node to match ipopt formulation
                         if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
-                            index = (
-                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
-                            )
+                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
                             vxe = np.zeros(n_states)
                             vxe[index] = 1.0
                             self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
@@ -447,9 +441,7 @@ class AcadosInterface(SolverInterface):
 
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
                         if J[0]["objective"].type.value[0] in state_objs:
-                            index = (
-                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
-                            )
+                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
                             vxe = np.zeros(n_states)
                             vxe[index] = 1.0
                             self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))

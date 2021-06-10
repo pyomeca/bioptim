@@ -132,7 +132,8 @@ class Problem:
             Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
             Problem.configure_dynamics_function(
-                ocp, nlp, DynamicsFunctions.forward_dynamics_torque_derivative_driven_with_contact)
+                ocp, nlp, DynamicsFunctions.forward_dynamics_torque_derivative_driven_with_contact
+            )
         Problem.configure_contact(
             ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact_for_torque_derivative_driven_problem
         )
@@ -488,8 +489,10 @@ class Problem:
 
             nlp.plot["tau"] = (
                 CustomPlot(
-                    lambda x, u, p: x[nlp.controls["tau"].index, :], plot_type=PlotType.INTEGRATED, legend=legend_tau,
-                    bounds=nlp.u_bounds[nlp.controls["tau"].index]
+                    lambda x, u, p: x[nlp.controls["tau"].index, :],
+                    plot_type=PlotType.INTEGRATED,
+                    legend=legend_tau,
+                    bounds=nlp.u_bounds[nlp.controls["tau"].index],
                 ),
             )
 
@@ -502,7 +505,10 @@ class Problem:
                 plot_type = PlotType.STEP
             nlp.plot["tau"] = (
                 CustomPlot(
-                    lambda x, u, p: u[nlp.controls["tau"].index, :], plot_type=plot_type, legend=legend_tau, bounds=nlp.u_bounds[nlp.controls["tau"].index]
+                    lambda x, u, p: u[nlp.controls["tau"].index, :],
+                    plot_type=plot_type,
+                    legend=legend_tau,
+                    bounds=nlp.u_bounds[nlp.controls["tau"].index],
                 ),
             )
 
@@ -539,7 +545,9 @@ class Problem:
             taudot_mx = vertcat(taudot_mx, MX.sym("Taudot_" + dof_names[i].to_string(), 1, 1))
 
         nlp.shape["taudot"] = len(nlp.mapping["taudot"].to_first)
-        legend_taudot = ["taudot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["taudot"].to_first.map_idx]
+        legend_taudot = [
+            "taudot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["taudot"].to_first.map_idx
+        ]
 
         if as_states:
             nlp.var_states.append("taudot", nlp.shape["taudot"], list(range(0, nlp.shape["taudot"])))
@@ -549,7 +557,7 @@ class Problem:
         if as_controls:
             nlp.var_controls.append("taudot", nlp.shape["taudot"], list(range(0, nlp.shape["taudot"])))
             nlp.u = vertcat(nlp.u, horzcat(*all_taudot))
-            taudot_bounds = nlp.u_bounds[:nlp.shape["taudot"]]  # taudot as the only control.
+            taudot_bounds = nlp.u_bounds[: nlp.shape["taudot"]]  # taudot as the only control.
 
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.PLOT
@@ -557,8 +565,11 @@ class Problem:
                 plot_type = PlotType.STEP
             nlp.plot["taudot"] = (
                 CustomPlot(
-                    lambda x, u, p: u[:nlp.shape["taudot"]], plot_type=plot_type, legend=legend_taudot,
-                    bounds=taudot_bounds),
+                    lambda x, u, p: u[: nlp.shape["taudot"]],
+                    plot_type=plot_type,
+                    legend=legend_taudot,
+                    bounds=taudot_bounds,
+                ),
             )
 
     @staticmethod
@@ -610,7 +621,7 @@ class Problem:
                         all_muscles[j], nlp.cx.sym(f"Muscle_{name}_excitation_{j}_{nlp.phase_idx}", 1, 1)
                     )
 
-            nlp.controls.append("muscles",  horzcat(*all_muscles), muscles_mx)
+            nlp.controls.append("muscles", horzcat(*all_muscles), muscles_mx)
 
             muscles_bounds = nlp.u_bounds[nlp.controls["muscles"].index]
 

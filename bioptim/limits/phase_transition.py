@@ -134,7 +134,10 @@ class PhaseTransitionFunctions:
             The difference between the state after and before
             """
 
-            if ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.shape:
+            if (
+                ocp.nlp[transition.phase_pre_idx].states.shape
+                != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.shape
+            ):
                 raise RuntimeError(
                     "Continuous phase transition without same number of states is not possible, "
                     "please provide a custom phase transition"
@@ -177,7 +180,10 @@ class PhaseTransitionFunctions:
             The difference between the last and first node after applying the impulse equations
             """
 
-            if ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.shape:
+            if (
+                ocp.nlp[transition.phase_pre_idx].states.shape
+                != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.shape
+            ):
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
@@ -196,7 +202,10 @@ class PhaseTransitionFunctions:
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
             model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
             func = biorbd.to_casadi_func(
-                "impulse_direct", model.ComputeConstraintImpulsesDirect, nlp_pre.states["q"].mx, nlp_pre.states["qdot"].mx
+                "impulse_direct",
+                model.ComputeConstraintImpulsesDirect,
+                nlp_pre.states["q"].mx,
+                nlp_pre.states["qdot"].mx,
             )
             qdot_post = func(q, qdot_pre)
             qdot_post = nlp_post.mapping["qdot"].to_first.map(qdot_post)

@@ -240,7 +240,9 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
-        def minimize_markers(penalty: PenaltyOption, all_pn: PenaltyNodeList, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)):
+        def minimize_markers(
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)
+        ):
             """
             Minimize a marker set.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -274,7 +276,9 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
-        def minimize_markers_displacement(penalty: PenaltyOption, pn: PenaltyNodeList, coordinates_system_idx: int = -1):
+        def minimize_markers_displacement(
+            penalty: PenaltyOption, pn: PenaltyNodeList, coordinates_system_idx: int = -1
+        ):
             """
             Minimize a marker set velocity by comparing the position at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -304,7 +308,10 @@ class PenaltyFunctionAbstract:
                         f"coordinates_system_idx ({coordinates_system_idx}) cannot be higher than {n_rts - 1}"
                     )
                 nlp.add_casadi_func(
-                    f"globalJCS_{coordinates_system_idx}", nlp.model.globalJCS, nlp.states["q"].mx, coordinates_system_idx
+                    f"globalJCS_{coordinates_system_idx}",
+                    nlp.model.globalJCS,
+                    nlp.states["q"].mx,
+                    coordinates_system_idx,
                 )
 
             for i in range(len(pn.x) - 1):
@@ -362,7 +369,13 @@ class PenaltyFunctionAbstract:
                 )
 
             for m in markers_idx:
-                nlp.add_casadi_func(f"biorbd_markerVelocity_{m}", nlp.model.markerVelocity, nlp.states["q"].mx, nlp.states["qdot"].mx, int(m))
+                nlp.add_casadi_func(
+                    f"biorbd_markerVelocity_{m}",
+                    nlp.model.markerVelocity,
+                    nlp.states["q"].mx,
+                    nlp.states["qdot"].mx,
+                    int(m),
+                )
 
             for i, pn in enumerate(all_pn):
                 for m in markers_idx:
@@ -372,7 +385,10 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def superimpose_markers(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, first_marker: Union[str, int], second_marker: Union[str, int]
+            penalty: PenaltyOption,
+            all_pn: PenaltyNodeList,
+            first_marker: Union[str, int],
+            second_marker: Union[str, int],
         ):
             """
             Minimize the distance between two markers
@@ -504,7 +520,9 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, all_pn.nlp.states.shape, "states_idx")
+            states_idx = PenaltyFunctionAbstract._check_and_fill_index(
+                penalty.index, all_pn.nlp.states.shape, "states_idx"
+            )
 
             for i in range(len(all_pn.x) - 1):
                 val = all_pn.x[i + 1][states_idx] - all_pn.x[i][states_idx]

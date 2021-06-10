@@ -261,9 +261,7 @@ class OptimizationVector:
         if len(data_parameters["all"].shape) == 1:
             data_parameters["all"] = data_parameters["all"][:, np.newaxis]
         for param in self.parameters_in_list:
-            data_parameters[param.name] = (
-                v_array[offset : offset + param.size, np.newaxis] * param.scaling
-            )
+            data_parameters[param.name] = v_array[offset : offset + param.size, np.newaxis] * param.scaling
             offset += param.size
             scaling_offset += param.size
             if len(data_parameters[param.name].shape) == 1:

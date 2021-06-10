@@ -94,7 +94,7 @@ def generate_data(
         dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_driven
 
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot))
-    symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else  vertcat(symbolic_mus)
+    symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
 
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn", dyn_func, symbolic_states, symbolic_controls, symbolic_parameters, nlp
