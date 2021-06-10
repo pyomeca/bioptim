@@ -587,7 +587,36 @@ class ObjectiveFunction:
             The time between two nodes for the current phase. If the objective is Mayer, dt should be 1
         """
 
-        node_index = len(pn.nlp.J[penalty.list_index]) - 1 if pn else None
+        # node_index = len(pn.nlp.J[penalty.list_index]) - 1 if pn else None
+        if penalty.name != 'MINIMIZE_TORQUE':
+            print('ICI')
+
+        if pn:
+            if penalty.node[0] == Node.START:
+                node_index = 0
+            elif penalty.node[0] == Node.MID:
+                node_index = pn.nlp.ns // 2
+            elif penalty.node[0] == Node.INTERMEDIATES:
+                node_index = range(1, pn.nlp.ns-1)
+            elif penalty.node[0] == Node.PENULTIMATE:
+                node_index = pn.nlp.ns - 1
+            elif penalty.node[0] == Node.END:
+                node_index = pn.nlp.ns
+            elif penalty.node[0] == Node.TRANSITION:
+                node_index = pn.nlp.ns
+            elif penalty.node[0] == Node.ALL:
+                node_index = range(pn.nlp.ns)
+
+                ### DEFAULT ?!
+
+        else:
+            if hasattr(penalty, 'node'):
+                if penalty.node == Node.TRANSITION:
+                    node_index = ocp.nlp[penalty.phase].ns
+                else:
+                    node_index = None
+            else:
+                node_index = None
 
         J = {
             "objective": penalty,

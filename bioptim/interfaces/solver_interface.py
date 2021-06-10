@@ -169,6 +169,9 @@ class SolverInterface:
                     elif node == Node.END:
                         nodes.append(nlp.ns - 1)
 
+                    # elif node == Node.TRANSITION:
+                    #     nodes.append(nlp.ns - 1)
+
                     elif node == Node.ALL:
                         for i in range(nlp.ns):
                             nodes.append(i)

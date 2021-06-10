@@ -927,8 +927,16 @@ class Solution:
                 sum_val_weighted = sum(val_weighted)
                 if to_graph:
                     # TODO : Attention à la taille des Mayeur !
-                    plt.plot(np.arange(0, len(val_weighted)), val_weighted)
-                    plt.draw()
+                    if type(j['node_index']) == int:
+                        general_node_index = 0
+                        for i_node in range(j['objective'].phase):
+                            general_node_index += ocp.nlp[i_node].ns
+                        general_node_index += j['node_index']
+                        plt.plot(general_node_index, np.reshape(val_weighted, np.size(val_weighted)), '-', marker='.', label=j['objective'].name)
+                        plt.draw()
+                    else:
+                        plt.plot(np.arange(0, len(val_weighted)), np.reshape(val_weighted, np.size(val_weighted)), '-', marker='.', label=j['objective'].name)
+                        plt.draw()
 
                 if to_console == True:
                     print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
@@ -967,8 +975,9 @@ class Solution:
                 print(f"Sum cost functions: {running_total}")
                 print(f"------------------------------")
             if to_graph:
-                plt.legend()
+                plt.legend(bbox_to_anchor=(1.05, 1))
                 plt.xlabel('Nodes')
+                plt.tight_layout()
                 plt.show()
 
         def print_constraints(ocp, sol):
@@ -987,9 +996,10 @@ class Solution:
             idx = 0
             has_global = False
 
-            # continuity
+            # continuity + phase transition
             idx_phase_start = 0
-            for G in ocp.g:
+            phases_nodes = []
+            for i_g, G in enumerate(ocp.g):
                 g_values = []
                 has_global = True
                 g, next_idx = None, None
@@ -1004,7 +1014,14 @@ class Solution:
                 if to_graph:
                     plt.plot(np.arange(idx_phase_start, idx_phase_start+len(g_values)), g_values, '-', label=g['constraint'].name, marker='.')
                     plt.draw()
-                idx_phase_start += len(g_values)
+                if i_g < len(ocp.nlp)-1:
+                    phases_nodes += [len(g_values)]
+                    idx_phase_start += len(g_values)
+                elif i_g == len(ocp.nlp)-1:
+                    phases_nodes += [len(g_values)]
+                    idx_phase_start = phases_nodes[0]
+                elif i_g < len(ocp.g):
+                    idx_phase_start += phases_nodes[i_g - len(ocp.nlp) + 1]
             if has_global:
                 print("")
 
@@ -1026,13 +1043,11 @@ class Solution:
                     idx = next_idx
                 if to_graph:
                     if type(g["node_index"]) == int:
-                        if g["node_index"] < 0:
-                            plt.plot(idx_phase_start+nlp.ns-g["node_index"], g_values, '-', label=g['constraint'].name, marker='.')
-                        else:
-                            plt.plot(idx_phase_start+g["node_index"], g_values, '-', label=g['constraint'].name, marker='.')
+                        plt.plot(idx_phase_start+g["node_index"], g_values, '-', label=g['constraint'].name, marker='.')
+                        plt.draw()
                     else:
                         plt.plot(np.arange(idx_phase_start, idx_phase_start+nlp.ns), g_values, label=g['constraint'].name, marker='.', line='-')
-                    plt.draw()
+                        plt.draw()
                 print("")
                 idx_phase_start += nlp.ns
                 if to_graph:
@@ -1041,7 +1056,9 @@ class Solution:
             if to_console:
                 print(f"------------------------------")
             if to_graph:
-                plt.legend()
+                plt.xlabel('Nodes')
+                plt.legend(bbox_to_anchor=(1.05, 1))
+                plt.tight_layout()
                 plt.show()
 
         if cost_type == CostType.OBJECTIVES:
