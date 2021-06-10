@@ -124,6 +124,8 @@ class GraphAbstract:
             The string to be completed
         """
 
+        if hasattr(objective, "index"):
+            string += f"<b>Index</b>: {objective.index}{self._return_line}" if objective.index is not None else ""
         if hasattr(objective, "weight"):
             string += f"<b>Weight</b>: {objective.weight}{self._return_line}"
         for param in objective.params:
@@ -479,11 +481,12 @@ class OcpToGraph(GraphAbstract):
         if parameter.penalty_list is not None:
             size_initial_guess = len(parameter.initial_guess.init[0])
             size_sliced_target = len(parameter.penalty_list.sliced_target[0])
-            scaling = [
-                parameter.scaling[i][j]
-                for i in range(parameter.size) for j in range(size_initial_guess)
+            scaling = [parameter.scaling[i][j] for i in range(parameter.size) for j in range(size_initial_guess)]
+            sliced_target_without_scaling = [
+                parameter.penalty_list.sliced_target[i][j] / scaling[i]
+                for i in range(parameter.size)
+                for j in range(size_sliced_target)
             ]
-            sliced_target_without_scaling = [parameter.penalty_list.sliced_target[i][j]/scaling[i] for i in range(parameter.size) for j in range(size_sliced_target)]
             node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
             node_str += (
                 f"{f'<b>Target</b>: {self._vector_layout(sliced_target_without_scaling)} <br/>'}"

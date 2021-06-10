@@ -91,10 +91,12 @@ def prepare_ocp_phase_transitions(
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=3)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, weight=0, phase=3, axis=None)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=0, phase=3, index=[0, 1])
 
     if with_mayer:
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, phase=0, node=1)
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, weight=0, phase=3, index=[0, 1])
         objective_functions.add(
             minimize_difference,
             custom_type=ObjectiveFcn.Mayer,
