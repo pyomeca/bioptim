@@ -325,7 +325,7 @@ class Solution:
             sol_states, sol_controls = sol[0], sol[1]
             for p, s in enumerate(sol_states):
                 ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states.n, ns, "states")
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states.shape, ns, "states")
                 for i in range(self.ns[p] + 1):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
             for p, s in enumerate(sol_controls):
@@ -336,7 +336,7 @@ class Solution:
                     off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].controls.n, self.ns[p], "controls")
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].controls.shape, self.ns[p], "controls")
                 for i in range(self.ns[p] + off):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
 
