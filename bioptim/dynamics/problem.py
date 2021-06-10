@@ -154,7 +154,6 @@ class Problem:
 
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
-        nlp.shape["actuators"] = nlp.shape["tau"]
         if nlp.dynamics_type.dynamic_function:
             Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -177,7 +176,6 @@ class Problem:
 
         Problem.configure_q_qdot(nlp, True, False)
         Problem.configure_tau(nlp, False, True)
-        nlp.shape["actuators"] = nlp.shape["tau"]
         if nlp.dynamics_type.dynamic_function:
             Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -377,30 +375,19 @@ class Problem:
         for i, _ in enumerate(nlp.mapping["q"].to_second.map_idx):
             q_mx = vertcat(q_mx, MX.sym("Q_" + dof_names[i].to_string(), 1, 1))
 
-        nlp.shape["q"] = nlp.mapping["q"].to_first.len
-
         legend_q = ["q_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["q"].to_first.map_idx]
-
-        nlp.q = q_mx
         if as_states:
-            nlp.var_states.append("q", nlp.shape["q"], list(range(nlp.x.shape[0], q.shape[0])))
-            nlp.x = vertcat(nlp.x, q)
-            q_bounds = nlp.x_bounds[: nlp.shape["q"]]
-
+            nlp.states.append("q", q, q_mx)
             nlp.plot["q"] = CustomPlot(
-                lambda x, u, p: x[: nlp.shape["q"]],
+                lambda x, u, p: x[nlp.states["q"].index, :],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_q,
-                bounds=q_bounds,
+                bounds=nlp.x_bounds[nlp.states["q"].index],  # TODO This is empty (this is a bug)
             )
 
         if as_controls:
-            nlp.var_controls.append("q", nlp.shape["q"], list(range(nlp.x.shape[0], q.shape[0])))
-            nlp.u = vertcat(nlp.u, q)
+            nlp.controls.append("q", q, q_mx)
             # Add plot (and retrieving bounds if plots of bounds) if this problem is ever added
-
-        nlp.nx = nlp.x.rows()
-        nlp.nu = nlp.u.rows()
 
     @staticmethod
     def configure_qdot(nlp, as_states: bool, as_controls: bool):
@@ -429,31 +416,20 @@ class Problem:
         for i, _ in enumerate(nlp.mapping["qdot"].to_second.map_idx):
             qdot_mx = vertcat(qdot_mx, MX.sym("Qdot_" + dof_names[i].to_string(), 1, 1))
 
-        nlp.shape["qdot"] = nlp.mapping["qdot"].to_first.len
-
         legend_qdot = ["qdot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["qdot"].to_first.map_idx]
 
-        nlp.qdot = qdot_mx
         if as_states:
-            nlp.var_states.append("qdot", nlp.shape["qdot"],
-                                  list(range(nlp.shape["q"], nlp.shape["q"] + nlp.shape["qdot"])))
-            nlp.x = vertcat(nlp.x, qdot)
-            qdot_bounds = nlp.x_bounds[nlp.shape["q"]: nlp.shape["q"] + nlp.shape["qdot"]]
-
+            nlp.states.append("qdot", qdot, qdot_mx)
             nlp.plot["qdot"] = CustomPlot(
-                lambda x, u, p: x[nlp.shape["q"]: nlp.shape["q"] + nlp.shape["qdot"]],
+                lambda x, u, p: x[nlp.states["qdot"].index, :],
                 plot_type=PlotType.INTEGRATED,
                 legend=legend_qdot,
-                bounds=qdot_bounds,
+                bounds=nlp.x_bounds[nlp.states["qdot"].index],  # TODO This is empty (this is a bug)
             )
 
         if as_controls:
-            nlp.var_controls.append("qdot", nlp.shape["qdot"], list(range(nlp.x.shape[0], qdot.shape[0])))
-            nlp.u = vertcat(nlp.u, qdot)
+            nlp.controls.append("qdot", qdot, qdot_mx)
             # Add plot (and retrieving bounds if plots of bounds) if this problem is ever added
-
-        nlp.nx = nlp.x.rows()
-        nlp.nu = nlp.u.rows()
 
     @staticmethod
     def configure_q_qdot(nlp, as_states: bool, as_controls: bool):
@@ -502,33 +478,23 @@ class Problem:
         for i in nlp.mapping["tau"].to_first.map_idx:
             for j in range(len(all_tau)):
                 all_tau[j] = vertcat(all_tau[j], nlp.cx.sym(f"Tau_{dof_names[i].to_string()}_{j}", 1, 1))
-        for i, _ in enumerate(nlp.mapping["q"].to_second.map_idx):
+        for i, _ in enumerate(nlp.mapping["tau"].to_second.map_idx):
             tau_mx = vertcat(tau_mx, MX.sym("Tau_" + dof_names[i].to_string(), 1, 1))
 
-        nlp.shape["tau"] = nlp.mapping["tau"].to_first.len
         legend_tau = ["tau_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["tau"].to_first.map_idx]
-        nlp.tau = tau_mx
 
         if as_states:
-            nq_qdot = nlp.shape["q"] + nlp.shape["qdot"]
+            nlp.states.append("tau", horzcat(*all_tau), tau_mx)
 
-            nlp.var_states.append("tau", nlp.shape["tau"], list(range(nq_qdot, nq_qdot + nlp.shape["tau"])))
-            nlp.x = vertcat(nlp.x, all_tau[0])
-
-            tau_bounds = nlp.x_bounds[nq_qdot: nq_qdot + nlp.shape["tau"]]
-            # tau as a state with q and qdot
-
-            nlp.plot["tau"] = CustomPlot(
-                lambda x, u, p: x[nq_qdot: nq_qdot + nlp.shape["tau"]],
-                plot_type=PlotType.INTEGRATED,
-                legend=legend_tau,
-                bounds=tau_bounds,
+            nlp.plot["tau"] = (
+                CustomPlot(
+                    lambda x, u, p: x[nlp.controls["tau"].index, :], plot_type=PlotType.INTEGRATED, legend=legend_tau,
+                    bounds=nlp.u_bounds[nlp.controls["tau"].index]
+                ),
             )
 
         if as_controls:
-            nlp.var_controls.append("tau", nlp.shape["tau"], list(range(0, nlp.shape["tau"])))
-            nlp.u = vertcat(nlp.u, horzcat(*all_tau))
-            tau_bounds = nlp.u_bounds[:nlp.shape["tau"]]
+            nlp.controls.append("tau", horzcat(*all_tau), tau_mx)
 
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.PLOT
@@ -536,12 +502,9 @@ class Problem:
                 plot_type = PlotType.STEP
             nlp.plot["tau"] = (
                 CustomPlot(
-                    lambda x, u, p: u[: nlp.shape["tau"]], plot_type=plot_type, legend=legend_tau, bounds=tau_bounds
+                    lambda x, u, p: u[nlp.controls["tau"].index, :], plot_type=plot_type, legend=legend_tau, bounds=nlp.u_bounds[nlp.controls["tau"].index]
                 ),
             )
-
-        nlp.nx = nlp.x.rows()
-        nlp.nu = nlp.u.rows()
 
     @staticmethod
     def configure_taudot(nlp, as_states: bool, as_controls: bool):
@@ -575,9 +538,8 @@ class Problem:
         for i, _ in enumerate(nlp.mapping["q"].to_second.map_idx):
             taudot_mx = vertcat(taudot_mx, MX.sym("Taudot_" + dof_names[i].to_string(), 1, 1))
 
-        nlp.shape["taudot"] = nlp.mapping["taudot"].to_first.len
+        nlp.shape["taudot"] = len(nlp.mapping["taudot"].to_first)
         legend_taudot = ["taudot_" + nlp.model.nameDof()[idx].to_string() for idx in nlp.mapping["taudot"].to_first.map_idx]
-        nlp.taudot = taudot_mx
 
         if as_states:
             nlp.var_states.append("taudot", nlp.shape["taudot"], list(range(0, nlp.shape["taudot"])))
@@ -599,9 +561,6 @@ class Problem:
                     bounds=taudot_bounds),
             )
 
-        nlp.nx = nlp.x.rows()
-        nlp.nu = nlp.u.rows()
-
     @staticmethod
     def configure_muscles(nlp, as_states: bool, as_controls: bool):
         """
@@ -617,29 +576,26 @@ class Problem:
             If the muscles should be a control
         """
 
-        nlp.shape["muscle"] = nlp.model.nbMuscles()
-        nlp.muscleNames = [names.to_string() for names in nlp.model.muscleNames()]
+        muscle_names = [names.to_string() for names in nlp.model.muscleNames()]
 
         muscles_mx = MX()
-        for name in nlp.muscleNames:
+        for name in muscle_names:
             muscles_mx = vertcat(muscles_mx, MX.sym(f"Muscle_{name}_{nlp.phase_idx}", 1, 1))
-        nlp.muscles = muscles_mx
 
         combine = None
         if as_states:
+
             muscles = nlp.cx()
-            for name in nlp.muscleNames:
+            for name in muscle_names:
                 muscles = vertcat(muscles, nlp.cx.sym(f"Muscle_{name}_activation_{nlp.phase_idx}"))
 
-            nx_q = nlp.shape["q"] + nlp.shape["qdot"]
-            nlp.var_states.append("muscle", nlp.shape["muscle"], list(range(nx_q, nx_q + nlp.shape["muscle"])))
-            nlp.x = vertcat(nlp.x, muscles)
+            nlp.states.append("muscles", muscles, muscles_mx)
 
-            muscles_bounds = nlp.x_bounds[nx_q: nx_q + nlp.shape["muscle"]]
+            muscles_bounds = nlp.x_bounds[nlp.states["muscles"].index]
             nlp.plot["muscles_states"] = CustomPlot(
-                lambda x, u, p: x[nx_q: nx_q + nlp.shape["muscle"]],
+                lambda x, u, p: x[nlp.states["muscles"].index, :],
                 plot_type=PlotType.INTEGRATED,
-                legend=nlp.muscleNames,
+                legend=muscle_names,
                 ylim=[0, 1],
                 bounds=muscles_bounds,
             )
@@ -649,31 +605,27 @@ class Problem:
             n_col = nlp.control_type.value
             all_muscles = [nlp.cx() for _ in range(n_col)]
             for j in range(len(all_muscles)):
-                for name in nlp.muscleNames:
+                for name in muscle_names:
                     all_muscles[j] = vertcat(
                         all_muscles[j], nlp.cx.sym(f"Muscle_{name}_excitation_{j}_{nlp.phase_idx}", 1, 1)
                     )
-            nlp.var_controls.append("muscle", nlp.shape["muscle"],
-                                    list(range(nlp.shape["tau"], nlp.shape["tau"] + nlp.shape["muscle"])))
-            nlp.u = vertcat(nlp.u, horzcat(*all_muscles))
 
-            muscles_bounds = nlp.u_bounds[nlp.shape["tau"]: nlp.shape["tau"] + nlp.shape["muscle"]]
+            nlp.controls.append("muscles",  horzcat(*all_muscles), muscles_mx)
+
+            muscles_bounds = nlp.u_bounds[nlp.controls["muscles"].index]
 
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 plot_type = PlotType.LINEAR
             else:
                 plot_type = PlotType.STEP
             nlp.plot["muscles_control"] = CustomPlot(
-                lambda x, u, p: u[nlp.shape["tau"]: nlp.shape["tau"] + nlp.shape["muscle"]],
+                lambda x, u, p: u[nlp.controls["muscles"].index, :],
                 plot_type=plot_type,
-                legend=nlp.muscleNames,
+                legend=muscle_names,
                 combine_to=combine,
                 ylim=[0, 1],
                 bounds=muscles_bounds,
             )
-
-        nlp.nx = nlp.x.rows()
-        nlp.nu = nlp.u.rows()
 
     @staticmethod
     def configure_dynamics_function(ocp, nlp, dyn_func):
@@ -690,20 +642,11 @@ class Problem:
             The function to get the derivative of the states
         """
 
-        nlp.nx = nlp.x.rows()
-        nlp.nu = nlp.u.rows()
-        mx_symbolic_states = MX.sym("x", nlp.nx, 1)
-        mx_symbolic_controls = MX.sym("u", nlp.nu, 1)
+        mx_symbolic_states = MX.sym("x", nlp.states.n, 1)
+        mx_symbolic_controls = MX.sym("u", nlp.controls.n, 1)
 
         nlp.parameters = ocp.v.parameters_in_list
-        nlp.p = ocp.v.parameters.cx
-
-        if len(nlp.parameters):
-            nlp.p_scaling = np.vstack([p.scaling for p in nlp.parameters])
-        else:
-            nlp.p_scaling = np.array([[1.0]])
-        nlp.np = sum([p.size for p in nlp.parameters])
-        mx_symbolic_params = MX.sym("p", nlp.np, 1)
+        mx_symbolic_params = MX.sym("p", nlp.parameters.n, 1)
 
         dynamics = dyn_func(mx_symbolic_states, mx_symbolic_controls, mx_symbolic_params, nlp)
         if isinstance(dynamics, (list, tuple)):
@@ -731,9 +674,9 @@ class Problem:
             The function to get the values of contact forces from the dynamics
         """
 
-        symbolic_states = MX.sym("x", nlp.nx, 1)
-        symbolic_controls = MX.sym("u", nlp.nu, 1)
-        symbolic_param = MX.sym("p", nlp.np, 1)
+        symbolic_states = MX.sym("x", nlp.states.n, 1)
+        symbolic_controls = MX.sym("u", nlp.controls.n, 1)
+        symbolic_param = MX.sym("p", nlp.parameters.n, 1)
         nlp.contact_forces_func = Function(
             "contact_forces_func",
             [symbolic_states, symbolic_controls, symbolic_param],

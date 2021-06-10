@@ -88,6 +88,11 @@ class Solution:
         Print the objective functions and/or constraints to the console
     """
 
+    class SimplifiedOptimizationVariable:
+        n: int
+        def __init__(self, other):
+            self.n = other.n
+
     class SimplifiedNLP:
         """
         A simplified version of the NonLinearProgram structure
@@ -127,17 +132,15 @@ class Solution:
             """
 
             self.model = nlp.model
-            self.nx = nlp.nx
-            self.nu = nlp.nu
+            self.states = Solution.SimplifiedOptimizationVariable(nlp.states)
+            self.controls = Solution.SimplifiedOptimizationVariable(nlp.controls)
             self.dynamics = nlp.dynamics
             self.ode_solver = nlp.ode_solver
             self.mapping = nlp.mapping
-            self.var_states = nlp.var_states
             self.control_type = nlp.control_type
             self.J = nlp.J
             self.g = nlp.g
             self.ns = nlp.ns
-            self.p_scaling = nlp.p_scaling
             self.parameters = nlp.parameters
 
     class SimplifiedOCP:
@@ -156,7 +159,7 @@ class Solution:
             The list of transition constraint between phases
         prepare_plots: Callable
             The function to call to prepare the PlotOCP
-        v: OptimizationVariable
+        v: OptimizationVector
         The variable optimization holder
         """
 
@@ -277,7 +280,7 @@ class Solution:
             sol_states, sol_controls = sol[0], sol[1]
             for p, s in enumerate(sol_states):
                 ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].nx, ns, "states")
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states.n, ns, "states")
                 for i in range(self.ns[p] + 1):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
             for p, s in enumerate(sol_controls):
@@ -288,7 +291,7 @@ class Solution:
                     off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].nu, self.ns[p], "controls")
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].controls.n, self.ns[p], "controls")
                 for i in range(self.ns[p] + off):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
 
@@ -525,7 +528,7 @@ class Solution:
         params = self.parameters["all"]
         x0 = self._states[0]["all"][:, 0]
         for p in range(len(self._states)):
-            param_scaling = self.ocp.nlp[p].p_scaling
+            param_scaling = self.ocp.nlp[p].parameters.scaling
             shape = self._states[p]["all"].shape
             if continuous:
                 n_steps = ocp.nlp[p].ode_solver.steps
@@ -588,9 +591,9 @@ class Solution:
 
             # Dispatch the integrated values to all the keys
             off = 0
-            for key in ocp.nlp[p].var_states.names():
-                out._states[p][key] = out._states[p]["all"][off : off + ocp.nlp[p].var_states[key].n, :]
-                off += ocp.nlp[p].var_states[key].n
+            for key in ocp.nlp[p].states:
+                out._states[p][key] = out._states[p]["all"][off : off + len(ocp.nlp[p].states[key]), :]
+                off += len(ocp.nlp[p].states[key])
 
         if merge_phases:
             if continuous:

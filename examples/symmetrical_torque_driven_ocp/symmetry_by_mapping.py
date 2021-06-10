@@ -83,14 +83,14 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * all_generalized_mapping.to_first.len * 2)
+    x_init.add([0] * len(all_generalized_mapping.to_first) * 2)
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * all_generalized_mapping.to_first.len, [tau_max] * all_generalized_mapping.to_first.len)
+    u_bounds.add([tau_min] * len(all_generalized_mapping.to_first), [tau_max] * len(all_generalized_mapping.to_first))
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * all_generalized_mapping.to_first.len)
+    u_init.add([tau_init] * len(all_generalized_mapping.to_first))
 
     # ------------- #
 

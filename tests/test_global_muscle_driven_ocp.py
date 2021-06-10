@@ -29,7 +29,7 @@ def test_muscle_driven_ocp(ode_solver):
     np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscle"]
+    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
     if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
@@ -205,7 +205,7 @@ def test_muscle_activations_with_contact_driven_ocp(ode_solver):
         np.testing.assert_almost_equal(g, np.zeros((60, 1)), decimal=6)
 
         # Check some of the results
-        q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscle"]
+        q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([0, 0.07, 1.4]))
@@ -261,9 +261,9 @@ def test_muscle_excitation_with_contact_driven_ocp(ode_solver):
     q, qdot, mus_states, tau, mus_controls = (
         sol.states["q"],
         sol.states["qdot"],
-        sol.states["muscle"],
+        sol.states["muscles"],
         sol.controls["tau"],
-        sol.controls["muscle"],
+        sol.controls["muscles"],
     )
 
     if isinstance(ode_solver, OdeSolver.IRK):

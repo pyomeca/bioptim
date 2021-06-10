@@ -121,7 +121,7 @@ class DynamicsFunctions:
         qdot_reduced = nlp.mapping["q"].to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
 
         if nlp.external_forces:
-            dxdt = MX(nlp.nx, nlp.ns)
+            dxdt = MX(nlp.states.n, nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
                 qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
                 qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
@@ -162,7 +162,7 @@ class DynamicsFunctions:
         taudot_reduced = nlp.mapping["taudot"].to_first.map(taudot)
 
         if nlp.external_forces:
-            dxdt = MX(nlp.nx, nlp.ns)
+            dxdt = MX(nlp.states.n, nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
                 qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
                 qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
@@ -434,9 +434,9 @@ class DynamicsFunctions:
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = nlp.model.stateSet()
-        muscles_activations = controls[nlp.shape["tau"] :]
+        muscles_activations = controls[nlp.controls["muscles"].index, :]
 
-        for k in range(nlp.shape["muscle"]):
+        for k in range(len(nlp.controls["muscles"])):
             muscles_states[k].setActivation(muscles_activations[k])
         muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
         tau = muscles_tau + residual_tau
@@ -476,9 +476,9 @@ class DynamicsFunctions:
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = nlp.model.stateSet()
-        muscles_activations = controls[nlp.shape["tau"] :]
+        muscles_activations = controls[nlp.controls["muscles"].index, :]
 
-        for k in range(nlp.shape["muscle"]):
+        for k in range(len(nlp.controls["muscles"])):
             muscles_states[k].setActivation(muscles_activations[k])
         muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
 
@@ -519,9 +519,9 @@ class DynamicsFunctions:
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = nlp.model.stateSet()
-        muscles_activations = controls[nlp.shape["tau"] :]
+        muscles_activations = controls[nlp.controls["muscles"].index, :]
 
-        for k in range(nlp.shape["muscle"]):
+        for k in range(len(nlp.controls["muscles"])):
             muscles_states[k].setActivation(muscles_activations[k])
         muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
 
@@ -556,14 +556,13 @@ class DynamicsFunctions:
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
 
-        nq = nlp.mapping["q"].to_first.len
-        q = nlp.mapping["q"].to_second.map(states[:nq])
-        qdot = nlp.mapping["qdot"].to_second.map(states[nq:])
+        q = nlp.mapping["q"].to_second.map(states[nlp.states["q"].index, :])
+        qdot = nlp.mapping["qdot"].to_second.map(states[nlp.states["qdot"].index, :])
 
         muscles_states = nlp.model.stateSet()
         muscles_activations = controls
 
-        for k in range(nlp.shape["muscle"]):
+        for k in range(len(nlp.controls["muscles"])):
             muscles_states[k].setActivation(muscles_activations[k])
 
         muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
@@ -598,15 +597,14 @@ class DynamicsFunctions:
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
 
-        nq = nlp.mapping["q"].to_first.len
-        q = nlp.mapping["q"].to_second.map(states[:nq])
-        qdot = nlp.mapping["qdot"].to_second.map(states[nq:])
+        q = nlp.mapping["q"].to_second.map(states[nlp.states["q"].index, :])
+        qdot = nlp.mapping["qdot"].to_second.map(states[nlp.states["qdot"].index, :])
 
         muscles_states = nlp.model.stateSet()
         muscles_excitation = controls
-        muscles_activations = states[nlp.shape["q"] + nlp.shape["qdot"] :]
+        muscles_activations = states[nlp.states["muscles"].index, :]
 
-        for k in range(nlp.shape["muscle"]):
+        for k in range(len(nlp.controls["muscles"])):
             muscles_states[k].setExcitation(muscles_excitation[k])
             muscles_states[k].setActivation(muscles_activations[k])
         muscles_activations_dot = nlp.model.activationDot(muscles_states).to_mx()
@@ -647,10 +645,10 @@ class DynamicsFunctions:
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = nlp.model.stateSet()
-        muscles_excitation = controls[nlp.shape["tau"] :]
-        muscles_activations = states[nlp.shape["q"] + nlp.shape["qdot"] :]
+        muscles_excitation = controls[nlp.controls["muscles"].index, :]
+        muscles_activations = states[nlp.states["muscles"].index, :]
 
-        for k in range(nlp.shape["muscle"]):
+        for k in range(len(nlp.states["muscles"])):
             muscles_states[k].setExcitation(muscles_excitation[k])
             muscles_states[k].setActivation(muscles_activations[k])
         muscles_activations_dot = nlp.model.activationDot(muscles_states).to_mx()
@@ -692,10 +690,10 @@ class DynamicsFunctions:
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = nlp.model.stateSet()
-        muscles_excitation = controls[nlp.shape["tau"] :]
-        muscles_activations = states[nlp.shape["q"] + nlp.shape["qdot"] :]
+        muscles_excitation = controls[nlp.controls["muscles"].index, :]
+        muscles_activations = states[nlp.states["muscles"].index, :]
 
-        for k in range(nlp.shape["muscle"]):
+        for k in range(len(nlp.controls["muscles"])):
             muscles_states[k].setExcitation(muscles_excitation[k])
             muscles_states[k].setActivation(muscles_activations[k])
         muscles_activations_dot = nlp.model.activationDot(muscles_states).to_mx()
@@ -737,10 +735,10 @@ class DynamicsFunctions:
         q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
         muscles_states = nlp.model.stateSet()
-        muscles_excitation = controls[nlp.shape["tau"] :]
-        muscles_activations = states[nlp.shape["q"] + nlp.shape["qdot"] :]
+        muscles_excitation = controls[nlp.controls["muscles"].index, :]
+        muscles_activations = states[nlp.states["muscles"].index, :]
 
-        for k in range(nlp.shape["muscle"]):
+        for k in range(len(nlp.controls["muscles"])):
             muscles_states[k].setExcitation(muscles_excitation[k])
             muscles_states[k].setActivation(muscles_activations[k])
 
@@ -772,9 +770,8 @@ class DynamicsFunctions:
             qdot, the generalized velocities
         """
 
-        nq = nlp.mapping["q"].to_first.len
-        q = nlp.mapping["q"].to_second.map(states[:nq])
-        qdot = nlp.mapping["qdot"].to_second.map(states[nq:])
+        q = nlp.mapping["q"].to_second.map(states[nlp.states["q"].index, :])
+        qdot = nlp.mapping["qdot"].to_second.map(states[nlp.states["qdot"].index, :])
         return q, qdot
 
     @staticmethod
@@ -802,7 +799,7 @@ class DynamicsFunctions:
         """
 
         q, qdot = DynamicsFunctions.dispatch_q_qdot_data(states, controls, nlp)
-        tau = nlp.mapping["tau"].to_second.map(controls[: nlp.shape["tau"]])
+        tau = nlp.mapping["tau"].to_second.map(controls[nlp.controls["tau"].index, :])
         return q, qdot, tau
 
     @staticmethod
@@ -832,8 +829,8 @@ class DynamicsFunctions:
             taudot, the generalized torque derivatives
         """
 
-        nq = nlp.mapping["q"].to_first.len
-        nqdot = nlp.mapping["qdot"].to_first.len
+        nq = len(nlp.mapping["q"].to_first)
+        nqdot = len(nlp.mapping["qdot"].to_first)
         q = nlp.mapping["q"].to_second.map(states[:nq])
         qdot = nlp.mapping["qdot"].to_second.map(states[nq:nq + nqdot])
         tau = nlp.mapping["tau"].to_second.map(states[nq + nqdot:])

@@ -3,7 +3,7 @@ from typing import Union, Any
 from casadi import MX, SX, vertcat
 
 from ..optimization.non_linear_program import NonLinearProgram
-from ..optimization.variable_information import VariableInformationList, VariableInformation
+from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 
 
 class PenaltyNodeList:
@@ -92,17 +92,38 @@ class PenaltyNode:
         self.p = nodes.p
 
     def __getitem__(self, item):
-        if isinstance(item, str):
-            if self.nlp.var_states.ismember(item):
-                v = self.x[self.nlp.var_states[item].index, :]
-            elif self.nlp.var_controls.ismember(item):
-                if self.u is None:
-                    v = None
-                else:
-                    v = self.u[self.nlp.var_controls[item].index, :]
-            else:
-                raise RuntimeError(f"{item} is not considered in both controls and states")
+        variable_type = "any"
+        if isinstance(item, tuple) and len(item) == 2 and isinstance(item[1], str):
+            variable_type = item[1]
+            item = item[0]
 
-            return v
+        if isinstance(item, str):
+            if item == "states":
+                return self.x
+            if item == "controls":
+                return self.u
+
+            if variable_type == "any":
+                if item in self.nlp.states and item in self.nlp.controls:
+                    raise RuntimeError(f"Sliced item must specify the type if they appear in both states and controls")
+
+                if item in self.nlp.states:
+                    return self.x[self.nlp.states[item].index, :]
+                elif item in self.nlp.controls:
+                    return self.u[self.nlp.controls[item].index, :]
+                else:
+                    raise RuntimeError(
+                        f"{item} is not present in controls nor states. Or was not 'states' or 'controls', for all"
+                    )
+
+            elif variable_type == "states":
+                return self.x[self.nlp.states[item].index, :]
+
+            elif variable_type == "controls":
+                return self.u[self.nlp.controls[item].index, :]
+
+            else:
+                raise ValueError("The variable_type must be 'any', 'states', or 'controls'")
+
         else:
             raise NotImplementedError("Slicing for penalty node is implemented only for str")

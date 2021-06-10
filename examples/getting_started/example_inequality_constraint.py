@@ -85,10 +85,10 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * tau_mapping.to_first.len, [tau_max] * tau_mapping.to_first.len)
+    u_bounds.add([tau_min] * len(tau_mapping.to_first), [tau_max] * len(tau_mapping.to_first))
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * tau_mapping.to_first.len)
+    u_init.add([tau_init] * len(tau_mapping.to_first))
 
     return OptimalControlProgram(
         biorbd_model,

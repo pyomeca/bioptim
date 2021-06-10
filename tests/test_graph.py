@@ -44,12 +44,10 @@ def custom_func_track_markers(pn: PenaltyNode, first_marker: str, second_marker:
     marker_1_idx = biorbd.marker_index(pn.nlp.model, second_marker)
 
     # Store the casadi function. Using add_casadi_func allow to skip if the function already exists
-    markers_func = pn.nlp.add_casadi_func("markers", pn.nlp.model.markers, pn.nlp.q)
+    markers_func = pn.nlp.add_casadi_func("markers", pn.nlp.model.markers, pn.nlp.states["q"].mx)
 
     # Get the marker positions and compute the difference
-    nq = pn.nlp.shape["q"]
-    q = pn.x[:nq]
-    markers = markers_func(q)
+    markers = markers_func(pn["q"])
     return markers[:, marker_0_idx] - markers[:, marker_1_idx]
 
 

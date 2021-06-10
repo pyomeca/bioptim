@@ -9,7 +9,7 @@ import casadi
 from casadi import MX, SX
 
 from .non_linear_program import NonLinearProgram as NLP
-from .variable import OptimizationVariable
+from .optimization_vector import OptimizationVector
 from ..dynamics.dynamics_type import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..dynamics.problem import Problem
@@ -71,7 +71,7 @@ class OptimalControlProgram:
         A reference to the ocp solver
     solver_type: Solver
         The designated solver to solve the ocp
-    v: OptimizationVariable
+    v: OptimizationVector
         The variable optimization holder
     version: dict
         The version of all the underlying software. This is important when loading a previous ocp
@@ -321,7 +321,7 @@ class OptimalControlProgram:
         # Declare optimization variables
         self.J = []
         self.g = []
-        self.v = OptimizationVariable(self)
+        self.v = OptimizationVector(self)
 
         # nlp is the core of a phase
         self.nlp = [NLP() for _ in range(self.n_phases)]
@@ -378,7 +378,7 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             Problem.initialize(self, self.nlp[i])
-            if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
+            if self.nlp[0].states.n != self.nlp[i].states.n or self.nlp[0].controls.n != self.nlp[i].controls.n:
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 

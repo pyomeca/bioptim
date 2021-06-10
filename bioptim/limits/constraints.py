@@ -162,7 +162,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def non_slipping(
             constraint: Constraint,
-            pn: PenaltyNodeList,
+            all_pn: PenaltyNodeList,
             tangential_component_idx: int,
             normal_component_idx: int,
             static_friction_coefficient: float,
@@ -177,7 +177,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             tangential_component_idx: int
                 Index of the tangential component of the contact force.
@@ -201,8 +201,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             mu_squared = static_friction_coefficient ** 2
             constraint.min_bound = np.array([0, 0])
             constraint.max_bound = np.array([np.inf, np.inf])
-            for i in range(len(pn.u)):
-                contact = pn.nlp.contact_forces_func(pn.x[i], pn.u[i], pn.p)
+            for i in range(len(all_pn.u)):
+                contact = all_pn.nlp.contact_forces_func(all_pn.x[i], all_pn.u[i], all_pn.p)
                 normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
                 if len(tangential_component_idx) == 1:
                     tangential_contact_force_squared = sum1(contact[tangential_component_idx[0], 0]) ** 2
@@ -216,8 +216,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                 # Since it is non-slipping normal forces are supposed to be greater than zero
                 ConstraintFunction.add_to_penalty(
-                    pn.ocp,
-                    pn,
+                    all_pn.ocp,
+                    all_pn,
                     vertcat(
                         mu_squared * normal_contact_force_squared - tangential_contact_force_squared,
                         mu_squared * normal_contact_force_squared + tangential_contact_force_squared,
@@ -228,7 +228,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         @staticmethod
         def torque_max_from_actuators(
             constraint: Constraint,
-            pn: PenaltyNodeList,
+            all_pn: PenaltyNodeList,
             min_torque=None,
         ):
             """
@@ -238,24 +238,23 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             min_torque: float
                 Minimum joint torques. This prevent from having too small torques, but introduces an if statement
             """
 
             # TODO: Add index to select the u (control_idx)
-            nlp = pn.nlp
-            nq = nlp.mapping["q"].to_first.len
-            q = [nlp.mapping["q"].to_second.map(mx[:nq]) for mx in pn.x]
-            qdot = [nlp.mapping["qdot"].to_second.map(mx[nq:]) for mx in pn.x]
+            nlp = all_pn.nlp
+            q = [nlp.mapping["q"].to_second.map(mx[nlp.states["q"].index, :]) for mx in all_pn.x]
+            qdot = [nlp.mapping["qdot"].to_second.map(mx[nlp.states["qdot"].index, :]) for mx in all_pn.x]
 
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
-            func = biorbd.to_casadi_func("torqueMax", nlp.model.torqueMax, nlp.q, nlp.qdot)
-            constraint.min_bound = np.repeat([0, -np.inf], nlp.nu)
-            constraint.max_bound = np.repeat([np.inf, 0], nlp.nu)
-            for i in range(len(pn.u)):
+            func = biorbd.to_casadi_func("torqueMax", nlp.model.torqueMax, nlp.states["q"].mx, nlp.states["qdot"].mx)
+            constraint.min_bound = np.repeat([0, -np.inf], nlp.controls.n)
+            constraint.max_bound = np.repeat([np.inf, 0], nlp.controls.n)
+            for i in range(len(all_pn.u)):
                 bound = func(q[i], qdot[i])
                 if min_torque:
                     min_bound = nlp.mapping["tau"].to_first.map(
@@ -269,13 +268,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     max_bound = nlp.mapping["tau"].to_first.map(bound[:, 0])
 
                 ConstraintFunction.add_to_penalty(
-                    pn.ocp, pn, vertcat(*[pn.u[i] + min_bound, pn.u[i] - max_bound]), constraint
+                    all_pn.ocp, all_pn, vertcat(*[all_pn.u[i] + min_bound, all_pn.u[i] - max_bound]), constraint
                 )
 
         @staticmethod
         def time_constraint(
             constraint: Constraint,
-            pn: PenaltyNodeList,
+            all_pn: PenaltyNodeList,
             **unused_param,
         ):
             """
@@ -285,7 +284,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ----------
             constraint: Constraint
                 The actual constraint to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             **unused_param: dict
                 Since the function does nothing, we can safely ignore any argument
@@ -331,9 +330,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ConstraintFunction.clear_penalty(ocp, None, penalty)
             # Loop over shooting nodes or use parallelization
             if ocp.n_threads > 1:
-                end_nodes = nlp.par_dynamics(horzcat(*nlp.X[:-1]), horzcat(*nlp.U), nlp.p)[0]
+                end_nodes = nlp.par_dynamics(horzcat(*nlp.X[:-1]), horzcat(*nlp.U), nlp.parameters.cx)[0]
                 val = horzcat(*nlp.X[1:]) - end_nodes
-                ConstraintFunction.add_to_penalty(ocp, None, val.reshape((nlp.nx * nlp.ns, 1)), penalty)
+                ConstraintFunction.add_to_penalty(ocp, None, val.reshape((nlp.states.n * nlp.ns, 1)), penalty)
             else:
                 for k in range(nlp.ns):
                     # Create an evaluation node
@@ -348,7 +347,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                             u = horzcat(nlp.U[k], nlp.U[k + 1])
                         else:
                             raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
-                        end_node = nlp.dynamics[k](x0=nlp.X[k], p=u, params=nlp.p)["xf"]
+                        end_node = nlp.dynamics[k](x0=nlp.X[k], p=u, params=nlp.parameters.cx)["xf"]
                     else:
                         end_node = nlp.dynamics[k](x0=nlp.X[k], p=nlp.U[k])["xf"]
 
@@ -381,7 +380,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         casadi_name = f"PHASE_TRANSITION_{pt.phase_pre_idx}_{pt.phase_pre_idx + 1}"
         pre_nlp, post_nlp = ocp.nlp[pt.phase_pre_idx], ocp.nlp[(pt.phase_pre_idx + 1) % ocp.n_phases]
         pt.casadi_function = Function(
-            casadi_name, [pre_nlp.X[-1], pre_nlp.U[-1], post_nlp.X[0], post_nlp.U[0], ocp.v.parameters.cx], [val]
+            casadi_name, [pre_nlp.X[-1], pre_nlp.U[-1], post_nlp.X[0], post_nlp.U[0], ocp.v.parameters_in_list.cx], [val]
         ).expand()
         pt.base.add_to_penalty(ocp, None, val, penalty)
 

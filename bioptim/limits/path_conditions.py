@@ -428,6 +428,8 @@ class Bounds(OptionGeneric):
         -------
         The bound sliced
         """
+        if isinstance(slice_list, range):
+            slice_list = slice(slice_list[0], slice_list[-1])
 
         if isinstance(slice_list, slice):
             t = self.min.t

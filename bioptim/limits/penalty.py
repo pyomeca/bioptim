@@ -197,7 +197,7 @@ class PenaltyFunctionAbstract:
         """
 
         @staticmethod
-        def minimize_states(penalty: PenaltyOption, pn: PenaltyNodeList):
+        def minimize_states(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -207,40 +207,40 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             """
 
-            nlp = pn.nlp
-            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, nlp.nx, "state_idx")
+            nlp = all_pn.nlp
+            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, nlp.states.n, "state_idx")
             target = None
             if penalty.target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (len(states_idx), len(pn.x))
+                    penalty.target, (len(states_idx), len(all_pn.x))
                 )
 
                 # Prepare the plot
                 prev_idx = 0  # offset due to previous states
-                for s in nlp.var_states.names():
+                for s in nlp.states:
                     state_idx = []
                     for i, idx in enumerate(states_idx):
-                        if prev_idx <= idx < nlp.var_states[s].n + prev_idx:
+                        if prev_idx <= idx < len(nlp.states[s]) + prev_idx:
                             state_idx.append([idx - prev_idx, i])
                     state_idx = np.array(state_idx)
                     if state_idx.shape[0] > 0:
                         mapping = Mapping(state_idx[:, 0])
                         PenaltyFunctionAbstract._add_track_data_to_plot(
-                            pn, target[state_idx[:, 1], :], combine_to=s, axes_idx=mapping
+                            all_pn, target[state_idx[:, 1], :], combine_to=s, axes_idx=mapping
                         )
-                    prev_idx += nlp.var_states[s].n
+                    prev_idx += len(nlp.states[s])
 
-            for i, v in enumerate(pn.x):
-                val = v[states_idx]
+            for i, pn in enumerate(all_pn):
+                val = pn["states"][states_idx, :]
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
-        def minimize_markers(penalty: PenaltyOption, pn: PenaltyNodeList, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)):
+        def minimize_markers(penalty: PenaltyOption, all_pn: PenaltyNodeList, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)):
             """
             Minimize a marker set.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -250,28 +250,28 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             axis_to_track: Axis
                 The axis the penalty is acting on
             """
 
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                penalty.index, pn.nlp.model.nbMarkers(), "markers_idx"
+                penalty.index, all_pn.nlp.model.nbMarkers(), "markers_idx"
             )
             target = None
             if penalty.target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (3, len(markers_idx), len(pn.x))
+                    penalty.target, (3, len(markers_idx), len(all_pn.x))
                 )
-            pn.nlp.add_casadi_func("biorbd_markers", pn.nlp.model.markers, pn.nlp.q)
-            nq = pn.nlp.mapping["q"].to_first.len
-            for i, v in enumerate(pn.x):
-                q = pn.nlp.mapping["q"].to_second.map(v[:nq])
+            all_pn.nlp.add_casadi_func("biorbd_markers", all_pn.nlp.model.markers, all_pn.nlp.states["q"].mx)
+
+            for i, pn in enumerate(all_pn):
+                q = pn.nlp.mapping["q"].to_second.map(pn["q"])
                 # TODO move the axis_to_track into a row (?) option of penalty
                 val = pn.nlp.casadi_func["biorbd_markers"](q)[axis_to_track, markers_idx]
                 penalty.sliced_target = target[axis_to_track, :, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
         def minimize_markers_displacement(penalty: PenaltyOption, pn: PenaltyNodeList, coordinates_system_idx: int = -1):
@@ -291,26 +291,25 @@ class PenaltyFunctionAbstract:
             """
 
             nlp = pn.nlp
-            nq = nlp.mapping["q"].to_first.len
             n_rts = nlp.model.nbSegment()
 
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 penalty.index, nlp.model.nbMarkers(), "markers_idx"
             )
 
-            nlp.add_casadi_func("biorbd_markers", nlp.model.markers, nlp.q)
+            nlp.add_casadi_func("biorbd_markers", nlp.model.markers, nlp.states["q"].mx)
             if coordinates_system_idx >= 0:
                 if coordinates_system_idx >= n_rts:
                     raise RuntimeError(
                         f"coordinates_system_idx ({coordinates_system_idx}) cannot be higher than {n_rts - 1}"
                     )
                 nlp.add_casadi_func(
-                    f"globalJCS_{coordinates_system_idx}", nlp.model.globalJCS, nlp.q, coordinates_system_idx
+                    f"globalJCS_{coordinates_system_idx}", nlp.model.globalJCS, nlp.states["q"].mx, coordinates_system_idx
                 )
 
             for i in range(len(pn.x) - 1):
-                q_0 = nlp.mapping["q"].to_second.map(pn.x[i][:nq])
-                q_1 = nlp.mapping["q"].to_second.map(pn.x[i + 1][:nq])
+                q_0 = nlp.mapping["q"].to_second.map(pn.x[i][pn.nlp.states["q"].index, :])
+                q_1 = nlp.mapping["q"].to_second.map(pn.x[i + 1][pn.nlp.states["q"].index, :])
 
                 if coordinates_system_idx < 0:
                     jcs_0_T = nlp.cx.eye(4)
@@ -337,7 +336,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val[:3, :], penalty)
 
         @staticmethod
-        def minimize_markers_velocity(penalty: PenaltyOption, pn: PenaltyNodeList):
+        def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -347,13 +346,11 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             """
 
-            nlp = pn.nlp
-            n_q = nlp.shape["q"]
-            n_qdot = nlp.shape["qdot"]
+            nlp = all_pn.nlp
             markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
                 penalty.index, nlp.model.nbMarkers(), "markers_idx"
             )
@@ -361,21 +358,21 @@ class PenaltyFunctionAbstract:
             target = None
             if penalty.target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (3, len(markers_idx), len(pn.x))
+                    penalty.target, (3, len(markers_idx), len(all_pn.x))
                 )
 
             for m in markers_idx:
-                nlp.add_casadi_func(f"biorbd_markerVelocity_{m}", nlp.model.markerVelocity, nlp.q, nlp.qdot, int(m))
+                nlp.add_casadi_func(f"biorbd_markerVelocity_{m}", nlp.model.markerVelocity, nlp.states["q"].mx, nlp.states["qdot"].mx, int(m))
 
-            for i, v in enumerate(pn.x):
+            for i, pn in enumerate(all_pn):
                 for m in markers_idx:
-                    val = nlp.casadi_func[f"biorbd_markerVelocity_{m}"](v[:n_q], v[n_q : n_q + n_qdot])
+                    val = nlp.casadi_func[f"biorbd_markerVelocity_{m}"](pn["q"], pn["qdot"])
                     penalty.sliced_target = target[:, m, i] if target is not None else None
-                    penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+                    penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
         def superimpose_markers(
-            penalty: PenaltyOption, pn: PenaltyNodeList, first_marker: Union[str, int], second_marker: Union[str, int]
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, first_marker: Union[str, int], second_marker: Union[str, int]
         ):
             """
             Minimize the distance between two markers
@@ -385,7 +382,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             first_marker: Union[str, int]
                 The name or index of one of the two markers
@@ -393,7 +390,7 @@ class PenaltyFunctionAbstract:
                 The name or index of one of the two markers
             """
 
-            nlp = pn.nlp
+            nlp = all_pn.nlp
             first_marker_idx = (
                 biorbd.marker_index(nlp.model, first_marker) if isinstance(first_marker, str) else first_marker
             )
@@ -402,20 +399,20 @@ class PenaltyFunctionAbstract:
             )
 
             PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nbMarkers())
-            nlp.add_casadi_func("markers", nlp.model.markers, nlp.q)
-            nq = nlp.mapping["q"].to_first.len
-            for v in pn.x:
-                q = nlp.mapping["q"].to_second.map(v[:nq])
+            nlp.add_casadi_func("markers", nlp.model.markers, nlp.states["q"].mx)
+
+            for pn in all_pn:
+                q = nlp.mapping["q"].to_second.map(pn["q"])
                 first_marker_func = nlp.casadi_func["markers"](q)[:, first_marker_idx]
                 second_marker_func = nlp.casadi_func["markers"](q)[:, second_marker_idx]
 
                 val = first_marker_func - second_marker_func
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
         def proportional_variable(
             penalty: PenaltyOption,
-            pn: PenaltyNodeList,
+            all_pn: PenaltyNodeList,
             which_var: str,
             first_dof: int,
             second_dof: int,
@@ -429,7 +426,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             which_var: str
                 If the proportion is on 'states' or on 'controls'
@@ -442,11 +439,11 @@ class PenaltyFunctionAbstract:
             """
 
             if which_var == "states":
-                ux = pn.x
-                n_val = pn.nlp.nx
+                ux = all_pn.x
+                n_val = all_pn.nlp.states.n
             elif which_var == "controls":
-                ux = pn.u
-                n_val = pn.nlp.nu
+                ux = all_pn.u
+                n_val = all_pn.nlp.controls.n
             else:
                 raise RuntimeError("Wrong choice of which_var")
 
@@ -455,9 +452,9 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("coef must be an int or a float")
 
             for v in ux:
-                v = pn.nlp.mapping["q"].to_second.map(v)
+                v = all_pn.nlp.mapping["q"].to_second.map(v)
                 val = v[first_dof] - coef * v[second_dof]
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
         def minimize_torque(penalty: PenaltyOption, all_pn: PenaltyNodeList):
@@ -474,7 +471,7 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            n_tau = all_pn.nlp.shape["tau"]
+            n_tau = len(all_pn.nlp.controls["tau"])
             tau_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_tau, "controls_idx")
 
             target = None
@@ -488,12 +485,12 @@ class PenaltyFunctionAbstract:
 
             for i in range(len(all_pn) - 1):
                 pn = all_pn[i]
-                val = pn["tau"]
+                val = pn["tau"][tau_idx, :]
                 penalty.sliced_target = target[:, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def minimize_state_derivative(penalty: PenaltyOption, pn: PenaltyNodeList):
+        def minimize_state_derivative(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the states velocity by comparing the state at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -503,18 +500,18 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             """
 
-            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, pn.nlp.nx, "states_idx")
+            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, all_pn.nlp.states.n, "states_idx")
 
-            for i in range(len(pn.x) - 1):
-                val = pn.x[i + 1][states_idx] - pn.x[i][states_idx]
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+            for i in range(len(all_pn.x) - 1):
+                val = all_pn.x[i + 1][states_idx] - all_pn.x[i][states_idx]
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
-        def minimize_qddot(penalty: PenaltyOption, pn: PenaltyNodeList):
+        def minimize_qddot(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the states velocity by comparing the state at a node and at the next node.
             By default this function is quadratic, meaning that it minimizes the difference.
@@ -524,15 +521,15 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             """
-            nq = pn.nlp.shape["q"]
+            nq = len(all_pn.nlp.states["q"])
             states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, nq, "states_idx")
-
-            for i in range(len(pn) - 1):
-                val = pn.nlp.dynamics_func(pn.x[i], pn.u[i], pn.p)[nq + states_idx, :]
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+            qdot_idx = [all_pn.nlp.states["qdot"].index[i] for i in states_idx]
+            for i in range(len(all_pn) - 1):
+                val = all_pn.nlp.dynamics_func(all_pn.x[i], all_pn.u[i], all_pn.p)[qdot_idx, :]
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
         def minimize_torque_derivative(penalty: PenaltyOption, all_pn: PenaltyNodeList):
@@ -549,10 +546,10 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            n_tau = all_pn.nlp.shape["tau"]
-            n_taudot = all_pn.nlp.shape["taudot"]
+            n_tau = len(all_pn.nlp.controls["tau"]) if "tau" in all_pn.nlp.controls else len(all_pn.nlp.states["tau"])
 
-            if n_taudot > 0:
+            if "taudot" in all_pn.nlp.controls:
+                n_taudot = len(all_pn.nlp.controls["taudot"])
 
                 controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_taudot, "controls_idx")
 
@@ -594,7 +591,7 @@ class PenaltyFunctionAbstract:
             """
 
             muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                penalty.index, all_pn.nlp.shape["muscle"], "muscles_idx"
+                penalty.index, len(all_pn.nlp.controls["muscles"]), "muscles_idx"
             )
 
             target = None
@@ -609,7 +606,7 @@ class PenaltyFunctionAbstract:
 
             for i in range(len(all_pn) - 1):
                 pn = all_pn[i]
-                val = pn["muscle"]
+                val = pn["muscles", "controls"][muscles_idx, :]
                 penalty.sliced_target = target[:, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
 
@@ -628,8 +625,8 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            n_u = all_pn.nlp.nu
-            controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_u, "muscles_idx")
+            n_u = all_pn.nlp.controls.n
+            controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_u, "controls_idx")
 
             target = None
             if penalty.target is not None:
@@ -637,8 +634,10 @@ class PenaltyFunctionAbstract:
                     penalty.target, (len(controls_idx), len(all_pn.u))
                 )
 
-            for i, v in enumerate(all_pn.u):
-                val = v[controls_idx]
+            for i, pn in enumerate(all_pn):
+                if pn.u is None:
+                    continue
+                val = pn.u[controls_idx]
                 penalty.sliced_target = target[:, i] if target is not None else None
                 penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
@@ -657,14 +656,14 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            n_u = all_pn.nlp.nu
+            n_u = all_pn.nlp.controls.n
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_u, "controls_idx")
             for i in range(len(all_pn.u) - 1):
                 val = all_pn.u[i + 1][controls_idx] - all_pn.u[i][controls_idx]
                 penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
-        def minimize_predicted_com_height(penalty: PenaltyOption, pn: PenaltyNodeList):
+        def minimize_predicted_com_height(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
             assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]
@@ -674,25 +673,23 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             """
 
-            nlp = pn.nlp
+            nlp = all_pn.nlp
             nlp.add_casadi_func("gravity", nlp.model.getGravity)
             g = float(nlp.casadi_func["gravity"]()["o0"][2])
-            nlp.add_casadi_func("biorbd_CoM", nlp.model.CoM, nlp.q)
-            nlp.add_casadi_func("biorbd_CoM_dot", nlp.model.CoMdot, nlp.q, nlp.qdot)
-            for i, v in enumerate(pn.x):
-                q = nlp.mapping["q"].to_second.map(v[: nlp.shape["q"]])
-                qdot = nlp.mapping["qdot"].to_second.map(v[nlp.shape["q"] :])
-                CoM = nlp.casadi_func["biorbd_CoM"](q)
-                CoM_dot = nlp.casadi_func["biorbd_CoM_dot"](q, qdot)
+            nlp.add_casadi_func("biorbd_CoM", nlp.model.CoM, nlp.states["q"].mx)
+            nlp.add_casadi_func("biorbd_CoM_dot", nlp.model.CoMdot, nlp.states["q"].mx, nlp.states["qdot"].mx)
+            for i, pn in enumerate(all_pn):
+                CoM = nlp.casadi_func["biorbd_CoM"](pn["q"])
+                CoM_dot = nlp.casadi_func["biorbd_CoM_dot"](pn["q"], pn["qdot"])
                 CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, CoM_height, penalty)
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, CoM_height, penalty)
 
         @staticmethod
-        def minimize_com_position(penalty: PenaltyOption, pn: PenaltyNodeList, axis: Axis = None):
+        def minimize_com_position(penalty: PenaltyOption, all_pn: PenaltyNodeList, axis: Axis = None):
             """
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's position is minimized.
@@ -703,20 +700,20 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             axis: Axis
                 The axis to project on. Default is all axes
             """
 
-            nlp = pn.nlp
+            nlp = all_pn.nlp
             target = None
             if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (1, len(pn.x)))
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (1, len(all_pn.x)))
 
-            nlp.add_casadi_func("biorbd_CoM", nlp.model.CoM, nlp.q)
-            for i, v in enumerate(pn.x):
-                q = nlp.mapping["q"].to_second.map(v[: nlp.shape["q"]])
+            nlp.add_casadi_func("biorbd_CoM", nlp.model.CoM, nlp.states["q"].mx)
+            for i, pn in enumerate(all_pn):
+                q = nlp.mapping["q"].to_second.map(pn["q"])
                 CoM = nlp.casadi_func["biorbd_CoM"](q)
 
                 if axis is None:
@@ -727,10 +724,10 @@ class PenaltyFunctionAbstract:
                     CoM_proj = CoM[axis]
 
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, CoM_proj, penalty)
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, CoM_proj, penalty)
 
         @staticmethod
-        def minimize_com_velocity(penalty: PenaltyOption, pn: PenaltyNodeList, axis: Axis = None):
+        def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, axis: Axis = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's velocity is minimized.
@@ -741,21 +738,21 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             axis: Axis
                 The axis to project on. Default is all axes
             """
 
-            nlp = pn.nlp
+            nlp = all_pn.nlp
             target = None
             if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (1, len(pn.x)))
+                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (1, len(all_pn.x)))
 
-            nlp.add_casadi_func("biorbd_CoM_dot", nlp.model.CoMdot, nlp.q, nlp.qdot)
-            for i, v in enumerate(pn.x):
-                q = nlp.mapping["q"].to_second.map(v[: nlp.shape["q"]])
-                qdot = nlp.mapping["qdot"].to_second.map(v[nlp.shape["q"] :])
+            nlp.add_casadi_func("biorbd_CoM_dot", nlp.model.CoMdot, nlp.states["q"].mx, nlp.states["qdot"].mx)
+            for i, pn in enumerate(all_pn):
+                q = nlp.mapping["q"].to_second.map(pn["q"])
+                qdot = nlp.mapping["qdot"].to_second.map(pn["qdot"])
                 CoM_dot = nlp.casadi_func["biorbd_CoM_dot"](q, qdot)
 
                 if axis is None:
@@ -766,10 +763,10 @@ class PenaltyFunctionAbstract:
                     CoM_dot_proj = CoM_dot[axis]
 
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, CoM_dot_proj, penalty)
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, CoM_dot_proj, penalty)
 
         @staticmethod
-        def minimize_contact_forces(penalty: PenaltyOption, pn: PenaltyNodeList):
+        def minimize_contact_forces(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the contact forces computed from dynamics with contact
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -779,32 +776,32 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             """
 
-            n_contact = pn.nlp.model.nbContacts()
+            n_contact = all_pn.nlp.model.nbContacts()
             contacts_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_contact, "contacts_idx")
 
             target = None
             if penalty.target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (len(contacts_idx), len(pn.u))
+                    penalty.target, (len(contacts_idx), len(all_pn.u))
                 )
 
                 PenaltyFunctionAbstract._add_track_data_to_plot(
-                    pn, target, combine_to="contact_forces", axes_idx=Mapping(contacts_idx)
+                    all_pn, target, combine_to="contact_forces", axes_idx=Mapping(contacts_idx)
                 )
 
-            for i, v in enumerate(pn.u):
-                force = pn.nlp.contact_forces_func(pn.x[i], pn.u[i], pn.p)
+            for i, v in enumerate(all_pn.u):
+                force = all_pn.nlp.contact_forces_func(all_pn.x[i], all_pn.u[i], all_pn.p)
                 val = force[contacts_idx]
                 penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
         def track_segment_with_custom_rt(
-            penalty: PenaltyOption, pn: PenaltyNodeList, segment: Union[int, str], rt_idx: int
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, segment: Union[int, str], rt_idx: int
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
@@ -814,7 +811,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             segment: Union[int, str]
                 The name or index of the segment
@@ -822,7 +819,7 @@ class PenaltyFunctionAbstract:
                 The index of the RT
             """
 
-            nlp = pn.nlp
+            nlp = all_pn.nlp
             segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
 
             PenaltyFunctionAbstract._check_idx("segment", segment_idx, nlp.model.nbSegment())
@@ -850,19 +847,18 @@ class PenaltyFunctionAbstract:
                 return biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
             nlp.add_casadi_func(
-                f"track_segment_with_custom_rt_{segment_idx}", biorbd_meta_func, nlp.q, segment_idx, rt_idx
+                f"track_segment_with_custom_rt_{segment_idx}", biorbd_meta_func, nlp.states["q"].mx, segment_idx, rt_idx
             )
 
-            nq = nlp.mapping["q"].to_first.len
-            for v in pn.x:
-                q = nlp.mapping["q"].to_second.map(v[:nq])
+            for pn in all_pn:
+                q = nlp.mapping["q"].to_second.map(pn["q"])
                 val = nlp.casadi_func[f"track_segment_with_custom_rt_{segment_idx}"](q)
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
         def track_marker_with_segment_axis(
             penalty: PenaltyOption,
-            pn: PenaltyNodeList,
+            all_pn: PenaltyNodeList,
             marker: Union[int, str],
             segment: Union[int, str],
             axis: Axis,
@@ -875,7 +871,7 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            pn: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             marker: int
                 Name or index of the marker to be tracked
@@ -888,7 +884,7 @@ class PenaltyFunctionAbstract:
             if not isinstance(axis, Axis):
                 raise RuntimeError("axis must be a bioptim.Axis")
 
-            nlp = pn.nlp
+            nlp = all_pn.nlp
             marker_idx = biorbd.marker_index(nlp.model, marker) if isinstance(marker, str) else marker
             segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
 
@@ -901,19 +897,19 @@ class PenaltyFunctionAbstract:
             nlp.add_casadi_func(
                 f"track_marker_with_segment_axis_{segment_idx}_{marker_idx}",
                 biorbd_meta_func,
-                nlp.q,
+                nlp.states["q"].mx,
                 segment_idx,
                 marker_idx,
             )
-            nq = nlp.mapping["q"].to_first.len
-            for v in pn.x:
-                q = nlp.mapping["q"].to_second.map(v[:nq])
+            nq = len(nlp.mapping["q"].to_first)
+            for pn in all_pn:
+                q = nlp.mapping["q"].to_second.map(pn["q"])
                 marker = nlp.casadi_func[f"track_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
                 for axe in Axis:
                     if axe != axis:
                         # To align an axis, the other must be equal to 0
                         val = marker[axe, 0]
-                        penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+                        penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
         def custom(penalty: PenaltyOption, nodes: Union[PenaltyNodeList, list], **parameters: Any):
@@ -1022,12 +1018,12 @@ class PenaltyFunctionAbstract:
             penalty.node = Node.END
             t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
             u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
-            pn.append(PenaltyNodeList(ocp, nlp, t, x, u, nlp.p))
+            pn.append(PenaltyNodeList(ocp, nlp, t, x, u, nlp.parameters.cx))
 
             nlp = ocp.nlp[(nlp.phase_idx + 1) % ocp.n_phases]
             penalty.node = Node.START
             t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
-            pn.append(PenaltyNodeList(ocp, nlp, t, x, u, nlp.p))
+            pn.append(PenaltyNodeList(ocp, nlp, t, x, u, nlp.parameters.cx))
 
             penalty.node = Node.TRANSITION
             penalty.get_all_nodes_at_once = True
@@ -1037,7 +1033,7 @@ class PenaltyFunctionAbstract:
             penalty_type.clear_penalty(ocp, None, penalty)
         else:
             t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
-            pn = PenaltyNodeList(ocp, nlp, t, x, u, nlp.p)
+            pn = PenaltyNodeList(ocp, nlp, t, x, u, nlp.parameters.cx)
 
             penalty_type._span_checker(penalty, pn)
             penalty_type.clear_penalty(pn.ocp, pn.nlp, penalty)

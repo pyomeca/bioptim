@@ -197,7 +197,7 @@ class PlotOcp:
             The type of integration method
         """
         for i in range(1, ocp.n_phases):
-            if ocp.nlp[0].shape["q"] != ocp.nlp[i].shape["q"]:
+            if len(ocp.nlp[0].states["q"]) != len(ocp.nlp[i].states["q"]):
                 raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
 
         self.ocp = ocp
@@ -237,7 +237,7 @@ class PlotOcp:
         self.top_margin = None
         self.height_step = None
         self.width_step = None
-        self._organize_windows(len(self.ocp.nlp[0].var_states) + len(self.ocp.nlp[0].var_controls))
+        self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
 
         self.plot_func = {}
         self.variable_sizes = []
@@ -303,9 +303,9 @@ class PlotOcp:
                         size = (
                             nlp.plot[key]
                             .function(
-                                np.zeros((nlp.nx, 1)),
-                                np.zeros((nlp.nu, 1)),
-                                np.zeros((nlp.np, 1)),
+                                np.zeros((nlp.states.n, 1)),
+                                np.zeros((nlp.controls.n, 1)),
+                                np.zeros((len(nlp.parameters), 1)),
                                 **nlp.plot[key].parameters,
                             )
                             .shape[0]
@@ -528,13 +528,13 @@ class PlotOcp:
             n_elements = nlp.ns * step_size + 1
 
             state = np.ndarray((0, n_elements))
-            for s in nlp.var_states.names():
+            for s in nlp.states:
                 if isinstance(data_states, (list, tuple)):
                     state = np.concatenate((state, data_states[i][s]))
                 else:
                     state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
-            for s in nlp.var_controls.names():
+            for s in nlp.controls:
                 if isinstance(data_controls, (list, tuple)):
                     control = np.concatenate((control, data_controls[i][s]))
                 else:

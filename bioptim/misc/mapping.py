@@ -75,8 +75,7 @@ class Mapping:
 
         return mapped_obj
 
-    @property
-    def len(self) -> int:
+    def __len__(self) -> int:
         """
         Get the len of the mapping
 
