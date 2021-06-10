@@ -303,8 +303,8 @@ class PlotOcp:
                         size = (
                             nlp.plot[key]
                             .function(
-                                np.zeros((nlp.states.n, 1)),
-                                np.zeros((nlp.controls.n, 1)),
+                                np.zeros((nlp.states.shape, 1)),
+                                np.zeros((nlp.controls.shape, 1)),
                                 np.zeros((len(nlp.parameters), 1)),
                                 **nlp.plot[key].parameters,
                             )

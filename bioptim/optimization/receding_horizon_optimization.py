@@ -125,14 +125,14 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                         "The MHE is not implemented yet for x_bounds not being "
                         "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
                     )
-                self.nlp[0].x_bounds.check_and_adjust_dimensions(self.nlp[0].states.n, 3)
+                self.nlp[0].x_bounds.check_and_adjust_dimensions(self.nlp[0].states.shape, 3)
             self.nlp[0].x_bounds[:, 0] = sol.states["all"][:, 1]
 
             if self.nlp[0].x_init.type != InterpolationType.EACH_FRAME:
                 self.nlp[0].x_init = InitialGuess(
                     np.ndarray(sol.states["all"].shape), interpolation=InterpolationType.EACH_FRAME
                 )
-                self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].states.n, self.nlp[0].ns)
+                self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].states.shape, self.nlp[0].ns)
             self.nlp[0].x_init.init[:, :] = np.concatenate(
                 (sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1
             )

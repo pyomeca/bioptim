@@ -101,7 +101,7 @@ class Parameter(OptionGeneric):
         self.cx = cx
 
     @property
-    def n(self):
+    def shape(self):
         return self.cx.shape[0]
 
 
@@ -277,8 +277,8 @@ class ParameterList(UniquePerProblemOptionList):
         return _init
 
     @property
-    def n(self):
-        return sum([p.n for p in self])
+    def shape(self):
+        return sum([p.shape for p in self])
 
 
 class Parameters:

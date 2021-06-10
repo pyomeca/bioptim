@@ -378,7 +378,7 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             Problem.initialize(self, self.nlp[i])
-            if self.nlp[0].states.n != self.nlp[i].states.n or self.nlp[0].controls.n != self.nlp[i].controls.n:
+            if self.nlp[0].states.shape != self.nlp[i].states.shape or self.nlp[0].controls.shape != self.nlp[i].controls.shape:
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 

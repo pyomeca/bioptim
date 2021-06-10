@@ -11,6 +11,7 @@ from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import ControlType, CostType, Shooting, InterpolationType
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
+from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 
 
 class Solution:
@@ -89,9 +90,59 @@ class Solution:
     """
 
     class SimplifiedOptimizationVariable:
-        n: int
-        def __init__(self, other):
-            self.n = other.n
+        def __init__(self, other: OptimizationVariable):
+            self.name = other.name
+            self.index = other.index
+
+        def __len__(self):
+            return len(self.index)
+
+    class SimplifiedOptimizationVariableList:
+        def __init__(self, other: Union[OptimizationVariableList]):
+            self.elements = []
+            if isinstance(other, Solution.SimplifiedOptimizationVariableList):
+                self.shape = other.shape
+            else:
+                self.shape = other.cx.shape[0]
+            for elt in other:
+                self.append(other[elt])
+
+        def __getitem__(self, item):
+            if isinstance(item, int):
+                return self.elements[item]
+            elif isinstance(item, str):
+                for elt in self.elements:
+                    if item == elt.name:
+                        return elt
+                raise KeyError(f"{item} is not in the list")
+            else:
+                raise ValueError("OptimizationVariableList can be sliced with int or str only")
+
+        def append(self, other: OptimizationVariable):
+            self.elements.append(Solution.SimplifiedOptimizationVariable(other))
+
+        def __contains__(self, item):
+            for elt in self.elements:
+                if item == elt.name:
+                    return True
+            else:
+                return False
+
+        def keys(self):
+            return [elt.name for elt in self]
+
+        def __len__(self):
+            return len(self.elements)
+
+        def __iter__(self):
+            self._iter_idx = 0
+            return self
+
+        def __next__(self):
+            self._iter_idx += 1
+            if self._iter_idx > len(self):
+                raise StopIteration
+            return self[self._iter_idx - 1].name
 
     class SimplifiedNLP:
         """
@@ -115,12 +166,6 @@ class Solution:
             The number of finite element of the RK
         ns: int
             The number of shooting points
-        nu: int
-            The number of controls
-        nx: int
-            The number of states
-        var_states: dict
-            The number of elements for each state the key is the name of the state
         """
 
         def __init__(self, nlp: NonLinearProgram):
@@ -132,8 +177,8 @@ class Solution:
             """
 
             self.model = nlp.model
-            self.states = Solution.SimplifiedOptimizationVariable(nlp.states)
-            self.controls = Solution.SimplifiedOptimizationVariable(nlp.controls)
+            self.states = Solution.SimplifiedOptimizationVariableList(nlp.states)
+            self.controls = Solution.SimplifiedOptimizationVariableList(nlp.controls)
             self.dynamics = nlp.dynamics
             self.ode_solver = nlp.ode_solver
             self.mapping = nlp.mapping

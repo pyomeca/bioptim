@@ -212,7 +212,7 @@ class PenaltyFunctionAbstract:
             """
 
             nlp = all_pn.nlp
-            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, nlp.states.n, "state_idx")
+            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, nlp.states.shape, "state_idx")
             target = None
             if penalty.target is not None:
                 target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
@@ -440,10 +440,10 @@ class PenaltyFunctionAbstract:
 
             if which_var == "states":
                 ux = all_pn.x
-                n_val = all_pn.nlp.states.n
+                n_val = all_pn.nlp.states.shape
             elif which_var == "controls":
                 ux = all_pn.u
-                n_val = all_pn.nlp.controls.n
+                n_val = all_pn.nlp.controls.shape
             else:
                 raise RuntimeError("Wrong choice of which_var")
 
@@ -504,7 +504,7 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, all_pn.nlp.states.n, "states_idx")
+            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, all_pn.nlp.states.shape, "states_idx")
 
             for i in range(len(all_pn.x) - 1):
                 val = all_pn.x[i + 1][states_idx] - all_pn.x[i][states_idx]
@@ -625,7 +625,7 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            n_u = all_pn.nlp.controls.n
+            n_u = all_pn.nlp.controls.shape
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_u, "controls_idx")
 
             target = None
@@ -656,7 +656,7 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            n_u = all_pn.nlp.controls.n
+            n_u = all_pn.nlp.controls.shape
             controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_u, "controls_idx")
             for i in range(len(all_pn.u) - 1):
                 val = all_pn.u[i + 1][controls_idx] - all_pn.u[i][controls_idx]

@@ -134,7 +134,7 @@ class PhaseTransitionFunctions:
             The difference between the state after and before
             """
 
-            if ocp.nlp[transition.phase_pre_idx].states.n != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.n:
+            if ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.shape:
                 raise RuntimeError(
                     "Continuous phase transition without same number of states is not possible, "
                     "please provide a custom phase transition"
@@ -177,7 +177,7 @@ class PhaseTransitionFunctions:
             The difference between the last and first node after applying the impulse equations
             """
 
-            if ocp.nlp[transition.phase_pre_idx].states.n != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.n:
+            if ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.shape:
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )

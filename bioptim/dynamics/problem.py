@@ -642,11 +642,11 @@ class Problem:
             The function to get the derivative of the states
         """
 
-        mx_symbolic_states = MX.sym("x", nlp.states.n, 1)
-        mx_symbolic_controls = MX.sym("u", nlp.controls.n, 1)
+        mx_symbolic_states = MX.sym("x", nlp.states.shape, 1)
+        mx_symbolic_controls = MX.sym("u", nlp.controls.shape, 1)
 
         nlp.parameters = ocp.v.parameters_in_list
-        mx_symbolic_params = MX.sym("p", nlp.parameters.n, 1)
+        mx_symbolic_params = MX.sym("p", nlp.parameters.shape, 1)
 
         dynamics = dyn_func(mx_symbolic_states, mx_symbolic_controls, mx_symbolic_params, nlp)
         if isinstance(dynamics, (list, tuple)):
@@ -674,9 +674,9 @@ class Problem:
             The function to get the values of contact forces from the dynamics
         """
 
-        symbolic_states = MX.sym("x", nlp.states.n, 1)
-        symbolic_controls = MX.sym("u", nlp.controls.n, 1)
-        symbolic_param = MX.sym("p", nlp.parameters.n, 1)
+        symbolic_states = MX.sym("x", nlp.states.shape, 1)
+        symbolic_controls = MX.sym("u", nlp.controls.shape, 1)
+        symbolic_param = MX.sym("p", nlp.parameters.shape, 1)
         nlp.contact_forces_func = Function(
             "contact_forces_func",
             [symbolic_states, symbolic_controls, symbolic_param],

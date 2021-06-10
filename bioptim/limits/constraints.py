@@ -252,8 +252,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
             func = biorbd.to_casadi_func("torqueMax", nlp.model.torqueMax, nlp.states["q"].mx, nlp.states["qdot"].mx)
-            constraint.min_bound = np.repeat([0, -np.inf], nlp.controls.n)
-            constraint.max_bound = np.repeat([np.inf, 0], nlp.controls.n)
+            constraint.min_bound = np.repeat([0, -np.inf], nlp.controls.shape)
+            constraint.max_bound = np.repeat([np.inf, 0], nlp.controls.shape)
             for i in range(len(all_pn.u)):
                 bound = func(q[i], qdot[i])
                 if min_torque:
@@ -332,7 +332,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if ocp.n_threads > 1:
                 end_nodes = nlp.par_dynamics(horzcat(*nlp.X[:-1]), horzcat(*nlp.U), nlp.parameters.cx)[0]
                 val = horzcat(*nlp.X[1:]) - end_nodes
-                ConstraintFunction.add_to_penalty(ocp, None, val.reshape((nlp.states.n * nlp.ns, 1)), penalty)
+                ConstraintFunction.add_to_penalty(ocp, None, val.reshape((nlp.states.shape * nlp.ns, 1)), penalty)
             else:
                 for k in range(nlp.ns):
                     # Create an evaluation node

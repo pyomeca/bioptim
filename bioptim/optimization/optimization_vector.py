@@ -234,7 +234,7 @@ class OptimizationVector:
         offset = 0
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].states.n, -1), order="F")
+            x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].states.shape, -1), order="F")
             data_states[p_idx]["all"] = x_array
             offset_var = 0
             for var in ocp.nlp[p].states:
@@ -246,7 +246,7 @@ class OptimizationVector:
         offset = self.n_all_x
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            u_array = v_array[offset : offset + self.n_phase_u[p]].reshape((ocp.nlp[p].controls.n, -1), order="F")
+            u_array = v_array[offset : offset + self.n_phase_u[p]].reshape((ocp.nlp[p].controls.shape, -1), order="F")
             data_controls[p_idx]["all"] = u_array
             offset_var = 0
             for var in ocp.nlp[p].controls:
@@ -283,12 +283,12 @@ class OptimizationVector:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
-                x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.n))
+                x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape))
 
                 if nlp.control_type != ControlType.CONSTANT or (
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                 ):
-                    u.append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.n, 1))
+                    u.append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.shape, 1))
 
             nlp.X = x
             self.x[nlp.phase_idx] = vertcat(*x)
@@ -310,18 +310,18 @@ class OptimizationVector:
 
         # Sanity check
         for i in range(ocp.n_phases):
-            ocp.nlp[i].x_bounds.check_and_adjust_dimensions(ocp.nlp[i].states.n, ocp.nlp[i].ns)
+            ocp.nlp[i].x_bounds.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ocp.nlp[i].ns)
             if ocp.nlp[i].control_type == ControlType.CONSTANT:
-                ocp.nlp[i].u_bounds.check_and_adjust_dimensions(ocp.nlp[i].controls.n, ocp.nlp[i].ns - 1)
+                ocp.nlp[i].u_bounds.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns - 1)
             elif ocp.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                ocp.nlp[i].u_bounds.check_and_adjust_dimensions(ocp.nlp[i].controls.n, ocp.nlp[i].ns)
+                ocp.nlp[i].u_bounds.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns)
             else:
                 raise NotImplementedError(f"Plotting {ocp.nlp[i].control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
-            nx = nlp.states.n
+            nx = nlp.states.shape
             all_nx = nx * (nlp.ns + 1)
             x_bounds = Bounds([0] * all_nx, [0] * all_nx, interpolation=InterpolationType.CONSTANT)
             for k in range(nlp.ns + 1):
@@ -335,7 +335,7 @@ class OptimizationVector:
                 ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-            nu = nlp.controls.n
+            nu = nlp.controls.shape
             all_nu = nu * ns
             u_bounds = Bounds([0] * all_nu, [0] * all_nu, interpolation=InterpolationType.CONSTANT)
             for k in range(ns):
@@ -354,18 +354,18 @@ class OptimizationVector:
 
         # Sanity check
         for i in range(ocp.n_phases):
-            ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.n, ocp.nlp[i].ns)
+            ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ocp.nlp[i].ns)
             if ocp.nlp[i].control_type == ControlType.CONSTANT:
-                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls.n, ocp.nlp[i].ns - 1)
+                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns - 1)
             elif ocp.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls.n, ocp.nlp[i].ns)
+                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns)
             else:
                 raise NotImplementedError(f"Plotting {ocp.nlp[i].control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
-            nx = nlp.states.n
+            nx = nlp.states.shape
             all_nx = nx * (nlp.ns + 1)
             x_init = InitialGuess([0] * all_nx, interpolation=InterpolationType.CONSTANT)
             for k in range(nlp.ns + 1):
@@ -378,7 +378,7 @@ class OptimizationVector:
                 ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-            nu = nlp.controls.n
+            nu = nlp.controls.shape
             all_nu = nu * ns
             u_init = InitialGuess([0] * all_nu, interpolation=InterpolationType.CONSTANT)
             for k in range(ns):

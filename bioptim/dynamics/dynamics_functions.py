@@ -121,7 +121,7 @@ class DynamicsFunctions:
         qdot_reduced = nlp.mapping["q"].to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
 
         if nlp.external_forces:
-            dxdt = MX(nlp.states.n, nlp.ns)
+            dxdt = MX(nlp.states.shape, nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
                 qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
                 qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
@@ -162,7 +162,7 @@ class DynamicsFunctions:
         taudot_reduced = nlp.mapping["taudot"].to_first.map(taudot)
 
         if nlp.external_forces:
-            dxdt = MX(nlp.states.n, nlp.ns)
+            dxdt = MX(nlp.states.shape, nlp.ns)
             for i, f_ext in enumerate(nlp.external_forces):
                 qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
                 qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)

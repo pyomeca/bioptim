@@ -54,7 +54,7 @@ class OptimizationVariableList:
         return [elt.name for elt in self]
 
     @property
-    def n(self):
+    def shape(self):
         return self.cx.shape[0]
 
     def __len__(self):

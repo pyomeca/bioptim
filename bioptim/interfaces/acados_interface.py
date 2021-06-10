@@ -136,9 +136,9 @@ class AcadosInterface(SolverInterface):
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
         self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
-        self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].controls.n)
-        self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.n)
-        self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.n)
+        self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].controls.shape)
+        self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
+        self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
 
     def __acados_export_model(self, ocp):
         """
@@ -163,7 +163,7 @@ class AcadosInterface(SolverInterface):
                 if str(param.cx)[:11] == f"time_phase_":
                     raise RuntimeError("Time constraint not implemented yet with Acados.")
 
-        self.nparams = ocp.nlp[0].parameters.n
+        self.nparams = ocp.nlp[0].parameters.shape
         self.params_initial_guess = ocp.v.parameters_in_list.initial_guess
         self.params_initial_guess.check_and_adjust_dimensions(self.nparams, 1)
         self.params_bounds = ocp.v.parameters_in_list.bounds
@@ -202,8 +202,8 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.solver_options.tf = ocp.nlp[0].tf
 
         # set dimensions
-        self.acados_ocp.dims.nx = ocp.nlp[0].states.n + ocp.nlp[0].parameters.n
-        self.acados_ocp.dims.nu = ocp.nlp[0].controls.n
+        self.acados_ocp.dims.nx = ocp.nlp[0].states.shape + ocp.nlp[0].parameters.shape
+        self.acados_ocp.dims.nu = ocp.nlp[0].controls.shape
         self.acados_ocp.dims.N = ocp.nlp[0].ns
 
     def __set_constr_type(self, constr_type: str = "BGH"):
@@ -379,48 +379,50 @@ class AcadosInterface(SolverInterface):
         ]
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
-            self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].controls.n)
-            self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.n)
-            self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.n)
+            n_states = ocp.nlp[0].states.shape
+            n_controls = ocp.nlp[0].controls.shape
+            self.Vu = np.array([], dtype=np.int64).reshape(0, n_controls)
+            self.Vx = np.array([], dtype=np.int64).reshape(0, n_states)
+            self.Vxe = np.array([], dtype=np.int64).reshape(0, n_states)
             for i in range(ocp.n_phases):
                 for j, J in enumerate(ocp.nlp[i].J):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
                         if J[0]["objective"].type.value[0] in ctrl_objs:
                             index = (
-                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].controls.n))
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_controls))
                             )
-                            vu = np.zeros(ocp.nlp[0].controls.n)
+                            vu = np.zeros(n_controls)
                             vu[index] = 1.0
                             self.Vu = np.vstack((self.Vu, np.diag(vu)))
-                            self.Vx = np.vstack((self.Vx, np.zeros((ocp.nlp[0].controls.n, ocp.nlp[0].states.n))))
-                            self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * ocp.nlp[0].controls.n))
+                            self.Vx = np.vstack((self.Vx, np.zeros((n_controls, n_states))))
+                            self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * n_controls))
                             if J[0]["target"] is not None:
-                                y_tp = np.zeros((ocp.nlp[0].controls.n, 1))
+                                y_tp = np.zeros((n_controls, 1))
                                 y_ref_tp = []
                                 for J_tp in J:
                                     y_tp[index] = J_tp["target"].T.reshape((-1, 1))
                                     y_ref_tp.append(y_tp)
                                 self.y_ref.append(y_ref_tp)
                             else:
-                                self.y_ref.append([np.zeros((ocp.nlp[0].controls.n, 1)) for _ in J])
+                                self.y_ref.append([np.zeros((n_controls, 1)) for _ in J])
                         elif J[0]["objective"].type.value[0] in state_objs:
                             index = (
-                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].states.n))
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
                             )
-                            vx = np.zeros(ocp.nlp[0].states.n)
+                            vx = np.zeros(n_states)
                             vx[index] = 1.0
                             self.Vx = np.vstack((self.Vx, np.diag(vx)))
-                            self.Vu = np.vstack((self.Vu, np.zeros((ocp.nlp[0].states.n, ocp.nlp[0].controls.n))))
-                            self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * ocp.nlp[0].states.n))
+                            self.Vu = np.vstack((self.Vu, np.zeros((n_states, n_controls))))
+                            self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * n_states))
                             if J[0]["target"] is not None:
                                 y_ref_tp = []
                                 for J_tp in J:
-                                    y_tp = np.zeros((ocp.nlp[0].states.n, 1))
+                                    y_tp = np.zeros((n_states, 1))
                                     y_tp[index] = J_tp["target"].T.reshape((-1, 1))
                                     y_ref_tp.append(y_tp)
                                 self.y_ref.append(y_ref_tp)
                             else:
-                                self.y_ref.append([np.zeros((ocp.nlp[0].states.n, 1)) for _ in J])
+                                self.y_ref.append([np.zeros((n_states, 1)) for _ in J])
                         else:
                             raise RuntimeError(
                                 f"{J[0]['objective'].type.name} is an incompatible objective term with "
@@ -430,34 +432,34 @@ class AcadosInterface(SolverInterface):
                         # Deal with last node to match ipopt formulation
                         if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
                             index = (
-                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].states.n))
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
                             )
-                            vxe = np.zeros(ocp.nlp[0].states.n)
+                            vxe = np.zeros(n_states)
                             vxe[index] = 1.0
                             self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
-                            self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * ocp.nlp[0].states.n))
+                            self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * n_states))
                             if J[0]["target"] is not None:
-                                y_tp = np.zeros((ocp.nlp[0].states.n, 1))
+                                y_tp = np.zeros((n_states, 1))
                                 y_tp[index] = J[-1]["target"].T.reshape((-1, 1))
                                 self.y_ref_end.append(y_tp)
                             else:
-                                self.y_ref_end.append(np.zeros((ocp.nlp[0].states.n, 1)))
+                                self.y_ref_end.append(np.zeros((n_states, 1)))
 
                     elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
                         if J[0]["objective"].type.value[0] in state_objs:
                             index = (
-                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(ocp.nlp[0].states.n))
+                                J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
                             )
-                            vxe = np.zeros(ocp.nlp[0].states.n)
+                            vxe = np.zeros(n_states)
                             vxe[index] = 1.0
                             self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
-                            self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * ocp.nlp[0].states.n))
+                            self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * n_states))
                             if J[0]["target"] is not None:
-                                y_tp = np.zeros((ocp.nlp[0].states.n, 1))
+                                y_tp = np.zeros((n_states, 1))
                                 y_tp[index] = J[-1]["target"].T.reshape((-1, 1))
                                 self.y_ref_end.append(y_tp)
                             else:
-                                self.y_ref_end.append(np.zeros((ocp.nlp[0].states.n, 1)))
+                                self.y_ref_end.append(np.zeros((n_states, 1)))
                         else:
                             raise RuntimeError(
                                 f"{J[0]['objective'].type.name} is an incompatible objective term "
@@ -686,7 +688,7 @@ class AcadosInterface(SolverInterface):
         """
 
         ns = self.acados_ocp.dims.N
-        n_params = self.ocp.nlp[0].parameters.n
+        n_params = self.ocp.nlp[0].parameters.shape
         acados_x = np.array([self.ocp_solver.get(i, "x") for i in range(ns + 1)]).T
         acados_p = acados_x[:n_params, :]
         acados_x = acados_x[n_params:, :]
