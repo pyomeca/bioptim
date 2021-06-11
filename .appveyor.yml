@@ -16,11 +16,11 @@ build: off
 
 # scripts that run after cloning repository
 install:
-  - ps: if [[ "$CI_LINUX" == true ]]; then 
-      Start-FileDownload 'https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh' -FileName 'miniconda.sh';
+  - if [[ "$CI_LINUX" == true ]]; then 
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh;
       bash miniconda.sh -b -p $HOME/miniconda;
     else
-      Start-FileDownload 'https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh' -FileName 'miniconda.sh';
+      curl https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -o miniconda.sh;
       bash miniconda.sh -b -p $HOME/miniconda;
     fi
   - export PATH="$HOME/miniconda/bin:$PATH"
