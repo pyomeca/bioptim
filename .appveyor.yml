@@ -38,7 +38,7 @@ install:
   - if [[ "$CI_LINUX" == true ]]; then 
       ./acados_install_linux.sh;
     else
-      ./acados_install_mac.sh
+      ./acados_install_mac.sh;
     fi
   - cd ..
 
