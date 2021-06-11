@@ -66,10 +66,10 @@ class NonLinearProgram:
         The bounds for the controls
     u_init = InitialGuess()
         The initial guess for the controls
-    controls: OptimizationVariable
-        The number of elements for each control the key is the name of the control
-    states: OptimizationVariable
-        The number of elements for each state the key is the name of the state
+    controls: OptimizationVariableList
+        A list of all the control variables
+    states: OptimizationVariableList
+        A list of all the state variables
     X: list[Union[MX, SX]]
         The casadi variables for the integration at each node of the phase
     x_bounds = Bounds()
