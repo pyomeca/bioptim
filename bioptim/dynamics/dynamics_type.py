@@ -29,6 +29,7 @@ class DynamicsFcn(Enum):
     MUSCLE_EXCITATIONS_DRIVEN = (Problem.muscle_excitations_driven,)
     MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = (Problem.muscle_excitations_and_torque_driven,)
     MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = (Problem.muscle_excitations_and_torque_driven_with_contact,)
+    
     # TODO MUSCLE_EXCITATIONS_AND_TORQUE_DERIVATIVE_DRIVEN = (Problem.muscle_excitations_and_torque_derivative_driven,)
     # TODO MUSCLE_EXCITATIONS_AND_TORQUE_DERIVATIVE_DRIVEN_WITH_CONTACT = (Problem.muscle_excitations_and_torque_derivative_driven_with_contact,)
 
