@@ -962,9 +962,15 @@ class Solution:
                     if to_console == True:
                         print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
                     if to_graph:
-                        # TODO : Attention à la taille des Mayeur !
-                        plt.plot(np.arange(idx_phase_start, idx_phase_start+nlp.ns), np.reshape(val_weighted, np.shape(np.arange(idx_phase_start, idx_phase_start+nlp.ns))), label=J[0]['objective'].name, marker='.', linestyle='-')
-                        plt.draw()
+                        if type(j["node_index"]) == int:
+                            plt.plot(idx_phase_start + j["node_index"], np.reshape(val_weighted, 1), label=J[0]['objective'].name, marker='.', linestyle='-')
+                            plt.draw()
+                        elif type(j["node_index"]) == np.ndarray:
+                            plt.plot(idx_phase_start + j["node_index"], np.reshape(val_weighted, np.shape(idx_phase_start + j["node_index"])), label=J[0]['objective'].name, marker='.', linestyle='-')
+                            plt.draw()
+                        else:
+                            plt.plot(np.arange(idx_phase_start, idx_phase_start+nlp.ns), np.reshape(val_weighted, np.shape(np.arange(idx_phase_start, idx_phase_start+nlp.ns))), label=J[0]['objective'].name, marker='.', linestyle='-')
+                            plt.draw()
                     running_total += sum_val_weighted
                 print("")
                 idx_phase_start += nlp.ns
@@ -1047,7 +1053,7 @@ class Solution:
                             plt.plot(idx_phase_start+g["node_index"], g_values, '-', label=g['constraint'].name, marker='.')
                             plt.draw()
                         else:
-                            plt.plot(np.arange(idx_phase_start, idx_phase_start+nlp.ns), g_values, label=g['constraint'].name, marker='.', line='-')
+                            plt.plot(np.arange(idx_phase_start, idx_phase_start+nlp.ns), g_values, '-', label=g['constraint'].name, marker='.')
                             plt.draw()
                 print("")
                 idx_phase_start += nlp.ns

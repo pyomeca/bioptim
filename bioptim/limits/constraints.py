@@ -434,8 +434,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 node_index = pn.nlp.ns
             elif penalty.node[0] == Node.ALL:
                 node_index = np.arange(pn.nlp.ns)
+            elif type(penalty.node[0]) == int:
+                node_index = list(penalty.node)
+            else: #DEFAULT
+                node_index = None
 
-                ### DEFAULT ?!
         else:
             if hasattr(penalty, 'node'):
                 if penalty.node == Node.TRANSITION:

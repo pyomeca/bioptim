@@ -589,9 +589,6 @@ class ObjectiveFunction:
         """
 
         # node_index = len(pn.nlp.J[penalty.list_index]) - 1 if pn else None
-        if penalty.name != 'MINIMIZE_TORQUE':
-            print('ICI')
-
         if pn:
             if penalty.node[0] == Node.START:
                 node_index = 0
