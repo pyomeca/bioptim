@@ -6,7 +6,7 @@
 image:
   # - Visual Studio 2019
   - Ubuntu2004
-  # - macos
+  - macos
 
 # set clone depth
 clone_depth: 5                      # clone entire repository history if not defined
@@ -16,8 +16,13 @@ build: off
 
 # scripts that run after cloning repository
 install:
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -b -p $HOME/miniconda
+    - if [[ "$CI_LINUX" == true ]]; then 
+        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+        bash miniconda.sh -b -p $HOME/miniconda;
+      else
+        wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh;
+        bash miniconda.sh -b -p $HOME/miniconda;
+      fi
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
@@ -30,13 +35,19 @@ install:
   - conda install xorg-libx11 xorg-libxtst -cconda-forge
   - conda list
   - cd external
-  - ./acados_install_linux.sh
+  - if [[ "$CI_LINUX" == true ]]; then 
+      ./acados_install_linux.sh;
+    else
+      ./acados_install_mac.sh
+    fi
   - cd ..
 
 # to run your custom scripts instead of automatic tests
 test_script:
   - bioptim_folder=`pwd`
-  - black . -l120 --exclude "external/*" --check
+  - if [[ "$CI_LINUX" == true ]]; then 
+      black . -l120 --exclude "external/*" --check;
+    fi
   - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
   - python setup.py install
   - cd
@@ -50,6 +61,8 @@ test_script:
 
 # on successful build
 on_success:
-  - codecov
+  - if [[ "$CI_LINUX" == true ]]; then 
+      codecov;
+    fi
 
 
