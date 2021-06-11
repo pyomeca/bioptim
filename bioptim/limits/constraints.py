@@ -425,7 +425,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             elif penalty.node[0] == Node.MID:
                 node_index = pn.nlp.ns // 2
             elif penalty.node[0] == Node.INTERMEDIATES:
-                node_index = range(1, pn.nlp.ns-1)
+                node_index = np.arange(1, pn.nlp.ns-1)
             elif penalty.node[0] == Node.PENULTIMATE:
                 node_index = pn.nlp.ns - 1
             elif penalty.node[0] == Node.END:
@@ -433,7 +433,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             elif penalty.node[0] == Node.TRANSITION:
                 node_index = pn.nlp.ns
             elif penalty.node[0] == Node.ALL:
-                node_index = range(pn.nlp.ns)
+                node_index = np.arange(pn.nlp.ns)
 
                 ### DEFAULT ?!
         else:

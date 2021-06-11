@@ -1035,19 +1035,20 @@ class Solution:
                     g, next_idx = None, idx
                     for g in G:
                         next_idx += g["val"].shape[0]
-                    if g:
-                        if to_console:
-                            print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
-                        if to_graph:
-                            g_values += [np.sum(np.sqrt(sol.constraints[idx:next_idx]**2))]
+                        if g:
+                            if to_console:
+                                print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
+                            if to_graph:
+                                g_values += [np.sum(np.sqrt(sol.constraints[idx:next_idx]**2))]
                     idx = next_idx
                 if to_graph:
-                    if type(g["node_index"]) == int:
-                        plt.plot(idx_phase_start+g["node_index"], g_values, '-', label=g['constraint'].name, marker='.')
-                        plt.draw()
-                    else:
-                        plt.plot(np.arange(idx_phase_start, idx_phase_start+nlp.ns), g_values, label=g['constraint'].name, marker='.', line='-')
-                        plt.draw()
+                    if g:
+                        if type(g["node_index"]) == int or type(g["node_index"]) == np.ndarray:
+                            plt.plot(idx_phase_start+g["node_index"], g_values, '-', label=g['constraint'].name, marker='.')
+                            plt.draw()
+                        else:
+                            plt.plot(np.arange(idx_phase_start, idx_phase_start+nlp.ns), g_values, label=g['constraint'].name, marker='.', line='-')
+                            plt.draw()
                 print("")
                 idx_phase_start += nlp.ns
                 if to_graph:
