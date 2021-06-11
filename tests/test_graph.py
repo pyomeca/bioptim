@@ -114,19 +114,43 @@ def prepare_ocp_phase_transitions(
     constraints = ConstraintList()
     if with_constraints:
         constraints.add(
-            ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1", phase=0
-        )
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=2, first_marker="m0", second_marker="m1", phase=0)
-        constraints.add(
-            ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=0
-        )
-        constraints.add(
-            ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m1", phase=1
+            ConstraintFcn.SUPERIMPOSE_MARKERS,
+            node=Node.START,
+            first_marker="m0",
+            second_marker="m1",
+            phase=0,
+            list_index=1,
         )
         constraints.add(
-            ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2
+            ConstraintFcn.SUPERIMPOSE_MARKERS, node=2, first_marker="m0", second_marker="m1", phase=0, list_index=2
         )
-        constraints.add(custom_func_track_markers, node=Node.ALL, first_marker="m0", second_marker="m1", phase=3)
+        constraints.add(
+            ConstraintFcn.SUPERIMPOSE_MARKERS,
+            node=Node.END,
+            first_marker="m0",
+            second_marker="m2",
+            phase=0,
+            list_index=3,
+        )
+        constraints.add(
+            ConstraintFcn.SUPERIMPOSE_MARKERS,
+            node=Node.END,
+            first_marker="m0",
+            second_marker="m1",
+            phase=1,
+            list_index=4,
+        )
+        constraints.add(
+            ConstraintFcn.SUPERIMPOSE_MARKERS,
+            node=Node.END,
+            first_marker="m0",
+            second_marker="m2",
+            phase=2,
+            list_index=5,
+        )
+        constraints.add(
+            custom_func_track_markers, node=Node.ALL, first_marker="m0", second_marker="m1", phase=3, list_index=6
+        )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -358,10 +382,10 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=2)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=3)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, list_index=1)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, list_index=2)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=2, list_index=3)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=3, list_index=4)
     objective_functions.add(
         custom_func_track_markers,
         custom_type=ObjectiveFcn.Mayer,
@@ -370,6 +394,7 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
         first_marker="m0",
         second_marker="m1",
         weight=1000,
+        list_index=5,
     )
     objective_functions.add(
         custom_func_track_markers,
@@ -379,7 +404,10 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
         first_marker="m0",
         second_marker="m2",
         weight=1000,
+        list_index=6,
     )
+    target = np.array([[1, 2, 3], [4, 5, 6]]).T[:, :, np.newaxis]
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, list_index=7, index=[1, 2], target=target)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -464,8 +492,8 @@ def test_objectives_target(quadratic):
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
     ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path)
-    ocp.nlp[0].J[0][0]["objective"].quadratic = quadratic
     ocp.nlp[0].J[1][0]["objective"].quadratic = quadratic
-    ocp.nlp[0].J[0][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     ocp.nlp[0].J[1][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ocp.nlp[0].J[2][0]["objective"].quadratic = quadratic
+    ocp.nlp[0].J[2][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     ocp.print()
