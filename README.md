@@ -607,7 +607,7 @@ If an advanced user wants to define their own dynamic function, they can define 
 
 The configuration is what tells `bioptim` which variables are states and which are control.
 The user is expected to provide a function handler with the follow signature: `custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram)`.
-In this function the user is expected to call the relevant `Problem` class methods: 
+In this function the user is expected to call the relevant `ConfigureProblem` class methods: 
 - `configure_q(nlp, as_states: bool, as_controls: bool)`
 - `configure_qdot(nlp, as_states: bool, as_controls: bool)`
 - `configure_q_qdot(nlp, as_states: bool, as_controls: bool)`
@@ -615,7 +615,7 @@ In this function the user is expected to call the relevant `Problem` class metho
 - `configure_muscles(nlp, as_states: bool, as_controls: bool)`
 where `as_states` add the variable to the states vector and `as_controls` to the controls vector.
 Please note that this is not necessary mutually exclusive.
-Finally, the user is expected to configure the dynamic by calling `Problem.configure_dynamics_function(ocp, nlp, custom_dynamics)`
+Finally, the user is expected to configure the dynamic by calling `ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics)`
 
 Defining the dynamic function must be done when one provides a custom configuration, but can also be defined by providing a function handler to the `dynamic_function` parameter for `Dynamics`. 
 The signature of this custom dynamic function is as follows: `custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram`.

@@ -10,9 +10,9 @@ from casadi import MX, SX
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
-from ..dynamics.dynamics_type import DynamicsList, Dynamics
+from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
-from ..dynamics.problem import Problem
+from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
@@ -377,7 +377,7 @@ class OptimalControlProgram:
         # Prepare the dynamics
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
-            Problem.initialize(self, self.nlp[i])
+            ConfigureProblem.initialize(self, self.nlp[i])
             if (
                 self.nlp[0].states.shape != self.nlp[i].states.shape
                 or self.nlp[0].controls.shape != self.nlp[i].controls.shape

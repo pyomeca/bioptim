@@ -1,15 +1,16 @@
-from typing import Callable
+from typing import Callable, Any, Union
+from enum import Enum
 
 from casadi import MX, vertcat, horzcat, Function
-import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
 from ..misc.enums import PlotType, ControlType
 from ..misc.mapping import BiMapping, Mapping
+from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..gui.plot import CustomPlot
 
 
-class Problem:
+class ConfigureProblem:
     """
     Dynamics configuration for the most common ocp
 
@@ -61,12 +62,12 @@ class Problem:
             A reference to the phase
         """
 
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_tau(nlp, False, True)
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven)
 
     @staticmethod
     def torque_derivative_driven(ocp, nlp):
@@ -81,14 +82,14 @@ class Problem:
             A reference to the phase
         """
 
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, True, False)
-        Problem.configure_taudot(nlp, False, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_tau(nlp, True, False)
+        ConfigureProblem.configure_taudot(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_derivative_driven)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_derivative_driven)
 
     @staticmethod
     def torque_driven_with_contact(ocp, nlp):
@@ -103,13 +104,13 @@ class Problem:
             A reference to the phase
         """
 
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_tau(nlp, False, True)
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven_with_contact)
-        Problem.configure_contact(
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_driven_with_contact)
+        ConfigureProblem.configure_contact(
             ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact_for_torque_driven_problem
         )
 
@@ -125,16 +126,16 @@ class Problem:
         nlp: NonLinearProgram
             A reference to the phase
         """
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, True, False)
-        Problem.configure_taudot(nlp, False, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_tau(nlp, True, False)
+        ConfigureProblem.configure_taudot(nlp, False, True)
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_dynamics_function(
+            ConfigureProblem.configure_dynamics_function(
                 ocp, nlp, DynamicsFunctions.forward_dynamics_torque_derivative_driven_with_contact
             )
-        Problem.configure_contact(
+        ConfigureProblem.configure_contact(
             ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact_for_torque_derivative_driven_problem
         )
 
@@ -153,12 +154,12 @@ class Problem:
             A reference to the phase
         """
 
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_tau(nlp, False, True)
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_activations_driven)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_torque_activations_driven)
 
     @staticmethod
     def torque_activations_driven_with_contact(ocp, nlp):
@@ -175,15 +176,15 @@ class Problem:
             A reference to the phase
         """
 
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_tau(nlp, False, True)
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_dynamics_function(
+            ConfigureProblem.configure_dynamics_function(
                 ocp, nlp, DynamicsFunctions.forward_dynamics_torque_activations_driven_with_contact
             )
-        Problem.configure_contact(
+        ConfigureProblem.configure_contact(
             ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem
         )
 
@@ -202,13 +203,13 @@ class Problem:
             A reference to the phase
         """
 
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_muscles(nlp, False, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_muscles(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_activations_driven)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_activations_driven)
 
     @staticmethod
     def muscle_activations_and_torque_driven(ocp, nlp):
@@ -226,14 +227,14 @@ class Problem:
             A reference to the phase
         """
 
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
-        Problem.configure_muscles(nlp, False, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_muscles(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, nlp.dynamics_type.dynamics)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, nlp.dynamics_type.dynamics)
         else:
-            Problem.configure_dynamics_function(
+            ConfigureProblem.configure_dynamics_function(
                 ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_activations_and_torque_driven
             )
 
@@ -253,17 +254,17 @@ class Problem:
             A reference to the phase
         """
 
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
-        Problem.configure_muscles(nlp, False, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_muscles(nlp, False, True)
 
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_dynamics_function(
+            ConfigureProblem.configure_dynamics_function(
                 ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_activations_and_torque_driven_with_contact
             )
-        Problem.configure_contact(
+        ConfigureProblem.configure_contact(
             ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact
         )
 
@@ -282,13 +283,13 @@ class Problem:
             A reference to the phase
         """
 
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_muscles(nlp, True, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_muscles(nlp, True, True)
 
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_driven)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_driven)
 
     @staticmethod
     def muscle_excitations_and_torque_driven(ocp, nlp):
@@ -307,14 +308,14 @@ class Problem:
             A reference to the phase
         """
 
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
-        Problem.configure_muscles(nlp, True, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_muscles(nlp, True, True)
 
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_dynamics_function(
+            ConfigureProblem.configure_dynamics_function(
                 ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven
             )
 
@@ -335,17 +336,17 @@ class Problem:
             A reference to the phase
         """
 
-        Problem.configure_q_qdot(nlp, True, False)
-        Problem.configure_tau(nlp, False, True)
-        Problem.configure_muscles(nlp, True, True)
+        ConfigureProblem.configure_q_qdot(nlp, True, False)
+        ConfigureProblem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_muscles(nlp, True, True)
 
         if nlp.dynamics_type.dynamic_function:
-            Problem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            Problem.configure_dynamics_function(
+            ConfigureProblem.configure_dynamics_function(
                 ocp, nlp, DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven_with_contact
             )
-        Problem.configure_contact(
+        ConfigureProblem.configure_contact(
             ocp, nlp, DynamicsFunctions.forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact
         )
 
@@ -447,8 +448,8 @@ class Problem:
             If the generalized coordinates and generalized velocities should be controls
         """
 
-        Problem.configure_q(nlp, as_states, as_controls)
-        Problem.configure_qdot(nlp, as_states, as_controls)
+        ConfigureProblem.configure_q(nlp, as_states, as_controls)
+        ConfigureProblem.configure_qdot(nlp, as_states, as_controls)
 
     @staticmethod
     def configure_tau(nlp, as_states: bool, as_controls: bool):
@@ -711,3 +712,114 @@ class Problem:
         nlp.plot["contact_forces"] = CustomPlot(
             nlp.contact_forces_func, plot_type=PlotType.INTEGRATED, axes_idx=phase_mappings, legend=all_contact_names
         )
+
+
+class DynamicsFcn(Enum):
+    """
+    Selection of valid dynamics functions
+    """
+
+    TORQUE_DRIVEN = (ConfigureProblem.torque_driven,)
+    TORQUE_DRIVEN_WITH_CONTACT = (ConfigureProblem.torque_driven_with_contact,)
+
+    TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
+    TORQUE_DERIVATIVE_DRIVEN_WITH_CONTACT = (ConfigureProblem.torque_derivative_driven_with_contact,)
+
+    TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
+    TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT = (ConfigureProblem.torque_activations_driven_with_contact,)
+
+    MUSCLE_ACTIVATIONS_DRIVEN = (ConfigureProblem.muscle_activations_driven,)
+    MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN = (ConfigureProblem.muscle_activations_and_torque_driven,)
+    MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = (ConfigureProblem.muscle_activations_and_torque_driven_with_contact,)
+
+    # TODO MUSCLE_ACTIVATIONS_AND_TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.muscle_activations_and_torque_derivative_driven,)
+    # TODO MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_DERIVATIVE_WITH_CONTACT = (ConfigureProblem.muscle_activations_and_torque_derivative_driven_with_contact,)
+
+    MUSCLE_EXCITATIONS_DRIVEN = (ConfigureProblem.muscle_excitations_driven,)
+    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = (ConfigureProblem.muscle_excitations_and_torque_driven,)
+    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = (ConfigureProblem.muscle_excitations_and_torque_driven_with_contact,)
+
+    # TODO MUSCLE_EXCITATIONS_AND_TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.muscle_excitations_and_torque_derivative_driven,)
+    # TODO MUSCLE_EXCITATIONS_AND_TORQUE_DERIVATIVE_DRIVEN_WITH_CONTACT = (ConfigureProblem.muscle_excitations_and_torque_derivative_driven_with_contact,)
+
+    CUSTOM = (ConfigureProblem.custom,)
+
+class Dynamics(OptionGeneric):
+    """
+    A placeholder for the chosen dynamics by the user
+
+    Attributes
+    ----------
+    dynamic_function: Callable
+        The custom dynamic function provided by the user
+    configure: Callable
+        The configuration function provided by the user that declares the NLP (states and controls),
+        usually only necessary when defining custom functions
+
+    """
+
+    def __init__(
+        self,
+        dynamics_type: Union[Callable, DynamicsFcn],
+        configure: Callable = None,
+        dynamic_function: Callable = None,
+        **params
+    ):
+        """
+        Parameters
+        ----------
+        dynamics_type: Union[Callable, DynamicsFcn]
+            The chosen dynamic functions
+        configure: Callable
+            The configuration function provided by the user that declares the NLP (states and controls),
+            usually only necessary when defining custom functions
+        dynamic_function: Callable
+            The custom dynamic function provided by the user
+        params: dict
+            Any parameters to pass to the dynamic and configure functions
+        """
+
+        if not isinstance(dynamics_type, DynamicsFcn):
+            configure = dynamics_type
+            dynamics_type = DynamicsFcn.CUSTOM
+
+        super(Dynamics, self).__init__(type=dynamics_type, **params)
+        self.dynamic_function = dynamic_function
+        self.configure = configure
+
+
+class DynamicsList(UniquePerPhaseOptionList):
+    """
+    A list of Dynamics if more than one is required, typically when more than one phases are declared
+
+    Methods
+    -------
+    add(dynamics: DynamicsFcn, **extra_parameters)
+        Add a new Dynamics to the list
+    print(self)
+        Print the DynamicsList to the console
+    """
+
+    def add(self, dynamics_type: Union[Callable, Dynamics, DynamicsFcn], **extra_parameters: Any):
+        """
+        Add a new Dynamics to the list
+
+        Parameters
+        ----------
+        dynamics_type: Union[Callable, Dynamics, DynamicsFcn]
+            The chosen dynamic functions
+        extra_parameters: dict
+            Any parameters to pass to Dynamics
+        """
+
+        if isinstance(dynamics_type, Dynamics):
+            self.copy(dynamics_type)
+
+        else:
+            super(DynamicsList, self)._add(dynamics_type=dynamics_type, option_type=Dynamics, **extra_parameters)
+
+    def print(self):
+        """
+        Print the DynamicsList to the console
+        """
+        raise NotImplementedError("Printing of DynamicsList is not ready yet")

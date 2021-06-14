@@ -15,7 +15,7 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     DynamicsList,
-    Problem,
+    ConfigureProblem,
     DynamicsFcn,
     DynamicsFunctions,
     Objective,
@@ -63,7 +63,7 @@ def custom_dynamic(
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     """
     Tell the program which variables are states and controls.
-    The user is expected to use the Problem.configure_xxx functions.
+    The user is expected to use the ConfigureProblem.configure_xxx functions.
 
     Parameters
     ----------
@@ -73,9 +73,9 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
         A reference to the phase
     """
 
-    Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
-    Problem.configure_tau(nlp, as_states=False, as_controls=True)
-    Problem.configure_dynamics_function(ocp, nlp, custom_dynamic)
+    ConfigureProblem.configure_q_qdot(nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_tau(nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic)
 
 
 def prepare_ocp(

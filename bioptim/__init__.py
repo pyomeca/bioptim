@@ -47,7 +47,7 @@ ControlType
 
 
 # --- Managing the dynamics --- #
-Problem
+ConfigureProblem
     Dynamics configuration for the most common ocp
 Dynamics
     A placeholder for the chosen dynamics by the user
@@ -143,8 +143,7 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 """
 
 from .misc.__version__ import __version__
-from .dynamics.problem import Problem
-from .dynamics.dynamics_type import DynamicsFcn, DynamicsList, Dynamics
+from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
 from .dynamics.ode_solver import OdeSolver
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint

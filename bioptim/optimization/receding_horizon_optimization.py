@@ -6,7 +6,7 @@ import biorbd
 
 from .optimal_control_program import OptimalControlProgram
 from .solution import Solution
-from ..dynamics.dynamics_type import Dynamics, DynamicsList
+from ..dynamics.configure_problem import Dynamics, DynamicsList
 from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds

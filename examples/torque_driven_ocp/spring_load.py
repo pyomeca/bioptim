@@ -10,7 +10,7 @@ import biorbd
 from bioptim import (
     OptimalControlProgram,
     Dynamics,
-    Problem,
+    ConfigureProblem,
     Objective,
     DynamicsFunctions,
     ObjectiveFcn,
@@ -64,9 +64,9 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     nlp: NonLinearProgram
         A reference to the phase of the ocp
     """
-    Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
-    Problem.configure_tau(nlp, as_states=False, as_controls=True)
-    Problem.configure_dynamics_function(ocp, nlp, custom_dynamic)
+    ConfigureProblem.configure_q_qdot(nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_tau(nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic)
 
 
 def prepare_ocp(biorbd_model_path: str = "mass_point.bioMod"):
