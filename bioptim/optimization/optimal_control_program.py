@@ -550,7 +550,7 @@ class OptimalControlProgram:
         if self.isdef_x_init and self.isdef_u_init:
             self.v.define_ocp_initial_guess()
 
-    def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
+    def add_plot(self, fig_name: str, update_function: Callable, node_index: list = [], phase: int = -1, **parameters: Any):
         """
         The main user interface to add a new plot to the ocp
 
@@ -560,6 +560,8 @@ class OptimalControlProgram:
             The name of the figure, it the name already exists, it is merged
         update_function: Callable
             The update function callable using f(states, controls, parameters, **parameters)
+        node_index : list
+            The nodes to add the plot to. [] = all nodes (retrocompatibility)
         phase: int
             The phase to add the plot to. -1 is the last
         parameters: dict

@@ -119,6 +119,39 @@ def main():
         contact_forces_ref=contact_forces_ref,
     )
 
+    def add_custom_plots(ocp, nb_phases):
+
+        def casadi_func(J_MX):
+            func = Function("val", [J_MX], [J_MX])
+            return func
+
+        def casadi_concat(MX_array, New_MX):
+            func = Function("val", [MX_array, New_MX], [cas.horzcat(MX_array, New_MX)])
+            return func
+
+        def casadi_func_objectives(casadi_func_eval, nlp, i_objectives):
+            # J_values = np.array([])
+            for i_subobjective in range(len(nlp.J[i_objectives])):
+                # MX_SYM = cas.MX.sym("res", 1, 1)
+                # MX_SYM_2 = cas.MX.sym("res_2", 1, i_subobjective+1)
+                # casadi_func_concat = casadi_concat(MX_SYM, MX_SYM_2)
+
+                # J_values = casadi_func_concat(J_values, casadi_func_eval(nlp.J[i_objectives][i_subobjective]["val"]))
+                if i_subobjective == 0:
+                    J_values = casadi_func_eval(nlp.J[i_objectives][0]["val"])
+                else:
+                    J_values = vertcat(J_values, casadi_func_eval(nlp.J[i_objectives][i_subobjective]["val"]))
+
+            return J_values
+
+        MX_SYM = cas.MX.sym("res", 1, 1)
+        casadi_func_eval = casadi_func(MX_SYM)
+
+        for i_phase in range(nb_phases):
+            # Plot Objectives
+            for i_objectives in range(len(ocp.nlp[i_phase].J)):
+                # casadi_objectives = casadi_func_objectives(ocp, i_phase, i_objectives)
+                ocp.add_plot('OBJECTIVE_'+ocp.nlp[i_phase].J[i_objectives][0]['objective'].name, casadi_func_objectives(casadi_func_eval, ocp.nlp[i_phase], i_objectives), node_index=ocp.nlp[i_phase].J[i_objectives][0]['node_index'], phase=i_phase, plot_type=PlotType.INTEGRATED, casadi_func_eval=casadi_func_eval, i_objectives=i_objectives)
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 

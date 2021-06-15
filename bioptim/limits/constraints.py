@@ -418,35 +418,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
 
-        # node_index = len(pn.nlp.g[penalty.list_index]) - 1 if pn else None
         if pn:
-            if penalty.node[0] == Node.START:
-                node_index = 0
-            elif penalty.node[0] == Node.MID:
-                node_index = pn.nlp.ns // 2
-            elif penalty.node[0] == Node.INTERMEDIATES:
-                node_index = np.arange(1, pn.nlp.ns-1)
-            elif penalty.node[0] == Node.PENULTIMATE:
-                node_index = pn.nlp.ns - 1
-            elif penalty.node[0] == Node.END:
-                node_index = pn.nlp.ns
-            elif penalty.node[0] == Node.TRANSITION:
-                node_index = pn.nlp.ns
-            elif penalty.node[0] == Node.ALL:
-                node_index = np.arange(pn.nlp.ns)
-            elif type(penalty.node[0]) == int:
-                node_index = list(penalty.node)
-            else: #DEFAULT
-                node_index = None
-
+            node_index = pn.t
         else:
-            if hasattr(penalty, 'node'):
-                if penalty.node == Node.TRANSITION:
-                    node_index = ocp.nlp[penalty.phase].ns
-                else:
-                    node_index = None
-            else:
-                node_index = None
+            node_index = None
 
         g = {
             "constraint": penalty,

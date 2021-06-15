@@ -46,6 +46,7 @@ class CustomPlot:
         update_function: Callable,
         plot_type: PlotType = PlotType.PLOT,
         axes_idx: Union[Mapping, tuple, list] = None,
+        node_index : list = [],
         legend: Union[tuple, list] = (),
         combine_to: str = None,
         color: str = None,
@@ -87,6 +88,7 @@ class CustomPlot:
             self.phase_mappings = axes_idx
         else:
             raise RuntimeError("phase_mapping must be a list or a Mapping")
+        self.node_index = node_index
         self.legend = legend
         self.combine_to = combine_to
         self.color = color
@@ -297,26 +299,61 @@ class PlotOcp:
             variable_sizes.append({})
             if nlp.plot:
                 for key in nlp.plot:
-                    if isinstance(nlp.plot[key], tuple):
-                        nlp.plot[key] = nlp.plot[key][0]
-                    if nlp.plot[key].phase_mappings is None:
-                        size = (
-                            nlp.plot[key]
-                            .function(
-                                np.zeros((nlp.nx, 1)),
-                                np.zeros((nlp.nu, 1)),
-                                np.zeros((nlp.np, 1)),
-                                **nlp.plot[key].parameters,
+                    if len(key) > 9:
+                        if key[:9] == "OBJECTIVE":
+                            if isinstance(nlp.plot[key], tuple):
+                                nlp.plot[key] = nlp.plot[key][0]
+                            if nlp.plot[key].phase_mappings is None:
+                                size = (nlp.plot[key].function(nlp.plot[key].parameters['casadi_func_eval'], nlp, nlp.plot[key].parameters['i_objectives']).shape[0])
+                                nlp.plot[key].phase_mappings = Mapping(range(size))
+                            else:
+                                size = len(nlp.plot[key].phase_mappings.map_idx)
+                            if key not in variable_sizes[i]:
+                                variable_sizes[i][key] = size
+                            else:
+                                variable_sizes[i][key] = max(variable_sizes[i][key], size)
+                        else:
+                            if isinstance(nlp.plot[key], tuple):
+                                nlp.plot[key] = nlp.plot[key][0]
+                            if nlp.plot[key].phase_mappings is None:
+                                size = (
+                                    nlp.plot[key]
+                                    .function(
+                                        np.zeros((nlp.nx, 1)),
+                                        np.zeros((nlp.nu, 1)),
+                                        np.zeros((nlp.np, 1)),
+                                        **nlp.plot[key].parameters,
+                                    )
+                                    .shape[0]
+                                )
+                                nlp.plot[key].phase_mappings = Mapping(range(size))
+                            else:
+                                size = len(nlp.plot[key].phase_mappings.map_idx)
+                            if key not in variable_sizes[i]:
+                                variable_sizes[i][key] = size
+                            else:
+                                variable_sizes[i][key] = max(variable_sizes[i][key], size)
+                    else:
+                        if isinstance(nlp.plot[key], tuple):
+                            nlp.plot[key] = nlp.plot[key][0]
+                        if nlp.plot[key].phase_mappings is None:
+                            size = (
+                                nlp.plot[key]
+                                    .function(
+                                    np.zeros((nlp.nx, 1)),
+                                    np.zeros((nlp.nu, 1)),
+                                    np.zeros((nlp.np, 1)),
+                                    **nlp.plot[key].parameters,
+                                )
+                                    .shape[0]
                             )
-                            .shape[0]
-                        )
-                        nlp.plot[key].phase_mappings = Mapping(range(size))
-                    else:
-                        size = len(nlp.plot[key].phase_mappings.map_idx)
-                    if key not in variable_sizes[i]:
-                        variable_sizes[i][key] = size
-                    else:
-                        variable_sizes[i][key] = max(variable_sizes[i][key], size)
+                            nlp.plot[key].phase_mappings = Mapping(range(size))
+                        else:
+                            size = len(nlp.plot[key].phase_mappings.map_idx)
+                        if key not in variable_sizes[i]:
+                            variable_sizes[i][key] = size
+                        else:
+                            variable_sizes[i][key] = max(variable_sizes[i][key], size)
         self.variable_sizes = variable_sizes
         if not variable_sizes:
             # No graph was setup in problem_type
