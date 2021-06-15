@@ -99,7 +99,7 @@ class Solution:
 
     class SimplifiedOptimizationVariableList:
         def __init__(self, other: Union[OptimizationVariableList]):
-            self.elements = []
+            self.elements = list()
             if isinstance(other, Solution.SimplifiedOptimizationVariableList):
                 self.shape = other.shape
             else:
@@ -255,8 +255,8 @@ class Solution:
         self.iterations = None
 
         # Extract the data now for further use
-        self._states, self._controls, self.parameters = [], [], {}
-        self.phase_time = []
+        self._states, self._controls, self.parameters = list(), list(), dict()
+        self.phase_time = list()
 
         def init_from_dict(sol: dict):
             """
@@ -371,7 +371,7 @@ class Solution:
         elif isinstance(sol, (np.ndarray, DM)):
             init_from_vector(sol)
         elif sol is None:
-            self.ns = []
+            self.ns = list()
         else:
             raise ValueError("Solution called with unknown initializer")
 
@@ -417,8 +417,8 @@ class Solution:
 
             running_total = 0
             for J in ocp.J:
-                val = []
-                val_weighted = []
+                val = list()
+                val_weighted = list()
                 for j in J:
                     out = __extract_objective(j)
                     val.append(out[0])
@@ -428,8 +428,8 @@ class Solution:
 
             for idx_phase, nlp in enumerate(ocp.nlp):
                 for J in nlp.J:
-                    val = []
-                    val_weighted = []
+                    val = list()
+                    val_weighted = list()
                     for j in J:
                         out = __extract_objective(j)
                         val.append(out[0])
@@ -479,7 +479,7 @@ class Solution:
         new.ns = deepcopy(self.ns)
 
         if skip_data:
-            new._states, new._controls, new.parameters = [], [], {}
+            new._states, new._controls, new.parameters = list(), list(), dict()
         else:
             new._states = deepcopy(self._states)
             new._controls = deepcopy(self._controls)
@@ -566,9 +566,9 @@ class Solution:
         out = self.copy(skip_data=True)
 
         ocp = out.ocp
-        out._states = []
+        out._states = list()
         for _ in range(len(self._states)):
-            out._states.append({})
+            out._states.append(dict())
 
         params = self.parameters["all"]
         x0 = self._states[0]["all"][:, 0]
@@ -667,7 +667,7 @@ class Solution:
 
         out = self.copy(skip_data=True)
 
-        t_all = []
+        t_all = list()
         for p, data in enumerate(self._states):
             t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), data["all"].shape[1]))
 
@@ -684,9 +684,9 @@ class Solution:
                 "or a list of int of the number of phases dimension"
             )
 
-        out._states = []
+        out._states = list()
         for _ in range(len(data_states)):
-            out._states.append({})
+            out._states.append(dict())
         for p in range(len(data_states)):
             x_phase = data_states[p]["all"]
             n_elements = x_phase.shape[0]
@@ -770,7 +770,7 @@ class Solution:
                 if d.keys() != keys or [d[key].shape[0] for key in d] != sizes:
                     raise RuntimeError("Program dimension must be coherent across phases to merge_phases them")
 
-            data_out = [{}]
+            data_out = [dict()]
             for i, key in enumerate(keys):
                 data_out[0][key] = np.ndarray((sizes[i], 0))
 
@@ -884,7 +884,7 @@ class Solution:
         if not isinstance(states, (list, tuple)):
             states = [states]
 
-        all_bioviz = []
+        all_bioviz = list()
         for idx_phase, data in enumerate(states):
             # Convert parameters to actual values
             nlp = self.ocp.nlp[idx_phase]
@@ -962,8 +962,8 @@ class Solution:
                 if not J:
                     continue
                 has_global = True
-                val = []
-                val_weighted = []
+                val = list()
+                val_weighted = list()
                 for j in J:
                     out = __extract_objective(j)
                     val.append(out[0])
@@ -979,8 +979,8 @@ class Solution:
                 for J in nlp.J:
                     if not J:
                         continue
-                    val = []
-                    val_weighted = []
+                    val = list()
+                    val_weighted = list()
                     for j in J:
                         out = __extract_objective(j)
                         val.append(out[0])

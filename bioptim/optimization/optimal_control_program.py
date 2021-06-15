@@ -319,8 +319,8 @@ class OptimalControlProgram:
             self.cx = MX
 
         # Declare optimization variables
-        self.J = []
-        self.g = []
+        self.J = list()
+        self.g = list()
         self.v = OptimizationVector(self)
 
         # nlp is the core of a phase
@@ -362,7 +362,7 @@ class OptimalControlProgram:
         NLP.add(self, "plot", reshaped_plot_mappings, False, name="mapping")
 
         # Prepare the parameters to optimize
-        self.phase_transitions = []
+        self.phase_transitions = list()
         if len(parameters) > 0:
             self.update_parameters(parameters)
 
@@ -669,7 +669,7 @@ class OptimalControlProgram:
             from ..interfaces.acados_interface import AcadosInterface
 
             if solver_options is None:
-                solver_options = {}
+                solver_options = dict()
             self.solver = AcadosInterface(self, **solver_options)
 
         elif self.solver_type == Solver.NONE:
@@ -852,7 +852,7 @@ class OptimalControlProgram:
         if isinstance(phase_time, (int, float)):
             phase_time = [phase_time]
         phase_time = list(phase_time)
-        initial_time_guess, time_min, time_max = [], [], []
+        initial_time_guess, time_min, time_max = list(), list(), list()
         has_penalty = define_parameters_phase_time(
             self, objective_functions, initial_time_guess, phase_time, time_min, time_max
         )

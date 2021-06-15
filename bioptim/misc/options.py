@@ -66,7 +66,7 @@ class OptionList:
     A list of OptionGeneric if more than one is required
 
     Attributes
-    options: list[list[]]
+    options: list
         A list [phase] of list [OptionGeneric]
 
     Methods
@@ -94,7 +94,7 @@ class OptionList:
     def __init__(self):
         """ """
         self.options = [
-            [],
+            list(),
         ]
 
     def __len__(self):
@@ -106,7 +106,7 @@ class OptionList:
         The len of the list of OptionGeneric
         """
 
-        if self.options == [[]]:  # Special case which would return 1 even though it is empty
+        if self.options == [list()]:  # Special case which would return 1 even though it is empty
             return 0
         else:
             return len(self.options)
@@ -204,7 +204,7 @@ class OptionList:
         """
 
         for i in range(len(self.options), phase + 1):
-            self.options.append([])
+            self.options.append(list())
         if list_index == -1:
             for i, opt in enumerate(self.options[phase]):
                 if not opt:

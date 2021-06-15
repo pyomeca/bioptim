@@ -324,7 +324,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
         # Dynamics must be sound within phases
         for i, nlp in enumerate(ocp.nlp):
-            penalty = Constraint([])
+            penalty = Constraint(list())
             penalty.name = f"CONTINUITY {i}"
             penalty.list_index = -1
             ConstraintFunction.clear_penalty(ocp, None, penalty)
@@ -459,12 +459,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     penalty.list_index = i
                     return
             else:
-                g_to_add_to.append([])
+                g_to_add_to.append(list())
                 penalty.list_index = len(g_to_add_to) - 1
         else:
             while penalty.list_index >= len(g_to_add_to):
-                g_to_add_to.append([])
-            g_to_add_to[penalty.list_index] = []
+                g_to_add_to.append(list())
+            g_to_add_to[penalty.list_index] = list()
 
     @staticmethod
     def _parameter_modifier(constraint: Constraint):

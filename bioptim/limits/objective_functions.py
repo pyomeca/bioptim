@@ -637,12 +637,12 @@ class ObjectiveFunction:
                     penalty.list_index = i
                     return
             else:
-                J_to_add_to.append([])
+                J_to_add_to.append(list())
                 penalty.list_index = len(J_to_add_to) - 1
         else:
             while penalty.list_index >= len(J_to_add_to):
-                J_to_add_to.append([])
-            J_to_add_to[penalty.list_index] = []
+                J_to_add_to.append(list())
+            J_to_add_to[penalty.list_index] = list()
 
 
 class ObjectiveFcn:

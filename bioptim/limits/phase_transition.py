@@ -275,7 +275,7 @@ class PhaseTransitionFunctions:
             PhaseTransition(type=PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=i) for i in range(ocp.n_phases - 1)
         ]
 
-        existing_phases = []
+        existing_phases = list()
         for pt in phase_transitions:
             if pt.phase_pre_idx is None and pt.type == PhaseTransitionFcn.CYCLIC:
                 pt.phase_pre_idx = ocp.n_phases - 1

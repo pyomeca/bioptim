@@ -38,8 +38,6 @@ class NonLinearProgram:
         All the constraints at each of the node of the phase
     J: list[list[Objective]]
         All the objectives at each of the node of the phase
-    mapping: dict
-        All the BiMapping of the states and controls
     model: biorbd.Model
         The biorbd model associated with the phase
     n_threads: int
@@ -56,10 +54,14 @@ class NonLinearProgram:
         The index of the current nlp in the ocp.nlp structure
     plot: dict
         The collection of plot for each of the variables
+    plot_mapping: list
+        The mapping for the plots
     t0: float
         The time stamp of the beginning of the phase
     tf: float
         The time stamp of the end of the phase
+    variable_mappings: BiMappingList
+        The list of mapping for all the variables
     U: list[Union[MX, SX]]
         The casadi variables for the integration at each node of the phase
     u_bounds = Bounds()
@@ -91,26 +93,26 @@ class NonLinearProgram:
     """
 
     def __init__(self):
-        self.casadi_func = {}
+        self.casadi_func = dict()
         self.contact_forces_func = None
         self.control_type = ControlType.NONE
         self.cx = None
         self.dt = None
-        self.dynamics = []
+        self.dynamics = list()
         self.dynamics_func = None
         self.dynamics_type = None
-        self.external_forces = []
-        self.g = []
-        self.J = []
+        self.external_forces = list()
+        self.g = list()
+        self.J = list()
         self.mapping = {}
         self.model = None
         self.n_threads = None
         self.ns = None
         self.ode_solver = OdeSolver.RK4()
-        self.parameters = []
+        self.parameters = list()
         self.par_dynamics = None
         self.phase_idx = None
-        self.plot = {}
+        self.plot = dict()
         self.t0 = None
         self.tf = None
         self.t_initial_guess = None
@@ -133,13 +135,13 @@ class NonLinearProgram:
             The type of casadi variable
 
         """
-        self.plot = {}
+        self.plot = dict()
         self.cx = cx
         self.states.cx = self.cx()
         self.controls.cx = self.cx()
-        self.J = []
-        self.g = []
-        self.casadi_func = {}
+        self.J = list()
+        self.g = list()
+        self.casadi_func = dict()
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):

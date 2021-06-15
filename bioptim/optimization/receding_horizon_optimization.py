@@ -93,8 +93,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         t = 0
         sol = None
-        states = []
-        controls = []
+        states = list()
+        controls = list()
         if solver_options_first_iter is None and solver_options is not None:
             solver_options_first_iter = solver_options
             solver_options = None
