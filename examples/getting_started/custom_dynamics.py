@@ -53,11 +53,15 @@ def custom_dynamic(
     """
 
     DynamicsFunctions.apply_parameters(parameters, nlp)
-    q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
+    q = DynamicsFunctions.get(nlp.states["q"], states)
+    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-    qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
+    # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
+    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+    ddq = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
-    return qdot, qddot
+    return dq, ddq
 
 
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
@@ -73,7 +77,8 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
         A reference to the phase
     """
 
-    ConfigureProblem.configure_q_qdot(nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(nlp, as_states=False, as_controls=True)
     ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic)
 

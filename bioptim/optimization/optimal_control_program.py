@@ -26,7 +26,7 @@ from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
 from ..misc.enums import ControlType, Solver, Shooting
-from ..misc.mapping import BiMapping, Mapping
+from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
@@ -132,11 +132,7 @@ class OptimalControlProgram:
         external_forces: Union[list, tuple] = (),
         ode_solver: Union[list, OdeSolverBase, OdeSolver] = OdeSolver.RK4(),
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
-        all_generalized_mapping: Union[BiMapping, list, tuple] = None,
-        q_mapping: Union[BiMapping, list, tuple] = None,
-        qdot_mapping: Union[BiMapping, list, tuple] = None,
-        tau_mapping: Union[BiMapping, list, tuple] = None,
-        taudot_mapping: Union[BiMapping, list, tuple] = None,
+        variable_mappings: BiMappingList = BiMappingList(),
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = PhaseTransitionList(),
         n_threads: int = 1,
@@ -173,16 +169,8 @@ class OptimalControlProgram:
             The solver for the ordinary differential equations
         control_type: ControlType
             The type of controls for each phase
-        all_generalized_mapping: BiMapping
-            The mapping to apply on q, qdot and tau at the same time
-        q_mapping: BiMapping
-            The mapping to apply on q
-        qdot_mapping: BiMapping
-            The mapping to apply on qdot
-        tau_mapping: BiMapping
-            The mapping to apply on tau
-        taudot_mapping: BiMapping
-            The mapping to apply on taudot
+        variable_mappings: BiMappingList
+            The mapping to apply on variables
         plot_mappings: Mapping
             The mapping to apply on the plots
         phase_transitions: PhaseTransitionList
@@ -228,11 +216,7 @@ class OptimalControlProgram:
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "control_type": control_type,
-            "all_generalized_mapping": all_generalized_mapping,
-            "q_mapping": q_mapping,
-            "qdot_mapping": qdot_mapping,
-            "tau_mapping": tau_mapping,
-            "taudot_mapping": taudot_mapping,
+            "variable_mappings": variable_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "n_threads": n_threads,
@@ -344,22 +328,13 @@ class OptimalControlProgram:
             external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)
             NLP.add(self, "external_forces", external_forces, False)
 
-        # Compute problem size
-        if all_generalized_mapping is not None:
-            if q_mapping is not None or qdot_mapping is not None or tau_mapping is not None:
-                raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used alongside")
-            q_mapping = qdot_mapping = tau_mapping = all_generalized_mapping
-        NLP.add(self, "q", q_mapping, q_mapping is None, BiMapping, name="mapping")
-        NLP.add(self, "qdot", qdot_mapping, qdot_mapping is None, BiMapping, name="mapping")
-        NLP.add(self, "tau", tau_mapping, tau_mapping is None, BiMapping, name="mapping")
-        NLP.add(self, "taudot", taudot_mapping, taudot_mapping is None, BiMapping, name="mapping")
-        plot_mappings = plot_mappings if plot_mappings is not None else {}
-        reshaped_plot_mappings = []
+        plot_mappings = plot_mappings if plot_mappings is not None else dict()
+        reshaped_plot_mappings = list()
         for i in range(self.n_phases):
-            reshaped_plot_mappings.append({})
+            reshaped_plot_mappings.append(dict())
             for key in plot_mappings:
                 reshaped_plot_mappings[i][key] = plot_mappings[key][i]
-        NLP.add(self, "plot", reshaped_plot_mappings, False, name="mapping")
+        NLP.add(self, "plot_mapping", reshaped_plot_mappings, False, name="plot_mapping")
 
         # Prepare the parameters to optimize
         self.phase_transitions = list()
@@ -373,6 +348,9 @@ class OptimalControlProgram:
         NLP.add(self, "dynamics_type", dynamics, False)
         NLP.add(self, "ode_solver", ode_solver, True)
         NLP.add(self, "control_type", control_type, True)
+
+        # Prepare the variable mappings
+        NLP.add(self, "variable_mappings", variable_mappings, True)
 
         # Prepare the dynamics
         for i in range(self.n_phases):

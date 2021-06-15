@@ -274,7 +274,7 @@ class PenaltyFunctionAbstract:
             all_pn.nlp.add_casadi_func("biorbd_markers", all_pn.nlp.model.markers, all_pn.nlp.states["q"].mx)
 
             for i, pn in enumerate(all_pn):
-                q = pn.nlp.mapping["q"].to_second.map(pn["q"])
+                q = pn.nlp.variable_mappings["q"].to_second.map(pn["q"])
                 # TODO move the axis_to_track into a row (?) option of penalty
                 val = pn.nlp.casadi_func["biorbd_markers"](q)[axis_to_track, markers_idx]
                 penalty.sliced_target = target[axis_to_track, :, i] if target is not None else None
@@ -320,8 +320,8 @@ class PenaltyFunctionAbstract:
                 )
 
             for i in range(len(pn.x) - 1):
-                q_0 = nlp.mapping["q"].to_second.map(pn.x[i][pn.nlp.states["q"].index, :])
-                q_1 = nlp.mapping["q"].to_second.map(pn.x[i + 1][pn.nlp.states["q"].index, :])
+                q_0 = nlp.variable_mappings["q"].to_second.map(pn.x[i][pn.nlp.states["q"].index, :])
+                q_1 = nlp.variable_mappings["q"].to_second.map(pn.x[i + 1][pn.nlp.states["q"].index, :])
 
                 if coordinates_system_idx < 0:
                     jcs_0_T = nlp.cx.eye(4)
@@ -423,7 +423,7 @@ class PenaltyFunctionAbstract:
             nlp.add_casadi_func("markers", nlp.model.markers, nlp.states["q"].mx)
 
             for pn in all_pn:
-                q = nlp.mapping["q"].to_second.map(pn["q"])
+                q = nlp.variable_mappings["q"].to_second.map(pn["q"])
                 first_marker_func = nlp.casadi_func["markers"](q)[:, first_marker_idx]
                 second_marker_func = nlp.casadi_func["markers"](q)[:, second_marker_idx]
 
@@ -473,7 +473,7 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("coef must be an int or a float")
 
             for v in ux:
-                v = all_pn.nlp.mapping["q"].to_second.map(v)
+                v = all_pn.nlp.variable_mappings["q"].to_second.map(v)
                 val = v[first_dof] - coef * v[second_dof]
                 penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
@@ -736,7 +736,7 @@ class PenaltyFunctionAbstract:
 
             nlp.add_casadi_func("biorbd_CoM", nlp.model.CoM, nlp.states["q"].mx)
             for i, pn in enumerate(all_pn):
-                q = nlp.mapping["q"].to_second.map(pn["q"])
+                q = nlp.variable_mappings["q"].to_second.map(pn["q"])
                 CoM = nlp.casadi_func["biorbd_CoM"](q)
 
                 if axis is None:
@@ -774,8 +774,8 @@ class PenaltyFunctionAbstract:
 
             nlp.add_casadi_func("biorbd_CoM_dot", nlp.model.CoMdot, nlp.states["q"].mx, nlp.states["qdot"].mx)
             for i, pn in enumerate(all_pn):
-                q = nlp.mapping["q"].to_second.map(pn["q"])
-                qdot = nlp.mapping["qdot"].to_second.map(pn["qdot"])
+                q = nlp.variable_mappings["q"].to_second.map(pn["q"])
+                qdot = nlp.variable_mappings["qdot"].to_second.map(pn["qdot"])
                 CoM_dot = nlp.casadi_func["biorbd_CoM_dot"](q, qdot)
 
                 if axis is None:
@@ -874,7 +874,7 @@ class PenaltyFunctionAbstract:
             )
 
             for pn in all_pn:
-                q = nlp.mapping["q"].to_second.map(pn["q"])
+                q = nlp.variable_mappings["q"].to_second.map(pn["q"])
                 val = nlp.casadi_func[f"track_segment_with_custom_rt_{segment_idx}"](q)
                 penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
@@ -924,9 +924,9 @@ class PenaltyFunctionAbstract:
                 segment_idx,
                 marker_idx,
             )
-            nq = len(nlp.mapping["q"].to_first)
+            nq = len(nlp.variable_mappings["q"].to_first)
             for pn in all_pn:
-                q = nlp.mapping["q"].to_second.map(pn["q"])
+                q = nlp.variable_mappings["q"].to_second.map(pn["q"])
                 marker = nlp.casadi_func[f"track_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
                 for axe in Axis:
                     if axe != axis:

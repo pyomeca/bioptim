@@ -74,29 +74,31 @@ def generate_data(
     symbolic_parameters = MX.sym("u", 0, 0)
     nlp = NonLinearProgram()
     nlp.model = biorbd_model
-    nlp.mapping = {
+    nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
         "qdot": BiMapping(range(n_qdot), range(n_qdot)),
         "tau": BiMapping(range(n_tau), range(n_tau)),
+        "muscles": BiMapping(range(n_mus), range(n_mus)),
     }
     markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_q)
 
     nlp.states.cx = MX()
     nlp.controls.cx = MX()
-    nlp.states.append("q", symbolic_q, symbolic_q)
-    nlp.states.append("qdot", symbolic_qdot, symbolic_qdot)
-    nlp.states.append("muscles", symbolic_mus_states, symbolic_mus_states)
+    nlp.states.append("q", symbolic_q, symbolic_q, nlp.variable_mappings["q"])
+    nlp.states.append("qdot", symbolic_qdot, symbolic_qdot, nlp.variable_mappings["qdot"])
+    nlp.states.append("muscles", symbolic_mus_states, symbolic_mus_states, nlp.variable_mappings["muscles"])
 
-    nlp.controls.append("tau", symbolic_tau, symbolic_tau)
-    nlp.controls.append("muscles", symbolic_mus_controls, symbolic_mus_controls)
+    nlp.controls.append("tau", symbolic_tau, symbolic_tau, nlp.variable_mappings["tau"])
+    nlp.controls.append("muscles", symbolic_mus_controls, symbolic_mus_controls, nlp.variable_mappings["muscles"])
 
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
-        DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven,
+        DynamicsFunctions.muscles_driven, # DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven,
         symbolic_states,
         symbolic_controls,
         symbolic_parameters,
         nlp,
+        False,
     )
 
     def dyn_interface(t, x, u):

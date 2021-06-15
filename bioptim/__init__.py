@@ -110,6 +110,8 @@ Mapping
     Mapping of index set to a different index set
 BiMapping
     Mapping of two index sets between each other
+BiMappingList
+    A list of BiMapping
 
 
 # --- Version of bioptim --- #
@@ -152,7 +154,7 @@ from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
 from .limits.penalty_node import PenaltyNode
 from .misc.enums import Axis, Node, InterpolationType, PlotType, Solver, ControlType, CostType, Shooting
-from .misc.mapping import BiMapping, Mapping
+from .misc.mapping import BiMappingList, BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.receding_horizon_optimization import MovingHorizonEstimator, NonlinearModelPredictiveControl

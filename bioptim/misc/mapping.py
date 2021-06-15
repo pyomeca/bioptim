@@ -3,8 +3,10 @@ from typing import Union
 import numpy as np
 from casadi import MX, SX, DM
 
+from .options import OptionDict, OptionGeneric
 
-class Mapping:
+
+class Mapping(OptionGeneric):
     """
     Mapping of index set to a different index set
 
@@ -28,13 +30,14 @@ class Mapping:
         Get the len of the mapping
     """
 
-    def __init__(self, map_idx: Union[list, tuple, range, np.ndarray]):
+    def __init__(self, map_idx: Union[list, tuple, range, np.ndarray], **params):
         """
         Parameters
         ----------
         map_idx: Union[list, tuple, range]
             The actual index list that links to the other set
         """
+        super(Mapping, self).__init__(**params)
         self.map_idx = map_idx
 
     def map(self, obj: Union[tuple, list, np.ndarray, MX, SX, DM]) -> Union[np.ndarray, MX, SX, DM]:
@@ -87,7 +90,7 @@ class Mapping:
         return len(self.map_idx)
 
 
-class BiMapping:
+class BiMapping(OptionGeneric):
     """
     Mapping of two index sets between each other
 
@@ -100,7 +103,7 @@ class BiMapping:
     """
 
     def __init__(
-        self, to_second: Union[Mapping, int, list, tuple, range], to_first: Union[Mapping, int, list, tuple, range]
+        self, to_second: Union[Mapping, int, list, tuple, range], to_first: Union[Mapping, int, list, tuple, range], **params
     ):
         """
         Parameters
@@ -110,10 +113,12 @@ class BiMapping:
         to_first: Union[Mapping, list[int], tuple[int], range]
             The mapping that links the second index set to the first
         """
+        super(BiMapping, self).__init__(**params)
+
         if isinstance(to_second, (list, tuple, range)):
-            to_second = Mapping(to_second)
+            to_second = Mapping(map_idx=to_second)
         if isinstance(to_first, (list, tuple, range)):
-            to_first = Mapping(to_first)
+            to_first = Mapping(map_idx=to_first)
 
         if not isinstance(to_second, Mapping):
             raise RuntimeError("to_second must be a Mapping class")
@@ -122,3 +127,47 @@ class BiMapping:
 
         self.to_second = to_second
         self.to_first = to_first
+
+
+class BiMappingList(OptionDict):
+    def __init__(self):
+        super(BiMappingList, self).__init__()
+
+    def add(
+            self,
+            name: str,
+            to_second: Union[Mapping, int, list, tuple, range] = None,
+            to_first: Union[Mapping, int, list, tuple, range] = None,
+            bimapping: BiMapping = None,
+            phase: int = 0,
+        ):
+
+        """
+        Add a new BiMapping to the list
+
+        Parameters
+        name: str
+            The name of the new BiMapping
+        to_second: Mapping
+            The mapping that links the first variable to the second
+        to_first: Mapping
+            The mapping that links the second variable to the first
+        bimapping: BiMapping
+            The BiMapping to copy
+        """
+
+        if name in self:
+            raise ValueError("BiMapping name should be unique")
+
+        if isinstance(bimapping, BiMapping):
+            if to_second is not None or to_first is not None:
+                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
+            self.add(name, phase=phase, to_second=bimapping.to_second, to_first=bimapping.to_first)
+
+        else:
+            if to_second is None or to_first is None:
+                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
+            super(BiMappingList, self)._add(key=name, phase=phase, option_type=BiMapping, to_second=to_second, to_first=to_first)
+
+    def __getitem__(self, item) -> Union[dict, BiMapping]:
+        return super(BiMappingList, self).__getitem__(item)

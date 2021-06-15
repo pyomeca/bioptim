@@ -181,7 +181,7 @@ class Solution:
             self.controls = Solution.SimplifiedOptimizationVariableList(nlp.controls)
             self.dynamics = nlp.dynamics
             self.ode_solver = nlp.ode_solver
-            self.mapping = nlp.mapping
+            self.variable_mappings = nlp.variable_mappings
             self.control_type = nlp.control_type
             self.J = nlp.J
             self.g = nlp.g
@@ -893,7 +893,7 @@ class Solution:
                     param.function(nlp.model, self.parameters[param.name], **param.params)
 
             all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
-            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].to_second.map(data["q"]))
+            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
 
         if show_now:
             b_is_visible = [True] * len(all_bioviz)

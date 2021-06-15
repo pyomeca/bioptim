@@ -1,5 +1,9 @@
-from casadi import vertcat, MX
-import biorbd
+from typing import Union
+
+from casadi import horzcat, vertcat, MX, SX
+
+from ..optimization.non_linear_program import NonLinearProgram
+from ..optimization.optimization_variable import OptimizationVariable
 
 
 class DynamicsFunctions:
@@ -10,62 +14,32 @@ class DynamicsFunctions:
     -------
     custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Interface to custom dynamic function provided by the user
-    forward_dynamics_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool)
         Forward dynamics driven by joint torques, optional external forces can be declared.
-    forward_dynamics_torque_derivative_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Forward dynamics driven by joint torques derivatives, optional external forces can be declared.
-    forward_dynamics_torque_driven_with_contact(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Forward dynamics driven by joint torques with contact constraints.
-    forward_dynamics_torque_derivative_driven_with_contact(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Forward dynamics driven by joint torque derivatives with contact constraints.
-    forces_from_forward_dynamics_with_contact_for_torque_driven_problem(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Contact forces of a forward dynamics driven by joint torque derivatives with contact constraints.
-    forces_from_forward_dynamics_with_contact_for_torque_driven_problem(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Contact forces of a forward dynamics driven by joint torques with contact constraints.
-    forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Contact forces of a forward dynamics driven by muscle activation with contact constraints.
-    forward_dynamics_torque_activations_driven(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact) -> MX:
         Forward dynamics driven by joint torques activations.
-    forward_dynamics_torque_activations_driven_with_contact(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Forward dynamics driven by joint torques activations with contact constraints.
-    forward_dynamics_muscle_activations_and_torque_driven(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Forward dynamics driven by muscle activations and joint torques.
-    forward_dynamics_muscle_activations_and_torque_driven_with_contact(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Forward dynamics driven by muscles activations and joint torques with contact constraints.
-    forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
+    torque_derivative_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
+        Forward dynamics driven by joint torques, optional external forces can be declared.
+    forces_from_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+        Contact forces of a forward dynamics driven by joint torques with contact constraints.
+    muscles_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
+        Forward dynamics driven by muscle.
+    forces_from_muscle_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
-    forward_dynamics_muscle_activations_driven(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Forward dynamics driven by muscle activations.
-    forward_dynamics_muscle_excitations_driven(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Forward dynamics driven by muscle excitations.
-    forward_dynamics_muscle_excitations_and_torque_driven(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Forward dynamics driven by muscle excitations and joint torques.
-    forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Forward dynamics driven by muscle excitations and joint torques with contact constraints..
-    forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
-            states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
-        Contact forces of a forward dynamics driven by muscle excitations and joint torques with contact constraints.
-    dispatch_q_qdot_tau_data(states: MX.sym, controls: MX.sym, nlp: NonLinearProgram) -> tuple[MX.sym, MX.sym, MX.sym]
-        Extracting q, qdot and tau from states and controls, assuming state, state and control, respectively.
-    dispatch_q_qdot_tau_taudot_data(states: MX.sym, controls: MX.sym, nlp: NonLinearProgram) -> tuple[MX.sym, MX.sym, MX.sym]
-        Extracting q, qdot, tau and taudot from states and controls, assuming state, state, state and control,
-        respectively.
+    get(var: OptimizationVariable, cx: Union[MX, SX]):
+        Main accessor to a variable in states or controls (cx)
     apply_parameters(parameters: MX.sym, nlp: NonLinearProgram)
         Apply the parameter variables to the model. This should be called before calling the dynamics
+    compute_qdot(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX]):
+        Easy accessor to derivative of q
+    forward_dynamics(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], tau: Union[MX, SX], with_contact: bool):
+        Easy accessor to derivative of qdot
+    compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: Union[MX, SX]):
+        Easy accessor to derivative of muscle activations
+    compute_tau_from_muscle(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], muscle_activations: Union[MX, SX]):
+        Easy accessor to tau computed from muscles
+    contact_forces(nlp: NonLinearProgram, q, qdot, tau):
+        Easy accessor for the contact forces in contact dynamics
     """
 
     @staticmethod
@@ -94,7 +68,7 @@ class DynamicsFunctions:
         return vertcat(qdot, qddot)
 
     @staticmethod
-    def forward_dynamics_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+    def torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
 
@@ -108,6 +82,8 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
+        with_contact: bool
+            If the dynamic with contact should be used
 
         Returns
         ----------
@@ -116,232 +92,18 @@ class DynamicsFunctions:
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-        qdot_reduced = nlp.mapping["q"].to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        if nlp.external_forces:
-            dxdt = MX(nlp.states.shape, nlp.ns)
-            for i, f_ext in enumerate(nlp.external_forces):
-                qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
-                qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-                dxdt[:, i] = vertcat(qdot_reduced, qddot_reduced)
-        else:
-            qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
-            qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-            dxdt = vertcat(qdot_reduced, qddot_reduced)
-
-        return dxdt
+        dq = horzcat(*[dq for _ in range(ddq.shape[1])])
+        return vertcat(dq, ddq)
 
     @staticmethod
-    def forward_dynamics_torque_derivative_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
-        """
-        Forward dynamics driven by joint torques, optional external forces can be declared.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            The derivative of the states
-        """
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, tau, taudot = DynamicsFunctions.dispatch_q_qdot_tau_taudot_data(states, controls, nlp)
-
-        qdot_reduced = nlp.mapping["q"].to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
-        taudot_reduced = nlp.mapping["taudot"].to_first.map(taudot)
-
-        if nlp.external_forces:
-            dxdt = MX(nlp.states.shape, nlp.ns)
-            for i, f_ext in enumerate(nlp.external_forces):
-                qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
-                qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-                dxdt[:, i] = vertcat(qdot_reduced, qddot_reduced, taudot_reduced)
-        else:
-            qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
-            qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-            dxdt = vertcat(qdot_reduced, qddot_reduced, taudot_reduced)
-
-        return dxdt
-
-    @staticmethod
-    def forward_dynamics_torque_driven_with_contact(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
-        """
-        Forward dynamics driven by joint torques with contact constraints.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            The derivative of the states
-        """
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
-
-        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau).to_mx()
-
-        qdot = nlp.model.computeQdot(q, qdot).to_mx()
-        qdot_reduced = nlp.mapping["q"].to_first.map(qdot)
-        qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-        return vertcat(qdot_reduced, qddot_reduced)
-
-    @staticmethod
-    def forward_dynamics_torque_derivative_driven_with_contact(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> MX:
-        """
-        Forward dynamics driven by joint torques with contact constraints.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            The derivative of the states
-        """
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, tau, taudot = DynamicsFunctions.dispatch_q_qdot_tau_taudot_data(states, controls, nlp)
-
-        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau).to_mx()
-
-        qdot = nlp.model.computeQdot(q, qdot).to_mx()
-        qdot_reduced = nlp.mapping["q"].to_first.map(qdot)
-        qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-        taudot_reduced = nlp.mapping["taudot"].to_first.map(taudot)
-
-        return vertcat(qdot_reduced, qddot_reduced, taudot_reduced)
-
-    @staticmethod
-    def forces_from_forward_dynamics_with_contact_for_torque_driven_problem(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> MX:
-        """
-        Contact forces of a forward dynamics driven by joint torques with contact constraints.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            The contact forces that ensure no acceleration at these contact points
-        """
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
-
-        cs = nlp.model.getConstraints()
-        biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau, cs)
-
-        return cs.getForce().to_mx()
-
-    @staticmethod
-    def forces_from_forward_dynamics_with_contact_for_torque_derivative_driven_problem(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> MX:
-        """
-        Contact forces of a forward dynamics driven by joint torques with contact constraints.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            The contact forces that ensure no acceleration at these contact points
-        """
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, tau, taudot = DynamicsFunctions.dispatch_q_qdot_tau_taudot_data(states, controls, nlp)
-
-        cs = nlp.model.getConstraints()
-        biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau, cs)
-
-        return cs.getForce().to_mx()
-
-    @staticmethod
-    def forces_from_forward_dynamics_with_contact_for_torque_activation_driven_problem(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> MX:
-        """
-        Contact forces of a forward dynamics driven by muscle activation with contact constraints.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            The contact forces that ensure no acceleration at these contact points
-        """
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, torque_act = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
-
-        tau = nlp.model.torque(torque_act, q, qdot).to_mx()
-
-        cs = nlp.model.getConstraints()
-        biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau, cs)
-
-        return cs.getForce().to_mx()
-
-    @staticmethod
-    def forward_dynamics_torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+    def torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact) -> MX:
         """
         Forward dynamics driven by joint torques activations.
 
@@ -355,6 +117,8 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
+        with_contact: bool
+            If the dynamic with contact should be used
 
         Returns
         ----------
@@ -363,22 +127,61 @@ class DynamicsFunctions:
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, torque_act = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau_activations = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-        tau = nlp.model.torque(torque_act, q, qdot).to_mx()
-        qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
+        tau = nlp.model.torque(tau_activations, q, qdot).to_mx()
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        qdot = nlp.model.computeQdot(q, qdot).to_mx()
-        qdot_reduced = nlp.mapping["q"].to_first.map(qdot)
-        qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-        return vertcat(qdot_reduced, qddot_reduced)
+        dq = horzcat(*[dq for _ in range(ddq.shape[1])])
+
+        return vertcat(dq, ddq)
 
     @staticmethod
-    def forward_dynamics_torque_activations_driven_with_contact(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> MX:
+    def torque_derivative_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
         """
-        Forward dynamics driven by joint torques activations with contact constraints.
+        Forward dynamics driven by joint torques, optional external forces can be declared.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+        with_contact: bool
+            If the dynamic with contact should be used
+
+        Returns
+        ----------
+        MX.sym
+            The derivative of the states
+        """
+
+        DynamicsFunctions.apply_parameters(parameters, nlp)
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.get(nlp.states["tau"], states)
+        taudot = DynamicsFunctions.get(nlp.controls["taudot"], controls)
+
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+        dtau = nlp.controls["taudot"].mapping.to_first.map(taudot)
+
+        dq = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dtau = horzcat(*[dtau for _ in range(ddq.shape[1])])
+
+        return vertcat(dq, ddq, dtau)
+
+    @staticmethod
+    def forces_from_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+        """
+        Contact forces of a forward dynamics driven by joint torques with contact constraints.
 
         Parameters
         ----------
@@ -394,26 +197,24 @@ class DynamicsFunctions:
         Returns
         ----------
         MX.sym
-            The derivative of the states
+            The contact forces that ensure no acceleration at these contact points
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, torque_act = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
 
-        tau = nlp.model.torque(torque_act, q, qdot).to_mx()
-        qddot = nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau).to_mx()
+        q_nlp, q_var = (nlp.states["q"], states) if "q" in nlp.states else (nlp.controls["q"], controls)
+        qdot_nlp, qdot_var = (nlp.states["qdot"], states) if "qdot" in nlp.states else (nlp.controls["qdot"], controls)
+        tau_nlp, tau_var = (nlp.states["tau"], states) if "tau" in nlp.states else (nlp.controls["tau"], controls)
+        q = DynamicsFunctions.get(q_nlp, q_var)
+        qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
+        tau = DynamicsFunctions.get(tau_nlp, tau_var)
 
-        qdot = nlp.model.computeQdot(q, qdot).to_mx()
-        qdot_reduced = nlp.mapping["q"].to_first.map(qdot)
-        qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-        return vertcat(qdot_reduced, qddot_reduced)
+        return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
 
     @staticmethod
-    def forward_dynamics_muscle_activations_and_torque_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> MX:
+    def muscles_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
         """
-        Forward dynamics driven by muscle activations and joint torques.
+        Forward dynamics driven by muscle.
 
         Parameters
         ----------
@@ -425,6 +226,8 @@ class DynamicsFunctions:
             The parameters of the system
         nlp: NonLinearProgram
             The definition of the system
+        with_contact: bool
+            If the dynamic with contact should be used
 
         Returns
         ----------
@@ -433,70 +236,32 @@ class DynamicsFunctions:
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        residual_tau = DynamicsFunctions.get(nlp.controls["tau"], controls) if "tau" in nlp.controls else None
 
-        muscles_states = nlp.model.stateSet()
-        muscles_activations = controls[nlp.controls["muscles"].index, :]
+        mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
+        mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
+        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
-        for k in range(len(nlp.controls["muscles"])):
-            muscles_states[k].setActivation(muscles_activations[k])
-        muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-        tau = muscles_tau + residual_tau
+        tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        qddot = biorbd.Model.ForwardDynamics(nlp.model, q, qdot, tau).to_mx()
+        dq = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt = vertcat(dq, ddq)
 
-        qdot = nlp.model.computeQdot(q, qdot).to_mx()
-        qdot_reduced = nlp.mapping["q"].to_first.map(qdot)
-        qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-        return vertcat(qdot_reduced, qddot_reduced)
+        has_excitation = True if "muscles" in nlp.states else False
+        if has_excitation:
+            mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
+            dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations)
+            dmus = horzcat(*[dmus for _ in range(ddq.shape[1])])
+            dxdt = vertcat(dxdt, dmus)
 
-    @staticmethod
-    def forward_dynamics_muscle_activations_and_torque_driven_with_contact(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> MX:
-        """
-        Forward dynamics driven by muscles activations and joint torques with contact constraints.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            The derivative of the states
-        """
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
-
-        muscles_states = nlp.model.stateSet()
-        muscles_activations = controls[nlp.controls["muscles"].index, :]
-
-        for k in range(len(nlp.controls["muscles"])):
-            muscles_states[k].setActivation(muscles_activations[k])
-        muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-
-        tau = muscles_tau + residual_tau
-
-        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau).to_mx()
-
-        qdot = nlp.model.computeQdot(q, qdot).to_mx()
-        qdot_reduced = nlp.mapping["q"].to_first.map(qdot)
-        qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-        return vertcat(qdot_reduced, qddot_reduced)
+        return dxdt
 
     @staticmethod
-    def forces_from_forward_dynamics_muscle_activations_and_torque_driven_with_contact(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> MX:
+    def forces_from_muscle_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
         """
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
 
@@ -518,327 +283,35 @@ class DynamicsFunctions:
         """
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        residual_tau = DynamicsFunctions.get(nlp.controls["tau"], controls) if "tau" in nlp.controls else None
 
-        muscles_states = nlp.model.stateSet()
-        muscles_activations = controls[nlp.controls["muscles"].index, :]
+        mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
+        mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
+        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
-        for k in range(len(nlp.controls["muscles"])):
-            muscles_states[k].setActivation(muscles_activations[k])
-        muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-
-        tau = muscles_tau + residual_tau
-
-        cs = nlp.model.getConstraints()
-        biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau, cs)
-
-        return cs.getForce().to_mx()
+        tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
+        return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
 
     @staticmethod
-    def forward_dynamics_muscle_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+    def get(var: OptimizationVariable, cx: Union[MX, SX]):
         """
-        Forward dynamics driven by muscle activations.
+        Main accessor to a variable in states or controls (cx)
 
         Parameters
         ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
+        var: OptimizationVariable
+            The variable from nlp.states["name"] or nlp.controls["name"]
+        cx: Union[MX, SX]
+            The actual SX or MX variables
 
         Returns
-        ----------
-        MX.sym
-            The derivative of the states
+        -------
+        The sliced values
         """
 
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-
-        q = nlp.mapping["q"].to_second.map(states[nlp.states["q"].index, :])
-        qdot = nlp.mapping["qdot"].to_second.map(states[nlp.states["qdot"].index, :])
-
-        muscles_states = nlp.model.stateSet()
-        muscles_activations = controls
-
-        for k in range(len(nlp.controls["muscles"])):
-            muscles_states[k].setActivation(muscles_activations[k])
-
-        muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, muscles_tau).to_mx()
-
-        qdot = nlp.model.computeQdot(q, qdot).to_mx()
-        qdot_reduced = nlp.mapping["q"].to_first.map(qdot)
-        qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-        return vertcat(qdot_reduced, qddot_reduced)
-
-    @staticmethod
-    def forward_dynamics_muscle_excitations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
-        """
-        Forward dynamics driven by muscle excitations.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            The derivative of the states
-        """
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-
-        q = nlp.mapping["q"].to_second.map(states[nlp.states["q"].index, :])
-        qdot = nlp.mapping["qdot"].to_second.map(states[nlp.states["qdot"].index, :])
-
-        muscles_states = nlp.model.stateSet()
-        muscles_excitation = controls
-        muscles_activations = states[nlp.states["muscles"].index, :]
-
-        for k in range(len(nlp.controls["muscles"])):
-            muscles_states[k].setExcitation(muscles_excitation[k])
-            muscles_states[k].setActivation(muscles_activations[k])
-        muscles_activations_dot = nlp.model.activationDot(muscles_states).to_mx()
-
-        muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, muscles_tau).to_mx()
-
-        qdot = nlp.model.computeQdot(q, qdot).to_mx()
-        qdot_reduced = nlp.mapping["q"].to_first.map(qdot)
-        qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-        return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
-
-    @staticmethod
-    def forward_dynamics_muscle_excitations_and_torque_driven(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> MX:
-        """
-        Forward dynamics driven by muscle excitations and joint torques.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            The derivative of the states
-        """
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
-
-        muscles_states = nlp.model.stateSet()
-        muscles_excitation = controls[nlp.controls["muscles"].index, :]
-        muscles_activations = states[nlp.states["muscles"].index, :]
-
-        for k in range(len(nlp.states["muscles"])):
-            muscles_states[k].setExcitation(muscles_excitation[k])
-            muscles_states[k].setActivation(muscles_activations[k])
-        muscles_activations_dot = nlp.model.activationDot(muscles_states).to_mx()
-
-        muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-        tau = muscles_tau + residual_tau
-        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau).to_mx()
-
-        qdot = nlp.model.computeQdot(q, qdot).to_mx()
-        qdot_reduced = nlp.mapping["q"].to_first.map(qdot)
-        qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-        return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
-
-    @staticmethod
-    def forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> MX:
-        """
-        Forward dynamics driven by muscle excitations and joint torques with contact constraints..
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            The derivative of the states
-        """
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
-
-        muscles_states = nlp.model.stateSet()
-        muscles_excitation = controls[nlp.controls["muscles"].index, :]
-        muscles_activations = states[nlp.states["muscles"].index, :]
-
-        for k in range(len(nlp.controls["muscles"])):
-            muscles_states[k].setExcitation(muscles_excitation[k])
-            muscles_states[k].setActivation(muscles_activations[k])
-        muscles_activations_dot = nlp.model.activationDot(muscles_states).to_mx()
-
-        muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-        tau = muscles_tau + residual_tau
-        qddot = biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau).to_mx()
-
-        qdot = nlp.model.computeQdot(q, qdot).to_mx()
-        qdot_reduced = nlp.mapping["q"].to_first.map(qdot)
-        qddot_reduced = nlp.mapping["qdot"].to_first.map(qddot)
-        return vertcat(qdot_reduced, qddot_reduced, muscles_activations_dot)
-
-    @staticmethod
-    def forces_from_forward_dynamics_muscle_excitations_and_torque_driven_with_contact(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp
-    ) -> MX:
-        """
-        Contact forces of a forward dynamics driven by muscle excitations and joint torques with contact constraints.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        parameters: MX.sym
-            The parameters of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            The contact forces that ensure no acceleration at these contact points
-        """
-
-        DynamicsFunctions.apply_parameters(parameters, nlp)
-        q, qdot, residual_tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
-
-        muscles_states = nlp.model.stateSet()
-        muscles_excitation = controls[nlp.controls["muscles"].index, :]
-        muscles_activations = states[nlp.states["muscles"].index, :]
-
-        for k in range(len(nlp.controls["muscles"])):
-            muscles_states[k].setExcitation(muscles_excitation[k])
-            muscles_states[k].setActivation(muscles_activations[k])
-
-        muscles_tau = nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
-        tau = muscles_tau + residual_tau
-        cs = nlp.model.getConstraints()
-        biorbd.Model.ForwardDynamicsConstraintsDirect(nlp.model, q, qdot, tau, cs)
-        return cs.getForce().to_mx()
-
-    @staticmethod
-    def dispatch_q_qdot_data(states: MX.sym, controls: MX.sym, nlp) -> tuple:
-        """
-        Extracting q and qdot from states and controls, assuming state, state and control, respectively.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            q, the generalized coordinates
-        MX.sym
-            qdot, the generalized velocities
-        """
-
-        q = nlp.mapping["q"].to_second.map(states[nlp.states["q"].index, :])
-        qdot = nlp.mapping["qdot"].to_second.map(states[nlp.states["qdot"].index, :])
-        return q, qdot
-
-    @staticmethod
-    def dispatch_q_qdot_tau_data(states: MX.sym, controls: MX.sym, nlp) -> tuple:
-        """
-        Extracting q, qdot and tau from states and controls, assuming state, state and control, respectively.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            q, the generalized coordinates
-        MX.sym
-            qdot, the generalized velocities
-        MX.sym
-            tau, the generalized torques
-        """
-
-        q, qdot = DynamicsFunctions.dispatch_q_qdot_data(states, controls, nlp)
-        tau = nlp.mapping["tau"].to_second.map(controls[nlp.controls["tau"].index, :])
-        return q, qdot, tau
-
-    @staticmethod
-    def dispatch_q_qdot_tau_taudot_data(states: MX.sym, controls: MX.sym, nlp) -> tuple:
-        """
-        Extracting q, qdot, tau, taudot, from states and controls, assuming state, state, state and control,
-         respectively.
-
-        Parameters
-        ----------
-        states: MX.sym
-            The state of the system
-        controls: MX.sym
-            The controls of the system
-        nlp: NonLinearProgram
-            The definition of the system
-
-        Returns
-        ----------
-        MX.sym
-            q, the generalized coordinates
-        MX.sym
-            qdot, the generalized velocities
-        MX.sym
-            tau, the generalized torques
-        MX.sym
-            taudot, the generalized torque derivatives
-        """
-
-        nq = len(nlp.mapping["q"].to_first)
-        nqdot = len(nlp.mapping["qdot"].to_first)
-        q = nlp.mapping["q"].to_second.map(states[:nq])
-        qdot = nlp.mapping["qdot"].to_second.map(states[nq : nq + nqdot])
-        tau = nlp.mapping["tau"].to_second.map(states[nq + nqdot :])
-        taudot = nlp.mapping["taudot"].to_second.map(controls[: nlp.shape["taudot"]])
-
-        return q, qdot, tau, taudot
+        return var.mapping.to_second.map(cx[var.index, :])
 
     @staticmethod
     def apply_parameters(parameters: MX.sym, nlp):
@@ -859,3 +332,146 @@ class DynamicsFunctions:
             if param.function:
                 param.function(nlp.model, parameters[offset : offset + param.size], **param.params)
                 offset += param.size
+
+    @staticmethod
+    def compute_qdot(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX]):
+        """
+        Easy accessor to derivative of q
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        q: Union[MX, SX]
+            The value of q from "get"
+        qdot: Union[MX, SX]
+            The value of qdot from "get"
+
+        Returns
+        -------
+        The derivative of q
+        """
+
+        qdot_var = nlp.states["qdot"] if "qdot" in nlp.states else nlp.controls["qdot"]
+        return qdot_var.mapping.to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
+
+    @staticmethod
+    def forward_dynamics(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], tau: Union[MX, SX], with_contact: bool):
+        """
+        Easy accessor to derivative of qdot
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        q: Union[MX, SX]
+            The value of q from "get"
+        qdot: Union[MX, SX]
+            The value of qdot from "get"
+        tau: Union[MX, SX]
+            The value of tau from "get"
+        with_contact: bool
+            If the dynamics with contact should be used
+
+        Returns
+        -------
+        The derivative of qdot
+        """
+        qdot_var = nlp.states["qdot"] if "qdot" in nlp.states else nlp.controls["qdot"]
+
+        if nlp.external_forces:
+            dxdt = MX(len(qdot_var.mapping.to_first), nlp.ns)
+            for i, f_ext in enumerate(nlp.external_forces):
+                if with_contact:
+                    qddot = nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau, f_ext).to_mx()
+                else:
+                    qddot = nlp.model.ForwardDynamics(q, qdot, tau, f_ext).to_mx()
+                dxdt[:, i] = qdot_var.mapping.to_first.map(qddot)
+            return dxdt
+        else:
+            if with_contact:
+                qddot = nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau).to_mx()
+            else:
+                qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
+            return qdot_var.mapping.to_first.map(qddot)
+
+    @staticmethod
+    def compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: Union[MX, SX]):
+        """
+        Easy accessor to derivative of muscle activations
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        muscle_excitations: Union[MX, SX]
+            The value of muscle_excitations from "get"
+
+        Returns
+        -------
+        The derivative of muscle activations
+        """
+
+        muscles_states = nlp.model.stateSet()
+        for k in range(len(nlp.controls["muscles"])):
+            muscles_states[k].setExcitation(muscle_excitations[k])
+        return nlp.model.activationDot(muscles_states).to_mx()
+
+    @staticmethod
+    def compute_tau_from_muscle(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], muscle_activations: Union[MX, SX]):
+        """
+        Easy accessor to tau computed from muscles
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        q: Union[MX, SX]
+            The value of q from "get"
+        qdot: Union[MX, SX]
+            The value of qdot from "get"
+        muscle_activations: Union[MX, SX]
+            The value of muscle_activations from "get"
+
+        Returns
+        -------
+        The generalized forces computed from the muscles
+        """
+
+        muscles_states = nlp.model.stateSet()
+        for k in range(len(nlp.controls["muscles"])):
+            muscles_states[k].setActivation(muscle_activations[k])
+        return nlp.model.muscularJointTorque(muscles_states, q, qdot).to_mx()
+
+    @staticmethod
+    def contact_forces(nlp: NonLinearProgram, q, qdot, tau):
+        """
+        Easy accessor for the contact forces in contact dynamics
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        q: Union[MX, SX]
+            The value of q from "get"
+        qdot: Union[MX, SX]
+            The value of qdot from "get"
+        tau: Union[MX, SX]
+            The value of tau from "get"
+
+        Returns
+        -------
+        The contact forces
+        """
+
+        cs = nlp.model.getConstraints()
+        if nlp.external_forces:
+            all_cs = MX()
+            for i, f_ext in enumerate(nlp.external_forces):
+                nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau, cs, f_ext).to_mx()
+                raise NotImplementedError("Forward dynamics with contact is not implemented yet")
+                # all_cs[:, i] = vertcat(cs.getForce().to_mx())  # TODO
+            return all_cs
+        else:
+            nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau, cs).to_mx()
+            return cs.getForce().to_mx()

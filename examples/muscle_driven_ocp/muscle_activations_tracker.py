@@ -65,9 +65,11 @@ def generate_data(
 
     nlp = NonLinearProgram()
     nlp.model = biorbd_model
-    nlp.mapping = {
+    nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
         "qdot": BiMapping(range(n_qdot), range(n_qdot)),
+        "tau": BiMapping(range(n_tau), range(n_tau)),
+        "muscles": BiMapping(range(n_mus), range(n_mus)),
     }
 
     # Casadi related stuff
@@ -80,24 +82,22 @@ def generate_data(
 
     nlp.states.cx = MX()
     nlp.controls.cx = MX()
-    nlp.states.append("q", symbolic_q, symbolic_q)
-    nlp.states.append("qdot", symbolic_qdot, symbolic_qdot)
+    nlp.states.append("q", symbolic_q, symbolic_q, nlp.variable_mappings["q"])
+    nlp.states.append("qdot", symbolic_qdot, symbolic_qdot, nlp.variable_mappings["qdot"])
 
     if use_residual_torque:
-        nlp.controls.append("tau", symbolic_tau, symbolic_tau)
-    nlp.controls.append("muscles", symbolic_mus, symbolic_mus)
+        nlp.controls.append("tau", symbolic_tau, symbolic_tau, nlp.variable_mappings["tau"])
+    nlp.controls.append("muscles", symbolic_mus, symbolic_mus, nlp.variable_mappings["muscles"])
 
     if use_residual_torque:
-        nlp.mapping["tau"] = BiMapping(range(n_tau), range(n_tau))
-        dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_and_torque_driven
-    else:
-        dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_driven
+        nlp.variable_mappings["tau"] = BiMapping(range(n_tau), range(n_tau))
+    dyn_func = DynamicsFunctions.muscles_driven
 
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot))
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
 
     dynamics_func = biorbd.to_casadi_func(
-        "ForwardDyn", dyn_func, symbolic_states, symbolic_controls, symbolic_parameters, nlp
+        "ForwardDyn", dyn_func, symbolic_states, symbolic_controls, symbolic_parameters, nlp, False
     )
 
     def dyn_interface(t, x, u):

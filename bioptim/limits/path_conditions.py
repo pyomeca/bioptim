@@ -578,50 +578,50 @@ class QAndQDotBounds(Bounds):
     def __init__(
         self,
         biorbd_model,
-        q_mapping: BiMapping = None,
-        qdot_mapping: BiMapping = None,
+        dof_mappings: dict = None,
     ):
         """
         Parameters
         ----------
         biorbd_model: biorbd.Model
             A reference to the model
-        q_mapping: BiMapping
-            The mapping of q
-        qdot_mapping: BiMapping
-            The mapping of qdot. If qdot_mapping is not provided, q_mapping is used
+        dof_mappings: BiMappingList
+            The mapping of q and qdot (if only q, then qdot = q)
         """
+        if dof_mappings is None:
+            dof_mappings = dict()
+
         if biorbd_model.nbQuat() > 0:
-            if q_mapping and not qdot_mapping:
+            if "q" in dof_mappings and "qdot" not in dof_mappings:
                 raise RuntimeError(
                     "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
                 )
-            elif qdot_mapping and not q_mapping:
+            elif "q" not in dof_mappings and "qdot" in dof_mappings:
                 raise RuntimeError(
                     "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
                 )
 
-        if not q_mapping:
-            q_mapping = BiMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
+        if "q" not in dof_mappings:
+            dof_mappings["q"] = BiMapping(range(biorbd_model.nbQ()), range(biorbd_model.nbQ()))
 
-        if not qdot_mapping:
+        if "qdot" not in dof_mappings:
             if biorbd_model.nbQuat() > 0:
-                qdot_mapping = BiMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
+                dof_mappings["qdot"] = BiMapping(range(biorbd_model.nbQdot()), range(biorbd_model.nbQdot()))
             else:
-                qdot_mapping = q_mapping
+                dof_mappings["qdot"] = dof_mappings["q"]
 
-        q_ranges = []
-        qdot_ranges = []
+        q_ranges = list()
+        qdot_ranges = list()
         for i in range(biorbd_model.nbSegment()):
             segment = biorbd_model.segment(i)
             q_ranges += [q_range for q_range in segment.QRanges()]
             qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
 
-        x_min = [q_ranges[i].min() for i in q_mapping.to_first.map_idx] + [
-            qdot_ranges[i].min() for i in qdot_mapping.to_first.map_idx
+        x_min = [q_ranges[i].min() for i in dof_mappings["q"].to_first.map_idx] + [
+            qdot_ranges[i].min() for i in dof_mappings["qdot"].to_first.map_idx
         ]
-        x_max = [q_ranges[i].max() for i in q_mapping.to_first.map_idx] + [
-            qdot_ranges[i].max() for i in qdot_mapping.to_first.map_idx
+        x_max = [q_ranges[i].max() for i in dof_mappings["q"].to_first.map_idx] + [
+            qdot_ranges[i].max() for i in dof_mappings["qdot"].to_first.map_idx
         ]
 
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)

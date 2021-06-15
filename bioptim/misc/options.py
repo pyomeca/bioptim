@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Any, Callable, Union
 
 
 class OptionGeneric:
@@ -233,6 +233,110 @@ class OptionList:
         """
         # TODO: Print all elements in the console
         raise NotImplementedError("Printing of options is not ready yet")
+
+
+class OptionDict(OptionList):
+    """
+   A list of OptionGeneric if more than one is required
+
+   Attributes
+   options: list
+       A list [phase] of list [OptionGeneric]
+
+   Methods
+   -------
+   __len__(self)
+       Allow for len(option) to be called
+   __iter__(self)
+       Allow for the list to be used in a for loop
+   __next__(self):
+       Get the next phase of the option list
+   __getitem__(self, i) -> list
+       Get the ith phase list of the option list
+   _add(self, option_type: Callable = OptionGeneric, phase: int = 0, list_index: int = -1, **extra_arguments)
+       Add a new option to the list
+   copy(self, option: OptionGeneric)
+       Deepcopy of an option in the list
+   __prepare_option_list(self, phase: int, list_index: int) -> int
+       Reshape the option according to the requested phase and index
+   __bool__(self) -> bool
+       Check if the list is empty
+   print(self)
+       Print the option to the console
+   """
+
+    def __init__(self):
+        super(OptionDict, self).__init__()
+        self.options = [dict()]
+
+    def _add(self, key: str, option_type: Callable = OptionGeneric, phase: int = 0, **extra_arguments: Any):
+        """
+        Add a new option to the list
+
+        Parameters
+        ----------
+        option_type: Callable
+            The type of option
+        phase: int
+            The phase the option is associated with
+        list_index: int
+            The index of the option in the list. If list_index < 0, the option is appended at the end. If the list_index
+            refers to a previously declare, the latter override the former
+        extra_arguments: dict
+            Any extra parameters that did not fall in any category
+        """
+
+        self.__prepare_option_list(phase, key)
+        self.options[phase][key] = option_type(phase=phase, **extra_arguments)
+
+    def copy(self, option: OptionGeneric, key: str):
+        """
+        Deepcopy of an option in the list
+
+        Parameters
+        ----------
+        option: OptionGeneric
+            The option to copy
+        key: str
+            The key to copy
+        """
+
+        self.__prepare_option_list(option.phase, key)
+        self.options[option.phase][key] = option
+
+    def __prepare_option_list(self, phase: int, key: str):
+        """
+        Reshape the option according to the requested phase and index
+
+        Parameters
+        ----------
+        phase: int
+            The phase index to add the option to
+        key: str
+            The key of the option in a specific phase.
+
+        Returns
+        -------
+        The list_index that may have been modify (if -1)
+        """
+
+        for i in range(len(self.options), phase + 1):
+            self.options.append(dict())
+        return
+
+    def __getitem__(self, item: Union[int, str, list, tuple]) -> Union[dict, OptionGeneric]:
+        if isinstance(item, int):
+            return self.options[item]
+
+        phase = 0
+        if len(self) > 1:
+            if isinstance(item, (list, tuple)):
+                phase = item[0]
+                item = item[1]
+            else:
+                raise ValueError("slicing an OptionDict must specify the phase if n_phase > 1")
+
+        return self.options[phase][item]
 
 
 class UniquePerPhaseOptionList(OptionList):

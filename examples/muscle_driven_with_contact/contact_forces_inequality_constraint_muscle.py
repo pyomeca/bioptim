@@ -16,7 +16,7 @@ from bioptim import (
     ObjectiveFcn,
     DynamicsList,
     DynamicsFcn,
-    BiMapping,
+    BiMappingList,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -29,7 +29,8 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
     biorbd_model = biorbd.Model(biorbd_model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
     activation_min, activation_max, activation_init = 0, 1, 0.5
-    tau_mapping = BiMapping([None, None, None, 0], [3])
+    dof_mapping = BiMappingList()
+    dof_mapping.add("tau", [None, None, None, 0], [3])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -73,12 +74,12 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(
-        [tau_min] * len(tau_mapping.to_first) + [activation_min] * biorbd_model.nbMuscleTotal(),
-        [tau_max] * len(tau_mapping.to_first) + [activation_max] * biorbd_model.nbMuscleTotal(),
+        [tau_min] * len(dof_mapping["tau"].to_first) + [activation_min] * biorbd_model.nbMuscleTotal(),
+        [tau_max] * len(dof_mapping["tau"].to_first) + [activation_max] * biorbd_model.nbMuscleTotal(),
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * len(tau_mapping.to_first) + [activation_init] * biorbd_model.nbMuscleTotal())
+    u_init.add([tau_init] * len(dof_mapping["tau"].to_first) + [activation_init] * biorbd_model.nbMuscleTotal())
     # ------------- #
 
     return OptimalControlProgram(
@@ -92,7 +93,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
         u_bounds,
         objective_functions,
         constraints,
-        tau_mapping=tau_mapping,
+        variable_mappings=dof_mapping,
     )
 
 

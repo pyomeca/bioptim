@@ -2,6 +2,8 @@ from typing import Union
 
 from casadi import MX, SX, vertcat
 
+from ..misc.mapping import BiMapping
+
 
 class OptimizationVariable:
     """
@@ -17,7 +19,7 @@ class OptimizationVariable:
         The indices to find this variable
     """
 
-    def __init__(self, name: str, mx: MX, index: range):
+    def __init__(self, name: str, mx: MX, index: range, mapping: BiMapping):
         """
         Parameters
         ----------
@@ -31,6 +33,7 @@ class OptimizationVariable:
         self.name: str = name
         self.mx: MX = mx
         self.index: range = index
+        self.mapping: BiMapping = mapping
 
     def __len__(self):
         """
@@ -55,7 +58,7 @@ class OptimizationVariableList:
 
     def __init__(self):
         self.elements: list = list()
-        self.cx: Union[MX, SX, list] = []
+        self.cx: Union[MX, SX, list] = list()
 
     def __getitem__(self, item: Union[int, str]):
         """
@@ -81,7 +84,7 @@ class OptimizationVariableList:
         else:
             raise ValueError("OptimizationVariableList can be sliced with int or str only")
 
-    def append(self, name: str, cx: Union[MX, SX], mx: MX):
+    def append(self, name: str, cx: Union[MX, SX], mx: MX, bimapping: BiMapping):
         """
         Add a new variable to the list
 
@@ -97,7 +100,7 @@ class OptimizationVariableList:
 
         index = range(self.cx.shape[0], self.cx.shape[0] + cx.shape[0])
         self.cx = vertcat(self.cx, cx)
-        self.elements.append(OptimizationVariable(name, mx, index))
+        self.elements.append(OptimizationVariable(name, mx, index, bimapping))
 
     @property
     def mx(self):

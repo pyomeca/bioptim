@@ -104,7 +104,6 @@ class NonLinearProgram:
         self.external_forces = list()
         self.g = list()
         self.J = list()
-        self.mapping = {}
         self.model = None
         self.n_threads = None
         self.ns = None
@@ -113,9 +112,11 @@ class NonLinearProgram:
         self.par_dynamics = None
         self.phase_idx = None
         self.plot = dict()
+        self.plot_mapping = dict()
         self.t0 = None
         self.tf = None
         self.t_initial_guess = None
+        self.variable_mappings = dict()
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
         self.U = None
