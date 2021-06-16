@@ -46,7 +46,7 @@ class CustomPlot:
         update_function: Callable,
         plot_type: PlotType = PlotType.PLOT,
         axes_idx: Union[Mapping, tuple, list] = None,
-        legend: Union[tuple, list] = (),
+        legend: Union[tuple, list] = None,
         combine_to: str = None,
         color: str = None,
         linestyle: str = None,
@@ -87,7 +87,7 @@ class CustomPlot:
             self.phase_mappings = axes_idx
         else:
             raise RuntimeError("phase_mapping must be a list or a Mapping")
-        self.legend = legend
+        self.legend = legend if legend is not None else ()
         self.combine_to = combine_to
         self.color = color
         self.linestyle = linestyle

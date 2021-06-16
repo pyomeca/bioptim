@@ -38,7 +38,7 @@ class Parameter(OptionGeneric):
         size: int = None,
         penalty_list: Union[Objective, ObjectiveList] = None,
         cx: Union[Callable, MX, SX] = None,
-        scaling: np.ndarray = np.array([1.0]),
+        scaling: np.ndarray = None,
         **params: Any,
     ):
         """
@@ -65,7 +65,9 @@ class Parameter(OptionGeneric):
         super(Parameter, self).__init__(type=Parameters, **params)
         self.function = function
 
-        if not isinstance(scaling, np.ndarray):
+        if scaling is None:
+            scaling = np.array([1.0])
+        elif not isinstance(scaling, np.ndarray):
             raise ValueError("Parameter scaling must be a numpy array")
 
         if not (scaling > 0).all():

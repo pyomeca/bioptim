@@ -122,19 +122,19 @@ class OptimalControlProgram:
         dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
-        x_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
-        u_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
-        x_bounds: Union[Bounds, BoundsList] = BoundsList(),
-        u_bounds: Union[Bounds, BoundsList] = BoundsList(),
-        objective_functions: Union[Objective, ObjectiveList] = ObjectiveList(),
-        constraints: Union[Constraint, ConstraintList] = ConstraintList(),
-        parameters: Union[Parameter, ParameterList] = ParameterList(),
-        external_forces: Union[list, tuple] = (),
-        ode_solver: Union[list, OdeSolverBase, OdeSolver] = OdeSolver.RK4(),
+        x_init: Union[InitialGuess, InitialGuessList] = None,
+        u_init: Union[InitialGuess, InitialGuessList] = None,
+        x_bounds: Union[Bounds, BoundsList] = None,
+        u_bounds: Union[Bounds, BoundsList] = None,
+        objective_functions: Union[Objective, ObjectiveList] = None,
+        constraints: Union[Constraint, ConstraintList] = None,
+        parameters: Union[Parameter, ParameterList] = None,
+        external_forces: Union[list, tuple] = None,
+        ode_solver: Union[list, OdeSolverBase, OdeSolver] = None,
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
-        variable_mappings: BiMappingList = BiMappingList(),
+        variable_mappings: BiMappingList = None,
         plot_mappings: Mapping = None,
-        phase_transitions: PhaseTransitionList = PhaseTransitionList(),
+        phase_transitions: PhaseTransitionList = None,
         n_threads: int = 1,
         use_sx: bool = False,
     ):
@@ -242,55 +242,73 @@ class OptimalControlProgram:
             else:
                 raise RuntimeError("phase_time should be a number or a list of number")
 
-        if isinstance(x_bounds, Bounds):
+        if x_bounds is None:
+            x_bounds = BoundsList()
+        elif isinstance(x_bounds, Bounds):
             x_bounds_tp = BoundsList()
             x_bounds_tp.add(bounds=x_bounds)
             x_bounds = x_bounds_tp
         elif not isinstance(x_bounds, BoundsList):
             raise RuntimeError("x_bounds should be built from a Bounds or a BoundsList")
 
-        if isinstance(u_bounds, Bounds):
+        if u_bounds is None:
+            u_bounds = BoundsList()
+        elif isinstance(u_bounds, Bounds):
             u_bounds_tp = BoundsList()
             u_bounds_tp.add(bounds=u_bounds)
             u_bounds = u_bounds_tp
         elif not isinstance(u_bounds, BoundsList):
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
-        if isinstance(x_init, InitialGuess):
+        if x_init is None:
+            x_init = InitialGuessList()
+        elif isinstance(x_init, InitialGuess):
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init)
             x_init = x_init_tp
         elif not isinstance(x_init, InitialGuessList):
             raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
-        if isinstance(u_init, InitialGuess):
+        if u_init is None:
+            u_init = InitialGuessList()
+        elif isinstance(u_init, InitialGuess):
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init)
             u_init = u_init_tp
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
-        if isinstance(objective_functions, Objective):
+        if objective_functions is None:
+            objective_functions = ObjectiveList()
+        elif isinstance(objective_functions, Objective):
             objective_functions_tp = ObjectiveList()
             objective_functions_tp.add(objective_functions)
             objective_functions = objective_functions_tp
         elif not isinstance(objective_functions, ObjectiveList):
             raise RuntimeError("objective_functions should be built from an Objective or ObjectiveList")
 
-        if isinstance(constraints, Constraint):
+        if constraints is None:
+            constraints = ConstraintList()
+        elif isinstance(constraints, Constraint):
             constraints_tp = ConstraintList()
             constraints_tp.add(constraints)
             constraints = constraints_tp
         elif not isinstance(constraints, ConstraintList):
             raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
 
-        if not isinstance(parameters, ParameterList):
+        if parameters is None:
+            parameters = ParameterList()
+        elif not isinstance(parameters, ParameterList):
             raise RuntimeError("parameters should be built from an ParameterList")
 
-        if not isinstance(phase_transitions, PhaseTransitionList):
+        if phase_transitions is None:
+            phase_transitions = PhaseTransitionList()
+        elif not isinstance(phase_transitions, PhaseTransitionList):
             raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
 
-        if not isinstance(ode_solver, OdeSolverBase):
+        if ode_solver is None:
+            ode_solver = OdeSolver.RK4()
+        elif not isinstance(ode_solver, OdeSolverBase):
             raise RuntimeError("ode_solver should be built an instance of OdeSolver")
 
         if not isinstance(use_sx, bool):
@@ -324,7 +342,7 @@ class OptimalControlProgram:
         self.solver = None
 
         # External forces
-        if external_forces != ():
+        if external_forces is not None:
             external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)
             NLP.add(self, "external_forces", external_forces, False)
 
@@ -350,6 +368,8 @@ class OptimalControlProgram:
         NLP.add(self, "control_type", control_type, True)
 
         # Prepare the variable mappings
+        if variable_mappings is None:
+            variable_mappings = BiMappingList()
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
         # Prepare the dynamics

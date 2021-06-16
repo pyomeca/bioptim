@@ -323,8 +323,8 @@ class Bounds(OptionGeneric):
 
     def __init__(
         self,
-        min_bound: Union[Callable, PathCondition, np.ndarray, list, tuple, float] = (),
-        max_bound: Union[Callable, PathCondition, np.ndarray, list, tuple, float] = (),
+        min_bound: Union[Callable, PathCondition, np.ndarray, list, tuple, float] = None,
+        max_bound: Union[Callable, PathCondition, np.ndarray, list, tuple, float] = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         slice_list: Union[slice, list, tuple] = None,
         **parameters: Any,
@@ -343,6 +343,9 @@ class Bounds(OptionGeneric):
         parameters: dict
             Any extra parameters that is associated to the path condition
         """
+        min_bound = min_bound if min_bound is not None else ()
+        max_bound = max_bound if max_bound is not None else ()
+
         if isinstance(min_bound, PathCondition):
             self.min = min_bound
         else:
@@ -651,7 +654,7 @@ class InitialGuess(OptionGeneric):
 
     def __init__(
         self,
-        initial_guess: Union[np.ndarray, list, tuple, float, Callable] = (),
+        initial_guess: Union[np.ndarray, list, tuple, float, Callable] = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         **parameters: Any,
     ):
@@ -665,6 +668,7 @@ class InitialGuess(OptionGeneric):
         parameters: dict
             Any extra parameters that is associated to the path condition
         """
+        initial_guess = initial_guess if initial_guess is not None else ()
 
         if isinstance(initial_guess, PathCondition):
             self.init = initial_guess
