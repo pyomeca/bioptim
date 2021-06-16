@@ -299,61 +299,24 @@ class PlotOcp:
             variable_sizes.append({})
             if nlp.plot:
                 for key in nlp.plot:
-                    if len(key) > 9:
-                        if key[:9] == "OBJECTIVE":
-                            if isinstance(nlp.plot[key], tuple):
-                                nlp.plot[key] = nlp.plot[key][0]
-                            if nlp.plot[key].phase_mappings is None:
-                                size = (nlp.plot[key].function(nlp.plot[key].parameters['casadi_func_eval'], nlp, nlp.plot[key].parameters['i_objectives']).shape[0])
-                                nlp.plot[key].phase_mappings = Mapping(range(size))
-                            else:
-                                size = len(nlp.plot[key].phase_mappings.map_idx)
-                            if key not in variable_sizes[i]:
-                                variable_sizes[i][key] = size
-                            else:
-                                variable_sizes[i][key] = max(variable_sizes[i][key], size)
-                        else:
-                            if isinstance(nlp.plot[key], tuple):
-                                nlp.plot[key] = nlp.plot[key][0]
-                            if nlp.plot[key].phase_mappings is None:
-                                size = (
-                                    nlp.plot[key]
-                                    .function(
-                                        np.zeros((nlp.nx, 1)),
-                                        np.zeros((nlp.nu, 1)),
-                                        np.zeros((nlp.np, 1)),
-                                        **nlp.plot[key].parameters,
-                                    )
-                                    .shape[0]
-                                )
-                                nlp.plot[key].phase_mappings = Mapping(range(size))
-                            else:
-                                size = len(nlp.plot[key].phase_mappings.map_idx)
-                            if key not in variable_sizes[i]:
-                                variable_sizes[i][key] = size
-                            else:
-                                variable_sizes[i][key] = max(variable_sizes[i][key], size)
+                    if isinstance(nlp.plot[key], tuple):
+                        nlp.plot[key] = nlp.plot[key][0]
+                    if nlp.plot[key].phase_mappings is None:
+                        size = (
+                            nlp.plot[key].function(  # TODO put this in a PenaltyNode
+                                np.zeros((nlp.nx, 1)),
+                                np.zeros((nlp.nu, 1)),
+                                np.zeros((nlp.np, 1)),
+                                **nlp.plot[key].parameters,
+                            ).shape[0]
+                        )
+                        nlp.plot[key].phase_mappings = Mapping(range(size))
                     else:
-                        if isinstance(nlp.plot[key], tuple):
-                            nlp.plot[key] = nlp.plot[key][0]
-                        if nlp.plot[key].phase_mappings is None:
-                            size = (
-                                nlp.plot[key]
-                                    .function(
-                                    np.zeros((nlp.nx, 1)),
-                                    np.zeros((nlp.nu, 1)),
-                                    np.zeros((nlp.np, 1)),
-                                    **nlp.plot[key].parameters,
-                                )
-                                    .shape[0]
-                            )
-                            nlp.plot[key].phase_mappings = Mapping(range(size))
-                        else:
-                            size = len(nlp.plot[key].phase_mappings.map_idx)
-                        if key not in variable_sizes[i]:
-                            variable_sizes[i][key] = size
-                        else:
-                            variable_sizes[i][key] = max(variable_sizes[i][key], size)
+                        size = len(nlp.plot[key].phase_mappings.map_idx)
+                    if key not in variable_sizes[i]:
+                        variable_sizes[i][key] = size
+                    else:
+                        variable_sizes[i][key] = max(variable_sizes[i][key], size)
         self.variable_sizes = variable_sizes
         if not variable_sizes:
             # No graph was setup in problem_type
@@ -591,8 +554,8 @@ class PlotOcp:
                         y_tp = np.empty((self.variable_sizes[i][key], len(t)))
                         y_tp.fill(np.nan)
                         y_tp[:, :] = self.plot_func[key][i].function(
-                            state[:, step_size * idx : step_size * (idx + 1)],
-                            control[:, idx : idx + u_mod],
+                            state[:, step_size * idx: step_size * (idx + 1)],
+                            control[:, idx: idx + u_mod],
                             data_params_in_dyn,
                             **self.plot_func[key][i].parameters,
                         )
@@ -607,6 +570,7 @@ class PlotOcp:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
                     try:
+                        # TODO Put this in a PenaltyNode in function(pn) (warning, t is the first value when integrating)
                         y[:, :] = self.plot_func[key][i].function(
                             state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
                         )
