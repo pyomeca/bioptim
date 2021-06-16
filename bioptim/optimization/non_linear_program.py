@@ -93,30 +93,30 @@ class NonLinearProgram:
     """
 
     def __init__(self):
-        self.casadi_func = dict()
+        self.casadi_func = {}
         self.contact_forces_func = None
         self.control_type = ControlType.NONE
         self.cx = None
         self.dt = None
-        self.dynamics = list()
+        self.dynamics = []
         self.dynamics_func = None
         self.dynamics_type = None
-        self.external_forces = list()
-        self.g = list()
-        self.J = list()
+        self.external_forces = []
+        self.g = []
+        self.J = []
         self.model = None
         self.n_threads = None
         self.ns = None
         self.ode_solver = OdeSolver.RK4()
-        self.parameters = list()
+        self.parameters = []
         self.par_dynamics = None
         self.phase_idx = None
-        self.plot = dict()
-        self.plot_mapping = dict()
+        self.plot = {}
+        self.plot_mapping = {}
         self.t0 = None
         self.tf = None
         self.t_initial_guess = None
-        self.variable_mappings = dict()
+        self.variable_mappings = {}
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
         self.U = None
@@ -136,13 +136,13 @@ class NonLinearProgram:
             The type of casadi variable
 
         """
-        self.plot = dict()
+        self.plot = {}
         self.cx = cx
         self.states.cx = self.cx()
         self.controls.cx = self.cx()
-        self.J = list()
-        self.g = list()
-        self.casadi_func = dict()
+        self.J = []
+        self.g = []
+        self.casadi_func = {}
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):

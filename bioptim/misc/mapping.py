@@ -103,7 +103,10 @@ class BiMapping(OptionGeneric):
     """
 
     def __init__(
-        self, to_second: Union[Mapping, int, list, tuple, range], to_first: Union[Mapping, int, list, tuple, range], **params
+        self,
+        to_second: Union[Mapping, int, list, tuple, range],
+        to_first: Union[Mapping, int, list, tuple, range],
+        **params
     ):
         """
         Parameters
@@ -134,13 +137,13 @@ class BiMappingList(OptionDict):
         super(BiMappingList, self).__init__()
 
     def add(
-            self,
-            name: str,
-            to_second: Union[Mapping, int, list, tuple, range] = None,
-            to_first: Union[Mapping, int, list, tuple, range] = None,
-            bimapping: BiMapping = None,
-            phase: int = 0,
-        ):
+        self,
+        name: str,
+        to_second: Union[Mapping, int, list, tuple, range] = None,
+        to_first: Union[Mapping, int, list, tuple, range] = None,
+        bimapping: BiMapping = None,
+        phase: int = 0,
+    ):
 
         """
         Add a new BiMapping to the list
@@ -167,7 +170,9 @@ class BiMappingList(OptionDict):
         else:
             if to_second is None or to_first is None:
                 raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
-            super(BiMappingList, self)._add(key=name, phase=phase, option_type=BiMapping, to_second=to_second, to_first=to_first)
+            super(BiMappingList, self)._add(
+                key=name, phase=phase, option_type=BiMapping, to_second=to_second, to_first=to_first
+            )
 
     def __getitem__(self, item) -> Union[dict, BiMapping]:
         return super(BiMappingList, self).__getitem__(item)

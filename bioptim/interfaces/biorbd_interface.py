@@ -36,7 +36,7 @@ class BiorbdInterface:
                 "f_ext should be a list of (6 x n_external_forces x n_shooting) or (6 x n_shooting) matrix"
             )
 
-        sv_over_all_phases = list()
+        sv_over_all_phases = []
         for f_ext in all_f_ext:
             f_ext = np.array(f_ext)
             if len(f_ext.shape) < 2 or len(f_ext.shape) > 3:
@@ -51,7 +51,7 @@ class BiorbdInterface:
                     "f_ext should be a list of (6 x n_external_forces x n_shooting) or (6 x n_shooting) matrix"
                 )
 
-            sv_over_phase = list()
+            sv_over_phase = []
             for node in range(f_ext.shape[2]):
                 sv = biorbd.VecBiorbdSpatialVector()
                 for idx in range(f_ext.shape[1]):

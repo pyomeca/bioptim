@@ -93,7 +93,7 @@ def generate_data(
 
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
-        DynamicsFunctions.muscles_driven, # DynamicsFunctions.forward_dynamics_muscle_excitations_and_torque_driven,
+        DynamicsFunctions.muscles_driven,
         symbolic_states,
         symbolic_controls,
         symbolic_parameters,

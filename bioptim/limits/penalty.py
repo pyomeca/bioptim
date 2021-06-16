@@ -227,7 +227,7 @@ class PenaltyFunctionAbstract:
                 # Prepare the plot
                 prev_idx = 0  # offset due to previous states
                 for s in nlp.states:
-                    state_idx = list()
+                    state_idx = []
                     for i, idx in enumerate(states_idx):
                         if prev_idx <= idx < len(nlp.states[s]) + prev_idx:
                             state_idx.append([idx - prev_idx, i])
@@ -1037,7 +1037,7 @@ class PenaltyFunctionAbstract:
         penalty_type = penalty.type.get_type()
         penalty_type._parameter_modifier(penalty)
         if penalty.node == Node.TRANSITION:
-            pn = list()
+            pn = []
             penalty.node = Node.END
             t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
             u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
@@ -1280,9 +1280,9 @@ class PenaltyFunctionAbstract:
 
         if not isinstance(penalty.node, (list, tuple)):
             penalty.node = (penalty.node,)
-        t = list()
-        x = list()
-        u = list()
+        t = []
+        x = []
+        u = []
         for node in penalty.node:
             if isinstance(node, int):
                 if node < 0 or node > nlp.ns:

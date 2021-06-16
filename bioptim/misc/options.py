@@ -94,7 +94,7 @@ class OptionList:
     def __init__(self):
         """ """
         self.options = [
-            list(),
+            [],
         ]
 
     def __len__(self):
@@ -106,7 +106,7 @@ class OptionList:
         The len of the list of OptionGeneric
         """
 
-        if self.options == [list()]:  # Special case which would return 1 even though it is empty
+        if self.options == [[]]:  # Special case which would return 1 even though it is empty
             return 0
         else:
             return len(self.options)
@@ -204,7 +204,7 @@ class OptionList:
         """
 
         for i in range(len(self.options), phase + 1):
-            self.options.append(list())
+            self.options.append([])
         if list_index == -1:
             for i, opt in enumerate(self.options[phase]):
                 if not opt:
@@ -237,37 +237,37 @@ class OptionList:
 
 class OptionDict(OptionList):
     """
-   A list of OptionGeneric if more than one is required
+    A list of OptionGeneric if more than one is required
 
-   Attributes
-   options: list
-       A list [phase] of list [OptionGeneric]
+    Attributes
+    options: list
+        A list [phase] of list [OptionGeneric]
 
-   Methods
-   -------
-   __len__(self)
-       Allow for len(option) to be called
-   __iter__(self)
-       Allow for the list to be used in a for loop
-   __next__(self):
-       Get the next phase of the option list
-   __getitem__(self, i) -> list
-       Get the ith phase list of the option list
-   _add(self, option_type: Callable = OptionGeneric, phase: int = 0, list_index: int = -1, **extra_arguments)
-       Add a new option to the list
-   copy(self, option: OptionGeneric)
-       Deepcopy of an option in the list
-   __prepare_option_list(self, phase: int, list_index: int) -> int
-       Reshape the option according to the requested phase and index
-   __bool__(self) -> bool
-       Check if the list is empty
-   print(self)
-       Print the option to the console
-   """
+    Methods
+    -------
+    __len__(self)
+        Allow for len(option) to be called
+    __iter__(self)
+        Allow for the list to be used in a for loop
+    __next__(self):
+        Get the next phase of the option list
+    __getitem__(self, i) -> list
+        Get the ith phase list of the option list
+    _add(self, option_type: Callable = OptionGeneric, phase: int = 0, list_index: int = -1, **extra_arguments)
+        Add a new option to the list
+    copy(self, option: OptionGeneric)
+        Deepcopy of an option in the list
+    __prepare_option_list(self, phase: int, list_index: int) -> int
+        Reshape the option according to the requested phase and index
+    __bool__(self) -> bool
+        Check if the list is empty
+    print(self)
+        Print the option to the console
+    """
 
     def __init__(self):
         super(OptionDict, self).__init__()
-        self.options = [dict()]
+        self.options = [{}]
 
     def _add(self, key: str, option_type: Callable = OptionGeneric, phase: int = 0, **extra_arguments: Any):
         """
@@ -321,7 +321,7 @@ class OptionDict(OptionList):
         """
 
         for i in range(len(self.options), phase + 1):
-            self.options.append(dict())
+            self.options.append({})
         return
 
     def __getitem__(self, item: Union[int, str, list, tuple]) -> Union[dict, OptionGeneric]:

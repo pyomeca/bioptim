@@ -77,25 +77,25 @@ class OptimizationVector:
 
         self.parameters_in_list = ParameterList()
 
-        self.x: Union[MX, SX, list] = list()
-        self.x_bounds = list()
-        self.x_init = list()
+        self.x: Union[MX, SX, list] = []
+        self.x_bounds = []
+        self.x_init = []
         self.n_all_x = 0
-        self.n_phase_x = list()
+        self.n_phase_x = []
 
-        self.u: Union[MX, SX, list] = list()
-        self.u_bounds = list()
-        self.u_init = list()
+        self.u: Union[MX, SX, list] = []
+        self.u_bounds = []
+        self.u_init = []
         self.n_all_u = 0
-        self.n_phase_u = list()
+        self.n_phase_u = []
 
         for _ in range(self.ocp.n_phases):
-            self.x.append(list())
+            self.x.append([])
             self.x_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
             self.x_init.append(InitialGuess(interpolation=InterpolationType.CONSTANT))
             self.n_phase_x.append(0)
 
-            self.u.append(list())
+            self.u.append([])
             self.u_bounds.append(Bounds(interpolation=InterpolationType.CONSTANT))
             self.u_init.append(InitialGuess(interpolation=InterpolationType.CONSTANT))
             self.n_phase_u.append(0)
@@ -190,7 +190,7 @@ class OptimizationVector:
         """
 
         offset = self.n_all_x + self.n_all_u
-        data_time_optimized = list()
+        data_time_optimized = []
         if "time" in self.parameters_in_list.names:
             for param in self.parameters_in_list:
                 if param.name == "time":
@@ -224,12 +224,12 @@ class OptimizationVector:
         ocp = self.ocp
         v_array = np.array(data).squeeze()
 
-        data_states = list()
-        data_controls = list()
+        data_states = []
+        data_controls = []
         for _ in range(self.ocp.n_phases):
-            data_states.append(dict())
-            data_controls.append(dict())
-        data_parameters = dict()
+            data_states.append({})
+            data_controls.append({})
+        data_parameters = {}
 
         offset = 0
         p_idx = 0
@@ -275,8 +275,8 @@ class OptimizationVector:
         """
 
         for nlp in self.ocp.nlp:
-            x = list()
-            u = list()
+            x = []
+            u = []
             if nlp.control_type != ControlType.CONSTANT and nlp.control_type != ControlType.LINEAR_CONTINUOUS:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 

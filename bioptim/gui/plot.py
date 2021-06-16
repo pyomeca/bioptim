@@ -210,26 +210,26 @@ class PlotOcp:
             "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
         }
 
-        self.ydata = list()
+        self.ydata = []
         self.ns = 0
 
-        self.t = list()
-        self.t_integrated = list()
+        self.t = []
+        self.t_integrated = []
         if isinstance(self.ocp.original_phase_time, (int, float)):
             self.tf = [self.ocp.original_phase_time]
         else:
             self.tf = list(self.ocp.original_phase_time)
-        self.t_idx_to_optimize = list()
+        self.t_idx_to_optimize = []
         for i, nlp in enumerate(self.ocp.nlp):
             if isinstance(nlp.tf, self.ocp.cx):
                 self.t_idx_to_optimize.append(i)
         self.__update_time_vector()
 
-        self.axes = dict()
-        self.plots = list()
-        self.plots_vertical_lines = list()
-        self.plots_bounds = list()
-        self.all_figures = list()
+        self.axes = {}
+        self.plots = []
+        self.plots_vertical_lines = []
+        self.plots_bounds = []
+        self.all_figures = []
 
         self.automatically_organize = automatically_organize
         self.n_vertical_windows: Union[int, None] = None
@@ -239,8 +239,8 @@ class PlotOcp:
         self.width_step: Union[int, None] = None
         self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
 
-        self.plot_func = dict()
-        self.variable_sizes = list()
+        self.plot_func = {}
+        self.variable_sizes = []
         self.adapt_graph_size_to_bounds = adapt_graph_size_to_bounds
         self.__create_plots()
         self.shooting_type = shooting_type
@@ -269,13 +269,13 @@ class PlotOcp:
 
         """
 
-        self.t = list()
-        self.t_integrated = list()
+        self.t = []
+        self.t_integrated = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
             n_int_steps = nlp.ode_solver.steps
             dt_ns = self.tf[phase_idx] / nlp.ns
-            time_phase_integrated = list()
+            time_phase_integrated = []
             last_t_int = copy(last_t)
             for _ in range(nlp.ns):
                 time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
@@ -292,9 +292,9 @@ class PlotOcp:
         Setup the plots
         """
 
-        variable_sizes = list()
+        variable_sizes = []
         for i, nlp in enumerate(self.ocp.nlp):
-            variable_sizes.append(dict())
+            variable_sizes.append({})
             if nlp.plot:
                 for key in nlp.plot:
                     if isinstance(nlp.plot[key], tuple):
@@ -322,7 +322,7 @@ class PlotOcp:
             # No graph was setup in problem_type
             return
 
-        self.plot_func = dict()
+        self.plot_func = {}
         for i, nlp in enumerate(self.ocp.nlp):
             for variable in self.variable_sizes[i]:
                 if nlp.plot[variable].combine_to:
@@ -377,7 +377,7 @@ class PlotOcp:
                         )
                     elif plot_type == PlotType.INTEGRATED:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
-                        plots_integrated = list()
+                        plots_integrated = []
                         n_int_steps = nlp.ode_solver.steps
                         for cmp in range(nlp.ns):
                             plots_integrated.append(
@@ -508,7 +508,7 @@ class PlotOcp:
             The data to parse
         """
 
-        self.ydata = list()
+        self.ydata = []
 
         sol = Solution(self.ocp, v)
         data_states = sol.integrate(continuous=False, shooting_type=self.shooting_type, keepdims=False).states
@@ -548,7 +548,7 @@ class PlotOcp:
 
             for key in self.variable_sizes[i]:
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
-                    all_y = list()
+                    all_y = []
                     for idx, t in enumerate(self.t_integrated[i]):
                         y_tp = np.empty((self.variable_sizes[i][key], len(t)))
                         y_tp.fill(np.nan)
@@ -561,7 +561,7 @@ class PlotOcp:
                         all_y.append(y_tp)
 
                     for idx in range(len(self.plot_func[key][i].phase_mappings.map_idx)):
-                        y_tp = list()
+                        y_tp = []
                         for y in all_y:
                             y_tp.append(y[idx, :])
                         self.__append_to_ydata([y_tp])
@@ -762,7 +762,7 @@ class OnlineCallback(Callback):
             Option to AnimateCallback method of CasADi
         """
         if opts is None:
-            opts = dict()
+            opts = {}
 
         Callback.__init__(self)
         self.ocp = ocp

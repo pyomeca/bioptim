@@ -235,7 +235,7 @@ class ParameterList(UniquePerProblemOptionList):
         A list of all names
         """
 
-        n = list()
+        n = []
         for p in self:
             n.append(p.name)
         return n

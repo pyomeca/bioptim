@@ -321,8 +321,8 @@ class OptimalControlProgram:
             self.cx = MX
 
         # Declare optimization variables
-        self.J = list()
-        self.g = list()
+        self.J = []
+        self.g = []
         self.v = OptimizationVector(self)
 
         # nlp is the core of a phase
@@ -346,16 +346,16 @@ class OptimalControlProgram:
             external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)
             NLP.add(self, "external_forces", external_forces, False)
 
-        plot_mappings = plot_mappings if plot_mappings is not None else dict()
-        reshaped_plot_mappings = list()
+        plot_mappings = plot_mappings if plot_mappings is not None else {}
+        reshaped_plot_mappings = []
         for i in range(self.n_phases):
-            reshaped_plot_mappings.append(dict())
+            reshaped_plot_mappings.append({})
             for key in plot_mappings:
                 reshaped_plot_mappings[i][key] = plot_mappings[key][i]
         NLP.add(self, "plot_mapping", reshaped_plot_mappings, False, name="plot_mapping")
 
         # Prepare the parameters to optimize
-        self.phase_transitions = list()
+        self.phase_transitions = []
         if len(parameters) > 0:
             self.update_parameters(parameters)
 
@@ -667,7 +667,7 @@ class OptimalControlProgram:
             from ..interfaces.acados_interface import AcadosInterface
 
             if solver_options is None:
-                solver_options = dict()
+                solver_options = {}
             self.solver = AcadosInterface(self, **solver_options)
 
         elif self.solver_type == Solver.NONE:
@@ -850,7 +850,7 @@ class OptimalControlProgram:
         if isinstance(phase_time, (int, float)):
             phase_time = [phase_time]
         phase_time = list(phase_time)
-        initial_time_guess, time_min, time_max = list(), list(), list()
+        initial_time_guess, time_min, time_max = [], [], []
         has_penalty = define_parameters_phase_time(
             self, objective_functions, initial_time_guess, phase_time, time_min, time_max
         )

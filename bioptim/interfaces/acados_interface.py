@@ -117,8 +117,8 @@ class AcadosInterface(SolverInterface):
 
         self.lagrange_costs = SX()
         self.mayer_costs = SX()
-        self.y_ref = list()
-        self.y_ref_end = list()
+        self.y_ref = []
+        self.y_ref_end = []
         self.nparams = 0
         self.params_initial_guess = None
         self.params_bounds = None
@@ -128,7 +128,7 @@ class AcadosInterface(SolverInterface):
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
         self.status = None
-        self.out = dict()
+        self.out = {}
 
         self.all_constr = None
         self.end_constr = SX()
@@ -136,9 +136,9 @@ class AcadosInterface(SolverInterface):
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
         self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
-        self.Vu = np.array(list(), dtype=np.int64).reshape(0, ocp.nlp[0].controls.shape)
-        self.Vx = np.array(list(), dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
-        self.Vxe = np.array(list(), dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
+        self.Vu = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].controls.shape)
+        self.Vx = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
+        self.Vxe = np.array([], dtype=np.int64).reshape(0, ocp.nlp[0].states.shape)
 
     def __acados_export_model(self, ocp):
         """
@@ -181,7 +181,7 @@ class AcadosInterface(SolverInterface):
         self.acados_model.u = u
         self.acados_model.con_h_expr = np.zeros((0, 0))
         self.acados_model.con_h_expr_e = np.zeros((0, 0))
-        self.acados_model.p = list()
+        self.acados_model.p = []
         now = datetime.now()  # current date and time
         self.acados_model.name = f"model_{now.strftime('%Y_%m_%d_%H%M%S%f')[:-4]}"
 
@@ -292,8 +292,8 @@ class AcadosInterface(SolverInterface):
         # TODO replace all these np.concatenate by proper bound and initial_guess classes
         self.x_bound_max = np.ndarray((self.acados_ocp.dims.nx, 3))
         self.x_bound_min = np.ndarray((self.acados_ocp.dims.nx, 3))
-        param_bounds_max = list()
-        param_bounds_min = list()
+        param_bounds_max = []
+        param_bounds_min = []
 
         if self.nparams:
             param_bounds_max = self.params_bounds.max[:, 0]
@@ -363,8 +363,8 @@ class AcadosInterface(SolverInterface):
         if ocp.n_phases != 1:
             raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")
         # costs handling in self.acados_ocp
-        self.y_ref = list()
-        self.y_ref_end = list()
+        self.y_ref = []
+        self.y_ref_end = []
         self.lagrange_costs = SX()
         self.mayer_costs = SX()
         self.W = np.zeros((0, 0))
@@ -381,9 +381,9 @@ class AcadosInterface(SolverInterface):
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             n_states = ocp.nlp[0].states.shape
             n_controls = ocp.nlp[0].controls.shape
-            self.Vu = np.array(list(), dtype=np.int64).reshape(0, n_controls)
-            self.Vx = np.array(list(), dtype=np.int64).reshape(0, n_states)
-            self.Vxe = np.array(list(), dtype=np.int64).reshape(0, n_states)
+            self.Vu = np.array([], dtype=np.int64).reshape(0, n_controls)
+            self.Vx = np.array([], dtype=np.int64).reshape(0, n_states)
+            self.Vxe = np.array([], dtype=np.int64).reshape(0, n_states)
             for i in range(ocp.n_phases):
                 for j, J in enumerate(ocp.nlp[i].J):
                     if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
@@ -396,7 +396,7 @@ class AcadosInterface(SolverInterface):
                             self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * n_controls))
                             if J[0]["target"] is not None:
                                 y_tp = np.zeros((n_controls, 1))
-                                y_ref_tp = list()
+                                y_ref_tp = []
                                 for J_tp in J:
                                     y_tp[index] = J_tp["target"].T.reshape((-1, 1))
                                     y_ref_tp.append(y_tp)
@@ -411,7 +411,7 @@ class AcadosInterface(SolverInterface):
                             self.Vu = np.vstack((self.Vu, np.zeros((n_states, n_controls))))
                             self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * n_states))
                             if J[0]["target"] is not None:
-                                y_ref_tp = list()
+                                y_ref_tp = []
                                 for J_tp in J:
                                     y_tp = np.zeros((n_states, 1))
                                     y_tp[index] = J_tp["target"].T.reshape((-1, 1))
@@ -563,7 +563,7 @@ class AcadosInterface(SolverInterface):
         Update the ACADOS solver to new values
         """
 
-        param_init = list()
+        param_init = []
         for n in range(self.acados_ocp.dims.N):
             if self.y_ref:  # Target
                 self.ocp_solver.cost_set(n, "yref", np.vstack([data[n] for data in self.y_ref])[:, 0])
@@ -627,7 +627,7 @@ class AcadosInterface(SolverInterface):
             The dictionary of options
         """
         if options is None:
-            options = dict()
+            options = {}
 
         if "acados_dir" in options:
             del options["acados_dir"]
@@ -687,7 +687,7 @@ class AcadosInterface(SolverInterface):
         acados_u = np.array([self.ocp_solver.get(i, "u") for i in range(ns)]).T
 
         out = {
-            "x": list(),
+            "x": [],
             "u": acados_u,
             "time_tot": self.ocp_solver.get_stats("time_tot")[0],
             "iter": self.ocp_solver.get_stats("sqp_iter")[0],
@@ -699,7 +699,7 @@ class AcadosInterface(SolverInterface):
         out["x"] = vertcat(out["x"], acados_p[:, 0])
 
         self.out["sol"] = out
-        out = list()
+        out = []
         for key in self.out.keys():
             out.append(self.out[key])
         return out[0] if len(out) == 1 else out

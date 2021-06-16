@@ -72,7 +72,9 @@ class ConfigureProblem:
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.torque_driven, with_contact=with_contact)
+            ConfigureProblem.configure_dynamics_function(
+                ocp, nlp, DynamicsFunctions.torque_driven, with_contact=with_contact
+            )
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
@@ -100,7 +102,9 @@ class ConfigureProblem:
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.torque_derivative_driven, with_contact=with_contact)
+            ConfigureProblem.configure_dynamics_function(
+                ocp, nlp, DynamicsFunctions.torque_derivative_driven, with_contact=with_contact
+            )
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
@@ -129,13 +133,17 @@ class ConfigureProblem:
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.torque_activations_driven, with_contact=with_contact)
+            ConfigureProblem.configure_dynamics_function(
+                ocp, nlp, DynamicsFunctions.torque_activations_driven, with_contact=with_contact
+            )
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
     @staticmethod
-    def muscle_driven(ocp, nlp, with_excitations: bool = False, with_residual_torque: bool = False, with_contact: bool = False):
+    def muscle_driven(
+        ocp, nlp, with_excitations: bool = False, with_residual_torque: bool = False, with_contact: bool = False
+    ):
         """
         Configure the dynamics for a muscle driven program.
         If with_excitations is set to True, then the muscle muscle activations are computed from the muscle dynamics.
@@ -166,7 +174,9 @@ class ConfigureProblem:
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
-            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.muscles_driven, with_contact=with_contact)
+            ConfigureProblem.configure_dynamics_function(
+                ocp, nlp, DynamicsFunctions.muscles_driven, with_contact=with_contact
+            )
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_muscle_driven)
@@ -229,7 +239,7 @@ class ConfigureProblem:
             ["contact_forces"],
         ).expand()
 
-        all_contact_names = list()
+        all_contact_names = []
         for elt in ocp.nlp:
             all_contact_names.extend(
                 [name.to_string() for name in elt.model.contactNames() if name.to_string() not in all_contact_names]
@@ -246,7 +256,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_new_variable(name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_plot: bool = False):
+    def configure_new_variable(
+        name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_plot: bool = False
+    ):
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
         legend = [f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx]
@@ -291,7 +303,7 @@ class ConfigureProblem:
                 plot_type=plot_type,
                 legend=legend,
                 bounds=nlp.x_bounds[nlp.controls[name].index],  # TODO This is empty (this is a bug)
-                combine_to=f"{name}_states" if as_states and combine_plot else None
+                combine_to=f"{name}_states" if as_states and combine_plot else None,
             )
 
     @staticmethod
@@ -399,9 +411,13 @@ class ConfigureProblem:
                     q_map = list(nlp.variable_mappings["q"].to_first.map_idx)
                     target = list(range(nlp.model.nbQ()))
                     if q_map != target or q_map != target:
-                        raise RuntimeError("It is not possible to define a q mapping without a qdot or tau mapping"
-                                           "while the model has quaternions")
-                    nlp.variable_mappings[name_to_adjust] = BiMapping(range(nlp.model.nbGeneralizedTorque()), range(nlp.model.nbGeneralizedTorque()))
+                        raise RuntimeError(
+                            "It is not possible to define a q mapping without a qdot or tau mapping"
+                            "while the model has quaternions"
+                        )
+                    nlp.variable_mappings[name_to_adjust] = BiMapping(
+                        range(nlp.model.nbGeneralizedTorque()), range(nlp.model.nbGeneralizedTorque())
+                    )
             else:
                 nlp.variable_mappings[name_to_adjust] = nlp.variable_mappings["q"]
 
@@ -437,7 +453,7 @@ class Dynamics(OptionGeneric):
         dynamics_type: Union[Callable, DynamicsFcn],
         configure: Callable = None,
         dynamic_function: Callable = None,
-        **params
+        **params,
     ):
         """
         Parameters

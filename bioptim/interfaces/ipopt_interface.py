@@ -55,11 +55,11 @@ class IpoptInterface(SolverInterface):
 
         super().__init__(ocp)
 
-        self.options_common = dict()
-        self.opts = dict()
+        self.options_common = {}
+        self.opts = {}
 
-        self.ipopt_nlp = dict()
-        self.ipopt_limits = dict()
+        self.ipopt_nlp = {}
+        self.ipopt_limits = {}
         self.ocp_solver = None
 
         self.lam_g = None
@@ -91,7 +91,7 @@ class IpoptInterface(SolverInterface):
             if self.opts:
                 return
             else:
-                solver_options = dict()
+                solver_options = {}
 
         options = {
             "ipopt.tol": 1e-6,

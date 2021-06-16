@@ -211,7 +211,7 @@ class PhaseTransitionFunctions:
             qdot_post = func(q, qdot_pre)
             qdot_post = nlp_post.variable_mappings["qdot"].to_first.map(qdot_post)
 
-            val = list()
+            val = []
             for key in nlp_pre.states:
                 if key != "qdot":
                     # Continuity constraint
@@ -284,7 +284,7 @@ class PhaseTransitionFunctions:
             PhaseTransition(type=PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=i) for i in range(ocp.n_phases - 1)
         ]
 
-        existing_phases = list()
+        existing_phases = []
         for pt in phase_transitions:
             if pt.phase_pre_idx is None and pt.type == PhaseTransitionFcn.CYCLIC:
                 pt.phase_pre_idx = ocp.n_phases - 1

@@ -230,7 +230,7 @@ class RK(Integrator):
         x[:, 0] = states
 
         n_dof = 0
-        quat_idx = list()
+        quat_idx = []
         quat_number = 0
         for j in range(self.model.nbSegment()):
             if self.model.segment(j).isRotationAQuaternion():
@@ -495,7 +495,7 @@ class IRK(Integrator):
         x_irk_points = [self.CX.sym(f"X_irk_{j}", nx, 1) for j in range(1, self.degree + 1)]
         x = [x0] + x_irk_points
 
-        x_irk_points_eq = list()
+        x_irk_points_eq = []
         for j in range(1, self.degree + 1):
 
             t_norm_init = (j - 1) / self.degree  # normalized time

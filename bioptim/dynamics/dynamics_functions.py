@@ -356,7 +356,9 @@ class DynamicsFunctions:
         return qdot_var.mapping.to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
 
     @staticmethod
-    def forward_dynamics(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], tau: Union[MX, SX], with_contact: bool):
+    def forward_dynamics(
+        nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], tau: Union[MX, SX], with_contact: bool
+    ):
         """
         Easy accessor to derivative of qdot
 
@@ -418,7 +420,9 @@ class DynamicsFunctions:
         return nlp.model.activationDot(muscles_states).to_mx()
 
     @staticmethod
-    def compute_tau_from_muscle(nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], muscle_activations: Union[MX, SX]):
+    def compute_tau_from_muscle(
+        nlp: NonLinearProgram, q: Union[MX, SX], qdot: Union[MX, SX], muscle_activations: Union[MX, SX]
+    ):
         """
         Easy accessor to tau computed from muscles
 

@@ -141,7 +141,7 @@ class GraphAbstract:
             The list of Lagrange objectives
         """
 
-        objective_names = list()
+        objective_names = []
         lagrange_str = ""
         for objective in objective_list:
             if len(objective) > 0:
@@ -172,7 +172,7 @@ class GraphAbstract:
             The list of Mayer objectives
         """
 
-        list_mayer_objectives = list()
+        list_mayer_objectives = []
         for objective in objective_list:
             for obj_index in objective:
                 obj = obj_index["objective"]
@@ -437,7 +437,7 @@ class OcpToGraph(GraphAbstract):
         """
 
         global_objectives = ""
-        global_objectives_names = list()
+        global_objectives_names = []
         for list_objective in objective_list:
             if len(list_objective) > 0 and isinstance(
                 list_objective[0]["objective"].type, ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange
@@ -557,7 +557,7 @@ class OcpToGraph(GraphAbstract):
             The index of the current phase
         """
 
-        list_constraints = list()
+        list_constraints = []
 
         for constraint in self.ocp.nlp[phase_idx].g:
             if not constraint:

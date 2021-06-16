@@ -592,7 +592,7 @@ class QAndQDotBounds(Bounds):
             The mapping of q and qdot (if only q, then qdot = q)
         """
         if dof_mappings is None:
-            dof_mappings = dict()
+            dof_mappings = {}
 
         if biorbd_model.nbQuat() > 0:
             if "q" in dof_mappings and "qdot" not in dof_mappings:
@@ -613,8 +613,8 @@ class QAndQDotBounds(Bounds):
             else:
                 dof_mappings["qdot"] = dof_mappings["q"]
 
-        q_ranges = list()
-        qdot_ranges = list()
+        q_ranges = []
+        qdot_ranges = []
         for i in range(biorbd_model.nbSegment()):
             segment = biorbd_model.segment(i)
             q_ranges += [q_range for q_range in segment.QRanges()]

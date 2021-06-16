@@ -119,7 +119,7 @@ class RK(OdeSolverBase):
         ode = {"x": nlp.states.cx, "p": nlp.controls.cx, "ode": nlp.dynamics_func}
 
         if nlp.external_forces:
-            dynamics_out = list()
+            dynamics_out = []
             for idx in range(len(nlp.external_forces)):
                 ode_opt["idx"] = idx
                 dynamics_out.append(nlp.ode_solver.rk_integrator(ode, ode_opt))

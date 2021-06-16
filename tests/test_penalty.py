@@ -58,8 +58,8 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     x_bounds = Bounds(np.zeros((nx, 1)), np.zeros((nx, 1)))
     u_bounds = Bounds(np.zeros((nu, 1)), np.zeros((nu, 1)))
     ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds)
-    ocp.nlp[0].J = [list()]
-    ocp.nlp[0].g = [list()]
+    ocp.nlp[0].J = [[]]
+    ocp.nlp[0].g = [[]]
     return ocp
 
 

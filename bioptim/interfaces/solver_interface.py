@@ -46,7 +46,7 @@ class SolverInterface:
 
         self.ocp = ocp
         self.solver = None
-        self.out = dict()
+        self.out = {}
 
     def configure(self, **options):
         """
@@ -80,7 +80,7 @@ class SolverInterface:
         A solution or a list of solution depending on the number of phases
         """
 
-        out = list()
+        out = []
         for key in self.out.keys():
             out.append(self.out[key])
         return out[0] if len(out) == 1 else out
@@ -147,7 +147,7 @@ class SolverInterface:
                 -------
                 A list of objective values
                 """
-                nodes = list()
+                nodes = []
                 for node in all_nodes:
                     if isinstance(node, int):
                         if node < 0 or node > nlp.ns:
@@ -175,7 +175,7 @@ class SolverInterface:
                 return nodes
 
             sol = sol["x"]
-            out = list()
+            out = []
             for nlp in ocp.nlp:
                 nJ = len(nlp.J)
                 out.append(np.ndarray((nJ, nlp.ns)))

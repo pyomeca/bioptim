@@ -57,8 +57,8 @@ class OptimizationVariableList:
     """
 
     def __init__(self):
-        self.elements: list = list()
-        self.cx: Union[MX, SX, list] = list()
+        self.elements: list = []
+        self.cx: Union[MX, SX, list] = []
 
     def __getitem__(self, item: Union[int, str]):
         """
