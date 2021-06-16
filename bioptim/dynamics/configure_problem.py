@@ -78,21 +78,6 @@ class ConfigureProblem:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
     @staticmethod
-    def torque_driven_with_contact(ocp, nlp):
-        """
-        Configure the dynamics for a torque driven with contact program (states are q and qdot, controls are tau)
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-
-        ConfigureProblem.torque_driven(ocp, nlp, True)
-
-    @staticmethod
     def torque_derivative_driven(ocp, nlp, with_contact=False):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -119,21 +104,6 @@ class ConfigureProblem:
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
-
-    @staticmethod
-    def torque_derivative_driven_with_contact(ocp, nlp):
-        """
-        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-
-        ConfigureProblem.torque_derivative_driven(ocp, nlp, True)
 
     @staticmethod
     def torque_activations_driven(ocp, nlp, with_contact=False):
@@ -165,27 +135,13 @@ class ConfigureProblem:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
     @staticmethod
-    def torque_activations_driven_with_contact(ocp, nlp):
+    def muscle_driven(ocp, nlp, with_excitations: bool = False, with_residual_torque: bool = False, with_contact: bool = False):
         """
-        Configure the dynamics for a torque with contact driven program (states are q and qdot,
-        controls are tau activations). The tau activations are bounded between -1 and 1 and actual tau is computed
-        from torque-position-velocity relationship
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-
-        ConfigureProblem.torque_activations_driven(ocp, nlp, True)
-
-    @staticmethod
-    def muscle_driven(ocp, nlp, with_excitations: bool, with_residual_torque: bool, with_contact: bool):
-        """
-        Configure the dynamics for a muscle driven program. This should not be called directly, be should be called
-        via one of the muscle below
+        Configure the dynamics for a muscle driven program.
+        If with_excitations is set to True, then the muscle muscle activations are computed from the muscle dynamics.
+        The tau from muscle is computed using the muscle activations.
+        If with_residual_torque is set to True, then tau are used as supplementary force in the
+        case muscles are too weak.
 
         Parameters
         ----------
@@ -214,146 +170,6 @@ class ConfigureProblem:
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_muscle_driven)
-
-    @staticmethod
-    def muscle_activations_driven(ocp, nlp):
-        """
-        Configure the dynamics for a muscle driven program (states are q and qdot, controls are the muscle activations).
-        The muscle activations are bounded between 0 and 1 and actual tau is computed from muscle force resulting from
-        the activations
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-
-        ConfigureProblem.muscle_driven(ocp, nlp, False, False, False)
-
-    @staticmethod
-    def muscle_activations_and_torque_driven(ocp, nlp):
-        """
-        Configure the dynamics for a muscle and torque driven program (states are q and qdot, controls are tau and the
-        muscle activations). The tau are used as supplementary force in the case muscles are too weak. The muscle
-        activations are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the
-        activations and added to the tau control
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-        ConfigureProblem.muscle_driven(ocp, nlp, False, True, False)
-
-    @staticmethod
-    def muscle_activations_with_contact(ocp, nlp):
-        """
-        Configure the dynamics for a muscle and torque driven with contact program (states are q and qdot, controls are
-        tau and the muscle activations). The tau are used as supplementary force in the case muscles are too weak. The
-        muscle activations are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the
-        activations and added to the tau control
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-        ConfigureProblem.muscle_driven(ocp, nlp, False, False, True)
-
-    @staticmethod
-    def muscle_activations_and_torque_driven_with_contact(ocp, nlp):
-        """
-        Configure the dynamics for a muscle and torque driven with contact program (states are q and qdot, controls are
-        tau and the muscle activations). The tau are used as supplementary force in the case muscles are too weak. The
-        muscle activations are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the
-        activations and added to the tau control
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-        ConfigureProblem.muscle_driven(ocp, nlp, False, True, True)
-
-    @staticmethod
-    def muscle_excitations_driven(ocp, nlp):
-        """
-        Configure the dynamics for a muscle driven program (states are q, qdot and muscle activations, controls are the
-        muscle excitations (EMG)). The muscle activations are computed from the muscle dynamics. The muscle excitations
-        are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the activations
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-        ConfigureProblem.muscle_driven(ocp, nlp, True, False, False)
-
-    @staticmethod
-    def muscle_excitations_and_torque_driven(ocp, nlp):
-        """
-        Configure the dynamics for a muscle and torque driven program (states are q, qdot and muscle activations,
-        controls are tau and the muscle excitations (EMG)). The tau are used as supplementary force in the case muscles
-        are too weak. The muscle activations are computed from the muscle dynamics. The muscle excitations
-        are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the activations added
-        to the tau control
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-        ConfigureProblem.muscle_driven(ocp, nlp, True, True, False)
-
-    @staticmethod
-    def muscle_excitations_driven_with_contact(ocp, nlp):
-        """
-        Configure the dynamics for a muscle and torque driven with contact program (states are q, qdot and muscle
-        activations, controls are tau and the muscle excitations (EMG)). The tau are used as supplementary force in the
-        case muscles are too weak. The muscle activations are computed from the muscle dynamics. The muscle excitations
-        are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the activations added
-        to the tau control
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-
-        ConfigureProblem.muscle_driven(ocp, nlp, True, False, True)
-
-    @staticmethod
-    def muscle_excitations_and_torque_driven_with_contact(ocp, nlp):
-        """
-        Configure the dynamics for a muscle and torque driven with contact program (states are q, qdot and muscle
-        activations, controls are tau and the muscle excitations (EMG)). The tau are used as supplementary force in the
-        case muscles are too weak. The muscle activations are computed from the muscle dynamics. The muscle excitations
-        are bounded between 0 and 1 and actual tau is computed from muscle force resulting from the activations added
-        to the tau control
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-
-        ConfigureProblem.muscle_driven(ocp, nlp, True, True, True)
 
     @staticmethod
     def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
@@ -430,7 +246,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_new_variable(name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_plot: bool):
+    def configure_new_variable(name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_plot: bool = False):
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
         legend = [f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx]
@@ -494,7 +310,7 @@ class ConfigureProblem:
         """
 
         name_q = [name.to_string() for name in nlp.model.nameDof()]
-        ConfigureProblem.configure_new_variable("q", name_q, nlp, as_states, as_controls, False)
+        ConfigureProblem.configure_new_variable("q", name_q, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_qdot(nlp, as_states: bool, as_controls: bool):
@@ -513,7 +329,7 @@ class ConfigureProblem:
 
         name_qdot = [str(i) for i in range(nlp.model.nbQdot())]
         ConfigureProblem._adjust_mapping_against_q("qdot", ["qdot", "taudot"], nlp)
-        ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls, False)
+        ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_tau(nlp, as_states: bool, as_controls: bool):
@@ -532,7 +348,7 @@ class ConfigureProblem:
 
         name_tau = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
         ConfigureProblem._adjust_mapping_against_q("tau", ["qdot", "taudot"], nlp)
-        ConfigureProblem.configure_new_variable("tau", name_tau, nlp, as_states, as_controls, False)
+        ConfigureProblem.configure_new_variable("tau", name_tau, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_taudot(nlp, as_states: bool, as_controls: bool):
@@ -596,24 +412,9 @@ class DynamicsFcn(Enum):
     """
 
     TORQUE_DRIVEN = (ConfigureProblem.torque_driven,)
-    TORQUE_DRIVEN_WITH_CONTACT = (ConfigureProblem.torque_driven_with_contact,)
-
     TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
-    TORQUE_DERIVATIVE_DRIVEN_WITH_CONTACT = (ConfigureProblem.torque_derivative_driven_with_contact,)
-
     TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
-    TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT = (ConfigureProblem.torque_activations_driven_with_contact,)
-
-    MUSCLE_ACTIVATIONS_DRIVEN = (ConfigureProblem.muscle_activations_driven,)
-    MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN = (ConfigureProblem.muscle_activations_and_torque_driven,)
-    MUSCLE_ACTIVATIONS_DRIVEN_WITH_CONTACT = (ConfigureProblem.muscle_activations_with_contact,)
-    MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = (ConfigureProblem.muscle_activations_and_torque_driven_with_contact,)
-
-    MUSCLE_EXCITATIONS_DRIVEN = (ConfigureProblem.muscle_excitations_driven,)
-    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN = (ConfigureProblem.muscle_excitations_and_torque_driven,)
-    MUSCLE_EXCITATIONS_DRIVEN_WITH_CONTACT = (ConfigureProblem.muscle_excitations_driven_with_contact,)
-    MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT = (ConfigureProblem.muscle_excitations_and_torque_driven_with_contact,)
-
+    MUSCLE_DRIVEN = (ConfigureProblem.muscle_driven,)
     CUSTOM = (ConfigureProblem.custom,)
 
 

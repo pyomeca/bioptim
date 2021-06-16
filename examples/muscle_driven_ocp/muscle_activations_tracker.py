@@ -186,10 +186,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    if use_residual_torque:
-        dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
-    else:
-        dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_DRIVEN)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=use_residual_torque)
 
     # Path constraint
     x_bounds = BoundsList()
