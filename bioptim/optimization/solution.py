@@ -32,7 +32,7 @@ class Solution:
         If the phases were merged
     vector: np.ndarray
         The data in the vector format
-    cost: float
+    _cost: float
         The value of the cost function
     constraints: list
         The values of the constraint
@@ -160,7 +160,7 @@ class Solution:
             All the objectives at each of the node of the phase
         model: biorbd.Model
             A reference to the biorbd Model
-        mapping: dict
+        variable_mappings: dict
             All the BiMapping of the states and controls
         ode_solver: OdeSolverBase
             The number of finite element of the RK
@@ -253,6 +253,7 @@ class Solution:
         self.time_to_optimize = None
         self.real_time_to_optimize = None
         self.iterations = None
+        self.status = None
 
         # Extract the data now for further use
         self._states, self._controls, self.parameters = list(), list(), dict()
@@ -854,6 +855,8 @@ class Solution:
         n_frames: int
             The number of frames to interpolate to. If the value is 0, the data are merged to a one phase if possible.
             If the value is -1, the data is not merge in one phase
+        shooting_type: Shooting
+            The Shooting type to animate
         show_now: bool
             If the bioviz exec() function should be called automatically. This is blocking method
         kwargs: Any

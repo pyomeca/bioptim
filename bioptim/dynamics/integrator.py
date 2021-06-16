@@ -59,6 +59,7 @@ class Integrator:
         ode_opt: dict
             The ode options
         """
+
         self.model = ode_opt["model"]
         self.t_span = ode_opt["t0"], ode_opt["tf"]
         self.idx = ode_opt["idx"]

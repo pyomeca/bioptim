@@ -3,7 +3,6 @@ from typing import Union, Any
 from casadi import MX, SX, vertcat
 
 from ..optimization.non_linear_program import NonLinearProgram
-from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 
 
 class PenaltyNodeList:

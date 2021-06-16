@@ -235,7 +235,8 @@ class GraphAbstract:
 
         return initial_guess_str, min_bound_str, max_bound_str, scaling_str
 
-    def _get_parameter_function_name(self, parameter: Parameter):
+    @staticmethod
+    def _get_parameter_function_name(parameter: Parameter):
         """
         Get parameter function name (whether or not it is a custom function)
 
@@ -620,7 +621,8 @@ class OcpToGraph(GraphAbstract):
             self._draw_mayer_node(g, phase_idx)
             self._draw_constraints_node(g, phase_idx)
 
-    def _draw_lagrange_to_mayer_edge(self, G: Digraph, phase_idx: int):
+    @staticmethod
+    def _draw_lagrange_to_mayer_edge(G: Digraph, phase_idx: int):
         """
         Draw edge between Lagrange node and Mayer node
 
@@ -634,7 +636,8 @@ class OcpToGraph(GraphAbstract):
 
         G.edge(f"lagrange_{phase_idx}", f"mayer_node_{phase_idx}", color="lightgrey")
 
-    def _draw_mayer_to_constraints_edge(self, G: Digraph, phase_idx: int):
+    @staticmethod
+    def _draw_mayer_to_constraints_edge(G: Digraph, phase_idx: int):
         """
         Draw edge between Mayer node and constraints node
 
@@ -669,7 +672,8 @@ class OcpToGraph(GraphAbstract):
         else:
             G.edge(f"param_{phase_idx}0", f"lagrange_{phase_idx}", color="lightgrey")
 
-    def _draw_phase_trans_to_phaseless_edge(self, G: Digraph, phaseless_objectives: str, nb_phase: int):
+    @staticmethod
+    def _draw_phase_trans_to_phaseless_edge(G: Digraph, phaseless_objectives: str, nb_phase: int):
         """
         Draw edge between phaseless objectives and phase transitions
 

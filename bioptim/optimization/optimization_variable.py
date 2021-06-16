@@ -96,6 +96,8 @@ class OptimizationVariableList:
             The SX or MX variable associated with this variable
         mx: MX
             The MX variable associated with this variable
+        bimapping: BiMapping
+            The Mapping of the MX against CX
         """
 
         index = range(self.cx.shape[0], self.cx.shape[0] + cx.shape[0])

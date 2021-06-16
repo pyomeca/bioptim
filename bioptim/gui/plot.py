@@ -219,7 +219,7 @@ class PlotOcp:
             self.tf = [self.ocp.original_phase_time]
         else:
             self.tf = list(self.ocp.original_phase_time)
-        self.t_idx_to_optimize = dict()
+        self.t_idx_to_optimize = list()
         for i, nlp in enumerate(self.ocp.nlp):
             if isinstance(nlp.tf, self.ocp.cx):
                 self.t_idx_to_optimize.append(i)
@@ -232,11 +232,11 @@ class PlotOcp:
         self.all_figures = list()
 
         self.automatically_organize = automatically_organize
-        self.n_vertical_windows = None
-        self.n_horizontal_windows = None
-        self.top_margin = None
-        self.height_step = None
-        self.width_step = None
+        self.n_vertical_windows: Union[int, None] = None
+        self.n_horizontal_windows: Union[int, None] = None
+        self.top_margin: Union[int, None] = None
+        self.height_step: Union[int, None] = None
+        self.width_step: Union[int, None] = None
         self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
 
         self.plot_func = dict()
@@ -343,8 +343,7 @@ class PlotOcp:
 
                 t = self.t[i]
                 if variable not in self.plot_func:
-                    self.plot_func[variable] = [None] * self.ocp.n_phases
-                self.plot_func[variable][i] = nlp.plot[variable]
+                    self.plot_func[variable] = [nlp.plot[variable]] * self.ocp.n_phases
 
                 mapping = self.plot_func[variable][i].phase_mappings.map_idx
                 for ctr, k in enumerate(mapping):

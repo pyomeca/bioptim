@@ -1,7 +1,7 @@
 from typing import Union
 
 import numpy as np
-from casadi import vertcat, DM
+from casadi import vertcat, DM, MX, SX
 
 from .parameters import ParameterList, Parameter
 from ..limits.path_conditions import Bounds, InitialGuess
@@ -77,13 +77,13 @@ class OptimizationVector:
 
         self.parameters_in_list = ParameterList()
 
-        self.x = list()
+        self.x: Union[MX, SX, list] = list()
         self.x_bounds = list()
         self.x_init = list()
         self.n_all_x = 0
         self.n_phase_x = list()
 
-        self.u = list()
+        self.u: Union[MX, SX, list] = list()
         self.u_bounds = list()
         self.u_init = list()
         self.n_all_u = 0
