@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt, lines
 from matplotlib.ticker import StrMethodFormatter
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
+from ..limits.penalty_node import PenaltyNode, PenaltyNodes
 from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting
 from ..misc.mapping import Mapping
@@ -302,14 +303,9 @@ class PlotOcp:
                     if isinstance(nlp.plot[key], tuple):
                         nlp.plot[key] = nlp.plot[key][0]
                     if nlp.plot[key].phase_mappings is None:
-                        size = (
-                            nlp.plot[key].function(  # TODO put this in a PenaltyNode
-                                np.zeros((nlp.nx, 1)),
-                                np.zeros((nlp.nu, 1)),
-                                np.zeros((nlp.np, 1)),
-                                **nlp.plot[key].parameters,
-                            ).shape[0]
-                        )
+                        pns_zero = PenaltyNodes(self.ocp, nlp, [0], np.zeros((nlp.nx, 1)), np.zeros((nlp.nu, 1)), np.zeros((nlp.np, 1)))
+                        size = (nlp.plot[key].function(pns_zero.x, pns_zero.u, pns_zero.p, **nlp.plot[key].parameters)
+                                .shape[0])
                         nlp.plot[key].phase_mappings = Mapping(range(size))
                     else:
                         size = len(nlp.plot[key].phase_mappings.map_idx)
@@ -570,9 +566,8 @@ class PlotOcp:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
                     try:
-                        # TODO Put this in a PenaltyNode in function(pn) (warning, t is the first value when integrating)
-                        y[:, :] = self.plot_func[key][i].function(
-                            state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                        pns = PenaltyNodes(self.ocp, nlp, list(range(0, nlp.ns+1)), state[:, ::step_size], control, data_params_in_dyn)
+                        y[:, :] = self.plot_func[key][i].function(pns.x, pns.u, pns.p, **self.plot_func[key][i].parameters
                         )
                     except ValueError:
                         raise ValueError(
