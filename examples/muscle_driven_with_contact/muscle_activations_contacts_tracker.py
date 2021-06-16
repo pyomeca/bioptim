@@ -121,30 +121,31 @@ def main():
         contact_forces_ref=contact_forces_ref,
     )
 
-    all_f = []
-    all_f_sym = []
-    # for phase, nlp in enumerate(ocp.nlp):
-    #     for index, J in enumerate(nlp.J):
-    phase = 0
-    nlp = ocp.nlp[phase]
-    index = 0
 
-    J = nlp.J[index]
-    j = J[0]
-    f_obj = cas.Function(
-        f"J_{phase}_{index}",
-        [ocp.nlp[phase].X[0], ocp.nlp[phase].U[0], ocp.nlp[phase].p],
-        [j["val"]]
-    ).expand() # quadratique & target
+    for phase, nlp in enumerate(ocp.nlp):
+        for index, J in enumerate(nlp.J):
+            for i_j, j in enumerate(J):
 
-    def plot_obj(t, x, u, p):
-        return f_obj(x, u, p) # - target[t]
+                if i_j == nlp.ns:
+                    U = ocp.nlp[phase].U[i_j - 1]
+                else:
+                    U = ocp.nlp[phase].U[i_j]
 
-    # i_phase = 0
-    # i_objectives = 0
-    # legend = ['OBJECTIVE_' + ocp.nlp[i_phase].J[i_objectives][0]['objective'].name]
-    ocp.add_plot("Objective functions", lambda x, u, p: plot_obj(0, x, u, p), plot_type=PlotType.STEP)
-
+                legend = ['OBJECTIVE_' + ocp.nlp[phase].J[index][i_j]['objective'].name]
+                if type(j['target']) == np.ndarray:
+                    f_obj = cas.Function(
+                        f"J_{phase}_{index}",
+                        [ocp.nlp[phase].X[i_j], U, ocp.nlp[phase].p],
+                        [j["val"] - j['target']]
+                    ).expand()  # quadratique
+                    ocp.add_plot(legend[0], lambda x, u, p: f_obj(x, u, p), plot_type=PlotType.STEP, legend=legend)
+                else:
+                    f_obj = cas.Function(
+                        f"J_{phase}_{index}",
+                        [ocp.nlp[phase].X[i_j], U, ocp.nlp[phase].p],
+                        [j["val"]]
+                    ).expand()  # quadratique
+                    ocp.add_plot(legend[0], lambda x, u, p: f_obj(x, u, p), plot_type=PlotType.STEP, legend=legend)
 
     # Plot Constraints
 
