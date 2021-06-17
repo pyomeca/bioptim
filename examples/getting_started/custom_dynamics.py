@@ -31,7 +31,11 @@ from bioptim import (
 
 
 def custom_dynamic(
-    states: Union[MX, SX], controls: Union[MX, SX], parameters: Union[MX, SX], nlp: NonLinearProgram, my_additional_factor=None
+    states: Union[MX, SX],
+    controls: Union[MX, SX],
+    parameters: Union[MX, SX],
+    nlp: NonLinearProgram,
+    my_additional_factor=None,
 ) -> tuple:
     """
     The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)

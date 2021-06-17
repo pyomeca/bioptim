@@ -450,7 +450,9 @@ def test_custom_dynamics(with_contact):
     nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
-    NonLinearProgram.add(ocp, "dynamics_type", Dynamics(configure, dynamic_function=custom_dynamic, with_contact=with_contact), False)
+    NonLinearProgram.add(
+        ocp, "dynamics_type", Dynamics(configure, dynamic_function=custom_dynamic, with_contact=with_contact), False
+    )
 
     np.random.seed(42)
 
