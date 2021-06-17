@@ -31,7 +31,7 @@ from bioptim import (
 
 
 def custom_dynamic(
-    states: Union[MX, SX], controls: Union[MX, SX], parameters: Union[MX, SX], nlp: NonLinearProgram
+    states: Union[MX, SX], controls: Union[MX, SX], parameters: Union[MX, SX], nlp: NonLinearProgram, my_additional_factor=None
 ) -> tuple:
     """
     The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
@@ -58,13 +58,13 @@ def custom_dynamic(
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
-    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
     ddq = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
     return dq, ddq
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=None):
     """
     Tell the program which variables are states and controls.
     The user is expected to use the ConfigureProblem.configure_xxx functions.
@@ -80,7 +80,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(nlp, as_states=False, as_controls=True)
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, my_additional_factor=my_additional_factor)
 
 
 def prepare_ocp(
@@ -123,7 +123,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     if problem_type_custom:
-        dynamics.add(custom_configure, dynamic_function=custom_dynamic)
+        dynamics.add(custom_configure, dynamic_function=custom_dynamic, my_additional_factor=1)
     else:
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN, dynamic_function=custom_dynamic)
 

@@ -3,6 +3,8 @@ import pytest
 import numpy as np
 from casadi import MX, SX
 import biorbd
+from bioptim.dynamics.configure_problem import ConfigureProblem
+from bioptim.dynamics.dynamics_functions import DynamicsFunctions
 from bioptim.interfaces.biorbd_interface import BiorbdInterface
 from bioptim.misc.enums import ControlType
 from bioptim.optimization.non_linear_program import NonLinearProgram
@@ -414,3 +416,62 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
                     x_out[:, 0],
                     [0.18340451, 0.61185289, 0.78517596, -0.07747687, 2.30892158, -9.64013318],
                 )
+
+
+@pytest.mark.parametrize("with_contact", [False, True])
+def test_custom_dynamics(with_contact):
+    def custom_dynamic(states, controls, parameters, nlp, with_contact=False) -> tuple:
+        DynamicsFunctions.apply_parameters(parameters, nlp)
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+
+        return dq, ddq
+
+    def configure(ocp, nlp, with_contact=None):
+        ConfigureProblem.configure_q(nlp, True, False)
+        ConfigureProblem.configure_qdot(nlp, True, False)
+        ConfigureProblem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, with_contact=with_contact)
+
+        if with_contact:
+            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+
+    # Prepare the program
+    nlp = NonLinearProgram()
+    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/2segments_4dof_2contacts.bioMod")
+    nlp.ns = 5
+    nlp.cx = MX
+
+    nlp.x_bounds = np.zeros((nlp.model.nbQ() * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nbQ(), 1))
+    ocp = OptimalControlProgram(nlp)
+    nlp.control_type = ControlType.CONSTANT
+    NonLinearProgram.add(ocp, "dynamics_type", Dynamics(configure, dynamic_function=custom_dynamic, with_contact=with_contact), False)
+
+    np.random.seed(42)
+
+    # Prepare the dynamics
+    nlp.dynamics_type.type.value[0](ocp, nlp, **nlp.dynamics_type.params)
+
+    # Test the results
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    params = np.random.rand(nlp.parameters.shape, nlp.ns)
+    x_out = np.array(nlp.dynamics_func(states, controls, params))
+
+    if with_contact:
+        contact_out = np.array(nlp.contact_forces_func(states, controls, params))
+        np.testing.assert_almost_equal(
+            x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
+        )
+        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+
+    else:
+        np.testing.assert_almost_equal(
+            x_out[:, 0],
+            [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
+        )

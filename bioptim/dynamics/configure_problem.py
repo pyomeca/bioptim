@@ -36,7 +36,7 @@ class ConfigureProblem:
         nlp.dynamics_type.type.value[0](ocp, nlp, **nlp.dynamics_type.params)
 
     @staticmethod
-    def custom(ocp, nlp):
+    def custom(ocp, nlp, **extra_params):
         """
         Call the user-defined dynamics configuration function
 
@@ -48,7 +48,7 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        nlp.dynamics_type.configure(ocp, nlp)
+        nlp.dynamics_type.configure(ocp, nlp, **extra_params)
 
     @staticmethod
     def torque_driven(ocp, nlp, with_contact=False):
