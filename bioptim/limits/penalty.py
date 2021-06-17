@@ -5,7 +5,7 @@ import inspect
 
 import numpy as np
 import biorbd
-from casadi import vertcat, horzcat, MX, SX
+from casadi import vertcat, horzcat, MX, SX, Function
 
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, Axis, PlotType, ControlType
@@ -23,7 +23,7 @@ class PenaltyOption(OptionGeneric):
         The node within a phase on which the penalty is acting on
     quadratic: bool
         If the penalty is quadratic
-    index: index
+    index: list
         The component index the penalty is acting on
     target: np.array(target)
         A target to track for the penalty
@@ -41,7 +41,7 @@ class PenaltyOption(OptionGeneric):
         get_all_nodes_at_once: bool = False,
         target: np.ndarray = None,
         quadratic: bool = None,
-        index: int = None,
+        index: list = None,
         custom_function: Callable = None,
         **params: Any,
     ):
@@ -77,10 +77,251 @@ class PenaltyOption(OptionGeneric):
             if len(self.target.shape) == 0:
                 self.target = self.target[np.newaxis]
             if len(self.target.shape) == 1:
-                self.target = self.target[:, np.newaxis]
-        self.sliced_target = None  # This one is the sliced node from the target. This is what is actually tracked
+                self.target = self.target[:, np.newaxis]  # This one is the sliced node from the target. This is what is actually tracked
 
         self.custom_function = custom_function
+
+        self.node_idx = []
+        self.dt = 0
+        self.function: Union[Function, None] = None
+        self.weighted_function: Union[Function, None] = None
+
+    def set_penalty(
+            self,
+            penalty: Union[MX, SX],
+            n_rows: int,
+            all_pn: PenaltyNodeList,
+            combine_to: str = "",
+            target_ns: int = -1
+    ):
+        """
+        Prepare the dimension and index of the penalty (including the target)
+
+        Parameters
+        ----------
+        penalty: Union[MX, SX],
+            The actual penalty function
+        n_rows: int
+            The expected row shape
+        target_ns: Union[list, tuple]
+            The expected shape (n_rows, ns) of the data to track
+        all_pn: PenaltyNodeList
+            The penalty node elements
+        combine_to: str
+            The name of the underlying plot to combine the tracking data to
+
+        """
+        self._set_rows_idx(n_rows)
+        if self.target:
+            self._check_target_dimensions(target_ns)
+            self._add_target_to_plot(all_pn, combine_to)
+        self._set_penalty_function(all_pn, penalty)
+
+    def _set_rows_idx(self, n_rows: int):
+        """
+        Checks if the variable index is consistent with the requested variable.
+
+        Parameters
+        ----------
+        n_rows: int
+            The expected row shape
+
+        Returns
+        -------
+        The formatted indices
+        """
+
+        if self.index is None:
+            self.index = range(n_rows)
+        else:
+            if isinstance(self.index, int):
+                self.index = [self.index]
+            if max(self.index) > n_rows:
+                raise RuntimeError(f"{self.name} index cannot be higher than nx ({n_rows})")
+        self.index = np.array(self.index)
+        if not np.issubdtype(self.index.dtype, np.integer):
+            raise RuntimeError(f"{self.name} index must be a list of integer")
+
+    def _check_target_dimensions(self, ns: int):
+        """
+        Checks if the variable index is consistent with the requested variable.
+        If the function returns, all is okay
+
+        Parameters
+        ----------
+        ns: Union[list, tuple]
+            The expected shape (n_rows, ns) of the data to track
+        """
+
+        if len(self.target.shape) == 1:
+            raise RuntimeError(
+                f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
+            )
+        if self.target.shape[1] == 1:
+            self.target = np.repeat(self.target, ns, axis=1)
+
+        if self.target.shape != (len(self.index), ns):
+            raise RuntimeError(f"target {self.target.shape} does not correspond to expected size {ns}")
+
+    def _set_penalty_function(self, all_pn: PenaltyNodeList, fcn: Union[MX, SX]):
+        param_cx = all_pn.nlp.cx(all_pn.nlp.parameters.cx)
+        self.function = biorbd.to_casadi_func(  # Do not use nlp.add_casadi_func because all of them must be registered
+            f"{self.name}", fcn, all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx,
+        )
+
+        n_out = self.function.numel_out()
+        dt_cx = all_pn.nlp.cx.sym("dt", 1, 1)
+
+        weight_cx = all_pn.nlp.cx.sym("weight", n_out, 1)
+        target_cx = all_pn.nlp.cx.sym("target", n_out, 1)
+
+        modified_fcn = self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx) - target_cx
+        modified_fcn = modified_fcn ** 2 if self.quadratic else modified_fcn
+        self.weighted_function = Function(  # Do not use nlp.add_casadi_func because all of them must be registered
+            f"{self.name}",
+            [all_pn.nlp.states.cx, all_pn.nlp.controls.cx, all_pn.nlp.parameters.cx, weight_cx, target_cx, dt_cx],
+            [weight_cx * modified_fcn * dt_cx]
+        ).expand()
+
+    def _add_target_to_plot(self, pn: PenaltyNodeList, combine_to: str):
+        """
+        Interface to the plot so it can be properly added to the proper plot
+
+        Parameters
+        ----------
+        pn: PenaltyNodeList
+            The penalty node elements
+        combine_to: str
+            The name of the underlying plot to combine the tracking data to
+        """
+
+        data = np.c_[self.target, self.target[:, -1]] if self.target.shape[1] == pn.nlp.ns else self.target
+        pn.ocp.add_plot(
+            combine_to,
+            lambda x, u, p: data,
+            color="tab:red",
+            linestyle=".-",
+            plot_type=PlotType.STEP,
+            phase=pn.nlp.phase_idx,
+            axes_idx=Mapping(self.index)
+        )
+
+    def add_or_replace_to_penalty_pool(self, ocp, nlp):
+        """
+        Doing some configuration on the penalty and add it to the list of penalty
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        """
+        if not self.name:
+            if self.type.name == "CUSTOM":
+                self.name = self.custom_function.__name__
+            else:
+                self.name = self.type.name
+
+        penalty_type = self.type.get_type()
+        penalty_type._parameter_modifier(self)
+        if self.node == Node.TRANSITION:
+            all_pn = []
+            self.node = Node.END
+            all_pn.append(self.get_penalty_node_list(ocp, nlp))
+            # u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
+
+            nlp = ocp.nlp[(nlp.phase_idx + 1) % ocp.n_phases]
+            self.node = Node.START
+            all_pn.append(self.get_penalty_node_list(ocp, nlp))
+
+            self.node = Node.TRANSITION
+            self.get_all_nodes_at_once = True
+
+            penalty_type._span_checker(self, all_pn[0])
+            penalty_type._span_checker(self, all_pn[1])
+            penalty_type.clear_penalty(ocp, None, self)
+        else:
+            all_pn = self.get_penalty_node_list(ocp, nlp)
+            penalty_type._span_checker(self, all_pn)
+            penalty_type.clear_penalty(all_pn.ocp, all_pn.nlp, self)
+
+        self.dt = penalty_type.get_dt(all_pn.nlp)
+        self.node_idx = all_pn.t
+        self.type.value[0](self, all_pn, **self.params)
+        penalty_type.get_penalty_pool(all_pn)[self.list_index] = self
+
+    def get_penalty_node_list(self, ocp, nlp) -> PenaltyNodeList:
+        """
+        Get the actual node (time, X and U) specified in the penalty
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+
+        Returns
+        -------
+        The actual node (time, X and U) specified in the penalty
+        """
+
+        if not isinstance(self.node, (list, tuple)):
+            self.node = (self.node,)
+        t = []
+        x = []
+        u = []
+        for node in self.node:
+            if isinstance(node, int):
+                if node < 0 or node > nlp.ns:
+                    raise RuntimeError(f"Invalid node, {node} must be between 0 and {nlp.ns}")
+                t.append(node)
+                x.append(nlp.X[node])
+                if (
+                    nlp.control_type == ControlType.CONSTANT and node != nlp.ns
+                ) or nlp.control_type != ControlType.CONSTANT:
+                    u.append(nlp.U[node])
+
+            elif node == Node.START:
+                t.append(0)
+                x.append(nlp.X[0])
+                u.append(nlp.U[0])
+
+            elif node == Node.MID:
+                if nlp.ns % 2 == 1:
+                    raise (ValueError("Number of shooting points must be even to use MID"))
+                t.append(nlp.ns // 2)
+                x.append(nlp.X[nlp.ns // 2])
+                u.append(nlp.U[nlp.ns // 2])
+
+            elif node == Node.INTERMEDIATES:
+                for i in range(1, nlp.ns - 1):
+                    t.append(i)
+                    x.append(nlp.X[i])
+                    u.append(nlp.U[i])
+
+            elif node == Node.PENULTIMATE:
+                if nlp.ns < 2:
+                    raise (ValueError("Number of shooting points must be greater than 1"))
+                t.append(nlp.ns - 1)
+                x.append(nlp.X[-2])
+                u.append(nlp.U[-1])
+
+            elif node == Node.END:
+                t.append(nlp.ns)
+                x.append(nlp.X[nlp.ns])
+
+            elif node == Node.ALL:
+                t.extend([i for i in range(nlp.ns + 1)])
+                for i in range(nlp.ns):
+                    x.append(nlp.X[i])
+                    u.append(nlp.U[i])
+                x.append(nlp.X[nlp.ns])
+
+            else:
+                raise RuntimeError(" is not a valid node")
+        return PenaltyNodeList(ocp, nlp, t, x, u, nlp.parameters.cx)
 
 
 class PenaltyFunctionAbstract:
@@ -492,23 +733,9 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            n_tau = len(all_pn.nlp.controls["tau"])
-            tau_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_tau, "controls_idx")
-
-            target = None
-            if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (len(tau_idx), len(all_pn.u))
-                )
-                PenaltyFunctionAbstract._add_track_data_to_plot(
-                    all_pn, target, combine_to="tau", axes_idx=Mapping(tau_idx)
-                )
-
-            for i in range(len(all_pn) - 1):
-                pn = all_pn[i]
-                val = pn["tau"][tau_idx, :]
-                penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
+            fcn = all_pn.nlp.controls.cx[all_pn[0].nlp.controls["tau"].index, :]
+            n_rows = len(all_pn.nlp.controls["tau"])
+            penalty.set_penalty(fcn, all_pn=all_pn, n_rows=n_rows, combine_to="tau", target_ns=len(all_pn.u))
 
         @staticmethod
         def minimize_state_derivative(penalty: PenaltyOption, all_pn: PenaltyNodeList):
@@ -1015,55 +1242,6 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("add cannot be called from an abstract class")
 
     @staticmethod
-    def add_or_replace(ocp, nlp, penalty: PenaltyOption):
-        """
-        Doing some configuration on the penalty and add it to the list of penalty
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        penalty: PenaltyOption
-            The actual penalty to declare
-        """
-        if not penalty.name:
-            if penalty.type.name == "CUSTOM":
-                penalty.name = penalty.custom_function.__name__
-            else:
-                penalty.name = penalty.type.name
-
-        penalty_type = penalty.type.get_type()
-        penalty_type._parameter_modifier(penalty)
-        if penalty.node == Node.TRANSITION:
-            pn = []
-            penalty.node = Node.END
-            t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
-            u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
-            pn.append(PenaltyNodeList(ocp, nlp, t, x, u, nlp.parameters.cx))
-
-            nlp = ocp.nlp[(nlp.phase_idx + 1) % ocp.n_phases]
-            penalty.node = Node.START
-            t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
-            pn.append(PenaltyNodeList(ocp, nlp, t, x, u, nlp.parameters.cx))
-
-            penalty.node = Node.TRANSITION
-            penalty.get_all_nodes_at_once = True
-
-            penalty_type._span_checker(penalty, pn[0])
-            penalty_type._span_checker(penalty, pn[1])
-            penalty_type.clear_penalty(ocp, None, penalty)
-        else:
-            t, x, u = PenaltyFunctionAbstract._get_node(nlp, penalty)
-            pn = PenaltyNodeList(ocp, nlp, t, x, u, nlp.parameters.cx)
-
-            penalty_type._span_checker(penalty, pn)
-            penalty_type.clear_penalty(pn.ocp, pn.nlp, penalty)
-
-        penalty.type.value[0](penalty, pn, **penalty.params)
-
-    @staticmethod
     def _parameter_modifier(penalty: PenaltyOption):
         """
         Apply some default parameters
@@ -1130,64 +1308,6 @@ class PenaltyFunctionAbstract:
             if node == Node.END or node == pn.nlp.ns:
                 raise RuntimeError("No control u at last node")
 
-    @staticmethod
-    def _check_and_fill_index(var_idx: Union[list, int], target_size: int, var_name: str = "var"):
-        """
-        Checks if the variable index is consistent with the requested variable.
-
-        Parameters
-        ----------
-        var_idx: Union[list, int]
-            Indices of the variable
-        target_size: int
-            The size of the variable array
-        var_name: str
-            The type of variable, it is use for raise message purpose
-
-        Returns
-        -------
-        The formatted indices
-        """
-
-        if var_idx is None:
-            var_idx = range(target_size)
-        else:
-            if isinstance(var_idx, int):
-                var_idx = [var_idx]
-            if max(var_idx) > target_size:
-                raise RuntimeError(f"{var_name} in cannot be higher than nx ({target_size})")
-        out = np.array(var_idx)
-        if not np.issubdtype(out.dtype, np.integer):
-            raise RuntimeError(f"{var_name} must be a list of integer")
-        return out
-
-    @staticmethod
-    def _check_and_fill_tracking_data_size(data_to_track: np.ndarray, target_size: Union[list, tuple]):
-        """
-        Checks if the variable index is consistent with the requested variable.
-        If the function returns, all is okay
-
-        Parameters
-        ----------
-        data_to_track: np.ndarray
-            The data to track matrix
-        target_size: Union[list, tuple]
-            The expected shape (n, m) of the data to track
-        """
-
-        if data_to_track is not None:
-            if len(data_to_track.shape) == 1:
-                raise RuntimeError(
-                    f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
-                )
-            if data_to_track.shape[1] == 1:
-                data_to_track = np.repeat(data_to_track, target_size[1], axis=1)
-
-            if data_to_track.shape != target_size:
-                raise RuntimeError(f"target {data_to_track.shape} does not correspond to expected size {target_size}")
-        else:
-            raise RuntimeError("target is None and that should not happen, please contact a developer")
-        return data_to_track
 
     @staticmethod
     def _check_idx(name: str, elements: Union[list, tuple, int], max_n_elements: int = inf, min_n_elements: int = 0):
@@ -1260,113 +1380,6 @@ class PenaltyFunctionAbstract:
         """
 
         raise RuntimeError("_get_type cannot be called from an abstract class")
-
-    @staticmethod
-    def _get_node(nlp, penalty: PenaltyOption):
-        """
-        Get the actual node (time, X and U) specified in the penalty
-
-        Parameters
-        ----------
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        penalty: PenaltyOption
-            The actual penalty to declare
-
-        Returns
-        -------
-        The actual node (time, X and U) specified in the penalty
-        """
-
-        if not isinstance(penalty.node, (list, tuple)):
-            penalty.node = (penalty.node,)
-        t = []
-        x = []
-        u = []
-        for node in penalty.node:
-            if isinstance(node, int):
-                if node < 0 or node > nlp.ns:
-                    raise RuntimeError(f"Invalid node, {node} must be between 0 and {nlp.ns}")
-                t.append(node)
-                x.append(nlp.X[node])
-                if (
-                    nlp.control_type == ControlType.CONSTANT and node != nlp.ns
-                ) or nlp.control_type != ControlType.CONSTANT:
-                    u.append(nlp.U[node])
-
-            elif node == Node.START:
-                t.append(0)
-                x.append(nlp.X[0])
-                u.append(nlp.U[0])
-
-            elif node == Node.MID:
-                if nlp.ns % 2 == 1:
-                    raise (ValueError("Number of shooting points must be even to use MID"))
-                t.append(nlp.ns // 2)
-                x.append(nlp.X[nlp.ns // 2])
-                u.append(nlp.U[nlp.ns // 2])
-
-            elif node == Node.INTERMEDIATES:
-                for i in range(1, nlp.ns - 1):
-                    t.append(i)
-                    x.append(nlp.X[i])
-                    u.append(nlp.U[i])
-
-            elif node == Node.PENULTIMATE:
-                if nlp.ns < 2:
-                    raise (ValueError("Number of shooting points must be greater than 1"))
-                t.append(nlp.ns - 1)
-                x.append(nlp.X[-2])
-                u.append(nlp.U[-1])
-
-            elif node == Node.END:
-                t.append(nlp.ns)
-                x.append(nlp.X[nlp.ns])
-
-            elif node == Node.ALL:
-                t.extend([i for i in range(nlp.ns + 1)])
-                for i in range(nlp.ns):
-                    x.append(nlp.X[i])
-                    u.append(nlp.U[i])
-                x.append(nlp.X[nlp.ns])
-
-            else:
-                raise RuntimeError(" is not a valid node")
-        return t, x, u
-
-    @staticmethod
-    def _add_track_data_to_plot(
-        pn: PenaltyNodeList,
-        data: np.ndarray,
-        combine_to: str,
-        axes_idx: Union[Mapping, tuple, list] = None,
-    ):
-        """
-        Interface to the plot so it can be properly added to the proper plot
-
-        Parameters
-        ----------
-        pn: PenaltyNodeList
-            The penalty node elements
-        data: np.ndarray
-            The actual tracking data to plot
-        combine_to: str
-            The name of the underlying plot to combine the tracking data to
-        axes_idx: Union[Mapping, tuple, list]
-            The index of the matplotlib axes
-        """
-
-        if data.shape[1] == pn.nlp.ns:
-            data = np.c_[data, data[:, -1]]
-        pn.ocp.add_plot(
-            combine_to,
-            lambda x, u, p: data,
-            color="tab:red",
-            linestyle=".-",
-            plot_type=PlotType.STEP,
-            phase=pn.nlp.phase_idx,
-            axes_idx=axes_idx,
-        )
 
 
 class PenaltyType(Enum):

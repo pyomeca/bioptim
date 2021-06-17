@@ -195,13 +195,20 @@ class IpoptInterface(SolverInterface):
         """
         # TODO: This should be done in bounds, so it is available for all the code
 
+        param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
         all_J = self.ocp.cx()
         for j_nodes in self.ocp.J:
             for obj in j_nodes:
                 all_J = vertcat(all_J, IpoptInterface.finalize_objective_value(obj))
         for nlp in self.ocp.nlp:
-            for obj_nodes in nlp.J:
-                for obj in obj_nodes:
-                    all_J = vertcat(all_J, IpoptInterface.finalize_objective_value(obj))
+            for penalty in nlp.J:
+                for node in penalty.node_idx:
+                    x = nlp.X[node]
+                    u = nlp.U[node] if node < len(nlp.U) else nlp.U[-1]
+                    weight = penalty.weight
+                    target = [] if penalty.target is None else penalty.target
+                    dt = penalty.dt
+                    p = penalty.weighted_function(x, u, param, weight, target, dt)
+                    all_J = vertcat(all_J, p)
 
         return all_J

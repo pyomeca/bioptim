@@ -1,7 +1,7 @@
 from typing import Callable, Union, Any
 from enum import Enum
 
-from casadi import MX, SX
+from casadi import MX, SX, Function
 
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
@@ -117,8 +117,6 @@ class ObjectiveFunction:
 
         Methods
         -------
-        add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodeList, val: Union[MX, SX], penalty: Objective)
-            Add the objective function to the objective pool
         clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
@@ -140,7 +138,7 @@ class ObjectiveFunction:
             """
 
             @staticmethod
-            def minimize_time(penalty: Objective, pn: PenaltyNodeList):
+            def minimize_time(penalty: Objective, all_pn: PenaltyNodeList):
                 """
                 Minimizes the duration of the phase
 
@@ -148,31 +146,30 @@ class ObjectiveFunction:
                 ----------
                 penalty: Objective,
                     The actual constraint to declare
-                pn: PenaltyNodeList
+                all_pn: PenaltyNodeList
                     The penalty node elements
                 """
 
                 val = 1
-                ObjectiveFunction.LagrangeFunction.add_to_penalty(pn.ocp, pn, val, penalty)
+                raise NotImplementedError()
+                ObjectiveFunction.add_to_penalty(all_pn.ocp, all_pn)
 
         @staticmethod
-        def add_to_penalty(ocp, pn: PenaltyNodeList, val: Union[MX, SX, float, int], penalty: Objective):
+        def get_dt(nlp):
+            return nlp.dt
+
+        @staticmethod
+        def get_penalty_pool(all_pn: PenaltyNodeList):
             """
             Add the objective function to the objective pool
 
             Parameters
             ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            pn: PenaltyNodeList
-                The penalty node elements
-            val: Union[MX, SX, float, int]
-                The actual objective function to add
-            penalty: Objective
-                The actual objective function to declare
+            all_pn: PenaltyNodeList
+                    The penalty node elements
             """
 
-            ObjectiveFunction.add_to_penalty(ocp, pn, val, penalty, dt=pn.nlp.dt)
+            return all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
 
         @staticmethod
         def clear_penalty(ocp, nlp, penalty: Objective):
@@ -272,8 +269,6 @@ class ObjectiveFunction:
         -------
         inter_phase_continuity(ocp: OptimalControlProgram, pt: "PhaseTransition")
             Add phase transition objective between two phases.
-        add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodeList, val: Union[MX, SX], penalty: Objective)
-            Add the objective function to the objective pool
         clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
@@ -314,6 +309,19 @@ class ObjectiveFunction:
                 ObjectiveFunction.MayerFunction.add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
+        def get_penalty_pool(all_pn: PenaltyNodeList):
+            """
+            Add the objective function to the objective pool
+
+            Parameters
+            ----------
+            all_pn: PenaltyNodeList
+                    The penalty node elements
+            """
+
+            return all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
+
+        @staticmethod
         def inter_phase_continuity(ocp, pt):
             """
             Add phase transition objective between two phases.
@@ -335,25 +343,6 @@ class ObjectiveFunction:
             pt.base.clear_penalty(ocp, None, penalty)
             val = pt.type.value[0](ocp, pt)
             pt.base.add_to_penalty(ocp, None, val, penalty)
-
-        @staticmethod
-        def add_to_penalty(ocp, pn: PenaltyNodeList, val: Union[MX, SX, float, int], penalty: Objective):
-            """
-            Add the objective function to the objective pool
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            pn: PenaltyNodeList
-                The penalty node elements
-            val: Union[MX, SX, float, int]
-                The actual objective function to add
-            penalty: Objective
-                The actual objective function to declare
-            """
-
-            ObjectiveFunction.add_to_penalty(ocp, pn, val, penalty, dt=1)
 
         @staticmethod
         def clear_penalty(ocp, nlp, penalty: Objective):
@@ -564,43 +553,7 @@ class ObjectiveFunction:
 
         else:
             raise RuntimeError("ObjectiveFcn function Type must be either a Lagrange or Mayer type")
-        PenaltyFunctionAbstract.add_or_replace(ocp, nlp, objective)
-
-    @staticmethod
-    def add_to_penalty(
-        ocp, pn: Union[PenaltyNodeList, None], val: Union[MX, SX, float, int], penalty: Objective, dt: float = 0
-    ):
-        """
-        Add the objective function to the objective pool
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        pn: PenaltyNodeList
-                The penalty node elements
-        val: Union[MX, SX, float, int]
-            The actual objective function to add
-        penalty: Objective
-            The actual objective function to declare
-        dt: float
-            The time between two nodes for the current phase. If the objective is Mayer, dt should be 1
-        """
-
-        node_index = len(pn.nlp.J[penalty.list_index]) - 1 if pn else None
-
-        J = {
-            "objective": penalty,
-            "node_index": node_index,
-            "val": val,
-            "target": penalty.sliced_target,
-            "dt": dt,
-        }
-
-        if pn is not None and pn.nlp:
-            pn.nlp.J[penalty.list_index].append(J)
-        else:
-            ocp.J[penalty.list_index].append(J)
+        objective.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @staticmethod
     def update_target(ocp_or_nlp, list_index, new_target):

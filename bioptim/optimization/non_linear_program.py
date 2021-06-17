@@ -2,6 +2,7 @@ from typing import Callable, Any, Union
 
 import biorbd
 import casadi
+from casadi import SX, MX
 
 from .optimization_variable import OptimizationVariableList
 from ..dynamics.ode_solver import OdeSolver
@@ -255,7 +256,7 @@ class NonLinearProgram:
             raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
         NonLinearProgram.add(ocp, path_name, var, False)
 
-    def add_casadi_func(self, name: str, function: Callable, *all_param: Any) -> casadi.Function:
+    def add_casadi_func(self, name: str, function: Union[Callable, SX, MX], *all_param: Any) -> casadi.Function:
         """
         Add to the pool of declared casadi function. If the function already exists, it is skipped
 

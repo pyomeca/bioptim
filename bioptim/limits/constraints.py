@@ -425,7 +425,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             "node_index": node_index,
             "val": val,
             "bounds": g_bounds,
-            "target": penalty.sliced_target,
+            "target": penalty.target,
         }
 
         if pn is not None and pn.nlp:
