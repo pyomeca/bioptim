@@ -352,8 +352,8 @@ class DynamicsFunctions:
         The derivative of q
         """
 
-        qdot_var = nlp.states["qdot"] if "qdot" in nlp.states else nlp.controls["qdot"]
-        return qdot_var.mapping.to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
+        q_nlp = nlp.states["q"] if "q" in nlp.states else nlp.controls["q"]
+        return q_nlp.mapping.to_first.map(nlp.model.computeQdot(q, qdot).to_mx())
 
     @staticmethod
     def forward_dynamics(
