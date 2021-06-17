@@ -4,7 +4,7 @@
 
 # Build worker image (VM template)
 image:
-  # - Visual Studio 2019
+  - Visual Studio 2019
   - macos
   - Ubuntu2004
 
@@ -16,28 +16,36 @@ build: off
 
 # scripts that run after cloning repository
 install:
-  - if [[ "$CI_LINUX" == true ]]; then 
+  - bash if [[ $CI_LINUX == true ]]; then 
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
       bash miniconda.sh -b -p $HOME/miniconda;
+      export PATH="$HOME/miniconda/bin:$PATH";
+    elif [[ $CI_WINDOWS == true ]]; then
+      choco install miniconda3 --params="'/AddToPath:1'";
+      export PATH="/c/tools/miniconda3/scripts:/c/tools/miniconda3/:/c/Program Files/Git/miniconda3/bin/:$PATH";
     else
       curl https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -L -o miniconda.sh;
       bash miniconda.sh -b -p $HOME/miniconda;
+      export PATH="$HOME/miniconda/bin:$PATH";
     fi
-  - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda config --set auto_update_conda no
-  - conda update -q conda
+  - if [[ "$CI_WINDOWS" == false ]]; then 
+      conda update -q conda; 
+    fi
   - source activate
   - conda env update -n bioptim -f environment.yml
   - conda activate bioptim
   - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
-  - conda install xorg-libx11 xorg-libxtst -cconda-forge
+  - if [[ "$CI_LINUX" == true ]]; then 
+      conda install xorg-libx11 xorg-libxtst -cconda-forge;
+    fi
   - conda list
   - cd external
   - if [[ "$CI_LINUX" == true ]]; then 
       ./acados_install_linux.sh;
-    else
+    elif [[ "$CI_WINDOWS" == false ]]; then
       ./acados_install_mac.sh;
     fi
   - cd ..
