@@ -110,14 +110,13 @@ class RK(OdeSolverBase):
             "t0": 0,
             "tf": nlp.dt,
             "model": nlp.model,
-            "param": nlp.p,
-            "param_scaling": nlp.p_scaling,
+            "param": nlp.parameters,
             "cx": nlp.cx,
             "idx": 0,
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
         }
-        ode = {"x": nlp.x, "p": nlp.u, "ode": nlp.dynamics_func}
+        ode = {"x": nlp.states.cx, "p": nlp.controls.cx, "ode": nlp.dynamics_func}
 
         if nlp.external_forces:
             dynamics_out = []
@@ -221,13 +220,12 @@ class OdeSolver:
                     "developers and ping EveCharbie"
                 )
 
-            ode = {"x": nlp.x, "p": nlp.u, "ode": nlp.dynamics_func}
+            ode = {"x": nlp.states.cx, "p": nlp.controls.cx, "ode": nlp.dynamics_func}
             ode_opt = {
                 "t0": 0,
                 "tf": nlp.dt,
                 "model": nlp.model,
-                "param": nlp.p,
-                "param_scaling": nlp.p_scaling,
+                "param": nlp.parameters,
                 "cx": nlp.cx,
                 "idx": 0,
                 "control_type": nlp.control_type,

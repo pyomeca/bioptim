@@ -13,7 +13,7 @@ from bioptim import (
     ObjectiveFcn,
     DynamicsList,
     DynamicsFcn,
-    BiMapping,
+    BiMappingList,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -67,7 +67,8 @@ def prepare_ocp(
     else:
         tau_min, tau_max, tau_init = -500, 500, 0
 
-    tau_mapping = BiMapping([None, None, None, 0], [3])
+    dof_mapping = BiMappingList()
+    dof_mapping.add("tau", [None, None, None, 0], [3])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -82,9 +83,9 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     if use_actuators:
-        dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT)
+        dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=True)
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True)
 
     # Constraints
     constraints = ConstraintList()
@@ -118,10 +119,10 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * tau_mapping.to_first.len, [tau_max] * tau_mapping.to_first.len)
+    u_bounds.add([tau_min] * len(dof_mapping["tau"].to_first), [tau_max] * len(dof_mapping["tau"].to_first))
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * tau_mapping.to_first.len)
+    u_init.add([tau_init] * len(dof_mapping["tau"].to_first))
 
     return OptimalControlProgram(
         biorbd_model,
@@ -134,7 +135,7 @@ def prepare_ocp(
         u_bounds,
         objective_functions,
         constraints=constraints,
-        tau_mapping=tau_mapping,
+        variable_mappings=dof_mapping,
         ode_solver=ode_solver,
     )
 

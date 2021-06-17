@@ -15,7 +15,7 @@ def test_mapping():
 def test_bidirectional_mapping():
     mapping = BiMapping([0, 1, 2], [3, 4, 5])
 
-    np.testing.assert_almost_equal(mapping.to_first.len, 3)
+    np.testing.assert_almost_equal(len(mapping.to_first), 3)
     np.testing.assert_almost_equal(mapping.to_first.map_idx, [3, 4, 5])
     np.testing.assert_almost_equal(mapping.to_second.map_idx, [0, 1, 2])
 

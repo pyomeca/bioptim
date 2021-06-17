@@ -15,7 +15,7 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     DynamicsList,
-    Problem,
+    ConfigureProblem,
     DynamicsFcn,
     DynamicsFunctions,
     Objective,
@@ -31,7 +31,11 @@ from bioptim import (
 
 
 def custom_dynamic(
-    states: Union[MX, SX], controls: Union[MX, SX], parameters: Union[MX, SX], nlp: NonLinearProgram
+    states: Union[MX, SX],
+    controls: Union[MX, SX],
+    parameters: Union[MX, SX],
+    nlp: NonLinearProgram,
+    my_additional_factor=1,
 ) -> tuple:
     """
     The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
@@ -46,6 +50,8 @@ def custom_dynamic(
         The parameters acting on the system
     nlp: NonLinearProgram
         A reference to the phase
+    my_additional_factor: int
+        An example of an extra parameter sent by the user
 
     Returns
     -------
@@ -53,17 +59,21 @@ def custom_dynamic(
     """
 
     DynamicsFunctions.apply_parameters(parameters, nlp)
-    q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
+    q = DynamicsFunctions.get(nlp.states["q"], states)
+    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-    qddot = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
+    # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
+    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
+    ddq = nlp.model.ForwardDynamics(q, qdot, tau).to_mx()
 
-    return qdot, qddot
+    return dq, ddq
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1):
     """
     Tell the program which variables are states and controls.
-    The user is expected to use the Problem.configure_xxx functions.
+    The user is expected to use the ConfigureProblem.configure_xxx functions.
 
     Parameters
     ----------
@@ -71,11 +81,14 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
         A reference to the ocp
     nlp: NonLinearProgram
         A reference to the phase
+    my_additional_factor: int
+        An example of an extra parameter sent by the user
     """
 
-    Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
-    Problem.configure_tau(nlp, as_states=False, as_controls=True)
-    Problem.configure_dynamics_function(ocp, nlp, custom_dynamic)
+    ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_tau(nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, my_additional_factor=my_additional_factor)
 
 
 def prepare_ocp(
@@ -118,7 +131,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     if problem_type_custom:
-        dynamics.add(custom_configure, dynamic_function=custom_dynamic)
+        dynamics.add(custom_configure, dynamic_function=custom_dynamic, my_additional_factor=1)
     else:
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN, dynamic_function=custom_dynamic)
 

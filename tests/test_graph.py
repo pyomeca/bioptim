@@ -31,6 +31,7 @@ from bioptim import (
     ParameterList,
 )
 
+from bioptim.gui.graph import OcpToGraph
 from .utils import TestUtils
 
 
@@ -44,12 +45,10 @@ def custom_func_track_markers(pn: PenaltyNode, first_marker: str, second_marker:
     marker_1_idx = biorbd.marker_index(pn.nlp.model, second_marker)
 
     # Store the casadi function. Using add_casadi_func allow to skip if the function already exists
-    markers_func = pn.nlp.add_casadi_func("markers", pn.nlp.model.markers, pn.nlp.q)
+    markers_func = pn.nlp.add_casadi_func("markers", pn.nlp.model.markers, pn.nlp.states["q"].mx)
 
     # Get the marker positions and compute the difference
-    nq = pn.nlp.shape["q"]
-    q = pn.x[:nq]
-    markers = markers_func(q)
+    markers = markers_func(pn["q"])
     return markers[:, marker_0_idx] - markers[:, marker_1_idx]
 
 
@@ -457,7 +456,8 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
     )
     if with_lagrange and with_mayer is not False:
         ocp.nlp[0].J[0][0]["objective"].quadratic = False
-    ocp.print(to_console=True, to_graph=True)
+    ocp.print(to_console=True, to_graph=False)  # False so it does not attack the programmer with lot of graphs!
+    OcpToGraph(ocp)._prepare_print()
 
 
 def test_parameters():
@@ -483,7 +483,8 @@ def test_parameters():
     )
     ocp.nlp[0].parameters.options[0][0].penalty_list.type = None
     ocp.nlp[0].parameters.options[0][0].penalty_list.name = "custom_gravity"
-    ocp.print(to_console=True, to_graph=True)
+    ocp.print(to_console=True, to_graph=False)  # False so it does not attack the programmer with lot of graphs!
+    OcpToGraph(ocp)._prepare_print()
 
 
 @pytest.mark.parametrize("quadratic", [True, False])
@@ -498,4 +499,5 @@ def test_objectives_target(quadratic):
     ocp.nlp[0].J[1][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     ocp.nlp[0].J[2][0]["objective"].quadratic = quadratic
     ocp.nlp[0].J[2][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    ocp.print()
+    ocp.print(to_graph=False)  # False so it does not attack the programmer with lot of graphs!
+    OcpToGraph(ocp)._prepare_print()
