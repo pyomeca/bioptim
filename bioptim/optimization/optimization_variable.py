@@ -139,7 +139,7 @@ class OptimizationVariableList:
         All the names of the elements in the list
         """
 
-        return [elt.name for elt in self]
+        return [elt for elt in self]
 
     @property
     def shape(self):
