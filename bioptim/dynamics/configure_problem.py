@@ -451,27 +451,37 @@ class Dynamics(OptionGeneric):
     def __init__(
         self,
         dynamics_type: Union[Callable, DynamicsFcn],
-        configure: Callable = None,
-        dynamic_function: Callable = None,
-        **params,
+        **params: dict,
     ):
         """
-        Parameters
-        ----------
-        dynamics_type: Union[Callable, DynamicsFcn]
-            The chosen dynamic functions
         configure: Callable
             The configuration function provided by the user that declares the NLP (states and controls),
             usually only necessary when defining custom functions
         dynamic_function: Callable
             The custom dynamic function provided by the user
+
+        Parameters
+        ----------
+        dynamics_type: Union[Callable, DynamicsFcn]
+            The chosen dynamic functions
         params: dict
             Any parameters to pass to the dynamic and configure functions
         """
 
+        configure = None
         if not isinstance(dynamics_type, DynamicsFcn):
-            configure = dynamics_type
+            configure = params["dynamics_type"]
+            del params["dynamics_type"]
             dynamics_type = DynamicsFcn.CUSTOM
+        else:
+            if "configure" in params:
+                configure = params["configure"]
+                del params["configure"]
+
+        dynamic_function = None
+        if "dynamic_function" in params:
+            dynamic_function = params["dynamic_function"]
+            del params["dynamic_function"]
 
         super(Dynamics, self).__init__(type=dynamics_type, **params)
         self.dynamic_function = dynamic_function

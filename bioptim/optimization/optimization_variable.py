@@ -1,5 +1,6 @@
 from typing import Union
 
+import numpy as np
 from casadi import MX, SX, vertcat
 
 from ..misc.mapping import BiMapping
@@ -58,7 +59,7 @@ class OptimizationVariableList:
 
     def __init__(self):
         self.elements: list = []
-        self.cx: Union[MX, SX, list] = []
+        self.cx: Union[MX, SX, np.ndarray] = np.array([])
 
     def __getitem__(self, item: Union[int, str]):
         """

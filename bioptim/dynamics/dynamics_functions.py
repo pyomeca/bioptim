@@ -473,8 +473,7 @@ class DynamicsFunctions:
             all_cs = MX()
             for i, f_ext in enumerate(nlp.external_forces):
                 nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau, cs, f_ext).to_mx()
-                raise NotImplementedError("Forward dynamics with contact is not implemented yet")
-                # all_cs[:, i] = vertcat(cs.getForce().to_mx())  # TODO
+                all_cs = horzcat(all_cs, cs.getForce().to_mx())
             return all_cs
         else:
             nlp.model.ForwardDynamicsConstraintsDirect(q, qdot, tau, cs).to_mx()
