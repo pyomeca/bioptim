@@ -35,7 +35,7 @@ def custom_dynamic(
     controls: Union[MX, SX],
     parameters: Union[MX, SX],
     nlp: NonLinearProgram,
-    my_additional_factor=None,
+    my_additional_factor=1,
 ) -> tuple:
     """
     The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
@@ -50,6 +50,8 @@ def custom_dynamic(
         The parameters acting on the system
     nlp: NonLinearProgram
         A reference to the phase
+    my_additional_factor: int
+        An example of an extra parameter sent by the user
 
     Returns
     -------
@@ -68,7 +70,7 @@ def custom_dynamic(
     return dq, ddq
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=None):
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1):
     """
     Tell the program which variables are states and controls.
     The user is expected to use the ConfigureProblem.configure_xxx functions.
@@ -79,6 +81,8 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_addit
         A reference to the ocp
     nlp: NonLinearProgram
         A reference to the phase
+    my_additional_factor: int
+        An example of an extra parameter sent by the user
     """
 
     ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
