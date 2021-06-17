@@ -205,9 +205,44 @@ class DynamicsFunctions:
         q_nlp, q_var = (nlp.states["q"], states) if "q" in nlp.states else (nlp.controls["q"], controls)
         qdot_nlp, qdot_var = (nlp.states["qdot"], states) if "qdot" in nlp.states else (nlp.controls["qdot"], controls)
         tau_nlp, tau_var = (nlp.states["tau"], states) if "tau" in nlp.states else (nlp.controls["tau"], controls)
+
         q = DynamicsFunctions.get(q_nlp, q_var)
         qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
         tau = DynamicsFunctions.get(tau_nlp, tau_var)
+
+        return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
+
+    @staticmethod
+    def forces_from_torque_activation_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
+        """
+        Contact forces of a forward dynamics driven by joint torques with contact constraints.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        nlp: NonLinearProgram
+            The definition of the system
+
+        Returns
+        ----------
+        MX.sym
+            The contact forces that ensure no acceleration at these contact points
+        """
+
+        DynamicsFunctions.apply_parameters(parameters, nlp)
+
+        q_nlp, q_var = (nlp.states["q"], states) if "q" in nlp.states else (nlp.controls["q"], controls)
+        qdot_nlp, qdot_var = (nlp.states["qdot"], states) if "qdot" in nlp.states else (nlp.controls["qdot"], controls)
+        tau_nlp, tau_var = (nlp.states["tau"], states) if "tau" in nlp.states else (nlp.controls["tau"], controls)
+        q = DynamicsFunctions.get(q_nlp, q_var)
+        qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
+        tau_activations = DynamicsFunctions.get(tau_nlp, tau_var)
+        tau = nlp.model.torque(tau_activations, q, qdot).to_mx()
 
         return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
 

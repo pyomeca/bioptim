@@ -138,7 +138,7 @@ class ConfigureProblem:
             )
 
         if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven)
 
     @staticmethod
     def muscle_driven(
@@ -179,7 +179,8 @@ class ConfigureProblem:
             )
 
         if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_muscle_driven)
+            raise NotImplementedError("Muscles with contact is not implemented yet")
+            # ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_muscle_driven)
 
     @staticmethod
     def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
@@ -451,7 +452,7 @@ class Dynamics(OptionGeneric):
     def __init__(
         self,
         dynamics_type: Union[Callable, DynamicsFcn],
-        **params: dict,
+        **params: Any,
     ):
         """
         configure: Callable
@@ -464,7 +465,7 @@ class Dynamics(OptionGeneric):
         ----------
         dynamics_type: Union[Callable, DynamicsFcn]
             The chosen dynamic functions
-        params: dict
+        params: Any
             Any parameters to pass to the dynamic and configure functions
         """
 
