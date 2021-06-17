@@ -377,7 +377,7 @@ class OcpToGraph(GraphAbstract):
         Draw a cluster including all the information about the phaseless objectives of the problem
     """
 
-    def print(self):
+    def _prepare_print(self):
         """
         Display ocp structure in a graph
         """
@@ -399,9 +399,11 @@ class OcpToGraph(GraphAbstract):
         # Draw phaseless objectives
         self._draw_phaseless_cluster(G)
         self._draw_phase_trans_to_phaseless_edge(G, self._global_objectives_to_str(self.ocp.J)[0], self.ocp.n_phases)
+        return G
 
+    def print(self):
         # Display graph
-        G.view()
+        self._prepare_print().view()
 
     def _constraint_to_str(self, constraint: Constraint):
         """

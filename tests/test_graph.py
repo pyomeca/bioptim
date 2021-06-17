@@ -31,6 +31,7 @@ from bioptim import (
     ParameterList,
 )
 
+from bioptim.gui.graph import OcpToGraph
 from .utils import TestUtils
 
 
@@ -455,7 +456,8 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
     )
     if with_lagrange and with_mayer is not False:
         ocp.nlp[0].J[0][0]["objective"].quadratic = False
-    ocp.print(to_console=True, to_graph=True)
+    ocp.print(to_console=True, to_graph=False)  # False so it does not attack the programmer with lot of graphs!
+    OcpToGraph(ocp)._prepare_print()
 
 
 def test_parameters():
@@ -481,7 +483,8 @@ def test_parameters():
     )
     ocp.nlp[0].parameters.options[0][0].penalty_list.type = None
     ocp.nlp[0].parameters.options[0][0].penalty_list.name = "custom_gravity"
-    ocp.print(to_console=True, to_graph=True)
+    ocp.print(to_console=True, to_graph=False)  # False so it does not attack the programmer with lot of graphs!
+    OcpToGraph(ocp)._prepare_print()
 
 
 @pytest.mark.parametrize("quadratic", [True, False])
@@ -496,4 +499,5 @@ def test_objectives_target(quadratic):
     ocp.nlp[0].J[1][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     ocp.nlp[0].J[2][0]["objective"].quadratic = quadratic
     ocp.nlp[0].J[2][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    ocp.print()
+    ocp.print(to_graph=False)  # False so it does not attack the programmer with lot of graphs!
+    OcpToGraph(ocp)._prepare_print()
