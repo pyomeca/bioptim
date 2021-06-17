@@ -471,8 +471,7 @@ class Dynamics(OptionGeneric):
 
         configure = None
         if not isinstance(dynamics_type, DynamicsFcn):
-            configure = params["dynamics_type"]
-            del params["dynamics_type"]
+            configure = dynamics_type
             dynamics_type = DynamicsFcn.CUSTOM
         else:
             if "configure" in params:
