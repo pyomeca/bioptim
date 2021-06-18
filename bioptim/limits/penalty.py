@@ -1,327 +1,16 @@
-from typing import Callable, Union, Any
+from typing import Union, Any
 from enum import Enum
 from math import inf
 import inspect
 
 import numpy as np
 import biorbd
-from casadi import vertcat, horzcat, MX, SX, Function
+from casadi import vertcat, horzcat, MX, SX
 
+from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
-from ..misc.enums import Node, Axis, PlotType, ControlType
+from ..misc.enums import Node, Axis
 from ..misc.mapping import Mapping
-from ..misc.options import OptionGeneric
-
-
-class PenaltyOption(OptionGeneric):
-    """
-    A placeholder for a penalty
-
-    Attributes
-    ----------
-    node: Node
-        The node within a phase on which the penalty is acting on
-    quadratic: bool
-        If the penalty is quadratic
-    index: list
-        The component index the penalty is acting on
-    target: np.array(target)
-        A target to track for the penalty
-    sliced_target: np.array(target)
-        The sliced version of the target to track, this is the one actually tracked
-    custom_function: Callable
-        A user defined function to call to get the penalty
-    """
-
-    def __init__(
-        self,
-        penalty: Any,
-        phase: int = 0,
-        node: Node = Node.DEFAULT,
-        get_all_nodes_at_once: bool = False,
-        target: np.ndarray = None,
-        quadratic: bool = None,
-        index: list = None,
-        custom_function: Callable = None,
-        **params: Any,
-    ):
-        """
-        Parameters
-        ----------
-        penalty: PenaltyType
-            The actual penalty
-        phase: int
-            The phase the penalty is acting on
-        node: Node
-            The node within a phase on which the penalty is acting on
-        target: np.ndarray
-            A target to track for the penalty
-        quadratic: bool
-            If the penalty is quadratic
-        index: int
-            The component index the penalty is acting on
-        custom_function: Callable
-            A user defined function to call to get the penalty
-        **params: dict
-            Generic parameters for the penalty
-        """
-
-        super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
-        self.node = node
-        self.get_all_nodes_at_once = get_all_nodes_at_once
-        self.quadratic = quadratic
-
-        self.index = index
-        self.target = np.array(target) if np.any(target) else None
-        if self.target is not None:
-            if len(self.target.shape) == 0:
-                self.target = self.target[np.newaxis]
-            if len(self.target.shape) == 1:
-                self.target = self.target[:, np.newaxis]  # This one is the sliced node from the target. This is what is actually tracked
-
-        self.custom_function = custom_function
-
-        self.node_idx = []
-        self.dt = 0
-        self.function: Union[Function, None] = None
-        self.weighted_function: Union[Function, None] = None
-
-    def set_penalty(
-            self,
-            penalty: Union[MX, SX],
-            n_rows: int,
-            all_pn: PenaltyNodeList,
-            combine_to: str = "",
-            target_ns: int = -1
-    ):
-        """
-        Prepare the dimension and index of the penalty (including the target)
-
-        Parameters
-        ----------
-        penalty: Union[MX, SX],
-            The actual penalty function
-        n_rows: int
-            The expected row shape
-        target_ns: Union[list, tuple]
-            The expected shape (n_rows, ns) of the data to track
-        all_pn: PenaltyNodeList
-            The penalty node elements
-        combine_to: str
-            The name of the underlying plot to combine the tracking data to
-
-        """
-        self._set_rows_idx(n_rows)
-        if self.target:
-            self._check_target_dimensions(target_ns)
-            self._add_target_to_plot(all_pn, combine_to)
-        self._set_penalty_function(all_pn, penalty)
-
-    def _set_rows_idx(self, n_rows: int):
-        """
-        Checks if the variable index is consistent with the requested variable.
-
-        Parameters
-        ----------
-        n_rows: int
-            The expected row shape
-
-        Returns
-        -------
-        The formatted indices
-        """
-
-        if self.index is None:
-            self.index = range(n_rows)
-        else:
-            if isinstance(self.index, int):
-                self.index = [self.index]
-            if max(self.index) > n_rows:
-                raise RuntimeError(f"{self.name} index cannot be higher than nx ({n_rows})")
-        self.index = np.array(self.index)
-        if not np.issubdtype(self.index.dtype, np.integer):
-            raise RuntimeError(f"{self.name} index must be a list of integer")
-
-    def _check_target_dimensions(self, ns: int):
-        """
-        Checks if the variable index is consistent with the requested variable.
-        If the function returns, all is okay
-
-        Parameters
-        ----------
-        ns: Union[list, tuple]
-            The expected shape (n_rows, ns) of the data to track
-        """
-
-        if len(self.target.shape) == 1:
-            raise RuntimeError(
-                f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
-            )
-        if self.target.shape[1] == 1:
-            self.target = np.repeat(self.target, ns, axis=1)
-
-        if self.target.shape != (len(self.index), ns):
-            raise RuntimeError(f"target {self.target.shape} does not correspond to expected size {ns}")
-
-    def _set_penalty_function(self, all_pn: PenaltyNodeList, fcn: Union[MX, SX]):
-        param_cx = all_pn.nlp.cx(all_pn.nlp.parameters.cx)
-        self.function = biorbd.to_casadi_func(  # Do not use nlp.add_casadi_func because all of them must be registered
-            f"{self.name}", fcn, all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx,
-        )
-
-        n_out = self.function.numel_out()
-        dt_cx = all_pn.nlp.cx.sym("dt", 1, 1)
-
-        weight_cx = all_pn.nlp.cx.sym("weight", n_out, 1)
-        target_cx = all_pn.nlp.cx.sym("target", n_out, 1)
-
-        modified_fcn = self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx) - target_cx
-        modified_fcn = modified_fcn ** 2 if self.quadratic else modified_fcn
-        self.weighted_function = Function(  # Do not use nlp.add_casadi_func because all of them must be registered
-            f"{self.name}",
-            [all_pn.nlp.states.cx, all_pn.nlp.controls.cx, all_pn.nlp.parameters.cx, weight_cx, target_cx, dt_cx],
-            [weight_cx * modified_fcn * dt_cx]
-        ).expand()
-
-    def _add_target_to_plot(self, pn: PenaltyNodeList, combine_to: str):
-        """
-        Interface to the plot so it can be properly added to the proper plot
-
-        Parameters
-        ----------
-        pn: PenaltyNodeList
-            The penalty node elements
-        combine_to: str
-            The name of the underlying plot to combine the tracking data to
-        """
-
-        data = np.c_[self.target, self.target[:, -1]] if self.target.shape[1] == pn.nlp.ns else self.target
-        pn.ocp.add_plot(
-            combine_to,
-            lambda x, u, p: data,
-            color="tab:red",
-            linestyle=".-",
-            plot_type=PlotType.STEP,
-            phase=pn.nlp.phase_idx,
-            axes_idx=Mapping(self.index)
-        )
-
-    def add_or_replace_to_penalty_pool(self, ocp, nlp):
-        """
-        Doing some configuration on the penalty and add it to the list of penalty
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        """
-        if not self.name:
-            if self.type.name == "CUSTOM":
-                self.name = self.custom_function.__name__
-            else:
-                self.name = self.type.name
-
-        penalty_type = self.type.get_type()
-        penalty_type._parameter_modifier(self)
-        if self.node == Node.TRANSITION:
-            all_pn = []
-            self.node = Node.END
-            all_pn.append(self.get_penalty_node_list(ocp, nlp))
-            # u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
-
-            nlp = ocp.nlp[(nlp.phase_idx + 1) % ocp.n_phases]
-            self.node = Node.START
-            all_pn.append(self.get_penalty_node_list(ocp, nlp))
-
-            self.node = Node.TRANSITION
-            self.get_all_nodes_at_once = True
-
-            penalty_type._span_checker(self, all_pn[0])
-            penalty_type._span_checker(self, all_pn[1])
-            penalty_type.clear_penalty(ocp, None, self)
-        else:
-            all_pn = self.get_penalty_node_list(ocp, nlp)
-            penalty_type._span_checker(self, all_pn)
-            penalty_type.clear_penalty(all_pn.ocp, all_pn.nlp, self)
-
-        self.dt = penalty_type.get_dt(all_pn.nlp)
-        self.node_idx = all_pn.t
-        self.type.value[0](self, all_pn, **self.params)
-        penalty_type.get_penalty_pool(all_pn)[self.list_index] = self
-
-    def get_penalty_node_list(self, ocp, nlp) -> PenaltyNodeList:
-        """
-        Get the actual node (time, X and U) specified in the penalty
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-
-        Returns
-        -------
-        The actual node (time, X and U) specified in the penalty
-        """
-
-        if not isinstance(self.node, (list, tuple)):
-            self.node = (self.node,)
-        t = []
-        x = []
-        u = []
-        for node in self.node:
-            if isinstance(node, int):
-                if node < 0 or node > nlp.ns:
-                    raise RuntimeError(f"Invalid node, {node} must be between 0 and {nlp.ns}")
-                t.append(node)
-                x.append(nlp.X[node])
-                if (
-                    nlp.control_type == ControlType.CONSTANT and node != nlp.ns
-                ) or nlp.control_type != ControlType.CONSTANT:
-                    u.append(nlp.U[node])
-
-            elif node == Node.START:
-                t.append(0)
-                x.append(nlp.X[0])
-                u.append(nlp.U[0])
-
-            elif node == Node.MID:
-                if nlp.ns % 2 == 1:
-                    raise (ValueError("Number of shooting points must be even to use MID"))
-                t.append(nlp.ns // 2)
-                x.append(nlp.X[nlp.ns // 2])
-                u.append(nlp.U[nlp.ns // 2])
-
-            elif node == Node.INTERMEDIATES:
-                for i in range(1, nlp.ns - 1):
-                    t.append(i)
-                    x.append(nlp.X[i])
-                    u.append(nlp.U[i])
-
-            elif node == Node.PENULTIMATE:
-                if nlp.ns < 2:
-                    raise (ValueError("Number of shooting points must be greater than 1"))
-                t.append(nlp.ns - 1)
-                x.append(nlp.X[-2])
-                u.append(nlp.U[-1])
-
-            elif node == Node.END:
-                t.append(nlp.ns)
-                x.append(nlp.X[nlp.ns])
-
-            elif node == Node.ALL:
-                t.extend([i for i in range(nlp.ns + 1)])
-                for i in range(nlp.ns):
-                    x.append(nlp.X[i])
-                    u.append(nlp.U[i])
-                x.append(nlp.X[nlp.ns])
-
-            else:
-                raise RuntimeError(" is not a valid node")
-        return PenaltyNodeList(ocp, nlp, t, x, u, nlp.parameters.cx)
 
 
 class PenaltyFunctionAbstract:
@@ -394,26 +83,6 @@ class PenaltyFunctionAbstract:
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_state_derivative(penalty: PenaltyOption, pn: PenaltyNodeList)
-            Minimize the states velocity by comparing the state at a node and at the next node.
-            By default this function is quadratic, meaning that it minimizes the difference.
-            Indices (default=all_idx) can be specified.
-        minimize_torque_derivative(penalty: PenaltyOption, pn: PenaltyNodeList)
-            Minimize the joint torque velocity by comparing the torque at a node and at the next node.
-            By default this function is quadratic, meaning that it minimizes the difference.
-            Indices (default=all_idx) can be specified.
-        minimize_muscles_control(penalty: PenaltyOption, pn: PenaltyNodeList)
-            Minimize the muscles part of the control variables.
-            By default this function is quadratic, meaning that it minimizes towards the target.
-            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_all_controls(penalty: PenaltyOption, pn: PenaltyNodeList)
-            Minimize the control variables.
-            By default this function is quadratic, meaning that it minimizes towards the target.
-            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_controls_derivatives(penalty: PenaltyOption, pn: PenaltyNodeList)
-            Minimize the control derivatives by comparing the control at a node and at the next node.
-            By default this function is quadratic, meaning that it minimizes towards the target.
-            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
         minimize_predicted_com_height(penalty: PenaltyOption, pn: PenaltyNodeList)
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
             assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]
@@ -443,7 +112,7 @@ class PenaltyFunctionAbstract:
         """
 
         @staticmethod
-        def minimize_states(penalty: PenaltyOption, all_pn: PenaltyNodeList):
+        def minimize_states(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: str = "all", derivative: bool = False):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -455,35 +124,77 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
+            names: str
+                The name of the state to minimize. Default "all"
+            derivative: bool
+                If the minimization is applied on the numerical derivative of the state
             """
 
-            nlp = all_pn.nlp
-            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, nlp.states.shape, "state_idx")
-            target = None
-            if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (len(states_idx), len(all_pn.x))
-                )
+            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, names, "states", derivative)
 
-                # Prepare the plot
-                prev_idx = 0  # offset due to previous states
-                for s in nlp.states:
-                    state_idx = []
-                    for i, idx in enumerate(states_idx):
-                        if prev_idx <= idx < len(nlp.states[s]) + prev_idx:
-                            state_idx.append([idx - prev_idx, i])
-                    state_idx = np.array(state_idx)
-                    if state_idx.shape[0] > 0:
-                        mapping = Mapping(state_idx[:, 0])
-                        PenaltyFunctionAbstract._add_track_data_to_plot(
-                            all_pn, target[state_idx[:, 1], :], combine_to=s, axes_idx=mapping
-                        )
-                    prev_idx += len(nlp.states[s])
+        @staticmethod
+        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: Union[str, list] = "all", derivative: bool = False):
+            """
+            Minimize the joint torque part of the control variables.
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
 
-            for i, pn in enumerate(all_pn):
-                val = pn["states"][states_idx, :]
-                penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            names: Union[str, list]
+                The name of the controls to minimize
+            derivative: bool
+                If the minimization is applied on the numerical derivative of the controls
+            """
+
+            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, names, "controls", derivative)
+
+        @staticmethod
+        def _minimize_optim_var(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: Union[str, list], suffix: str, derivative: bool):
+            """
+            Minimize the joint torque part of the control variables.
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            names: Union[str, list]
+                The name of the controls to minimize
+            suffix: str
+                If the optim_var is 'states' or 'controls'
+            derivative: bool
+                If the minimization is applied on the numerical derivative of the variable
+            """
+
+            if suffix == "states":
+                optim_var = all_pn.nlp.states
+                var = all_pn.x
+            elif suffix == "controls":
+                optim_var = all_pn.nlp.controls
+                var = all_pn.u
+            else:
+                raise ValueError("suffix can only be 'states' or 'controls'")
+            names = optim_var.keys() if names == "all" else names
+
+            if derivative:
+                all_pn.nlp.cx.sym("")  # TODO Derivative
+                fcn = optim_var.mx[optim_var[names].index, :]
+            else:
+                fcn = optim_var.cx[optim_var[names].index, :]
+            n_rows = len(optim_var[names])
+            combined_to = None if isinstance(names, (list, tuple)) else f"{names}_{suffix}"
+            penalty.set_penalty(fcn, all_pn=all_pn, n_rows=n_rows, combine_to=combined_to, target_ns=len(var))
+
+            if combined_to is None:
+                penalty.add_multiple_target_to_plot(names, suffix, all_pn)
 
         @staticmethod
         def minimize_markers(
@@ -719,48 +430,6 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
-        def minimize_torque(penalty: PenaltyOption, all_pn: PenaltyNodeList):
-            """
-            Minimize the joint torque part of the control variables.
-            By default this function is quadratic, meaning that it minimizes towards the target.
-            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-
-            Parameters
-            ----------
-            penalty: PenaltyOption
-                The actual penalty to declare
-            all_pn: PenaltyNodeList
-                The penalty node elements
-            """
-
-            fcn = all_pn.nlp.controls.cx[all_pn[0].nlp.controls["tau"].index, :]
-            n_rows = len(all_pn.nlp.controls["tau"])
-            penalty.set_penalty(fcn, all_pn=all_pn, n_rows=n_rows, combine_to="tau", target_ns=len(all_pn.u))
-
-        @staticmethod
-        def minimize_state_derivative(penalty: PenaltyOption, all_pn: PenaltyNodeList):
-            """
-            Minimize the states velocity by comparing the state at a node and at the next node.
-            By default this function is quadratic, meaning that it minimizes the difference.
-            Indices (default=all_idx) can be specified.
-
-            Parameters
-            ----------
-            penalty: PenaltyOption
-                The actual penalty to declare
-            all_pn: PenaltyNodeList
-                The penalty node elements
-            """
-
-            states_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                penalty.index, all_pn.nlp.states.shape, "states_idx"
-            )
-
-            for i in range(len(all_pn.x) - 1):
-                val = all_pn.x[i + 1][states_idx] - all_pn.x[i][states_idx]
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
-
-        @staticmethod
         def minimize_qddot(penalty: PenaltyOption, all_pn: PenaltyNodeList):
             """
             Minimize the states velocity by comparing the state at a node and at the next node.
@@ -779,137 +448,6 @@ class PenaltyFunctionAbstract:
             qdot_idx = [all_pn.nlp.states["qdot"].index[i] for i in states_idx]
             for i in range(len(all_pn) - 1):
                 val = all_pn.nlp.dynamics_func(all_pn.x[i], all_pn.u[i], all_pn.p)[qdot_idx, :]
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
-
-        @staticmethod
-        def minimize_torque_derivative(penalty: PenaltyOption, all_pn: PenaltyNodeList):
-            """
-            Minimize the joint torque velocity by comparing the torque at a node and at the next node.
-            By default this function is quadratic, meaning that it minimizes the difference.
-            Indices (default=all_idx) can be specified.
-
-            Parameters
-            ----------
-            penalty: PenaltyOption
-                The actual penalty to declare
-            all_pn: PenaltyNodeList
-                The penalty node elements
-            """
-
-            n_tau = len(all_pn.nlp.controls["tau"]) if "tau" in all_pn.nlp.controls else len(all_pn.nlp.states["tau"])
-
-            if "taudot" in all_pn.nlp.controls:
-                n_taudot = len(all_pn.nlp.controls["taudot"])
-
-                controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_taudot, "controls_idx")
-
-                target = None
-                if penalty.target is not None:
-                    target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                        penalty.target, (len(controls_idx), len(all_pn.u))
-                    )
-                    PenaltyFunctionAbstract._add_track_data_to_plot(
-                        all_pn, target, combine_to="taudot", axes_idx=Mapping(controls_idx)
-                    )
-
-                for i in range(len(all_pn) - 1):
-                    pn = all_pn[i]
-                    val = pn["taudot"]
-                    penalty.sliced_target = target[:, i] if target is not None else None
-                    penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
-
-            else:
-                controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_tau, "controls_idx")
-
-                for i in range(len(all_pn.u) - 1):
-                    val = all_pn.u[i + 1][controls_idx] - all_pn.u[i][controls_idx]
-                    penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
-
-        @staticmethod
-        def minimize_muscles_control(penalty: PenaltyOption, all_pn: PenaltyNodeList):
-            """
-            Minimize the muscles part of the control variables.
-            By default this function is quadratic, meaning that it minimizes towards the target.
-            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-
-            Parameters
-            ----------
-            penalty: PenaltyOption
-                The actual penalty to declare
-            all_pn: PenaltyNodeList
-                The penalty node elements
-            """
-
-            muscles_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                penalty.index, len(all_pn.nlp.controls["muscles"]), "muscles_idx"
-            )
-
-            target = None
-            if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (len(muscles_idx), len(all_pn.u))
-                )
-
-                PenaltyFunctionAbstract._add_track_data_to_plot(
-                    all_pn, target, combine_to="muscles_control", axes_idx=Mapping(muscles_idx)
-                )
-
-            for i in range(len(all_pn) - 1):
-                pn = all_pn[i]
-                val = pn["muscles", "controls"][muscles_idx, :]
-                penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val, penalty)
-
-        @staticmethod
-        def minimize_all_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList):
-            """
-            Minimize the control variables.
-            By default this function is quadratic, meaning that it minimizes towards the target.
-            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-
-            Parameters
-            ----------
-            penalty: PenaltyOption
-                The actual penalty to declare
-            all_pn: PenaltyNodeList
-                The penalty node elements
-            """
-
-            n_u = all_pn.nlp.controls.shape
-            controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_u, "controls_idx")
-
-            target = None
-            if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (len(controls_idx), len(all_pn.u))
-                )
-
-            for i, pn in enumerate(all_pn):
-                if pn.u is None:
-                    continue
-                val = pn.u[controls_idx]
-                penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
-
-        @staticmethod
-        def minimize_control_derivatives(penalty: PenaltyOption, all_pn: PenaltyNodeList):
-            """
-            Minimize the control derivatives by comparing the controls at a node and at the next node.
-            By default this function is quadratic, meaning that it minimizes the difference.
-            Indices (default=all_idx) can be specified.
-
-            Parameters
-            ----------
-            penalty: PenaltyOption
-                The actual penalty to declare
-            all_pn: PenaltyNodeList
-                The penalty node elements
-            """
-
-            n_u = all_pn.nlp.controls.shape
-            controls_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_u, "controls_idx")
-            for i in range(len(all_pn.u) - 1):
-                val = all_pn.u[i + 1][controls_idx] - all_pn.u[i][controls_idx]
                 penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
 
         @staticmethod
@@ -1242,74 +780,6 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("add cannot be called from an abstract class")
 
     @staticmethod
-    def _parameter_modifier(penalty: PenaltyOption):
-        """
-        Apply some default parameters
-
-        Parameters
-        ----------
-        penalty: PenaltyOption
-            The actual penalty to declare
-        """
-
-        func = penalty.type.value[0]
-        # Everything that should change the entry parameters depending on the penalty can be added here
-        if penalty.quadratic is None:
-            if (
-                func == PenaltyType.MINIMIZE_STATE
-                or func == PenaltyType.MINIMIZE_MARKERS
-                or func == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
-                or func == PenaltyType.MINIMIZE_MARKERS_VELOCITY
-                or func == PenaltyType.SUPERIMPOSE_MARKERS
-                or func == PenaltyType.PROPORTIONAL_STATE
-                or func == PenaltyType.PROPORTIONAL_CONTROL
-                or func == PenaltyType.MINIMIZE_TORQUE
-                or func == PenaltyType.MINIMIZE_MUSCLES_CONTROL
-                or func == PenaltyType.MINIMIZE_ALL_CONTROLS
-                or func == PenaltyType.MINIMIZE_CONTACT_FORCES
-                or func == PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT
-                or func == PenaltyType.TRACK_MARKER_WITH_SEGMENT_AXIS
-                or func == PenaltyType.MINIMIZE_TORQUE_DERIVATIVE
-                or func == PenaltyType.MINIMIZE_STATE_DERIVATIVE
-                or func == PenaltyType.MINIMIZE_COM_POSITION
-                or func == PenaltyType.MINIMIZE_COM_VELOCITY
-            ):
-                penalty.quadratic = True
-            else:
-                penalty.quadratic = False
-
-        if func == PenaltyType.PROPORTIONAL_STATE:
-            penalty.params["which_var"] = "states"
-        if func == PenaltyType.PROPORTIONAL_CONTROL:
-            penalty.params["which_var"] = "controls"
-
-    @staticmethod
-    def _span_checker(penalty: PenaltyOption, pn: PenaltyNodeList):
-        """
-        Check for any non sense in the requested times for the constraint. Raises an error if so
-
-        Parameters
-        ----------
-        penalty: PenaltyOption
-            The actual penalty to declare
-        pn: PenaltyNodeList
-            The penalty node elements
-        """
-
-        func = penalty.type.value[0]
-        node = penalty.node
-        # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-        if (
-            func == PenaltyType.PROPORTIONAL_CONTROL
-            or func == PenaltyType.MINIMIZE_TORQUE
-            or func == PenaltyType.MINIMIZE_MUSCLES_CONTROL
-            or func == PenaltyType.MINIMIZE_ALL_CONTROLS
-        ):
-            if node == Node.END or node == pn.nlp.ns:
-                raise RuntimeError("No control u at last node")
-
-
-    @staticmethod
     def _check_idx(name: str, elements: Union[list, tuple, int], max_n_elements: int = inf, min_n_elements: int = 0):
         """
         Generic sanity check for requested dimensions.
@@ -1338,23 +808,65 @@ class PenaltyFunctionAbstract:
                 )
 
     @staticmethod
-    def add_to_penalty(ocp, pn: PenaltyNodeList, val: Union[MX, SX, float, int], penalty: PenaltyOption):
+    def adjust_penalty_parameters(penalty: PenaltyOption):
         """
-        Add the constraint to the penalty pool (abstract)
+        Apply some default parameters
 
         Parameters
         ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        pn: PenaltyNodeList
-            The penalty node elements
-        val: Union[MX, SX, float, int]
-            The actual constraint to add
         penalty: PenaltyOption
             The actual penalty to declare
         """
 
-        raise RuntimeError("_add_to_penalty cannot be called from an abstract class")
+        func = penalty.type.value[0]
+        # Everything that should change the entry parameters depending on the penalty can be added here
+        if penalty.quadratic is None:
+            if (
+                func == PenaltyType.MINIMIZE_STATE
+                or func == PenaltyType.MINIMIZE_MARKERS
+                or func == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
+                or func == PenaltyType.MINIMIZE_MARKERS_VELOCITY
+                or func == PenaltyType.SUPERIMPOSE_MARKERS
+                or func == PenaltyType.PROPORTIONAL_STATE
+                or func == PenaltyType.PROPORTIONAL_CONTROL
+                or func == PenaltyType.MINIMIZE_CONTROL
+                or func == PenaltyType.MINIMIZE_CONTACT_FORCES
+                or func == PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT
+                or func == PenaltyType.TRACK_MARKER_WITH_SEGMENT_AXIS
+                or func == PenaltyType.MINIMIZE_COM_POSITION
+                or func == PenaltyType.MINIMIZE_COM_VELOCITY
+            ):
+                penalty.quadratic = True
+            else:
+                penalty.quadratic = False
+
+        if func == PenaltyType.PROPORTIONAL_STATE:
+            penalty.params["which_var"] = "states"
+        if func == PenaltyType.PROPORTIONAL_CONTROL:
+            penalty.params["which_var"] = "controls"
+
+    @staticmethod
+    def validate_penalty_time_index(penalty: PenaltyOption, pn: PenaltyNodeList):
+        """
+        Check for any non sense in the requested times for the penalty. Raises an error if so
+
+        Parameters
+        ----------
+        penalty: PenaltyOption
+            The actual penalty to declare
+        pn: PenaltyNodeList
+            The penalty node elements
+        """
+
+        func = penalty.type.value[0]
+        node = penalty.node
+        # Everything that is suspicious in terms of the span of the penalty function ca be checked here
+        if (
+            func == PenaltyType.PROPORTIONAL_CONTROL
+            or func == PenaltyType.MINIMIZE_CONTROL
+        ):
+            if node == Node.END or (isinstance(node, int) and node >= pn.nlp.ns):
+                raise RuntimeError("No control u at last node")
 
     @staticmethod
     def clear_penalty(ocp, nlp, penalty: PenaltyOption):
@@ -1379,7 +891,7 @@ class PenaltyFunctionAbstract:
         Returns the type of the penalty (abstract)
         """
 
-        raise RuntimeError("_get_type cannot be called from an abstract class")
+        raise RuntimeError("get_type cannot be called from an abstract class")
 
 
 class PenaltyType(Enum):
@@ -1389,6 +901,9 @@ class PenaltyType(Enum):
 
     MINIMIZE_STATE = PenaltyFunctionAbstract.Functions.minimize_states
     TRACK_STATE = MINIMIZE_STATE
+    MINIMIZE_CONTROL = PenaltyFunctionAbstract.Functions.minimize_controls
+    TRACK_CONTROL = MINIMIZE_CONTROL
+
     MINIMIZE_MARKERS = PenaltyFunctionAbstract.Functions.minimize_markers
     TRACK_MARKERS = MINIMIZE_MARKERS
     MINIMIZE_MARKERS_DISPLACEMENT = PenaltyFunctionAbstract.Functions.minimize_markers_displacement
@@ -1397,16 +912,7 @@ class PenaltyType(Enum):
     SUPERIMPOSE_MARKERS = PenaltyFunctionAbstract.Functions.superimpose_markers
     PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_variable
     PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_variable
-    MINIMIZE_TORQUE = PenaltyFunctionAbstract.Functions.minimize_torque
-    TRACK_TORQUE = MINIMIZE_TORQUE
-    MINIMIZE_STATE_DERIVATIVE = PenaltyFunctionAbstract.Functions.minimize_state_derivative
     MINIMIZE_QDDOT = PenaltyFunctionAbstract.Functions.minimize_qddot
-    MINIMIZE_TORQUE_DERIVATIVE = PenaltyFunctionAbstract.Functions.minimize_torque_derivative
-    MINIMIZE_MUSCLES_CONTROL = PenaltyFunctionAbstract.Functions.minimize_muscles_control
-    TRACK_MUSCLES_CONTROL = MINIMIZE_MUSCLES_CONTROL
-    MINIMIZE_ALL_CONTROLS = PenaltyFunctionAbstract.Functions.minimize_all_controls
-    MINIMIZE_CONTROL_DERIVATIVES = PenaltyFunctionAbstract.Functions.minimize_control_derivatives
-    TRACK_ALL_CONTROLS = MINIMIZE_ALL_CONTROLS
     MINIMIZE_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
     TRACK_CONTACT_FORCES = MINIMIZE_CONTACT_FORCES
     MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height

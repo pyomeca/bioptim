@@ -613,9 +613,12 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
-        MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
         MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
         TRACK_STATE = (PenaltyType.TRACK_STATE,)
+        MINIMIZE_CONTROL = (PenaltyType.MINIMIZE_CONTROL,)
+        TRACK_CONTROL = (PenaltyType.TRACK_CONTROL,)
+
+        MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
         MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
         TRACK_MARKERS = (PenaltyType.TRACK_MARKERS,)
         MINIMIZE_MARKERS_DISPLACEMENT = (PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT,)
@@ -624,16 +627,7 @@ class ObjectiveFcn:
         SUPERIMPOSE_MARKERS = (PenaltyType.SUPERIMPOSE_MARKERS,)
         PROPORTIONAL_STATE = (PenaltyType.PROPORTIONAL_STATE,)
         PROPORTIONAL_CONTROL = (PenaltyType.PROPORTIONAL_CONTROL,)
-        MINIMIZE_TORQUE = (PenaltyType.MINIMIZE_TORQUE,)
-        TRACK_TORQUE = (PenaltyType.TRACK_TORQUE,)
-        MINIMIZE_STATE_DERIVATIVE = (PenaltyType.MINIMIZE_STATE_DERIVATIVE,)
         MINIMIZE_QDDOT = (PenaltyType.MINIMIZE_QDDOT,)
-        MINIMIZE_TORQUE_DERIVATIVE = (PenaltyType.MINIMIZE_TORQUE_DERIVATIVE,)
-        MINIMIZE_MUSCLES_CONTROL = (PenaltyType.MINIMIZE_MUSCLES_CONTROL,)
-        TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
-        MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
-        MINIMIZE_CONTROL_DERIVATIVES = (PenaltyType.MINIMIZE_CONTROL_DERIVATIVES,)
-        TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
         MINIMIZE_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
         TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
         MINIMIZE_COM_POSITION = (PenaltyType.MINIMIZE_COM_POSITION,)

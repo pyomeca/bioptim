@@ -370,7 +370,7 @@ class AcadosInterface(SolverInterface):
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
         ctrl_objs = [
-            PenaltyType.MINIMIZE_TORQUE,
+            PenaltyType.MINIMIZE_CONTROL,
             PenaltyType.MINIMIZE_MUSCLES_CONTROL,
             PenaltyType.MINIMIZE_ALL_CONTROLS,
         ]

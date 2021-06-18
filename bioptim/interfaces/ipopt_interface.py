@@ -116,10 +116,10 @@ class IpoptInterface(SolverInterface):
         A reference to the solution
         """
 
-        all_J = self.__dispatch_obj_func()
+        all_objectives = self.__dispatch_obj_func()
         all_g, all_g_bounds = self.__dispatch_bounds()
 
-        self.ipopt_nlp = {"x": self.ocp.v.vector, "f": sum1(all_J), "g": all_g}
+        self.ipopt_nlp = {"x": self.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
         v_bounds = self.ocp.v.bounds
         v_init = self.ocp.v.init
         self.ipopt_limits = {
@@ -193,22 +193,22 @@ class IpoptInterface(SolverInterface):
         """
         Parse the objective functions of the full ocp to a Ipopt-friendly one
         """
-        # TODO: This should be done in bounds, so it is available for all the code
 
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
-        all_J = self.ocp.cx()
-        for j_nodes in self.ocp.J:
-            for obj in j_nodes:
-                all_J = vertcat(all_J, IpoptInterface.finalize_objective_value(obj))
-        for nlp in self.ocp.nlp:
-            for penalty in nlp.J:
-                for node in penalty.node_idx:
-                    x = nlp.X[node]
-                    u = nlp.U[node] if node < len(nlp.U) else nlp.U[-1]
-                    weight = penalty.weight
-                    target = [] if penalty.target is None else penalty.target
-                    dt = penalty.dt
-                    p = penalty.weighted_function(x, u, param, weight, target, dt)
-                    all_J = vertcat(all_J, p)
 
-        return all_J
+        def get_all_obj(objectives):
+            out = self.ocp.cx()
+            for penalty in objectives:
+                for idx in penalty.node_idx:
+                    target = penalty.target[:, idx] if penalty.target is not None and idx < len(penalty.target) else []
+                    u = nlp.U[idx] if idx < len(nlp.U) else []
+                    p = penalty.weighted_function(nlp.X[idx], u, param, penalty.weight, target, penalty.dt)
+                    out = vertcat(out, p)
+            return out
+
+        all_objectives = self.ocp.cx()
+        all_objectives = vertcat(all_objectives, get_all_obj(self.ocp.J))
+        for nlp in self.ocp.nlp:
+            all_objectives = vertcat(all_objectives, get_all_obj(nlp.J))
+
+        return all_objectives

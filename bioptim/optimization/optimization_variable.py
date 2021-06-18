@@ -20,7 +20,7 @@ class OptimizationVariable:
         The indices to find this variable
     """
 
-    def __init__(self, name: str, mx: MX, index: range, mapping: BiMapping):
+    def __init__(self, name: str, mx: MX, index: [range, list], mapping: BiMapping = None):
         """
         Parameters
         ----------
@@ -28,12 +28,12 @@ class OptimizationVariable:
             The name of the variable
         mx: MX
             The MX variable associated with this variable
-        index: range
+        index: [range, list]
             The indices to find this variable
         """
         self.name: str = name
         self.mx: MX = mx
-        self.index: range = index
+        self.index: [range, list] = index
         self.mapping: BiMapping = mapping
 
     def __len__(self):
@@ -78,10 +78,23 @@ class OptimizationVariableList:
         if isinstance(item, int):
             return self.elements[item]
         elif isinstance(item, str):
+            if item == "all":
+                index = []
+                for elt in self.elements:
+                    index.extend(list(elt.index))
+                return OptimizationVariable("all", self.mx, index)
+
             for elt in self.elements:
                 if item == elt.name:
                     return elt
             raise KeyError(f"{item} is not in the list")
+        elif isinstance(item, (list, tuple)):
+            mx = [elt.mx for elt in self.elements if elt.name in item]
+            index = []
+            for elt in self.elements:
+                if elt.name in item:
+                    index.extend(list(elt.index))
+            return OptimizationVariable("some", mx, index)
         else:
             raise ValueError("OptimizationVariableList can be sliced with int or str only")
 
