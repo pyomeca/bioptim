@@ -43,7 +43,7 @@ def test_torque_driven(with_contact, with_external_force, cx):
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
-    nlp.dynamics_type.type.value[0](ocp, nlp, **nlp.dynamics_type.params)
+    ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
     states = np.random.rand(nlp.states.shape, nlp.ns)
@@ -102,7 +102,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
-    nlp.dynamics_type.type.value[0](ocp, nlp, **nlp.dynamics_type.params)
+    ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
     states = np.random.rand(nlp.states.shape, nlp.ns)
@@ -213,7 +213,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
         nlp.external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)[0]
 
     # Prepare the dynamics
-    nlp.dynamics_type.type.value[0](ocp, nlp, **nlp.dynamics_type.params)
+    ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
     states = np.random.rand(nlp.states.shape, nlp.ns)
@@ -309,7 +309,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
         with pytest.raises(NotImplementedError, match="Muscles with contact is not implemented yet"):
             nlp.dynamics_type.type.value[0](ocp, nlp, **nlp.dynamics_type.params)
         return
-    nlp.dynamics_type.type.value[0](ocp, nlp, **nlp.dynamics_type.params)
+    ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
     states = np.random.rand(nlp.states.shape, nlp.ns)
@@ -457,7 +457,7 @@ def test_custom_dynamics(with_contact):
     np.random.seed(42)
 
     # Prepare the dynamics
-    nlp.dynamics_type.type.value[0](ocp, nlp, **nlp.dynamics_type.params)
+    ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
     states = np.random.rand(nlp.states.shape, nlp.ns)
