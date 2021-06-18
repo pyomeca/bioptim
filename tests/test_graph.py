@@ -458,6 +458,7 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
     )
     if with_lagrange and with_mayer is not False:
         ocp.nlp[0].J[0][0]["objective"].quadratic = False
+        ocp.J[1][0]["objective"].sliced_target = 2
     ocp.print(to_console=True, to_graph=False)  # False so it does not attack the programmer with lot of graphs!
     OcpToGraph(ocp)._prepare_print()
 
