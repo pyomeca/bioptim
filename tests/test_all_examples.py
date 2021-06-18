@@ -199,47 +199,6 @@ def test__muscle_driven_ocp__static_arm():
     )
 
 
-def test__muscle_driven_ocp__static_arm_with_contact():
-    bioptim_folder = TestUtils.bioptim_folder()
-    module = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/static_arm_with_contact.py")
-    module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/muscle_driven_ocp/arm26_with_contact.bioMod",
-        final_time=3,
-        n_shooting=50,
-        weight=1000,
-    )
-
-
-def test__muscle_driven_with_contact__contact_forces_inequality_constraint_muscle():
-    bioptim_folder = TestUtils.bioptim_folder()
-    module = TestUtils.load_module(
-        bioptim_folder + "/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle.py"
-    )
-    module.prepare_ocp(
-        biorbd_model_path=bioptim_folder
-        + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod",
-        phase_time=0.3,
-        n_shooting=10,
-        min_bound=50,
-        max_bound=np.inf,
-    )
-
-
-def test__muscle_driven_with_contact__contact_forces_inequality_constraint_muscle_excitations():
-    bioptim_folder = TestUtils.bioptim_folder()
-    module = TestUtils.load_module(
-        bioptim_folder
-        + "/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle_excitations.py"
-    )
-    module.prepare_ocp(
-        biorbd_model_path=bioptim_folder
-        + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod",
-        phase_time=0.3,
-        n_shooting=10,
-        min_bound=50,
-    )
-
-
 def test__muscle_driven_with_contact__muscle_activations_contacts_tracker():
     bioptim_folder = TestUtils.bioptim_folder()
     module = TestUtils.load_module(

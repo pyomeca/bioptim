@@ -1,11 +1,12 @@
 from typing import Callable, Union, Any
 
-from casadi import MX, SX
+from casadi import MX, SX, vertcat
 import numpy as np
 
 from ..misc.enums import Node
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
 from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
+from ..misc.enums import InterpolationType
 from ..misc.options import UniquePerProblemOptionList, OptionGeneric
 
 
@@ -37,7 +38,7 @@ class Parameter(OptionGeneric):
         size: int = None,
         penalty_list: Union[Objective, ObjectiveList] = None,
         cx: Union[Callable, MX, SX] = None,
-        scaling: np.ndarray = np.array([1.0]),
+        scaling: np.ndarray = None,
         **params: Any,
     ):
         """
@@ -64,7 +65,9 @@ class Parameter(OptionGeneric):
         super(Parameter, self).__init__(type=Parameters, **params)
         self.function = function
 
-        if not isinstance(scaling, np.ndarray):
+        if scaling is None:
+            scaling = np.array([1.0])
+        elif not isinstance(scaling, np.ndarray):
             raise ValueError("Parameter scaling must be a numpy array")
 
         if not (scaling > 0).all():
@@ -98,6 +101,10 @@ class Parameter(OptionGeneric):
         self.size = size
         self.penalty_list = penalty_list
         self.cx = cx
+
+    @property
+    def shape(self):
+        return self.cx.shape[0]
 
 
 class ParameterList(UniquePerProblemOptionList):
@@ -248,6 +255,32 @@ class ParameterList(UniquePerProblemOptionList):
         """
 
         return self.names.index(item)
+
+    @property
+    def scaling(self):
+        return np.vstack([p.scaling for p in self]) if len(self) else np.array([[1.0]])
+
+    @property
+    def cx(self):
+        return vertcat(*[p.cx for p in self])
+
+    @property
+    def bounds(self):
+        _bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+        for p in self:
+            _bounds.concatenate(p.bounds)
+        return _bounds
+
+    @property
+    def initial_guess(self):
+        _init = InitialGuess(interpolation=InterpolationType.CONSTANT)
+        for p in self:
+            _init.concatenate(p.initial_guess)
+        return _init
+
+    @property
+    def shape(self):
+        return sum([p.shape for p in self])
 
 
 class Parameters:

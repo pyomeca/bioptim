@@ -6,7 +6,7 @@ import biorbd
 
 from .optimal_control_program import OptimalControlProgram
 from .solution import Solution
-from ..dynamics.dynamics_type import Dynamics, DynamicsList
+from ..dynamics.configure_problem import Dynamics, DynamicsList
 from ..limits.constraints import ConstraintFcn
 from ..limits.objective_functions import ObjectiveFcn
 from ..limits.path_conditions import InitialGuess, Bounds
@@ -125,14 +125,14 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                         "The MHE is not implemented yet for x_bounds not being "
                         "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
                     )
-                self.nlp[0].x_bounds.check_and_adjust_dimensions(self.nlp[0].nx, 3)
+                self.nlp[0].x_bounds.check_and_adjust_dimensions(self.nlp[0].states.shape, 3)
             self.nlp[0].x_bounds[:, 0] = sol.states["all"][:, 1]
 
             if self.nlp[0].x_init.type != InterpolationType.EACH_FRAME:
                 self.nlp[0].x_init = InitialGuess(
                     np.ndarray(sol.states["all"].shape), interpolation=InterpolationType.EACH_FRAME
                 )
-                self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].nx, self.nlp[0].ns)
+                self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].states.shape, self.nlp[0].ns)
             self.nlp[0].x_init.init[:, :] = np.concatenate(
                 (sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1
             )

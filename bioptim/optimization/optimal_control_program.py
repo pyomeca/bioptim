@@ -9,10 +9,10 @@ import casadi
 from casadi import MX, SX
 
 from .non_linear_program import NonLinearProgram as NLP
-from .variable import OptimizationVariable
-from ..dynamics.dynamics_type import DynamicsList, Dynamics
+from .optimization_vector import OptimizationVector
+from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
-from ..dynamics.problem import Problem
+from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
@@ -26,7 +26,7 @@ from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
 from ..misc.enums import ControlType, Solver, Shooting
-from ..misc.mapping import BiMapping, Mapping
+from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
@@ -71,7 +71,7 @@ class OptimalControlProgram:
         A reference to the ocp solver
     solver_type: Solver
         The designated solver to solve the ocp
-    v: OptimizationVariable
+    v: OptimizationVector
         The variable optimization holder
     version: dict
         The version of all the underlying software. This is important when loading a previous ocp
@@ -122,22 +122,19 @@ class OptimalControlProgram:
         dynamics: Union[Dynamics, DynamicsList],
         n_shooting: Union[int, list, tuple],
         phase_time: Union[int, float, list, tuple],
-        x_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
-        u_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
-        x_bounds: Union[Bounds, BoundsList] = BoundsList(),
-        u_bounds: Union[Bounds, BoundsList] = BoundsList(),
-        objective_functions: Union[Objective, ObjectiveList] = ObjectiveList(),
-        constraints: Union[Constraint, ConstraintList] = ConstraintList(),
-        parameters: Union[Parameter, ParameterList] = ParameterList(),
-        external_forces: Union[list, tuple] = (),
-        ode_solver: Union[list, OdeSolverBase, OdeSolver] = OdeSolver.RK4(),
+        x_init: Union[InitialGuess, InitialGuessList] = None,
+        u_init: Union[InitialGuess, InitialGuessList] = None,
+        x_bounds: Union[Bounds, BoundsList] = None,
+        u_bounds: Union[Bounds, BoundsList] = None,
+        objective_functions: Union[Objective, ObjectiveList] = None,
+        constraints: Union[Constraint, ConstraintList] = None,
+        parameters: Union[Parameter, ParameterList] = None,
+        external_forces: Union[list, tuple] = None,
+        ode_solver: Union[list, OdeSolverBase, OdeSolver] = None,
         control_type: Union[ControlType, list] = ControlType.CONSTANT,
-        all_generalized_mapping: Union[BiMapping, list, tuple] = None,
-        q_mapping: Union[BiMapping, list, tuple] = None,
-        qdot_mapping: Union[BiMapping, list, tuple] = None,
-        tau_mapping: Union[BiMapping, list, tuple] = None,
+        variable_mappings: BiMappingList = None,
         plot_mappings: Mapping = None,
-        phase_transitions: PhaseTransitionList = PhaseTransitionList(),
+        phase_transitions: PhaseTransitionList = None,
         n_threads: int = 1,
         use_sx: bool = False,
     ):
@@ -172,14 +169,8 @@ class OptimalControlProgram:
             The solver for the ordinary differential equations
         control_type: ControlType
             The type of controls for each phase
-        all_generalized_mapping: BiMapping
-            The mapping to apply on q, qdot and tau at the same time
-        q_mapping: BiMapping
-            The mapping to apply on q
-        qdot_mapping: BiMapping
-            The mapping to apply on qdot
-        tau_mapping: BiMapping
-            The mapping to apply on tau
+        variable_mappings: BiMappingList
+            The mapping to apply on variables
         plot_mappings: Mapping
             The mapping to apply on the plots
         phase_transitions: PhaseTransitionList
@@ -225,10 +216,7 @@ class OptimalControlProgram:
             "external_forces": external_forces,
             "ode_solver": ode_solver,
             "control_type": control_type,
-            "all_generalized_mapping": all_generalized_mapping,
-            "q_mapping": q_mapping,
-            "qdot_mapping": qdot_mapping,
-            "tau_mapping": tau_mapping,
+            "variable_mappings": variable_mappings,
             "plot_mappings": plot_mappings,
             "phase_transitions": phase_transitions,
             "n_threads": n_threads,
@@ -254,55 +242,73 @@ class OptimalControlProgram:
             else:
                 raise RuntimeError("phase_time should be a number or a list of number")
 
-        if isinstance(x_bounds, Bounds):
+        if x_bounds is None:
+            x_bounds = BoundsList()
+        elif isinstance(x_bounds, Bounds):
             x_bounds_tp = BoundsList()
             x_bounds_tp.add(bounds=x_bounds)
             x_bounds = x_bounds_tp
         elif not isinstance(x_bounds, BoundsList):
             raise RuntimeError("x_bounds should be built from a Bounds or a BoundsList")
 
-        if isinstance(u_bounds, Bounds):
+        if u_bounds is None:
+            u_bounds = BoundsList()
+        elif isinstance(u_bounds, Bounds):
             u_bounds_tp = BoundsList()
             u_bounds_tp.add(bounds=u_bounds)
             u_bounds = u_bounds_tp
         elif not isinstance(u_bounds, BoundsList):
             raise RuntimeError("u_bounds should be built from a Bounds or a BoundsList")
 
-        if isinstance(x_init, InitialGuess):
+        if x_init is None:
+            x_init = InitialGuessList()
+        elif isinstance(x_init, InitialGuess):
             x_init_tp = InitialGuessList()
             x_init_tp.add(x_init)
             x_init = x_init_tp
         elif not isinstance(x_init, InitialGuessList):
             raise RuntimeError("x_init should be built from a InitialGuess or InitialGuessList")
 
-        if isinstance(u_init, InitialGuess):
+        if u_init is None:
+            u_init = InitialGuessList()
+        elif isinstance(u_init, InitialGuess):
             u_init_tp = InitialGuessList()
             u_init_tp.add(u_init)
             u_init = u_init_tp
         elif not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuess or InitialGuessList")
 
-        if isinstance(objective_functions, Objective):
+        if objective_functions is None:
+            objective_functions = ObjectiveList()
+        elif isinstance(objective_functions, Objective):
             objective_functions_tp = ObjectiveList()
             objective_functions_tp.add(objective_functions)
             objective_functions = objective_functions_tp
         elif not isinstance(objective_functions, ObjectiveList):
             raise RuntimeError("objective_functions should be built from an Objective or ObjectiveList")
 
-        if isinstance(constraints, Constraint):
+        if constraints is None:
+            constraints = ConstraintList()
+        elif isinstance(constraints, Constraint):
             constraints_tp = ConstraintList()
             constraints_tp.add(constraints)
             constraints = constraints_tp
         elif not isinstance(constraints, ConstraintList):
             raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
 
-        if not isinstance(parameters, ParameterList):
+        if parameters is None:
+            parameters = ParameterList()
+        elif not isinstance(parameters, ParameterList):
             raise RuntimeError("parameters should be built from an ParameterList")
 
-        if not isinstance(phase_transitions, PhaseTransitionList):
+        if phase_transitions is None:
+            phase_transitions = PhaseTransitionList()
+        elif not isinstance(phase_transitions, PhaseTransitionList):
             raise RuntimeError("phase_transitions should be built from an PhaseTransitionList")
 
-        if not isinstance(ode_solver, OdeSolverBase):
+        if ode_solver is None:
+            ode_solver = OdeSolver.RK4()
+        elif not isinstance(ode_solver, OdeSolverBase):
             raise RuntimeError("ode_solver should be built an instance of OdeSolver")
 
         if not isinstance(use_sx, bool):
@@ -317,7 +323,7 @@ class OptimalControlProgram:
         # Declare optimization variables
         self.J = []
         self.g = []
-        self.v = OptimizationVariable(self)
+        self.v = OptimizationVector(self)
 
         # nlp is the core of a phase
         self.nlp = [NLP() for _ in range(self.n_phases)]
@@ -336,25 +342,17 @@ class OptimalControlProgram:
         self.solver = None
 
         # External forces
-        if external_forces != ():
+        if external_forces is not None:
             external_forces = BiorbdInterface.convert_array_to_external_forces(external_forces)
             NLP.add(self, "external_forces", external_forces, False)
 
-        # Compute problem size
-        if all_generalized_mapping is not None:
-            if q_mapping is not None or qdot_mapping is not None or tau_mapping is not None:
-                raise RuntimeError("all_generalized_mapping and a specified mapping cannot be used alongside")
-            q_mapping = qdot_mapping = tau_mapping = all_generalized_mapping
-        NLP.add(self, "q", q_mapping, q_mapping is None, BiMapping, name="mapping")
-        NLP.add(self, "qdot", qdot_mapping, qdot_mapping is None, BiMapping, name="mapping")
-        NLP.add(self, "tau", tau_mapping, tau_mapping is None, BiMapping, name="mapping")
         plot_mappings = plot_mappings if plot_mappings is not None else {}
         reshaped_plot_mappings = []
         for i in range(self.n_phases):
             reshaped_plot_mappings.append({})
             for key in plot_mappings:
                 reshaped_plot_mappings[i][key] = plot_mappings[key][i]
-        NLP.add(self, "plot", reshaped_plot_mappings, False, name="mapping")
+        NLP.add(self, "plot_mapping", reshaped_plot_mappings, False, name="plot_mapping")
 
         # Prepare the parameters to optimize
         self.phase_transitions = []
@@ -369,11 +367,19 @@ class OptimalControlProgram:
         NLP.add(self, "ode_solver", ode_solver, True)
         NLP.add(self, "control_type", control_type, True)
 
+        # Prepare the variable mappings
+        if variable_mappings is None:
+            variable_mappings = BiMappingList()
+        NLP.add(self, "variable_mappings", variable_mappings, True)
+
         # Prepare the dynamics
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
-            Problem.initialize(self, self.nlp[i])
-            if self.nlp[0].nx != self.nlp[i].nx or self.nlp[0].nu != self.nlp[i].nu:
+            ConfigureProblem.initialize(self, self.nlp[i])
+            if (
+                self.nlp[0].states.shape != self.nlp[i].states.shape
+                or self.nlp[0].controls.shape != self.nlp[i].controls.shape
+            ):
                 raise RuntimeError("Dynamics with different nx or nu is not supported yet")
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 

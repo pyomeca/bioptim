@@ -11,6 +11,7 @@ from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import ControlType, CostType, Shooting, InterpolationType
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
+from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 
 
 class Solution:
@@ -31,7 +32,7 @@ class Solution:
         If the phases were merged
     vector: np.ndarray
         The data in the vector format
-    cost: float
+    _cost: float
         The value of the cost function
     constraints: list
         The values of the constraint
@@ -88,6 +89,61 @@ class Solution:
         Print the objective functions and/or constraints to the console
     """
 
+    class SimplifiedOptimizationVariable:
+        def __init__(self, other: OptimizationVariable):
+            self.name = other.name
+            self.index = other.index
+
+        def __len__(self):
+            return len(self.index)
+
+    class SimplifiedOptimizationVariableList:
+        def __init__(self, other: Union[OptimizationVariableList]):
+            self.elements = []
+            if isinstance(other, Solution.SimplifiedOptimizationVariableList):
+                self.shape = other.shape
+            else:
+                self.shape = other.cx.shape[0]
+            for elt in other:
+                self.append(other[elt])
+
+        def __getitem__(self, item):
+            if isinstance(item, int):
+                return self.elements[item]
+            elif isinstance(item, str):
+                for elt in self.elements:
+                    if item == elt.name:
+                        return elt
+                raise KeyError(f"{item} is not in the list")
+            else:
+                raise ValueError("OptimizationVariableList can be sliced with int or str only")
+
+        def append(self, other: OptimizationVariable):
+            self.elements.append(Solution.SimplifiedOptimizationVariable(other))
+
+        def __contains__(self, item):
+            for elt in self.elements:
+                if item == elt.name:
+                    return True
+            else:
+                return False
+
+        def keys(self):
+            return [elt.name for elt in self]
+
+        def __len__(self):
+            return len(self.elements)
+
+        def __iter__(self):
+            self._iter_idx = 0
+            return self
+
+        def __next__(self):
+            self._iter_idx += 1
+            if self._iter_idx > len(self):
+                raise StopIteration
+            return self[self._iter_idx - 1].name
+
     class SimplifiedNLP:
         """
         A simplified version of the NonLinearProgram structure
@@ -104,18 +160,12 @@ class Solution:
             All the objectives at each of the node of the phase
         model: biorbd.Model
             A reference to the biorbd Model
-        mapping: dict
+        variable_mappings: dict
             All the BiMapping of the states and controls
         ode_solver: OdeSolverBase
             The number of finite element of the RK
         ns: int
             The number of shooting points
-        nu: int
-            The number of controls
-        nx: int
-            The number of states
-        var_states: dict
-            The number of elements for each state the key is the name of the state
         """
 
         def __init__(self, nlp: NonLinearProgram):
@@ -127,17 +177,15 @@ class Solution:
             """
 
             self.model = nlp.model
-            self.nx = nlp.nx
-            self.nu = nlp.nu
+            self.states = Solution.SimplifiedOptimizationVariableList(nlp.states)
+            self.controls = Solution.SimplifiedOptimizationVariableList(nlp.controls)
             self.dynamics = nlp.dynamics
             self.ode_solver = nlp.ode_solver
-            self.mapping = nlp.mapping
-            self.var_states = nlp.var_states
+            self.variable_mappings = nlp.variable_mappings
             self.control_type = nlp.control_type
             self.J = nlp.J
             self.g = nlp.g
             self.ns = nlp.ns
-            self.p_scaling = nlp.p_scaling
             self.parameters = nlp.parameters
 
     class SimplifiedOCP:
@@ -156,7 +204,7 @@ class Solution:
             The list of transition constraint between phases
         prepare_plots: Callable
             The function to call to prepare the PlotOCP
-        v: OptimizationVariable
+        v: OptimizationVector
         The variable optimization holder
         """
 
@@ -205,6 +253,7 @@ class Solution:
         self.time_to_optimize = None
         self.real_time_to_optimize = None
         self.iterations = None
+        self.status = None
 
         # Extract the data now for further use
         self._states, self._controls, self.parameters = [], [], {}
@@ -277,7 +326,7 @@ class Solution:
             sol_states, sol_controls = sol[0], sol[1]
             for p, s in enumerate(sol_states):
                 ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].nx, ns, "states")
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states.shape, ns, "states")
                 for i in range(self.ns[p] + 1):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
             for p, s in enumerate(sol_controls):
@@ -288,7 +337,7 @@ class Solution:
                     off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
-                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].nu, self.ns[p], "controls")
+                s.init.check_and_adjust_dimensions(self.ocp.nlp[p].controls.shape, self.ns[p], "controls")
                 for i in range(self.ns[p] + off):
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
 
@@ -525,7 +574,7 @@ class Solution:
         params = self.parameters["all"]
         x0 = self._states[0]["all"][:, 0]
         for p in range(len(self._states)):
-            param_scaling = self.ocp.nlp[p].p_scaling
+            param_scaling = self.ocp.nlp[p].parameters.scaling
             shape = self._states[p]["all"].shape
             if continuous:
                 n_steps = ocp.nlp[p].ode_solver.steps
@@ -588,9 +637,9 @@ class Solution:
 
             # Dispatch the integrated values to all the keys
             off = 0
-            for key in ocp.nlp[p].var_states:
-                out._states[p][key] = out._states[p]["all"][off : off + ocp.nlp[p].var_states[key], :]
-                off += ocp.nlp[p].var_states[key]
+            for key in ocp.nlp[p].states:
+                out._states[p][key] = out._states[p]["all"][off : off + len(ocp.nlp[p].states[key]), :]
+                off += len(ocp.nlp[p].states[key])
 
         if merge_phases:
             if continuous:
@@ -806,6 +855,8 @@ class Solution:
         n_frames: int
             The number of frames to interpolate to. If the value is 0, the data are merged to a one phase if possible.
             If the value is -1, the data is not merge in one phase
+        shooting_type: Shooting
+            The Shooting type to animate
         show_now: bool
             If the bioviz exec() function should be called automatically. This is blocking method
         kwargs: Any
@@ -845,7 +896,7 @@ class Solution:
                     param.function(nlp.model, self.parameters[param.name], **param.params)
 
             all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
-            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].mapping["q"].to_second.map(data["q"]))
+            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
 
         if show_now:
             b_is_visible = [True] * len(all_bioviz)

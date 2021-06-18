@@ -10,7 +10,7 @@ import biorbd
 from bioptim import (
     OptimalControlProgram,
     Dynamics,
-    Problem,
+    ConfigureProblem,
     Objective,
     DynamicsFunctions,
     ObjectiveFcn,
@@ -41,7 +41,9 @@ def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgr
     The state derivative
     """
 
-    q, qdot, tau = DynamicsFunctions.dispatch_q_qdot_tau_data(states, controls, nlp)
+    q = DynamicsFunctions.get(nlp.states["q"], states)
+    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
     force_vector = MX.zeros(6)
     force_vector[5] = 100 * q[0] ** 2
@@ -64,9 +66,10 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     nlp: NonLinearProgram
         A reference to the phase of the ocp
     """
-    Problem.configure_q_qdot(nlp, as_states=True, as_controls=False)
-    Problem.configure_tau(nlp, as_states=False, as_controls=True)
-    Problem.configure_dynamics_function(ocp, nlp, custom_dynamic)
+    ConfigureProblem.configure_q(nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_tau(nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic)
 
 
 def prepare_ocp(biorbd_model_path: str = "mass_point.bioMod"):
