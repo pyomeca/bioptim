@@ -7,6 +7,7 @@ from casadi import vertcat, MX, Function
 
 from .constraints import ConstraintFunction
 from .objective_functions import ObjectiveFunction
+from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 
 
@@ -134,7 +135,10 @@ class PhaseTransitionFunctions:
             The difference between the state after and before
             """
 
-            if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].nx:
+            if (
+                ocp.nlp[transition.phase_pre_idx].states.shape
+                != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.shape
+            ):
                 raise RuntimeError(
                     "Continuous phase transition without same number of states is not possible, "
                     "please provide a custom phase transition"
@@ -177,17 +181,20 @@ class PhaseTransitionFunctions:
             The difference between the last and first node after applying the impulse equations
             """
 
-            if ocp.nlp[transition.phase_pre_idx].nx != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].nx:
+            if (
+                ocp.nlp[transition.phase_pre_idx].states.shape
+                != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.shape
+            ):
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
 
             # Aliases
             nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
-            n_q = nlp_pre.shape["q"]
-            n_qdot = nlp_pre.shape["qdot"]
-            q = nlp_pre.mapping["q"].to_second.map(nlp_pre.X[-1][:n_q])
-            qdot_pre = nlp_pre.mapping["qdot"].to_second.map(nlp_pre.X[-1][n_q : n_q + n_qdot])
+            n_q = len(nlp_pre.states["q"])
+            n_qdot = len(nlp_pre.states["qdot"])
+            q = DynamicsFunctions.get(nlp_pre.states["q"], nlp_pre.X[-1])
+            qdot_pre = DynamicsFunctions.get(nlp_pre.states["qdot"], nlp_pre.X[-1])
 
             if nlp_post.model.nbContacts() == 0:
                 warn("The chosen model does not have any contact")
@@ -196,13 +203,24 @@ class PhaseTransitionFunctions:
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
             model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
             func = biorbd.to_casadi_func(
-                "impulse_direct", model.ComputeConstraintImpulsesDirect, nlp_pre.q, nlp_pre.qdot
+                "impulse_direct",
+                model.ComputeConstraintImpulsesDirect,
+                nlp_pre.states["q"].mx,
+                nlp_pre.states["qdot"].mx,
             )
             qdot_post = func(q, qdot_pre)
-            qdot_post = nlp_post.mapping["qdot"].to_first.map(qdot_post)
+            qdot_post = nlp_post.variable_mappings["qdot"].to_first.map(qdot_post)
 
-            val = nlp_pre.X[-1][:n_q] - nlp_post.X[0][:n_q]
-            val = vertcat(val, qdot_post - nlp_post.X[0][n_q : n_q + n_qdot])
+            val = []
+            for key in nlp_pre.states:
+                if key != "qdot":
+                    # Continuity constraint
+                    var_pre = DynamicsFunctions.get(nlp_pre.states[key], nlp_pre.X[-1])
+                    var_post = DynamicsFunctions.get(nlp_post.states[key], nlp_post.X[0])
+                    val = vertcat(val, var_pre - var_post)
+                else:
+                    var_post = DynamicsFunctions.get(nlp_post.states[key], nlp_post.X[0])
+                    val = vertcat(val, qdot_post - var_post)
             return val
 
         @staticmethod

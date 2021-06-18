@@ -4,7 +4,7 @@ from enum import Enum
 from casadi import MX, SX
 
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
-from .penalty_node import PenaltyNodes
+from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node
 from ..misc.options import OptionList, OptionGeneric
 
@@ -105,7 +105,7 @@ class ObjectiveFunction:
     -------
     add_or_replace(ocp: OptimalControlProgram, nlp: NonLinearProgram, objective: Objective)
         Add the objective function to the objective pool
-    add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodes, val: Union[MX, SX], penalty: Objective, dt:float=0)
+    add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodeList, val: Union[MX, SX], penalty: Objective, dt:float=0)
         Add the objective function to the objective pool
     clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
         Resets a objective function. A negative penalty index creates a new empty objective function.
@@ -117,13 +117,13 @@ class ObjectiveFunction:
 
         Methods
         -------
-        add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodes, val: Union[MX, SX], penalty: Objective)
+        add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodeList, val: Union[MX, SX], penalty: Objective)
             Add the objective function to the objective pool
         clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, pn: PenaltyNodes)
+        _span_checker(objective: Objective, pn: PenaltyNodeList)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         penalty_nature() -> str
             Get the nature of the penalty
@@ -135,12 +135,12 @@ class ObjectiveFunction:
 
             Methods
             -------
-            minimize_time(penalty: ObjectiveFcn.Lagrange, pn: PenaltyNodes)
+            minimize_time(penalty: ObjectiveFcn.Lagrange, pn: PenaltyNodeList)
                 Minimizes the duration of the phase
             """
 
             @staticmethod
-            def minimize_time(penalty: Objective, pn: PenaltyNodes):
+            def minimize_time(penalty: Objective, pn: PenaltyNodeList):
                 """
                 Minimizes the duration of the phase
 
@@ -148,7 +148,7 @@ class ObjectiveFunction:
                 ----------
                 penalty: Objective,
                     The actual constraint to declare
-                pn: PenaltyNodes
+                pn: PenaltyNodeList
                     The penalty node elements
                 """
 
@@ -156,7 +156,7 @@ class ObjectiveFunction:
                 ObjectiveFunction.LagrangeFunction.add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def add_to_penalty(ocp, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: Objective):
+        def add_to_penalty(ocp, pn: PenaltyNodeList, val: Union[MX, SX, float, int], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -164,7 +164,7 @@ class ObjectiveFunction:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             val: Union[MX, SX, float, int]
                 The actual objective function to add
@@ -221,7 +221,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, pn: PenaltyNodes):
+        def _span_checker(objective: Objective, pn: PenaltyNodeList):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -229,7 +229,7 @@ class ObjectiveFunction:
             ----------
             objective: Objective
                 The actual objective function to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -272,13 +272,13 @@ class ObjectiveFunction:
         -------
         inter_phase_continuity(ocp: OptimalControlProgram, pt: "PhaseTransition")
             Add phase transition objective between two phases.
-        add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodes, val: Union[MX, SX], penalty: Objective)
+        add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodeList, val: Union[MX, SX], penalty: Objective)
             Add the objective function to the objective pool
         clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, pn: PenaltyNodes)
+        _span_checker(objective: Objective, pn: PenaltyNodeList)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         penalty_nature() -> str
             Get the nature of the penalty
@@ -290,14 +290,14 @@ class ObjectiveFunction:
 
             Methods
             -------
-            minimize_time(penalty: "ObjectiveFcn.Lagrange", pn: PenaltyNodes)
+            minimize_time(penalty: "ObjectiveFcn.Lagrange", pn: PenaltyNodeList)
                 Minimizes the duration of the phase
             """
 
             @staticmethod
             def minimize_time(
                 penalty: Objective,
-                pn: PenaltyNodes,
+                pn: PenaltyNodeList,
             ):
                 """
                 Minimizes the duration of the phase
@@ -306,7 +306,7 @@ class ObjectiveFunction:
                 ----------
                 penalty: Objective,
                     The actual constraint to declare
-                pn: PenaltyNodes
+                pn: PenaltyNodeList
                     The penalty node elements
                 """
 
@@ -337,7 +337,7 @@ class ObjectiveFunction:
             pt.base.add_to_penalty(ocp, None, val, penalty)
 
         @staticmethod
-        def add_to_penalty(ocp, pn: PenaltyNodes, val: Union[MX, SX, float, int], penalty: Objective):
+        def add_to_penalty(ocp, pn: PenaltyNodeList, val: Union[MX, SX, float, int], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -345,7 +345,7 @@ class ObjectiveFunction:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             val: Union[MX, SX, float, int]
                 The actual objective function to add
@@ -395,7 +395,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, pn: PenaltyNodes):
+        def _span_checker(objective: Objective, pn: PenaltyNodeList):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -404,7 +404,7 @@ class ObjectiveFunction:
             objective: Objective
                 The actual objective function to declare
                 A reference to the current phase of the ocp
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -449,7 +449,7 @@ class ObjectiveFunction:
             Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
-        _span_checker(objective: Objective, pn: PenaltyNodes)
+        _span_checker(objective: Objective, pn: PenaltyNodeList)
             Check for any non sense in the requested times for the constraint. Raises an error if so
         penalty_nature() -> str
             Get the nature of the penalty
@@ -463,7 +463,7 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def add_to_penalty(ocp, pn: Union[PenaltyNodes, None], val: Union[MX, SX, float, int], penalty: Objective):
+        def add_to_penalty(ocp, pn: Union[PenaltyNodeList, None], val: Union[MX, SX, float, int], penalty: Objective):
             """
             Add the objective function to the objective pool
 
@@ -471,7 +471,7 @@ class ObjectiveFunction:
             ----------
             ocp: OptimalControlProgram
                 A reference to the ocp
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             val: Union[MX, SX, float, int]
                 The actual objective function to add
@@ -512,7 +512,7 @@ class ObjectiveFunction:
             PenaltyFunctionAbstract._parameter_modifier(objective)
 
         @staticmethod
-        def _span_checker(objective: Objective, pn: PenaltyNodes):
+        def _span_checker(objective: Objective, pn: PenaltyNodeList):
             """
             Check for any non sense in the requested times for the constraint. Raises an error if so
 
@@ -520,7 +520,7 @@ class ObjectiveFunction:
             ----------
             objective: Objective
                 The actual objective function to declare
-            pn: PenaltyNodes
+            pn: PenaltyNodeList
                 The penalty node elements
             """
 
@@ -568,7 +568,7 @@ class ObjectiveFunction:
 
     @staticmethod
     def add_to_penalty(
-        ocp, pn: Union[PenaltyNodes, None], val: Union[MX, SX, float, int], penalty: Objective, dt: float = 0
+        ocp, pn: Union[PenaltyNodeList, None], val: Union[MX, SX, float, int], penalty: Objective, dt: float = 0
     ):
         """
         Add the objective function to the objective pool
@@ -577,7 +577,7 @@ class ObjectiveFunction:
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp
-        pn: PenaltyNodes
+        pn: PenaltyNodeList
                 The penalty node elements
         val: Union[MX, SX, float, int]
             The actual objective function to add
@@ -679,6 +679,7 @@ class ObjectiveFcn:
         MINIMIZE_MUSCLES_CONTROL = (PenaltyType.MINIMIZE_MUSCLES_CONTROL,)
         TRACK_MUSCLES_CONTROL = (PenaltyType.TRACK_MUSCLES_CONTROL,)
         MINIMIZE_ALL_CONTROLS = (PenaltyType.MINIMIZE_ALL_CONTROLS,)
+        MINIMIZE_CONTROL_DERIVATIVES = (PenaltyType.MINIMIZE_CONTROL_DERIVATIVES,)
         TRACK_ALL_CONTROLS = (PenaltyType.TRACK_ALL_CONTROLS,)
         MINIMIZE_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
         TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)

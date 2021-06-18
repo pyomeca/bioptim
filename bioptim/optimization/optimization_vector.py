@@ -1,14 +1,14 @@
 from typing import Union
 
 import numpy as np
-from casadi import vertcat, DM
+from casadi import vertcat, DM, MX, SX
 
 from .parameters import ParameterList, Parameter
 from ..limits.path_conditions import Bounds, InitialGuess
 from ..misc.enums import ControlType, InterpolationType
 
 
-class OptimizationVariable:
+class OptimizationVector:
     """
     Attributes
     ----------
@@ -77,13 +77,13 @@ class OptimizationVariable:
 
         self.parameters_in_list = ParameterList()
 
-        self.x = []
+        self.x: Union[MX, SX, list] = []
         self.x_bounds = []
         self.x_init = []
         self.n_all_x = 0
         self.n_phase_x = []
 
-        self.u = []
+        self.u: Union[MX, SX, list] = []
         self.u_bounds = []
         self.u_init = []
         self.n_all_u = 0
@@ -110,7 +110,7 @@ class OptimizationVariable:
         The vector of all variables
         """
 
-        return vertcat(*self.x, *self.u, self.parameters.cx)
+        return vertcat(*self.x, *self.u, self.parameters_in_list.cx)
 
     @property
     def bounds(self):
@@ -127,7 +127,7 @@ class OptimizationVariable:
             v_bounds.concatenate(x_bound)
         for u_bound in self.u_bounds:
             v_bounds.concatenate(u_bound)
-        v_bounds.concatenate(self.parameters.bounds)
+        v_bounds.concatenate(self.parameters_in_list.bounds)
         return v_bounds
 
     @property
@@ -145,35 +145,35 @@ class OptimizationVariable:
             v_init.concatenate(x_init)
         for u_init in self.u_init:
             v_init.concatenate(u_init)
-        v_init.concatenate(self.parameters.initial_guess)
+        v_init.concatenate(self.parameters_in_list.initial_guess)
         return v_init
 
-    @property
-    def parameters(self):
-        """
-        Get the parameters in one single Parameter class
-
-        Returns
-        -------
-        The parameters in one single Parameter class
-        """
-
-        param = Parameter(
-            cx=self.ocp.cx(),
-            bounds=Bounds(interpolation=InterpolationType.CONSTANT),
-            initial_guess=InitialGuess(),
-            size=0,
-        )
-        for p in self.parameters_in_list:
-            param.cx = vertcat(param.cx, p.cx)
-            param.size += p.size if p else 0
-
-            param.bounds.concatenate(p.bounds)
-            param.bounds.check_and_adjust_dimensions(param.size, 1)
-
-            param.initial_guess.concatenate(p.initial_guess)
-            param.initial_guess.check_and_adjust_dimensions(param.size, 1)
-        return param
+    # @property
+    # def parameters(self):
+    #     """
+    #     Get the parameters in one single Parameter class
+    #
+    #     Returns
+    #     -------
+    #     The parameters in one single Parameter class
+    #     """
+    #
+    #     param = Parameter(
+    #         cx=self.ocp.cx(),
+    #         bounds=Bounds(interpolation=InterpolationType.CONSTANT),
+    #         initial_guess=InitialGuess(),
+    #         size=0,
+    #     )
+    #     for p in self.parameters_in_list:
+    #         param.cx = vertcat(param.cx, p.cx)
+    #         param.size += p.size if p else 0
+    #
+    #         param.bounds.concatenate(p.bounds)
+    #         param.bounds.check_and_adjust_dimensions(param.size, 1)
+    #
+    #         param.initial_guess.concatenate(p.initial_guess)
+    #         param.initial_guess.check_and_adjust_dimensions(param.size, 1)
+    #     return param
 
     def extract_phase_time(self, data: Union[np.array, DM]) -> list:
         """
@@ -234,37 +234,34 @@ class OptimizationVariable:
         offset = 0
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].nx, -1), order="F")
+            x_array = v_array[offset : offset + self.n_phase_x[p]].reshape((ocp.nlp[p].states.shape, -1), order="F")
             data_states[p_idx]["all"] = x_array
             offset_var = 0
-            for var in ocp.nlp[p].var_states:
-                data_states[p_idx][var] = x_array[offset_var : offset_var + ocp.nlp[p].var_states[var], :]
-                offset_var += ocp.nlp[p].var_states[var]
+            for var in ocp.nlp[p].states:
+                data_states[p_idx][var] = x_array[offset_var : offset_var + len(ocp.nlp[p].states[var]), :]
+                offset_var += len(ocp.nlp[p].states[var])
             p_idx += 1
             offset += self.n_phase_x[p]
 
         offset = self.n_all_x
         p_idx = 0
         for p in range(self.ocp.n_phases):
-            u_array = v_array[offset : offset + self.n_phase_u[p]].reshape((ocp.nlp[p].nu, -1), order="F")
+            u_array = v_array[offset : offset + self.n_phase_u[p]].reshape((ocp.nlp[p].controls.shape, -1), order="F")
             data_controls[p_idx]["all"] = u_array
             offset_var = 0
-            for var in ocp.nlp[p].var_controls:
-                data_controls[p_idx][var] = u_array[offset_var : offset_var + ocp.nlp[p].var_controls[var], :]
-                offset_var += ocp.nlp[p].var_controls[var]
+            for var in ocp.nlp[p].controls:
+                data_controls[p_idx][var] = u_array[offset_var : offset_var + len(ocp.nlp[p].controls[var]), :]
+                offset_var += len(ocp.nlp[p].controls[var])
             p_idx += 1
             offset += self.n_phase_u[p]
 
         offset = self.n_all_x + self.n_all_u
         scaling_offset = 0
-        data_parameters["all"] = v_array[offset:, np.newaxis] * ocp.nlp[0].p_scaling
+        data_parameters["all"] = v_array[offset:, np.newaxis] * ocp.nlp[0].parameters.scaling
         if len(data_parameters["all"].shape) == 1:
             data_parameters["all"] = data_parameters["all"][:, np.newaxis]
         for param in self.parameters_in_list:
-            data_parameters[param.name] = (
-                v_array[offset : offset + param.size, np.newaxis]
-                * ocp.nlp[0].p_scaling[scaling_offset : scaling_offset + param.size]
-            )
+            data_parameters[param.name] = v_array[offset : offset + param.size, np.newaxis] * param.scaling
             offset += param.size
             scaling_offset += param.size
             if len(data_parameters[param.name].shape) == 1:
@@ -284,12 +281,12 @@ class OptimizationVariable:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
-                x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.nx))
+                x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape))
 
                 if nlp.control_type != ControlType.CONSTANT or (
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
                 ):
-                    u.append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.nu, 1))
+                    u.append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.shape, 1))
 
             nlp.X = x
             self.x[nlp.phase_idx] = vertcat(*x)
@@ -311,22 +308,23 @@ class OptimizationVariable:
 
         # Sanity check
         for i in range(ocp.n_phases):
-            ocp.nlp[i].x_bounds.check_and_adjust_dimensions(ocp.nlp[i].nx, ocp.nlp[i].ns)
+            ocp.nlp[i].x_bounds.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ocp.nlp[i].ns)
             if ocp.nlp[i].control_type == ControlType.CONSTANT:
-                ocp.nlp[i].u_bounds.check_and_adjust_dimensions(ocp.nlp[i].nu, ocp.nlp[i].ns - 1)
+                ocp.nlp[i].u_bounds.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns - 1)
             elif ocp.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                ocp.nlp[i].u_bounds.check_and_adjust_dimensions(ocp.nlp[i].nu, ocp.nlp[i].ns)
+                ocp.nlp[i].u_bounds.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns)
             else:
                 raise NotImplementedError(f"Plotting {ocp.nlp[i].control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
-            nx = nlp.nx * (nlp.ns + 1)
-            x_bounds = Bounds([0] * nx, [0] * nx, interpolation=InterpolationType.CONSTANT)
+            nx = nlp.states.shape
+            all_nx = nx * (nlp.ns + 1)
+            x_bounds = Bounds([0] * all_nx, [0] * all_nx, interpolation=InterpolationType.CONSTANT)
             for k in range(nlp.ns + 1):
-                x_bounds.min[k * nlp.nx : (k + 1) * nlp.nx, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=k)
-                x_bounds.max[k * nlp.nx : (k + 1) * nlp.nx, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=k)
+                x_bounds.min[k * nx : (k + 1) * nx, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=k)
+                x_bounds.max[k * nx : (k + 1) * nx, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=k)
 
             # For controls
             if nlp.control_type == ControlType.CONSTANT:
@@ -335,11 +333,12 @@ class OptimizationVariable:
                 ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-            nu = nlp.nu * ns
-            u_bounds = Bounds([0] * nu, [0] * nu, interpolation=InterpolationType.CONSTANT)
+            nu = nlp.controls.shape
+            all_nu = nu * ns
+            u_bounds = Bounds([0] * all_nu, [0] * all_nu, interpolation=InterpolationType.CONSTANT)
             for k in range(ns):
-                u_bounds.min[k * nlp.nu : (k + 1) * nlp.nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
-                u_bounds.max[k * nlp.nu : (k + 1) * nlp.nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
+                u_bounds.min[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.min.evaluate_at(shooting_point=k)
+                u_bounds.max[k * nu : (k + 1) * nu, 0] = nlp.u_bounds.max.evaluate_at(shooting_point=k)
 
             self.x_bounds[i_phase] = x_bounds
             self.u_bounds[i_phase] = u_bounds
@@ -353,21 +352,22 @@ class OptimizationVariable:
 
         # Sanity check
         for i in range(ocp.n_phases):
-            ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].nx, ocp.nlp[i].ns)
+            ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ocp.nlp[i].ns)
             if ocp.nlp[i].control_type == ControlType.CONSTANT:
-                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].nu, ocp.nlp[i].ns - 1)
+                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns - 1)
             elif ocp.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].nu, ocp.nlp[i].ns)
+                ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns)
             else:
                 raise NotImplementedError(f"Plotting {ocp.nlp[i].control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
-            nx = nlp.nx * (nlp.ns + 1)
-            x_init = InitialGuess([0] * nx, interpolation=InterpolationType.CONSTANT)
+            nx = nlp.states.shape
+            all_nx = nx * (nlp.ns + 1)
+            x_init = InitialGuess([0] * all_nx, interpolation=InterpolationType.CONSTANT)
             for k in range(nlp.ns + 1):
-                x_init.init[k * nlp.nx : (k + 1) * nlp.nx, 0] = nlp.x_init.init.evaluate_at(shooting_point=k)
+                x_init.init[k * nx : (k + 1) * nx, 0] = nlp.x_init.init.evaluate_at(shooting_point=k)
 
             # For controls
             if nlp.control_type == ControlType.CONSTANT:
@@ -376,10 +376,11 @@ class OptimizationVariable:
                 ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-            nu = nlp.nu * ns
-            u_init = InitialGuess([0] * nu, interpolation=InterpolationType.CONSTANT)
+            nu = nlp.controls.shape
+            all_nu = nu * ns
+            u_init = InitialGuess([0] * all_nu, interpolation=InterpolationType.CONSTANT)
             for k in range(ns):
-                u_init.init[k * nlp.nu : (k + 1) * nlp.nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
+                u_init.init[k * nu : (k + 1) * nu, 0] = nlp.u_init.init.evaluate_at(shooting_point=k)
 
             self.x_init[i_phase] = x_init
             self.u_init[i_phase] = u_init

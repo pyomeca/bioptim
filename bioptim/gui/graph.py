@@ -69,7 +69,7 @@ class GraphAbstract:
                 condensed_vector += f"... {self._return_line}... "
         return condensed_vector
 
-    def _vector_layout(self, vector: Union[list, np.array]):
+    def _vector_layout(self, vector: Union[list, np.array, int]):
         """
         Resize vector content for display task
 
@@ -78,22 +78,26 @@ class GraphAbstract:
         vector: Union[list, np.array]
             The vector to be condensed
         """
-        condensed_vector = ""
-        vector = np.array(vector)
-        if len(vector.shape) == 1:
-            vector = vector[:, np.newaxis]
 
-        if vector.shape[1] != 1:
-            condensed_vector += f"{self._return_line}"
-            condensed_vector += "["
-        for i in range(vector.shape[1]):
-            if i != 0:
+        condensed_vector = ""
+        if isinstance(vector, int):
+            condensed_vector = f"{vector}"
+        else:
+            vector = np.array(vector)
+            if len(vector.shape) == 1:
+                vector = vector[:, np.newaxis]
+
+            if vector.shape[1] != 1:
                 condensed_vector += f"{self._return_line}"
-            condensed_vector += "[" if vector.size > 1 else ""
-            condensed_vector += self._vector_layout_structure(vector[:, i], 3)
-            condensed_vector += "]" if vector.size > 1 else ""
-        if vector.shape[1] != 1:
-            condensed_vector += "]"
+                condensed_vector += "["
+            for i in range(vector.shape[1]):
+                if i != 0:
+                    condensed_vector += f"{self._return_line}"
+                condensed_vector += "[" if vector.size > 1 else ""
+                condensed_vector += self._vector_layout_structure(vector[:, i], 3)
+                condensed_vector += "]" if vector.size > 1 else ""
+            if vector.shape[1] != 1:
+                condensed_vector += "]"
 
         return condensed_vector
 
@@ -124,6 +128,8 @@ class GraphAbstract:
             The string to be completed
         """
 
+        if hasattr(objective, "index"):
+            string += f"<b>Index</b>: {objective.index}{self._return_line}" if objective.index is not None else ""
         if hasattr(objective, "weight"):
             string += f"<b>Weight</b>: {objective.weight}{self._return_line}"
         for param in objective.params:
@@ -235,7 +241,8 @@ class GraphAbstract:
 
         return initial_guess_str, min_bound_str, max_bound_str, scaling_str
 
-    def _get_parameter_function_name(self, parameter: Parameter):
+    @staticmethod
+    def _get_parameter_function_name(parameter: Parameter):
         """
         Get parameter function name (whether or not it is a custom function)
 
@@ -376,7 +383,7 @@ class OcpToGraph(GraphAbstract):
         Draw a cluster including all the information about the phaseless objectives of the problem
     """
 
-    def print(self):
+    def _prepare_print(self):
         """
         Display ocp structure in a graph
         """
@@ -398,9 +405,11 @@ class OcpToGraph(GraphAbstract):
         # Draw phaseless objectives
         self._draw_phaseless_cluster(G)
         self._draw_phase_trans_to_phaseless_edge(G, self._global_objectives_to_str(self.ocp.J)[0], self.ocp.n_phases)
+        return G
 
+    def print(self):
         # Display graph
-        G.view()
+        self._prepare_print().view()
 
     def _constraint_to_str(self, constraint: Constraint):
         """
@@ -446,7 +455,7 @@ class OcpToGraph(GraphAbstract):
                 global_objectives += f"<b>Type:</b> {objective.type} <br/>"
                 global_objectives_names += objective.name
                 global_objectives += (
-                    f"{f'<b>Target</b>: {self.vector_layout(objective.sliced_target)} <br/>'}"
+                    f"{f'<b>Target</b>: {self._vector_layout(objective.sliced_target)} <br/>'}"
                     if objective.sliced_target is not None
                     else ""
                 )
@@ -477,9 +486,17 @@ class OcpToGraph(GraphAbstract):
         node_str += f"<b>Min bound</b>: {min_bound} <br/>"
         node_str += f"<b>Max bound</b>: {max_bound} <br/><br/>"
         if parameter.penalty_list is not None:
+            size_initial_guess = len(parameter.initial_guess.init[0])
+            size_sliced_target = len(parameter.penalty_list.sliced_target[0])
+            scaling = [parameter.scaling[i][j] for i in range(parameter.size) for j in range(size_initial_guess)]
+            sliced_target_without_scaling = [
+                parameter.penalty_list.sliced_target[i][j] / scaling[i]
+                for i in range(parameter.size)
+                for j in range(size_sliced_target)
+            ]
             node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
             node_str += (
-                f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.sliced_target)} <br/>'}"
+                f"{f'<b>Target</b>: {self._vector_layout(sliced_target_without_scaling)} <br/>'}"
                 if parameter.penalty_list.sliced_target is not None
                 else ""
             )
@@ -620,7 +637,8 @@ class OcpToGraph(GraphAbstract):
             self._draw_mayer_node(g, phase_idx)
             self._draw_constraints_node(g, phase_idx)
 
-    def _draw_lagrange_to_mayer_edge(self, G: Digraph, phase_idx: int):
+    @staticmethod
+    def _draw_lagrange_to_mayer_edge(G: Digraph, phase_idx: int):
         """
         Draw edge between Lagrange node and Mayer node
 
@@ -634,7 +652,8 @@ class OcpToGraph(GraphAbstract):
 
         G.edge(f"lagrange_{phase_idx}", f"mayer_node_{phase_idx}", color="lightgrey")
 
-    def _draw_mayer_to_constraints_edge(self, G: Digraph, phase_idx: int):
+    @staticmethod
+    def _draw_mayer_to_constraints_edge(G: Digraph, phase_idx: int):
         """
         Draw edge between Mayer node and constraints node
 
@@ -669,7 +688,8 @@ class OcpToGraph(GraphAbstract):
         else:
             G.edge(f"param_{phase_idx}0", f"lagrange_{phase_idx}", color="lightgrey")
 
-    def _draw_phase_trans_to_phaseless_edge(self, G: Digraph, phaseless_objectives: str, nb_phase: int):
+    @staticmethod
+    def _draw_phase_trans_to_phaseless_edge(G: Digraph, phaseless_objectives: str, nb_phase: int):
         """
         Draw edge between phaseless objectives and phase transitions
 

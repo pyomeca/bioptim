@@ -14,7 +14,7 @@ It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fas
 | Type | Status |
 |---|---|
 | License | <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-success" alt="License"/></a> |
-| Continuous integration | [![Build Status](https://travis-ci.org/pyomeca/bioptim.svg?branch=master)](https://travis-ci.org/pyomeca/bioptim) |
+| Continuous integration | [![Build status](https://ci.appveyor.com/api/projects/status/om07r8jhng61qx7y/branch/master?svg=true)](https://ci.appveyor.com/project/pariterre/bioptim/branch/master) |
 | Code coverage | [![codecov](https://codecov.io/gh/pyomeca/bioptim/branch/master/graph/badge.svg?token=NK1V6QE2CK)](https://codecov.io/gh/pyomeca/bioptim) |
 | DOI | [![DOI](https://zenodo.org/badge/251615517.svg)](https://zenodo.org/badge/latestdoi/251615517) |
 
@@ -607,7 +607,7 @@ If an advanced user wants to define their own dynamic function, they can define 
 
 The configuration is what tells `bioptim` which variables are states and which are control.
 The user is expected to provide a function handler with the follow signature: `custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram)`.
-In this function the user is expected to call the relevant `Problem` class methods: 
+In this function the user is expected to call the relevant `ConfigureProblem` class methods: 
 - `configure_q(nlp, as_states: bool, as_controls: bool)`
 - `configure_qdot(nlp, as_states: bool, as_controls: bool)`
 - `configure_q_qdot(nlp, as_states: bool, as_controls: bool)`
@@ -615,7 +615,7 @@ In this function the user is expected to call the relevant `Problem` class metho
 - `configure_muscles(nlp, as_states: bool, as_controls: bool)`
 where `as_states` add the variable to the states vector and `as_controls` to the controls vector.
 Please note that this is not necessary mutually exclusive.
-Finally, the user is expected to configure the dynamic by calling `Problem.configure_dynamics_function(ocp, nlp, custom_dynamics)`
+Finally, the user is expected to configure the dynamic by calling `ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics)`
 
 Defining the dynamic function must be done when one provides a custom configuration, but can also be defined by providing a function handler to the `dynamic_function` parameter for `Dynamics`. 
 The signature of this custom dynamic function is as follows: `custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram`.
@@ -653,6 +653,19 @@ If external forces are provided, they are added to the ForwardDynamics function.
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = biorbd_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
+
+#### TORQUE_DERIVATIVE_DRIVEN
+The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. 
+The derivative of *q* is trivially *qdot*.
+The derivative of *qdot* is given by the biorbd function: `qddot = biorbd_model.ForwardDynamics(q, qdot, tau)`.
+The derivative of *tau* is trivially *taudot*.
+If external forces are provided, they are added to the ForwardDynamics function. 
+
+#### TORQUE_DERIVATIVE_DRIVEN_WITH_CONTACT
+The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. 
+The derivative of *q* is trivially *qdot*.
+The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = biorbd_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
+The derivative of *tau* is trivially *taudot*.
 
 #### TORQUE_ACTIVATIONS_DRIVEN
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. 
@@ -842,8 +855,8 @@ The dimensions of the target must be of [index, node]
 The `ConstraintFcn` class provides a list of some predefined constraint functions. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 It is possible however to define a custom constraint by sending a function handler in place of the `ConstraintFcn`.
-The signature of this custom function is: `custom_function(pn: PenaltyNodes, **extra_params)`
-The PenaltyNodes contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Constraint` constructor. 
+The signature of this custom function is: `custom_function(pn: PenaltyNodeList, **extra_params)`
+The PenaltyNodeList contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Constraint` constructor. 
 The function is expected to return an MX vector of the constraint to be inside `min_bound` and `max_bound`. 
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom constraint should be at least familiar with this type beforehand. 
@@ -982,8 +995,8 @@ The `ObjectiveFcn` class provides a list of some predefined objective functions.
 Since `ObjectiveFcn.Lagrange` and `ObjectiveFcn.Mayer` are Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
 It is possible however to define a custom objective function by sending a function handler in place of the `ObjectiveFcn`.
 If one do so, an additional parameter must be sent to the `Objective` constructor which is `custom_type` and must be either `ObjectiveFcn.Lagrange` or `ObjectiveFcn.Mayer`.
-The signature of the custom function is: `custom_function(pn: PenaltyNodes, **extra_params)`
-The PenaltyNodes contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Objective` constructor. 
+The signature of the custom function is: `custom_function(pn: PenaltyNodeList, **extra_params)`
+The PenaltyNodeList contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Objective` constructor. 
 The function is expected to return an MX vector of the objective function. 
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom objective functions should be at least familiar with this type beforehand. 

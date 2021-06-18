@@ -47,7 +47,7 @@ ControlType
 
 
 # --- Managing the dynamics --- #
-Problem
+ConfigureProblem
     Dynamics configuration for the most common ocp
 Dynamics
     A placeholder for the chosen dynamics by the user
@@ -110,6 +110,8 @@ Mapping
     Mapping of index set to a different index set
 BiMapping
     Mapping of two index sets between each other
+BiMappingList
+    A list of BiMapping
 
 
 # --- Version of bioptim --- #
@@ -143,8 +145,7 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 """
 
 from .misc.__version__ import __version__
-from .dynamics.problem import Problem
-from .dynamics.dynamics_type import DynamicsFcn, DynamicsList, Dynamics
+from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
 from .dynamics.ode_solver import OdeSolver
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
@@ -153,7 +154,7 @@ from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
 from .limits.penalty_node import PenaltyNode
 from .misc.enums import Axis, Node, InterpolationType, PlotType, Solver, ControlType, CostType, Shooting
-from .misc.mapping import BiMapping, Mapping
+from .misc.mapping import BiMappingList, BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.receding_horizon_optimization import MovingHorizonEstimator, NonlinearModelPredictiveControl
