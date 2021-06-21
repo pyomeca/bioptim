@@ -452,12 +452,9 @@ class PenaltyFunctionAbstract:
             all_pn: PenaltyNodeList
                 The penalty node elements
             """
-            nq = len(all_pn.nlp.states["q"])
-            states_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, nq, "states_idx")
-            qdot_idx = [all_pn.nlp.states["qdot"].index[i] for i in states_idx]
-            for i in range(len(all_pn) - 1):
-                val = all_pn.nlp.dynamics_func(all_pn.x[i], all_pn.u[i], all_pn.p)[qdot_idx, :]
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
+
+            nlp = all_pn.nlp
+            penalty.set_penalty(all_pn.nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx), all_pn)
 
         @staticmethod
         def minimize_predicted_com_height(penalty: PenaltyOption, all_pn: PenaltyNodeList):
@@ -475,15 +472,12 @@ class PenaltyFunctionAbstract:
             """
 
             nlp = all_pn.nlp
-            nlp.add_casadi_func("gravity", nlp.model.getGravity)
-            g = float(nlp.casadi_func["gravity"]()["o0"][2])
-            nlp.add_casadi_func("biorbd_CoM", nlp.model.CoM, nlp.states["q"].mx)
-            nlp.add_casadi_func("biorbd_CoM_dot", nlp.model.CoMdot, nlp.states["q"].mx, nlp.states["qdot"].mx)
-            for i, pn in enumerate(all_pn):
-                CoM = nlp.casadi_func["biorbd_CoM"](pn["q"])
-                CoM_dot = nlp.casadi_func["biorbd_CoM_dot"](pn["q"], pn["qdot"])
-                CoM_height = (CoM_dot[2] * CoM_dot[2]) / (2 * -g) + CoM[2]
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, CoM_height, penalty)
+            g = nlp.model.getGravity().to_mx()[2]
+            com = nlp.model.CoM(nlp.states["q"].mx).to_mx()
+            com_dot = nlp.model.CoMdot(nlp.states["q"].mx, nlp.states["qdot"].mx).to_mx()
+            com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
+            com_height_cx = nlp.add_casadi_func("com_height", com_height, nlp.states["q"], nlp.states["qdot"])
+            penalty.set_penalty(com_height_cx, all_pn)
 
         @staticmethod
         def minimize_com_position(penalty: PenaltyOption, all_pn: PenaltyNodeList, axis: Axis = None):
@@ -889,11 +883,6 @@ class PenaltyFunctionAbstract:
             else:
                 penalty.quadratic = False
 
-        if func == PenaltyType.PROPORTIONAL_STATE:
-            penalty.params["which_var"] = "states"
-        if func == PenaltyType.PROPORTIONAL_CONTROL:
-            penalty.params["which_var"] = "controls"
-
     @staticmethod
     def validate_penalty_time_index(penalty: PenaltyOption, pn: PenaltyNodeList):
         """
@@ -962,9 +951,10 @@ class PenaltyType(Enum):
     PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_states
     PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_controls
     MINIMIZE_QDDOT = PenaltyFunctionAbstract.Functions.minimize_qddot
+    MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height
+
     MINIMIZE_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
     TRACK_CONTACT_FORCES = MINIMIZE_CONTACT_FORCES
-    MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height
     MINIMIZE_COM_POSITION = PenaltyFunctionAbstract.Functions.minimize_com_position
     MINIMIZE_COM_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_com_velocity
     TRACK_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt

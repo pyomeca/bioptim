@@ -309,6 +309,10 @@ class ObjectiveFunction:
                 ObjectiveFunction.MayerFunction.add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
+        def get_dt(nlp):
+            return 1
+
+        @staticmethod
         def get_penalty_pool(all_pn: PenaltyNodeList):
             """
             Add the objective function to the objective pool
