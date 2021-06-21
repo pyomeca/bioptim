@@ -4,12 +4,13 @@ from math import inf
 import inspect
 
 import biorbd
-from casadi import vertcat, horzcat, MX, SX
+from casadi import vertcat, MX, SX
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, Axis
 from ..misc.mapping import Mapping
+from ..optimization.optimization_variable import OptimizationVariable
 
 
 class PenaltyFunctionAbstract:
@@ -343,13 +344,12 @@ class PenaltyFunctionAbstract:
 
             marker_0 = nlp.add_casadi_func(f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker)
             marker_1 = nlp.add_casadi_func(f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker)
-            penalty.set_penalty(marker_1 - marker_0, 3, all_pn)
+            penalty.set_penalty(marker_1 - marker_0, all_pn)
 
         @staticmethod
-        def proportional_variable(
+        def proportional_states(
             penalty: PenaltyOption,
             all_pn: PenaltyNodeList,
-            which_var: str,
             first_dof: int,
             second_dof: int,
             coef: float,
@@ -364,8 +364,6 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            which_var: str
-                If the proportion is on 'states' or on 'controls'
             first_dof: int
                 The index of the first variable
             second_dof: int
@@ -374,23 +372,71 @@ class PenaltyFunctionAbstract:
                 The proportion coefficient such that v[first_dof] = coef * v[second_dof]
             """
 
-            if which_var == "states":
-                ux = all_pn.x
-                n_val = all_pn.nlp.states.shape
-            elif which_var == "controls":
-                ux = all_pn.u
-                n_val = all_pn.nlp.controls.shape
-            else:
-                raise RuntimeError("Wrong choice of which_var")
+            PenaltyFunctionAbstract.Functions._proportional_variable(penalty, all_pn, first_dof, second_dof, coef, all_pn.nlp.states.cx, "proportional_states")
 
-            PenaltyFunctionAbstract._check_idx("dof", (first_dof, second_dof), n_val)
-            if not isinstance(coef, (int, float)):
-                raise RuntimeError("coef must be an int or a float")
+        @staticmethod
+        def proportional_controls(
+                penalty: PenaltyOption,
+                all_pn: PenaltyNodeList,
+                first_dof: int,
+                second_dof: int,
+                coef: float,
+        ):
+            """
+            Introduce a proportionality between two variables (e.g. one variable is twice the other)
+            By default this function is quadratic, meaning that it minimizes the difference of this proportion.
 
-            for v in ux:
-                v = all_pn.nlp.variable_mappings["q"].to_second.map(v)
-                val = v[first_dof] - coef * v[second_dof]
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            first_dof: int
+                The index of the first variable
+            second_dof: int
+                The index of the second variable
+            coef: float
+                The proportion coefficient such that v[first_dof] = coef * v[second_dof]
+            """
+
+            PenaltyFunctionAbstract.Functions._proportional_variable(penalty, all_pn, first_dof, second_dof, coef, all_pn.nlp.controls.cx, "proportional_controls")
+
+        @staticmethod
+        def _proportional_variable(
+                penalty: PenaltyOption,
+                all_pn: PenaltyNodeList,
+                first_dof: int,
+                second_dof: int,
+                coef: float,
+                var_cx: OptimizationVariable,
+                var_type: str,
+        ):
+            """
+            Introduce a proportionality between two variables (e.g. one variable is twice the other)
+            By default this function is quadratic, meaning that it minimizes the difference of this proportion.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            first_dof: int
+                The index of the first variable
+            second_dof: int
+                The index of the second variable
+            coef: float
+                The proportion coefficient such that v[first_dof] = coef * v[second_dof]
+            """
+
+            if penalty.rows is not None:
+                raise ValueError(f"rows should not be defined for {var_type}")
+
+            if penalty.cols is not None:
+                raise ValueError(f"cols should not be defined for {var_type}")
+
+            penalty.set_penalty(var_cx[first_dof, :] - coef * var_cx[second_dof, :], all_pn)
 
         @staticmethod
         def minimize_qddot(penalty: PenaltyOption, all_pn: PenaltyNodeList):
@@ -913,8 +959,8 @@ class PenaltyType(Enum):
     MINIMIZE_MARKERS_DISPLACEMENT = PenaltyFunctionAbstract.Functions.minimize_markers_displacement
     MINIMIZE_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
     TRACK_MARKERS_VELOCITY = MINIMIZE_MARKERS_VELOCITY
-    PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_variable
-    PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_variable
+    PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_states
+    PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_controls
     MINIMIZE_QDDOT = PenaltyFunctionAbstract.Functions.minimize_qddot
     MINIMIZE_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
     TRACK_CONTACT_FORCES = MINIMIZE_CONTACT_FORCES
