@@ -8,7 +8,6 @@ from casadi import vertcat, horzcat, MX, SX
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
-from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, Axis
 from ..misc.mapping import Mapping
 
@@ -179,16 +178,15 @@ class PenaltyFunctionAbstract:
             names = optim_var.keys() if names == "all" else names
 
             fcn = vertcat(*[optim_var[name].cx for name in names])
-            n_rows = len(optim_var[names])
             combined_to = None if isinstance(names, (list, tuple)) else f"{names}_{suffix}"
-            penalty.set_penalty(fcn, all_pn=all_pn, n_rows=n_rows, combine_to=combined_to, target_ns=len(var))
+            penalty.set_penalty(fcn, all_pn=all_pn, combine_to=combined_to, target_ns=len(var))
 
             if combined_to is None:
                 penalty.add_multiple_target_to_plot(names, suffix, all_pn)
 
         @staticmethod
         def minimize_markers(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None,  axis_to_track: Union[tuple, list] = (Axis.X, Axis.Y, Axis.Z)
         ):
             """
             Minimize a marker set.
@@ -201,16 +199,29 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
+            marker_index: Union[tuple, list]
+                The index of markers to minimize, can be int or str.
+                penalty.cols should not be defined if marker_index is defined
+            axis_to_track: list
+                The axis to minimize, default XYZ
             """
 
-            marker = all_pn.nlp.add_casadi_func("marker", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
+            # Adjust the cols and rows
+            if penalty.cols is not None and marker_index is not None:
+                raise ValueError("It is not possible to define cols and marker_index since they are the same variable")
+            penalty.cols = marker_index if marker_index is not None else penalty.cols
+            if penalty.cols is not None:
+                penalty.cols = [penalty.cols] if not isinstance(penalty, (tuple, list)) else penalty.cols
+                # Convert to int if it is str
+                penalty.cols = [cols if isinstance(cols, int) else biorbd.marker_index(all_pn.nlp.model, cols) for cols in penalty.cols]
 
-            # if penalty.index is None:
-            #     marker = horzcat(*[mark.to_mx() for i, mark in enumerate(marker)])
-            # else:
-            #     marker = horzcat(*[mark.to_mx() for i, mark in enumerate(marker) if i in penalty.index])
+            if penalty.rows is not None and axis_to_track is not None:
+                raise ValueError("It is not possible to define rows and axis_to_track since they are the same variable")
+            penalty.rows = axis_to_track if axis_to_track is not None else penalty.rows
 
-            penalty.set_penalty(marker, 3, all_pn)
+            # Add the penalty
+            markers_obj = all_pn.nlp.add_casadi_func("marker", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
+            penalty.set_penalty(markers_obj, all_pn)
 
         @staticmethod
         def minimize_markers_displacement(
@@ -879,11 +890,11 @@ class PenaltyType(Enum):
     TRACK_CONTROL = MINIMIZE_CONTROL
     MINIMIZE_MARKERS = PenaltyFunctionAbstract.Functions.minimize_markers
     TRACK_MARKERS = MINIMIZE_MARKERS
+    SUPERIMPOSE_MARKERS = PenaltyFunctionAbstract.Functions.superimpose_markers
 
     MINIMIZE_MARKERS_DISPLACEMENT = PenaltyFunctionAbstract.Functions.minimize_markers_displacement
     MINIMIZE_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
     TRACK_MARKERS_VELOCITY = MINIMIZE_MARKERS_VELOCITY
-    SUPERIMPOSE_MARKERS = PenaltyFunctionAbstract.Functions.superimpose_markers
     PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_variable
     PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_variable
     MINIMIZE_QDDOT = PenaltyFunctionAbstract.Functions.minimize_qddot

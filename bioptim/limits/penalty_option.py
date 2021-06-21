@@ -42,6 +42,8 @@ class PenaltyOption(OptionGeneric):
         quadratic: bool = None,
         derivative: bool = False,
         index: list = None,
+        rows: Union[list, tuple, range, np.ndarray] = None,
+        cols: Union[list, tuple, range, np.ndarray] = None,
         custom_function: Callable = None,
         **params: Any,
     ):
@@ -73,7 +75,11 @@ class PenaltyOption(OptionGeneric):
         self.get_all_nodes_at_once = get_all_nodes_at_once
         self.quadratic = quadratic
 
-        self.index = index
+        if index is not None and rows is not None:
+            raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")
+        self.rows = rows if rows is not None else index
+        self.cols = cols
+
         self.target = np.array(target) if np.any(target) else None
         if self.target is not None:
             if len(self.target.shape) == 0:
@@ -90,12 +96,7 @@ class PenaltyOption(OptionGeneric):
         self.derivative = derivative
 
     def set_penalty(
-            self,
-            penalty: Union[MX, SX],
-            n_rows: int,
-            all_pn: PenaltyNodeList,
-            combine_to: str = None,
-            target_ns: int = -1
+            self, penalty: Union[MX, SX], all_pn: PenaltyNodeList, combine_to: str = None, target_ns: int = -1
     ):
         """
         Prepare the dimension and index of the penalty (including the target)
@@ -104,8 +105,6 @@ class PenaltyOption(OptionGeneric):
         ----------
         penalty: Union[MX, SX],
             The actual penalty function
-        n_rows: int
-            The expected row shape
         target_ns: Union[list, tuple]
             The expected shape (n_rows, ns) of the data to track
         all_pn: PenaltyNodeList
@@ -114,19 +113,22 @@ class PenaltyOption(OptionGeneric):
             The name of the underlying plot to combine the tracking data to
 
         """
-        self._set_rows_idx(n_rows)
+        self.rows = self._set_dim_idx(self.rows, penalty.rows())
+        self.cols = self._set_dim_idx(self.cols, penalty.columns())
         if self.target is not None:
             self._check_target_dimensions(target_ns)
             if combine_to is not None:
                 self.add_target_to_plot(all_pn, combine_to)
         self._set_penalty_function(all_pn, penalty)
 
-    def _set_rows_idx(self, n_rows: int):
+    def _set_dim_idx(self, dim: Union[list, tuple, range, np.ndarray], n_rows: int):
         """
         Checks if the variable index is consistent with the requested variable.
 
         Parameters
         ----------
+        dim: Union[list, tuple, range]
+            The dimension to set
         n_rows: int
             The expected row shape
 
@@ -135,16 +137,17 @@ class PenaltyOption(OptionGeneric):
         The formatted indices
         """
 
-        if self.index is None:
-            self.index = range(n_rows)
+        if dim is None:
+            dim = range(n_rows)
         else:
-            if isinstance(self.index, int):
-                self.index = [self.index]
-            if max(self.index) > n_rows:
+            if isinstance(dim, int):
+                dim = [dim]
+            if max(dim) > n_rows:
                 raise RuntimeError(f"{self.name} index cannot be higher than nx ({n_rows})")
-        self.index = np.array(self.index)
-        if not np.issubdtype(self.index.dtype, np.integer):
+        dim = np.array(dim)
+        if not np.issubdtype(dim.dtype, np.integer):
             raise RuntimeError(f"{self.name} index must be a list of integer")
+        return dim
 
     def _check_target_dimensions(self, ns: int):
         """
@@ -164,9 +167,9 @@ class PenaltyOption(OptionGeneric):
         if self.target.shape[1] == 1:
             self.target = np.repeat(self.target, ns, axis=1)
 
-        if self.target.shape != (len(self.index), ns):
+        if self.target.shape != (len(self.rows), ns):
             raise RuntimeError(
-                f"target {self.target.shape} does not correspond to expected size {(len(self.index), ns)}"
+                f"target {self.target.shape} does not correspond to expected size {(len(self.rows), ns)}"
             )
 
     def _set_penalty_function(self, all_pn: PenaltyNodeList, fcn: Union[MX, SX]):
@@ -174,7 +177,7 @@ class PenaltyOption(OptionGeneric):
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         self.function = biorbd.to_casadi_func(
-            f"{self.name}", fcn, all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx,
+            f"{self.name}", fcn[self.rows, self.cols], all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx,
         )
 
         state_cx, control_cx = (all_pn.nlp.states._cx, all_pn.nlp.controls._cx) if self.derivative else (all_pn.nlp.states.cx, all_pn.nlp.controls.cx)
@@ -203,7 +206,7 @@ class PenaltyOption(OptionGeneric):
             [weight_cx * modified_fcn * dt_cx]
         ).expand()
 
-    def add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str, rows: range = None, axes_index: range = None):
+    def add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str, rows: Union[range, list, tuple, np.ndarray] = None, axes_index: Union[range, list, tuple, np.ndarray] = None):
         """
         Interface to the plot so it can be properly added to the proper plot
 
@@ -213,14 +216,14 @@ class PenaltyOption(OptionGeneric):
             The penalty node elements
         combine_to: str
             The name of the underlying plot to combine the tracking data to
-        rows: range
+        rows: Union[range, list, tuple, np.ndarray]
             The rows of the target to plot
-        axes_index: range
-            The position of the target to plot, self.index is used if None
+        axes_index: Union[range, list, tuple, np.ndarray]
+            The position of the target to plot, self.rows is used if None
         """
 
         data = np.c_[self.target, self.target[:, -1]] if self.target.shape[1] == all_pn.nlp.ns else self.target
-        axes_index = self.index if axes_index is None else axes_index
+        axes_index = self.rows if axes_index is None else axes_index
         if rows is not None:
             data = data[rows, :]
         all_pn.ocp.add_plot(
@@ -242,7 +245,7 @@ class PenaltyOption(OptionGeneric):
         names: list
             The list of names in optim_var to add
         suffix: str
-            The suffixe name to add (either "states" or "controls").
+            The suffix name to add (either "states" or "controls").
             This will determine if nlp.states or nlp.controls is used
         all_pn: PenaltyNodeList
             The penalty node elements
@@ -258,8 +261,8 @@ class PenaltyOption(OptionGeneric):
         else:
             raise ValueError("suffix for add_multiple_target_to_plot can only be 'states' or 'controls'")
         for name in names:
-            n_elt = len(optim_var[name])
-            self.add_target_to_plot(all_pn, combine_to=f"{name}_{suffix}", rows=range(offset, offset + n_elt), axes_index=range(0, n_elt))
+            n_elt = self.rows.shape[0]
+            self.add_target_to_plot(all_pn, combine_to=f"{name}_{suffix}", rows=range(offset, offset + n_elt), axes_index=self.rows)
             offset += n_elt
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):

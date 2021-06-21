@@ -618,10 +618,10 @@ class ObjectiveFcn:
         MINIMIZE_CONTROL = (PenaltyType.MINIMIZE_CONTROL,)
         TRACK_CONTROL = (PenaltyType.TRACK_CONTROL,)
         SUPERIMPOSE_MARKERS = (PenaltyType.SUPERIMPOSE_MARKERS,)
-
-        MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
         MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
         TRACK_MARKERS = (PenaltyType.TRACK_MARKERS,)
+
+        MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
         MINIMIZE_MARKERS_DISPLACEMENT = (PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT,)
         MINIMIZE_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
         TRACK_MARKERS_VELOCITY = (PenaltyType.TRACK_MARKERS_VELOCITY,)
