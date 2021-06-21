@@ -207,17 +207,8 @@ class PenaltyFunctionAbstract:
             """
 
             # Adjust the cols and rows
-            if penalty.cols is not None and marker_index is not None:
-                raise ValueError("It is not possible to define cols and marker_index since they are the same variable")
-            penalty.cols = marker_index if marker_index is not None else penalty.cols
-            if penalty.cols is not None:
-                penalty.cols = [penalty.cols] if not isinstance(penalty, (tuple, list)) else penalty.cols
-                # Convert to int if it is str
-                penalty.cols = [cols if isinstance(cols, int) else biorbd.marker_index(all_pn.nlp.model, cols) for cols in penalty.cols]
-
-            if penalty.rows is not None and axis_to_track is not None:
-                raise ValueError("It is not possible to define rows and axis_to_track since they are the same variable")
-            penalty.rows = axis_to_track if axis_to_track is not None else penalty.rows
+            PenaltyFunctionAbstract.set_marker_idx_columns(penalty, all_pn, marker_index)
+            PenaltyFunctionAbstract.set_marker_idx_rows(penalty, axis_to_track)
 
             # Add the penalty
             markers_obj = all_pn.nlp.add_casadi_func("marker", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
@@ -291,7 +282,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val[:3, :], penalty)
 
         @staticmethod
-        def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList):
+        def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None,  axis_to_track: Union[tuple, list] = (Axis.X, Axis.Y, Axis.Z)):
             """
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -303,33 +294,20 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
+            marker_index: Union[tuple, list]
+                The index of markers to minimize, can be int or str.
+                penalty.cols should not be defined if marker_index is defined
+            axis_to_track: list
+                The axis to minimize, default XYZ
             """
 
-            nlp = all_pn.nlp
-            markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                penalty.index, nlp.model.nbMarkers(), "markers_idx"
-            )
+            # Adjust the cols and rows
+            PenaltyFunctionAbstract.set_marker_idx_columns(penalty, all_pn, marker_index)
+            PenaltyFunctionAbstract.set_marker_idx_rows(penalty, axis_to_track)
 
-            target = None
-            if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (3, len(markers_idx), len(all_pn.x))
-                )
-
-            for m in markers_idx:
-                nlp.add_casadi_func(
-                    f"biorbd_markerVelocity_{m}",
-                    nlp.model.markerVelocity,
-                    nlp.states["q"].mx,
-                    nlp.states["qdot"].mx,
-                    int(m),
-                )
-
-            for i, pn in enumerate(all_pn):
-                for m in markers_idx:
-                    val = nlp.casadi_func[f"biorbd_markerVelocity_{m}"](pn["q"], pn["qdot"])
-                    penalty.sliced_target = target[:, m, i] if target is not None else None
-                    penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
+            # Add the penalty
+            markers_obj = all_pn.nlp.add_casadi_func("marker", all_pn.nlp.model.markersVelocity, all_pn.nlp.states["q"], all_pn.nlp.states["qdot"])
+            penalty.set_penalty(markers_obj, all_pn)
 
         @staticmethod
         def superimpose_markers(
@@ -763,6 +741,46 @@ class PenaltyFunctionAbstract:
             A reference to the current phase of the ocp
         """
         raise RuntimeError("add cannot be called from an abstract class")
+
+    @staticmethod
+    def set_marker_idx_columns(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[str, int, list, tuple]):
+        """
+        Simple penalty.cols setter for marker index and names
+
+        Parameters
+        ----------
+        penalty: PenaltyOption
+            The actual penalty to declare
+        all_pn: PenaltyNodeList
+            The penalty node elements
+        marker_index: Union[str, int, list, tuple]
+            The marker to index
+        """
+
+        if penalty.cols is not None and marker_index is not None:
+            raise ValueError("It is not possible to define cols and marker_index since they are the same variable")
+        penalty.cols = marker_index if marker_index is not None else penalty.cols
+        if penalty.cols is not None:
+            penalty.cols = [penalty.cols] if not isinstance(penalty, (tuple, list)) else penalty.cols
+            # Convert to int if it is str
+            penalty.cols = [cols if isinstance(cols, int) else biorbd.marker_index(all_pn.nlp.model, cols) for cols in penalty.cols]
+
+    @staticmethod
+    def set_marker_idx_rows(penalty: PenaltyOption, axis_to_track: Union[list, tuple]):
+        """
+        Simple penalty.cols setter for marker index and names
+
+        Parameters
+        ----------
+        penalty: PenaltyOption
+            The actual penalty to declare
+        axis_to_track: Union[list, tuple]
+            The marker to index
+        """
+
+        if penalty.rows is not None and axis_to_track is not None:
+            raise ValueError("It is not possible to define rows and axis_to_track since they are the same variable")
+        penalty.rows = axis_to_track if axis_to_track is not None else penalty.rows
 
     @staticmethod
     def _check_idx(name: str, elements: Union[list, tuple, int], max_n_elements: int = inf, min_n_elements: int = 0):
