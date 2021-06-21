@@ -3,12 +3,12 @@ from enum import Enum
 from math import inf
 import inspect
 
-import numpy as np
 import biorbd
 from casadi import vertcat, horzcat, MX, SX
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
+from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, Axis
 from ..misc.mapping import Mapping
 
@@ -201,26 +201,16 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            axis_to_track: Axis
-                The axis the penalty is acting on
             """
 
-            markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                penalty.index, all_pn.nlp.model.nbMarkers(), "markers_idx"
-            )
-            target = None
-            if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (3, len(markers_idx), len(all_pn.x))
-                )
-            all_pn.nlp.add_casadi_func("biorbd_markers", all_pn.nlp.model.markers, all_pn.nlp.states["q"].mx)
+            marker = all_pn.nlp.add_casadi_func("marker", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
 
-            for i, pn in enumerate(all_pn):
-                q = pn.nlp.variable_mappings["q"].to_second.map(pn["q"])
-                # TODO move the axis_to_track into a row (?) option of penalty
-                val = pn.nlp.casadi_func["biorbd_markers"](q)[axis_to_track, markers_idx]
-                penalty.sliced_target = target[axis_to_track, :, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
+            # if penalty.index is None:
+            #     marker = horzcat(*[mark.to_mx() for i, mark in enumerate(marker)])
+            # else:
+            #     marker = horzcat(*[mark.to_mx() for i, mark in enumerate(marker) if i in penalty.index])
+
+            penalty.set_penalty(marker, 3, all_pn)
 
         @staticmethod
         def minimize_markers_displacement(
@@ -360,17 +350,11 @@ class PenaltyFunctionAbstract:
             second_marker_idx = (
                 biorbd.marker_index(nlp.model, second_marker) if isinstance(second_marker, str) else second_marker
             )
-
             PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nbMarkers())
-            nlp.add_casadi_func("markers", nlp.model.markers, nlp.states["q"].mx)
 
-            for pn in all_pn:
-                q = nlp.variable_mappings["q"].to_second.map(pn["q"])
-                first_marker_func = nlp.casadi_func["markers"](q)[:, first_marker_idx]
-                second_marker_func = nlp.casadi_func["markers"](q)[:, second_marker_idx]
-
-                val = first_marker_func - second_marker_func
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
+            marker_0 = nlp.add_casadi_func(f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker)
+            marker_1 = nlp.add_casadi_func(f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker)
+            penalty.set_penalty(marker_1 - marker_0, 3, all_pn)
 
         @staticmethod
         def proportional_variable(
@@ -893,9 +877,9 @@ class PenaltyType(Enum):
     TRACK_STATE = MINIMIZE_STATE
     MINIMIZE_CONTROL = PenaltyFunctionAbstract.Functions.minimize_controls
     TRACK_CONTROL = MINIMIZE_CONTROL
-
     MINIMIZE_MARKERS = PenaltyFunctionAbstract.Functions.minimize_markers
     TRACK_MARKERS = MINIMIZE_MARKERS
+
     MINIMIZE_MARKERS_DISPLACEMENT = PenaltyFunctionAbstract.Functions.minimize_markers_displacement
     MINIMIZE_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
     TRACK_MARKERS_VELOCITY = MINIMIZE_MARKERS_VELOCITY

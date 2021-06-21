@@ -20,7 +20,7 @@ class OptimizationVariable:
         The indices to find this variable
     """
 
-    def __init__(self, name: str, mx: MX, index: [range, list], mapping: BiMapping = None):
+    def __init__(self, name: str, mx: MX, index: [range, list], mapping: BiMapping = None, parent_list=None):
         """
         Parameters
         ----------
@@ -30,11 +30,14 @@ class OptimizationVariable:
             The MX variable associated with this variable
         index: [range, list]
             The indices to find this variable
+        parent_list: OptimizationVariableList
+            The list the OptimizationVariable is in
         """
         self.name: str = name
         self.mx: MX = mx
         self.index: [range, list] = index
         self.mapping: BiMapping = mapping
+        self.parent_list: OptimizationVariableList = parent_list
 
     def __len__(self):
         """
@@ -48,7 +51,7 @@ class OptimizationVariable:
     def cx(self):
         if self.parent_list is None:
             raise RuntimeError("OptimizationVariable must have been created by OptimizationVariableList to have a cx")
-        return self.parent_list.cx
+        return self.parent_list.cx[self.index, :]
 
     @property
     def cx_end(self):
@@ -128,7 +131,7 @@ class OptimizationVariableList:
 
         index = range(self._cx.shape[0], self._cx.shape[0] + cx.shape[0])
         self._cx = vertcat(self._cx, cx)
-        self.elements.append(OptimizationVariable(name, mx, index, bimapping))
+        self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
 
     @property
     def cx(self):

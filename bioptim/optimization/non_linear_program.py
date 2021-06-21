@@ -4,7 +4,7 @@ import biorbd
 import casadi
 from casadi import SX, MX
 
-from .optimization_variable import OptimizationVariableList
+from .optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
@@ -269,8 +269,11 @@ class NonLinearProgram:
         all_param: dict
             Any parameters to pass to the biorbd function
         """
+
         if name in self.casadi_func:
             return self.casadi_func[name]
         else:
-            self.casadi_func[name] = biorbd.to_casadi_func(name, function, *all_param)
+            mx = [var.mx if isinstance(var, OptimizationVariable) else var for var in all_param]
+            sx = [var.cx for var in all_param if isinstance(var, OptimizationVariable)]
+            self.casadi_func[name] = biorbd.to_casadi_func(name, function, *mx)(*sx)
         return self.casadi_func[name]

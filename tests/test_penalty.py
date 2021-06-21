@@ -57,7 +57,7 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     u_init = InitialGuess(np.zeros((nu, 1)))
     x_bounds = Bounds(np.zeros((nx, 1)), np.zeros((nx, 1)))
     u_bounds = Bounds(np.zeros((nu, 1)), np.zeros((nu, 1)))
-    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds)
+    ocp = OptimalControlProgram(biorbd_model, dynamics, 10, 1.0, x_init, u_init, x_bounds, u_bounds, use_sx=True)
     ocp.nlp[0].J = [[]]
     ocp.nlp[0].g = [[]]
     return ocp
@@ -164,7 +164,7 @@ def test_penalty_track_state(penalty_origin, value):
 def test_penalty_minimize_markers(penalty_origin, value):
     ocp = prepare_test_ocp()
     t = [0]
-    x = [DM.ones((12, 1)) * value]
+    x = [DM.ones((8, 1)) * value]
     u = [0]
     penalty_type = penalty_origin.MINIMIZE_MARKERS
     penalty = Objective(penalty_type)
@@ -187,7 +187,7 @@ def test_penalty_minimize_markers(penalty_origin, value):
         )
 
     np.testing.assert_almost_equal(
-        ocp.nlp[0].J[0][0]["val"],
+        penalty.weighted_function(x[0], u[0], [], 1, [], 1),
         res,
     )
 
