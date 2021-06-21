@@ -139,8 +139,8 @@ class NonLinearProgram:
         """
         self.plot = {}
         self.cx = cx
-        self.states.cx = self.cx()
-        self.controls.cx = self.cx()
+        self.states._cx = self.cx()
+        self.controls._cx = self.cx()
         self.J = []
         self.g = []
         self.casadi_func = {}

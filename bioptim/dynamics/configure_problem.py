@@ -1,7 +1,7 @@
 from typing import Callable, Any, Union
 from enum import Enum
 
-from casadi import MX, vertcat, horzcat, Function
+from casadi import MX, SX, vertcat, horzcat, Function
 import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
@@ -262,6 +262,16 @@ class ConfigureProblem:
     def configure_new_variable(
         name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_plot: bool = False
     ):
+        def define_cx(n_col: int) -> Union[MX, SX]:
+            cx = [nlp.cx() for _ in range(n_col)]
+            for idx in nlp.variable_mappings[name].to_first.map_idx:
+                if idx is None:
+                    continue
+                for j in range(len(cx)):
+                    sign = "-" if np.sign(idx) < 0 else ""
+                    cx[j] = vertcat(cx[j], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{j}", 1, 1))
+            return horzcat(*cx)
+
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
         legend = [f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx]
@@ -271,15 +281,10 @@ class ConfigureProblem:
             if i is None:
                 continue
             sign = "-" if np.sign(i) < 0 else ""
-            mx = vertcat(mx, MX.sym(f"{sign}{name}_{name_elements[abs(i)]}", 1, 1))
+            mx = vertcat(mx, MX.sym(f"{sign}{name}_{name_elements[abs(i)]}_MX", 1, 1))
 
         if as_states:
-            cx = nlp.cx()
-            for i in nlp.variable_mappings[name].to_first.map_idx:
-                if i is None:
-                    continue
-                sign = "-" if np.sign(i) < 0 else ""
-                cx = vertcat(cx, nlp.cx.sym(f"{sign}{name}_{name_elements[abs(i)]}", 1, 1))
+            cx = define_cx(n_col=2)
 
             nlp.states.append(name, cx, mx, nlp.variable_mappings[name])
             nlp.plot[f"{name}_states"] = CustomPlot(
@@ -290,16 +295,9 @@ class ConfigureProblem:
             )
 
         if as_controls:
-            n_col = nlp.control_type.value
-            cx = [nlp.cx() for _ in range(n_col)]
-            for i in nlp.variable_mappings[name].to_first.map_idx:
-                if i is None:
-                    continue
-                for j in range(len(cx)):
-                    sign = "-" if np.sign(i) < 0 else ""
-                    cx[j] = vertcat(cx[j], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(i)]}_{j}", 1, 1))
+            cx = define_cx(n_col=2)
 
-            nlp.controls.append(name, horzcat(*cx), mx, nlp.variable_mappings[name])
+            nlp.controls.append(name, cx, mx, nlp.variable_mappings[name])
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
             nlp.plot[f"{name}_controls"] = CustomPlot(
                 lambda x, u, p: x[nlp.controls[name].index, :],

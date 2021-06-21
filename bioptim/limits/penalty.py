@@ -112,7 +112,7 @@ class PenaltyFunctionAbstract:
         """
 
         @staticmethod
-        def minimize_states(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: str = "all", derivative: bool = False):
+        def minimize_states(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: str = "all"):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -126,14 +126,12 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             names: str
                 The name of the state to minimize. Default "all"
-            derivative: bool
-                If the minimization is applied on the numerical derivative of the state
             """
 
-            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, names, "states", derivative)
+            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, names, "states")
 
         @staticmethod
-        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: Union[str, list] = "all", derivative: bool = False):
+        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: Union[str, list] = "all"):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -147,14 +145,12 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             names: Union[str, list]
                 The name of the controls to minimize
-            derivative: bool
-                If the minimization is applied on the numerical derivative of the controls
             """
 
-            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, names, "controls", derivative)
+            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, names, "controls")
 
         @staticmethod
-        def _minimize_optim_var(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: Union[str, list], suffix: str, derivative: bool):
+        def _minimize_optim_var(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: Union[str, list], suffix: str):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -170,8 +166,6 @@ class PenaltyFunctionAbstract:
                 The name of the controls to minimize
             suffix: str
                 If the optim_var is 'states' or 'controls'
-            derivative: bool
-                If the minimization is applied on the numerical derivative of the variable
             """
 
             if suffix == "states":
@@ -184,11 +178,7 @@ class PenaltyFunctionAbstract:
                 raise ValueError("suffix can only be 'states' or 'controls'")
             names = optim_var.keys() if names == "all" else names
 
-            if derivative:
-                all_pn.nlp.cx.sym("")  # TODO Derivative
-                fcn = optim_var.mx[optim_var[names].index, :]
-            else:
-                fcn = optim_var.cx[optim_var[names].index, :]
+            fcn = vertcat(*[optim_var[name].cx for name in names])
             n_rows = len(optim_var[names])
             combined_to = None if isinstance(names, (list, tuple)) else f"{names}_{suffix}"
             penalty.set_penalty(fcn, all_pn=all_pn, n_rows=n_rows, combine_to=combined_to, target_ns=len(var))

@@ -8,7 +8,6 @@ from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, PlotType
 from ..misc.mapping import Mapping
 from ..misc.options import OptionGeneric
-from ..optimization.optimization_variable import OptimizationVariable
 
 
 class PenaltyOption(OptionGeneric):
@@ -29,6 +28,8 @@ class PenaltyOption(OptionGeneric):
         The sliced version of the target to track, this is the one actually tracked
     custom_function: Callable
         A user defined function to call to get the penalty
+    derivative: bool
+        If the minimization is applied on the numerical derivative of the state
     """
 
     def __init__(
@@ -39,6 +40,7 @@ class PenaltyOption(OptionGeneric):
         get_all_nodes_at_once: bool = False,
         target: np.ndarray = None,
         quadratic: bool = None,
+        derivative: bool = False,
         index: list = None,
         custom_function: Callable = None,
         **params: Any,
@@ -56,6 +58,8 @@ class PenaltyOption(OptionGeneric):
             A target to track for the penalty
         quadratic: bool
             If the penalty is quadratic
+        derivative: bool
+            If the minimization is applied on the numerical derivative of the state
         index: int
             The component index the penalty is acting on
         custom_function: Callable
@@ -83,6 +87,7 @@ class PenaltyOption(OptionGeneric):
         self.dt = 0
         self.function: Union[Function, None] = None
         self.weighted_function: Union[Function, None] = None
+        self.derivative = derivative
 
     def set_penalty(
             self,
@@ -166,21 +171,35 @@ class PenaltyOption(OptionGeneric):
 
     def _set_penalty_function(self, all_pn: PenaltyNodeList, fcn: Union[MX, SX]):
         param_cx = all_pn.nlp.cx(all_pn.nlp.parameters.cx)
-        self.function = biorbd.to_casadi_func(  # Do not use nlp.add_casadi_func because all of them must be registered
+
+        # Do not use nlp.add_casadi_func because all functions must be registered
+        self.function = biorbd.to_casadi_func(
             f"{self.name}", fcn, all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx,
         )
 
-        n_out = self.function.numel_out()
+        state_cx, control_cx = (all_pn.nlp.states._cx, all_pn.nlp.controls._cx) if self.derivative else (all_pn.nlp.states.cx, all_pn.nlp.controls.cx)
+
+        if self.derivative:
+            self.function = biorbd.to_casadi_func(
+                f"{self.name}",
+                self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) - self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx),
+                state_cx,
+                control_cx,
+                param_cx,
+            )
+
+        modified_fcn = self.function(state_cx, control_cx, param_cx)
+
         dt_cx = all_pn.nlp.cx.sym("dt", 1, 1)
+        weight_cx = all_pn.nlp.cx.sym("weight", 1, 1)
+        target_cx = all_pn.nlp.cx.sym("target", modified_fcn.shape)
 
-        weight_cx = all_pn.nlp.cx.sym("weight", n_out, 1)
-        target_cx = all_pn.nlp.cx.sym("target", n_out, 1)
-
-        modified_fcn = self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx) - target_cx
+        modified_fcn = modified_fcn - target_cx
         modified_fcn = modified_fcn ** 2 if self.quadratic else modified_fcn
+
         self.weighted_function = Function(  # Do not use nlp.add_casadi_func because all of them must be registered
             f"{self.name}",
-            [all_pn.nlp.states.cx, all_pn.nlp.controls.cx, all_pn.nlp.parameters.cx, weight_cx, target_cx, dt_cx],
+            [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
             [weight_cx * modified_fcn * dt_cx]
         ).expand()
 

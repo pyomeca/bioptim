@@ -1,7 +1,7 @@
 from time import time
 from sys import platform
 
-from casadi import vertcat, sum1, nlpsol, SX, MX
+from casadi import horzcat, vertcat, sum1, nlpsol, SX, MX
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
@@ -201,8 +201,14 @@ class IpoptInterface(SolverInterface):
             for penalty in objectives:
                 for idx in penalty.node_idx:
                     target = penalty.target[:, idx] if penalty.target is not None and idx < len(penalty.target) else []
-                    u = nlp.U[idx] if idx < len(nlp.U) else []
-                    p = penalty.weighted_function(nlp.X[idx], u, param, penalty.weight, target, penalty.dt)
+                    if penalty.derivative:
+                        x = horzcat(*nlp.X[idx:idx+2])
+                        u = horzcat(*nlp.U[idx:idx+2]) if idx < len(nlp.U) - 1 else []
+
+                    else:
+                        x = nlp.X[idx]
+                        u = nlp.U[idx] if idx < len(nlp.U) else []
+                    p = penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt)
                     out = vertcat(out, p)
             return out
 

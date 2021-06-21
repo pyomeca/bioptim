@@ -44,6 +44,18 @@ class OptimizationVariable:
         """
         return len(self.index)
 
+    @property
+    def cx(self):
+        if self.parent_list is None:
+            raise RuntimeError("OptimizationVariable must have been created by OptimizationVariableList to have a cx")
+        return self.parent_list.cx
+
+    @property
+    def cx_end(self):
+        if self.parent_list is None:
+            raise RuntimeError("OptimizationVariable must have been created by OptimizationVariableList to have a cx")
+        return self.parent_list.cx_end
+
 
 class OptimizationVariableList:
     """
@@ -53,13 +65,13 @@ class OptimizationVariableList:
     ----------
     elements: list
         Each of the variable separated
-    cx: Union[MX, SX]
+    _cx: Union[MX, SX]
         The symbolic MX or SX of the list
     """
 
     def __init__(self):
         self.elements: list = []
-        self.cx: Union[MX, SX, np.ndarray] = np.array([])
+        self._cx: Union[MX, SX, np.ndarray] = np.array([])
 
     def __getitem__(self, item: Union[int, str]):
         """
@@ -114,9 +126,17 @@ class OptimizationVariableList:
             The Mapping of the MX against CX
         """
 
-        index = range(self.cx.shape[0], self.cx.shape[0] + cx.shape[0])
-        self.cx = vertcat(self.cx, cx)
+        index = range(self._cx.shape[0], self._cx.shape[0] + cx.shape[0])
+        self._cx = vertcat(self._cx, cx)
         self.elements.append(OptimizationVariable(name, mx, index, bimapping))
+
+    @property
+    def cx(self):
+        return self._cx[:, 0]
+
+    @property
+    def cx_end(self):
+        return self._cx[:, 1]
 
     @property
     def mx(self):
@@ -162,7 +182,7 @@ class OptimizationVariableList:
         The size of the CX
         """
 
-        return self.cx.shape[0]
+        return self._cx.shape[0]
 
     def __len__(self):
         """
