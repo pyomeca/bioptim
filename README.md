@@ -136,6 +136,7 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 - [vtk](https://vtk.org/)
 - [PyQt](https://www.riverbankcomputing.com/software/pyqt)
 - [bioviz](https://github.com/pyomeca/bioviz)
+- [graphviz](https://graphviz.org/)
 - [`Ipopt`](https://github.com/coin-or/Ipopt)
 - [`Acados`](https://github.com/acados/acados)
 
