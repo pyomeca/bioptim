@@ -513,7 +513,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def track_segment_with_custom_rt(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, segment_index: Union[int, str], rt_index: int
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, segment: Union[int, str], rt: int
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
@@ -525,21 +525,21 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            segment_index: Union[int, str]
+            segment: Union[int, str]
                 The name or index of the segment
-            rt_index: int
+            rt: int
                 The index of the RT in the bioMod
             """
 
             nlp = all_pn.nlp
-            segment_idx = biorbd.segment_index(nlp.model, segment_index) if isinstance(segment_index, str) else segment_index
+            segment_index = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
 
-            r_seg = nlp.model.globalJCS(nlp.states["q"].mx, segment_idx).rot()
-            r_rt = nlp.model.RT(nlp.states["q"].mx, rt_index).rot()
+            r_seg = nlp.model.globalJCS(nlp.states["q"].mx, segment_index).rot()
+            r_rt = nlp.model.RT(nlp.states["q"].mx, rt).rot()
             angles_diff = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
-            segment = BiorbdInterface.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])
-            penalty.set_penalty(segment, all_pn)
+            angle_objective = BiorbdInterface.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])
+            penalty.set_penalty(angle_objective, all_pn)
 
         @staticmethod
         def track_marker_with_segment_axis(
@@ -574,28 +574,18 @@ class PenaltyFunctionAbstract:
             marker_idx = biorbd.marker_index(nlp.model, marker) if isinstance(marker, str) else marker
             segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
 
-            def biorbd_meta_func(q, segment_idx, marker_idx):
-                r_rt = nlp.model.globalJCS(q, segment_idx)
-                marker = nlp.model.marker(q, marker_idx)
-                marker.applyRT(r_rt.transpose())
-                return marker.to_mx()
+            # Get the marker in rt reference frame
+            jcs = nlp.model.globalJCS(nlp.states["q"].mx, segment_idx)
+            marker = nlp.model.marker(nlp.states["q"].mx, marker_idx)
+            marker.applyRT(jcs.transpose())
+            marker_objective = BiorbdInterface.mx_to_cx("marker", marker.to_mx(), nlp.states["q"])
 
-            nlp.add_casadi_func(
-                f"track_marker_with_segment_axis_{segment_idx}_{marker_idx}",
-                biorbd_meta_func,
-                nlp.states["q"].mx,
-                segment_idx,
-                marker_idx,
-            )
-            nq = len(nlp.variable_mappings["q"].to_first)
-            for pn in all_pn:
-                q = nlp.variable_mappings["q"].to_second.map(pn["q"])
-                marker = nlp.casadi_func[f"track_marker_with_segment_axis_{segment_idx}_{marker_idx}"](q)
-                for axe in Axis:
-                    if axe != axis:
-                        # To align an axis, the other must be equal to 0
-                        val = marker[axe, 0]
-                        penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
+            # To align an axis, the other must be equal to 0
+            if penalty.rows is not None:
+                raise ValueError("rows cannot be defined in track_marker_with_segment_axis")
+            penalty.rows = [ax for ax in [Axis.X, Axis.Y, Axis.Z] if ax != axis]
+
+            penalty.set_penalty(marker_objective, all_pn)
 
         @staticmethod
         def custom(penalty: PenaltyOption, nodes: Union[PenaltyNodeList, list], **parameters: Any):
