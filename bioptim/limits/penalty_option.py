@@ -37,7 +37,6 @@ class PenaltyOption(OptionGeneric):
         penalty: Any,
         phase: int = 0,
         node: Node = Node.DEFAULT,
-        get_all_nodes_at_once: bool = False,
         target: np.ndarray = None,
         quadratic: bool = None,
         derivative: bool = False,
@@ -72,7 +71,6 @@ class PenaltyOption(OptionGeneric):
 
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
         self.node = node
-        self.get_all_nodes_at_once = get_all_nodes_at_once
         self.quadratic = quadratic
 
         if index is not None and rows is not None:
@@ -295,7 +293,6 @@ class PenaltyOption(OptionGeneric):
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
 
             self.node = Node.TRANSITION
-            self.get_all_nodes_at_once = True
 
             penalty_type.validate_penalty_time_index(self, all_pn[0])
             penalty_type.validate_penalty_time_index(self, all_pn[1])

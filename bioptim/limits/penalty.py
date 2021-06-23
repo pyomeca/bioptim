@@ -588,7 +588,7 @@ class PenaltyFunctionAbstract:
             penalty.set_penalty(marker_objective, all_pn)
 
         @staticmethod
-        def custom(penalty: PenaltyOption, nodes: Union[PenaltyNodeList, list], **parameters: Any):
+        def custom(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], **parameters: Any):
             """
             A user defined penalty function
 
@@ -596,13 +596,13 @@ class PenaltyFunctionAbstract:
             ----------
             penalty: PenaltyOption
                 The actual penalty to declare
-            nodes: PenaltyNodeList
+            all_pn: PenaltyNodeList
                 The penalty node elements
             parameters: dict
                 Any parameters that should be pass to the custom function
             """
 
-            keywords = [
+            invalid_keywords = [
                 "phase",
                 "list_index",
                 "name",
@@ -617,41 +617,25 @@ class PenaltyFunctionAbstract:
                 "max_bound",
                 "custom_function",
                 "weight",
-                "get_all_nodes_at_once",
             ]
-            for keyword in keywords:
-                if keyword in inspect.signature(penalty.custom_function).parameters:
+            for keyword in inspect.signature(penalty.custom_function).parameters:
+                if keyword in invalid_keywords:
                     raise TypeError(f"{keyword} is a reserved word and cannot be used in a custom function signature")
 
-            has_bound = (
-                True
-                if (hasattr(penalty, "min_bound") and penalty.min_bound is not None)
-                or (hasattr(penalty, "max_bound") and penalty.max_bound is not None)
-                else False
-            )
+            if penalty.node == Node.TRANSITION:
+                raise NotImplementedError("Node transition is not implemented yet")
 
-            if penalty.get_all_nodes_at_once:
-                nodes = [nodes]  # Trick the next for loop into sending everything at once
+            val = penalty.custom_function(all_pn, **parameters)
+            if isinstance(val, (list, tuple)):
+                if (hasattr(penalty, "min_bound") and penalty.min_bound is not None) or (hasattr(penalty, "max_bound") and penalty.max_bound is not None):
+                    raise RuntimeError(
+                        "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined"
+                    )
+                penalty.min_bound = val[0]
+                penalty.max_bound = val[2]
+                val = val[1]
 
-            for node in nodes:
-                val = penalty.custom_function(node, **parameters)
-                if val is None:
-                    continue
-
-                if isinstance(val, (list, tuple)):
-                    if has_bound:
-                        raise RuntimeError(
-                            "You cannot have non linear bounds for custom constraints "
-                            "and min_bound or max_bound defined"
-                        )
-                    penalty.min_bound = val[0]
-                    penalty.max_bound = val[2]
-                    val = val[1]
-                if penalty.get_all_nodes_at_once:
-                    nlp = nodes[0].nlp if penalty.node != Node.TRANSITION else None
-                    penalty.type.get_type().add_to_penalty(node[0].ocp, nlp, val, penalty)
-                else:
-                    penalty.type.get_type().add_to_penalty(node.ocp, nodes, val, penalty)
+            penalty.set_penalty(val, all_pn)
 
     @staticmethod
     def add(ocp, nlp):

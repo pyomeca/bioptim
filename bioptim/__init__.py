@@ -148,6 +148,7 @@ from .misc.__version__ import __version__
 from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
 from .dynamics.ode_solver import OdeSolver
+from .interfaces.biorbd_interface import BiorbdInterface
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
