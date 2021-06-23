@@ -513,7 +513,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def track_segment_with_custom_rt(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, segment: Union[int, str], rt_idx: int
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, segment_index: Union[int, str], rt_index: int
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
@@ -525,47 +525,21 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            segment: Union[int, str]
+            segment_index: Union[int, str]
                 The name or index of the segment
-            rt_idx: int
-                The index of the RT
+            rt_index: int
+                The index of the RT in the bioMod
             """
 
             nlp = all_pn.nlp
-            segment_idx = biorbd.segment_index(nlp.model, segment) if isinstance(segment, str) else segment
+            segment_idx = biorbd.segment_index(nlp.model, segment_index) if isinstance(segment_index, str) else segment_index
 
-            PenaltyFunctionAbstract._check_idx("segment", segment_idx, nlp.model.nbSegment())
-            PenaltyFunctionAbstract._check_idx("rt", rt_idx, nlp.model.nbRTs())
+            r_seg = nlp.model.globalJCS(nlp.states["q"].mx, segment_idx).rot()
+            r_rt = nlp.model.RT(nlp.states["q"].mx, rt_index).rot()
+            angles_diff = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
-            def biorbd_meta_func(q: Union[MX, SX], segment_idx: int, rt_idx: int):
-                """
-                Compute the Euler angles between a segment and a RT
-
-                Parameters
-                ----------
-                q: Union[MX, SX]
-                    The generalized coordinates of the system
-                segment_idx: int
-                    The index of the segment
-                rt_idx: int
-                    The index of the RT
-
-                Returns
-                -------
-                The Euler angles between a segment and a RT
-                """
-                r_seg = nlp.model.globalJCS(q, segment_idx).rot()
-                r_rt = nlp.model.RT(q, rt_idx).rot()
-                return biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
-
-            BiorbdInterface.mx_to_cx(
-                f"track_segment_with_custom_rt_{segment_idx}", biorbd_meta_func, nlp.states["q"].mx, segment_idx, rt_idx
-            )
-
-            for pn in all_pn:
-                q = nlp.variable_mappings["q"].to_second.map(pn["q"])
-                val = nlp.casadi_func[f"track_segment_with_custom_rt_{segment_idx}"](q)
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
+            segment = BiorbdInterface.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])
+            penalty.set_penalty(segment, all_pn)
 
         @staticmethod
         def track_marker_with_segment_axis(
@@ -870,7 +844,7 @@ class PenaltyType(Enum):
     MINIMIZE_COM_POSITION = PenaltyFunctionAbstract.Functions.minimize_com_position
     MINIMIZE_COM_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_com_velocity
     MINIMIZE_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
-
     TRACK_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt
+
     TRACK_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis
     CUSTOM = PenaltyFunctionAbstract.Functions.custom
