@@ -274,6 +274,6 @@ class NonLinearProgram:
             return self.casadi_func[name]
         else:
             mx = [var.mx if isinstance(var, OptimizationVariable) else var for var in all_param]
-            sx = [var.cx for var in all_param if isinstance(var, OptimizationVariable)]
-            self.casadi_func[name] = biorbd.to_casadi_func(name, function, *mx)(*sx)
+            cx = [var.cx for var in all_param if isinstance(var, OptimizationVariable)]
+            self.casadi_func[name] = biorbd.to_casadi_func(name, function, *mx)(*cx)
         return self.casadi_func[name]

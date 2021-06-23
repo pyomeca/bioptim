@@ -60,7 +60,7 @@ class PenaltyFunctionAbstract:
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-        minimize_markers(penalty: PenaltyOption, , pn: PenaltyNodeList, axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z))
+        minimize_markers(penalty: PenaltyOption, , pn: PenaltyNodeList, axis: Axis = (Axis.X, Axis.Y, Axis.Z))
             Minimize a marker set.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
@@ -187,7 +187,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_markers(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None,  axis_to_track: Union[tuple, list] = (Axis.X, Axis.Y, Axis.Z)
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None,  axes: Union[tuple, list] = None
         ):
             """
             Minimize a marker set.
@@ -203,13 +203,13 @@ class PenaltyFunctionAbstract:
             marker_index: Union[tuple, list]
                 The index of markers to minimize, can be int or str.
                 penalty.cols should not be defined if marker_index is defined
-            axis_to_track: list
-                The axis to minimize, default XYZ
+            axes: list
+                The axes to minimize, default XYZ
             """
 
             # Adjust the cols and rows
             PenaltyFunctionAbstract.set_marker_idx_columns(penalty, all_pn, marker_index)
-            PenaltyFunctionAbstract.set_marker_idx_rows(penalty, axis_to_track)
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             # Add the penalty
             markers_obj = all_pn.nlp.add_casadi_func("marker", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
@@ -283,7 +283,7 @@ class PenaltyFunctionAbstract:
                 penalty.type.get_type().add_to_penalty(pn.ocp, pn, val[:3, :], penalty)
 
         @staticmethod
-        def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None,  axis_to_track: Union[tuple, list] = (Axis.X, Axis.Y, Axis.Z)):
+        def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None, axes: Union[tuple, list] = None):
             """
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -298,13 +298,13 @@ class PenaltyFunctionAbstract:
             marker_index: Union[tuple, list]
                 The index of markers to minimize, can be int or str.
                 penalty.cols should not be defined if marker_index is defined
-            axis_to_track: list
-                The axis to minimize, default XYZ
+            axes: Union[tuple, list]
+                The axes to project on. Default is all axes
             """
 
             # Adjust the cols and rows
             PenaltyFunctionAbstract.set_marker_idx_columns(penalty, all_pn, marker_index)
-            PenaltyFunctionAbstract.set_marker_idx_rows(penalty, axis_to_track)
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             # Add the penalty
             markers_obj = all_pn.nlp.add_casadi_func("marker", all_pn.nlp.model.markersVelocity, all_pn.nlp.states["q"], all_pn.nlp.states["qdot"])
@@ -480,11 +480,11 @@ class PenaltyFunctionAbstract:
             penalty.set_penalty(com_height_cx, all_pn)
 
         @staticmethod
-        def minimize_com_position(penalty: PenaltyOption, all_pn: PenaltyNodeList, axis: Axis = None):
+        def minimize_com_position(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
             """
             Adds the objective that the position of the center of mass of the model should be minimized.
-            If no axis is specified, the squared-norm of the CoM's position is minimized.
-            Otherwise, the projection of the CoM's position on the specified axis is minimized.
+            If no axes is specified, the squared-norm of the CoM's position is minimized.
+            Otherwise, the projection of the CoM's position on the specified axes are minimized.
             By default this function is not quadratic, meaning that it minimizes towards infinity.
 
             Parameters
@@ -493,32 +493,17 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            axis: Axis
-                The axis to project on. Default is all axes
+            axes: Union[tuple, list]
+                The axes to project on. Default is all axes
             """
 
-            nlp = all_pn.nlp
-            target = None
-            if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (1, len(all_pn.x)))
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
-            nlp.add_casadi_func("biorbd_CoM", nlp.model.CoM, nlp.states["q"].mx)
-            for i, pn in enumerate(all_pn):
-                q = nlp.variable_mappings["q"].to_second.map(pn["q"])
-                CoM = nlp.casadi_func["biorbd_CoM"](q)
-
-                if axis is None:
-                    CoM_proj = CoM
-                elif not isinstance(axis, Axis):
-                    raise RuntimeError("axis must be a bioptim.Axis")
-                else:
-                    CoM_proj = CoM[axis]
-
-                penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, CoM_proj, penalty)
+            com_cx = all_pn.nlp.add_casadi_func("com", all_pn.nlp.model.CoM, all_pn.nlp.states["q"])
+            penalty.set_penalty(com_cx, all_pn)
 
         @staticmethod
-        def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, axis: Axis = None):
+        def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the CoM's velocity is minimized.
@@ -531,30 +516,15 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            axis: Axis
-                The axis to project on. Default is all axes
+            axes: Union[tuple, list]
+                The axes to project on. Default is all axes
             """
 
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
+
             nlp = all_pn.nlp
-            target = None
-            if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(penalty.target, (1, len(all_pn.x)))
-
-            nlp.add_casadi_func("biorbd_CoM_dot", nlp.model.CoMdot, nlp.states["q"].mx, nlp.states["qdot"].mx)
-            for i, pn in enumerate(all_pn):
-                q = nlp.variable_mappings["q"].to_second.map(pn["q"])
-                qdot = nlp.variable_mappings["qdot"].to_second.map(pn["qdot"])
-                CoM_dot = nlp.casadi_func["biorbd_CoM_dot"](q, qdot)
-
-                if axis is None:
-                    CoM_dot_proj = CoM_dot[0] ** 2 + CoM_dot[1] ** 2 + CoM_dot[2] ** 2
-                elif not isinstance(axis, Axis):
-                    raise RuntimeError("axis must be a bioptim.Axis")
-                else:
-                    CoM_dot_proj = CoM_dot[axis]
-
-                penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, CoM_dot_proj, penalty)
+            com_dot_cx = all_pn.nlp.add_casadi_func("com_dot", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"])
+            penalty.set_penalty(com_dot_cx, all_pn)
 
         @staticmethod
         def minimize_contact_forces(penalty: PenaltyOption, all_pn: PenaltyNodeList):
@@ -806,7 +776,7 @@ class PenaltyFunctionAbstract:
             penalty.cols = [cols if isinstance(cols, int) else biorbd.marker_index(all_pn.nlp.model, cols) for cols in penalty.cols]
 
     @staticmethod
-    def set_marker_idx_rows(penalty: PenaltyOption, axis_to_track: Union[list, tuple]):
+    def set_axes_rows(penalty: PenaltyOption, axes: Union[list, tuple]):
         """
         Simple penalty.cols setter for marker index and names
 
@@ -814,13 +784,13 @@ class PenaltyFunctionAbstract:
         ----------
         penalty: PenaltyOption
             The actual penalty to declare
-        axis_to_track: Union[list, tuple]
+        axes: Union[list, tuple]
             The marker to index
         """
 
-        if penalty.rows is not None and axis_to_track is not None:
-            raise ValueError("It is not possible to define rows and axis_to_track since they are the same variable")
-        penalty.rows = axis_to_track if axis_to_track is not None else penalty.rows
+        if penalty.rows is not None and axes is not None:
+            raise ValueError("It is not possible to define rows and axis since they are the same variable")
+        penalty.rows = axes if axes is not None else penalty.rows
 
     @staticmethod
     def _check_idx(name: str, elements: Union[list, tuple, int], max_n_elements: int = inf, min_n_elements: int = 0):
@@ -938,25 +908,19 @@ class PenaltyType(Enum):
     """
 
     MINIMIZE_STATE = PenaltyFunctionAbstract.Functions.minimize_states
-    TRACK_STATE = MINIMIZE_STATE
     MINIMIZE_CONTROL = PenaltyFunctionAbstract.Functions.minimize_controls
-    TRACK_CONTROL = MINIMIZE_CONTROL
     MINIMIZE_MARKERS = PenaltyFunctionAbstract.Functions.minimize_markers
-    TRACK_MARKERS = MINIMIZE_MARKERS
     SUPERIMPOSE_MARKERS = PenaltyFunctionAbstract.Functions.superimpose_markers
-
-    MINIMIZE_MARKERS_DISPLACEMENT = PenaltyFunctionAbstract.Functions.minimize_markers_displacement
     MINIMIZE_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
-    TRACK_MARKERS_VELOCITY = MINIMIZE_MARKERS_VELOCITY
     PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_states
     PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_controls
     MINIMIZE_QDDOT = PenaltyFunctionAbstract.Functions.minimize_qddot
     MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height
+    MINIMIZE_COM_POSITION = PenaltyFunctionAbstract.Functions.minimize_com_position
+    MINIMIZE_COM_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_com_velocity
 
     MINIMIZE_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
     TRACK_CONTACT_FORCES = MINIMIZE_CONTACT_FORCES
-    MINIMIZE_COM_POSITION = PenaltyFunctionAbstract.Functions.minimize_com_position
-    MINIMIZE_COM_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_com_velocity
     TRACK_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt
     TRACK_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis
     CUSTOM = PenaltyFunctionAbstract.Functions.custom
