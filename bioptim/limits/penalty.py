@@ -8,6 +8,7 @@ from casadi import vertcat, MX, SX
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
+from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, Axis
 from ..misc.mapping import Mapping
 from ..optimization.optimization_variable import OptimizationVariable
@@ -307,7 +308,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             # Add the penalty
-            markers_obj = all_pn.nlp.add_casadi_func("marker", all_pn.nlp.model.markersVelocity, all_pn.nlp.states["q"], all_pn.nlp.states["qdot"])
+            markers_obj = BiorbdInterface.mx_to_cx("marker", all_pn.nlp.model.markersVelocity, all_pn.nlp.states["q"], all_pn.nlp.states["qdot"])
             penalty.set_penalty(markers_obj, all_pn)
 
         @staticmethod
@@ -342,8 +343,8 @@ class PenaltyFunctionAbstract:
             )
             PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nbMarkers())
 
-            marker_0 = nlp.add_casadi_func(f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker)
-            marker_1 = nlp.add_casadi_func(f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker)
+            marker_0 = BiorbdInterface.mx_to_cx(f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker)
+            marker_1 = BiorbdInterface.mx_to_cx(f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker)
             penalty.set_penalty(marker_1 - marker_0, all_pn)
 
         @staticmethod
@@ -476,7 +477,7 @@ class PenaltyFunctionAbstract:
             com = nlp.model.CoM(nlp.states["q"].mx).to_mx()
             com_dot = nlp.model.CoMdot(nlp.states["q"].mx, nlp.states["qdot"].mx).to_mx()
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
-            com_height_cx = nlp.add_casadi_func("com_height", com_height, nlp.states["q"], nlp.states["qdot"])
+            com_height_cx = BiorbdInterface.mx_to_cx("com_height", com_height, nlp.states["q"], nlp.states["qdot"])
             penalty.set_penalty(com_height_cx, all_pn)
 
         @staticmethod
@@ -499,7 +500,7 @@ class PenaltyFunctionAbstract:
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
-            com_cx = all_pn.nlp.add_casadi_func("com", all_pn.nlp.model.CoM, all_pn.nlp.states["q"])
+            com_cx = BiorbdInterface.mx_to_cx("com", all_pn.nlp.model.CoM, all_pn.nlp.states["q"])
             penalty.set_penalty(com_cx, all_pn)
 
         @staticmethod
@@ -523,7 +524,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             nlp = all_pn.nlp
-            com_dot_cx = all_pn.nlp.add_casadi_func("com_dot", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"])
+            com_dot_cx = BiorbdInterface.mx_to_cx("com_dot", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"])
             penalty.set_penalty(com_dot_cx, all_pn)
 
         @staticmethod
@@ -607,7 +608,7 @@ class PenaltyFunctionAbstract:
                 r_rt = nlp.model.RT(q, rt_idx).rot()
                 return biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
-            nlp.add_casadi_func(
+            BiorbdInterface.mx_to_cx(
                 f"track_segment_with_custom_rt_{segment_idx}", biorbd_meta_func, nlp.states["q"].mx, segment_idx, rt_idx
             )
 

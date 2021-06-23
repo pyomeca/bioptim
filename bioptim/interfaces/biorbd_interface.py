@@ -1,8 +1,10 @@
-from typing import Union
+from typing import Union, Callable, Any
 
 import numpy as np
-from casadi import MX
+from casadi import MX, SX, Function
 import biorbd
+
+from ..optimization.optimization_variable import OptimizationVariable
 
 
 class BiorbdInterface:
@@ -60,3 +62,22 @@ class BiorbdInterface:
             sv_over_all_phases.append(sv_over_phase)
 
         return sv_over_all_phases
+
+    @staticmethod
+    def mx_to_cx(name: str, function: Union[Callable, SX, MX], *all_param: Any) -> Function:
+        """
+        Add to the pool of declared casadi function. If the function already exists, it is skipped
+
+        Parameters
+        ----------
+        name: str
+            The unique name of the function to add to the casadi functions pool
+        function: Callable
+            The biorbd function to add
+        all_param: dict
+            Any parameters to pass to the biorbd function
+        """
+
+        mx = [var.mx if isinstance(var, OptimizationVariable) else var for var in all_param]
+        cx = [var.cx for var in all_param if isinstance(var, OptimizationVariable)]
+        return biorbd.to_casadi_func(name, function, *mx)(*cx)
