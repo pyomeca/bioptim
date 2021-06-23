@@ -4,7 +4,7 @@ from math import inf
 import inspect
 
 import biorbd
-from casadi import vertcat, MX, SX
+from casadi import horzcat, vertcat, MX, SX
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
@@ -188,7 +188,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_markers(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None,  axes: Union[tuple, list] = None
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None, axes: Union[tuple, list] = None, reference_jcs: Union[str, int] = None
         ):
             """
             Minimize a marker set.
@@ -206,82 +206,22 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if marker_index is defined
             axes: list
                 The axes to minimize, default XYZ
+            reference_jcs: Union[int, str]
+                The index or name of the segment to use as reference. Default [None] is the global coordinate system
             """
 
             # Adjust the cols and rows
             PenaltyFunctionAbstract.set_marker_idx_columns(penalty, all_pn, marker_index)
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
-            # Add the penalty
-            markers_obj = all_pn.nlp.add_casadi_func("marker", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
-            penalty.set_penalty(markers_obj, all_pn)
+            # Compute the position of the marker in the requested reference frame (None for global)
+            q_mx = all_pn.nlp.states["q"].mx
+            model = all_pn.nlp.model
+            jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.globalJCS(q_mx, reference_jcs).transpose()
+            all_markers = horzcat(*[mark.to_mx() for mark in model.markers(q_mx) if mark.applyRT(jcs_t) is None])
 
-        @staticmethod
-        def minimize_markers_displacement(
-            penalty: PenaltyOption, pn: PenaltyNodeList, coordinates_system_idx: int = -1
-        ):
-            """
-            Minimize a marker set velocity by comparing the position at a node and at the next node.
-            By default this function is quadratic, meaning that it minimizes the difference.
-            Indices (default=all_idx) can be specified.
-
-            Parameters
-            ----------
-            penalty: PenaltyOption
-                The actual penalty to declare
-            pn: PenaltyNodeList
-                The penalty node elements
-            coordinates_system_idx: int
-                The index of the segment to use as reference. Default [-1] is the global coordinate system
-            """
-
-            nlp = pn.nlp
-            n_rts = nlp.model.nbSegment()
-
-            markers_idx = PenaltyFunctionAbstract._check_and_fill_index(
-                penalty.index, nlp.model.nbMarkers(), "markers_idx"
-            )
-
-            nlp.add_casadi_func("biorbd_markers", nlp.model.markers, nlp.states["q"].mx)
-            if coordinates_system_idx >= 0:
-                if coordinates_system_idx >= n_rts:
-                    raise RuntimeError(
-                        f"coordinates_system_idx ({coordinates_system_idx}) cannot be higher than {n_rts - 1}"
-                    )
-                nlp.add_casadi_func(
-                    f"globalJCS_{coordinates_system_idx}",
-                    nlp.model.globalJCS,
-                    nlp.states["q"].mx,
-                    coordinates_system_idx,
-                )
-
-            for i in range(len(pn.x) - 1):
-                q_0 = nlp.variable_mappings["q"].to_second.map(pn.x[i][pn.nlp.states["q"].index, :])
-                q_1 = nlp.variable_mappings["q"].to_second.map(pn.x[i + 1][pn.nlp.states["q"].index, :])
-
-                if coordinates_system_idx < 0:
-                    jcs_0_T = nlp.cx.eye(4)
-                    jcs_1_T = nlp.cx.eye(4)
-
-                elif coordinates_system_idx < n_rts:
-                    jcs_0 = nlp.casadi_func[f"globalJCS_{coordinates_system_idx}"](q_0)
-                    jcs_0_T = vertcat(horzcat(jcs_0[:3, :3], -jcs_0[:3, :3] @ jcs_0[:3, 3]), horzcat(0, 0, 0, 1))
-
-                    jcs_1 = nlp.casadi_func[f"globalJCS_{coordinates_system_idx}"](q_1)
-                    jcs_1_T = vertcat(horzcat(jcs_1[:3, :3], -jcs_1[:3, :3] @ jcs_1[:3, 3]), horzcat(0, 0, 0, 1))
-
-                else:
-                    raise RuntimeError(
-                        f"Wrong choice of coordinates_system_idx. (Negative values refer to global coordinates system, "
-                        f"positive values must be between 0 and {n_rts})"
-                    )
-
-                val = jcs_1_T @ vertcat(
-                    nlp.casadi_func["biorbd_markers"](q_1)[:, markers_idx], nlp.cx.ones(1, markers_idx.shape[0])
-                ) - jcs_0_T @ vertcat(
-                    nlp.casadi_func["biorbd_markers"](q_0)[:, markers_idx], nlp.cx.ones(1, markers_idx.shape[0])
-                )
-                penalty.type.get_type().add_to_penalty(pn.ocp, pn, val[:3, :], penalty)
+            markers_objective = BiorbdInterface.mx_to_cx("marker", all_markers, all_pn.nlp.states["q"])
+            penalty.set_penalty(markers_objective, all_pn)
 
         @staticmethod
         def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None, axes: Union[tuple, list] = None):
@@ -838,7 +778,6 @@ class PenaltyFunctionAbstract:
             if (
                 func == PenaltyType.MINIMIZE_STATE
                 or func == PenaltyType.MINIMIZE_MARKERS
-                or func == PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT
                 or func == PenaltyType.MINIMIZE_MARKERS_VELOCITY
                 or func == PenaltyType.SUPERIMPOSE_MARKERS
                 or func == PenaltyType.PROPORTIONAL_STATE

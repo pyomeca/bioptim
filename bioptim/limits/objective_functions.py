@@ -626,7 +626,6 @@ class ObjectiveFcn:
         TRACK_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
 
         MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
-        MINIMIZE_MARKERS_DISPLACEMENT = (PenaltyType.MINIMIZE_MARKERS_DISPLACEMENT,)
         MINIMIZE_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
         TRACK_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
         PROPORTIONAL_STATE = (PenaltyType.PROPORTIONAL_STATE,)
