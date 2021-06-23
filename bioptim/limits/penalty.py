@@ -1,16 +1,14 @@
 from typing import Union, Any
-from enum import Enum
 from math import inf
 import inspect
 
 import biorbd
-from casadi import horzcat, vertcat, MX, SX
+from casadi import horzcat, vertcat
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, Axis
-from ..misc.mapping import Mapping
 from ..optimization.optimization_variable import OptimizationVariable
 
 
@@ -181,8 +179,8 @@ class PenaltyFunctionAbstract:
 
             fcn = vertcat(*[optim_var[name].cx for name in names])
             combined_to = None if isinstance(names, (list, tuple)) else f"{names}_{suffix}"
-            penalty.set_penalty(fcn, all_pn=all_pn, combine_to=combined_to, target_ns=len(var))
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.set_penalty(fcn, all_pn=all_pn, combine_to=combined_to, target_ns=len(var))
 
             if combined_to is None:
                 penalty.add_multiple_target_to_plot(names, suffix, all_pn)
@@ -223,8 +221,8 @@ class PenaltyFunctionAbstract:
             markers = horzcat(*[m.to_mx() for m in model.markers(q_mx) if m.applyRT(jcs_t) is None])
 
             markers_objective = BiorbdInterface.mx_to_cx("markers", markers, nlp.states["q"])
-            penalty.set_penalty(markers_objective, all_pn)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.set_penalty(markers_objective, all_pn)
 
         @staticmethod
         def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list, int, str] = None, axes: Union[tuple, list] = None, reference_jcs: Union[str, int] = None):
@@ -261,8 +259,8 @@ class PenaltyFunctionAbstract:
             markers = horzcat(*[m.to_mx() for m in model.markersVelocity(q_mx, qdot_mx) if m.applyRT(jcs_t) is None])
 
             markers_objective = BiorbdInterface.mx_to_cx("markersVel", markers, nlp.states["q"], nlp.states["qdot"])
-            penalty.set_penalty(markers_objective, all_pn)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.set_penalty(markers_objective, all_pn)
 
         @staticmethod
         def superimpose_markers(
@@ -302,8 +300,8 @@ class PenaltyFunctionAbstract:
 
             marker_0 = BiorbdInterface.mx_to_cx(f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker)
             marker_1 = BiorbdInterface.mx_to_cx(f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker)
-            penalty.set_penalty(marker_1 - marker_0, all_pn)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.set_penalty(marker_1 - marker_0, all_pn)
 
         @staticmethod
         def proportional_states(
@@ -395,8 +393,8 @@ class PenaltyFunctionAbstract:
             if penalty.cols is not None:
                 raise ValueError(f"cols should not be defined for {var_type}")
 
-            penalty.set_penalty(var_cx[first_dof, :] - coef * var_cx[second_dof, :], all_pn)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.set_penalty(var_cx[first_dof, :] - coef * var_cx[second_dof, :], all_pn)
 
         @staticmethod
         def minimize_qddot(penalty: PenaltyOption, all_pn: PenaltyNodeList):
@@ -460,8 +458,8 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             com_cx = BiorbdInterface.mx_to_cx("com", all_pn.nlp.model.CoM, all_pn.nlp.states["q"])
-            penalty.set_penalty(com_cx, all_pn)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.set_penalty(com_cx, all_pn)
 
         @staticmethod
         def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
@@ -485,8 +483,8 @@ class PenaltyFunctionAbstract:
 
             nlp = all_pn.nlp
             com_dot_cx = BiorbdInterface.mx_to_cx("com_dot", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"])
-            penalty.set_penalty(com_dot_cx, all_pn)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.set_penalty(com_dot_cx, all_pn)
 
         @staticmethod
         def minimize_contact_forces(penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None, axes: Union[tuple, list] = None):
@@ -516,8 +514,8 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             contact_force = nlp.contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
-            penalty.set_penalty(contact_force, all_pn)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.set_penalty(contact_force, all_pn)
 
         @staticmethod
         def track_segment_with_custom_rt(
@@ -547,8 +545,8 @@ class PenaltyFunctionAbstract:
             angles_diff = biorbd.Rotation_toEulerAngles(r_seg.transpose() * r_rt, "zyx").to_mx()
 
             angle_objective = BiorbdInterface.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])
-            penalty.set_penalty(angle_objective, all_pn)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.set_penalty(angle_objective, all_pn)
 
         @staticmethod
         def track_marker_with_segment_axis(
@@ -594,8 +592,8 @@ class PenaltyFunctionAbstract:
                 raise ValueError("rows cannot be defined in track_marker_with_segment_axis")
             penalty.rows = [ax for ax in [Axis.X, Axis.Y, Axis.Z] if ax != axis]
 
-            penalty.set_penalty(marker_objective, all_pn)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.set_penalty(marker_objective, all_pn)
 
         @staticmethod
         def custom(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], **parameters: Any):
