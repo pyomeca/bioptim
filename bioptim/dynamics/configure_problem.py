@@ -270,7 +270,7 @@ class ConfigureProblem:
                 for j in range(len(cx)):
                     sign = "-" if np.sign(idx) < 0 else ""
                     cx[j] = vertcat(cx[j], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{j}", 1, 1))
-            return horzcat(*cx)
+            return cx
 
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))

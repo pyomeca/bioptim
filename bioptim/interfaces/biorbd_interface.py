@@ -4,8 +4,6 @@ import numpy as np
 from casadi import MX, SX, Function
 import biorbd
 
-from ..optimization.optimization_variable import OptimizationVariable
-
 
 class BiorbdInterface:
     """
@@ -77,7 +75,10 @@ class BiorbdInterface:
         all_param: dict
             Any parameters to pass to the biorbd function
         """
+        from ..optimization.optimization_variable import OptimizationVariable, OptimizationVariableList
+        from ..optimization.parameters import Parameter, ParameterList
 
-        mx = [var.mx if isinstance(var, OptimizationVariable) else var for var in all_param]
-        cx = [var.cx for var in all_param if isinstance(var, OptimizationVariable)]
+        ok_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
+        mx = [var.mx if isinstance(var, ok_types) else var for var in all_param]
+        cx = [var.cx for var in all_param if isinstance(var, ok_types)]
         return biorbd.to_casadi_func(name, function, *mx)(*cx)

@@ -75,6 +75,7 @@ class OptimizationVariableList:
     def __init__(self):
         self.elements: list = []
         self._cx: Union[MX, SX, np.ndarray] = np.array([])
+        self._cx_end: Union[MX, SX, np.ndarray] = np.array([])
 
     def __getitem__(self, item: Union[int, str]):
         """
@@ -129,8 +130,13 @@ class OptimizationVariableList:
             The Mapping of the MX against CX
         """
 
-        index = range(self._cx.shape[0], self._cx.shape[0] + cx.shape[0])
-        self._cx = vertcat(self._cx, cx)
+        if len(cx) != 2:
+            raise NotImplementedError("Appending optimization_variable without cx.shape = [n, 2] is not implemented")
+
+        index = range(self._cx.shape[0], self._cx.shape[0] + cx[0].shape[0])
+        self._cx = vertcat(self._cx, cx[0])
+        self._cx_end = vertcat(self._cx_end, cx[1])
+
         self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
 
     @property
@@ -139,7 +145,7 @@ class OptimizationVariableList:
 
     @property
     def cx_end(self):
-        return self._cx[:, 1]
+        return self._cx_end[:, 0]
 
     @property
     def mx(self):

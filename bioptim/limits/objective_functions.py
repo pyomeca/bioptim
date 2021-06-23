@@ -1,7 +1,7 @@
 from typing import Callable, Union, Any
 from enum import Enum
 
-from casadi import MX, SX, Function
+from casadi import MX, SX
 
 from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
@@ -632,7 +632,7 @@ class ObjectiveFcn:
         PROPORTIONAL_CONTROL = (PenaltyType.PROPORTIONAL_CONTROL,)
         MINIMIZE_QDDOT = (PenaltyType.MINIMIZE_QDDOT,)
         MINIMIZE_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
-        TRACK_CONTACT_FORCES = (PenaltyType.TRACK_CONTACT_FORCES,)
+        TRACK_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
         MINIMIZE_COM_POSITION = (PenaltyType.MINIMIZE_COM_POSITION,)
         MINIMIZE_COM_VELOCITY = (PenaltyType.MINIMIZE_COM_VELOCITY,)
         TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT,)

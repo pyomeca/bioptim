@@ -265,6 +265,12 @@ class ParameterList(UniquePerProblemOptionList):
         return vertcat(*[p.cx for p in self])
 
     @property
+    def mx(self):
+        import warnings
+        warnings.warn("mx is not implemented!")
+        return MX()
+
+    @property
     def bounds(self):
         _bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for p in self:

@@ -188,7 +188,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_markers(
-            penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None, axes: Union[tuple, list] = None, reference_jcs: Union[str, int] = None
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list, int, str] = None, axes: Union[tuple, list] = None, reference_jcs: Union[str, int] = None
         ):
             """
             Minimize a marker set.
@@ -201,7 +201,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            marker_index: Union[tuple, list]
+            marker_index: Union[tuple, list, int, str]
                 The index of markers to minimize, can be int or str.
                 penalty.cols should not be defined if marker_index is defined
             axes: list
@@ -211,7 +211,7 @@ class PenaltyFunctionAbstract:
             """
 
             # Adjust the cols and rows
-            PenaltyFunctionAbstract.set_marker_idx_columns(penalty, all_pn, marker_index)
+            PenaltyFunctionAbstract.set_idx_columns(penalty, all_pn, marker_index, "marker")
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             # Compute the position of the marker in the requested reference frame (None for global)
@@ -225,7 +225,7 @@ class PenaltyFunctionAbstract:
             penalty.set_penalty(markers_objective, all_pn)
 
         @staticmethod
-        def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None, axes: Union[tuple, list] = None, reference_jcs: Union[str, int] = None):
+        def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list, int, str] = None, axes: Union[tuple, list] = None, reference_jcs: Union[str, int] = None):
             """
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -237,7 +237,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            marker_index: Union[tuple, list]
+            marker_index: Union[tuple, list, int, str]
                 The index of markers to minimize, can be int or str.
                 penalty.cols should not be defined if marker_index is defined
             axes: Union[tuple, list]
@@ -247,7 +247,7 @@ class PenaltyFunctionAbstract:
             """
 
             # Adjust the cols and rows
-            PenaltyFunctionAbstract.set_marker_idx_columns(penalty, all_pn, marker_index)
+            PenaltyFunctionAbstract.set_idx_columns(penalty, all_pn, marker_index, "marker")
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             # Add the penalty in the requested reference frame. None for global
@@ -267,6 +267,7 @@ class PenaltyFunctionAbstract:
             all_pn: PenaltyNodeList,
             first_marker: Union[str, int],
             second_marker: Union[str, int],
+            axes: Union[tuple, list] = None,
         ):
             """
             Minimize the distance between two markers
@@ -282,6 +283,8 @@ class PenaltyFunctionAbstract:
                 The name or index of one of the two markers
             second_marker: Union[str, int]
                 The name or index of one of the two markers
+            axes: Union[tuple, list]
+                The axes to project on. Default is all axes
             """
 
             nlp = all_pn.nlp
@@ -292,6 +295,7 @@ class PenaltyFunctionAbstract:
                 biorbd.marker_index(nlp.model, second_marker) if isinstance(second_marker, str) else second_marker
             )
             PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nbMarkers())
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             marker_0 = BiorbdInterface.mx_to_cx(f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker)
             marker_1 = BiorbdInterface.mx_to_cx(f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker)
@@ -478,7 +482,7 @@ class PenaltyFunctionAbstract:
             penalty.set_penalty(com_dot_cx, all_pn)
 
         @staticmethod
-        def minimize_contact_forces(penalty: PenaltyOption, all_pn: PenaltyNodeList):
+        def minimize_contact_forces(penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None, axes: Union[tuple, list] = None):
             """
             Minimize the contact forces computed from dynamics with contact
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -490,26 +494,22 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
+            contact_index: Union[tuple, list]
+                The index of contact to minimize, must be an int.
+                penalty.cols should not be defined if contact_index is defined
+            axes: Union[tuple, list]
+                The axes to project on. Default is all axes
             """
 
-            n_contact = all_pn.nlp.model.nbContacts()
-            contacts_idx = PenaltyFunctionAbstract._check_and_fill_index(penalty.index, n_contact, "contacts_idx")
+            nlp = all_pn.nlp
+            if nlp.contact_forces_func is None:
+                raise RuntimeError("minimize_contact_forces requires a contact dynamics")
 
-            target = None
-            if penalty.target is not None:
-                target = PenaltyFunctionAbstract._check_and_fill_tracking_data_size(
-                    penalty.target, (len(contacts_idx), len(all_pn.u))
-                )
+            PenaltyFunctionAbstract.set_idx_columns(penalty, all_pn, contact_index, "contact")
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
-                PenaltyFunctionAbstract._add_track_data_to_plot(
-                    all_pn, target, combine_to="contact_forces", axes_idx=Mapping(contacts_idx)
-                )
-
-            for i, v in enumerate(all_pn.u):
-                force = all_pn.nlp.contact_forces_func(all_pn.x[i], all_pn.u[i], all_pn.p)
-                val = force[contacts_idx]
-                penalty.sliced_target = target[:, i] if target is not None else None
-                penalty.type.get_type().add_to_penalty(all_pn.ocp, all_pn, val, penalty)
+            contact_force = nlp.contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+            penalty.set_penalty(contact_force, all_pn)
 
         @staticmethod
         def track_segment_with_custom_rt(
@@ -704,7 +704,7 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("add cannot be called from an abstract class")
 
     @staticmethod
-    def set_marker_idx_columns(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[str, int, list, tuple]):
+    def set_idx_columns(penalty: PenaltyOption, all_pn: PenaltyNodeList, index: Union[str, int, list, tuple], _type: str):
         """
         Simple penalty.cols setter for marker index and names
 
@@ -714,17 +714,18 @@ class PenaltyFunctionAbstract:
             The actual penalty to declare
         all_pn: PenaltyNodeList
             The penalty node elements
-        marker_index: Union[str, int, list, tuple]
+        index: Union[str, int, list, tuple]
             The marker to index
         """
 
-        if penalty.cols is not None and marker_index is not None:
-            raise ValueError("It is not possible to define cols and marker_index since they are the same variable")
-        penalty.cols = marker_index if marker_index is not None else penalty.cols
+        if penalty.cols is not None and index is not None:
+            raise ValueError(f"It is not possible to define cols and {_type}_index since they are the same variable")
+        penalty.cols = index if index is not None else penalty.cols
         if penalty.cols is not None:
             penalty.cols = [penalty.cols] if not isinstance(penalty, (tuple, list)) else penalty.cols
             # Convert to int if it is str
-            penalty.cols = [cols if isinstance(cols, int) else biorbd.marker_index(all_pn.nlp.model, cols) for cols in penalty.cols]
+            if _type == "marker":
+                penalty.cols = [cols if isinstance(cols, int) else biorbd.marker_index(all_pn.nlp.model, cols) for cols in penalty.cols]
 
     @staticmethod
     def set_axes_rows(penalty: PenaltyOption, axes: Union[list, tuple]):
@@ -740,7 +741,7 @@ class PenaltyFunctionAbstract:
         """
 
         if penalty.rows is not None and axes is not None:
-            raise ValueError("It is not possible to define rows and axis since they are the same variable")
+            raise ValueError("It is not possible to define rows and axes since they are the same variable")
         penalty.rows = axes if axes is not None else penalty.rows
 
     @staticmethod
@@ -859,18 +860,17 @@ class PenaltyType(Enum):
 
     MINIMIZE_STATE = PenaltyFunctionAbstract.Functions.minimize_states
     MINIMIZE_CONTROL = PenaltyFunctionAbstract.Functions.minimize_controls
+    PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_states
+    PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_controls
     MINIMIZE_MARKERS = PenaltyFunctionAbstract.Functions.minimize_markers
     SUPERIMPOSE_MARKERS = PenaltyFunctionAbstract.Functions.superimpose_markers
     MINIMIZE_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
-    PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_states
-    PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_controls
     MINIMIZE_QDDOT = PenaltyFunctionAbstract.Functions.minimize_qddot
     MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height
     MINIMIZE_COM_POSITION = PenaltyFunctionAbstract.Functions.minimize_com_position
     MINIMIZE_COM_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_com_velocity
-
     MINIMIZE_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
-    TRACK_CONTACT_FORCES = MINIMIZE_CONTACT_FORCES
+
     TRACK_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt
     TRACK_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis
     CUSTOM = PenaltyFunctionAbstract.Functions.custom
