@@ -146,7 +146,7 @@ and optionally:
 #### Linux - Installing dependencies with conda
 All these (except for ̀`Acados` and the HSL lib) can easily be installed using (assuming the anaconda3 environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
 ```bash
-conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* bioviz=*=*casadi* python-graphviz=*=*casadi* -cconda-forge
+conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* bioviz=*=*casadi* python-graphviz -cconda-forge
 ```
 Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`. 
 The installer can be found and run at `[ROOT_BIOPTIM]/external/acados_install_linux.sh`.
@@ -160,7 +160,7 @@ Please note that depending on your computer architecture, `Acados` may or may no
 #### Mac - Installing dependencies with conda
 Equivalently for MacOSX:
 ```bash
-conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' 'python-graphviz=*=*casadi*' -cconda-forge
+conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' python-graphviz -cconda-forge
 ```
 Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`.
 The `Acados` installation script is `[ROOT_BIOPTIM]/external/acados_install_mac.sh`.
@@ -174,7 +174,7 @@ Please note that depending on your computer architecture, `Acados` may or may no
 #### Windows - Installing dependencies with conda
 Equivalently for Windows:
 ```bash
-conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' 'python-graphviz=*=*casadi*' -cconda-forge
+conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' python-graphviz -cconda-forge
 ```
 There isn't any `Anaconda` nor `pip3` package of `Acados`.
 If one wants to use the `Acados` solver on Windows, they must compile it by themselves.
