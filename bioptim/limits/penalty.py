@@ -182,6 +182,7 @@ class PenaltyFunctionAbstract:
             fcn = vertcat(*[optim_var[name].cx for name in names])
             combined_to = None if isinstance(names, (list, tuple)) else f"{names}_{suffix}"
             penalty.set_penalty(fcn, all_pn=all_pn, combine_to=combined_to, target_ns=len(var))
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             if combined_to is None:
                 penalty.add_multiple_target_to_plot(names, suffix, all_pn)
@@ -223,6 +224,7 @@ class PenaltyFunctionAbstract:
 
             markers_objective = BiorbdInterface.mx_to_cx("markers", markers, nlp.states["q"])
             penalty.set_penalty(markers_objective, all_pn)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
         @staticmethod
         def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list, int, str] = None, axes: Union[tuple, list] = None, reference_jcs: Union[str, int] = None):
@@ -260,6 +262,7 @@ class PenaltyFunctionAbstract:
 
             markers_objective = BiorbdInterface.mx_to_cx("markersVel", markers, nlp.states["q"], nlp.states["qdot"])
             penalty.set_penalty(markers_objective, all_pn)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
         @staticmethod
         def superimpose_markers(
@@ -300,6 +303,7 @@ class PenaltyFunctionAbstract:
             marker_0 = BiorbdInterface.mx_to_cx(f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker)
             marker_1 = BiorbdInterface.mx_to_cx(f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker)
             penalty.set_penalty(marker_1 - marker_0, all_pn)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
         @staticmethod
         def proportional_states(
@@ -392,6 +396,7 @@ class PenaltyFunctionAbstract:
                 raise ValueError(f"cols should not be defined for {var_type}")
 
             penalty.set_penalty(var_cx[first_dof, :] - coef * var_cx[second_dof, :], all_pn)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
         @staticmethod
         def minimize_qddot(penalty: PenaltyOption, all_pn: PenaltyNodeList):
@@ -456,6 +461,7 @@ class PenaltyFunctionAbstract:
 
             com_cx = BiorbdInterface.mx_to_cx("com", all_pn.nlp.model.CoM, all_pn.nlp.states["q"])
             penalty.set_penalty(com_cx, all_pn)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
         @staticmethod
         def minimize_com_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, axes: Union[tuple, list] = None):
@@ -480,6 +486,7 @@ class PenaltyFunctionAbstract:
             nlp = all_pn.nlp
             com_dot_cx = BiorbdInterface.mx_to_cx("com_dot", nlp.model.CoMdot, nlp.states["q"], nlp.states["qdot"])
             penalty.set_penalty(com_dot_cx, all_pn)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
         @staticmethod
         def minimize_contact_forces(penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None, axes: Union[tuple, list] = None):
@@ -510,6 +517,7 @@ class PenaltyFunctionAbstract:
 
             contact_force = nlp.contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
             penalty.set_penalty(contact_force, all_pn)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
         @staticmethod
         def track_segment_with_custom_rt(
@@ -540,6 +548,7 @@ class PenaltyFunctionAbstract:
 
             angle_objective = BiorbdInterface.mx_to_cx(f"track_segment", angles_diff, nlp.states["q"])
             penalty.set_penalty(angle_objective, all_pn)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
         @staticmethod
         def track_marker_with_segment_axis(
@@ -586,6 +595,7 @@ class PenaltyFunctionAbstract:
             penalty.rows = [ax for ax in [Axis.X, Axis.Y, Axis.Z] if ax != axis]
 
             penalty.set_penalty(marker_objective, all_pn)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
         @staticmethod
         def custom(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], **parameters: Any):
@@ -730,27 +740,7 @@ class PenaltyFunctionAbstract:
         penalty: PenaltyOption
             The actual penalty to declare
         """
-
-        func = penalty.type.value[0]
-        # Everything that should change the entry parameters depending on the penalty can be added here
-        if penalty.quadratic is None:
-            if (
-                func == PenaltyType.MINIMIZE_STATE
-                or func == PenaltyType.MINIMIZE_MARKERS
-                or func == PenaltyType.MINIMIZE_MARKERS_VELOCITY
-                or func == PenaltyType.SUPERIMPOSE_MARKERS
-                or func == PenaltyType.PROPORTIONAL_STATE
-                or func == PenaltyType.PROPORTIONAL_CONTROL
-                or func == PenaltyType.MINIMIZE_CONTROL
-                or func == PenaltyType.MINIMIZE_CONTACT_FORCES
-                or func == PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT
-                or func == PenaltyType.TRACK_MARKER_WITH_SEGMENT_AXIS
-                or func == PenaltyType.MINIMIZE_COM_POSITION
-                or func == PenaltyType.MINIMIZE_COM_VELOCITY
-            ):
-                penalty.quadratic = True
-            else:
-                penalty.quadratic = False
+        pass
 
     @staticmethod
     def validate_penalty_time_index(penalty: PenaltyOption, pn: PenaltyNodeList):
@@ -769,8 +759,8 @@ class PenaltyFunctionAbstract:
         node = penalty.node
         # Everything that is suspicious in terms of the span of the penalty function ca be checked here
         if (
-            func == PenaltyType.PROPORTIONAL_CONTROL
-            or func == PenaltyType.MINIMIZE_CONTROL
+            func == PenaltyFunctionAbstract.Functions.minimize_controls
+            or func == PenaltyFunctionAbstract.Functions.proportional_controls
         ):
             if node == Node.END or (isinstance(node, int) and node >= pn.nlp.ns):
                 raise RuntimeError("No control u at last node")
@@ -799,26 +789,3 @@ class PenaltyFunctionAbstract:
         """
 
         raise RuntimeError("get_type cannot be called from an abstract class")
-
-
-class PenaltyType(Enum):
-    """
-    Selection of valid penalty functions
-    """
-
-    MINIMIZE_STATE = PenaltyFunctionAbstract.Functions.minimize_states
-    MINIMIZE_CONTROL = PenaltyFunctionAbstract.Functions.minimize_controls
-    PROPORTIONAL_STATE = PenaltyFunctionAbstract.Functions.proportional_states
-    PROPORTIONAL_CONTROL = PenaltyFunctionAbstract.Functions.proportional_controls
-    MINIMIZE_MARKERS = PenaltyFunctionAbstract.Functions.minimize_markers
-    SUPERIMPOSE_MARKERS = PenaltyFunctionAbstract.Functions.superimpose_markers
-    MINIMIZE_MARKERS_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_markers_velocity
-    MINIMIZE_QDDOT = PenaltyFunctionAbstract.Functions.minimize_qddot
-    MINIMIZE_PREDICTED_COM_HEIGHT = PenaltyFunctionAbstract.Functions.minimize_predicted_com_height
-    MINIMIZE_COM_POSITION = PenaltyFunctionAbstract.Functions.minimize_com_position
-    MINIMIZE_COM_VELOCITY = PenaltyFunctionAbstract.Functions.minimize_com_velocity
-    MINIMIZE_CONTACT_FORCES = PenaltyFunctionAbstract.Functions.minimize_contact_forces
-    TRACK_SEGMENT_WITH_CUSTOM_RT = PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt
-
-    TRACK_MARKER_WITH_SEGMENT_AXIS = PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis
-    CUSTOM = PenaltyFunctionAbstract.Functions.custom

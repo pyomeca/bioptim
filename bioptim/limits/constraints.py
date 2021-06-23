@@ -6,7 +6,7 @@ from casadi import sum1, horzcat, if_else, vertcat, lt, MX, SX, Function
 import biorbd
 
 from .path_conditions import Bounds
-from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
+from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
 from ..dynamics.ode_solver import OdeSolver
 from ..misc.enums import Node, ControlType, InterpolationType
 from ..misc.options import OptionList, OptionGeneric
@@ -524,20 +524,19 @@ class ConstraintFcn(Enum):
         Returns the type of the penalty
     """
 
-    TRACK_CONTROL = (PenaltyType.MINIMIZE_CONTROL,)
-
-    TRACK_STATE = (PenaltyType.MINIMIZE_STATE,)
-    TRACK_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
-    TRACK_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
-    SUPERIMPOSE_MARKERS = (PenaltyType.SUPERIMPOSE_MARKERS,)
-    PROPORTIONAL_STATE = (PenaltyType.PROPORTIONAL_STATE,)
-    PROPORTIONAL_CONTROL = (PenaltyType.PROPORTIONAL_CONTROL,)
-    TRACK_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
-    TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT,)
-    TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.TRACK_MARKER_WITH_SEGMENT_AXIS,)
-    TRACK_COM_POSITION = (PenaltyType.MINIMIZE_COM_POSITION,)
-    TRACK_COM_VELOCITY = (PenaltyType.MINIMIZE_COM_VELOCITY,)
-    CUSTOM = (PenaltyType.CUSTOM,)
+    TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
+    TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+    TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
+    TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+    SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
+    PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
+    PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
+    TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+    TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
+    TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+    TRACK_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
+    TRACK_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
+    CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
     CONTACT_FORCE = (ConstraintFunction.Functions.contact_force,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     TORQUE_MAX_FROM_ACTUATORS = (ConstraintFunction.Functions.torque_max_from_actuators,)

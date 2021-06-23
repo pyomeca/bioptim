@@ -1,9 +1,7 @@
 from typing import Callable, Union, Any
 from enum import Enum
 
-from casadi import MX, SX
-
-from .penalty import PenaltyType, PenaltyFunctionAbstract, PenaltyOption
+from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node
 from ..misc.options import OptionList, OptionGeneric
@@ -456,24 +454,6 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def add_to_penalty(ocp, pn: Union[PenaltyNodeList, None], val: Union[MX, SX, float, int], penalty: Objective):
-            """
-            Add the objective function to the objective pool
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            pn: PenaltyNodeList
-                The penalty node elements
-            val: Union[MX, SX, float, int]
-                The actual objective function to add
-            penalty: Objective
-                The actual objective function to declare
-            """
-            ObjectiveFunction.add_to_penalty(ocp, pn, val, penalty, dt=1)
-
-        @staticmethod
         def clear_penalty(ocp, _, penalty: Objective):
             """
             Resets a objective function. A negative penalty index creates a new empty objective function.
@@ -617,27 +597,26 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
-        MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
-        TRACK_STATE = (PenaltyType.MINIMIZE_STATE,)
-        MINIMIZE_CONTROL = (PenaltyType.MINIMIZE_CONTROL,)
-        TRACK_CONTROL = (PenaltyType.MINIMIZE_CONTROL,)
-        SUPERIMPOSE_MARKERS = (PenaltyType.SUPERIMPOSE_MARKERS,)
-        MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
-        TRACK_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
-
+        MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states, )
+        TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+        MINIMIZE_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
+        TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
+        SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
+        MINIMIZE_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
+        TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
         MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
-        MINIMIZE_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
-        TRACK_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
-        PROPORTIONAL_STATE = (PenaltyType.PROPORTIONAL_STATE,)
-        PROPORTIONAL_CONTROL = (PenaltyType.PROPORTIONAL_CONTROL,)
-        MINIMIZE_QDDOT = (PenaltyType.MINIMIZE_QDDOT,)
-        MINIMIZE_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
-        TRACK_CONTACT_FORCES = (PenaltyType.MINIMIZE_CONTACT_FORCES,)
-        MINIMIZE_COM_POSITION = (PenaltyType.MINIMIZE_COM_POSITION,)
-        MINIMIZE_COM_VELOCITY = (PenaltyType.MINIMIZE_COM_VELOCITY,)
-        TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT,)
-        TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.TRACK_MARKER_WITH_SEGMENT_AXIS,)
-        CUSTOM = (PenaltyType.CUSTOM,)
+        MINIMIZE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+        TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+        PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
+        PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
+        MINIMIZE_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
+        MINIMIZE_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+        TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+        MINIMIZE_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
+        MINIMIZE_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
+        TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
+        TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+        CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod
         def get_type() -> Callable:
@@ -657,20 +636,20 @@ class ObjectiveFcn:
         """
 
         MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
-        MINIMIZE_STATE = (PenaltyType.MINIMIZE_STATE,)
-        TRACK_STATE = (PenaltyType.MINIMIZE_STATE,)
-        MINIMIZE_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
-        TRACK_MARKERS = (PenaltyType.MINIMIZE_MARKERS,)
-        MINIMIZE_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
-        TRACK_MARKERS_VELOCITY = (PenaltyType.MINIMIZE_MARKERS_VELOCITY,)
-        SUPERIMPOSE_MARKERS = (PenaltyType.SUPERIMPOSE_MARKERS,)
-        PROPORTIONAL_STATE = (PenaltyType.PROPORTIONAL_STATE,)
-        MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyType.MINIMIZE_PREDICTED_COM_HEIGHT,)
-        MINIMIZE_COM_POSITION = (PenaltyType.MINIMIZE_COM_POSITION,)
-        MINIMIZE_COM_VELOCITY = (PenaltyType.MINIMIZE_COM_VELOCITY,)
-        TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyType.TRACK_SEGMENT_WITH_CUSTOM_RT,)
-        TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyType.TRACK_MARKER_WITH_SEGMENT_AXIS,)
-        CUSTOM = (PenaltyType.CUSTOM,)
+        MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+        TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+        MINIMIZE_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
+        TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
+        MINIMIZE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+        TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+        SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
+        PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
+        MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyFunctionAbstract.Functions.minimize_predicted_com_height,)
+        MINIMIZE_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
+        MINIMIZE_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
+        TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
+        TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+        CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod
         def get_type() -> Callable:
@@ -689,7 +668,7 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
-        CUSTOM = (PenaltyType.CUSTOM,)
+        CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod
         def get_type() -> Callable:
