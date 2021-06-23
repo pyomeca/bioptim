@@ -215,16 +215,17 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
             # Compute the position of the marker in the requested reference frame (None for global)
-            q_mx = all_pn.nlp.states["q"].mx
-            model = all_pn.nlp.model
+            nlp = all_pn.nlp
+            q_mx = nlp.states["q"].mx
+            model = nlp.model
             jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.globalJCS(q_mx, reference_jcs).transpose()
-            all_markers = horzcat(*[mark.to_mx() for mark in model.markers(q_mx) if mark.applyRT(jcs_t) is None])
+            markers = horzcat(*[m.to_mx() for m in model.markers(q_mx) if m.applyRT(jcs_t) is None])
 
-            markers_objective = BiorbdInterface.mx_to_cx("marker", all_markers, all_pn.nlp.states["q"])
+            markers_objective = BiorbdInterface.mx_to_cx("markers", markers, nlp.states["q"])
             penalty.set_penalty(markers_objective, all_pn)
 
         @staticmethod
-        def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None, axes: Union[tuple, list] = None):
+        def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list] = None, axes: Union[tuple, list] = None, reference_jcs: Union[str, int] = None):
             """
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -241,15 +242,24 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if marker_index is defined
             axes: Union[tuple, list]
                 The axes to project on. Default is all axes
+            reference_jcs: Union[int, str]
+                The index or name of the segment to use as reference. Default [None] is the global coordinate system
             """
 
             # Adjust the cols and rows
             PenaltyFunctionAbstract.set_marker_idx_columns(penalty, all_pn, marker_index)
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
-            # Add the penalty
-            markers_obj = BiorbdInterface.mx_to_cx("marker", all_pn.nlp.model.markersVelocity, all_pn.nlp.states["q"], all_pn.nlp.states["qdot"])
-            penalty.set_penalty(markers_obj, all_pn)
+            # Add the penalty in the requested reference frame. None for global
+            nlp = all_pn.nlp
+            q_mx = nlp.states["q"].mx
+            qdot_mx = nlp.states["qdot"].mx
+            model = nlp.model
+            jcs_t = biorbd.RotoTrans() if reference_jcs is None else model.globalJCS(q_mx, reference_jcs).transpose()
+            markers = horzcat(*[m.to_mx() for m in model.markersVelocity(q_mx, qdot_mx) if m.applyRT(jcs_t) is None])
+
+            markers_objective = BiorbdInterface.mx_to_cx("markersVel", markers, nlp.states["q"], nlp.states["qdot"])
+            penalty.set_penalty(markers_objective, all_pn)
 
         @staticmethod
         def superimpose_markers(
