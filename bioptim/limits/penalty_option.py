@@ -5,7 +5,7 @@ from casadi import Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
-from ..misc.enums import Node, PlotType
+from ..misc.enums import Node, PlotType, ControlType
 from ..misc.mapping import Mapping
 from ..misc.options import OptionGeneric
 
@@ -114,7 +114,7 @@ class PenaltyOption(OptionGeneric):
         self.rows = self._set_dim_idx(self.rows, penalty.rows())
         self.cols = self._set_dim_idx(self.cols, penalty.columns())
         if self.target is not None:
-            self._check_target_dimensions(target_ns)
+            self._check_target_dimensions(all_pn, target_ns)
             if combine_to is not None:
                 self.add_target_to_plot(all_pn, combine_to)
         self._set_penalty_function(all_pn, penalty)
@@ -147,14 +147,16 @@ class PenaltyOption(OptionGeneric):
             raise RuntimeError(f"{self.name} index must be a list of integer")
         return dim
 
-    def _check_target_dimensions(self, ns: int):
+    def _check_target_dimensions(self, all_pn: PenaltyNodeList, n_col_expected: int):
         """
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
 
         Parameters
         ----------
-        ns: Union[list, tuple]
+        all_pn: PenaltyNodeList
+            The penalty node elements
+        n_col_expected: Union[list, tuple]
             The expected shape (n_rows, ns) of the data to track
         """
 
@@ -163,12 +165,18 @@ class PenaltyOption(OptionGeneric):
                 f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
             )
         if self.target.shape[1] == 1:
-            self.target = np.repeat(self.target, ns, axis=1)
+            self.target = np.repeat(self.target, n_col_expected, axis=1)
 
-        if self.target.shape != (len(self.rows), ns):
+        if self.target.shape != (len(self.rows), n_col_expected):
             raise RuntimeError(
-                f"target {self.target.shape} does not correspond to expected size {(len(self.rows), ns)}"
+                f"target {self.target.shape} does not correspond to expected size {(len(self.rows), n_col_expected)}"
             )
+
+        # If the target is on controls and control is constant, there will be one value missing
+        if all_pn.nlp.control_type == ControlType.CONSTANT and all_pn.nlp.ns in all_pn.t and self.target.shape[1] == all_pn.nlp.ns:
+            if all_pn.t[-1] != all_pn.nlp.ns:
+                raise NotImplementedError("Modifying target for END not being last is not implemented yet")
+            self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
     def _set_penalty_function(self, all_pn: PenaltyNodeList, fcn: Union[MX, SX]):
         param_cx = all_pn.nlp.cx(all_pn.nlp.parameters.cx)
@@ -347,7 +355,7 @@ class PenaltyOption(OptionGeneric):
             elif node == Node.END:
                 t.append(nlp.ns)
             elif node == Node.ALL:
-                t.extend([i for i in range(nlp.ns + 1)])
+                t.extend(range(nlp.ns + 1))
             else:
                 raise RuntimeError(" is not a valid node")
         x = [nlp.X[idx] for idx in t]

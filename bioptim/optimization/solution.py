@@ -807,7 +807,7 @@ class Solution:
             if nlp.control_type == ControlType.CONSTANT:
                 for key in self._controls[p]:
                     self._controls[p][key] = np.concatenate(
-                        (self._controls[p][key], self._controls[p][key][:, -1][:, np.newaxis]), axis=1
+                        (self._controls[p][key], np.nan * np.zeros((self._controls[p][key].shape[0], 1))), axis=1
                     )
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 pass
