@@ -925,72 +925,33 @@ class Solution:
             Print the values of each objective function to the console
             """
 
-            def __extract_objective(pen: dict):
-                """
-                Extract objective function from a penalty
+            def extract_objective(J):
+                running_total = 0
+                for j in J:
+                    if not j:
+                        continue
 
-                Parameters
-                ----------
-                pen: dict
-                    The penalty to extract the value from
+                    x = sol.states["all"][:, j.node_idx]
+                    u = sol.controls["all"][:, j.node_idx]
+                    p = sol.parameters["all"]
+                    target = j.target[:, j.node_idx] if j.target is not None else []
 
-                Returns
-                -------
-                The value extract
-                """
+                    val = np.nansum(j.weighted_function(x, u, p, 1, target, j.dt))
+                    val_weighted = np.nansum(j.weighted_function(x, u, p, j.weight, target, j.dt))
 
-                # TODO: This should be done in bounds and objective functions, so it is available for all the code
-                val_tp = Function("val_tp", [ocp.v.vector], [pen["val"]]).expand()(sol.vector)
-                if pen["target"] is not None:
-                    # TODO Target should be available to constraint?
-                    nan_idx = np.isnan(pen["target"])
-                    pen["target"][nan_idx] = 0
-                    val_tp -= pen["target"]
-                    if np.any(nan_idx):
-                        val_tp[np.where(nan_idx)] = 0
-
-                if pen["objective"].quadratic:
-                    val_tp *= val_tp
-
-                val = np.sum(val_tp)
-
-                dt = Function("dt", [ocp.v.vector], [pen["dt"]]).expand()(sol.vector)
-                val_weighted = pen["objective"].weight * val * dt
-                return val, val_weighted
+                    print(f"{j.name}: {val} (weighted {val_weighted})")
+                    running_total += val_weighted
+                return running_total
 
             print(f"\n---- COST FUNCTION VALUES ----")
-            has_global = False
-            running_total = 0
-            for J in ocp.J:
-                if not J:
-                    continue
-                has_global = True
-                val = []
-                val_weighted = []
-                for j in J:
-                    out = __extract_objective(j)
-                    val.append(out[0])
-                    val_weighted.append(out[1])
-                sum_val_weighted = sum(val_weighted)
-                print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
-                running_total += sum_val_weighted
-            if has_global:
+
+            running_total = extract_objective(ocp.J)
+            if ocp.J:
                 print("")
 
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
-                for J in nlp.J:
-                    if not J:
-                        continue
-                    val = []
-                    val_weighted = []
-                    for j in J:
-                        out = __extract_objective(j)
-                        val.append(out[0])
-                        val_weighted.append(out[1])
-                    sum_val_weighted = sum(val_weighted)
-                    print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
-                    running_total += sum_val_weighted
+                running_total += extract_objective(nlp.J)
                 print("")
 
             print(f"Sum cost functions: {running_total}")

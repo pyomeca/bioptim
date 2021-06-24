@@ -143,23 +143,21 @@ class GraphAbstract:
 
         objective_names = []
         lagrange_str = ""
-        for objective in objective_list:
-            if len(objective) > 0:
-                obj = objective[0]["objective"]
-                if isinstance(obj.type, ObjectiveFcn.Lagrange):
-                    if obj.sliced_target is not None:
-                        if obj.quadratic:
-                            lagrange_str += f"({obj.name} - {self._vector_layout(obj.sliced_target)}){self._squared}{self._return_line}"
-                        else:
-                            lagrange_str += f"{obj.name} - {self._vector_layout(obj.sliced_target)}{self._return_line}"
+        for i, obj in enumerate(objective_list):
+            if isinstance(obj.type, ObjectiveFcn.Lagrange):
+                if obj.target is not None:
+                    if obj.quadratic:
+                        lagrange_str += f"({obj.name} - {self._vector_layout(obj.target[:, i])}){self._squared}{self._return_line}"
                     else:
-                        if obj.quadratic:
-                            lagrange_str += f"({obj.name}){self._squared}{self._return_line}"
-                        else:
-                            lagrange_str += f"{obj.name}{self._return_line}"
-                    lagrange_str = self._add_extra_parameters_to_str(obj, lagrange_str)
-                    lagrange_str += f"{self._return_line}"
-                    objective_names.append(obj.name)
+                        lagrange_str += f"{obj.name} - {self._vector_layout(obj.target[:, i])}{self._return_line}"
+                else:
+                    if obj.quadratic:
+                        lagrange_str += f"({obj.name}){self._squared}{self._return_line}"
+                    else:
+                        lagrange_str += f"{obj.name}{self._return_line}"
+                lagrange_str = self._add_extra_parameters_to_str(obj, lagrange_str)
+                lagrange_str += f"{self._return_line}"
+                objective_names.append(obj.name)
         return lagrange_str, objective_names
 
     def _mayer_to_str(self, objective_list: ObjectiveList):
@@ -173,17 +171,16 @@ class GraphAbstract:
         """
 
         list_mayer_objectives = []
-        for objective in objective_list:
-            for obj_index in objective:
-                obj = obj_index["objective"]
+        for obj in objective_list:
+            for i in obj.node_idx:
                 if isinstance(obj.type, ObjectiveFcn.Mayer):
                     mayer_str = ""
                     mayer_objective = [obj.node[0]]
                     if obj.sliced_target is not None:
                         if obj.quadratic:
-                            mayer_str += f"({obj.name} - {self._vector_layout(obj.sliced_target)}){self._squared}{self._return_line}"
+                            mayer_str += f"({obj.name} - {self._vector_layout(obj.target[:, i])}){self._squared}{self._return_line}"
                         else:
-                            mayer_str += f"{obj.name} - {self._vector_layout(obj.sliced_target)}{self._return_line}"
+                            mayer_str += f"{obj.name} - {self._vector_layout(obj.target[:, i])}{self._return_line}"
                     else:
                         if obj.quadratic:
                             mayer_str += f"({obj.name}){self._squared}{self._return_line}"
@@ -611,7 +608,7 @@ class OcpToGraph(GraphAbstract):
             for objective in self.ocp.nlp[phase_idx].J:
                 if not objective:
                     continue
-                if isinstance(objective[0]["objective"].type, ObjectiveFcn.Lagrange):
+                if isinstance(objective.type, ObjectiveFcn.Lagrange):
                     only_mayer = False
 
             if len(self.ocp.nlp[phase_idx].J) > 0 and not only_mayer:
