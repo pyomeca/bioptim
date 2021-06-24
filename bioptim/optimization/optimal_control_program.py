@@ -45,6 +45,8 @@ class OptimalControlProgram:
         The base type for the symbolic casadi variables
     g: list
         Constraints that are not phase dependent (mostly parameters and continuity constraints)
+    g_internal: list[list[Constraint]]
+        All the constraints internally defined by the OCP at each of the node of the phase
     J: list
         Objective values that are not phase dependent (mostly parameters)
     isdef_x_init: bool
@@ -323,6 +325,7 @@ class OptimalControlProgram:
         # Declare optimization variables
         self.J = []
         self.g = []
+        self.g_internal = []
         self.v = OptimizationVector(self)
 
         # nlp is the core of a phase
@@ -893,4 +896,4 @@ class OptimalControlProgram:
         # Copy to self.original_values so it can be save/load
         pen = new_penalty.type.get_type()
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
-        pen.add_or_replace(self, self.nlp[phase_idx], new_penalty)
+        new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])

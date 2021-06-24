@@ -8,7 +8,7 @@ from casadi import horzcat, vertcat
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
-from ..misc.enums import Node, Axis
+from ..misc.enums import Node, Axis, ControlType
 from ..optimization.optimization_variable import OptimizationVariable
 
 
@@ -130,7 +130,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, names, "states")
 
         @staticmethod
-        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: Union[str, list] = "all"):
+        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, name: Union[str, list] = "all"):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -142,11 +142,11 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            names: Union[str, list]
+            name: Union[str, list]
                 The name of the controls to minimize
             """
 
-            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, names, "controls")
+            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, name, "controls")
 
         @staticmethod
         def _minimize_optim_var(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: Union[str, list], suffix: str):
@@ -596,6 +596,25 @@ class PenaltyFunctionAbstract:
             penalty.set_penalty(marker_objective, all_pn)
 
         @staticmethod
+        def continuity(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list]):
+
+            nlp = all_pn.nlp
+            if nlp.control_type == ControlType.CONSTANT:
+                u = nlp.controls.cx
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                u = horzcat(nlp.controls.cx, nlp.controls.cx_end)
+            else:
+                raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
+
+            if not isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
+                raise RuntimeError("continuity should be called one node at a time")
+
+            end_node = nlp.dynamics[penalty.node[0]](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
+            continuity = nlp.states.cx_end - end_node
+            penalty.explicit_derivative = True
+            penalty.set_penalty(continuity, all_pn)
+
+        @staticmethod
         def custom(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], **parameters: Any):
             """
             A user defined penalty function
@@ -741,7 +760,7 @@ class PenaltyFunctionAbstract:
         pass
 
     @staticmethod
-    def validate_penalty_time_index(penalty: PenaltyOption, pn: PenaltyNodeList):
+    def validate_penalty_time_index(penalty: PenaltyOption, all_pn: PenaltyNodeList):
         """
         Check for any non sense in the requested times for the penalty. Raises an error if so
 
@@ -749,7 +768,7 @@ class PenaltyFunctionAbstract:
         ----------
         penalty: PenaltyOption
             The actual penalty to declare
-        pn: PenaltyNodeList
+        all_pn: PenaltyNodeList
             The penalty node elements
         """
 
@@ -760,25 +779,12 @@ class PenaltyFunctionAbstract:
             func == PenaltyFunctionAbstract.Functions.minimize_controls
             or func == PenaltyFunctionAbstract.Functions.proportional_controls
         ):
-            if node == Node.END or (isinstance(node, int) and node >= pn.nlp.ns):
+            if node == Node.END or (isinstance(node, int) and node >= all_pn.nlp.ns):
                 raise RuntimeError("No control u at last node")
 
     @staticmethod
-    def clear_penalty(ocp, nlp, penalty: PenaltyOption):
-        """
-        Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        penalty: PenaltyOption
-            The actual penalty to declare
-        """
-
-        raise RuntimeError("_reset_penalty cannot be called from an abstract class")
+    def set_penalty(penalty, all_pn):
+        pass
 
     @staticmethod
     def get_type():
@@ -787,3 +793,11 @@ class PenaltyFunctionAbstract:
         """
 
         raise RuntimeError("get_type cannot be called from an abstract class")
+
+    @staticmethod
+    def get_dt(nlp):
+        """
+        Return the dt of the penalty (abstract
+        """
+
+        raise RuntimeError("get_dt cannot be called from an abstract class")

@@ -37,6 +37,8 @@ class NonLinearProgram:
         The external forces acting at the center of mass of the designated segment
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase
+    g_internal: list[list[Constraint]]
+        All the constraints internally defined by the OCP at each of the node of the phase
     J: list[list[Objective]]
         All the objectives at each of the node of the phase
     model: biorbd.Model
@@ -104,6 +106,7 @@ class NonLinearProgram:
         self.dynamics_type = None
         self.external_forces = []
         self.g = []
+        self.g_internal = []
         self.J = []
         self.model = None
         self.n_threads = None
@@ -143,6 +146,7 @@ class NonLinearProgram:
         self.controls._cx = self.cx()
         self.J = []
         self.g = []
+        self.g_internal = []
         self.casadi_func = {}
 
     @staticmethod

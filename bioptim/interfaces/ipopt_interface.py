@@ -167,24 +167,26 @@ class IpoptInterface(SolverInterface):
         """
         Parse the bounds of the full ocp to a Ipopt-friendly one
         """
-        # TODO: This should be done in bounds, so it is available for all the code
 
         all_g = self.ocp.cx()
         all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for i in range(len(self.ocp.g)):
-            for j in range(len(self.ocp.g[i])):
-                all_g = vertcat(all_g, self.ocp.g[i][j]["val"])
-                all_g_bounds.concatenate(self.ocp.g[i][j]["bounds"])
+            all_g = vertcat(all_g, self.__get_all_penalties(self.ocp, self.ocp.g_internal))
+            for g in self.ocp.g_internal:
+                all_g_bounds.concatenate(g.bounds)
+
+            all_g = vertcat(all_g, self.__get_all_penalties(self.ocp, self.ocp.g))
+            for g in self.ocp.g:
+                all_g_bounds.concatenate(g.bounds)
+
         for nlp in self.ocp.nlp:
-            for i in range(len(nlp.g)):
-                for j in range(len(nlp.g[i])):
-                    if nlp.g[i][j]["constraint"].target is not None:
-                        # TODO This is not tested and therefore it is not sure it works..
-                        # TODO Add an example and test or remove?
-                        all_g = vertcat(all_g, nlp.g[i][j]["val"] - nlp.g[i][j]["target"])
-                    else:
-                        all_g = vertcat(all_g, nlp.g[i][j]["val"])
-                    all_g_bounds.concatenate(nlp.g[i][j]["bounds"])
+            all_g = vertcat(all_g, self.__get_all_penalties(nlp, nlp.g_internal))
+            for g in nlp.g_internal:
+                all_g_bounds.concatenate(g.bounds)
+
+            all_g = vertcat(all_g, self.__get_all_penalties(nlp, nlp.g))
+            for g in nlp.g:
+                all_g_bounds.concatenate(g.bounds)
 
         if isinstance(all_g_bounds.min, (SX, MX)) or isinstance(all_g_bounds.max, (SX, MX)):
             raise RuntimeError("Ipopt doesn't support SX/MX types in constraints bounds")
@@ -195,30 +197,29 @@ class IpoptInterface(SolverInterface):
         Parse the objective functions of the full ocp to a Ipopt-friendly one
         """
 
-        param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
-
-        def get_all_obj(objectives):
-            out = self.ocp.cx()
-            for penalty in objectives:
-                for idx in penalty.node_idx:
-                    target = [] if penalty.target is None else penalty.target[:, idx]
-                    if np.isnan(np.sum(target)):
-                        continue
-
-                    if penalty.derivative:
-                        x = horzcat(*nlp.X[idx:idx+2])
-                        u = horzcat(*nlp.U[idx:idx+2]) if idx < len(nlp.U) - 1 else []
-                    else:
-                        x = nlp.X[idx]
-                        u = nlp.U[idx] if idx < len(nlp.U) else []
-
-                    p = penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt)
-                    out = vertcat(out, sum2(p))
-            return out
-
         all_objectives = self.ocp.cx()
-        all_objectives = vertcat(all_objectives, get_all_obj(self.ocp.J))
+        all_objectives = vertcat(all_objectives, self.__get_all_penalties([], self.ocp.J))
         for nlp in self.ocp.nlp:
-            all_objectives = vertcat(all_objectives, get_all_obj(nlp.J))
+            all_objectives = vertcat(all_objectives, self.__get_all_penalties(nlp, nlp.J))
 
         return all_objectives
+
+    def __get_all_penalties(self, nlp, penalties):
+        param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
+        out = self.ocp.cx()
+        for penalty in penalties:
+            for idx in penalty.node_idx:
+                target = [] if penalty.target is None else penalty.target[:, idx]
+                if np.isnan(np.sum(target)):
+                    continue
+
+                if penalty.derivative or penalty.explicit_derivative:
+                    x = horzcat(*nlp.X[idx:idx+2])
+                    u = horzcat(*nlp.U[idx:idx+2]) if idx < len(nlp.U) else []
+                else:
+                    x = nlp.X[idx]
+                    u = nlp.U[idx] if idx < len(nlp.U) else []
+
+                p = penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt)
+                out = vertcat(out, sum2(p))
+        return out

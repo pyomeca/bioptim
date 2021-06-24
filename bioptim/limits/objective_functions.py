@@ -15,17 +15,22 @@ class Objective(PenaltyOption):
     ----------
     weight: float
         The weighting applied to this specific objective function
+
+    Functions
+    ---------
+    clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
+        Resets a objective function. A negative penalty index creates a new empty objective function.
+    add_or_replace_to_penalty_pool(ocp: OptimalControlProgram, nlp: NonLinearProgram, objective: Objective)
+        Add the objective function to the objective pool
     """
 
-    def __init__(self, objective: Any, weight: float = 1, custom_type: Callable = None, phase: int = 0, **params: Any):
+    def __init__(self, objective: Any, custom_type: Any = None, phase: int = 0, **params: Any):
         """
         Parameters
         ----------
         objective: Union[ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, Callable[OptimalControlProgram, MX]]
             The chosen objective function
-        weight: float
-            The weighting applied to this specific objective function
-        custom_type: Union[ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer]
+        custom_type: Union[ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, Callable]
             When objective is a custom defined function, one must specify if the custom_type is Mayer or Lagrange
         phase: int
             At which phase this objective function must be applied
@@ -56,7 +61,62 @@ class Objective(PenaltyOption):
                 )
 
         super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
-        self.weight = weight
+
+    def get_penalty_pool(self, all_pn: PenaltyNodeList):
+        """
+        Add the objective function to the objective pool
+
+        Parameters
+        ----------
+        all_pn: PenaltyNodeList
+                The penalty node elements
+        """
+
+        return all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
+
+    def clear_penalty(self, ocp, nlp):
+        """
+        Resets a objective function. A negative penalty index creates a new empty objective function.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        """
+
+        if nlp:
+            J_to_add_to = nlp.J
+        else:
+            J_to_add_to = ocp.J
+
+        if self.list_index < 0:
+            # Add a new one
+            for i, j in enumerate(J_to_add_to):
+                if not j:
+                    self.list_index = i
+                    return
+            else:
+                J_to_add_to.append([])
+                self.list_index = len(J_to_add_to) - 1
+        else:
+            while self.list_index >= len(J_to_add_to):
+                J_to_add_to.append([])
+            J_to_add_to[self.list_index] = []
+
+    def add_or_replace_to_penalty_pool(self, ocp, nlp):
+        if self.type.get_type() == ObjectiveFunction.LagrangeFunction:
+            if self.node != Node.ALL and self.node != Node.DEFAULT:
+                raise RuntimeError("Lagrange objective are for Node.ALL, did you mean Mayer?")
+            self.node = Node.ALL
+        elif self.type.get_type() == ObjectiveFunction.MayerFunction:
+            if self.node == Node.DEFAULT:
+                self.node = Node.END
+        else:
+            raise RuntimeError("Objective is not Mayer or Lagrange")
+
+        super(Objective, self).add_or_replace_to_penalty_pool(ocp, nlp)
 
 
 class ObjectiveList(OptionList):
@@ -101,12 +161,8 @@ class ObjectiveFunction:
 
     Methods
     -------
-    add_or_replace(ocp: OptimalControlProgram, nlp: NonLinearProgram, objective: Objective)
-        Add the objective function to the objective pool
     add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodeList, val: Union[MX, SX], penalty: Objective, dt:float=0)
         Add the objective function to the objective pool
-    clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
-        Resets a objective function. A negative penalty index creates a new empty objective function.
     """
 
     class LagrangeFunction(PenaltyFunctionAbstract):
@@ -115,8 +171,6 @@ class ObjectiveFunction:
 
         Methods
         -------
-        clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
-            Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
         _span_checker(objective: Objective, pn: PenaltyNodeList)
@@ -150,102 +204,24 @@ class ObjectiveFunction:
 
                 val = 1
                 raise NotImplementedError()
-                ObjectiveFunction.add_to_penalty(all_pn.ocp, all_pn)
+                # # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
+                # if "min_bound" in objective.params:
+                #     raise RuntimeError(
+                #         "ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have min_bound. "
+                #         "Please either use MAYER or constraint"
+                #     )
+                # if "max_bound" in objective.params:
+                #     raise RuntimeError(
+                #         "ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have max_bound. "
+                #         "Please either use MAYER or constraint"
+                #     )
+                # if not objective.quadratic:
+                #     objective.quadratic = True
+                # ObjectiveFunction.add_to_penalty(all_pn.ocp, all_pn)
 
         @staticmethod
         def get_dt(nlp):
             return nlp.dt
-
-        @staticmethod
-        def get_penalty_pool(all_pn: PenaltyNodeList):
-            """
-            Add the objective function to the objective pool
-
-            Parameters
-            ----------
-            all_pn: PenaltyNodeList
-                    The penalty node elements
-            """
-
-            return all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
-
-        @staticmethod
-        def clear_penalty(ocp, nlp, penalty: Objective):
-            """
-            Resets a objective function. A negative penalty index creates a new empty objective function.
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the current phase of the ocp
-            penalty: Objective
-                The actual objective function to declare
-            """
-
-            return ObjectiveFunction.clear_penalty(ocp, nlp, penalty)
-
-        @staticmethod
-        def _parameter_modifier(objective: Objective):
-            """
-            Apply some default parameters
-
-            Parameters
-            ----------
-            objective: Objective
-                The actual objective function to declare
-            """
-
-            func = objective.type.value[0]
-            # Everything that should change the entry parameters depending on the penalty can be added here
-            if func == ObjectiveFcn.Lagrange.MINIMIZE_TIME.value[0]:
-                # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
-                if "min_bound" in objective.params:
-                    raise RuntimeError(
-                        "ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have min_bound. "
-                        "Please either use MAYER or constraint"
-                    )
-                if "max_bound" in objective.params:
-                    raise RuntimeError(
-                        "ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have max_bound. "
-                        "Please either use MAYER or constraint"
-                    )
-                if not objective.quadratic:
-                    objective.quadratic = True
-            PenaltyFunctionAbstract._parameter_modifier(objective)
-
-        @staticmethod
-        def _span_checker(objective: Objective, pn: PenaltyNodeList):
-            """
-            Check for any non sense in the requested times for the constraint. Raises an error if so
-
-            Parameters
-            ----------
-            objective: Objective
-                The actual objective function to declare
-            pn: PenaltyNodeList
-                The penalty node elements
-            """
-
-            # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(objective, pn)
-
-        @staticmethod
-        def add_or_replace(ocp, nlp, objective: PenaltyOption):
-            """
-            Add the objective function to the objective pool
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the current phase of the ocp
-            objective: PenaltyOption
-                The actual objective function to declare
-            """
-            ObjectiveFunction.add_or_replace(ocp, nlp, objective)
 
         @staticmethod
         def penalty_nature() -> str:
@@ -267,8 +243,6 @@ class ObjectiveFunction:
         -------
         inter_phase_continuity(ocp: OptimalControlProgram, pt: "PhaseTransition")
             Add phase transition objective between two phases.
-        clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
-            Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
         _span_checker(objective: Objective, pn: PenaltyNodeList)
@@ -304,24 +278,16 @@ class ObjectiveFunction:
                 """
 
                 val = pn.nlp.tf
-                ObjectiveFunction.MayerFunction.add_to_penalty(pn.ocp, pn, val, penalty)
+                # penalty.quadratic = True
+                # if "min_bound" in objective.params:
+                #     del objective.params["min_bound"]
+                # if "max_bound" in objective.params:
+                #     del objective.params["max_bound"]
+                # ObjectiveFunction.MayerFunction.add_to_penalty(pn.ocp, pn, val, penalty)
 
         @staticmethod
-        def get_dt(nlp):
+        def get_dt(_):
             return 1
-
-        @staticmethod
-        def get_penalty_pool(all_pn: PenaltyNodeList):
-            """
-            Add the objective function to the objective pool
-
-            Parameters
-            ----------
-            all_pn: PenaltyNodeList
-                    The penalty node elements
-            """
-
-            return all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
 
         @staticmethod
         def inter_phase_continuity(ocp, pt):
@@ -337,86 +303,14 @@ class ObjectiveFunction:
             """
 
             # Dynamics must be respected between phases
-            penalty = OptionGeneric()
+            penalty = PenaltyOption()
             penalty.list_index = -1
             penalty.quadratic = pt.quadratic
             penalty.weight = pt.weight
             penalty.sliced_target = None
-            pt.base.clear_penalty(ocp, None, penalty)
+            penalty.clear_penalty(ocp, None)
             val = pt.type.value[0](ocp, pt)
             pt.base.add_to_penalty(ocp, None, val, penalty)
-
-        @staticmethod
-        def clear_penalty(ocp, nlp, penalty: Objective):
-            """
-            Resets a objective function. A negative penalty index creates a new empty objective function.
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the current phase of the ocp
-            penalty: Objective
-                The actual objective function to declare
-            """
-
-            return ObjectiveFunction.clear_penalty(ocp, nlp, penalty)
-
-        @staticmethod
-        def _parameter_modifier(objective: Objective):
-            """
-            Apply some default parameters
-
-            Parameters
-            ----------
-            objective: Objective
-                The actual objective function to declare
-            """
-
-            func = objective.type.value[0]
-            # Everything that should change the entry parameters depending on the penalty can be added here
-            if func == ObjectiveFcn.Mayer.MINIMIZE_TIME.value[0]:
-                # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
-                if "min_bound" in objective.params:
-                    del objective.params["min_bound"]
-                if "max_bound" in objective.params:
-                    del objective.params["max_bound"]
-
-            PenaltyFunctionAbstract._parameter_modifier(objective)
-
-        @staticmethod
-        def _span_checker(objective: Objective, pn: PenaltyNodeList):
-            """
-            Check for any non sense in the requested times for the constraint. Raises an error if so
-
-            Parameters
-            ----------
-            objective: Objective
-                The actual objective function to declare
-                A reference to the current phase of the ocp
-            pn: PenaltyNodeList
-                The penalty node elements
-            """
-
-            # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(objective, pn)
-
-        @staticmethod
-        def add_or_replace(ocp, nlp, objective: PenaltyOption):
-            """
-            Add the objective function to the objective pool
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the current phase of the ocp
-            objective: PenaltyOption
-                The actual objective function to declare
-            """
-            ObjectiveFunction.add_or_replace(ocp, nlp, objective)
 
         @staticmethod
         def penalty_nature() -> str:
@@ -436,8 +330,6 @@ class ObjectiveFunction:
 
         add_to_penalty(ocp: OptimalControlProgram, _, val: Union[MX, SX], penalty: Objective)
             Add the objective function to the objective pool
-        clear_penalty(ocp: OptimalControlProgram, _, penalty: Objective)
-            Resets a objective function. A negative penalty index creates a new empty objective function.
         _parameter_modifier(objective: Objective)
             Apply some default parameters
         _span_checker(objective: Objective, pn: PenaltyNodeList)
@@ -454,53 +346,6 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def clear_penalty(ocp, _, penalty: Objective):
-            """
-            Resets a objective function. A negative penalty index creates a new empty objective function.
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            _: Any
-                The ignored nlp
-            penalty: Objective
-                The actual objective function to declare
-            """
-
-            return ObjectiveFunction.clear_penalty(ocp, None, penalty)
-
-        @staticmethod
-        def _parameter_modifier(objective: Objective):
-            """
-            Apply some default parameters
-
-            Parameters
-            ----------
-            objective: Objective
-                The actual objective function to declare
-            """
-
-            # Everything that should change the entry parameters depending on the penalty can be added here
-            PenaltyFunctionAbstract._parameter_modifier(objective)
-
-        @staticmethod
-        def _span_checker(objective: Objective, pn: PenaltyNodeList):
-            """
-            Check for any non sense in the requested times for the constraint. Raises an error if so
-
-            Parameters
-            ----------
-            objective: Objective
-                The actual objective function to declare
-            pn: PenaltyNodeList
-                The penalty node elements
-            """
-
-            # Everything that is suspicious in terms of the span of the penalty function ca be checked here
-            PenaltyFunctionAbstract._span_checker(objective, pn)
-
-        @staticmethod
         def penalty_nature() -> str:
             """
             Get the nature of the penalty
@@ -513,73 +358,12 @@ class ObjectiveFunction:
             return "parameters"
 
     @staticmethod
-    def add_or_replace(ocp, nlp, objective: PenaltyOption):
-        """
-        Add the objective function to the objective pool
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        objective: PenaltyOption
-            The actual objective function to declare
-        """
-
-        if objective.type.get_type() == ObjectiveFunction.LagrangeFunction:
-            if objective.node != Node.ALL and objective.node != Node.DEFAULT:
-                raise RuntimeError("Lagrange objective are for Node.ALL, did you mean Mayer?")
-            objective.node = Node.ALL
-        elif objective.type.get_type() == ObjectiveFunction.MayerFunction:
-            if objective.node == Node.DEFAULT:
-                objective.node = Node.END
-
-        else:
-            raise RuntimeError("ObjectiveFcn function Type must be either a Lagrange or Mayer type")
-        objective.add_or_replace_to_penalty_pool(ocp, nlp)
-
-    @staticmethod
     def update_target(ocp_or_nlp, list_index, new_target):
         if list_index >= len(ocp_or_nlp.J) or list_index < 0:
             raise ValueError("'list_index' must be defined properly")
 
         for i, j in enumerate(ocp_or_nlp.J[list_index]):
             j["target"] = new_target[..., i]
-
-    @staticmethod
-    def clear_penalty(ocp, nlp, penalty: Objective):
-        """
-        Resets a objective function. A negative penalty index creates a new empty objective function.
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        penalty: Objective
-            The actual objective function to declare
-        """
-
-        if nlp:
-            J_to_add_to = nlp.J
-        else:
-            J_to_add_to = ocp.J
-
-        if penalty.list_index < 0:
-            # Add a new one
-            for i, j in enumerate(J_to_add_to):
-                if not j:
-                    penalty.list_index = i
-                    return
-            else:
-                J_to_add_to.append([])
-                penalty.list_index = len(J_to_add_to) - 1
-        else:
-            while penalty.list_index >= len(J_to_add_to):
-                J_to_add_to.append([])
-            J_to_add_to[penalty.list_index] = []
 
 
 class ObjectiveFcn:

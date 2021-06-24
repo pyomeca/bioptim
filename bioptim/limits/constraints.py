@@ -29,6 +29,7 @@ class Constraint(PenaltyOption):
         constraint: Any,
         min_bound: Union[np.ndarray, float] = None,
         max_bound: Union[np.ndarray, float] = None,
+        quadratic: bool = False,
         phase: int = 0,
         **params: Any,
     ):
@@ -43,6 +44,8 @@ class Constraint(PenaltyOption):
             The vector of maximal bound of the constraint. Default is 0
         phase: int
             The index of the phase to apply the constraint
+        quadratic: bool
+            If the penalty is quadratic
         params:
             Generic parameters for options
         """
@@ -51,9 +54,89 @@ class Constraint(PenaltyOption):
             custom_function = constraint
             constraint = ConstraintFcn.CUSTOM
 
-        super(Constraint, self).__init__(penalty=constraint, phase=phase, custom_function=custom_function, **params)
+        super(Constraint, self).__init__(penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function, **params)
         self.min_bound = min_bound
         self.max_bound = max_bound
+        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+
+    def add_or_replace_to_penalty_pool(self, ocp, nlp):
+        """
+        Doing some configuration before calling the super.add_or_replace function that prepares the adding of the
+        constraint to the constraint pool
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        """
+
+        if self.type == ConstraintFcn.TIME_CONSTRAINT:
+            self.node = Node.END
+
+        super(Constraint, self).add_or_replace_to_penalty_pool(ocp, nlp)
+
+        self.min_bound = 0 if self.min_bound is None else self.min_bound
+        self.max_bound = 0 if self.max_bound is None else self.max_bound
+
+        for i in self.rows:
+            min_bound = (
+                self.min_bound[i]
+                if hasattr(self.min_bound, "__getitem__") and self.min_bound.shape[0] > 1
+                else self.min_bound
+            )
+            max_bound = (
+                self.max_bound[i]
+                if hasattr(self.max_bound, "__getitem__") and self.max_bound.shape[0] > 1
+                else self.max_bound
+            )
+            self.bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
+
+    def get_penalty_pool(self, all_pn: PenaltyNodeList):
+        """
+        Add the objective function to the objective pool
+
+        Parameters
+        ----------
+        all_pn: PenaltyNodeList
+                The penalty node elements
+        """
+
+        if self.is_internal:
+            return all_pn.nlp.g_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.g_internal
+        else:
+            return all_pn.nlp.g if all_pn is not None and all_pn.nlp else all_pn.ocp.g
+
+    def clear_penalty(self, ocp, nlp):
+        """
+        Resets a constraint. A negative penalty index creates a new empty constraint.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        """
+
+        if self.is_internal:
+            g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
+        else:
+            g_to_add_to = nlp.g if nlp else ocp.g
+
+        if self.list_index < 0:
+            for i, j in enumerate(g_to_add_to):
+                if not j:
+                    self.list_index = i
+                    return
+            else:
+                g_to_add_to.append([])
+                self.list_index = len(g_to_add_to) - 1
+        else:
+            while self.list_index >= len(g_to_add_to):
+                g_to_add_to.append([])
+            g_to_add_to[self.list_index] = []
 
 
 class ConstraintList(OptionList):
@@ -131,33 +214,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         contact_force(constraint: Constraint, pn: PenaltyNodeList, contact_force_idx: int)
             Add a constraint of contact forces given by any forward dynamics with contact
         """
-
-        @staticmethod
-        def contact_force(
-            constraint: Constraint,
-            pn: PenaltyNodeList,
-            contact_force_idx: int,
-        ):
-            """
-            Add a constraint of contact forces given by any forward dynamics with contact
-
-            Parameters
-            ----------
-            constraint: Constraint
-                The actual constraint to declare
-            pn: PenaltyNodeList
-                The penalty node elements
-            contact_force_idx: int
-                The index of the contact force to add to the constraint set
-            """
-
-            for i in range(len(pn.u)):
-                ConstraintFunction.add_to_penalty(
-                    pn.ocp,
-                    pn,
-                    pn.nlp.contact_forces_func(pn.x[i], pn.u[i], pn.p)[contact_force_idx, 0],
-                    constraint,
-                )
 
         @staticmethod
         def non_slipping(
@@ -293,26 +349,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             pass
 
     @staticmethod
-    def add_or_replace(ocp, nlp, penalty: PenaltyOption):
-        """
-        Doing some configuration before calling the super.add_or_replace function that prepares the adding of the
-        constraint to the constraint pool
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        penalty: PenaltyOption
-            The actual constraint to declare
-        """
-
-        if penalty.type == ConstraintFcn.TIME_CONSTRAINT:
-            penalty.node = Node.END
-        PenaltyFunctionAbstract.add_or_replace(ocp, nlp, penalty)
-
-    @staticmethod
     def inner_phase_continuity(ocp):
         """
         Add continuity constraints between each nodes of a phase.
@@ -324,36 +360,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
         # Dynamics must be sound within phases
         for i, nlp in enumerate(ocp.nlp):
-            penalty = Constraint([])
-            penalty.name = f"CONTINUITY {i}"
-            penalty.list_index = -1
-            ConstraintFunction.clear_penalty(ocp, None, penalty)
-            # Loop over shooting nodes or use parallelization
             if ocp.n_threads > 1:
-                end_nodes = nlp.par_dynamics(horzcat(*nlp.X[:-1]), horzcat(*nlp.U), nlp.parameters.cx)[0]
-                val = horzcat(*nlp.X[1:]) - end_nodes
-                ConstraintFunction.add_to_penalty(ocp, None, val.reshape((nlp.states.shape * nlp.ns, 1)), penalty)
+                raise NotImplementedError("n_threads is not implemented yet")
+                # end_nodes = nlp.par_dynamics(horzcat(*nlp.X[:-1]), horzcat(*nlp.U), nlp.parameters.cx)[0]
+                #     val = horzcat(*nlp.X[1:]) - end_nodes
+                #     ConstraintFunction.add_to_penalty(ocp, None, val.reshape((nlp.states.shape * nlp.ns, 1)), penalty)
             else:
-                for k in range(nlp.ns):
-                    # Create an evaluation node
-                    if (
-                        isinstance(nlp.ode_solver, OdeSolver.RK4)
-                        or isinstance(nlp.ode_solver, OdeSolver.RK8)
-                        or isinstance(nlp.ode_solver, OdeSolver.IRK)
-                    ):
-                        if nlp.control_type == ControlType.CONSTANT:
-                            u = nlp.U[k]
-                        elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                            u = horzcat(nlp.U[k], nlp.U[k + 1])
-                        else:
-                            raise NotImplementedError(f"Dynamics with {nlp.control_type} is not implemented yet")
-                        end_node = nlp.dynamics[k](x0=nlp.X[k], p=u, params=nlp.parameters.cx)["xf"]
-                    else:
-                        end_node = nlp.dynamics[k](x0=nlp.X[k], p=nlp.U[k])["xf"]
-
-                    # Save continuity constraints
-                    val = end_node - nlp.X[k + 1]
-                    ConstraintFunction.add_to_penalty(ocp, None, val, penalty)
+                for j in range(nlp.ns):
+                    penalty = Constraint(ConstraintFcn.CONTINUITY, node=j, is_internal=True)
+                    penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @staticmethod
     def inter_phase_continuity(ocp, pt):
@@ -387,119 +402,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         pt.base.add_to_penalty(ocp, None, val, penalty)
 
     @staticmethod
-    def add_to_penalty(ocp, pn: Union[PenaltyNodeList, None], val: Union[MX, SX, float, int], penalty: Constraint):
-        """
-        Add the constraint to the constraint pool
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        pn: PenaltyNodeList
-            The penalty node elements
-        val: Union[MX, SX, float, int]
-            The actual constraint to add
-        penalty: Constraint
-            The actual constraint to declare
-        """
-
-        g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        penalty.min_bound = 0 if penalty.min_bound is None else penalty.min_bound
-        penalty.max_bound = 0 if penalty.max_bound is None else penalty.max_bound
-        for i in range(val.rows()):
-            min_bound = (
-                penalty.min_bound[i]
-                if hasattr(penalty.min_bound, "__getitem__") and penalty.min_bound.shape[0] > 1
-                else penalty.min_bound
-            )
-            max_bound = (
-                penalty.max_bound[i]
-                if hasattr(penalty.max_bound, "__getitem__") and penalty.max_bound.shape[0] > 1
-                else penalty.max_bound
-            )
-            g_bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
-
-        node_index = len(pn.nlp.g[penalty.list_index]) - 1 if pn else None
-        g = {
-            "constraint": penalty,
-            "node_index": node_index,
-            "val": val,
-            "bounds": g_bounds,
-            "target": penalty.target,
-        }
-
-        if pn is not None and pn.nlp:
-            pn.nlp.g[penalty.list_index].append(g)
-        else:
-            ocp.g[penalty.list_index].append(g)
-
-    @staticmethod
-    def clear_penalty(ocp, nlp, penalty: Constraint):
-        """
-        Resets a constraint. A negative penalty index creates a new empty constraint.
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        penalty: Constraint
-            The actual constraint to declare
-        """
-
-        if nlp:
-            g_to_add_to = nlp.g
-        else:
-            g_to_add_to = ocp.g
-
-        if penalty.list_index < 0:
-            for i, j in enumerate(g_to_add_to):
-                if not j:
-                    penalty.list_index = i
-                    return
-            else:
-                g_to_add_to.append([])
-                penalty.list_index = len(g_to_add_to) - 1
-        else:
-            while penalty.list_index >= len(g_to_add_to):
-                g_to_add_to.append([])
-            g_to_add_to[penalty.list_index] = []
-
-    @staticmethod
-    def _parameter_modifier(constraint: Constraint):
-        """
-        Apply some default parameters
-
-        Parameters
-        ----------
-        constraint: Constraint
-            The actual constraint to declare
-        """
-
-        # Everything that should change the entry parameters depending on the penalty can be added here
-        super(ConstraintFunction, ConstraintFunction)._parameter_modifier(constraint)
-
-    @staticmethod
-    def _span_checker(constraint: Constraint, pn: PenaltyNodeList):
-        """
-        Check for any non sense in the requested times for the constraint. Raises an error if so
-
-        Parameters
-        ----------
-        constraint: Constraint
-            The actual constraint to declare
-        pn: PenaltyNodeList
-            The penalty node elements
-        """
-
-        # Everything that is suspicious in terms of the span of the penalty function can be checked here
-        super(ConstraintFunction, ConstraintFunction)._span_checker(constraint, pn)
-        func = constraint.type.value[0]
-        node = constraint.node
-        if func == ConstraintFcn.CONTACT_FORCE.value[0] or func == ConstraintFcn.NON_SLIPPING.value[0]:
-            if node == Node.END or node == pn.nlp.ns:
-                raise RuntimeError("No control u at last node")
+    def get_dt(_):
+        return 1
 
     @staticmethod
     def penalty_nature() -> str:
@@ -524,6 +428,7 @@ class ConstraintFcn(Enum):
         Returns the type of the penalty
     """
 
+    CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
     TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
     TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
     TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)

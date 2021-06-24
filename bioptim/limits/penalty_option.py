@@ -1,7 +1,7 @@
 from typing import Any, Union, Callable
 
 import biorbd
-from casadi import Function, MX, SX
+from casadi import horzcat, Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
@@ -36,14 +36,17 @@ class PenaltyOption(OptionGeneric):
         self,
         penalty: Any,
         phase: int = 0,
-        node: Node = Node.DEFAULT,
+        node: Union[Node, list, tuple] = Node.DEFAULT,
         target: np.ndarray = None,
         quadratic: bool = None,
+        weight: float = 1,
         derivative: bool = False,
+        explicit_derivative: bool = False,
         index: list = None,
         rows: Union[list, tuple, range, np.ndarray] = None,
         cols: Union[list, tuple, range, np.ndarray] = None,
         custom_function: Callable = None,
+        is_internal: bool = False,
         **params: Any,
     ):
         """
@@ -53,18 +56,24 @@ class PenaltyOption(OptionGeneric):
             The actual penalty
         phase: int
             The phase the penalty is acting on
-        node: Node
+        node: Union[Node, list, tuple]
             The node within a phase on which the penalty is acting on
         target: np.ndarray
             A target to track for the penalty
         quadratic: bool
             If the penalty is quadratic
+        weight: float
+            The weighting applied to this specific penalty
         derivative: bool
-            If the minimization is applied on the numerical derivative of the state
+            If the function should be evaluated at X and X+1
+        explicit_derivative: bool
+            If the function should be evaluated at [X, X+1]
         index: int
             The component index the penalty is acting on
         custom_function: Callable
             A user defined function to call to get the penalty
+        is_internal: bool
+            If the penalty is internally defined [True] or by the user
         **params: dict
             Generic parameters for the penalty
         """
@@ -89,9 +98,14 @@ class PenaltyOption(OptionGeneric):
 
         self.node_idx = []
         self.dt = 0
+        self.weight = weight
         self.function: Union[Function, None] = None
         self.weighted_function: Union[Function, None] = None
         self.derivative = derivative
+        self.explicit_derivative = explicit_derivative
+        if self.derivative and self.explicit_derivative:
+            raise ValueError("derivative and explicit_derivative cannot be both True")
+        self.is_internal = is_internal
 
     def set_penalty(
             self, penalty: Union[MX, SX], all_pn: PenaltyNodeList, combine_to: str = None, target_ns: int = -1
@@ -182,20 +196,29 @@ class PenaltyOption(OptionGeneric):
         param_cx = all_pn.nlp.cx(all_pn.nlp.parameters.cx)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
-        self.function = biorbd.to_casadi_func(
-            f"{self.name}", fcn[self.rows, self.cols], all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx,
-        )
+        if self.explicit_derivative:
+            state_cx = horzcat(all_pn.nlp.states.cx, all_pn.nlp.states.cx_end)
+            control_cx = horzcat(all_pn.nlp.controls.cx, all_pn.nlp.controls.cx_end)
 
-        state_cx, control_cx = (all_pn.nlp.states._cx, all_pn.nlp.controls._cx) if self.derivative else (all_pn.nlp.states.cx, all_pn.nlp.controls.cx)
-
-        if self.derivative:
             self.function = biorbd.to_casadi_func(
-                f"{self.name}",
-                self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) - self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx),
-                state_cx,
-                control_cx,
-                param_cx,
+                f"{self.name}", fcn[self.rows, self.cols], state_cx, control_cx, param_cx
             )
+        else:
+            state_cx = all_pn.nlp.states.cx
+            control_cx = all_pn.nlp.controls.cx
+
+            self.function = biorbd.to_casadi_func(
+                f"{self.name}", fcn[self.rows, self.cols], state_cx, control_cx, param_cx,
+            )
+
+            if self.derivative:
+                self.function = biorbd.to_casadi_func(
+                    f"{self.name}",
+                    self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) - self.function(state_cx, control_cx, param_cx),
+                    state_cx,
+                    control_cx,
+                    param_cx,
+                )
 
         modified_fcn = self.function(state_cx, control_cx, param_cx)
 
@@ -308,12 +331,38 @@ class PenaltyOption(OptionGeneric):
         else:
             all_pn = self._get_penalty_node_list(ocp, nlp)
             penalty_type.validate_penalty_time_index(self, all_pn)
-            penalty_type.clear_penalty(all_pn.ocp, all_pn.nlp, self)
+            self.clear_penalty(all_pn.ocp, all_pn.nlp)
 
         self.dt = penalty_type.get_dt(all_pn.nlp)
         self.node_idx = all_pn.t
         self.type.value[0](self, all_pn, **self.params)
-        penalty_type.get_penalty_pool(all_pn)[self.list_index] = self
+        self.get_penalty_pool(all_pn)[self.list_index] = self
+
+    def get_penalty_pool(self, all_pn: PenaltyNodeList):
+        """
+        Return the penalty pool for the specified penalty (abstract)
+
+        Parameters
+        ----------
+        all_pn: PenaltyNodeList
+            The penalty node elements
+        """
+
+        raise RuntimeError("get_dt cannot be called from an abstract class")
+
+    def clear_penalty(self, ocp, nlp):
+        """
+        Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        """
+
+        raise RuntimeError("_reset_penalty cannot be called from an abstract class")
 
     def _get_penalty_node_list(self, ocp, nlp) -> PenaltyNodeList:
         """
