@@ -85,10 +85,10 @@ def prepare_ocp_phase_transitions(
     # Add objective functions
     objective_functions = ObjectiveList()
     if with_lagrange:
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=1)
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=3)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=100, phase=0)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=100, phase=1)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=100, phase=2)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=100, phase=3)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, weight=0, phase=3, axis=None)
 
     if with_mayer:
@@ -278,7 +278,7 @@ def prepare_ocp_parameters(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=10)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=10)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=10)
 
     # Dynamics
@@ -383,7 +383,7 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, list_index=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", list_index=1)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, list_index=2)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=2, list_index=3)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=3, list_index=4)
@@ -496,8 +496,8 @@ def test_objectives_target(quadratic):
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
     ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path)
     ocp.nlp[0].J[1][0]["objective"].quadratic = quadratic
-    ocp.nlp[0].J[1][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ocp.nlp[0].J[1][0]["objective"].target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     ocp.nlp[0].J[2][0]["objective"].quadratic = quadratic
-    ocp.nlp[0].J[2][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ocp.nlp[0].J[2][0]["objective"].target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     ocp.print(to_graph=False)  # False so it does not attack the programmer with lot of graphs!
     OcpToGraph(ocp)._prepare_print()

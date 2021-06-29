@@ -78,7 +78,7 @@ def prepare_ocp(
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, axis=Axis.Z, weight=-1)
     elif objective_name == "MINIMIZE_COM_VELOCITY":
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, axis=Axis.Z, weight=-1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=1 / 100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=1 / 100)
 
     # Dynamics
     dynamics = DynamicsList()

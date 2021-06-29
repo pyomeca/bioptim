@@ -82,7 +82,7 @@ def prepare_ocp(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE_DERIVATIVE)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", derivative=True)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)

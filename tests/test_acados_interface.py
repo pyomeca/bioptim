@@ -326,7 +326,7 @@ def test_acados_one_parameter():
     objectives = ObjectiveList()
     objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[0, 1], target=np.array([[0, 3.14]]).T, weight=100000)
     objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[2, 3], target=np.array([[0, 0]]).T, weight=100)
-    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, index=1, weight=10)
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", index=1, weight=10)
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=[2, 3], weight=0.000000010)
     ocp.update_objectives(objectives)
 
@@ -381,7 +381,7 @@ def test_acados_several_parameter():
     objectives = ObjectiveList()
     objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[0, 1], target=np.array([[0, 3.14]]).T, weight=100000)
     objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[2, 3], target=np.array([[0, 0]]).T, weight=100)
-    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, index=1, weight=10)
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", index=1, weight=10)
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=[2, 3], weight=0.000000010)
     ocp.update_objectives(objectives)
 
@@ -434,7 +434,7 @@ def test_acados_one_end_constraints():
     model = ocp.nlp[0].model
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.TRACK_STATE, index=0, weight=100, target=np.array([[1]]))
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=100)
     ocp.update_objectives(objective_functions)
 
     # Path constraint

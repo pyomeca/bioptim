@@ -20,19 +20,19 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     OdeSolver,
-    PenaltyNode,
+    PenaltyNodeList,
     BiorbdInterface,
 )
 
 
-def custom_func_track_markers(pn: PenaltyNode, first_marker: str, second_marker: str, method: int) -> MX:
+def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str, method: int) -> MX:
     """
     The used-defined objective function (This particular one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
 
     Parameters
     ----------
-    pn: PenaltyNode
+    all_pn: PenaltyNodeList
         The penalty node elements
     first_marker: str
         The index of the first marker in the bioMod
@@ -48,19 +48,19 @@ def custom_func_track_markers(pn: PenaltyNode, first_marker: str, second_marker:
     """
 
     # Get the index of the markers from their name
-    marker_0_idx = biorbd.marker_index(pn.nlp.model, first_marker)
-    marker_1_idx = biorbd.marker_index(pn.nlp.model, second_marker)
+    marker_0_idx = biorbd.marker_index(all_pn.nlp.model, first_marker)
+    marker_1_idx = biorbd.marker_index(all_pn.nlp.model, second_marker)
 
     if method == 0:
         # Convert the function to the required format and then subtract
-        markers = BiorbdInterface.mx_to_cx("markers", pn.nlp.model.markers, pn.nlp.states["q"])
+        markers = BiorbdInterface.mx_to_cx("markers", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
         markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
     else:
         # Do the calculation in biorbd API and then convert to the required format
-        markers = pn.nlp.model.markers(pn.nlp.states["q"].mx)
+        markers = all_pn.nlp.model.markers(all_pn.nlp.states["q"].mx)
         markers_diff = markers[marker_1_idx].to_mx() - markers[marker_0_idx].to_mx()
-        markers_diff = BiorbdInterface.mx_to_cx("markers", markers_diff, pn.nlp.states["q"])
+        markers_diff = BiorbdInterface.mx_to_cx("markers", markers_diff, all_pn.nlp.states["q"])
 
     return markers_diff
 

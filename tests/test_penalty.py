@@ -476,7 +476,7 @@ def test_penalty_minimize_torque(penalty_origin, value):
     t = [0, 1]
     x = [0]
     u = [DM.ones((12, 1)) * value]
-    penalty_type = penalty_origin.MINIMIZE_TORQUE
+    penalty_type = penalty_origin.MINIMIZE_CONTROL, name="tau"
     penalty = Objective(penalty_type)
     penalty_type.value[0](penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, u, []))
 
@@ -553,11 +553,10 @@ def test_penalty_minimize_state_derivative(value):
 def test_penalty_minimize_torque_derivative(value):
     ocp = prepare_test_ocp()
     u = [DM.ones((12, 1)) * value, DM.ones((12, 1)) * value * 3]
-    penalty_type = ObjectiveFcn.Lagrange.MINIMIZE_TORQUE_DERIVATIVE
-    penalty = Objective(penalty_type)
-    penalty_type.value[0](penalty, PenaltyNodeList(ocp, ocp.nlp[0], [], [], u, []))
+    penalty = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", derivative=True)
+    penalty.type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], [], [], u, []))
 
-    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+    if isinstance(penalty.type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         res = ocp.nlp[0].J[0][0]["val"]
     else:
         res = ocp.nlp[0].g[0][0]["val"]
@@ -567,7 +566,7 @@ def test_penalty_minimize_torque_derivative(value):
         np.array([[value * 2, value * 2, value * 2, value * 2]]).T,
     )
 
-    if isinstance(penalty_type, ConstraintFcn):
+    if isinstance(penalty.type, ConstraintFcn):
         np.testing.assert_almost_equal(ocp.nlp[0].g[0][0]["bounds"].min, np.array([[0.0, 0, 0, 0]]))
         np.testing.assert_almost_equal(ocp.nlp[0].g[0][0]["bounds"].max, np.array([[0.0, 0, 0, 0]]))
 
@@ -1059,7 +1058,6 @@ def test_penalty_custom_fail(penalty_origin, value):
             "quadratic",
             "index",
             "target",
-            "sliced_target",
             "min_bound",
             "max_bound",
             "custom_function",
