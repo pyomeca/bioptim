@@ -26,7 +26,7 @@ from bioptim import (
 
 
 def minimize_difference(all_pn: PenaltyNode):
-    return all_pn[0].u[0] - all_pn[1].u[0]
+    return all_pn[0].nlp.controls.cx_end - all_pn[1].nlp.controls.cx
 
 
 def prepare_ocp(
@@ -70,7 +70,6 @@ def prepare_ocp(
         node=Node.TRANSITION,
         weight=100,
         phase=1,
-        get_all_nodes_at_once=True,
         quadratic=True,
     )
 
@@ -128,6 +127,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
+        use_sx=True
     )
 
 
@@ -139,7 +139,7 @@ def main():
     ocp = prepare_ocp(long_optim=True)
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(show_online_optim=False)
 
     # --- Show results --- #
     sol.animate()

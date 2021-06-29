@@ -194,57 +194,74 @@ class PenaltyOption(OptionGeneric):
                     raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                 self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
-    def _set_penalty_function(self, all_pn: PenaltyNodeList, fcn: Union[MX, SX], expand: bool = True):
-        param_cx = all_pn.nlp.cx(all_pn.nlp.parameters.cx)
+    def _set_penalty_function(self, all_pn: [PenaltyNodeList, list, tuple], fcn: Union[MX, SX], expand: bool = True):
+        # Sanity checks
+        if self.transition and self.explicit_derivative:
+            raise ValueError("transition and explicit_derivative cannot be true simultaneously")
+        if self.transition and self.derivative:
+            raise ValueError("transition and derivative cannot be true simultaneously")
+        if self.derivative and self.explicit_derivative:
+            raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
-        # Do not use nlp.add_casadi_func because all functions must be registered
-        if self.explicit_derivative:
-            state_cx = horzcat(all_pn.nlp.states.cx, all_pn.nlp.states.cx_end)
-            control_cx = horzcat(all_pn.nlp.controls.cx, all_pn.nlp.controls.cx_end)
+        if self.transition:
+            nlp = all_pn[0].nlp
+            nlp_post = all_pn[1].nlp
+            name = self.name.replace("->", "_").replace(" ", "_")
+            state_cx = horzcat(nlp.states.cx_end, nlp_post.states.cx)
+            control_cx = horzcat(nlp.controls.cx_end, nlp_post.controls.cx)
 
-            self.function = biorbd.to_casadi_func(
-                f"{self.name}", fcn[self.rows, self.cols], state_cx, control_cx, param_cx, expand=expand
-            )
         else:
+            nlp = all_pn.nlp
+            name = self.name
             state_cx = all_pn.nlp.states.cx
             control_cx = all_pn.nlp.controls.cx
+            if self.explicit_derivative:
+                state_cx = horzcat(state_cx, all_pn.nlp.states.cx_end)
+                control_cx = horzcat(control_cx, all_pn.nlp.controls.cx_end)
 
+        param_cx = nlp.cx(nlp.parameters.cx)
+
+        # Do not use nlp.add_casadi_func because all functions must be registered
+        self.function = biorbd.to_casadi_func(
+            name, fcn[self.rows, self.cols], state_cx, control_cx, param_cx, expand=expand
+        )
+
+        # if self.integration:
+        #     if all_pn.nlp.integration == TRAPEZE
+        #         self.function = biorbd.to_casadi_func(
+        #             f"{name}",
+        #             (self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) + self.function(
+        #                 state_cx, control_cx, param_cx))/2,
+        #             state_cx,
+        #             control_cx,
+        #             param_cx,
+        #         )
+
+        if self.derivative:
             self.function = biorbd.to_casadi_func(
-                f"{self.name}", fcn[self.rows, self.cols], state_cx, control_cx, param_cx,
+                f"{name}",
+                self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) - self.function(state_cx, control_cx, param_cx),
+                state_cx,
+                control_cx,
+                param_cx,
             )
-
-            if self.derivative:
-                # if all_pn.nlp.integration == TRAPEZE
-                #     self.function = biorbd.to_casadi_func(
-                #         f"{self.name}",
-                #         (self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) + self.function(
-                #             state_cx, control_cx, param_cx))/2,
-                #         state_cx,
-                #         control_cx,
-                #         param_cx,
-                #     )
-
-                self.function = biorbd.to_casadi_func(
-                    f"{self.name}",
-                    self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) - self.function(state_cx, control_cx, param_cx),
-                    state_cx,
-                    control_cx,
-                    param_cx,
-                )
 
         modified_fcn = self.function(state_cx, control_cx, param_cx)
 
-        dt_cx = all_pn.nlp.cx.sym("dt", 1, 1)
-        weight_cx = all_pn.nlp.cx.sym("weight", 1, 1)
-        target_cx = all_pn.nlp.cx.sym("target", modified_fcn.shape)
-
+        dt_cx = nlp.cx.sym("dt", 1, 1)
+        weight_cx = nlp.cx.sym("weight", 1, 1)
+        target_cx = nlp.cx.sym("target", modified_fcn.shape)
         modified_fcn = modified_fcn - target_cx
-        modified_fcn = modified_fcn ** 2 if self.quadratic else modified_fcn
 
-        self.weighted_function = Function(  # Do not use nlp.add_casadi_func because all of them must be registered
-            f"{self.name}",
-            [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
-            [weight_cx * modified_fcn * dt_cx]
+        if self.weight:
+            modified_fcn = modified_fcn ** 2 if self.quadratic else modified_fcn
+            modified_fcn = weight_cx * modified_fcn * dt_cx
+        else:
+            modified_fcn = modified_fcn * dt_cx
+
+        # Do not use nlp.add_casadi_func because all of them must be registered
+        self.weighted_function = Function(
+            name, [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
         )
         if expand:
             self.weighted_function.expand()
@@ -328,7 +345,15 @@ class PenaltyOption(OptionGeneric):
         penalty_type = self.type.get_type()
         if self.node == Node.TRANSITION:
             all_pn = []
+
+            # Make sure the penalty behave like a PhaseTransition, even though it may be an Objective or Constraint
             self.node = Node.END
+            self.node_idx = [0]
+            self.transition = True
+            self.dt = 1
+            self.phase_pre_idx = nlp.phase_idx
+            self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
+
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
             all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
 
@@ -340,7 +365,7 @@ class PenaltyOption(OptionGeneric):
 
             penalty_type.validate_penalty_time_index(self, all_pn[0])
             penalty_type.validate_penalty_time_index(self, all_pn[1])
-            self.clear_penalty(ocp, None)
+            self.clear_penalty(ocp, all_pn[0].nlp)
 
         else:
             all_pn = self._get_penalty_node_list(ocp, nlp)

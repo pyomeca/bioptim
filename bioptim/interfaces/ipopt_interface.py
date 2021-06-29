@@ -182,11 +182,13 @@ class IpoptInterface(SolverInterface):
         for nlp in self.ocp.nlp:
             all_g = vertcat(all_g, self.__get_all_penalties(nlp, nlp.g_internal))
             for g in nlp.g_internal:
-                all_g_bounds.concatenate(g.bounds)
+                for _ in g.node_idx:
+                    all_g_bounds.concatenate(g.bounds)
 
             all_g = vertcat(all_g, self.__get_all_penalties(nlp, nlp.g))
             for g in nlp.g:
-                all_g_bounds.concatenate(g.bounds)
+                for _ in g.node_idx:
+                    all_g_bounds.concatenate(g.bounds)
 
         if isinstance(all_g_bounds.min, (SX, MX)) or isinstance(all_g_bounds.max, (SX, MX)):
             raise RuntimeError("Ipopt doesn't support SX/MX types in constraints bounds")
@@ -211,6 +213,9 @@ class IpoptInterface(SolverInterface):
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
         out = self.ocp.cx()
         for penalty in penalties:
+            if penalty == []:
+                continue
+
             for idx in penalty.node_idx:
                 target = [] if penalty.target is None else penalty.target[:, idx]
                 if np.isnan(np.sum(target)):
@@ -224,10 +229,9 @@ class IpoptInterface(SolverInterface):
                         x = horzcat(*nlp.X[idx:idx+2])
                         u = horzcat(*nlp.U[idx:idx+2]) if idx < len(nlp.U) else []
                     elif penalty.transition:
-                        # Assume NLP is actually OCP
-                        ocp = nlp
+                        ocp = self.ocp
                         x = horzcat(ocp.nlp[penalty.phase_pre_idx].X[-1], ocp.nlp[penalty.phase_post_idx].X[0])
-                        u = []
+                        u = horzcat(ocp.nlp[penalty.phase_pre_idx].U[-1], ocp.nlp[penalty.phase_post_idx].U[0])
                     else:
                         x = nlp.X[idx]
                         u = nlp.U[idx] if idx < len(nlp.U) else []

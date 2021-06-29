@@ -65,57 +65,20 @@ class PhaseTransition(Constraint):
         self.transition = True
         self.is_internal = True
 
-    def get_penalty_pool(self, all_pn: PenaltyNodeList):
+    def get_penalty_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         """
         Add the objective function to the objective pool
 
         Parameters
         ----------
-        all_pn: PenaltyNodeList
+        all_pn: Union[PenaltyNodeList, list, tuple)
                 The penalty node elements
         """
 
         if self.weight == 0:
-            return all_pn[0].ocp.g_internal
+            return all_pn[0].nlp.g_internal if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.g_internal
         else:
-            return all_pn[0].ocp.J_internal
-
-    def _set_penalty_function(self, all_pn: PenaltyNodeList, fcn: Union[MX, SX], expand: bool = True):
-        nlp_pre = all_pn[0].nlp
-        nlp_post = all_pn[1].nlp
-        name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-        param_cx = nlp_pre.cx(nlp_pre.parameters.cx)
-
-        # Do not use nlp.add_casadi_func because all functions must be registered
-        state_cx = horzcat(nlp_pre.states.cx_end, nlp_post.states.cx)
-        control_cx = nlp_pre.cx()
-        self.function = biorbd.to_casadi_func(name, fcn[self.rows, self.cols], state_cx, control_cx, param_cx)
-
-        modified_fcn = self.function(state_cx, control_cx, param_cx)
-
-        dt_cx = nlp_pre.cx.sym("dt", 1, 1)
-        weight_cx = nlp_pre.cx.sym("weight", 1, 1)
-        target_cx = nlp_pre.cx.sym("target", modified_fcn.shape)
-
-        modified_fcn = modified_fcn - target_cx
-        if self.weight:
-            # If objective function
-            modified_fcn = modified_fcn ** 2 if self.quadratic else modified_fcn
-            self.weighted_function = Function(  # Do not use nlp.add_casadi_func because all of them must be registered
-                f"{self.name[:-5]}",
-                [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
-                [weight_cx * modified_fcn * dt_cx]
-            )
-
-        else:
-            # If constraint
-            self.weighted_function = Function(  # Do not use nlp.add_casadi_func because all of them must be registered
-                name,
-                [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
-                [modified_fcn * dt_cx]
-            )
-        if expand:
-            self.weighted_function.expand()
+            return all_pn[0].nlp.g if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.g
 
     def clear_penalty(self, ocp, nlp):
         """

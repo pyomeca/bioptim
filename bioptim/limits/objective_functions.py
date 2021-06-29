@@ -62,17 +62,20 @@ class Objective(PenaltyOption):
 
         super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
 
-    def get_penalty_pool(self, all_pn: PenaltyNodeList):
+    def get_penalty_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         """
         Add the objective function to the objective pool
 
         Parameters
         ----------
-        all_pn: PenaltyNodeList
+        all_pn: Union[PenaltyNodeList, list, tuple]
                 The penalty node elements
         """
 
-        return all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
+        if isinstance(all_pn, (list, tuple)):
+            return all_pn[0].nlp.J if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.J
+        else:
+            return all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
 
     def clear_penalty(self, ocp, nlp):
         """

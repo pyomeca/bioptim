@@ -489,7 +489,7 @@ class Bounds(OptionGeneric):
         return len(self.min) > 0
 
     @property
-    def shape(self) -> int:
+    def shape(self) -> list:
         """
         Get the size of the Bounds
 

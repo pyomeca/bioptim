@@ -77,18 +77,21 @@ class Constraint(PenaltyOption):
 
         super(Constraint, self).add_or_replace_to_penalty_pool(ocp, nlp)
 
-        for i in self.rows:
-            min_bound = (
-                self.min_bound[i]
-                if hasattr(self.min_bound, "__getitem__") and self.min_bound.shape[0] > 1
-                else self.min_bound
-            )
-            max_bound = (
-                self.max_bound[i]
-                if hasattr(self.max_bound, "__getitem__") and self.max_bound.shape[0] > 1
-                else self.max_bound
-            )
-            self.bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
+        if self.bounds.shape[0] == 0:
+            for i in self.rows:
+                min_bound = (
+                    self.min_bound[i]
+                    if hasattr(self.min_bound, "__getitem__") and self.min_bound.shape[0] > 1
+                    else self.min_bound
+                )
+                max_bound = (
+                    self.max_bound[i]
+                    if hasattr(self.max_bound, "__getitem__") and self.max_bound.shape[0] > 1
+                    else self.max_bound
+                )
+                self.bounds.concatenate(Bounds(min_bound, max_bound, interpolation=InterpolationType.CONSTANT))
+        elif self.bounds.shape[0] != len(self.rows):
+            raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
     def get_penalty_pool(self, all_pn: PenaltyNodeList):
         """

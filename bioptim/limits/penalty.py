@@ -644,9 +644,6 @@ class PenaltyFunctionAbstract:
                 if keyword in invalid_keywords:
                     raise TypeError(f"{keyword} is a reserved word and cannot be used in a custom function signature")
 
-            if penalty.node == Node.TRANSITION:
-                raise NotImplementedError("Node transition is not implemented yet")
-
             val = penalty.custom_function(all_pn, **parameters)
             if isinstance(val, (list, tuple)):
                 if (hasattr(penalty, "min_bound") and penalty.min_bound is not None) or (hasattr(penalty, "max_bound") and penalty.max_bound is not None):
