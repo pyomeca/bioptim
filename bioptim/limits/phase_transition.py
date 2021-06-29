@@ -3,15 +3,17 @@ from warnings import warn
 from enum import Enum
 
 import biorbd
-from casadi import vertcat, MX, Function
+from casadi import horzcat, vertcat, MX, SX, Function
 
-from .constraints import ConstraintFunction
+from .constraints import ConstraintFunction, Constraint
+from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
-from ..dynamics.dynamics_functions import DynamicsFunctions
-from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
+from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
+from ..misc.options import UniquePerPhaseOptionList
+from ..misc.enums import Node, InterpolationType
 
 
-class PhaseTransition(OptionGeneric):
+class PhaseTransition(Constraint):
     """
     A placeholder for a transition of state
 
@@ -32,26 +34,118 @@ class PhaseTransition(OptionGeneric):
     """
 
     def __init__(
-        self, phase_pre_idx: int = None, weight: float = None, custom_function: Callable = None, **params: Any
+        self, phase_pre_idx: int = None, transition: Union[Callable, Any] = None, weight: float = 0, custom_function: Callable = None, min_bound: float = 0, max_bound: float = 0, **params: Any
     ):
         """
         Parameters
         ----------
         phase_pre_idx: int
             The index of the phase right before the transition
-        custom_function: Callable
-            The function to call if a custom transition function is provided
         params:
             Generic parameters for options
         """
 
-        super(PhaseTransition, self).__init__(**params)
-        self.base = ConstraintFunction
+        if not isinstance(transition, PhaseTransitionFcn):
+            custom_function = transition
+            transition = PhaseTransitionFcn.CUSTOM
+        super(Constraint, self).__init__(penalty=transition, custom_function=custom_function, **params)
+
+        self.min_bound = min_bound
+        self.max_bound = max_bound
+        self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+
         self.weight = weight
         self.quadratic = True
         self.phase_pre_idx = phase_pre_idx
-        self.custom_function = custom_function
+        self.phase_post_idx = None
         self.casadi_function = None
+        self.node = Node.TRANSITION
+        self.dt = 1
+        self.node_idx = [0]
+        self.transition = True
+        self.is_internal = True
+
+    def get_penalty_pool(self, all_pn: PenaltyNodeList):
+        """
+        Add the objective function to the objective pool
+
+        Parameters
+        ----------
+        all_pn: PenaltyNodeList
+                The penalty node elements
+        """
+
+        if self.weight == 0:
+            return all_pn[0].ocp.g_internal
+        else:
+            return all_pn[0].ocp.J_internal
+
+    def _set_penalty_function(self, all_pn: PenaltyNodeList, fcn: Union[MX, SX], expand: bool = True):
+        nlp_pre = all_pn[0].nlp
+        nlp_post = all_pn[1].nlp
+        name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
+        param_cx = nlp_pre.cx(nlp_pre.parameters.cx)
+
+        # Do not use nlp.add_casadi_func because all functions must be registered
+        state_cx = horzcat(nlp_pre.states.cx_end, nlp_post.states.cx)
+        control_cx = nlp_pre.cx()
+        self.function = biorbd.to_casadi_func(name, fcn[self.rows, self.cols], state_cx, control_cx, param_cx)
+
+        modified_fcn = self.function(state_cx, control_cx, param_cx)
+
+        dt_cx = nlp_pre.cx.sym("dt", 1, 1)
+        weight_cx = nlp_pre.cx.sym("weight", 1, 1)
+        target_cx = nlp_pre.cx.sym("target", modified_fcn.shape)
+
+        modified_fcn = modified_fcn - target_cx
+        if self.weight:
+            # If objective function
+            modified_fcn = modified_fcn ** 2 if self.quadratic else modified_fcn
+            self.weighted_function = Function(  # Do not use nlp.add_casadi_func because all of them must be registered
+                f"{self.name[:-5]}",
+                [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
+                [weight_cx * modified_fcn * dt_cx]
+            )
+
+        else:
+            # If constraint
+            self.weighted_function = Function(  # Do not use nlp.add_casadi_func because all of them must be registered
+                name,
+                [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
+                [modified_fcn * dt_cx]
+            )
+        if expand:
+            self.weighted_function.expand()
+
+    def clear_penalty(self, ocp, nlp):
+        """
+        Resets a constraint. A negative penalty index creates a new empty constraint.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        """
+
+        if self.weight == 0:
+            g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
+        else:
+            g_to_add_to = nlp.J_internal if nlp else ocp.J_internal
+
+        if self.list_index < 0:
+            for i, j in enumerate(g_to_add_to):
+                if not j:
+                    self.list_index = i
+                    return
+            else:
+                g_to_add_to.append([])
+                self.list_index = len(g_to_add_to) - 1
+        else:
+            while self.list_index >= len(g_to_add_to):
+                g_to_add_to.append([])
+            g_to_add_to[self.list_index] = []
 
 
 class PhaseTransitionList(UniquePerPhaseOptionList):
@@ -81,7 +175,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         if not isinstance(transition, PhaseTransitionFcn):
             extra_arguments["custom_function"] = transition
             transition = PhaseTransitionFcn.CUSTOM
-        super(PhaseTransitionList, self)._add(option_type=PhaseTransition, type=transition, phase=-1, **extra_arguments)
+        super(PhaseTransitionList, self)._add(option_type=PhaseTransition, transition=transition, phase=-1, **extra_arguments)
 
     def print(self):
         """
@@ -89,8 +183,52 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         """
         raise NotImplementedError("Printing of PhaseTransitionList is not ready yet")
 
+    def prepare_phase_transitions(self, ocp) -> list:
+        """
+        Configure all the phase transitions and put them in a list
 
-class PhaseTransitionFunctions:
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+
+        Returns
+        -------
+        The list of all the transitions prepared
+        """
+
+        # By default it assume Continuous. It can be change later
+        full_phase_transitions = [
+            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS) for i in range(ocp.n_phases - 1)
+        ]
+        for pt in full_phase_transitions:
+            pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
+
+        existing_phases = []
+        for pt in self:
+            if pt.phase_pre_idx is None and pt.type == PhaseTransitionFcn.CYCLIC:
+                pt.phase_pre_idx = ocp.n_phases - 1
+            pt.phase_post_idx = (pt.phase_pre_idx + 1) % ocp.n_phases
+
+            idx_phase = pt.phase_pre_idx
+            if idx_phase in existing_phases:
+                raise RuntimeError("It is not possible to define two phase transitions for the same phase")
+            if idx_phase >= ocp.n_phases:
+                raise RuntimeError("Phase index of the phase transition is higher than the number of phases")
+            existing_phases.append(idx_phase)
+
+            if pt.weight:
+                pt.base = ObjectiveFunction.MayerFunction
+
+            if idx_phase == ocp.n_phases - 1:
+                # Add a cyclic constraint or objective
+                full_phase_transitions.append(pt)
+            else:
+                full_phase_transitions[idx_phase] = pt
+        return full_phase_transitions
+
+
+class PhaseTransitionFunctions(PenaltyFunctionAbstract):
     """
     Internal implementation of the phase transitions
 
@@ -119,82 +257,76 @@ class PhaseTransitionFunctions:
         """
 
         @staticmethod
-        def continuous(ocp, transition: PhaseTransition) -> MX:
+        def continuous(transition, all_pn):
             """
             The most common continuity function, that is state before equals state after
 
             Parameters
             ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
             transition: PhaseTransition
                 A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
 
             Returns
             -------
             The difference between the state after and before
             """
 
-            if (
-                ocp.nlp[transition.phase_pre_idx].states.shape
-                != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.shape
-            ):
+            if all_pn[0].x[0].shape != all_pn[1].x[0].shape:
                 raise RuntimeError(
                     "Continuous phase transition without same number of states is not possible, "
                     "please provide a custom phase transition"
                 )
-            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
-            return nlp_pre.X[-1] - nlp_post.X[0]
+            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
+            continuity = nlp_pre.states.cx_end - nlp_post.states.cx
+            transition.set_penalty(continuity, all_pn, expand=True)
 
         @staticmethod
-        def cyclic(ocp, transition: PhaseTransition) -> MX:
+        def cyclic(transition, all_pn) -> MX:
             """
             The continuity function applied to the last to first node
 
             Parameters
             ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
             transition: PhaseTransition
                 A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
 
             Returns
             -------
             The difference between the last and first node
             """
-            return PhaseTransitionFunctions.Functions.continuous(ocp, transition)
+            return PhaseTransitionFunctions.Functions.continuous(transition, all_pn)
 
         @staticmethod
-        def impact(ocp, transition: PhaseTransition) -> MX:
+        def impact(transition, all_pn):
             """
             A discontinuous function that simulates an inelastic impact of a new contact point
 
             Parameters
             ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
             transition: PhaseTransition
                 A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
 
             Returns
             -------
             The difference between the last and first node after applying the impulse equations
             """
 
+            ocp = all_pn[0].ocp
             if (
-                ocp.nlp[transition.phase_pre_idx].states.shape
-                != ocp.nlp[(transition.phase_pre_idx + 1) % ocp.n_phases].states.shape
+                ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[transition.phase_post_idx].states.shape
             ):
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
 
             # Aliases
-            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
-            n_q = len(nlp_pre.states["q"])
-            n_qdot = len(nlp_pre.states["qdot"])
-            q = DynamicsFunctions.get(nlp_pre.states["q"], nlp_pre.X[-1])
-            qdot_pre = DynamicsFunctions.get(nlp_pre.states["qdot"], nlp_pre.X[-1])
+            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
 
             if nlp_post.model.nbContacts() == 0:
                 warn("The chosen model does not have any contact")
@@ -202,109 +334,47 @@ class PhaseTransitionFunctions:
             # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
             # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
             model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
-            func = biorbd.to_casadi_func(
-                "impulse_direct",
-                model.ComputeConstraintImpulsesDirect,
-                nlp_pre.states["q"].mx,
-                nlp_pre.states["qdot"].mx,
-            )
-            qdot_post = func(q, qdot_pre)
-            qdot_post = nlp_post.variable_mappings["qdot"].to_first.map(qdot_post)
+            q_pre = nlp_pre.states["q"].mx
+            qdot_pre = nlp_pre.states["qdot"].mx
+            qdot_impact = model.ComputeConstraintImpulsesDirect(q_pre, qdot_pre).to_mx()
 
             val = []
+            mx = []
+            cx = []
             for key in nlp_pre.states:
                 if key != "qdot":
                     # Continuity constraint
-                    var_pre = DynamicsFunctions.get(nlp_pre.states[key], nlp_pre.X[-1])
-                    var_post = DynamicsFunctions.get(nlp_post.states[key], nlp_post.X[0])
-                    val = vertcat(val, var_pre - var_post)
+                    val = vertcat(val, nlp_pre.states[key].mx - nlp_post.states[key].mx)
+
                 else:
-                    var_post = DynamicsFunctions.get(nlp_post.states[key], nlp_post.X[0])
-                    val = vertcat(val, qdot_post - var_post)
-            return val
+                    val = vertcat(val, qdot_impact - nlp_post.states["qdot"].mx)
+
+                cx = vertcat(cx, horzcat(nlp_pre.states[key].cx_end, nlp_post.states[key].cx))
+
+            name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
+            func = biorbd.to_casadi_func(name, val, horzcat(nlp_pre.states.mx, nlp_post.states.mx))(horzcat(nlp_pre.states.cx_end, nlp_post.states.cx))
+            transition.set_penalty(func, all_pn, expand=True)
 
         @staticmethod
-        def custom(ocp, transition: PhaseTransition) -> MX:
+        def custom(transition, all_pn, **extra_params):
             """
             Calls the custom transition function provided by the user
 
             Parameters
             ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
             transition: PhaseTransition
                 A reference to the phase transition
+            all_pn: PenaltyNodeList
+                    The penalty node elements
 
             Returns
             -------
             The expected difference between the last and first node provided by the user
             """
 
-            nlp_pre, nlp_post = PhaseTransitionFunctions.Functions.__get_nlp_pre_and_post(ocp, transition.phase_pre_idx)
-            return transition.custom_function(nlp_pre.X[-1], nlp_post.X[0], **transition.params)
-
-        @staticmethod
-        def __get_nlp_pre_and_post(ocp, phase_pre_idx: int) -> tuple:
-            """
-            Get two consecutive nlp. If the "pre" phase is the last, then the next one is the first (circular)
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            phase_pre_idx: int
-                The index of the phase right before the transition
-
-            Returns
-            -------
-            The nlp before and after the transition
-            """
-
-            return ocp.nlp[phase_pre_idx], ocp.nlp[(phase_pre_idx + 1) % ocp.n_phases]
-
-    @staticmethod
-    def prepare_phase_transitions(ocp, phase_transitions: PhaseTransitionList) -> list:
-        """
-        Configure all the phase transitions and put them in a list
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        phase_transitions: PhaseTransitionList
-            The list of all the phase transitions
-
-        Returns
-        -------
-        The list of all the transitions prepared
-        """
-
-        # By default it assume Continuous. It can be change later
-        full_phase_transitions = [
-            PhaseTransition(type=PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=i) for i in range(ocp.n_phases - 1)
-        ]
-
-        existing_phases = []
-        for pt in phase_transitions:
-            if pt.phase_pre_idx is None and pt.type == PhaseTransitionFcn.CYCLIC:
-                pt.phase_pre_idx = ocp.n_phases - 1
-
-            idx_phase = pt.phase_pre_idx
-            if idx_phase in existing_phases:
-                raise RuntimeError("It is not possible to define two phase transitions for the same phase")
-            if idx_phase >= ocp.n_phases:
-                raise RuntimeError("Phase index of the phase transition is higher than the number of phases")
-            existing_phases.append(idx_phase)
-
-            if pt.weight:
-                pt.base = ObjectiveFunction.MayerFunction
-
-            if idx_phase == ocp.n_phases - 1:
-                # Add a cyclic constraint or objective
-                full_phase_transitions.append(pt)
-            else:
-                full_phase_transitions[idx_phase] = pt
-        return full_phase_transitions
+            nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
+            val = transition.custom_function(nlp_pre.states, nlp_post.states, **extra_params)
+            transition.set_penalty(val, all_pn, expand=True)
 
 
 class PhaseTransitionFcn(Enum):
@@ -316,3 +386,11 @@ class PhaseTransitionFcn(Enum):
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
     CUSTOM = (PhaseTransitionFunctions.Functions.custom,)
+
+    @staticmethod
+    def get_type():
+        """
+        Returns the type of the penalty
+        """
+
+        return PhaseTransitionFunctions

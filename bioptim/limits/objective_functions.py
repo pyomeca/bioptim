@@ -107,9 +107,9 @@ class Objective(PenaltyOption):
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         if self.type.get_type() == ObjectiveFunction.LagrangeFunction:
-            if self.node != Node.ALL and self.node != Node.DEFAULT:
-                raise RuntimeError("Lagrange objective are for Node.ALL, did you mean Mayer?")
-            self.node = Node.ALL
+            if self.node != Node.ALL_SHOOTING and self.node != Node.DEFAULT:
+                raise RuntimeError("Lagrange objective are for Node.ALL_SHOOTING, did you mean Mayer?")
+            self.node = Node.ALL_SHOOTING
         elif self.type.get_type() == ObjectiveFunction.MayerFunction:
             if self.node == Node.DEFAULT:
                 self.node = Node.END
@@ -288,29 +288,6 @@ class ObjectiveFunction:
         @staticmethod
         def get_dt(_):
             return 1
-
-        @staticmethod
-        def inter_phase_continuity(ocp, pt):
-            """
-            Add phase transition objective between two phases.
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            pt: PhaseTransition
-                The phase transition to add
-            """
-
-            # Dynamics must be respected between phases
-            penalty = PenaltyOption()
-            penalty.list_index = -1
-            penalty.quadratic = pt.quadratic
-            penalty.weight = pt.weight
-            penalty.sliced_target = None
-            penalty.clear_penalty(ocp, None)
-            val = pt.type.value[0](ocp, pt)
-            pt.base.add_to_penalty(ocp, None, val, penalty)
 
         @staticmethod
         def penalty_nature() -> str:

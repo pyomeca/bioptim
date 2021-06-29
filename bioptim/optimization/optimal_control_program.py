@@ -324,6 +324,7 @@ class OptimalControlProgram:
 
         # Declare optimization variables
         self.J = []
+        self.J_internal = []
         self.g = []
         self.g_internal = []
         self.v = OptimizationVector(self)
@@ -392,7 +393,7 @@ class OptimalControlProgram:
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
-        self.phase_transitions = PhaseTransitionFunctions.prepare_phase_transitions(self, phase_transitions)
+        self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
 
         # Inner- and inter-phase continuity
         ContinuityFunctions.continuity(self)

@@ -170,14 +170,14 @@ class IpoptInterface(SolverInterface):
 
         all_g = self.ocp.cx()
         all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        for i in range(len(self.ocp.g)):
-            all_g = vertcat(all_g, self.__get_all_penalties(self.ocp, self.ocp.g_internal))
-            for g in self.ocp.g_internal:
-                all_g_bounds.concatenate(g.bounds)
 
-            all_g = vertcat(all_g, self.__get_all_penalties(self.ocp, self.ocp.g))
-            for g in self.ocp.g:
-                all_g_bounds.concatenate(g.bounds)
+        all_g = vertcat(all_g, self.__get_all_penalties(self.ocp, self.ocp.g_internal))
+        for g in self.ocp.g_internal:
+            all_g_bounds.concatenate(g.bounds)
+
+        all_g = vertcat(all_g, self.__get_all_penalties(self.ocp, self.ocp.g))
+        for g in self.ocp.g:
+            all_g_bounds.concatenate(g.bounds)
 
         for nlp in self.ocp.nlp:
             all_g = vertcat(all_g, self.__get_all_penalties(nlp, nlp.g_internal))
@@ -198,8 +198,11 @@ class IpoptInterface(SolverInterface):
         """
 
         all_objectives = self.ocp.cx()
+        all_objectives = vertcat(all_objectives, self.__get_all_penalties(self.ocp, self.ocp.J_internal))
         all_objectives = vertcat(all_objectives, self.__get_all_penalties([], self.ocp.J))
+
         for nlp in self.ocp.nlp:
+            all_objectives = vertcat(all_objectives, self.__get_all_penalties(nlp, nlp.J_internal))
             all_objectives = vertcat(all_objectives, self.__get_all_penalties(nlp, nlp.J))
 
         return all_objectives
@@ -213,12 +216,21 @@ class IpoptInterface(SolverInterface):
                 if np.isnan(np.sum(target)):
                     continue
 
-                if penalty.derivative or penalty.explicit_derivative:
-                    x = horzcat(*nlp.X[idx:idx+2])
-                    u = horzcat(*nlp.U[idx:idx+2]) if idx < len(nlp.U) else []
+                if nlp == []:
+                    x = []
+                    u = []
                 else:
-                    x = nlp.X[idx]
-                    u = nlp.U[idx] if idx < len(nlp.U) else []
+                    if penalty.derivative or penalty.explicit_derivative:
+                        x = horzcat(*nlp.X[idx:idx+2])
+                        u = horzcat(*nlp.U[idx:idx+2]) if idx < len(nlp.U) else []
+                    elif penalty.transition:
+                        # Assume NLP is actually OCP
+                        ocp = nlp
+                        x = horzcat(ocp.nlp[penalty.phase_pre_idx].X[-1], ocp.nlp[penalty.phase_post_idx].X[0])
+                        u = []
+                    else:
+                        x = nlp.X[idx]
+                        u = nlp.U[idx] if idx < len(nlp.U) else []
 
                 p = penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt)
                 out = vertcat(out, sum2(p))

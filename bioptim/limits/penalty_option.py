@@ -24,8 +24,6 @@ class PenaltyOption(OptionGeneric):
         The component index the penalty is acting on
     target: np.array(target)
         A target to track for the penalty
-    sliced_target: np.array(target)
-        The sliced version of the target to track, this is the one actually tracked
     custom_function: Callable
         A user defined function to call to get the penalty
     derivative: bool
@@ -103,12 +101,13 @@ class PenaltyOption(OptionGeneric):
         self.weighted_function: Union[Function, None] = None
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
+        self.transition = False
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be both True")
         self.is_internal = is_internal
 
     def set_penalty(
-            self, penalty: Union[MX, SX], all_pn: PenaltyNodeList, combine_to: str = None, target_ns: int = -1
+            self, penalty: Union[MX, SX], all_pn: PenaltyNodeList, combine_to: str = None, target_ns: int = -1, expand: bool = True
     ):
         """
         Prepare the dimension and index of the penalty (including the target)
@@ -123,15 +122,17 @@ class PenaltyOption(OptionGeneric):
             The penalty node elements
         combine_to: str
             The name of the underlying plot to combine the tracking data to
-
+        expand: bool
+            If the penalty function should be expanded
         """
+
         self.rows = self._set_dim_idx(self.rows, penalty.rows())
         self.cols = self._set_dim_idx(self.cols, penalty.columns())
         if self.target is not None:
             self._check_target_dimensions(all_pn, target_ns)
             if combine_to is not None:
                 self.add_target_to_plot(all_pn, combine_to)
-        self._set_penalty_function(all_pn, penalty)
+        self._set_penalty_function(all_pn, penalty, expand)
 
     def _set_dim_idx(self, dim: Union[list, tuple, range, np.ndarray], n_rows: int):
         """
@@ -187,12 +188,13 @@ class PenaltyOption(OptionGeneric):
             )
 
         # If the target is on controls and control is constant, there will be one value missing
-        if all_pn.nlp.control_type == ControlType.CONSTANT and all_pn.nlp.ns in all_pn.t and self.target.shape[1] == all_pn.nlp.ns:
-            if all_pn.t[-1] != all_pn.nlp.ns:
-                raise NotImplementedError("Modifying target for END not being last is not implemented yet")
-            self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
+        if all_pn is not None:
+            if all_pn.nlp.control_type == ControlType.CONSTANT and all_pn.nlp.ns in all_pn.t and self.target.shape[1] == all_pn.nlp.ns:
+                if all_pn.t[-1] != all_pn.nlp.ns:
+                    raise NotImplementedError("Modifying target for END not being last is not implemented yet")
+                self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
-    def _set_penalty_function(self, all_pn: PenaltyNodeList, fcn: Union[MX, SX]):
+    def _set_penalty_function(self, all_pn: PenaltyNodeList, fcn: Union[MX, SX], expand: bool = True):
         param_cx = all_pn.nlp.cx(all_pn.nlp.parameters.cx)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
@@ -201,7 +203,7 @@ class PenaltyOption(OptionGeneric):
             control_cx = horzcat(all_pn.nlp.controls.cx, all_pn.nlp.controls.cx_end)
 
             self.function = biorbd.to_casadi_func(
-                f"{self.name}", fcn[self.rows, self.cols], state_cx, control_cx, param_cx
+                f"{self.name}", fcn[self.rows, self.cols], state_cx, control_cx, param_cx, expand=expand
             )
         else:
             state_cx = all_pn.nlp.states.cx
@@ -212,6 +214,16 @@ class PenaltyOption(OptionGeneric):
             )
 
             if self.derivative:
+                # if all_pn.nlp.integration == TRAPEZE
+                #     self.function = biorbd.to_casadi_func(
+                #         f"{self.name}",
+                #         (self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) + self.function(
+                #             state_cx, control_cx, param_cx))/2,
+                #         state_cx,
+                #         control_cx,
+                #         param_cx,
+                #     )
+
                 self.function = biorbd.to_casadi_func(
                     f"{self.name}",
                     self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) - self.function(state_cx, control_cx, param_cx),
@@ -233,7 +245,9 @@ class PenaltyOption(OptionGeneric):
             f"{self.name}",
             [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
             [weight_cx * modified_fcn * dt_cx]
-        ).expand()
+        )
+        if expand:
+            self.weighted_function.expand()
 
     def add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str, rows: Union[range, list, tuple, np.ndarray] = None, axes_index: Union[range, list, tuple, np.ndarray] = None):
         """
@@ -312,12 +326,11 @@ class PenaltyOption(OptionGeneric):
                 self.name = self.type.name
 
         penalty_type = self.type.get_type()
-        penalty_type.adjust_penalty_parameters(self)
         if self.node == Node.TRANSITION:
             all_pn = []
             self.node = Node.END
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
-            # u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
+            all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
 
             nlp = ocp.nlp[(nlp.phase_idx + 1) % ocp.n_phases]
             self.node = Node.START
@@ -327,14 +340,15 @@ class PenaltyOption(OptionGeneric):
 
             penalty_type.validate_penalty_time_index(self, all_pn[0])
             penalty_type.validate_penalty_time_index(self, all_pn[1])
-            penalty_type.clear_penalty(ocp, None, self)
+            self.clear_penalty(ocp, None)
+
         else:
             all_pn = self._get_penalty_node_list(ocp, nlp)
             penalty_type.validate_penalty_time_index(self, all_pn)
             self.clear_penalty(all_pn.ocp, all_pn.nlp)
+            self.dt = penalty_type.get_dt(all_pn.nlp)
+            self.node_idx = all_pn.t
 
-        self.dt = penalty_type.get_dt(all_pn.nlp)
-        self.node_idx = all_pn.t
         self.type.value[0](self, all_pn, **self.params)
         self.get_penalty_pool(all_pn)[self.list_index] = self
 
@@ -403,6 +417,8 @@ class PenaltyOption(OptionGeneric):
                 t.append(nlp.ns - 1)
             elif node == Node.END:
                 t.append(nlp.ns)
+            elif node == Node.ALL_SHOOTING:
+                t.extend(range(nlp.ns))
             elif node == Node.ALL:
                 t.extend(range(nlp.ns + 1))
             else:

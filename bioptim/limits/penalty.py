@@ -7,6 +7,7 @@ from casadi import horzcat, vertcat
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
+from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, Axis, ControlType
 from ..optimization.optimization_variable import OptimizationVariable
@@ -20,8 +21,6 @@ class PenaltyFunctionAbstract:
     -------
     add(ocp: OptimalControlProgram, nlp: NonLinearProgram)
         Add a new penalty to the list (abstract)
-    add_or_replace(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: PenaltyOption)
-        Doing some configuration on the penalty and add it to the list of penalty
     _parameter_modifier(penalty: PenaltyOption)
         Apply some default parameters
     _span_checker(penalty: PenaltyOption, pn: PenaltyNodeList)
@@ -36,8 +35,6 @@ class PenaltyFunctionAbstract:
         If the function returns, everything is okay
     add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodeList, val: Union[MX, SX, float, int], penalty: PenaltyOption)
         Add the constraint to the penalty pool (abstract)
-    clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: PenaltyOption)
-        Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
     get_type()
         Returns the type of the penalty (abstract)
     _get_node(nlp: NonLinearProgram, penalty: PenaltyOption)
@@ -298,8 +295,8 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract._check_idx("marker", [first_marker_idx, second_marker_idx], nlp.model.nbMarkers())
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
 
-            marker_0 = BiorbdInterface.mx_to_cx(f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker)
-            marker_1 = BiorbdInterface.mx_to_cx(f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker)
+            marker_0 = BiorbdInterface.mx_to_cx(f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker_idx)
+            marker_1 = BiorbdInterface.mx_to_cx(f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker_idx)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.set_penalty(marker_1 - marker_0, all_pn)
 
@@ -487,7 +484,7 @@ class PenaltyFunctionAbstract:
             penalty.set_penalty(com_dot_cx, all_pn)
 
         @staticmethod
-        def minimize_contact_forces(penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None, axes: Union[tuple, list] = None):
+        def minimize_contact_forces(penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None):
             """
             Minimize the contact forces computed from dynamics with contact
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -500,18 +497,15 @@ class PenaltyFunctionAbstract:
             all_pn: PenaltyNodeList
                 The penalty node elements
             contact_index: Union[tuple, list]
-                The index of contact to minimize, must be an int.
+                The index of contact to minimize, must be an int or a list.
                 penalty.cols should not be defined if contact_index is defined
-            axes: Union[tuple, list]
-                The axes to project on. Default is all axes
             """
 
             nlp = all_pn.nlp
             if nlp.contact_forces_func is None:
                 raise RuntimeError("minimize_contact_forces requires a contact dynamics")
 
-            PenaltyFunctionAbstract.set_idx_columns(penalty, all_pn, contact_index, "contact")
-            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
+            PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
 
             contact_force = nlp.contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
@@ -612,7 +606,9 @@ class PenaltyFunctionAbstract:
             end_node = nlp.dynamics[penalty.node[0]](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
             continuity = nlp.states.cx_end - end_node
             penalty.explicit_derivative = True
-            penalty.set_penalty(continuity, all_pn)
+            expand = False if type(all_pn.nlp.ode_solver) == OdeSolver.IRK else True
+
+            penalty.set_penalty(continuity, all_pn, expand=expand)
 
         @staticmethod
         def custom(penalty: PenaltyOption, all_pn: Union[PenaltyNodeList, list], **parameters: Any):
@@ -639,7 +635,6 @@ class PenaltyFunctionAbstract:
                 "quadratic",
                 "index",
                 "target",
-                "sliced_target",
                 "min_bound",
                 "max_bound",
                 "custom_function",
@@ -746,18 +741,6 @@ class PenaltyFunctionAbstract:
                     f"{element} is not a valid index for {name}, it must be between "
                     f"{min_n_elements} and {max_n_elements - 1}."
                 )
-
-    @staticmethod
-    def adjust_penalty_parameters(penalty: PenaltyOption):
-        """
-        Apply some default parameters
-
-        Parameters
-        ----------
-        penalty: PenaltyOption
-            The actual penalty to declare
-        """
-        pass
 
     @staticmethod
     def validate_penalty_time_index(penalty: PenaltyOption, all_pn: PenaltyNodeList):

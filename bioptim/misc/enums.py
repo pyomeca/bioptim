@@ -33,6 +33,7 @@ class Node(Enum):
     PENULTIMATE = "penultimate"  # The second to last node of the phase
     END = "end"  # The last node of the phase
     ALL = "all"  # All the nodes
+    ALL_SHOOTING = "all"  # All the shooting nodes
     TRANSITION = "transition"  # The last node of a phase and the first node of the next phase
     DEFAULT = "default"
 

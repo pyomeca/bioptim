@@ -27,8 +27,8 @@ class Constraint(PenaltyOption):
     def __init__(
         self,
         constraint: Any,
-        min_bound: Union[np.ndarray, float] = None,
-        max_bound: Union[np.ndarray, float] = None,
+        min_bound: Union[np.ndarray, float] = 0,
+        max_bound: Union[np.ndarray, float] = 0,
         quadratic: bool = False,
         phase: int = 0,
         **params: Any,
@@ -61,7 +61,7 @@ class Constraint(PenaltyOption):
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         """
-        Doing some configuration before calling the super.add_or_replace function that prepares the adding of the
+        Doing some configuration before calling the super.add_or_replace_to_penalty_pool function that prepares the adding of the
         constraint to the constraint pool
 
         Parameters
@@ -76,9 +76,6 @@ class Constraint(PenaltyOption):
             self.node = Node.END
 
         super(Constraint, self).add_or_replace_to_penalty_pool(ocp, nlp)
-
-        self.min_bound = 0 if self.min_bound is None else self.min_bound
-        self.max_bound = 0 if self.max_bound is None else self.max_bound
 
         for i in self.rows:
             min_bound = (
@@ -244,6 +241,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Static friction coefficient
             """
 
+            nlp = all_pn.nlp
+
             if isinstance(tangential_component_idx, int):
                 tangential_component_idx = [tangential_component_idx]
             elif not isinstance(tangential_component_idx, (tuple, list)):
@@ -257,29 +256,24 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             mu_squared = static_friction_coefficient ** 2
             constraint.min_bound = np.array([0, 0])
             constraint.max_bound = np.array([np.inf, np.inf])
-            for i in range(len(all_pn.u)):
-                contact = all_pn.nlp.contact_forces_func(all_pn.x[i], all_pn.u[i], all_pn.p)
-                normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
-                if len(tangential_component_idx) == 1:
-                    tangential_contact_force_squared = sum1(contact[tangential_component_idx[0], 0]) ** 2
-                elif len(tangential_component_idx) == 2:
-                    tangential_contact_force_squared = (
-                        sum1(contact[tangential_component_idx[0], 0]) ** 2
-                        + sum1(contact[tangential_component_idx[1], 0]) ** 2
-                    )
-                else:
-                    raise (ValueError("tangential_component_idx should either be x and y or only one component"))
 
-                # Since it is non-slipping normal forces are supposed to be greater than zero
-                ConstraintFunction.add_to_penalty(
-                    all_pn.ocp,
-                    all_pn,
-                    vertcat(
-                        mu_squared * normal_contact_force_squared - tangential_contact_force_squared,
-                        mu_squared * normal_contact_force_squared + tangential_contact_force_squared,
-                    ),
-                    constraint,
+            contact = all_pn.nlp.contact_forces_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+            normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
+            if len(tangential_component_idx) == 1:
+                tangential_contact_force_squared = sum1(contact[tangential_component_idx[0], 0]) ** 2
+            elif len(tangential_component_idx) == 2:
+                tangential_contact_force_squared = (
+                    sum1(contact[tangential_component_idx[0], 0]) ** 2
+                    + sum1(contact[tangential_component_idx[1], 0]) ** 2
                 )
+            else:
+                raise (ValueError("tangential_component_idx should either be x and y or only one component"))
+
+            slipping = vertcat(
+                    mu_squared * normal_contact_force_squared - tangential_contact_force_squared,
+                    mu_squared * normal_contact_force_squared + tangential_contact_force_squared,
+                )
+            constraint.set_penalty(slipping, all_pn)
 
         @staticmethod
         def torque_max_from_actuators(
@@ -371,7 +365,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @staticmethod
-    def inter_phase_continuity(ocp, pt):
+    def inter_phase_continuity(ocp):
         """
         Add phase transition constraints between two phases.
 
@@ -379,27 +373,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp
-        pt: PhaseTransition
-            The phase transition to add
         """
-
-        # Dynamics must be respected between phases
-        penalty = OptionGeneric()
-        penalty.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_pre_idx + 1}"
-        penalty.min_bound = 0
-        penalty.max_bound = 0
-        penalty.list_index = -1
-        penalty.sliced_target = None
-        pt.base.clear_penalty(ocp, None, penalty)
-        val = pt.type.value[0](ocp, pt)
-        casadi_name = f"PHASE_TRANSITION_{pt.phase_pre_idx}_{pt.phase_pre_idx + 1}"
-        pre_nlp, post_nlp = ocp.nlp[pt.phase_pre_idx], ocp.nlp[(pt.phase_pre_idx + 1) % ocp.n_phases]
-        pt.casadi_function = Function(
-            casadi_name,
-            [pre_nlp.X[-1], pre_nlp.U[-1], post_nlp.X[0], post_nlp.U[0], ocp.v.parameters_in_list.cx],
-            [val],
-        ).expand()
-        pt.base.add_to_penalty(ocp, None, val, penalty)
+        for i, pt in enumerate(ocp.phase_transitions):
+            # Dynamics must be respected between phases
+            pt.name = f"PHASE_TRANSITION {pt.phase_pre_idx}->{pt.phase_post_idx}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(ocp, ocp.nlp[pt.phase_pre_idx])
 
     @staticmethod
     def get_dt(_):
@@ -442,7 +421,6 @@ class ConstraintFcn(Enum):
     TRACK_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
     TRACK_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
-    CONTACT_FORCE = (ConstraintFunction.Functions.contact_force,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     TORQUE_MAX_FROM_ACTUATORS = (ConstraintFunction.Functions.torque_max_from_actuators,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
@@ -475,5 +453,4 @@ class ContinuityFunctions:
         ConstraintFunction.inner_phase_continuity(ocp)
 
         # Dynamics must be respected between phases
-        for pt in ocp.phase_transitions:
-            pt.base.inter_phase_continuity(ocp, pt)
+        ConstraintFunction.inter_phase_continuity(ocp)

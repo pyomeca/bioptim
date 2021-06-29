@@ -41,6 +41,8 @@ class NonLinearProgram:
         All the constraints internally defined by the OCP at each of the node of the phase
     J: list[list[Objective]]
         All the objectives at each of the node of the phase
+    J_internal: list[list[Objective]]
+        All the objectives internally defined by the phase at each of the node of the phase
     model: biorbd.Model
         The biorbd model associated with the phase
     n_threads: int
@@ -108,6 +110,7 @@ class NonLinearProgram:
         self.g = []
         self.g_internal = []
         self.J = []
+        self.J_internal = []
         self.model = None
         self.n_threads = None
         self.ns = None

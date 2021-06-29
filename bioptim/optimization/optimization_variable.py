@@ -57,7 +57,7 @@ class OptimizationVariable:
     def cx_end(self):
         if self.parent_list is None:
             raise RuntimeError("OptimizationVariable must have been created by OptimizationVariableList to have a cx")
-        return self.parent_list.cx_end
+        return self.parent_list.cx_end[self.index, :]
 
 
 class OptimizationVariableList:

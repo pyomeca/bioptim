@@ -78,7 +78,7 @@ class BiorbdInterface:
         from ..optimization.optimization_variable import OptimizationVariable, OptimizationVariableList
         from ..optimization.parameters import Parameter, ParameterList
 
-        ok_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
-        mx = [var.mx if isinstance(var, ok_types) else var for var in all_param]
-        cx = [var.cx for var in all_param if isinstance(var, ok_types)]
+        cx_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
+        mx = [var.mx if isinstance(var, cx_types) else var for var in all_param]
+        cx = [var.cx for var in all_param if isinstance(var, cx_types)]
         return biorbd.to_casadi_func(name, function, *mx)(*cx)
