@@ -176,7 +176,7 @@ class GraphAbstract:
                 if isinstance(obj.type, ObjectiveFcn.Mayer):
                     mayer_str = ""
                     mayer_objective = [obj.node[0]]
-                    if obj.sliced_target is not None:
+                    if obj.target is not None:
                         if obj.quadratic:
                             mayer_str += f"({obj.name} - {self._vector_layout(obj.target[:, i])}){self._squared}{self._return_line}"
                         else:
@@ -417,8 +417,8 @@ class OcpToGraph(GraphAbstract):
         constraint_str += f"<b>Min bound</b>: {constraint.min_bound}<br/>"
         constraint_str += f"<b>Max bound</b>: {constraint.max_bound}<br/>"
         constraint_str += (
-            f"{f'<b>Target</b>: {self._vector_layout(constraint.sliced_target)} <br/>'}"
-            if constraint.sliced_target is not None
+            f"{f'<b>Target</b>: {self._vector_layout(constraint.target)} <br/>'}"
+            if constraint.target is not None
             else ""
         )
         constraint_str += self._add_dict_to_str(constraint.params)
@@ -446,8 +446,8 @@ class OcpToGraph(GraphAbstract):
                 global_objectives += f"<b>Type:</b> {objective.type} <br/>"
                 global_objectives_names += objective.name
                 global_objectives += (
-                    f"{f'<b>Target</b>: {self.vector_layout(objective.sliced_target)} <br/>'}"
-                    if objective.sliced_target is not None
+                    f"{f'<b>Target</b>: {self.vector_layout(objective.target)} <br/>'}"
+                    if objective.target is not None
                     else ""
                 )
                 global_objectives += f"<b>Quadratic</b>: {objective.quadratic} <br/><br/>"
@@ -479,8 +479,8 @@ class OcpToGraph(GraphAbstract):
         if parameter.penalty_list is not None:
             node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
             node_str += (
-                f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.sliced_target)} <br/>'}"
-                if parameter.penalty_list.sliced_target is not None
+                f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.target)} <br/>'}"
+                if parameter.penalty_list.target is not None
                 else ""
             )
             node_str += f"<b>Quadratic</b>: {parameter.penalty_list.quadratic} <br/>"
