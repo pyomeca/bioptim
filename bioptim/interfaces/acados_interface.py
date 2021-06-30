@@ -8,10 +8,9 @@ from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from ..misc.enums import Node
 from .solver_interface import SolverInterface
-from ..limits.objective_functions import ObjectiveFunction
+from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType
-from ..limits.penalty import PenaltyType
 
 
 class AcadosInterface(SolverInterface):
@@ -155,8 +154,8 @@ class AcadosInterface(SolverInterface):
             raise NotImplementedError("More than 1 phase is not implemented yet with ACADOS backend")
 
         # Declare model variables
-        x = ocp.nlp[0].X[0]
-        u = ocp.nlp[0].U[0]
+        x = ocp.nlp[0].states.cx
+        u = ocp.nlp[0].controls.cx
         p = ocp.nlp[0].parameters.cx
         if ocp.v.parameters_in_list:
             for param in ocp.v.parameters_in_list:
@@ -360,6 +359,26 @@ class AcadosInterface(SolverInterface):
             A reference to the current OptimalControlProgram
         """
 
+        def add_nonlinear_ls_mayer(acados, J, x, u, p):
+            acados.W_e = linalg.block_diag(
+                acados.W_e, np.diag([J.weight] * J.function.size1_out("o0"))
+            )
+            acados.mayer_costs = vertcat(
+                acados.mayer_costs, J.function(x, u, p).reshape((-1, 1))
+            )
+            if J.target is not None:
+                acados.y_ref_end.append(J.target.T.reshape((-1, 1)))
+            else:
+                acados.y_ref_end.append(np.zeros(J.function.size_out("o0")))
+
+        def add_nonlinear_ls_lagrange(acados, J, x, u, p):
+            acados.lagrange_costs = vertcat(acados.lagrange_costs, J.function(x, u, p).reshape((-1, 1)))
+            acados.W = linalg.block_diag(acados.W, np.diag([J.weight] * J.function.size_out("o0")[0]))
+            if J.target is not None:
+                acados.y_ref.append([J_tp.target.T.reshape((-1, 1)) for J_tp in J])
+            else:
+                acados.y_ref.append([np.zeros(J.function.size_out("o0")) for _ in J.node_idx])
+
         if ocp.n_phases != 1:
             raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")
         # costs handling in self.acados_ocp
@@ -369,14 +388,8 @@ class AcadosInterface(SolverInterface):
         self.mayer_costs = SX()
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
-        ctrl_objs = [
-            PenaltyType.MINIMIZE_CONTROL,
-            PenaltyType.MINIMIZE_MUSCLES_CONTROL,
-            PenaltyType.MINIMIZE_ALL_CONTROLS,
-        ]
-        state_objs = [
-            PenaltyType.MINIMIZE_STATE,
-        ]
+        ctrl_objs = [ObjectiveFcn.Lagrange.MINIMIZE_CONTROL]
+        state_objs = [ObjectiveFcn.Lagrange.MINIMIZE_STATE, ObjectiveFcn.Mayer.TRACK_STATE]
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             n_states = ocp.nlp[0].states.shape
@@ -482,59 +495,29 @@ class AcadosInterface(SolverInterface):
             self.acados_ocp.cost.yref_e = np.zeros((self.acados_ocp.cost.W_e.shape[0],))
 
         elif self.acados_ocp.cost.cost_type == "NONLINEAR_LS":
-            for i in range(ocp.n_phases):
-                for j, J in enumerate(ocp.nlp[i].J):
+            for i, nlp in enumerate(ocp.nlp):
+                for j, J in enumerate(nlp.J):
                     if not J:
                         continue
-                    if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
-                        self.lagrange_costs = vertcat(self.lagrange_costs, J[0]["val"].reshape((-1, 1)))
-                        self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * J[0]["val"].numel()))
-                        if J[0]["target"] is not None:
-                            self.y_ref.append([J_tp["target"].T.reshape((-1, 1)) for J_tp in J])
-                        else:
-                            self.y_ref.append([np.zeros((J_tp["val"].numel(), 1)) for J_tp in J])
+                    if J.type.get_type() == ObjectiveFunction.LagrangeFunction:
+                        add_nonlinear_ls_lagrange(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
-                        # Deal with last node to match ipopt formulation
-                        if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
-                            mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
-                            self.W_e = linalg.block_diag(
-                                self.W_e, np.diag([J[0]["objective"].weight] * J[0]["val"].numel())
-                            )
-                            self.mayer_costs = vertcat(
-                                self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1))
-                            )
-                            if J[0]["target"] is not None:
-                                self.y_ref_end.append(J[-1]["target"].T.reshape((-1, 1)))
-                            else:
-                                self.y_ref_end.append(np.zeros((J[-1]["val"].numel(), 1)))
+                        # # Deal with last node to match ipopt formulation
+                        # if J.node[0] == Node.ALL:
+                        #     add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
-                    elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
-                        mayer_func_tp = Function(f"cas_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
-                        self.W_e = linalg.block_diag(
-                            self.W_e, np.diag([J[0]["objective"].weight] * J[0]["val"].numel())
-                        )
-                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
-                        if J[0]["target"] is not None:
-                            self.y_ref_end.append(J[0]["target"].T.reshape((-1, 1)))
-                        else:
-                            self.y_ref_end.append(np.zeros((J[0]["val"].numel(), 1)))
+                    elif J.type.get_type() == ObjectiveFunction.MayerFunction:
+                        add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
 
-                # parameter as mayer function
-                # IMPORTANT: it is considered that only parameters are stored in ocp.J, for now.
-                if self.nparams:
-                    for j, J in enumerate(ocp.J):
-                        mayer_func_tp = Function(f"cas_J_mayer_func_{i}_{j}", [ocp.nlp[i].X[-1]], [J[0]["val"]])
-                        self.W_e = linalg.block_diag(
-                            self.W_e, np.diag(([J[0]["objective"].weight] * J[0]["val"].numel()))
-                        )
-                        self.mayer_costs = vertcat(self.mayer_costs, mayer_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
-                        if J[0]["target"] is not None:
-                            self.y_ref_end.append(J[0]["target"].T.reshape((-1, 1)))
-                        else:
-                            self.y_ref_end.append(np.zeros((J[0]["val"].numel(), 1)))
+            # parameter as mayer function
+            # IMPORTANT: it is considered that only parameters are stored in ocp.J, for now.
+            if self.nparams:
+                nlp = ocp.nlp[0]  # Assume 1 phase
+                for j, J in enumerate(ocp.J):
+                    add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
             # Set costs
             self.acados_ocp.model.cost_y_expr = self.lagrange_costs if self.lagrange_costs.numel() else SX(1, 1)

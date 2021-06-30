@@ -273,9 +273,11 @@ class PenaltyOption(OptionGeneric):
         )
 
         if self.multi_thread:
+            self.function = self.function.map(nlp.ns, "thread", ocp.n_threads)
             self.weighted_function = self.weighted_function.map(nlp.ns, "thread", ocp.n_threads)
 
         if expand:
+            self.function.expand()
             self.weighted_function.expand()
 
     def add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str, rows: Union[range, list, tuple, np.ndarray] = None, axes_index: Union[range, list, tuple, np.ndarray] = None):
