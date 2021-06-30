@@ -173,7 +173,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL, target=activations_ref)
 
     if use_residual_torque:
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau")
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau")
 
     if kin_data_to_track == "markers":
         objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)

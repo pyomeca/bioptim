@@ -50,7 +50,7 @@ def test_track_markers(ode_solver, actuator_type):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
@@ -103,7 +103,7 @@ def test_track_markers_changing_constraints(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((4.2641129, 9.81, 2.27903226)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((1.36088709, 9.81, -2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((1.36088709, 9.81, -2.27903226)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -143,7 +143,7 @@ def test_track_markers_changing_constraints(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-5.625, 21.06, 2.2790323)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.625, 21.06, -2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-5.625, 21.06, -2.27903226)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -189,7 +189,7 @@ def test_track_markers_with_actuators(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.2140175, 0.981, 0.3360075)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-0.2196496, 0.981, -0.3448498)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-0.2196496, 0.981, -0.3448498)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
@@ -243,7 +243,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((0.98431048, -13.78108592)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15668869, 0.77410131)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-0.15668869, 0.77410131)))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
@@ -261,7 +261,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((0.98436218, -13.78113709)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15666471, 0.77420505)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-0.15666471, 0.77420505)))
 
     else:
         # Check objective function value
@@ -279,7 +279,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((0.98431925, -13.78108143)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15666955, 0.77421434)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-0.15666955, 0.77421434)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

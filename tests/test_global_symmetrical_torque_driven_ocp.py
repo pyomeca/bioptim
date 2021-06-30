@@ -41,7 +41,7 @@ def test_symmetry_by_construction(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.16129033, 1.16129033, -0.58458751)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-1.16129033, -1.16129033, 0.58458751)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-1.16129033, -1.16129033, 0.58458751)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
@@ -83,7 +83,7 @@ def test_symmetry_by_constraint(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.16129033, 1.16129033, -0.58458751, 0.58458751)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-1.16129033, -1.16129033, 0.58458751, -0.58458751)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-1.16129033, -1.16129033, 0.58458751, -0.58458751)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

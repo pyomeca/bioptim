@@ -60,9 +60,9 @@ class OdeSolverBase:
         """
 
         nlp.dynamics = nlp.ode_solver.integrator(ocp, nlp)
+        if len(nlp.dynamics) != 1 and ocp.n_threads != 1:
+            raise NotImplementedError("n_threads > 1 with external_forces is not implemented yet")
         if len(nlp.dynamics) == 1:
-            if ocp.n_threads > 1:
-                nlp.par_dynamics = nlp.dynamics[0].map(nlp.ns, "thread", ocp.n_threads)
             nlp.dynamics = nlp.dynamics * nlp.ns
 
 

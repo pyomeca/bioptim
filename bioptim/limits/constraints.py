@@ -2,14 +2,13 @@ from typing import Callable, Union, Any
 from enum import Enum
 
 import numpy as np
-from casadi import sum1, horzcat, if_else, vertcat, lt, MX, SX, Function
+from casadi import sum1, if_else, vertcat, lt
 import biorbd
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
-from ..dynamics.ode_solver import OdeSolver
-from ..misc.enums import Node, ControlType, InterpolationType
-from ..misc.options import OptionList, OptionGeneric
+from ..misc.enums import Node, InterpolationType
+from ..misc.options import OptionList
 
 
 class Constraint(PenaltyOption):
@@ -343,7 +342,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            pass
+            constraint.set_penalty(all_pn.nlp.tf, all_pn, plot_target=False)
 
     @staticmethod
     def inner_phase_continuity(ocp):
@@ -357,15 +356,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         """
         # Dynamics must be sound within phases
         for i, nlp in enumerate(ocp.nlp):
-            if ocp.n_threads > 1:
-                raise NotImplementedError("n_threads is not implemented yet")
-                # end_nodes = nlp.par_dynamics(horzcat(*nlp.X[:-1]), horzcat(*nlp.U), nlp.parameters.cx)[0]
-                #     val = horzcat(*nlp.X[1:]) - end_nodes
-                #     ConstraintFunction.add_to_penalty(ocp, None, val.reshape((nlp.states.shape * nlp.ns, 1)), penalty)
-            else:
-                for j in range(nlp.ns):
-                    penalty = Constraint(ConstraintFcn.CONTINUITY, node=j, is_internal=True)
-                    penalty.add_or_replace_to_penalty_pool(ocp, nlp)
+            penalty = Constraint(ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, is_internal=True)
+            penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @staticmethod
     def inter_phase_continuity(ocp):

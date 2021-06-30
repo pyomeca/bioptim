@@ -47,7 +47,7 @@ def test_pendulum_save_and_load():
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((16.25734477, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-25.59944635, 0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-25.59944635, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -109,7 +109,7 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
 
             # initial and final controls
             np.testing.assert_almost_equal(tau[:, 0], np.array((16.23831574, 0)))
-            np.testing.assert_almost_equal(tau[:, -1], np.array((-25.59884582, 0)))
+            np.testing.assert_almost_equal(tau[:, -2], np.array((-25.59884582, 0)))
 
             # save and load
             TestUtils.save_and_load(sol, ocp, True)
@@ -154,10 +154,10 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
         # initial and final controls
         if isinstance(ode_solver, OdeSolver.RK8):
             np.testing.assert_almost_equal(tau[:, 0], np.array((16.2560473, 0)))
-            np.testing.assert_almost_equal(tau[:, -1], np.array((-25.5991168, 0)))
+            np.testing.assert_almost_equal(tau[:, -2], np.array((-25.5991168, 0)))
         else:
             np.testing.assert_almost_equal(tau[:, 0], np.array((16.25734477, 0)))
-            np.testing.assert_almost_equal(tau[:, -1], np.array((-25.59944635, 0)))
+            np.testing.assert_almost_equal(tau[:, -2], np.array((-25.59944635, 0)))
 
         # save and load
         TestUtils.save_and_load(sol, ocp, True)
@@ -639,11 +639,11 @@ def test_example_multiphase(ode_solver):
 
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((1.42857142, 9.81, 0.01124212)))
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -1], np.array((-1.42857144, 9.81, -0.01124212)))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array((-1.42857144, 9.81, -0.01124212)))
     np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array((-0.22788183, 9.81, 0.01775688)))
-    np.testing.assert_almost_equal(controls[1]["tau"][:, -1], np.array((0.2957136, 9.81, 0.285805)))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array((0.2957136, 9.81, 0.285805)))
     np.testing.assert_almost_equal(controls[2]["tau"][:, 0], np.array((0.3078264, 9.81, 0.34001243)))
-    np.testing.assert_almost_equal(controls[2]["tau"][:, -1], np.array((-0.36233407, 9.81, -0.58394606)))
+    np.testing.assert_almost_equal(controls[2]["tau"][:, -2], np.array((-0.36233407, 9.81, -0.58394606)))
 
     # save and load
     with pytest.raises(pickle.PickleError):
@@ -742,7 +742,7 @@ def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.89054233, 0.47700932, 2.02049847, -2.02049847)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-24.36641199)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-23.53987687)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-23.53987687)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

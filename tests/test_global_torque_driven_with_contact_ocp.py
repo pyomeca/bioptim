@@ -65,7 +65,7 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
         np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2636414, -1.3010929, -3.6274687, 3.6274687)))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-22.1218282)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array(0.2653957))
+        np.testing.assert_almost_equal(tau[:, -2], np.array(0.2653957))
     elif objective_name == "MINIMIZE_COM_POSITION":
         # Check objective function value
         np.testing.assert_almost_equal(f[0, 0], 0.458575464873056)
@@ -76,7 +76,7 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
         np.testing.assert_almost_equal(qdot[:, -1], np.array((1.24525494, -1.28216182, -3.57468814, 3.57468814)))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-21.96213697)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array(-0.22120207))
+        np.testing.assert_almost_equal(tau[:, -2], np.array(-0.22120207))
     elif objective_name == "MINIMIZE_COM_VELOCITY":
         # Check objective function value
         np.testing.assert_almost_equal(f[0, 0], 0.4709888694097001)
@@ -87,7 +87,7 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
         np.testing.assert_almost_equal(qdot[:, -1], np.array((1.26103572, -1.29841047, -3.61998944, 3.61998944)))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-22.18008227)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array(-0.02280469))
+        np.testing.assert_almost_equal(tau[:, -2], np.array(-0.02280469))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
@@ -135,7 +135,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
         )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-0.5509092)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array(-0.00506117))
+        np.testing.assert_almost_equal(tau[:, -2], np.array(-0.00506117))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # initial and final position
@@ -148,7 +148,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
         )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-0.55090931)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array(-0.00506117))
+        np.testing.assert_almost_equal(tau[:, -2], np.array(-0.00506117))
 
     else:
         # initial and final position
@@ -161,7 +161,7 @@ def test_maximize_predicted_height_CoM_with_actuators(ode_solver):
         )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-0.550905)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array(-0.0050623))
+        np.testing.assert_almost_equal(tau[:, -2], np.array(-0.0050623))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

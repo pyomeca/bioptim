@@ -61,9 +61,9 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=100, phase=0)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=100, phase=1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=100, phase=2)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100, phase=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100, phase=2)
     objective_functions.add(
         minimize_difference,
         custom_type=ObjectiveFcn.Mayer,
@@ -127,7 +127,6 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        use_sx=True
     )
 
 

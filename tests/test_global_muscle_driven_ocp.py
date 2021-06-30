@@ -45,7 +45,7 @@ def test_muscle_driven_ocp(ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([0.41149114, -0.55863385]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([0.00147561, 0.00520749]))
-        np.testing.assert_almost_equal(tau[:, -1], np.array([-0.00027953, 0.00069257]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([-0.00027953, 0.00069257]))
         np.testing.assert_almost_equal(
             mus[:, 0],
             np.array([2.29029533e-06, 1.64976642e-01, 1.00004898e-01, 4.01974257e-06, 4.13014984e-06, 1.03945583e-01]),
@@ -69,7 +69,7 @@ def test_muscle_driven_ocp(ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([0.41151235, -0.55866253]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([0.00147777, 0.00520795]))
-        np.testing.assert_almost_equal(tau[:, -1], np.array([-0.00027953, 0.00069258]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([-0.00027953, 0.00069258]))
         np.testing.assert_almost_equal(
             mus[:, 0],
             np.array([2.28863414e-06, 1.65011897e-01, 1.00017224e-01, 4.01934660e-06, 4.12974244e-06, 1.03954780e-01]),
@@ -93,7 +93,7 @@ def test_muscle_driven_ocp(ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([0.4115254, -0.5586797]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([0.0014793, 0.0052082]))
-        np.testing.assert_almost_equal(tau[:, -1], np.array([-0.0002795, 0.0006926]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([-0.0002795, 0.0006926]))
         np.testing.assert_almost_equal(
             mus[:, 0],
             np.array([2.2869218e-06, 1.6503522e-01, 1.0002514e-01, 4.0190181e-06, 4.1294041e-06, 1.0396051e-01]),

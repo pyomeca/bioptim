@@ -33,9 +33,9 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=10)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=10)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=10)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL, weight=10)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="muscles", weight=10)
     objective_functions.add(
         ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, weight=100000, first_marker="target", second_marker="COM_hand"
     )

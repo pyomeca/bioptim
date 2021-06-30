@@ -1,10 +1,12 @@
 from typing import Callable, Union, Any
 from enum import Enum
 
+import numpy as np
+
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node
-from ..misc.options import OptionList, OptionGeneric
+from ..misc.options import OptionList
 
 
 class Objective(PenaltyOption):
@@ -110,9 +112,10 @@ class Objective(PenaltyOption):
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         if self.type.get_type() == ObjectiveFunction.LagrangeFunction:
-            if self.node != Node.ALL_SHOOTING and self.node != Node.DEFAULT:
-                raise RuntimeError("Lagrange objective are for Node.ALL_SHOOTING, did you mean Mayer?")
-            self.node = Node.ALL_SHOOTING
+            if self.node != Node.ALL_SHOOTING and self.node != Node.ALL and self.node != Node.DEFAULT:
+                raise RuntimeError("Lagrange objective are for Node.ALL_SHOOTING or Node.ALL, did you mean Mayer?")
+            if self.node == Node.DEFAULT:
+                self.node = Node.ALL_SHOOTING
         elif self.type.get_type() == ObjectiveFunction.MayerFunction:
             if self.node == Node.DEFAULT:
                 self.node = Node.END
@@ -205,22 +208,7 @@ class ObjectiveFunction:
                     The penalty node elements
                 """
 
-                val = 1
-                raise NotImplementedError()
-                # # max_bound ans min_bound are already dealt with in OptimalControlProgram.__define_parameters_phase_time
-                # if "min_bound" in objective.params:
-                #     raise RuntimeError(
-                #         "ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have min_bound. "
-                #         "Please either use MAYER or constraint"
-                #     )
-                # if "max_bound" in objective.params:
-                #     raise RuntimeError(
-                #         "ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have max_bound. "
-                #         "Please either use MAYER or constraint"
-                #     )
-                # if not objective.quadratic:
-                #     objective.quadratic = True
-                # ObjectiveFunction.add_to_penalty(all_pn.ocp, all_pn)
+                penalty.set_penalty(all_pn.nlp.cx().ones(1, 1), all_pn, plot_target=False)
 
         @staticmethod
         def get_dt(nlp):
@@ -267,7 +255,9 @@ class ObjectiveFunction:
             @staticmethod
             def minimize_time(
                 penalty: Objective,
-                pn: PenaltyNodeList,
+                all_pn: PenaltyNodeList,
+                min_bound: float = None,
+                max_bound: float = None,
             ):
                 """
                 Minimizes the duration of the phase
@@ -276,17 +266,18 @@ class ObjectiveFunction:
                 ----------
                 penalty: Objective,
                     The actual constraint to declare
-                pn: PenaltyNodeList
+                all_pn: PenaltyNodeList
                     The penalty node elements
+                min_bound: float
+                    The minimum value the time can take (this is ignored here, but
+                    taken into account elsewhere in the code)
+                max_bound: float
+                    The maximal value the time can take (this is ignored here, but
+                    taken into account elsewhere in the code)
                 """
 
-                val = pn.nlp.tf
-                # penalty.quadratic = True
-                # if "min_bound" in objective.params:
-                #     del objective.params["min_bound"]
-                # if "max_bound" in objective.params:
-                #     del objective.params["max_bound"]
-                # ObjectiveFunction.MayerFunction.add_to_penalty(pn.ocp, pn, val, penalty)
+                penalty.quadratic = True
+                penalty.set_penalty(all_pn.nlp.tf, all_pn, plot_target=False)
 
         @staticmethod
         def get_dt(_):

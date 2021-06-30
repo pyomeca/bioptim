@@ -126,7 +126,7 @@ def prepare_ocp(
     final_time = 2
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=100)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100)
 
     # Dynamics
     dynamics = DynamicsList()

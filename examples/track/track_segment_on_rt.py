@@ -48,7 +48,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -56,7 +56,7 @@ def prepare_ocp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment="seg_rt", rt_idx=0)
+    constraints.add(ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment="seg_rt", rt=0)
 
     # Path constraint
     nq = biorbd_model.nbQ()

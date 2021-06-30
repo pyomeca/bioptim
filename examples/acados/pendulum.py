@@ -55,7 +55,7 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau",
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau",
         weight=100.0,
     )
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=1.0)

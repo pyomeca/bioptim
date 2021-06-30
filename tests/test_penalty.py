@@ -476,7 +476,7 @@ def test_penalty_minimize_torque(penalty_origin, value):
     t = [0, 1]
     x = [0]
     u = [DM.ones((12, 1)) * value]
-    penalty_type = penalty_origin.MINIMIZE_CONTROL, name="tau"
+    penalty_type = penalty_origin.MINIMIZE_CONTROL, tag="tau"
     penalty = Objective(penalty_type)
     penalty_type.value[0](penalty, PenaltyNodeList(ocp, ocp.nlp[0], t, x, u, []))
 
@@ -553,7 +553,7 @@ def test_penalty_minimize_state_derivative(value):
 def test_penalty_minimize_torque_derivative(value):
     ocp = prepare_test_ocp()
     u = [DM.ones((12, 1)) * value, DM.ones((12, 1)) * value * 3]
-    penalty = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, name="tau", derivative=True)
+    penalty = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", derivative=True)
     penalty.type(penalty, PenaltyNodeList(ocp, ocp.nlp[0], [], [], u, []))
 
     if isinstance(penalty.type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):

@@ -254,7 +254,7 @@ def test_track_and_minimize_marker_velocity(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array([3.77168521e-01, -3.40782793, 10, 0]))
     # # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-4.52216174e-02, 9.25170010e-01, 0, 0]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([4.4260355e-02, 1.4004583, 0, 0]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([4.4260355e-02, 1.4004583, 0, 0]))
 
     # # save and load
     TestUtils.save_and_load(sol, ocp, False)

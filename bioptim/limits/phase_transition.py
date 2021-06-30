@@ -58,7 +58,6 @@ class PhaseTransition(Constraint):
         self.quadratic = True
         self.phase_pre_idx = phase_pre_idx
         self.phase_post_idx = None
-        self.casadi_function = None
         self.node = Node.TRANSITION
         self.dt = 1
         self.node_idx = [0]
@@ -75,10 +74,12 @@ class PhaseTransition(Constraint):
                 The penalty node elements
         """
 
+        ocp = all_pn[0].ocp
+        nlp = all_pn[0].nlp
         if self.weight == 0:
-            return all_pn[0].nlp.g_internal if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.g_internal
+            return nlp.g_internal if nlp else ocp.g_internal
         else:
-            return all_pn[0].nlp.g if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.g
+            return nlp.J_internal if nlp else ocp.J_internal
 
     def clear_penalty(self, ocp, nlp):
         """
@@ -293,16 +294,11 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
 
             if nlp_post.model.nbContacts() == 0:
                 warn("The chosen model does not have any contact")
-            # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
-            # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
-            # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
-            model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
             q_pre = nlp_pre.states["q"].mx
             qdot_pre = nlp_pre.states["qdot"].mx
-            qdot_impact = model.ComputeConstraintImpulsesDirect(q_pre, qdot_pre).to_mx()
+            qdot_impact = nlp_pre.model.ComputeConstraintImpulsesDirect(q_pre, qdot_pre).to_mx()
 
             val = []
-            mx = []
             cx = []
             for key in nlp_pre.states:
                 if key != "qdot":

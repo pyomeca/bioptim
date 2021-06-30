@@ -4,7 +4,7 @@ from copy import deepcopy
 import biorbd
 import numpy as np
 from scipy import interpolate as sci_interp
-from casadi import Function, DM
+from casadi import horzcat, Function, DM
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -184,7 +184,9 @@ class Solution:
             self.variable_mappings = nlp.variable_mappings
             self.control_type = nlp.control_type
             self.J = nlp.J
+            self.J_internal = nlp.J_internal
             self.g = nlp.g
+            self.g_internal = nlp.g_internal
             self.ns = nlp.ns
             self.parameters = nlp.parameters
 
@@ -219,7 +221,9 @@ class Solution:
             self.nlp = [Solution.SimplifiedNLP(nlp) for nlp in ocp.nlp]
             self.v = ocp.v
             self.J = ocp.J
+            self.J_internal = ocp.J_internal
             self.g = ocp.g
+            self.g_internal = ocp.g_internal
             self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
 
@@ -593,7 +597,7 @@ class Solution:
             if shooting_type == Shooting.SINGLE_CONTINUOUS:
                 if p != 0:
                     u0 = self._controls[p - 1]["all"][:, -1]
-                    val = self.ocp.phase_transitions[p - 1].casadi_function(x0, u0, x0, u0, params)
+                    val = self.ocp.phase_transitions[p - 1].function(horzcat(x0, x0), horzcat(u0, u0), params)
                     if val.shape[0] != x0.shape[0]:
                         raise RuntimeError(
                             f"Phase transition must have the same number of states ({val.shape[0]}) "
@@ -920,38 +924,42 @@ class Solution:
             The type of cost to console print
         """
 
+        def print_penalty_list(idx_phase, sol, penalties, print_only_weighted):
+            running_total = 0
+
+            for penalty in penalties:
+                if not penalty:
+                    continue
+
+                x = sol._states[idx_phase]["all"][:, penalty.node_idx]
+                u = sol._controls[idx_phase]["all"][:, penalty.node_idx]
+                p = sol.parameters["all"]
+                target = penalty.target[:, penalty.node_idx] if penalty.target is not None else []
+
+                val = np.nansum(penalty.function(x, u, p))
+                val_weighted = np.nansum(penalty.weighted_function(x, u, p, penalty.weight, target, penalty.dt))
+                running_total += val_weighted
+                if print_only_weighted:
+                    print(f"{penalty.name}: {val_weighted}")
+                else:
+                    print(f"{penalty.name}: {val: .2f} (weighted {val_weighted})")
+
+            return running_total
+
         def print_objective_functions(ocp, sol):
             """
             Print the values of each objective function to the console
             """
-
-            def extract_objective(J):
-                running_total = 0
-                for j in J:
-                    if not j:
-                        continue
-
-                    x = sol.states["all"][:, j.node_idx]
-                    u = sol.controls["all"][:, j.node_idx]
-                    p = sol.parameters["all"]
-                    target = j.target[:, j.node_idx] if j.target is not None else []
-
-                    val = np.nansum(j.weighted_function(x, u, p, 1, target, j.dt))
-                    val_weighted = np.nansum(j.weighted_function(x, u, p, j.weight, target, j.dt))
-
-                    print(f"{j.name}: {val} (weighted {val_weighted})")
-                    running_total += val_weighted
-                return running_total
-
             print(f"\n---- COST FUNCTION VALUES ----")
-
-            running_total = extract_objective(ocp.J)
-            if ocp.J:
+            running_total = print_penalty_list(None, sol, ocp.J_internal, False)
+            running_total += print_penalty_list(None, sol, ocp.J, False)
+            if running_total:
                 print("")
 
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
-                running_total += extract_objective(nlp.J)
+                running_total += print_penalty_list(idx_phase, sol, nlp.J_internal, False)
+                running_total += print_penalty_list(idx_phase, sol, nlp.J, False)
                 print("")
 
             print(f"Sum cost functions: {running_total}")
@@ -967,28 +975,13 @@ class Solution:
 
             # Todo, min/mean/max
             print(f"\n--------- CONSTRAINTS ---------")
-            idx = 0
-            has_global = False
-            for G in ocp.g:
-                has_global = True
-                g, next_idx = None, None
-                for g in G:
-                    next_idx = idx + g["val"].shape[0]
-                if g:
-                    print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
-                idx = next_idx
-            if has_global:
+            if print_penalty_list(None, sol, ocp.g_internal, True) + print_penalty_list(None, sol, ocp.g, True):
                 print("")
 
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
-                for G in nlp.g:
-                    g, next_idx = None, idx
-                    for g in G:
-                        next_idx += g["val"].shape[0]
-                    if g:
-                        print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
-                    idx = next_idx
+                print_penalty_list(idx_phase, sol, nlp.g_internal, True)
+                print_penalty_list(idx_phase, sol, nlp.g, True)
                 print("")
             print(f"------------------------------")
 

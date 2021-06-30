@@ -2,12 +2,12 @@ from time import time
 from sys import platform
 
 import numpy as np
-from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX
+from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
-from ..misc.enums import InterpolationType
+from ..misc.enums import InterpolationType, ControlType
 from ..optimization.solution import Solution
 
 
@@ -210,32 +210,63 @@ class IpoptInterface(SolverInterface):
         return all_objectives
 
     def __get_all_penalties(self, nlp, penalties):
+        def format_target(target_in):
+            target_out = []
+            if target_in is not None:
+                if len(target_in.shape) == 2:
+                    target_out = target_in[:, idx]
+                elif len(target_in.shape) == 3:
+                    target_out = target_in[:, :, idx]
+                else:
+                    raise NotImplementedError("penalty target with dimension != 2 or 3 is not implemented yet")
+            return target_out
+
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
         out = self.ocp.cx()
         for penalty in penalties:
             if penalty == []:
                 continue
 
-            for idx in penalty.node_idx:
-                target = [] if penalty.target is None else penalty.target[:, idx]
-                if np.isnan(np.sum(target)):
-                    continue
+            if penalty.multi_thread:
+                if penalty.target is not None:
+                    raise NotImplementedError("Multithread penalty with target is not implemented yet")
+                target = []
 
-                if nlp == []:
-                    x = []
-                    u = []
+                if penalty.derivative or penalty.explicit_derivative:
+                    x = nlp.cx()
+                    u = nlp.cx()
+                    for idx in penalty.node_idx:
+                        x = horzcat(x, horzcat(*nlp.X[idx:idx + 2]))
+                        u = horzcat(u, horzcat(*nlp.U[idx:idx + 2]))
+                    if nlp.control_type == ControlType.CONSTANT:
+                        u = horzcat(u, u[:, -1])
                 else:
-                    if penalty.derivative or penalty.explicit_derivative:
-                        x = horzcat(*nlp.X[idx:idx+2])
-                        u = horzcat(*nlp.U[idx:idx+2]) if idx < len(nlp.U) else []
-                    elif penalty.transition:
-                        ocp = self.ocp
-                        x = horzcat(ocp.nlp[penalty.phase_pre_idx].X[-1], ocp.nlp[penalty.phase_post_idx].X[0])
-                        u = horzcat(ocp.nlp[penalty.phase_pre_idx].U[-1], ocp.nlp[penalty.phase_post_idx].U[0])
-                    else:
-                        x = nlp.X[idx]
-                        u = nlp.U[idx] if idx < len(nlp.U) else []
+                    raise NotImplementedError("multi_thread is still in development")
+                p = reshape(penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt), -1, 1)
 
-                p = penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt)
-                out = vertcat(out, sum2(p))
+            else:
+                p = self.ocp.cx()
+                for idx in penalty.node_idx:
+                    target = format_target(penalty.target)
+
+                    if np.isnan(np.sum(target)):
+                        continue
+
+                    if nlp == []:
+                        x = []
+                        u = []
+                    else:
+                        if penalty.derivative or penalty.explicit_derivative:
+                            x = horzcat(*nlp.X[idx:idx+2])
+                            u = horzcat(*nlp.U[idx:idx+2]) if idx < len(nlp.U) else []
+                        elif penalty.transition:
+                            ocp = self.ocp
+                            x = horzcat(ocp.nlp[penalty.phase_pre_idx].X[-1], ocp.nlp[penalty.phase_post_idx].X[0])
+                            u = horzcat(ocp.nlp[penalty.phase_pre_idx].U[-1], ocp.nlp[penalty.phase_post_idx].U[0])
+                        else:
+                            x = nlp.X[idx]
+                            u = nlp.U[idx] if idx < len(nlp.U) else []
+
+                    p = vertcat(p, penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt))
+            out = vertcat(out, sum2(p))
         return out

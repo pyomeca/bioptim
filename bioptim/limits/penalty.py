@@ -108,7 +108,7 @@ class PenaltyFunctionAbstract:
         """
 
         @staticmethod
-        def minimize_states(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: str = "all"):
+        def minimize_states(penalty: PenaltyOption, all_pn: PenaltyNodeList, tag: str = "all"):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -120,14 +120,14 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            names: str
+            tag: str
                 The name of the state to minimize. Default "all"
             """
 
-            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, names, "states")
+            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, tag, "states")
 
         @staticmethod
-        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, name: Union[str, list] = "all"):
+        def minimize_controls(penalty: PenaltyOption, all_pn: PenaltyNodeList, tag: Union[str, list] = "all"):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -139,14 +139,14 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            name: Union[str, list]
+            tag: Union[str, list]
                 The name of the controls to minimize
             """
 
-            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, name, "controls")
+            PenaltyFunctionAbstract.Functions._minimize_optim_var(penalty, all_pn, tag, "controls")
 
         @staticmethod
-        def _minimize_optim_var(penalty: PenaltyOption, all_pn: PenaltyNodeList, names: Union[str, list], suffix: str):
+        def _minimize_optim_var(penalty: PenaltyOption, all_pn: PenaltyNodeList, tag: Union[str, list], suffix: str):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -158,7 +158,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
-            names: Union[str, list]
+            tag: Union[str, list]
                 The name of the controls to minimize
             suffix: str
                 If the optim_var is 'states' or 'controls'
@@ -172,15 +172,16 @@ class PenaltyFunctionAbstract:
                 var = all_pn.u
             else:
                 raise ValueError("suffix can only be 'states' or 'controls'")
-            names = optim_var.keys() if names == "all" else names
+            tag = optim_var.keys() if tag == "all" else tag
+            tag = [tag] if isinstance(tag, str) else tag
 
-            fcn = vertcat(*[optim_var[name].cx for name in names])
-            combined_to = None if isinstance(names, (list, tuple)) else f"{names}_{suffix}"
+            fcn = vertcat(*[optim_var[t].cx for t in tag])
+            combined_to = None if isinstance(tag, (list, tuple)) else f"{tag}_{suffix}"
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.set_penalty(fcn, all_pn=all_pn, combine_to=combined_to, target_ns=len(var))
 
             if combined_to is None:
-                penalty.add_multiple_target_to_plot(names, suffix, all_pn)
+                penalty.add_multiple_target_to_plot(tag, suffix, all_pn)
 
         @staticmethod
         def minimize_markers(
@@ -219,7 +220,7 @@ class PenaltyFunctionAbstract:
 
             markers_objective = BiorbdInterface.mx_to_cx("markers", markers, nlp.states["q"])
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-            penalty.set_penalty(markers_objective, all_pn)
+            penalty.set_penalty(markers_objective, all_pn, plot_target=False)
 
         @staticmethod
         def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list, int, str] = None, axes: Union[tuple, list] = None, reference_jcs: Union[str, int] = None):
@@ -603,10 +604,11 @@ class PenaltyFunctionAbstract:
             if not isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
                 raise RuntimeError("continuity should be called one node at a time")
 
-            end_node = nlp.dynamics[penalty.node[0]](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
+            expand = False if type(all_pn.nlp.ode_solver) == OdeSolver.IRK else True
+            end_node = nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
             continuity = nlp.states.cx_end - end_node
             penalty.explicit_derivative = True
-            expand = False if type(all_pn.nlp.ode_solver) == OdeSolver.IRK else True
+            penalty.multi_thread = True
 
             penalty.set_penalty(continuity, all_pn, expand=expand)
 

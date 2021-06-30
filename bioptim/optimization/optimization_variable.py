@@ -114,7 +114,7 @@ class OptimizationVariableList:
         else:
             raise ValueError("OptimizationVariableList can be sliced with int or str only")
 
-    def append(self, name: str, cx: Union[MX, SX], mx: MX, bimapping: BiMapping):
+    def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
         """
         Add a new variable to the list
 
@@ -122,8 +122,8 @@ class OptimizationVariableList:
         ----------
         name: str
             The name of the variable
-        cx: Union[MX, SX]
-            The SX or MX variable associated with this variable
+        cx: list
+            The list of SX or MX variable associated with this variable
         mx: MX
             The MX variable associated with this variable
         bimapping: BiMapping

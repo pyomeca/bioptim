@@ -106,8 +106,10 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("derivative and explicit_derivative cannot be both True")
         self.is_internal = is_internal
 
+        self.multi_thread = False
+
     def set_penalty(
-            self, penalty: Union[MX, SX], all_pn: PenaltyNodeList, combine_to: str = None, target_ns: int = -1, expand: bool = True
+            self, penalty: Union[MX, SX], all_pn: PenaltyNodeList, combine_to: str = None, target_ns: int = -1, expand: bool = True, plot_target: bool = True
     ):
         """
         Prepare the dimension and index of the penalty (including the target)
@@ -124,11 +126,13 @@ class PenaltyOption(OptionGeneric):
             The name of the underlying plot to combine the tracking data to
         expand: bool
             If the penalty function should be expanded
+        plot_target: bool
+            If there is a target, it can be automatically added to plot, assuming the target is 2-dimensions
         """
 
         self.rows = self._set_dim_idx(self.rows, penalty.rows())
         self.cols = self._set_dim_idx(self.cols, penalty.columns())
-        if self.target is not None:
+        if self.target is not None and plot_target:
             self._check_target_dimensions(all_pn, target_ns)
             if combine_to is not None:
                 self.add_target_to_plot(all_pn, combine_to)
@@ -175,7 +179,7 @@ class PenaltyOption(OptionGeneric):
             The expected shape (n_rows, ns) of the data to track
         """
 
-        if len(self.target.shape) == 1:
+        if len(self.target.shape) != 2:
             raise RuntimeError(
                 f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
             )
@@ -204,6 +208,7 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
         if self.transition:
+            ocp = all_pn[0].ocp
             nlp = all_pn[0].nlp
             nlp_post = all_pn[1].nlp
             name = self.name.replace("->", "_").replace(" ", "_")
@@ -211,6 +216,7 @@ class PenaltyOption(OptionGeneric):
             control_cx = horzcat(nlp.controls.cx_end, nlp_post.controls.cx)
 
         else:
+            ocp = all_pn.ocp
             nlp = all_pn.nlp
             name = self.name
             state_cx = all_pn.nlp.states.cx
@@ -238,9 +244,11 @@ class PenaltyOption(OptionGeneric):
         #         )
 
         if self.derivative:
+            state_cx = horzcat(all_pn.nlp.states.cx_end, all_pn.nlp.states.cx)
+            control_cx = horzcat(all_pn.nlp.controls.cx_end, all_pn.nlp.controls.cx)
             self.function = biorbd.to_casadi_func(
                 f"{name}",
-                self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) - self.function(state_cx, control_cx, param_cx),
+                self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) - self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx),
                 state_cx,
                 control_cx,
                 param_cx,
@@ -263,6 +271,10 @@ class PenaltyOption(OptionGeneric):
         self.weighted_function = Function(
             name, [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
         )
+
+        if self.multi_thread:
+            self.weighted_function = self.weighted_function.map(nlp.ns, "thread", ocp.n_threads)
+
         if expand:
             self.weighted_function.expand()
 
