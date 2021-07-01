@@ -224,7 +224,7 @@ class IpoptInterface(SolverInterface):
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
         out = self.ocp.cx()
         for penalty in penalties:
-            if penalty == []:
+            if not penalty:
                 continue
 
             if penalty.multi_thread:
@@ -252,7 +252,7 @@ class IpoptInterface(SolverInterface):
                     if np.isnan(np.sum(target)):
                         continue
 
-                    if nlp == []:
+                    if not nlp:
                         x = []
                         u = []
                     else:

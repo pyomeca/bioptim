@@ -3,7 +3,7 @@ from datetime import datetime
 
 import numpy as np
 from scipy import linalg
-from casadi import SX, vertcat, Function
+from casadi import SX, vertcat
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from ..misc.enums import Node
@@ -246,22 +246,25 @@ class AcadosInterface(SolverInterface):
         # TODO:change for more node flexibility on bounds
         self.all_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         self.end_g_bounds = Bounds(interpolation=InterpolationType.CONSTANT)
-        for i in range(ocp.n_phases):
-            for g, G in enumerate(ocp.nlp[i].g):
+        for i, nlp in enumerate(ocp.nlp):
+            x = nlp.states.cx
+            u = nlp.controls.cx
+            p = nlp.parameters.cx
+
+            for g, G in enumerate(nlp.g):
                 if not G:
                     continue
-                if G[0]["constraint"].node[0] is Node.ALL:
-                    self.all_constr = vertcat(self.all_constr, G[0]["val"].reshape((-1, 1)))
-                    self.all_g_bounds.concatenate(G[0]["bounds"])
-                    if len(G) > ocp.nlp[0].ns:
-                        constr_end_func_tp = Function(f"cas_constr_end_func_{i}_{g}", [ocp.nlp[i].X[-1]], [G[0]["val"]])
-                        self.end_constr = vertcat(self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
-                        self.end_g_bounds.concatenate(G[0]["bounds"])
 
-                elif G[0]["constraint"].node[0] is Node.END:
-                    constr_end_func_tp = Function(f"cas_constr_end_func_{i}_{g}", [ocp.nlp[i].X[-1]], [G[0]["val"]])
-                    self.end_constr = vertcat(self.end_constr, constr_end_func_tp(ocp.nlp[i].X[0]).reshape((-1, 1)))
-                    self.end_g_bounds.concatenate(G[0]["bounds"])
+                if G.node[0] == Node.ALL or G.node[0] == Node.ALL_SHOOTING:
+                    self.all_constr = vertcat(self.all_constr, G.function(x, u, p))
+                    self.all_g_bounds.concatenate(G.bounds)
+                    if G.node[0] == Node.ALL:
+                        self.end_constr = vertcat(self.end_constr, G.function(x, u, p))
+                        self.end_g_bounds.concatenate(G.bounds)
+
+                elif G.node[0] == Node.END:
+                    self.end_constr = vertcat(self.end_constr, G.function(x, u, p))
+                    self.end_g_bounds.concatenate(G.bounds)
 
                 else:
                     raise RuntimeError(
@@ -359,23 +362,67 @@ class AcadosInterface(SolverInterface):
             A reference to the current OptimalControlProgram
         """
 
-        def add_nonlinear_ls_mayer(acados, J, x, u, p):
-            acados.W_e = linalg.block_diag(
-                acados.W_e, np.diag([J.weight] * J.function.size1_out("o0"))
-            )
-            acados.mayer_costs = vertcat(
-                acados.mayer_costs, J.function(x, u, p).reshape((-1, 1))
-            )
-            if J.target is not None:
-                acados.y_ref_end.append(J.target.T.reshape((-1, 1)))
+        def add_linear_ls_lagrange(acados, J):
+            def add_objective(n_variables, is_state):
+                v_var = np.zeros(n_variables)
+                var_type = acados.ocp.nlp[0].states if is_state else acados.ocp.nlp[0].controls
+                rows = J.rows + var_type[J.params["key"]].index[0]
+                v_var[rows] = 1.0
+                if is_state:
+                    acados.Vx = np.vstack((acados.Vx, np.diag(v_var)))
+                    acados.Vu = np.vstack((acados.Vu, np.zeros((n_states, n_controls))))
+                else:
+                    acados.Vx = np.vstack((acados.Vx, np.zeros((n_controls, n_states))))
+                    acados.Vu = np.vstack((acados.Vu, np.diag(v_var)))
+                acados.W = linalg.block_diag(acados.W, np.diag([J.weight] * n_variables))
+
+                y_ref = [np.zeros((n_states if is_state else n_controls, 1)) for _ in J.node_idx]
+                if J.target is not None:
+                    for idx in J.node_idx:
+                        y_ref[idx][rows] = J.target[:, idx]
+                acados.y_ref.append(y_ref)
+
+            if J.type in allowed_control_objectives:
+                add_objective(n_controls, False)
+            elif J.type in allowed_state_objectives:
+                add_objective(n_states, True)
             else:
-                acados.y_ref_end.append(np.zeros(J.function.size_out("o0")))
+                raise RuntimeError(
+                    f"{J[0]['objective'].type.name} is an incompatible objective term with LINEAR_LS cost type"
+                )
+
+        def add_linear_ls_mayer(acados, J):
+            if J.type in allowed_state_objectives:
+                vxe = np.zeros(n_states)
+                rows = J.rows + acados.ocp.nlp[0].states[J.params["key"]].index[0]
+                vxe[rows] = 1.0
+                acados.Vxe = np.vstack((acados.Vxe, np.diag(vxe)))
+                acados.W_e = linalg.block_diag(acados.W_e, np.diag([J.weight] * n_states))
+
+                y_ref_end = np.zeros((n_states, 1))
+                if J.target is not None:
+                    y_ref_end[rows] = J.target[:, -1][:, np.newaxis]
+                acados.y_ref_end.append(y_ref_end)
+
+            else:
+                raise RuntimeError(f"{J.type.name} is an incompatible objective term with LINEAR_LS cost type")
+
+        def add_nonlinear_ls_mayer(acados, J, x, u, p):
+            acados.W_e = linalg.block_diag(acados.W_e, np.diag([J.weight] * J.function.size1_out("o0")))
+            x = x if J.function.sparsity_in("i0").shape != (0, 0) else []
+            u = u if J.function.sparsity_in("i1").shape != (0, 0) else []
+            acados.mayer_costs = vertcat(acados.mayer_costs, J.function(x, u, p))
+
+            if J.target is not None:
+                acados.y_ref_end.append(J.target[:, -1][:, np.newaxis])
+            else:
+                acados.y_ref_end.append(np.zeros(J.function.size_out("o0"))[:, np.newaxis])
 
         def add_nonlinear_ls_lagrange(acados, J, x, u, p):
-            acados.lagrange_costs = vertcat(acados.lagrange_costs, J.function(x, u, p).reshape((-1, 1)))
+            acados.lagrange_costs = vertcat(acados.lagrange_costs, J.function(x, u, p))
             acados.W = linalg.block_diag(acados.W, np.diag([J.weight] * J.function.size_out("o0")[0]))
             if J.target is not None:
-                acados.y_ref.append([J_tp.target.T.reshape((-1, 1)) for J_tp in J])
+                acados.y_ref.append([J.target[:, idx:idx+1] for idx in J.node_idx])
             else:
                 acados.y_ref.append([np.zeros(J.function.size_out("o0")) for _ in J.node_idx])
 
@@ -388,8 +435,8 @@ class AcadosInterface(SolverInterface):
         self.mayer_costs = SX()
         self.W = np.zeros((0, 0))
         self.W_e = np.zeros((0, 0))
-        ctrl_objs = [ObjectiveFcn.Lagrange.MINIMIZE_CONTROL]
-        state_objs = [ObjectiveFcn.Lagrange.MINIMIZE_STATE, ObjectiveFcn.Mayer.TRACK_STATE]
+        allowed_control_objectives = [ObjectiveFcn.Lagrange.MINIMIZE_CONTROL]
+        allowed_state_objectives = [ObjectiveFcn.Lagrange.MINIMIZE_STATE, ObjectiveFcn.Mayer.TRACK_STATE]
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             n_states = ocp.nlp[0].states.shape
@@ -398,78 +445,19 @@ class AcadosInterface(SolverInterface):
             self.Vx = np.array([], dtype=np.int64).reshape(0, n_states)
             self.Vxe = np.array([], dtype=np.int64).reshape(0, n_states)
             for i in range(ocp.n_phases):
-                for j, J in enumerate(ocp.nlp[i].J):
-                    if J[0]["objective"].type.get_type() == ObjectiveFunction.LagrangeFunction:
-                        if J[0]["objective"].type.value[0] in ctrl_objs:
-                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_controls))
-                            vu = np.zeros(n_controls)
-                            vu[index] = 1.0
-                            self.Vu = np.vstack((self.Vu, np.diag(vu)))
-                            self.Vx = np.vstack((self.Vx, np.zeros((n_controls, n_states))))
-                            self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * n_controls))
-                            if J[0]["target"] is not None:
-                                y_tp = np.zeros((n_controls, 1))
-                                y_ref_tp = []
-                                for J_tp in J:
-                                    y_tp[index] = J_tp["target"].T.reshape((-1, 1))
-                                    y_ref_tp.append(y_tp)
-                                self.y_ref.append(y_ref_tp)
-                            else:
-                                self.y_ref.append([np.zeros((n_controls, 1)) for _ in J])
-                        elif J[0]["objective"].type.value[0] in state_objs:
-                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
-                            vx = np.zeros(n_states)
-                            vx[index] = 1.0
-                            self.Vx = np.vstack((self.Vx, np.diag(vx)))
-                            self.Vu = np.vstack((self.Vu, np.zeros((n_states, n_controls))))
-                            self.W = linalg.block_diag(self.W, np.diag([J[0]["objective"].weight] * n_states))
-                            if J[0]["target"] is not None:
-                                y_ref_tp = []
-                                for J_tp in J:
-                                    y_tp = np.zeros((n_states, 1))
-                                    y_tp[index] = J_tp["target"].T.reshape((-1, 1))
-                                    y_ref_tp.append(y_tp)
-                                self.y_ref.append(y_ref_tp)
-                            else:
-                                self.y_ref.append([np.zeros((n_states, 1)) for _ in J])
-                        else:
-                            raise RuntimeError(
-                                f"{J[0]['objective'].type.name} is an incompatible objective term with "
-                                f"LINEAR_LS cost type"
-                            )
+                for J in ocp.nlp[i].J:
+                    if not J:
+                        continue
+
+                    if J.type.get_type() == ObjectiveFunction.LagrangeFunction:
+                        add_linear_ls_lagrange(self, J)
 
                         # Deal with last node to match ipopt formulation
-                        if J[0]["objective"].node[0].value == "all" and len(J) > ocp.nlp[0].ns:
-                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
-                            vxe = np.zeros(n_states)
-                            vxe[index] = 1.0
-                            self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
-                            self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * n_states))
-                            if J[0]["target"] is not None:
-                                y_tp = np.zeros((n_states, 1))
-                                y_tp[index] = J[-1]["target"].T.reshape((-1, 1))
-                                self.y_ref_end.append(y_tp)
-                            else:
-                                self.y_ref_end.append(np.zeros((n_states, 1)))
+                        if J.node[0] == Node.ALL:
+                            add_linear_ls_mayer(self, J)
 
-                    elif J[0]["objective"].type.get_type() == ObjectiveFunction.MayerFunction:
-                        if J[0]["objective"].type.value[0] in state_objs:
-                            index = J[0]["objective"].index if J[0]["objective"].index else list(np.arange(n_states))
-                            vxe = np.zeros(n_states)
-                            vxe[index] = 1.0
-                            self.Vxe = np.vstack((self.Vxe, np.diag(vxe)))
-                            self.W_e = linalg.block_diag(self.W_e, np.diag([J[0]["objective"].weight] * n_states))
-                            if J[0]["target"] is not None:
-                                y_tp = np.zeros((n_states, 1))
-                                y_tp[index] = J[-1]["target"].T.reshape((-1, 1))
-                                self.y_ref_end.append(y_tp)
-                            else:
-                                self.y_ref_end.append(np.zeros((n_states, 1)))
-                        else:
-                            raise RuntimeError(
-                                f"{J[0]['objective'].type.name} is an incompatible objective term "
-                                f"with LINEAR_LS cost type"
-                            )
+                    elif J.type.get_type() == ObjectiveFunction.MayerFunction:
+                        add_linear_ls_mayer(self, J)
 
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
@@ -502,9 +490,9 @@ class AcadosInterface(SolverInterface):
                     if J.type.get_type() == ObjectiveFunction.LagrangeFunction:
                         add_nonlinear_ls_lagrange(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
-                        # # Deal with last node to match ipopt formulation
-                        # if J.node[0] == Node.ALL:
-                        #     add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
+                        # Deal with last node to match ipopt formulation
+                        if J.node[0] == Node.ALL:
+                            add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
                         add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
@@ -574,9 +562,7 @@ class AcadosInterface(SolverInterface):
             if len(self.y_ref_end) == 1:
                 self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.array(self.y_ref_end[0])[:, 0])
             else:
-                self.ocp_solver.cost_set(
-                    self.acados_ocp.dims.N, "yref", np.concatenate([data for data in self.y_ref_end])[:, 0]
-                )
+                self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate(self.y_ref_end)[:, 0])
             # check following line
             # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
         self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
