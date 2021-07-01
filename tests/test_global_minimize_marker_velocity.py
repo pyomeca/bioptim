@@ -62,26 +62,26 @@ def prepare_ocp(
         coordinates_system_idx = 0
     else:
         # Marker should be static in global reference frame
-        coordinates_system_idx = -1
+        coordinates_system_idx = None
 
     objective_functions = ObjectiveList()
     if marker_velocity_or_displacement == "disp":
         objective_functions.add(
-            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT,
-            coordinates_system_idx=coordinates_system_idx,
-            index=6,
+            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS,
+            derivative=True,
+            reference_jcs=coordinates_system_idx,
+            marker_index=6,
             weight=1000,
         )
     elif marker_velocity_or_displacement == "velo":
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, index=6, weight=1000)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, marker_index=6, weight=1000)
     else:
         raise RuntimeError(
             f"Wrong choice of marker_velocity_or_displacement, actual value is "
             f"{marker_velocity_or_displacement}, should be 'velo' or 'disp'."
         )
     # Make sure the segments actually moves (in order to test the relative speed objective)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=6, weight=-1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=7, weight=-1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", index=[2, 3], weight=-1)
 
     # Dynamics
     dynamics = DynamicsList()

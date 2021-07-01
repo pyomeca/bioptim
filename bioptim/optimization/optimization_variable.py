@@ -50,13 +50,15 @@ class OptimizationVariable:
     @property
     def cx(self):
         if self.parent_list is None:
-            raise RuntimeError("OptimizationVariable must have been created by OptimizationVariableList to have a cx")
+            raise RuntimeError("OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
+                               "Typically 'all' cannot be used")
         return self.parent_list.cx[self.index, :]
 
     @property
     def cx_end(self):
         if self.parent_list is None:
-            raise RuntimeError("OptimizationVariable must have been created by OptimizationVariableList to have a cx")
+            raise RuntimeError("OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
+                               "Typically 'all' cannot be used")
         return self.parent_list.cx_end[self.index, :]
 
 

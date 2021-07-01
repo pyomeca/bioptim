@@ -658,7 +658,7 @@ def test_mayer1_neg_multiphase_time_constraint():
     ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
@@ -698,7 +698,7 @@ def test_mayer2_neg_multiphase_time_constraint():
     ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100, phase=2)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=2)
 
     constraints = ConstraintList()
@@ -738,7 +738,7 @@ def test_mayer_multiphase_time_constraint():
     ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
@@ -777,7 +777,7 @@ def test_lagrange_neg_monophase_time_constraint():
     ) = partial_ocp_parameters(n_phases=1)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME)
 
     constraints = ConstraintList()
@@ -818,7 +818,7 @@ def test_lagrange1_neg_multiphase_time_constraint():
         ) = partial_ocp_parameters(n_phases=3)
 
         objective_functions = ObjectiveList()
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100, phase=0)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=0)
 
         constraints = ConstraintList()
@@ -860,7 +860,7 @@ def test_lagrange2_neg_multiphase_time_constraint():
         ) = partial_ocp_parameters(n_phases=3)
 
         objective_functions = ObjectiveList()
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100, phase=2)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=2)
 
         constraints = ConstraintList()
@@ -901,7 +901,7 @@ def test_lagrange_multiphase_time_constraint():
     ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()

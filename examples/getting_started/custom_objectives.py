@@ -92,7 +92,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     objective_functions.add(
         custom_func_track_markers,
         custom_type=ObjectiveFcn.Mayer,

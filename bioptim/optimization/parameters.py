@@ -171,7 +171,7 @@ class Parameter(PenaltyOption):
                 val = func(ocp, self.cx * self.scaling, **penalty.params)
                 self.set_penalty(ocp, penalty, val, target_ns=1)
                 penalty.clear_penalty(ocp, None)
-                penalty.get_penalty_pool(all_pn)[self.list_index] = penalty
+                penalty._add_penalty_to_pool(all_pn)
 
     def set_penalty(
             self, ocp, objective: Objective, penalty: Union[MX, SX], combine_to: str = None, target_ns: int = -1, expand: bool = True
@@ -188,8 +188,8 @@ class Parameter(PenaltyOption):
 
     def _set_penalty_function(self, ocp, objective, fcn: Union[MX, SX], expand: bool = True):
         # Do not use nlp.add_casadi_func because all functions must be registered
-        state_cx = ocp.cx()
-        control_cx = ocp.cx()
+        state_cx = ocp.cx(0, 0)
+        control_cx = ocp.cx(0, 0)
         param_cx = ocp.v.parameters_in_list.cx
 
         objective.function = biorbd.to_casadi_func(
@@ -210,7 +210,9 @@ class Parameter(PenaltyOption):
             [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
             [weight_cx * modified_fcn * dt_cx]
         )
+
         if expand:
+            objective.function.expand()
             objective.weighted_function.expand()
 
 

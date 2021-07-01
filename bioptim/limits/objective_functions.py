@@ -1,8 +1,6 @@
 from typing import Callable, Union, Any
 from enum import Enum
 
-import numpy as np
-
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node
@@ -64,7 +62,7 @@ class Objective(PenaltyOption):
 
         super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
 
-    def get_penalty_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
+    def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         """
         Add the objective function to the objective pool
 
@@ -75,9 +73,10 @@ class Objective(PenaltyOption):
         """
 
         if isinstance(all_pn, (list, tuple)):
-            return all_pn[0].nlp.J if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.J
+            pool = all_pn[0].nlp.J if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.J
         else:
-            return all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
+            pool = all_pn.nlp.J if all_pn is not None and all_pn.nlp else all_pn.ocp.J
+        pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
         """
@@ -208,7 +207,7 @@ class ObjectiveFunction:
                     The penalty node elements
                 """
 
-                penalty.set_penalty(all_pn.nlp.cx().ones(1, 1), all_pn, plot_target=False)
+                return all_pn.nlp.cx().ones(1, 1)
 
         @staticmethod
         def get_dt(nlp):
@@ -277,7 +276,7 @@ class ObjectiveFunction:
                 """
 
                 penalty.quadratic = True
-                penalty.set_penalty(all_pn.nlp.tf, all_pn, plot_target=False)
+                return all_pn.nlp.tf
 
         @staticmethod
         def get_dt(_):

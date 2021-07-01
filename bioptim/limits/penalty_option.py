@@ -84,13 +84,18 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")
         self.rows = rows if rows is not None else index
         self.cols = cols
+        self.expand = True
 
-        self.target = np.array(target) if np.any(target) else None
-        if self.target is not None:
+        self.target = None
+        if target is not None:
+            self.target = np.array(target)
             if len(self.target.shape) == 0:
                 self.target = self.target[np.newaxis]
             if len(self.target.shape) == 1:
                 self.target = self.target[:, np.newaxis]
+        self.target_plot_name = None
+        self.target_to_plot = None
+        self.plot_target = True
 
         self.custom_function = custom_function
 
@@ -108,9 +113,7 @@ class PenaltyOption(OptionGeneric):
 
         self.multi_thread = False
 
-    def set_penalty(
-            self, penalty: Union[MX, SX], all_pn: PenaltyNodeList, combine_to: str = None, target_ns: int = -1, expand: bool = True, plot_target: bool = True
-    ):
+    def set_penalty(self, penalty: Union[MX, SX], all_pn: PenaltyNodeList):
         """
         Prepare the dimension and index of the penalty (including the target)
 
@@ -118,25 +121,17 @@ class PenaltyOption(OptionGeneric):
         ----------
         penalty: Union[MX, SX],
             The actual penalty function
-        target_ns: Union[list, tuple]
-            The expected shape (n_rows, ns) of the data to track
         all_pn: PenaltyNodeList
             The penalty node elements
-        combine_to: str
-            The name of the underlying plot to combine the tracking data to
-        expand: bool
-            If the penalty function should be expanded
-        plot_target: bool
-            If there is a target, it can be automatically added to plot, assuming the target is 2-dimensions
         """
 
         self.rows = self._set_dim_idx(self.rows, penalty.rows())
         self.cols = self._set_dim_idx(self.cols, penalty.columns())
-        if self.target is not None and plot_target:
-            self._check_target_dimensions(all_pn, target_ns)
-            if combine_to is not None:
-                self.add_target_to_plot(all_pn, combine_to)
-        self._set_penalty_function(all_pn, penalty, expand)
+        if self.target is not None and self.plot_target:
+            self._check_target_dimensions(all_pn, len(all_pn.t))
+            self._finish_add_target_to_plot(all_pn)
+        self._set_penalty_function(all_pn, penalty)
+        self._add_penalty_to_pool(all_pn)
 
     def _set_dim_idx(self, dim: Union[list, tuple, range, np.ndarray], n_rows: int):
         """
@@ -198,7 +193,7 @@ class PenaltyOption(OptionGeneric):
                     raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                 self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
-    def _set_penalty_function(self, all_pn: [PenaltyNodeList, list, tuple], fcn: Union[MX, SX], expand: bool = True):
+    def _set_penalty_function(self, all_pn: [PenaltyNodeList, list, tuple], fcn: Union[MX, SX]):
         # Sanity checks
         if self.transition and self.explicit_derivative:
             raise ValueError("transition and explicit_derivative cannot be true simultaneously")
@@ -229,7 +224,7 @@ class PenaltyOption(OptionGeneric):
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         self.function = biorbd.to_casadi_func(
-            name, fcn[self.rows, self.cols], state_cx, control_cx, param_cx, expand=expand
+            name, fcn[self.rows, self.cols], state_cx, control_cx, param_cx, expand=self.expand
         )
 
         # if self.integration:
@@ -276,11 +271,15 @@ class PenaltyOption(OptionGeneric):
             self.function = self.function.map(nlp.ns, "thread", ocp.n_threads)
             self.weighted_function = self.weighted_function.map(nlp.ns, "thread", ocp.n_threads)
 
-        if expand:
+        if self.expand:
             self.function.expand()
             self.weighted_function.expand()
 
-    def add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str, rows: Union[range, list, tuple, np.ndarray] = None, axes_index: Union[range, list, tuple, np.ndarray] = None):
+    def add_target_to_plot(
+            self,
+            all_pn: PenaltyNodeList,
+            combine_to: str,
+    ):
         """
         Interface to the plot so it can be properly added to the proper plot
 
@@ -290,54 +289,37 @@ class PenaltyOption(OptionGeneric):
             The penalty node elements
         combine_to: str
             The name of the underlying plot to combine the tracking data to
-        rows: Union[range, list, tuple, np.ndarray]
-            The rows of the target to plot
-        axes_index: Union[range, list, tuple, np.ndarray]
-            The position of the target to plot, self.rows is used if None
         """
 
-        data = np.c_[self.target, self.target[:, -1]] if self.target.shape[1] == all_pn.nlp.ns else self.target
-        axes_index = self.rows if axes_index is None else axes_index
-        if rows is not None:
-            data = data[rows, :]
-        all_pn.ocp.add_plot(
-            combine_to,
-            lambda x, u, p: data,
-            color="tab:red",
-            linestyle=".-",
-            plot_type=PlotType.STEP,
-            phase=all_pn.nlp.phase_idx,
-            axes_idx=Mapping(axes_index)
-        )
-
-    def add_multiple_target_to_plot(self, names: list, suffix: str, all_pn: PenaltyNodeList):
-        """
-        Easy plot adder for multiple values
-
-        Parameters
-        ----------
-        names: list
-            The list of names in optim_var to add
-        suffix: str
-            The suffix name to add (either "states" or "controls").
-            This will determine if nlp.states or nlp.controls is used
-        all_pn: PenaltyNodeList
-            The penalty node elements
-        """
-        if self.target is None:
+        if self.target is None or combine_to is None:
             return
 
-        offset = 0
-        if suffix == "states":
-            optim_var = all_pn.nlp.states
-        elif suffix == "controls":
-            optim_var = all_pn.nlp.controls
+        self.target_plot_name = combine_to
+        if self.target.shape[1] == all_pn.nlp.ns:
+            self.target_to_plot = np.concatenate((self.target, np.nan * np.ndarray((self.target.shape[0], 1))), axis=1)
         else:
-            raise ValueError("suffix for add_multiple_target_to_plot can only be 'states' or 'controls'")
-        for name in names:
-            n_elt = self.rows.shape[0]
-            self.add_target_to_plot(all_pn, combine_to=f"{name}_{suffix}", rows=range(offset, offset + n_elt), axes_index=self.rows)
-            offset += n_elt
+            self.target_to_plot = self.target
+
+    def _finish_add_target_to_plot(self, all_pn: PenaltyNodeList):
+        """
+        Internal interface to add (after having check the target dimensions) the target to the plot if needed
+        Parameters
+        ----------
+        all_pn: PenaltyNodeList
+            The penalty node elements
+
+        """
+
+        if self.target_to_plot is not None:
+            all_pn.ocp.add_plot(
+                self.target_plot_name,
+                lambda x, u, p: self.target_to_plot,
+                color="tab:red",
+                linestyle=".-",
+                plot_type=PlotType.STEP,
+                phase=all_pn.nlp.phase_idx,
+                axes_idx=Mapping(self.rows)
+            )
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         """
@@ -388,10 +370,10 @@ class PenaltyOption(OptionGeneric):
             self.dt = penalty_type.get_dt(all_pn.nlp)
             self.node_idx = all_pn.t
 
-        self.type.value[0](self, all_pn, **self.params)
-        self.get_penalty_pool(all_pn)[self.list_index] = self
+        penalty_function = self.type.value[0](self, all_pn, **self.params)
+        self.set_penalty(penalty_function, all_pn)
 
-    def get_penalty_pool(self, all_pn: PenaltyNodeList):
+    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):
         """
         Return the penalty pool for the specified penalty (abstract)
 
@@ -449,7 +431,7 @@ class PenaltyOption(OptionGeneric):
                     raise (ValueError("Number of shooting points must be even to use MID"))
                 t.append(nlp.ns // 2)
             elif node == Node.INTERMEDIATES:
-                t.append(i for i in range(1, nlp.ns - 1))
+                t.extend(list(i for i in range(1, nlp.ns - 1)))
             elif node == Node.PENULTIMATE:
                 if nlp.ns < 2:
                     raise (ValueError("Number of shooting points must be greater than 1"))
@@ -462,6 +444,7 @@ class PenaltyOption(OptionGeneric):
                 t.extend(range(nlp.ns + 1))
             else:
                 raise RuntimeError(" is not a valid node")
+
         x = [nlp.X[idx] for idx in t]
         u = [nlp.U[idx] for idx in t if idx != nlp.ns]
         return PenaltyNodeList(ocp, nlp, t, x, u, nlp.parameters.cx)

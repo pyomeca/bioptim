@@ -43,7 +43,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau")
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)

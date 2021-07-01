@@ -3,7 +3,7 @@ from warnings import warn
 from enum import Enum
 
 import biorbd
-from casadi import horzcat, vertcat, MX, SX, Function
+from casadi import horzcat, vertcat, MX, Function
 
 from .constraints import ConstraintFunction, Constraint
 from .path_conditions import Bounds
@@ -64,7 +64,7 @@ class PhaseTransition(Constraint):
         self.transition = True
         self.is_internal = True
 
-    def get_penalty_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
+    def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
         """
         Add the objective function to the objective pool
 
@@ -77,9 +77,10 @@ class PhaseTransition(Constraint):
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
         if self.weight == 0:
-            return nlp.g_internal if nlp else ocp.g_internal
+            pool = nlp.g_internal if nlp else ocp.g_internal
         else:
-            return nlp.J_internal if nlp else ocp.J_internal
+            pool = nlp.J_internal if nlp else ocp.J_internal
+        pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
         """
@@ -244,7 +245,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 )
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
             continuity = nlp_pre.states.cx_end - nlp_post.states.cx
-            transition.set_penalty(continuity, all_pn, expand=True)
+            return continuity
 
         @staticmethod
         def cyclic(transition, all_pn) -> MX:
@@ -312,7 +313,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
 
             name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
             func = biorbd.to_casadi_func(name, val, horzcat(nlp_pre.states.mx, nlp_post.states.mx))(horzcat(nlp_pre.states.cx_end, nlp_post.states.cx))
-            transition.set_penalty(func, all_pn, expand=True)
+            return func
 
         @staticmethod
         def custom(transition, all_pn, **extra_params):
@@ -333,7 +334,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
             val = transition.custom_function(nlp_pre.states, nlp_post.states, **extra_params)
-            transition.set_penalty(val, all_pn, expand=True)
+            return val
 
 
 class PhaseTransitionFcn(Enum):

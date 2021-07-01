@@ -2,11 +2,12 @@ from typing import Callable, Union, Any
 from enum import Enum
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt
+from casadi import sum1, if_else, vertcat, lt, SX, MX
 import biorbd
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList
+from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, InterpolationType
 from ..misc.options import OptionList
 
@@ -26,8 +27,8 @@ class Constraint(PenaltyOption):
     def __init__(
         self,
         constraint: Any,
-        min_bound: Union[np.ndarray, float] = 0,
-        max_bound: Union[np.ndarray, float] = 0,
+        min_bound: Union[np.ndarray, float] = None,
+        max_bound: Union[np.ndarray, float] = None,
         quadratic: bool = False,
         phase: int = 0,
         **params: Any,
@@ -57,6 +58,22 @@ class Constraint(PenaltyOption):
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
+
+    def set_penalty(self, penalty: Union[MX, SX], all_pn: PenaltyNodeList):
+        """
+        Prepare the dimension and index of the penalty (including the target)
+
+        Parameters
+        ----------
+        penalty: Union[MX, SX],
+            The actual penalty function
+        all_pn: PenaltyNodeList
+            The penalty node elements
+        """
+        
+        super(Constraint, self).set_penalty(penalty, all_pn)
+        self.min_bound = 0 if self.min_bound is None else self.min_bound
+        self.max_bound = 0 if self.max_bound is None else self.max_bound
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         """
@@ -92,7 +109,7 @@ class Constraint(PenaltyOption):
         elif self.bounds.shape[0] != len(self.rows):
             raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
-    def get_penalty_pool(self, all_pn: PenaltyNodeList):
+    def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):
         """
         Add the objective function to the objective pool
 
@@ -103,9 +120,10 @@ class Constraint(PenaltyOption):
         """
 
         if self.is_internal:
-            return all_pn.nlp.g_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.g_internal
+            pool = all_pn.nlp.g_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.g_internal
         else:
-            return all_pn.nlp.g if all_pn is not None and all_pn.nlp else all_pn.ocp.g
+            pool = all_pn.nlp.g if all_pn is not None and all_pn.nlp else all_pn.ocp.g
+        pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
         """
@@ -275,7 +293,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     mu_squared * normal_contact_force_squared - tangential_contact_force_squared,
                     mu_squared * normal_contact_force_squared + tangential_contact_force_squared,
                 )
-            constraint.set_penalty(slipping, all_pn)
+            return slipping
 
         @staticmethod
         def torque_max_from_actuators(
@@ -296,32 +314,20 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Minimum joint torques. This prevent from having too small torques, but introduces an if statement
             """
 
-            # TODO: Add index to select the u (control_idx)
             nlp = all_pn.nlp
-            q = [nlp.variable_mappings["q"].to_second.map(mx[nlp.states["q"].index, :]) for mx in all_pn.x]
-            qdot = [nlp.variable_mappings["qdot"].to_second.map(mx[nlp.states["qdot"].index, :]) for mx in all_pn.x]
-
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
-            func = biorbd.to_casadi_func("torqueMax", nlp.model.torqueMax, nlp.states["q"].mx, nlp.states["qdot"].mx)
-            constraint.min_bound = np.repeat([0, -np.inf], nlp.controls.shape)
-            constraint.max_bound = np.repeat([np.inf, 0], nlp.controls.shape)
-            for i in range(len(all_pn.u)):
-                bound = func(q[i], qdot[i])
-                if min_torque:
-                    min_bound = nlp.variable_mappings["tau"].to_first.map(
-                        if_else(lt(bound[:, 1], min_torque), min_torque, bound[:, 1])
-                    )
-                    max_bound = nlp.variable_mappings["tau"].to_first.map(
-                        if_else(lt(bound[:, 0], min_torque), min_torque, bound[:, 0])
-                    )
-                else:
-                    min_bound = nlp.variable_mappings["tau"].to_first.map(bound[:, 1])
-                    max_bound = nlp.variable_mappings["tau"].to_first.map(bound[:, 0])
+            constraint.min_bound = [0, -np.inf]
+            constraint.max_bound = [np.inf, 0]
 
-                ConstraintFunction.add_to_penalty(
-                    all_pn.ocp, all_pn, vertcat(*[all_pn.u[i] + min_bound, all_pn.u[i] - max_bound]), constraint
-                )
+            bound = nlp.model.torqueMax(nlp.states["q"].mx, nlp.states["qdot"].mx)
+            min_bound = BiorbdInterface.mx_to_cx("min_bound", bound[1].to_mx(), nlp.states["q"], nlp.states["qdot"])
+            max_bound = BiorbdInterface.mx_to_cx("max_bound", bound[0].to_mx(), nlp.states["q"], nlp.states["qdot"])
+            if min_torque:
+                min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
+                max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)
+
+            return vertcat(nlp.controls["tau"].cx + min_bound, nlp.controls["tau"].cx - max_bound)
 
         @staticmethod
         def time_constraint(
@@ -342,7 +348,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            constraint.set_penalty(all_pn.nlp.tf, all_pn, plot_target=False)
+            return all_pn.nlp.tf
 
     @staticmethod
     def inner_phase_continuity(ocp):

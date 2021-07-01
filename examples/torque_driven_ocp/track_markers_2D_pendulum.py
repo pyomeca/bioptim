@@ -95,7 +95,7 @@ def prepare_ocp(
     objective_functions.add(
         ObjectiveFcn.Lagrange.TRACK_MARKERS, axis_to_track=[Axis.Y, Axis.Z], weight=100, target=markers_ref
     )
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_TORQUE, target=tau_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="tau", target=tau_ref)
 
     # Dynamics
     dynamics = DynamicsList()

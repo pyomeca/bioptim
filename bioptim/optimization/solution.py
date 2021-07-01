@@ -4,7 +4,7 @@ from copy import deepcopy
 import biorbd
 import numpy as np
 from scipy import interpolate as sci_interp
-from casadi import horzcat, Function, DM
+from casadi import horzcat, DM
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -176,6 +176,7 @@ class Solution:
                 A reference to the NonLinearProgram to strip
             """
 
+            self.phase_idx = nlp.phase_idx
             self.model = nlp.model
             self.states = Solution.SimplifiedOptimizationVariableList(nlp.states)
             self.controls = Solution.SimplifiedOptimizationVariableList(nlp.controls)
@@ -260,7 +261,7 @@ class Solution:
         self.status = None
 
         # Extract the data now for further use
-        self._states, self._controls, self.parameters = [], [], {}
+        self._states, self._controls, self.parameters = {}, {}, {}
         self.phase_time = []
 
         def init_from_dict(sol: dict):
@@ -382,69 +383,16 @@ class Solution:
 
     @property
     def cost(self):
-        def get_objective_functions(ocp, sol):
-            """
-            Print the values of each objective function to the console
-            """
-
-            def __extract_objective(pen: dict):
-                """
-                Extract objective function from a penalty
-
-                Parameters
-                ----------
-                pen: dict
-                    The penalty to extract the value from
-
-                Returns
-                -------
-                The value extract
-                """
-
-                # TODO: This should be done in bounds and objective functions, so it is available for all the code
-                val_tp = Function("val_tp", [ocp.v.vector], [pen["val"]]).expand()(sol.vector)
-                if pen["target"] is not None:
-                    # TODO Target should be available to constraint?
-                    nan_idx = np.isnan(pen["target"])
-                    pen["target"][nan_idx] = 0
-                    val_tp -= pen["target"]
-                    if np.any(nan_idx):
-                        val_tp[np.where(nan_idx)] = 0
-
-                if pen["objective"].quadratic:
-                    val_tp *= val_tp
-
-                val = np.sum(val_tp)
-
-                dt = Function("dt", [ocp.v.vector], [pen["dt"]]).expand()(sol.vector)
-                val_weighted = pen["objective"].weight * val * dt
-                return val, val_weighted
-
-            running_total = 0
-            for J in ocp.J:
-                val = []
-                val_weighted = []
-                for j in J:
-                    out = __extract_objective(j)
-                    val.append(out[0])
-                    val_weighted.append(out[1])
-                sum_val_weighted = sum(val_weighted)
-                running_total += sum_val_weighted
-
-            for idx_phase, nlp in enumerate(ocp.nlp):
-                for J in nlp.J:
-                    val = []
-                    val_weighted = []
-                    for j in J:
-                        out = __extract_objective(j)
-                        val.append(out[0])
-                        val_weighted.append(out[1])
-                    sum_val_weighted = sum(val_weighted)
-                    running_total += sum_val_weighted
-            return running_total
-
         if self._cost is None:
-            self._cost = get_objective_functions(self.ocp, self)
+            self._cost = 0
+            for J in self.ocp.J:
+                _, val_weighted = self._get_penalty_cost(None, J)
+                self._cost += val_weighted
+
+            for idx_phase, nlp in enumerate(self.ocp.nlp):
+                for J in nlp.J:
+                    _, val_weighted = self._get_penalty_cost(nlp, J)
+                    self._cost += val_weighted
         return self._cost
 
     def copy(self, skip_data: bool = False) -> Any:
@@ -914,6 +862,18 @@ class Solution:
         else:
             return all_bioviz
 
+    def _get_penalty_cost(self, nlp, penalty):
+        phase_idx = nlp.phase_idx
+        x = self._states[phase_idx]["all"][:, penalty.node_idx] if nlp is not None else []
+        u = self._controls[phase_idx]["all"][:, penalty.node_idx] if nlp is not None else []
+        p = self.parameters["all"]
+        target = penalty.target if penalty.target is not None else []
+
+        val = np.nansum(penalty.function(x, u, p))
+        val_weighted = np.nansum(penalty.weighted_function(x, u, p, penalty.weight, target, penalty.dt))
+
+        return val, val_weighted
+
     def print(self, cost_type: CostType = CostType.ALL):
         """
         Print the objective functions and/or constraints to the console
@@ -924,20 +884,14 @@ class Solution:
             The type of cost to console print
         """
 
-        def print_penalty_list(idx_phase, sol, penalties, print_only_weighted):
+        def print_penalty_list(nlp, penalties, print_only_weighted):
             running_total = 0
 
             for penalty in penalties:
                 if not penalty:
                     continue
 
-                x = sol._states[idx_phase]["all"][:, penalty.node_idx]
-                u = sol._controls[idx_phase]["all"][:, penalty.node_idx]
-                p = sol.parameters["all"]
-                target = penalty.target[:, penalty.node_idx] if penalty.target is not None else []
-
-                val = np.nansum(penalty.function(x, u, p))
-                val_weighted = np.nansum(penalty.weighted_function(x, u, p, penalty.weight, target, penalty.dt))
+                val, val_weighted = self._get_penalty_cost(nlp, penalty)
                 running_total += val_weighted
                 if print_only_weighted:
                     print(f"{penalty.name}: {val_weighted}")
@@ -951,15 +905,15 @@ class Solution:
             Print the values of each objective function to the console
             """
             print(f"\n---- COST FUNCTION VALUES ----")
-            running_total = print_penalty_list(None, sol, ocp.J_internal, False)
-            running_total += print_penalty_list(None, sol, ocp.J, False)
+            running_total = print_penalty_list(None, ocp.J_internal, False)
+            running_total += print_penalty_list(None, ocp.J, False)
             if running_total:
                 print("")
 
-            for idx_phase, nlp in enumerate(ocp.nlp):
-                print(f"PHASE {idx_phase}")
-                running_total += print_penalty_list(idx_phase, sol, nlp.J_internal, False)
-                running_total += print_penalty_list(idx_phase, sol, nlp.J, False)
+            for nlp in ocp.nlp:
+                print(f"PHASE {nlp.phase_idx}")
+                running_total += print_penalty_list(nlp, nlp.J_internal, False)
+                running_total += print_penalty_list(nlp, nlp.J, False)
                 print("")
 
             print(f"Sum cost functions: {running_total}")
@@ -975,13 +929,13 @@ class Solution:
 
             # Todo, min/mean/max
             print(f"\n--------- CONSTRAINTS ---------")
-            if print_penalty_list(None, sol, ocp.g_internal, True) + print_penalty_list(None, sol, ocp.g, True):
+            if print_penalty_list(None, ocp.g_internal, True) + print_penalty_list(None, ocp.g, True):
                 print("")
 
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
-                print_penalty_list(idx_phase, sol, nlp.g_internal, True)
-                print_penalty_list(idx_phase, sol, nlp.g, True)
+                print_penalty_list(nlp, nlp.g_internal, True)
+                print_penalty_list(nlp, nlp.g, True)
                 print("")
             print(f"------------------------------")
 

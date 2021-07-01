@@ -57,7 +57,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -67,7 +67,7 @@ def prepare_ocp(
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
-    constraints.add(ConstraintFcn.PROPORTIONAL_STATE, node=Node.ALL, first_dof=2, second_dof=3, coef=-1)
+    constraints.add(ConstraintFcn.PROPORTIONAL_STATE, key="q", node=Node.ALL, first_dof=2, second_dof=3, coef=-1)
 
     # Path constraint
     x_bounds = BoundsList()

@@ -59,7 +59,7 @@ def prepare_ocp(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, tag="tau", weight=100)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -67,7 +67,7 @@ def prepare_ocp(
     # Constraints
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.MID, first_marker="m0", second_marker="m2")
-    constraints.add(ConstraintFcn.TRACK_STATE, node=Node.MID, index=2)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.MID, index=2)
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m1")
 
     # Path constraint
