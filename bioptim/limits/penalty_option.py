@@ -127,9 +127,10 @@ class PenaltyOption(OptionGeneric):
 
         self.rows = self._set_dim_idx(self.rows, penalty.rows())
         self.cols = self._set_dim_idx(self.cols, penalty.columns())
-        if self.target is not None and self.plot_target:
+        if self.target is not None:
             self._check_target_dimensions(all_pn, len(all_pn.t))
-            self._finish_add_target_to_plot(all_pn)
+            if self.plot_target:
+                self._finish_add_target_to_plot(all_pn)
         self._set_penalty_function(all_pn, penalty)
         self._add_penalty_to_pool(all_pn)
 
@@ -161,7 +162,7 @@ class PenaltyOption(OptionGeneric):
             raise RuntimeError(f"{self.name} index must be a list of integer")
         return dim
 
-    def _check_target_dimensions(self, all_pn: PenaltyNodeList, n_col_expected: int):
+    def _check_target_dimensions(self, all_pn: PenaltyNodeList, n_time_expected: int):
         """
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
@@ -170,25 +171,26 @@ class PenaltyOption(OptionGeneric):
         ----------
         all_pn: PenaltyNodeList
             The penalty node elements
-        n_col_expected: Union[list, tuple]
+        n_time_expected: Union[list, tuple]
             The expected shape (n_rows, ns) of the data to track
         """
 
-        if len(self.target.shape) != 2:
+        n_dim = len(self.target.shape)
+        if n_dim != 2 and n_dim != 3:
             raise RuntimeError(
                 f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
             )
-        if self.target.shape[1] == 1:
-            self.target = np.repeat(self.target, n_col_expected, axis=1)
+        if self.target.shape[-1] == 1:
+            self.target = np.repeat(self.target, n_time_expected, axis=-1)
 
-        if self.target.shape != (len(self.rows), n_col_expected):
+        if self.target.shape != ((len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)):
             raise RuntimeError(
-                f"target {self.target.shape} does not correspond to expected size {(len(self.rows), n_col_expected)}"
+                f"target {self.target.shape} does not correspond to expected size {(len(self.rows), n_time_expected)}"
             )
 
         # If the target is on controls and control is constant, there will be one value missing
         if all_pn is not None:
-            if all_pn.nlp.control_type == ControlType.CONSTANT and all_pn.nlp.ns in all_pn.t and self.target.shape[1] == all_pn.nlp.ns:
+            if all_pn.nlp.control_type == ControlType.CONSTANT and all_pn.nlp.ns in all_pn.t and self.target.shape[-1] == all_pn.nlp.ns:
                 if all_pn.t[-1] != all_pn.nlp.ns:
                     raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                 self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)

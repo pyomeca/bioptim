@@ -332,8 +332,7 @@ class ObjectiveFunction:
         if list_index >= len(ocp_or_nlp.J) or list_index < 0:
             raise ValueError("'list_index' must be defined properly")
 
-        for i, j in enumerate(ocp_or_nlp.J[list_index]):
-            j["target"] = new_target[..., i]
+        ocp_or_nlp.J[list_index].target = new_target
 
 
 class ObjectiveFcn:

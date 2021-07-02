@@ -2,6 +2,8 @@
 Test for file IO
 """
 import pytest
+import re
+
 import numpy as np
 import biorbd
 from bioptim import (
@@ -119,7 +121,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
     # Check constraints
     g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -210,7 +212,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
     else:
         # initial and final controls
         np.testing.assert_almost_equal(tau[1, 0], np.array(0))
-        np.testing.assert_almost_equal(tau[1, -1], np.array(0))
+        np.testing.assert_almost_equal(tau[1, -2], np.array(0))
 
     # optimized time
     np.testing.assert_almost_equal(tf, 1.0)
@@ -317,10 +319,7 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
-    with pytest.raises(
-        RuntimeError,
-        match="ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have min_bound. Please either use MAYER or constraint",
-    ):
+    with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'min_bound'")):
         OptimalControlProgram(biorbd_model, dynamics, 10, 2, objective_functions=objective_functions)
 
 
@@ -334,17 +333,14 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weigth=-1, max_bound=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=-1, max_bound=1)
 
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
-    with pytest.raises(
-        RuntimeError,
-        match="ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have max_bound. Please either use MAYER or constraint",
-    ):
+    with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'max_bound'")):
         OptimalControlProgram(biorbd_model, dynamics, 10, 2, objective_functions=objective_functions)
 
 
@@ -367,8 +363,8 @@ def test_time_constraint(ode_solver):
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+    np.testing.assert_equal(g.shape, (41, 1))
+    np.testing.assert_almost_equal(g, np.concatenate((np.zeros((40, 1)), [[1]])))
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]

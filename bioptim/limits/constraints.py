@@ -3,7 +3,6 @@ from enum import Enum
 
 import numpy as np
 from casadi import sum1, if_else, vertcat, lt, SX, MX
-import biorbd
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyNodeList

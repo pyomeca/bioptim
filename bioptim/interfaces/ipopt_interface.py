@@ -214,9 +214,9 @@ class IpoptInterface(SolverInterface):
             target_out = []
             if target_in is not None:
                 if len(target_in.shape) == 2:
-                    target_out = target_in[:, idx]
+                    target_out = target_in[:, penalty.node_idx.index(idx)]
                 elif len(target_in.shape) == 3:
-                    target_out = target_in[:, :, idx]
+                    target_out = target_in[:, :, penalty.node_idx.index(idx)]
                 else:
                     raise NotImplementedError("penalty target with dimension != 2 or 3 is not implemented yet")
             return target_out

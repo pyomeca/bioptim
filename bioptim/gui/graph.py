@@ -143,12 +143,15 @@ class GraphAbstract:
         objective_names = []
         lagrange_str = ""
         for i, obj in enumerate(objective_list):
+            if not obj:
+                continue
+
             if isinstance(obj.type, ObjectiveFcn.Lagrange):
                 if obj.target is not None:
                     if obj.quadratic:
-                        lagrange_str += f"({obj.name} - {self._vector_layout(obj.target[:, i])}){self._squared}{self._return_line}"
+                        lagrange_str += f"({obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])}){self._squared}{self._return_line}"
                     else:
-                        lagrange_str += f"{obj.name} - {self._vector_layout(obj.target[:, i])}{self._return_line}"
+                        lagrange_str += f"{obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])}{self._return_line}"
                 else:
                     if obj.quadratic:
                         lagrange_str += f"({obj.name}){self._squared}{self._return_line}"
@@ -171,15 +174,18 @@ class GraphAbstract:
 
         list_mayer_objectives = []
         for obj in objective_list:
+            if not obj:
+                continue
+
             for i in obj.node_idx:
                 if isinstance(obj.type, ObjectiveFcn.Mayer):
                     mayer_str = ""
-                    mayer_objective = [obj.node[0]]
+                    mayer_objective = [obj.node[0]] if isinstance(obj.node, (list, tuple)) else [obj.node]
                     if obj.target is not None:
                         if obj.quadratic:
-                            mayer_str += f"({obj.name} - {self._vector_layout(obj.target[:, i])}){self._squared}{self._return_line}"
+                            mayer_str += f"({obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])}){self._squared}{self._return_line}"
                         else:
-                            mayer_str += f"{obj.name} - {self._vector_layout(obj.target[:, i])}{self._return_line}"
+                            mayer_str += f"{obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])}{self._return_line}"
                     else:
                         if obj.quadratic:
                             mayer_str += f"({obj.name}){self._squared}{self._return_line}"
@@ -262,13 +268,13 @@ class GraphAbstract:
             The constraint to which the nodes to analyze is attached
         """
 
-        if isinstance(constraint["constraint"].node[0], Node):
-            if constraint["constraint"].node[0].value != "all":
-                node = self.ocp.nlp[phase_idx].ns if constraint["constraint"].node[0].value == "end" else 0
+        if isinstance(constraint.node[0], Node):
+            if constraint.node[0] != Node.ALL:
+                node = self.ocp.nlp[phase_idx].ns if constraint.node[0] == Node.END else 0
             else:
                 node = "all"
         else:
-            node = constraint["constraint"].node[0]
+            node = constraint.node[0]
         return node
 
 
@@ -328,9 +334,9 @@ class OcpToConsole(GraphAbstract):
                 for constraint in self.ocp.nlp[phase_idx].g:
                     if not constraint:
                         continue
-                    node_index = self._analyze_nodes(phase_idx, constraint[0])
+                    node_index = self._analyze_nodes(phase_idx, constraint)
                     if node_index == node_idx:
-                        print(f"*** Constraint: {constraint[0]['constraint'].name}")
+                        print(f"*** Constraint: {constraint.name}")
                 print("")
 
 
@@ -563,8 +569,8 @@ class OcpToGraph(GraphAbstract):
             if not constraint:
                 continue
             constraints_str = ""
-            node_index = self._analyze_nodes(phase_idx, constraint[0])
-            constraints_str += self._constraint_to_str(constraint[0]["constraint"])
+            node_index = self._analyze_nodes(phase_idx, constraint)
+            constraints_str += self._constraint_to_str(constraint)
             list_constraints.append([constraints_str, node_index])
 
         all_constraints_str = "<u><b>Constraints</b></u><br/>"

@@ -73,7 +73,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
             mus[:, 0], np.array([0.37442763, 0.95074155, 0.73202163, 0.59858471, 0.15595214, 0.15596623])
         )
         np.testing.assert_almost_equal(
-            mus[:, -1], np.array([0.54685822, 0.18481451, 0.96949193, 0.77512584, 0.93948978, 0.89483523])
+            mus[:, -2], np.array([0.54685822, 0.18481451, 0.96949193, 0.77512584, 0.93948978, 0.89483523])
         )
 
     elif isinstance(ode_solver, OdeSolver.RK8):
@@ -90,7 +90,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
             mus[:, 0], np.array([0.37438764, 0.95075245, 0.73203411, 0.59854825, 0.15591868, 0.15595168])
         )
         np.testing.assert_almost_equal(
-            mus[:, -1], np.array([0.5468589, 0.18481491, 0.96949149, 0.77512487, 0.93948887, 0.89483671])
+            mus[:, -2], np.array([0.5468589, 0.18481491, 0.96949149, 0.77512487, 0.93948887, 0.89483671])
         )
 
     else:
@@ -107,7 +107,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
             mus[:, 0], np.array([0.3744008, 0.9507489, 0.7320295, 0.5985624, 0.1559316, 0.1559573])
         )
         np.testing.assert_almost_equal(
-            mus[:, -1], np.array([0.5468632, 0.184813, 0.969489, 0.7751258, 0.9394897, 0.8948353])
+            mus[:, -2], np.array([0.5468632, 0.184813, 0.969489, 0.7751258, 0.9394897, 0.8948353])
         )
 
     # save and load

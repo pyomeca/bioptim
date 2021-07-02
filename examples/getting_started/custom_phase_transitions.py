@@ -6,7 +6,7 @@ It is designed to show how one can define its phase transition constraints if th
 More specifically, this example mimics the behaviour of the most common PhaseTransitionFcn.CONTINUOUS
 """
 
-from casadi import MX, horzcat, vertcat
+from casadi import MX
 import biorbd
 from bioptim import (
     Node,

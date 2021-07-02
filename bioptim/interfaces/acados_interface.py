@@ -376,10 +376,12 @@ class AcadosInterface(SolverInterface):
                     acados.Vu = np.vstack((acados.Vu, np.diag(v_var)))
                 acados.W = linalg.block_diag(acados.W, np.diag([J.weight] * n_variables))
 
-                y_ref = [np.zeros((n_states if is_state else n_controls, 1)) for _ in J.node_idx]
+                node_idx = J.node_idx[:-1] if J.node[0] == Node.ALL else J.node_idx
+
+                y_ref = [np.zeros((n_states if is_state else n_controls, 1)) for _ in node_idx]
                 if J.target is not None:
-                    for idx in J.node_idx:
-                        y_ref[idx][rows] = J.target[:, idx]
+                    for idx in node_idx:
+                        y_ref[rows] = J.target[..., idx].T.reshape((-1, 1))
                 acados.y_ref.append(y_ref)
 
             if J.type in allowed_control_objectives:
@@ -401,30 +403,32 @@ class AcadosInterface(SolverInterface):
 
                 y_ref_end = np.zeros((n_states, 1))
                 if J.target is not None:
-                    y_ref_end[rows] = J.target[:, -1][:, np.newaxis]
+                    y_ref_end[rows] = J.target[..., -1].T.reshape((-1, 1))
                 acados.y_ref_end.append(y_ref_end)
 
             else:
                 raise RuntimeError(f"{J.type.name} is an incompatible objective term with LINEAR_LS cost type")
 
+        def add_nonlinear_ls_lagrange(acados, J, x, u, p):
+            acados.lagrange_costs = vertcat(acados.lagrange_costs, J.function(x, u, p))
+            acados.W = linalg.block_diag(acados.W, np.diag([J.weight] * J.function.numel_out()))
+
+            node_idx = J.node_idx[:-1] if J.node[0] == Node.ALL else J.node_idx
+            if J.target is not None:
+                acados.y_ref.append([J.target[..., idx].T.reshape((-1, 1)) for idx in node_idx])
+            else:
+                acados.y_ref.append([np.zeros((J.function.numel_out(), 1)) for _ in node_idx])
+
         def add_nonlinear_ls_mayer(acados, J, x, u, p):
-            acados.W_e = linalg.block_diag(acados.W_e, np.diag([J.weight] * J.function.size1_out("o0")))
+            acados.W_e = linalg.block_diag(acados.W_e, np.diag([J.weight] * J.function.numel_out()))
             x = x if J.function.sparsity_in("i0").shape != (0, 0) else []
             u = u if J.function.sparsity_in("i1").shape != (0, 0) else []
             acados.mayer_costs = vertcat(acados.mayer_costs, J.function(x, u, p))
 
             if J.target is not None:
-                acados.y_ref_end.append(J.target[:, -1][:, np.newaxis])
+                acados.y_ref_end.append(J.target[..., -1].T.reshape((-1, 1)))
             else:
-                acados.y_ref_end.append(np.zeros(J.function.size_out("o0"))[:, np.newaxis])
-
-        def add_nonlinear_ls_lagrange(acados, J, x, u, p):
-            acados.lagrange_costs = vertcat(acados.lagrange_costs, J.function(x, u, p))
-            acados.W = linalg.block_diag(acados.W, np.diag([J.weight] * J.function.size_out("o0")[0]))
-            if J.target is not None:
-                acados.y_ref.append([J.target[:, idx:idx+1] for idx in J.node_idx])
-            else:
-                acados.y_ref.append([np.zeros(J.function.size_out("o0")) for _ in J.node_idx])
+                acados.y_ref_end.append(np.zeros((J.function.numel_out(), 1)))
 
         if ocp.n_phases != 1:
             raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")
@@ -508,8 +512,8 @@ class AcadosInterface(SolverInterface):
                     add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
             # Set costs
-            self.acados_ocp.model.cost_y_expr = self.lagrange_costs if self.lagrange_costs.numel() else SX(1, 1)
-            self.acados_ocp.model.cost_y_expr_e = self.mayer_costs if self.mayer_costs.numel() else SX(1, 1)
+            self.acados_ocp.model.cost_y_expr = self.lagrange_costs.reshape((-1, 1)) if self.lagrange_costs.numel() else SX(1, 1)
+            self.acados_ocp.model.cost_y_expr_e = self.mayer_costs.reshape((-1, 1))  if self.mayer_costs.numel() else SX(1, 1)
 
             # Set dimensions
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]
