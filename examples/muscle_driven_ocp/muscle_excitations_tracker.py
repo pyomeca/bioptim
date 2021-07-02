@@ -172,7 +172,7 @@ def prepare_ocp(
     if use_residual_torque:
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     if kin_data_to_track == "markers":
-        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, node=Node.ALL, weight=100, target=markers_ref)
     elif kin_data_to_track == "q":
         objective_functions.add(
             ObjectiveFcn.Lagrange.TRACK_STATE, key="q", weight=100, node=Node.ALL, target=q_ref, index=range(biorbd_model.nbQ())

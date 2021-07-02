@@ -92,6 +92,9 @@ class Constraint(PenaltyOption):
 
         super(Constraint, self).add_or_replace_to_penalty_pool(ocp, nlp)
 
+        self.min_bound = np.array(self.min_bound) if isinstance(self.min_bound, (list, tuple)) else self.min_bound
+        self.max_bound = np.array(self.max_bound) if isinstance(self.max_bound, (list, tuple)) else self.max_bound
+
         if self.bounds.shape[0] == 0:
             for i in self.rows:
                 min_bound = (
@@ -316,8 +319,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nlp = all_pn.nlp
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
-            constraint.min_bound = [0, -np.inf]
-            constraint.max_bound = [np.inf, 0]
 
             bound = nlp.model.torqueMax(nlp.states["q"].mx, nlp.states["qdot"].mx)
             min_bound = BiorbdInterface.mx_to_cx("min_bound", bound[1].to_mx(), nlp.states["q"], nlp.states["qdot"])
@@ -326,7 +327,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
                 max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)
 
-            return vertcat(nlp.controls["tau"].cx + min_bound, nlp.controls["tau"].cx - max_bound)
+            value = vertcat(nlp.controls["tau"].cx + min_bound, nlp.controls["tau"].cx - max_bound)
+
+            n_rows = constraint.rows if constraint.rows else int(value.shape[0] / 2)
+            constraint.min_bound = [0] * n_rows + [-np.inf] * n_rows
+            constraint.max_bound = [np.inf] * n_rows + [0] * n_rows
+            return value
 
         @staticmethod
         def time_constraint(

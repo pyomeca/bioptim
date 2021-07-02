@@ -290,7 +290,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
             mus_controls[:, 0], np.array([0.37477829, 0.95063176, 0.73196614, 0.59867481, 0.1560593, 0.15600768])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -1], np.array([0.546718, 0.18485758, 0.96954554, 0.7751266, 0.93947678, 0.89481784])
+            mus_controls[:, -2], np.array([0.546718, 0.18485758, 0.96954554, 0.7751266, 0.93947678, 0.89481784])
         )
 
     elif isinstance(ode_solver, OdeSolver.RK8):
@@ -319,7 +319,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
             mus_controls[:, 0], np.array([0.37477774, 0.95063188, 0.73196591, 0.5986757, 0.15606055, 0.15600778])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -1], np.array([0.54671643, 0.18485788, 0.96954568, 0.77512639, 0.93947659, 0.89481833])
+            mus_controls[:, -2], np.array([0.54671643, 0.18485788, 0.96954568, 0.77512639, 0.93947659, 0.89481833])
         )
 
     else:
@@ -348,7 +348,7 @@ def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver)
             mus_controls[:, 0], np.array([0.37458886, 0.95067258, 0.73198315, 0.59866926, 0.15604832, 0.15600496])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -1], np.array([0.54673199, 0.18485512, 0.9695433, 0.77513005, 0.93947984, 0.89480958])
+            mus_controls[:, -2], np.array([0.54673199, 0.18485512, 0.9695433, 0.77513005, 0.93947984, 0.89480958])
         )
 
     # save and load
@@ -427,7 +427,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
             mus_controls[:, 0], np.array([0.37477831, 0.95063176, 0.73196614, 0.59867481, 0.1560593, 0.15600768])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -1], np.array([0.546718, 0.18485758, 0.96954554, 0.7751266, 0.93947678, 0.89481784])
+            mus_controls[:, -2], np.array([0.546718, 0.18485758, 0.96954554, 0.7751266, 0.93947678, 0.89481784])
         )
 
     elif isinstance(ode_solver, OdeSolver.RK8):
@@ -455,7 +455,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
             mus_controls[:, 0], np.array([0.37477776, 0.95063188, 0.73196591, 0.5986757, 0.15606055, 0.15600778])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -1], np.array([0.54671643, 0.18485788, 0.96954568, 0.77512639, 0.93947659, 0.89481833])
+            mus_controls[:, -2], np.array([0.54671643, 0.18485788, 0.96954568, 0.77512639, 0.93947659, 0.89481833])
         )
 
     else:
@@ -482,7 +482,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
             mus_controls[:, 0], np.array([0.37458887, 0.95067258, 0.73198315, 0.59866926, 0.15604832, 0.15600496])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -1], np.array([0.54673199, 0.18485512, 0.9695433, 0.77513005, 0.93947984, 0.89480958])
+            mus_controls[:, -2], np.array([0.54673199, 0.18485512, 0.9695433, 0.77513005, 0.93947984, 0.89480958])
         )
 
     # save and load

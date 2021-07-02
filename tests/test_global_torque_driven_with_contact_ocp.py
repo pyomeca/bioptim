@@ -42,7 +42,7 @@ def test_maximize_predicted_height_CoM(ode_solver, objective_name, com_constrain
     # Check constraints
     g = np.array(sol.constraints)
     if com_constraints:
-        np.testing.assert_equal(g.shape, (244, 1))
+        np.testing.assert_equal(g.shape, (286, 1))
     else:
         np.testing.assert_equal(g.shape, (160, 1))
         np.testing.assert_almost_equal(g, np.zeros((160, 1)))

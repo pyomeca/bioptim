@@ -75,9 +75,9 @@ def prepare_ocp(
     if objective_name == "MINIMIZE_PREDICTED_COM_HEIGHT":
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
     elif objective_name == "MINIMIZE_COM_POSITION":
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, axes=Axis.Z, weight=-1)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, node=Node.ALL, axes=Axis.Z, weight=-1)
     elif objective_name == "MINIMIZE_COM_VELOCITY":
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, axes=Axis.Z, weight=-1)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, node=Node.ALL, axes=Axis.Z, weight=-1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1 / 100)
 
     # Dynamics
