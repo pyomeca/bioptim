@@ -274,8 +274,8 @@ class PenaltyOption(OptionGeneric):
             self.weighted_function = self.weighted_function.map(nlp.ns, "thread", ocp.n_threads)
 
         if self.expand:
-            self.function.expand()
-            self.weighted_function.expand()
+            self.function = self.function.expand()
+            self.weighted_function = self.weighted_function.expand()
 
     def add_target_to_plot(
             self,
