@@ -1,4 +1,4 @@
-import casadi
+from casadi import MX, SX, integrator as casadi_integrator, horzcat
 
 from .integrator import RK4, RK8, IRK
 from ..misc.enums import ControlType
@@ -116,7 +116,7 @@ class RK(OdeSolverBase):
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
         }
-        ode = {"x": nlp.states.cx, "p": nlp.controls.cx, "ode": nlp.dynamics_func}
+        ode = {"x": nlp.states.cx, "p": nlp.controls.cx if nlp.control_type == ControlType.CONSTANT else horzcat(nlp.controls.cx, nlp.controls.cx_end), "ode": nlp.dynamics_func}
 
         if nlp.external_forces:
             dynamics_out = []
@@ -211,7 +211,7 @@ class OdeSolver:
             if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
 
-            if ocp.cx is casadi.SX:
+            if ocp.cx is SX:
                 raise NotImplementedError("use_sx=True and OdeSolver.IRK are not yet compatible")
 
             if nlp.model.nbQuat() > 0:
@@ -257,7 +257,7 @@ class OdeSolver:
             A list of integrators
             """
 
-            if not isinstance(ocp.cx(), casadi.MX):
+            if not isinstance(ocp.cx(), MX):
                 raise RuntimeError("CVODES integrator can only be used with MX graphs")
             if len(ocp.v.params.size) != 0:
                 raise RuntimeError("CVODES cannot be used while optimizing parameters")
@@ -271,4 +271,4 @@ class OdeSolver:
             ode = {"x": nlp.x, "p": nlp.u, "ode": nlp.dynamics_func(nlp.x, nlp.u, nlp.p)}
             ode_opt = {"t0": 0, "tf": nlp.dt, "number_of_finite_elements": nlp.ode_solver.steps}
 
-            return [casadi.integrator("integrator", "cvodes", ode, ode_opt)]
+            return [casadi_integrator("integrator", "cvodes", ode, ode_opt)]
