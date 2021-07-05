@@ -78,8 +78,8 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, index=1, weight=-1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", node=Node.ALL, weight=100)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, marker_index=1, weight=-1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", node=Node.ALL_SHOOTING, weight=100)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -142,7 +142,6 @@ def main():
         final_time=0.25,
     )
     sol = ocp.solve(show_online_optim=True)
-    print("\n")
 
     # Print the last solution
     sol.animate()

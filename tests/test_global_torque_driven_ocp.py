@@ -309,7 +309,7 @@ def test_trampo_quaternions():
     # Check constraints
     g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (130, 1))
-    np.testing.assert_almost_equal(g, np.zeros((130, 1)))
+    np.testing.assert_almost_equal(g, np.zeros((130, 1)), decimal=6)
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
