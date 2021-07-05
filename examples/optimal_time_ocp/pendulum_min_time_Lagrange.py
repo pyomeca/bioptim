@@ -18,6 +18,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
+    Node,
 )
 
 

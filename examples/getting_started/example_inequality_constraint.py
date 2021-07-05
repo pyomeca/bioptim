@@ -52,19 +52,19 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
         ConstraintFcn.TRACK_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
-        node=Node.ALL,
+        node=Node.ALL_SHOOTING,
         contact_index=1,
     )
     constraints.add(
         ConstraintFcn.TRACK_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
-        node=Node.ALL,
+        node=Node.ALL_SHOOTING,
         contact_index=2,
     )
     constraints.add(
         ConstraintFcn.NON_SLIPPING,
-        node=Node.ALL,
+        node=Node.ALL_SHOOTING,
         normal_component_idx=(1, 2),
         tangential_component_idx=0,
         static_friction_coefficient=mu,

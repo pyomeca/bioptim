@@ -18,6 +18,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
+    Node,
 )
 
 
@@ -68,8 +69,8 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     if n_phases == 3:
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL, key="tau", weight=100, phase=1)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL, key="tau", weight=100, phase=2)
 
     # Dynamics
     dynamics = DynamicsList()

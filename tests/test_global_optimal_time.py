@@ -207,7 +207,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
     if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final controls
         np.testing.assert_almost_equal(tau[1, 0], np.array(0))
-        np.testing.assert_almost_equal(tau[1, -1], np.array(0))
+        np.testing.assert_almost_equal(tau[1, -2], np.array(0))
 
     else:
         # initial and final controls
@@ -260,40 +260,40 @@ def test_pendulum_min_time_lagrange(ode_solver):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.06209245173245879)
+        np.testing.assert_almost_equal(f[0, 0], 0.6209187886055383)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95201483, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99803395, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9535415, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.9998014, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.6209245173245879)
+        np.testing.assert_almost_equal(tf, 0.6209187886055383)
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.062092495597983965)
+        np.testing.assert_almost_equal(f[0, 0], 0.6209192272155531)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9525622, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99803401, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.954089, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.9998014, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.6209249559798397)
+        np.testing.assert_almost_equal(tf, 0.6209192272155531)
 
     else:
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.062092703196434854)
+        np.testing.assert_almost_equal(f[0, 0], 0.6209213032003107)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9529745, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.9980341, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99980141, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.6209270319643485)
+        np.testing.assert_almost_equal(tf, 0.6209213032003107)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -438,12 +438,12 @@ def test_monophase_time_constraint(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 10826.61745874204)
+    np.testing.assert_almost_equal(f[0, 0], 10826.61745902614)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (126, 1))
-    np.testing.assert_almost_equal(g, np.zeros((126, 1)))
+    np.testing.assert_equal(g.shape, (127, 1))
+    np.testing.assert_almost_equal(g, np.concatenate((np.zeros((126, 1)), [[1]])))
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -491,18 +491,19 @@ def test_multiphase_time_constraint(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 55582.04125059745)
+    np.testing.assert_almost_equal(f[0, 0], 55582.04125083612)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (444, 1))
-    np.testing.assert_almost_equal(g, np.zeros((444, 1)))
+    np.testing.assert_equal(g.shape, (447, 1))
+    np.testing.assert_almost_equal(g, np.concatenate((np.zeros((132, 1)), [[1]], np.zeros((189, 1)), [[3]], np.zeros((123, 1)), [[0.8]])))
 
     # Check some of the results
     sol_merged = sol.merge_phases()
     states, controls = sol_merged.states, sol_merged.controls
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-    tf = sol_merged.parameters["time"][0, 0]
+    tf_all = sol.parameters["time"]
+    tf = sol_merged.phase_time[1]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -517,7 +518,8 @@ def test_multiphase_time_constraint(ode_solver):
     np.testing.assert_almost_equal(tau[:, -2], np.array((-8.92857121, 9.81, -14.01785679)))
 
     # optimized time
-    np.testing.assert_almost_equal(tf, 1.0)
+    np.testing.assert_almost_equal(tf_all.T, [[1.0, 3, 0.8]])
+    np.testing.assert_almost_equal(tf, np.sum(tf_all))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)

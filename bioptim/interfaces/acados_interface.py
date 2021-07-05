@@ -381,7 +381,7 @@ class AcadosInterface(SolverInterface):
                 y_ref = [np.zeros((n_states if is_state else n_controls, 1)) for _ in node_idx]
                 if J.target is not None:
                     for idx in node_idx:
-                        y_ref[rows] = J.target[..., idx].T.reshape((-1, 1))
+                        y_ref[idx][rows] = J.target[..., idx].T.reshape((-1, 1))
                 acados.y_ref.append(y_ref)
 
             if J.type in allowed_control_objectives:

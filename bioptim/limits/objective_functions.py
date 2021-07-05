@@ -275,7 +275,6 @@ class ObjectiveFunction:
                     taken into account elsewhere in the code)
                 """
 
-                penalty.quadratic = True
                 return all_pn.nlp.tf
 
         @staticmethod

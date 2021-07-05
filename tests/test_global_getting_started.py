@@ -654,7 +654,7 @@ def test_example_multiphase(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
+def test_contact_forces_inequality_greater_than_constraint(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     contact = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_inequality_constraint.py")
     min_bound = 50
@@ -703,7 +703,7 @@ def test_contact_forces_inequality_GREATER_THAN_constraint(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_contact_forces_inequality_LESSER_THAN_constraint(ode_solver):
+def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     contact = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_inequality_constraint.py")
     max_bound = 75
