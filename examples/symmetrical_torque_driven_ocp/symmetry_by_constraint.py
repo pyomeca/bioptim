@@ -68,7 +68,9 @@ def prepare_ocp(
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
-    constraints.add(ConstraintFcn.PROPORTIONAL_CONTROL, key="tau", node=Node.ALL_SHOOTING, first_dof=2, second_dof=3, coef=-1)
+    constraints.add(
+        ConstraintFcn.PROPORTIONAL_CONTROL, key="tau", node=Node.ALL_SHOOTING, first_dof=2, second_dof=3, coef=-1
+    )
 
     # Path constraint
     x_bounds = BoundsList()

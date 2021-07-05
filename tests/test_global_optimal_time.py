@@ -496,7 +496,9 @@ def test_multiphase_time_constraint(ode_solver):
     # Check constraints
     g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (447, 1))
-    np.testing.assert_almost_equal(g, np.concatenate((np.zeros((132, 1)), [[1]], np.zeros((189, 1)), [[3]], np.zeros((123, 1)), [[0.8]])))
+    np.testing.assert_almost_equal(
+        g, np.concatenate((np.zeros((132, 1)), [[1]], np.zeros((189, 1)), [[3]], np.zeros((123, 1)), [[0.8]]))
+    )
 
     # Check some of the results
     sol_merged = sol.merge_phases()

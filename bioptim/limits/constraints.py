@@ -53,7 +53,9 @@ class Constraint(PenaltyOption):
             custom_function = constraint
             constraint = ConstraintFcn.CUSTOM
 
-        super(Constraint, self).__init__(penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function, **params)
+        super(Constraint, self).__init__(
+            penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function, **params
+        )
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
@@ -69,7 +71,7 @@ class Constraint(PenaltyOption):
         all_pn: PenaltyNodeList
             The penalty node elements
         """
-        
+
         super(Constraint, self).set_penalty(penalty, all_pn)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound
@@ -292,9 +294,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise (ValueError("tangential_component_idx should either be x and y or only one component"))
 
             slipping = vertcat(
-                    mu_squared * normal_contact_force_squared - tangential_contact_force_squared,
-                    mu_squared * normal_contact_force_squared + tangential_contact_force_squared,
-                )
+                mu_squared * normal_contact_force_squared - tangential_contact_force_squared,
+                mu_squared * normal_contact_force_squared + tangential_contact_force_squared,
+            )
             return slipping
 
         @staticmethod

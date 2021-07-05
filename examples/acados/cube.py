@@ -59,8 +59,12 @@ def main():
 
     # --- Add objective functions --- #
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", weight=1000, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", weight=10000, index=[2], target=np.array([[3.0]]))
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", weight=1000, index=[0, 1], target=np.array([[1.0, 2.0]]).T
+    )
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", weight=10000, index=[2], target=np.array([[3.0]])
+    )
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
     ocp.update_objectives(objective_functions)
 
@@ -69,8 +73,12 @@ def main():
     sol.graphs()
 
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", weight=1, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", weight=10000, index=[2], target=np.array([[3.0]]))
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", weight=1, index=[0, 1], target=np.array([[1.0, 2.0]]).T
+    )
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", weight=10000, index=[2], target=np.array([[3.0]])
+    )
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10)
     ocp.update_objectives(objective_functions)
 

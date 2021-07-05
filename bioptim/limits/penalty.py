@@ -152,10 +152,11 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_markers(
-                penalty: PenaltyOption, all_pn: PenaltyNodeList,
-                marker_index: Union[tuple, list, int, str] = None,
-                axes: Union[tuple, list] = None,
-                reference_jcs: Union[str, int] = None
+            penalty: PenaltyOption,
+            all_pn: PenaltyNodeList,
+            marker_index: Union[tuple, list, int, str] = None,
+            axes: Union[tuple, list] = None,
+            reference_jcs: Union[str, int] = None,
         ):
             """
             Minimize a marker set.
@@ -197,7 +198,13 @@ class PenaltyFunctionAbstract:
             return markers_objective
 
         @staticmethod
-        def minimize_markers_velocity(penalty: PenaltyOption, all_pn: PenaltyNodeList, marker_index: Union[tuple, list, int, str] = None, axes: Union[tuple, list] = None, reference_jcs: Union[str, int] = None):
+        def minimize_markers_velocity(
+            penalty: PenaltyOption,
+            all_pn: PenaltyNodeList,
+            marker_index: Union[tuple, list, int, str] = None,
+            axes: Union[tuple, list] = None,
+            reference_jcs: Union[str, int] = None,
+        ):
             """
             Minimize a marker set velocity by computing the actual velocity of the markers
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -272,8 +279,12 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            marker_0 = BiorbdInterface.mx_to_cx(f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker_idx)
-            marker_1 = BiorbdInterface.mx_to_cx(f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker_idx)
+            marker_0 = BiorbdInterface.mx_to_cx(
+                f"markers_{first_marker}", nlp.model.marker, nlp.states["q"], first_marker_idx
+            )
+            marker_1 = BiorbdInterface.mx_to_cx(
+                f"markers_{second_marker}", nlp.model.marker, nlp.states["q"], second_marker_idx
+            )
             return marker_1 - marker_0
 
         @staticmethod
@@ -362,7 +373,9 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True
 
             nlp = all_pn.nlp
-            return all_pn.nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[all_pn.nlp.states["qdot"].index, :]
+            return all_pn.nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)[
+                all_pn.nlp.states["qdot"].index, :
+            ]
 
         @staticmethod
         def minimize_predicted_com_height(penalty: PenaltyOption, all_pn: PenaltyNodeList):
@@ -437,7 +450,9 @@ class PenaltyFunctionAbstract:
             return com_dot_cx
 
         @staticmethod
-        def minimize_contact_forces(penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None):
+        def minimize_contact_forces(
+            penalty: PenaltyOption, all_pn: PenaltyNodeList, contact_index: Union[tuple, list, int, str] = None
+        ):
             """
             Minimize the contact forces computed from dynamics with contact
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -605,7 +620,9 @@ class PenaltyFunctionAbstract:
 
             val = penalty.custom_function(all_pn, **parameters)
             if isinstance(val, (list, tuple)):
-                if (hasattr(penalty, "min_bound") and penalty.min_bound is not None) or (hasattr(penalty, "max_bound") and penalty.max_bound is not None):
+                if (hasattr(penalty, "min_bound") and penalty.min_bound is not None) or (
+                    hasattr(penalty, "max_bound") and penalty.max_bound is not None
+                ):
                     raise RuntimeError(
                         "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined"
                     )
@@ -630,7 +647,9 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("add cannot be called from an abstract class")
 
     @staticmethod
-    def set_idx_columns(penalty: PenaltyOption, all_pn: PenaltyNodeList, index: Union[str, int, list, tuple], _type: str):
+    def set_idx_columns(
+        penalty: PenaltyOption, all_pn: PenaltyNodeList, index: Union[str, int, list, tuple], _type: str
+    ):
         """
         Simple penalty.cols setter for marker index and names
 
@@ -651,7 +670,10 @@ class PenaltyFunctionAbstract:
             penalty.cols = [penalty.cols] if not isinstance(penalty.cols, (tuple, list)) else penalty.cols
             # Convert to int if it is str
             if _type == "marker":
-                penalty.cols = [cols if isinstance(cols, int) else biorbd.marker_index(all_pn.nlp.model, cols) for cols in penalty.cols]
+                penalty.cols = [
+                    cols if isinstance(cols, int) else biorbd.marker_index(all_pn.nlp.model, cols)
+                    for cols in penalty.cols
+                ]
 
     @staticmethod
     def set_axes_rows(penalty: PenaltyOption, axes: Union[list, tuple]):

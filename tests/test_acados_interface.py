@@ -124,7 +124,9 @@ def test_acados_one_lagrange(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q", node=Node.ALL, weight=10, index=[0], target=target)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.TRACK_STATE, key="q", node=Node.ALL, weight=10, index=[0], target=target
+    )
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -154,7 +156,9 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q", node=Node.ALL, weight=10, index=[0], target=target)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.TRACK_STATE, key="q", node=Node.ALL, weight=10, index=[0], target=target
+    )
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=target[:, -1:])
     ocp.update_objectives(objective_functions)
 
@@ -494,7 +498,7 @@ def test_acados_constraints_all():
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.04483914, 9.90739842, 2.24951691, 0.78496612)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.15945561, 10.03978178, -2.36075327,  0.07267697)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -2], np.array((0.15945561, 10.03978178, -2.36075327, 0.07267697)), decimal=6)
 
 
 def test_acados_constraints_end_all():
@@ -525,7 +529,7 @@ def test_acados_constraints_end_all():
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([2.01701330,  0, 0,  3.20057865e-01]), decimal=6)
+    np.testing.assert_almost_equal(q[:, 0], np.array([2.01701330, 0, 0, 3.20057865e-01]), decimal=6)
     np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57, 7.85398168e-01)), decimal=6)
 
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=6)
@@ -533,7 +537,7 @@ def test_acados_constraints_end_all():
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.04648408, 9.88616194, 2.24285498, 0.864213)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.19389194,  9.99905781, -2.37713652, -0.19858311)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -2], np.array((0.19389194, 9.99905781, -2.37713652, -0.19858311)), decimal=6)
 
 
 @pytest.mark.parametrize("failing", ["u_bounds", "x_bounds"])

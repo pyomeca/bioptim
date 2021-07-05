@@ -116,7 +116,13 @@ class RK(OdeSolverBase):
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
         }
-        ode = {"x": nlp.states.cx, "p": nlp.controls.cx if nlp.control_type == ControlType.CONSTANT else horzcat(nlp.controls.cx, nlp.controls.cx_end), "ode": nlp.dynamics_func}
+        ode = {
+            "x": nlp.states.cx,
+            "p": nlp.controls.cx
+            if nlp.control_type == ControlType.CONSTANT
+            else horzcat(nlp.controls.cx, nlp.controls.cx_end),
+            "ode": nlp.dynamics_func,
+        }
 
         if nlp.external_forces:
             dynamics_out = []

@@ -85,10 +85,17 @@ def generate_data(
 
     nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
     nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
-    nlp.states.append("muscles", [symbolic_mus_states, symbolic_mus_states], symbolic_mus_states, nlp.variable_mappings["muscles"])
+    nlp.states.append(
+        "muscles", [symbolic_mus_states, symbolic_mus_states], symbolic_mus_states, nlp.variable_mappings["muscles"]
+    )
 
     nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
-    nlp.controls.append("muscles", [symbolic_mus_controls, symbolic_mus_controls], symbolic_mus_controls, nlp.variable_mappings["muscles"])
+    nlp.controls.append(
+        "muscles",
+        [symbolic_mus_controls, symbolic_mus_controls],
+        symbolic_mus_controls,
+        nlp.variable_mappings["muscles"],
+    )
 
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
@@ -175,14 +182,21 @@ def prepare_ocp(
         objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, node=Node.ALL, weight=100, target=markers_ref)
     elif kin_data_to_track == "q":
         objective_functions.add(
-            ObjectiveFcn.Lagrange.TRACK_STATE, key="q", weight=100, node=Node.ALL, target=q_ref, index=range(biorbd_model.nbQ())
+            ObjectiveFcn.Lagrange.TRACK_STATE,
+            key="q",
+            weight=100,
+            node=Node.ALL,
+            target=q_ref,
+            index=range(biorbd_model.nbQ()),
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=use_residual_torque, expand=False)
+    dynamics.add(
+        DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=use_residual_torque, expand=False
+    )
 
     # Path constraint
     x_bounds = BoundsList()

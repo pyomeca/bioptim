@@ -512,8 +512,12 @@ class AcadosInterface(SolverInterface):
                     add_nonlinear_ls_mayer(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
 
             # Set costs
-            self.acados_ocp.model.cost_y_expr = self.lagrange_costs.reshape((-1, 1)) if self.lagrange_costs.numel() else SX(1, 1)
-            self.acados_ocp.model.cost_y_expr_e = self.mayer_costs.reshape((-1, 1))  if self.mayer_costs.numel() else SX(1, 1)
+            self.acados_ocp.model.cost_y_expr = (
+                self.lagrange_costs.reshape((-1, 1)) if self.lagrange_costs.numel() else SX(1, 1)
+            )
+            self.acados_ocp.model.cost_y_expr_e = (
+                self.mayer_costs.reshape((-1, 1)) if self.mayer_costs.numel() else SX(1, 1)
+            )
 
             # Set dimensions
             self.acados_ocp.dims.ny = self.acados_ocp.model.cost_y_expr.shape[0]

@@ -75,7 +75,9 @@ def prepare_ocp(
             weight=1000,
         )
     elif marker_velocity_or_displacement == "velo":
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, node=Node.ALL, marker_index=6, weight=1000)
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, node=Node.ALL, marker_index=6, weight=1000
+        )
     else:
         raise RuntimeError(
             f"Wrong choice of marker_velocity_or_displacement, actual value is "
@@ -198,17 +200,15 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver):
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.07221334, -0.4578082 , -3.00436948,  1.57079633]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.05754807, -0.43931116,  2.99563057,  1.57079633]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.07221334, -0.4578082, -3.00436948, 1.57079633]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.05754807, -0.43931116, 2.99563057, 1.57079633]))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([5.17192208,   2.3422717 ,  10.        , -10.0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.56965109, -4.36318589, 10.        , 10.0]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([5.17192208, 2.3422717, 10.0, -10.0]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.56965109, -4.36318589, 10.0, 10.0]))
     # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([-3.21817755e01, 1.55202948e01, 7.42730542e-13, 2.61513401e-08]))
     np.testing.assert_almost_equal(
-        tau[:, 0], np.array([-3.21817755e+01,  1.55202948e+01,  7.42730542e-13,  2.61513401e-08])
-    )
-    np.testing.assert_almost_equal(
-        tau[:, -2], np.array([-1.97981112e+01, -9.89876772e-02,  4.34033234e-08,  2.61513636e-08])
+        tau[:, -2], np.array([-1.97981112e01, -9.89876772e-02, 4.34033234e-08, 2.61513636e-08])
     )
 
     # save and load

@@ -15,6 +15,7 @@ from bioptim import OptimalControlProgram
 from .utils import TestUtils
 
 import matplotlib
+
 matplotlib.use("Agg")
 
 
@@ -138,7 +139,9 @@ def test_console_objective_functions():
                 dt = MX.sym("dt", *p.weighted_function.sparsity_in("i5").shape)
 
                 p.function = Function(name, [x, u, param], [np.array([range(cmp, len(p.rows) + cmp)]).T])
-                p.weighted_function = Function(name, [x, u, param, weight, target, dt], [np.array([range(cmp+1, len(p.rows) + cmp+1)]).T])
+                p.weighted_function = Function(
+                    name, [x, u, param, weight, target, dt], [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T]
+                )
 
     override_penalty(ocp.g_internal)  # Override constraints in the ocp
     override_penalty(ocp.g)  # Override constraints in the ocp

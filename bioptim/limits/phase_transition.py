@@ -34,7 +34,14 @@ class PhaseTransition(Constraint):
     """
 
     def __init__(
-        self, phase_pre_idx: int = None, transition: Union[Callable, Any] = None, weight: float = 0, custom_function: Callable = None, min_bound: float = 0, max_bound: float = 0, **params: Any
+        self,
+        phase_pre_idx: int = None,
+        transition: Union[Callable, Any] = None,
+        weight: float = 0,
+        custom_function: Callable = None,
+        min_bound: float = 0,
+        max_bound: float = 0,
+        **params: Any,
     ):
         """
         Parameters
@@ -140,7 +147,9 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         if not isinstance(transition, PhaseTransitionFcn):
             extra_arguments["custom_function"] = transition
             transition = PhaseTransitionFcn.CUSTOM
-        super(PhaseTransitionList, self)._add(option_type=PhaseTransition, transition=transition, phase=-1, **extra_arguments)
+        super(PhaseTransitionList, self)._add(
+            option_type=PhaseTransition, transition=transition, phase=-1, **extra_arguments
+        )
 
     def print(self):
         """
@@ -283,9 +292,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             ocp = all_pn[0].ocp
-            if (
-                ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[transition.phase_post_idx].states.shape
-            ):
+            if ocp.nlp[transition.phase_pre_idx].states.shape != ocp.nlp[transition.phase_post_idx].states.shape:
                 raise RuntimeError(
                     "Impact transition without same nx is not possible, please provide a custom phase transition"
                 )
@@ -312,7 +319,9 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 cx = vertcat(cx, horzcat(nlp_pre.states[key].cx_end, nlp_post.states[key].cx))
 
             name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = biorbd.to_casadi_func(name, val, horzcat(nlp_pre.states.mx, nlp_post.states.mx))(horzcat(nlp_pre.states.cx_end, nlp_post.states.cx))
+            func = biorbd.to_casadi_func(name, val, horzcat(nlp_pre.states.mx, nlp_post.states.mx))(
+                horzcat(nlp_pre.states.cx_end, nlp_post.states.cx)
+            )
             return func
 
         @staticmethod

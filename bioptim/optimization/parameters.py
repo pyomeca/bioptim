@@ -140,9 +140,16 @@ class Parameter(PenaltyOption):
                 weight_cx = ocp.cx.sym("weight", 1, 1)
                 target_cx = ocp.cx.sym("target", p_list.weighted_function.numel_out(), 1)
 
-                p_list.function = Function(p_list.function.name(), [state_cx, controls_cx, parameter_cx], [p_list.function(state_cx, controls_cx, old_parameter_cx)])
-                p_list.weighted_function = Function(p_list.function.name(), [state_cx, controls_cx, parameter_cx, weight_cx, target_cx, dt_cx],
-                                           [p_list.weighted_function(state_cx, controls_cx, old_parameter_cx, weight_cx, target_cx, dt_cx)])
+                p_list.function = Function(
+                    p_list.function.name(),
+                    [state_cx, controls_cx, parameter_cx],
+                    [p_list.function(state_cx, controls_cx, old_parameter_cx)],
+                )
+                p_list.weighted_function = Function(
+                    p_list.function.name(),
+                    [state_cx, controls_cx, parameter_cx, weight_cx, target_cx, dt_cx],
+                    [p_list.weighted_function(state_cx, controls_cx, old_parameter_cx, weight_cx, target_cx, dt_cx)],
+                )
 
         if self.penalty_list:
             if ocp.phase_transitions:
@@ -174,7 +181,13 @@ class Parameter(PenaltyOption):
                 penalty._add_penalty_to_pool(all_pn)
 
     def set_penalty(
-            self, ocp, objective: Objective, penalty: Union[MX, SX], combine_to: str = None, target_ns: int = -1, expand: bool = True
+        self,
+        ocp,
+        objective: Objective,
+        penalty: Union[MX, SX],
+        combine_to: str = None,
+        target_ns: int = -1,
+        expand: bool = True,
     ):
         objective.rows = self._set_dim_idx(self.rows, penalty.rows())
         objective.cols = self._set_dim_idx(self.cols, penalty.columns())
@@ -208,7 +221,7 @@ class Parameter(PenaltyOption):
         objective.weighted_function = Function(  # Do not use nlp.add_casadi_func because all of them must be registered
             f"{self.name}",
             [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
-            [weight_cx * modified_fcn * dt_cx]
+            [weight_cx * modified_fcn * dt_cx],
         )
 
         if expand:
@@ -376,6 +389,7 @@ class ParameterList(UniquePerProblemOptionList):
     @property
     def mx(self):
         import warnings
+
         warnings.warn("mx is not implemented!")
         return MX()
 

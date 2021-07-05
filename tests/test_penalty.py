@@ -231,19 +231,21 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value):
                 [
                     [0.1, -0.00948376, -0.0194671, 0.0900167, 00, 00, -0.00499167],
                     [0, 0, 0, 0, 00, 00, 0],
-                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, -0.0497502]
-                 ]
+                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, -0.0497502],
+                ]
             ),
         )
     else:
         np.testing.assert_almost_equal(
             res,
             np.array(
-                [[-10, -12.9505, -7.51029, -4.55979, 00, 00, 2.72011],
-                 [0, 0, 0, 0, 00, 00, 0],
-                 [-10, -23.8309, -32.2216, -18.3907, 0, 0, -4.19536]]
+                [
+                    [-10, -12.9505, -7.51029, -4.55979, 00, 00, 2.72011],
+                    [0, 0, 0, 0, 00, 00, 0],
+                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, -4.19536],
+                ]
             ),
-            decimal=4
+            decimal=4,
         )
 
 
@@ -269,7 +271,7 @@ def test_penalty_track_markers_velocity(penalty_origin, value):
                 [
                     [0.1, -0.00948376, -0.0194671, 0.0900167, 00, 00, -0.00499167],
                     [0, 0, 0, 0, 00, 00, 0],
-                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, -0.0497502]
+                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, -0.0497502],
                 ]
             ),
         )
@@ -280,10 +282,10 @@ def test_penalty_track_markers_velocity(penalty_origin, value):
                 [
                     [-10, -12.9505, -7.51029, -4.55979, 00, 00, 2.72011],
                     [0, 0, 0, 0, 00, 00, 0],
-                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, -4.19536]
+                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, -4.19536],
                 ]
             ),
-            decimal=4
+            decimal=4,
         )
 
 
@@ -532,7 +534,9 @@ def test_penalty_non_slipping(value):
     x = [DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
     penalty_type = ConstraintFcn.NON_SLIPPING
-    penalty = Constraint(penalty_type, tangential_component_idx=0, normal_component_idx=1, static_friction_coefficient=2)
+    penalty = Constraint(
+        penalty_type, tangential_component_idx=0, normal_component_idx=1, static_friction_coefficient=2
+    )
     res = get_penalty_value(ocp, penalty, t, x, u, [])
 
     expected = [[64662.56185612, 64849.5027121]] if value == 0.1 else [[856066.90177734, 857384.05177395]]
@@ -713,7 +717,17 @@ def test_penalty_custom_with_bounds_failing_max_bound(value):
 
 
 @pytest.mark.parametrize(
-    "node", [Node.ALL, Node.ALL_SHOOTING, Node.INTERMEDIATES, Node.START, Node.MID, Node.PENULTIMATE, Node.END, Node.TRANSITION]
+    "node",
+    [
+        Node.ALL,
+        Node.ALL_SHOOTING,
+        Node.INTERMEDIATES,
+        Node.START,
+        Node.MID,
+        Node.PENULTIMATE,
+        Node.END,
+        Node.TRANSITION,
+    ],
 )
 @pytest.mark.parametrize("ns", [1, 10, 11])
 def test_PenaltyFunctionAbstract_get_node(node, ns):

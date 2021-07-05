@@ -392,6 +392,7 @@ class OcpToGraph(GraphAbstract):
 
     def _prepare_print(self):
         from graphviz import Digraph
+
         """
         Display ocp structure in a graph
         """

@@ -236,8 +236,8 @@ class IpoptInterface(SolverInterface):
                     x = nlp.cx()
                     u = nlp.cx()
                     for idx in penalty.node_idx:
-                        x = horzcat(x, horzcat(*nlp.X[idx:idx + 2]))
-                        u = horzcat(u, horzcat(*nlp.U[idx:idx + 2]))
+                        x = horzcat(x, horzcat(*nlp.X[idx : idx + 2]))
+                        u = horzcat(u, horzcat(*nlp.U[idx : idx + 2]))
                     if nlp.control_type == ControlType.CONSTANT:
                         u = horzcat(u, u[:, -1])
                 else:
@@ -257,8 +257,8 @@ class IpoptInterface(SolverInterface):
                         u = []
                     else:
                         if penalty.derivative or penalty.explicit_derivative:
-                            x = horzcat(*nlp.X[idx:idx+2])
-                            u = horzcat(*nlp.U[idx:idx+2]) if idx < len(nlp.U) else []
+                            x = horzcat(*nlp.X[idx : idx + 2])
+                            u = horzcat(*nlp.U[idx : idx + 2]) if idx < len(nlp.U) else []
                         elif penalty.transition:
                             ocp = self.ocp
                             x = horzcat(ocp.nlp[penalty.phase_pre_idx].X[-1], ocp.nlp[penalty.phase_post_idx].X[0])

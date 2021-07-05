@@ -177,20 +177,24 @@ class PenaltyOption(OptionGeneric):
 
         n_dim = len(self.target.shape)
         if n_dim != 2 and n_dim != 3:
-            raise RuntimeError(
-                f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
-            )
+            raise RuntimeError(f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)")
         if self.target.shape[-1] == 1:
             self.target = np.repeat(self.target, n_time_expected, axis=-1)
 
-        if self.target.shape != ((len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)):
+        if self.target.shape != (
+            (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
+        ):
             raise RuntimeError(
                 f"target {self.target.shape} does not correspond to expected size {(len(self.rows), n_time_expected)}"
             )
 
         # If the target is on controls and control is constant, there will be one value missing
         if all_pn is not None:
-            if all_pn.nlp.control_type == ControlType.CONSTANT and all_pn.nlp.ns in all_pn.t and self.target.shape[-1] == all_pn.nlp.ns:
+            if (
+                all_pn.nlp.control_type == ControlType.CONSTANT
+                and all_pn.nlp.ns in all_pn.t
+                and self.target.shape[-1] == all_pn.nlp.ns
+            ):
                 if all_pn.t[-1] != all_pn.nlp.ns:
                     raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                 self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
@@ -245,7 +249,8 @@ class PenaltyOption(OptionGeneric):
             control_cx = horzcat(all_pn.nlp.controls.cx_end, all_pn.nlp.controls.cx)
             self.function = biorbd.to_casadi_func(
                 f"{name}",
-                self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) - self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx),
+                self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx)
+                - self.function(all_pn.nlp.states.cx, all_pn.nlp.controls.cx, param_cx),
                 state_cx,
                 control_cx,
                 param_cx,
@@ -278,9 +283,9 @@ class PenaltyOption(OptionGeneric):
             self.weighted_function = self.weighted_function.expand()
 
     def add_target_to_plot(
-            self,
-            all_pn: PenaltyNodeList,
-            combine_to: str,
+        self,
+        all_pn: PenaltyNodeList,
+        combine_to: str,
     ):
         """
         Interface to the plot so it can be properly added to the proper plot
@@ -320,7 +325,7 @@ class PenaltyOption(OptionGeneric):
                 linestyle=".-",
                 plot_type=PlotType.STEP,
                 phase=all_pn.nlp.phase_idx,
-                axes_idx=Mapping(self.rows)
+                axes_idx=Mapping(self.rows),
             )
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
