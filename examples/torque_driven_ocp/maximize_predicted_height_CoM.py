@@ -83,9 +83,9 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     if use_actuators:
-        dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=True)
+        dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=True, expand=False)
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False)
 
     # Constraints
     constraints = ConstraintList()

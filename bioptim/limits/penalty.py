@@ -558,7 +558,7 @@ class PenaltyFunctionAbstract:
             if not isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
                 raise RuntimeError("continuity should be called one node at a time")
 
-            penalty.expand = False if type(all_pn.nlp.ode_solver) == OdeSolver.IRK else True
+            penalty.expand = all_pn.nlp.dynamics_type.expand
             end_node = nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
             continuity = nlp.states.cx_end - end_node
             penalty.explicit_derivative = True

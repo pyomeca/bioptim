@@ -44,7 +44,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False)
 
     # Constraints
     constraints = ConstraintList()

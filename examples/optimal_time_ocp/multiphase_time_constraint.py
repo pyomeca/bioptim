@@ -74,10 +74,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=0)
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=0, expand=expand)
     if n_phases == 3:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=1)
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=2)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=1, expand=expand)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=2, expand=expand)
 
     # Constraints
     constraints = ConstraintList()

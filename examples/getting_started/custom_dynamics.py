@@ -130,10 +130,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
     if problem_type_custom:
-        dynamics.add(custom_configure, dynamic_function=custom_dynamic, my_additional_factor=1)
+        dynamics.add(custom_configure, dynamic_function=custom_dynamic, my_additional_factor=1, expand=expand)
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, dynamic_function=custom_dynamic)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, dynamic_function=custom_dynamic, expand=expand)
 
     # Constraints
     constraints = ConstraintList()

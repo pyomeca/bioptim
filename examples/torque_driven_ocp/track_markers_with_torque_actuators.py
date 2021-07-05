@@ -70,13 +70,14 @@ def prepare_ocp(
     dynamics = DynamicsList()
     if actuator_type:
         if actuator_type == 1:
-            dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN)
+            dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, expand=False)
         elif actuator_type == 2:
-            dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+            dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=False)
         else:
             raise ValueError("actuator_type is 1 (torque activations) or 2 (torque max constraints)")
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+        expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Constraints
     constraints = ConstraintList()

@@ -452,12 +452,15 @@ class Dynamics(OptionGeneric):
     def __init__(
         self,
         dynamics_type: Union[Callable, DynamicsFcn],
+        expand: bool = True,
         **params: Any,
     ):
         """
         configure: Callable
             The configuration function provided by the user that declares the NLP (states and controls),
             usually only necessary when defining custom functions
+        expand: bool
+            If the continuity constraint should be expand. This can be extensive on RAM
         dynamic_function: Callable
             The custom dynamic function provided by the user
 
@@ -486,6 +489,7 @@ class Dynamics(OptionGeneric):
         super(Dynamics, self).__init__(type=dynamics_type, **params)
         self.dynamic_function = dynamic_function
         self.configure = configure
+        self.expand = expand
 
 
 class DynamicsList(UniquePerPhaseOptionList):
