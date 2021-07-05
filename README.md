@@ -2024,8 +2024,8 @@ If you use `bioptim`, we would be grateful if you could cite it as follows:
 	year = {2021},
 	doi = {10.1101/2021.02.27.432868},
 	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/10.1101/2021.02.27.432868v2},
-	eprint = {https://www.biorxiv.org/content/10.1101/2021.02.27.432868v2.full.pdf},
+	URL = {https://www.biorxiv.org/content/10.1101/2021.02.27.432868v1},
+	eprint = {https://www.biorxiv.org/content/10.1101/2021.02.27.432868v1.full.pdf},
 	journal = {bioRxiv}
 }
 
