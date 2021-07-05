@@ -238,7 +238,7 @@ class GraphAbstract:
         return initial_guess_str, min_bound_str, max_bound_str, scaling_str
 
     @staticmethod
-    def _get_parameter_function_name(parameter: Parameter):
+    def _get_parameter_function_name(parameter: Parameter, idx: int):
         """
         Get parameter function name (whether or not it is a custom function)
 
@@ -246,14 +246,16 @@ class GraphAbstract:
         ----------
         parameter: Parameter
             The parameter to which the function is linked
+        idx: int
+            The penalty index
         """
 
         name = ""
         if parameter.penalty_list is not None:
-            if parameter.penalty_list.type is not None and parameter.penalty_list.type.name == "CUSTOM":
-                name = parameter.penalty_list.custom_function.__name__
+            if parameter.penalty_list[0][idx].type is not None and parameter.penalty_list[0][idx].type.name == "CUSTOM":
+                name = parameter.penalty_list[0][idx].custom_function.__name__
             else:
-                name = parameter.penalty_list.name
+                name = parameter.penalty_list[0][idx].name
         return name
 
     def _analyze_nodes(self, phase_idx: int, constraint: Constraint):
@@ -300,14 +302,16 @@ class OcpToConsole(GraphAbstract):
             print("")
             for parameter in self.ocp.nlp[phase_idx].parameters:
                 initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter)
-                objective_name = self._get_parameter_function_name(parameter)
                 print(f"Name: {parameter.name}")
                 print(f"Size: {parameter.size}")
                 print(f"Initial_guess: {initial_guess}")
                 print(f"Scaling: {scaling}")
                 print(f"Min_bound: {min_bound}")
                 print(f"Max_bound: {max_bound}")
-                print(f"Objectives: {objective_name}")
+                if parameter.penalty_list:
+                    for idx, _ in enumerate(parameter.penalty_list[0]):
+                        objective_name = self._get_parameter_function_name(parameter, idx)
+                        print(f"Objectives: {objective_name}")
                 print("")
             print("")
             print(f"**********")
@@ -444,16 +448,14 @@ class OcpToGraph(GraphAbstract):
 
         global_objectives = ""
         global_objectives_names = []
-        for list_objective in objective_list:
-            if len(list_objective) > 0 and isinstance(
-                list_objective[0]["objective"].type, ObjectiveFcn.Mayer or ObjectiveFcn.Lagrange
-            ):
-                objective = list_objective[0]["objective"]
-                global_objectives += f"<b>Objective:</b> {objective.name} <br/>"
+        for objective in objective_list:
+            if objective:
+                name = objective.custom_function.__name__ if objective.custom_function else objective.name
+                global_objectives += f"<b>Objective:</b> {name} <br/>"
                 global_objectives += f"<b>Type:</b> {objective.type} <br/>"
-                global_objectives_names += objective.name
+                global_objectives_names += name
                 global_objectives += (
-                    f"{f'<b>Target</b>: {self.vector_layout(objective.target)} <br/>'}"
+                    f"{f'<b>Target</b>: {self._vector_layout(objective.target)} <br/>'}"
                     if objective.target is not None
                     else ""
                 )
@@ -484,13 +486,14 @@ class OcpToGraph(GraphAbstract):
         node_str += f"<b>Min bound</b>: {min_bound} <br/>"
         node_str += f"<b>Max bound</b>: {max_bound} <br/><br/>"
         if parameter.penalty_list is not None:
-            node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter)} <br/>"
-            node_str += (
-                f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list.target)} <br/>'}"
-                if parameter.penalty_list.target is not None
-                else ""
-            )
-            node_str += f"<b>Quadratic</b>: {parameter.penalty_list.quadratic} <br/>"
+            for idx, _ in enumerate(parameter.penalty_list[0]):
+                node_str += f"<b>Objective</b>: {self._get_parameter_function_name(parameter, idx)} <br/>"
+                node_str += (
+                    f"{f'<b>Target</b>: {self._vector_layout(parameter.penalty_list[0][idx].target)} <br/>'}"
+                    if parameter.penalty_list[0][idx].target is not None
+                    else ""
+                )
+                node_str += f"<b>Quadratic</b>: {parameter.penalty_list[0][idx].quadratic} <br/>"
         g.node(f"param_{phase_idx}{param_idx}", f"""<{node_str}>""")
 
     def _draw_nlp_node(self, g, phase_idx: int):
