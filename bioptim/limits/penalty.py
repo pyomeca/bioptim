@@ -648,7 +648,7 @@ class PenaltyFunctionAbstract:
             raise ValueError(f"It is not possible to define cols and {_type}_index since they are the same variable")
         penalty.cols = index if index is not None else penalty.cols
         if penalty.cols is not None:
-            penalty.cols = [penalty.cols] if not isinstance(penalty, (tuple, list)) else penalty.cols
+            penalty.cols = [penalty.cols] if not isinstance(penalty.cols, (tuple, list)) else penalty.cols
             # Convert to int if it is str
             if _type == "marker":
                 penalty.cols = [cols if isinstance(cols, int) else biorbd.marker_index(all_pn.nlp.model, cols) for cols in penalty.cols]

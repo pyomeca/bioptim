@@ -136,6 +136,7 @@ Here is a list of all direct dependencies (meaning that some dependencies may re
 - [vtk](https://vtk.org/)
 - [PyQt](https://www.riverbankcomputing.com/software/pyqt)
 - [bioviz](https://github.com/pyomeca/bioviz)
+- [graphviz](https://graphviz.org/)
 - [`Ipopt`](https://github.com/coin-or/Ipopt)
 - [`Acados`](https://github.com/acados/acados)
 
@@ -145,7 +146,7 @@ and optionally:
 #### Linux - Installing dependencies with conda
 All these (except for ̀`Acados` and the HSL lib) can easily be installed using (assuming the anaconda3 environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
 ```bash
-conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* [bioviz=*=*casadi*] -cconda-forge
+conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* bioviz=*=*casadi* python-graphviz -cconda-forge
 ```
 Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`. 
 The installer can be found and run at `[ROOT_BIOPTIM]/external/acados_install_linux.sh`.
@@ -159,7 +160,7 @@ Please note that depending on your computer architecture, `Acados` may or may no
 #### Mac - Installing dependencies with conda
 Equivalently for MacOSX:
 ```bash
-conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' -cconda-forge
+conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' python-graphviz -cconda-forge
 ```
 Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`.
 The `Acados` installation script is `[ROOT_BIOPTIM]/external/acados_install_mac.sh`.
@@ -173,7 +174,7 @@ Please note that depending on your computer architecture, `Acados` may or may no
 #### Windows - Installing dependencies with conda
 Equivalently for Windows:
 ```bash
-conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' -cconda-forge
+conda install casadi 'rbdl=*=*casadi*' 'biorbd=*=*casadi*' 'bioviz=*=*casadi*' python-graphviz -cconda-forge
 ```
 There isn't any `Anaconda` nor `pip3` package of `Acados`.
 If one wants to use the `Acados` solver on Windows, they must compile it by themselves.
@@ -2023,8 +2024,8 @@ If you use `bioptim`, we would be grateful if you could cite it as follows:
 	year = {2021},
 	doi = {10.1101/2021.02.27.432868},
 	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/10.1101/2021.02.27.432868v2},
-	eprint = {https://www.biorxiv.org/content/10.1101/2021.02.27.432868v2.full.pdf},
+	URL = {https://www.biorxiv.org/content/10.1101/2021.02.27.432868v1},
+	eprint = {https://www.biorxiv.org/content/10.1101/2021.02.27.432868v1.full.pdf},
 	journal = {bioRxiv}
 }
 

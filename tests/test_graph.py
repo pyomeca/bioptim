@@ -88,10 +88,12 @@ def prepare_ocp_phase_transitions(
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=3)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, weight=0, phase=3)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=0, phase=3, marker_index=[0, 1])
 
     if with_mayer:
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, phase=0, node=1)
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, weight=0, phase=3, marker_index=[0, 1])
         objective_functions.add(
             minimize_difference,
             custom_type=ObjectiveFcn.Mayer,
@@ -453,6 +455,7 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
     )
     if with_lagrange and with_mayer is not False:
         ocp.nlp[0].J[0].quadratic = False
+        ocp.nlp[0].J[0].target = np.array([[2]])
     ocp.print(to_console=True, to_graph=False)  # False so it does not attack the programmer with lot of graphs!
     OcpToGraph(ocp)._prepare_print()
 

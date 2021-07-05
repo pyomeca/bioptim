@@ -68,7 +68,7 @@ class GraphAbstract:
                 condensed_vector += f"... {self._return_line}... "
         return condensed_vector
 
-    def _vector_layout(self, vector: Union[list, np.array]):
+    def _vector_layout(self, vector: Union[list, np.array, int]):
         """
         Resize vector content for display task
 
@@ -77,22 +77,26 @@ class GraphAbstract:
         vector: Union[list, np.array]
             The vector to be condensed
         """
-        condensed_vector = ""
-        vector = np.array(vector)
-        if len(vector.shape) == 1:
-            vector = vector[:, np.newaxis]
 
-        if vector.shape[1] != 1:
-            condensed_vector += f"{self._return_line}"
-            condensed_vector += "["
-        for i in range(vector.shape[1]):
-            if i != 0:
+        condensed_vector = ""
+        if isinstance(vector, int):
+            condensed_vector = f"{vector}"
+        else:
+            vector = np.array(vector)
+            if len(vector.shape) == 1:
+                vector = vector[:, np.newaxis]
+
+            if vector.shape[1] != 1:
                 condensed_vector += f"{self._return_line}"
-            condensed_vector += "[" if vector.size > 1 else ""
-            condensed_vector += self._vector_layout_structure(vector[:, i], 3)
-            condensed_vector += "]" if vector.size > 1 else ""
-        if vector.shape[1] != 1:
-            condensed_vector += "]"
+                condensed_vector += "["
+            for i in range(vector.shape[1]):
+                if i != 0:
+                    condensed_vector += f"{self._return_line}"
+                condensed_vector += "[" if vector.size > 1 else ""
+                condensed_vector += self._vector_layout_structure(vector[:, i], 3)
+                condensed_vector += "]" if vector.size > 1 else ""
+            if vector.shape[1] != 1:
+                condensed_vector += "]"
 
         return condensed_vector
 
@@ -123,6 +127,8 @@ class GraphAbstract:
             The string to be completed
         """
 
+        if hasattr(objective, "index"):
+            string += f"<b>Index</b>: {objective.index}{self._return_line}" if objective.index is not None else ""
         if hasattr(objective, "weight"):
             string += f"<b>Weight</b>: {objective.weight}{self._return_line}"
         for param in objective.params:
