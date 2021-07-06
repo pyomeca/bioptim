@@ -8,9 +8,10 @@ from casadi import horzcat, vertcat, MX, Function
 from .constraints import ConstraintFunction, Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
+from ..interfaces.biorbd_interface import BiorbdInterface
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.options import UniquePerPhaseOptionList
 from ..misc.enums import Node, InterpolationType
+from ..misc.options import UniquePerPhaseOptionList
 
 
 class PhaseTransition(Constraint):
@@ -300,28 +301,31 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             # Aliases
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
 
+            # A new model is loaded here so we can use pre Qdot with post model, this is a hack and should be dealt
+            # a better way (e.g. create a supplementary variable in v that link the pre and post phase with a
+            # constraint. The transition would therefore apply to node_0 and node_1 (with an augmented ns)
+            model = biorbd.Model(nlp_post.model.path().absolutePath().to_string())
+
             if nlp_post.model.nbContacts() == 0:
                 warn("The chosen model does not have any contact")
             q_pre = nlp_pre.states["q"].mx
             qdot_pre = nlp_pre.states["qdot"].mx
-            qdot_impact = nlp_pre.model.ComputeConstraintImpulsesDirect(q_pre, qdot_pre).to_mx()
+            qdot_impact = model.ComputeConstraintImpulsesDirect(q_pre, qdot_pre).to_mx()
 
             val = []
+            cx_end = []
             cx = []
             for key in nlp_pre.states:
+                cx_end = vertcat(cx_end, nlp_pre.states[key].mapping.to_second.map(nlp_pre.states[key].cx_end))
+                cx = vertcat(cx, nlp_post.states[key].mapping.to_second.map(nlp_post.states[key].cx))
                 if key != "qdot":
                     # Continuity constraint
                     val = vertcat(val, nlp_pre.states[key].mx - nlp_post.states[key].mx)
-
                 else:
                     val = vertcat(val, qdot_impact - nlp_post.states["qdot"].mx)
 
-                cx = vertcat(cx, horzcat(nlp_pre.states[key].cx_end, nlp_post.states[key].cx))
-
             name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = biorbd.to_casadi_func(name, val, horzcat(nlp_pre.states.mx, nlp_post.states.mx))(
-                horzcat(nlp_pre.states.cx_end, nlp_post.states.cx)
-            )
+            func = biorbd.to_casadi_func(name, val, nlp_pre.states.mx, nlp_post.states.mx)(cx_end, cx)
             return func
 
         @staticmethod
