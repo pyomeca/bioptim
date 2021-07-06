@@ -125,7 +125,13 @@ def test_acados_one_lagrange(cost_type):
     )
     objective_functions = ObjectiveList()
     objective_functions.add(
-        ObjectiveFcn.Lagrange.TRACK_STATE, key="q", node=Node.ALL, weight=10, index=[0], target=target, multi_thread=False,
+        ObjectiveFcn.Lagrange.TRACK_STATE,
+        key="q",
+        node=Node.ALL,
+        weight=10,
+        index=[0],
+        target=target,
+        multi_thread=False,
     )
     ocp.update_objectives(objective_functions)
 
@@ -157,9 +163,17 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     )
     objective_functions = ObjectiveList()
     objective_functions.add(
-        ObjectiveFcn.Lagrange.TRACK_STATE, key="q", node=Node.ALL, weight=10, index=[0], target=target, multi_thread=False
+        ObjectiveFcn.Lagrange.TRACK_STATE,
+        key="q",
+        node=Node.ALL,
+        weight=10,
+        index=[0],
+        target=target,
+        multi_thread=False,
     )
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=target[:, -1:], multi_thread=False)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=target[:, -1:], multi_thread=False
+    )
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -327,8 +341,12 @@ def test_acados_one_parameter():
     )
     model = ocp.nlp[0].model
     objectives = ObjectiveList()
-    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, key="q", target=np.array([[0, 3.14]]).T, weight=100000, multi_thread=False)
-    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, key="qdot", target=np.array([[0, 0]]).T, weight=100, multi_thread=False)
+    objectives.add(
+        ObjectiveFcn.Mayer.TRACK_STATE, key="q", target=np.array([[0, 3.14]]).T, weight=100000, multi_thread=False
+    )
+    objectives.add(
+        ObjectiveFcn.Mayer.TRACK_STATE, key="qdot", target=np.array([[0, 0]]).T, weight=100, multi_thread=False
+    )
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", index=1, weight=10, multi_thread=False)
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.000000010, multi_thread=False)
     ocp.update_objectives(objectives)
@@ -382,8 +400,12 @@ def test_acados_several_parameter():
     )
     model = ocp.nlp[0].model
     objectives = ObjectiveList()
-    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, key="q", target=np.array([[0, 3.14]]).T, weight=100000, multi_thread=False)
-    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, key="qdot", target=np.array([[0, 0]]).T, weight=100, multi_thread=False)
+    objectives.add(
+        ObjectiveFcn.Mayer.TRACK_STATE, key="q", target=np.array([[0, 3.14]]).T, weight=100000, multi_thread=False
+    )
+    objectives.add(
+        ObjectiveFcn.Mayer.TRACK_STATE, key="qdot", target=np.array([[0, 0]]).T, weight=100, multi_thread=False
+    )
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", index=1, weight=10, multi_thread=False)
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.000000010, multi_thread=False)
     ocp.update_objectives(objectives)

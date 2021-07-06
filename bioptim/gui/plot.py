@@ -343,7 +343,9 @@ class PlotOcp:
 
                 t = self.t[i]
                 if variable not in self.plot_func:
-                    self.plot_func[variable] = [nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp]
+                    self.plot_func[variable] = [
+                        nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
+                    ]
 
                 if not self.plot_func[variable][i]:
                     continue

@@ -868,7 +868,11 @@ class Solution:
         u = self._controls[phase_idx]["all"][:, penalty.node_idx] if nlp is not None else []
         p = self.parameters["all"]
         target = penalty.target if penalty.target is not None else []
-        dt = Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"]) if "time" in self.parameters else penalty.dt
+        dt = (
+            Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
+            if "time" in self.parameters
+            else penalty.dt
+        )
 
         val = np.nansum(penalty.function(x, u, p))
         val_weighted = np.nansum(penalty.weighted_function(x, u, p, penalty.weight, target, dt))

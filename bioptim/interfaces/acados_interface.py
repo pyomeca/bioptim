@@ -454,8 +454,10 @@ class AcadosInterface(SolverInterface):
                         continue
 
                     if J.multi_thread:
-                        raise RuntimeError(f"The objective function {J.name} was declared with multi_thread=True, "
-                                           f"but this is not possible to multi_thread objective function with ACADOS")
+                        raise RuntimeError(
+                            f"The objective function {J.name} was declared with multi_thread=True, "
+                            f"but this is not possible to multi_thread objective function with ACADOS"
+                        )
 
                     if J.type.get_type() == ObjectiveFunction.LagrangeFunction:
                         add_linear_ls_lagrange(self, J)
@@ -497,8 +499,10 @@ class AcadosInterface(SolverInterface):
                         continue
 
                     if J.multi_thread:
-                        raise RuntimeError(f"The objective function {J.name} was declared with multi_thread=True, "
-                                           f"but this is not possible to multi_thread objective function with ACADOS")
+                        raise RuntimeError(
+                            f"The objective function {J.name} was declared with multi_thread=True, "
+                            f"but this is not possible to multi_thread objective function with ACADOS"
+                        )
 
                     if J.type.get_type() == ObjectiveFunction.LagrangeFunction:
                         add_nonlinear_ls_lagrange(self, J, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)
