@@ -54,11 +54,15 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100.0)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1.0)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=1.0)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=50000, key="q", target=target[:nq, :])
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=50000, key="qdot", target=target[nq:, :])
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100.0, multi_thread=False)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1.0, multi_thread=False)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=1.0, multi_thread=False)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=50000, key="q", target=target[:nq, :], multi_thread=False
+    )
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=50000, key="qdot", target=target[nq:, :], multi_thread=False
+    )
 
     # Dynamics
     dynamics = DynamicsList()

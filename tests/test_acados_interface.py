@@ -202,8 +202,10 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=target, weight=1000)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", multi_thread=False)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=target, weight=1000, multi_thread=False
+    )
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -341,12 +343,8 @@ def test_acados_one_parameter():
     )
     model = ocp.nlp[0].model
     objectives = ObjectiveList()
-    objectives.add(
-        ObjectiveFcn.Mayer.TRACK_STATE, key="q", target=np.array([[0, 3.14]]).T, weight=100000, multi_thread=False
-    )
-    objectives.add(
-        ObjectiveFcn.Mayer.TRACK_STATE, key="qdot", target=np.array([[0, 0]]).T, weight=100, multi_thread=False
-    )
+    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, key="q", target=np.array([[0, 3.14]]).T, weight=100000)
+    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, key="qdot", target=np.array([[0, 0]]).T, weight=100)
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", index=1, weight=10, multi_thread=False)
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.000000010, multi_thread=False)
     ocp.update_objectives(objectives)
@@ -458,8 +456,10 @@ def test_acados_one_end_constraints():
 
     model = ocp.nlp[0].model
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.TRACK_STATE, index=0, key="q", weight=100, target=np.array([[1]]))
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.TRACK_STATE, index=0, key="q", weight=100, target=np.array([[1]]), multi_thread=False
+    )
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, multi_thread=False)
     ocp.update_objectives(objective_functions)
 
     # Path constraint
