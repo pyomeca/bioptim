@@ -228,20 +228,21 @@ class IpoptInterface(SolverInterface):
                 continue
 
             if penalty.multi_thread:
-                if penalty.target is not None:
-                    raise NotImplementedError("Multithread penalty with target is not implemented yet")
-                target = []
+                if penalty.target is not None and len(penalty.target.shape) != 2:
+                    raise NotImplementedError("Multithread penalty with target shape != [n x m] is not implemented yet")
+                target = penalty.target if penalty.target is not None else []
 
-                if penalty.derivative or penalty.explicit_derivative:
-                    x = nlp.cx()
-                    u = nlp.cx()
-                    for idx in penalty.node_idx:
+                x = nlp.cx()
+                u = nlp.cx()
+                for idx in penalty.node_idx:
+                    if penalty.derivative or penalty.explicit_derivative:
                         x = horzcat(x, horzcat(*nlp.X[idx : idx + 2]))
                         u = horzcat(u, horzcat(*nlp.U[idx : idx + 2]))
-                    if nlp.control_type == ControlType.CONSTANT:
-                        u = horzcat(u, u[:, -1])
-                else:
-                    raise NotImplementedError("multi_thread is still in development")
+                    else:
+                        x = horzcat(x, nlp.X[idx])
+                        u = horzcat(u, nlp.U[idx] if idx < len(nlp.U) else np.zeros(nlp.U[-1].shape))
+                if (penalty.derivative or penalty.explicit_derivative) and nlp.control_type == ControlType.CONSTANT:
+                    u = horzcat(u, u[:, -1])
                 p = reshape(penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt), -1, 1)
 
             else:

@@ -323,8 +323,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
 
             bound = nlp.model.torqueMax(nlp.states["q"].mx, nlp.states["qdot"].mx)
-            min_bound = BiorbdInterface.mx_to_cx("min_bound", bound[1].to_mx(), nlp.states["q"], nlp.states["qdot"])
-            max_bound = BiorbdInterface.mx_to_cx("max_bound", bound[0].to_mx(), nlp.states["q"], nlp.states["qdot"])
+            min_bound = BiorbdInterface.mx_to_cx("min_bound", nlp.controls["tau"].mapping.to_first.map(bound[1].to_mx()), nlp.states["q"], nlp.states["qdot"])
+            max_bound = BiorbdInterface.mx_to_cx("max_bound", nlp.controls["tau"].mapping.to_first.map(bound[0].to_mx()), nlp.states["q"], nlp.states["qdot"])
             if min_torque:
                 min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
                 max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)

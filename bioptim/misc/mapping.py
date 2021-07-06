@@ -176,3 +176,6 @@ class BiMappingList(OptionDict):
 
     def __getitem__(self, item) -> Union[dict, BiMapping]:
         return super(BiMappingList, self).__getitem__(item)
+
+    def __contains__(self, item):
+        return item in self.options[0].keys()

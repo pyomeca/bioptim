@@ -343,8 +343,10 @@ class PlotOcp:
 
                 t = self.t[i]
                 if variable not in self.plot_func:
-                    self.plot_func[variable] = [nlp.plot[variable]] * self.ocp.n_phases
+                    self.plot_func[variable] = [nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp]
 
+                if not self.plot_func[variable][i]:
+                    continue
                 mapping = self.plot_func[variable][i].phase_mappings.map_idx
                 for ctr, k in enumerate(mapping):
                     ax = axes[k]
@@ -519,7 +521,7 @@ class PlotOcp:
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
-                    self.tf[i_in_tf] = data_params["time"][i_in_time]
+                    self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):
@@ -547,6 +549,9 @@ class PlotOcp:
                 raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
             for key in self.variable_sizes[i]:
+                if not self.plot_func[key][i]:
+                    continue
+
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
                     all_y = []
                     for idx, t in enumerate(self.t_integrated[i]):
@@ -921,9 +926,11 @@ class OnlineCallback(Callback):
             -------
             True if everything went well
             """
+
             while not self.pipe.empty():
                 V = self.pipe.get()
                 self.plot.update_data(V)
+
             for i, fig in enumerate(self.plot.all_figures):
                 fig.canvas.draw()
             return True

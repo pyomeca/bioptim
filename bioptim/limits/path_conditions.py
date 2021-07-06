@@ -5,7 +5,7 @@ from casadi import MX, SX, vertcat
 from scipy.interpolate import interp1d
 
 from ..misc.enums import InterpolationType
-from ..misc.mapping import BiMapping
+from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 
 
@@ -581,7 +581,7 @@ class QAndQDotBounds(Bounds):
     def __init__(
         self,
         biorbd_model,
-        dof_mappings: dict = None,
+        dof_mappings: BiMappingList = None,
     ):
         """
         Parameters

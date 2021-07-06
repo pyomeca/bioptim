@@ -45,6 +45,7 @@ class PenaltyOption(OptionGeneric):
         cols: Union[list, tuple, range, np.ndarray] = None,
         custom_function: Callable = None,
         is_internal: bool = False,
+        multi_thread: bool = None,
         **params: Any,
     ):
         """
@@ -111,7 +112,7 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("derivative and explicit_derivative cannot be both True")
         self.is_internal = is_internal
 
-        self.multi_thread = False
+        self.multi_thread = multi_thread
 
     def set_penalty(self, penalty: Union[MX, SX], all_pn: PenaltyNodeList):
         """
@@ -274,9 +275,11 @@ class PenaltyOption(OptionGeneric):
             name, [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
         )
 
-        if self.multi_thread:
-            self.function = self.function.map(nlp.ns, "thread", ocp.n_threads)
-            self.weighted_function = self.weighted_function.map(nlp.ns, "thread", ocp.n_threads)
+        if self.multi_thread and len(self.node_idx) > 1:
+            self.function = self.function.map(len(self.node_idx), "thread", ocp.n_threads)
+            self.weighted_function = self.weighted_function.map(len(self.node_idx), "thread", ocp.n_threads)
+        else:
+            self.multi_thread = False  # Override the multi_threading, since only one node is optimized
 
         if self.expand:
             self.function = self.function.expand()

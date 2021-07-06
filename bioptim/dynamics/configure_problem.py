@@ -1,7 +1,7 @@
 from typing import Callable, Any, Union
 from enum import Enum
 
-from casadi import MX, SX, vertcat, horzcat, Function
+from casadi import MX, vertcat, Function
 import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
@@ -262,7 +262,7 @@ class ConfigureProblem:
     def configure_new_variable(
         name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_plot: bool = False
     ):
-        def define_cx(n_col: int) -> Union[MX, SX]:
+        def define_cx(n_col: int) -> list:
             cx = [nlp.cx() for _ in range(n_col)]
             for idx in nlp.variable_mappings[name].to_first.map_idx:
                 if idx is None:

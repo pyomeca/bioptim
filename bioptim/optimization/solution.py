@@ -4,7 +4,7 @@ from copy import deepcopy
 import biorbd
 import numpy as np
 from scipy import interpolate as sci_interp
-from casadi import horzcat, DM
+from casadi import horzcat, DM, Function
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -868,9 +868,10 @@ class Solution:
         u = self._controls[phase_idx]["all"][:, penalty.node_idx] if nlp is not None else []
         p = self.parameters["all"]
         target = penalty.target if penalty.target is not None else []
+        dt = Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"]) if "time" in self.parameters else penalty.dt
 
         val = np.nansum(penalty.function(x, u, p))
-        val_weighted = np.nansum(penalty.weighted_function(x, u, p, penalty.weight, target, penalty.dt))
+        val_weighted = np.nansum(penalty.weighted_function(x, u, p, penalty.weight, target, dt))
 
         return val, val_weighted
 
