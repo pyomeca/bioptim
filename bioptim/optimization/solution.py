@@ -93,6 +93,7 @@ class Solution:
         def __init__(self, other: OptimizationVariable):
             self.name = other.name
             self.index = other.index
+            self.mapping = other.mapping
 
         def __len__(self):
             return len(self.index)

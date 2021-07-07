@@ -146,6 +146,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             dynamics=self.original_values["dynamics"][0],
             n_shooting=t - 1,
             phase_time=t * self.nlp[0].dt,
+            skip_continuity=True,
         )
 
         states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)

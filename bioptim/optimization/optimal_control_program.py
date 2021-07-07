@@ -139,6 +139,7 @@ class OptimalControlProgram:
         phase_transitions: PhaseTransitionList = None,
         n_threads: int = 1,
         use_sx: bool = False,
+        skip_continuity: bool = False,
     ):
         """
         Parameters
@@ -181,6 +182,8 @@ class OptimalControlProgram:
             The number of thread to use while solving (multi-threading if > 1)
         use_sx: bool
             The nature of the casadi variables. MX are used if False.
+        skip_continuity: bool
+            This is mainly for internal purposes when creating an OCP not destined to be solved
         """
 
         if isinstance(biorbd_model, str):
@@ -395,8 +398,10 @@ class OptimalControlProgram:
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
 
-        # Inner- and inter-phase continuity
-        ContinuityFunctions.continuity(self)
+        # Skipping creates a valid but unsolvable OCP class
+        if not skip_continuity:
+            # Inner- and inter-phase continuity
+            ContinuityFunctions.continuity(self)
 
         self.isdef_x_init = False
         self.isdef_u_init = False
