@@ -56,9 +56,9 @@ def test_torque_driven(with_contact, with_external_force, cx):
         if with_external_force:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
-                [0.8631034, 0.3251833, 0.1195942, 0.4937956, -7.8965868, -7.7015214, 22.0607764, -16.6593293],
+                [0.8631034, 0.3251833, 0.1195942, 0.4937956, -8.0213588, -7.8230534, 22.409133, -17.0076859],
             )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-48.4505407, 111.4024916, -24.4449121])
+            np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
         else:
             np.testing.assert_almost_equal(
                 x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
@@ -116,21 +116,21 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
             np.testing.assert_almost_equal(
                 x_out[:, 0],
                 [
-                    0.86310343,
-                    0.32518332,
-                    0.11959425,
+                    0.8631034,
+                    0.3251833,
+                    0.1195942,
                     0.4937956,
-                    -7.8965868,
-                    -7.70152137,
-                    22.06077635,
-                    -16.65932927,
-                    0.80744016,
-                    0.42710779,
+                    -8.0213588,
+                    -7.8230534,
+                    22.409133,
+                    -17.0076859,
+                    0.8074402,
+                    0.4271078,
                     0.417411,
-                    0.32320293,
+                    0.3232029,
                 ],
             )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-48.4505407, 111.4024916, -24.4449121])
+            np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
         else:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
@@ -226,10 +226,10 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
         if with_external_force:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
-                [0.86310343, 0.32518332, 0.11959425, 0.4937956, 18.89229596, 18.39174157, -52.73234125, 58.13378833],
+                [0.8631, 0.32518, 0.11959, 0.4938, 18.76752, 18.27021, -52.38398, 57.78543],
                 decimal=5,
             )
-            np.testing.assert_almost_equal(contact_out[:, 0], [109.17126642, 3790.62308393, -3571.78585744])
+            np.testing.assert_almost_equal(contact_out[:, 0], [109.8086936, 3790.3932439, -3571.7858574])
         else:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
