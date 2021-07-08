@@ -397,6 +397,7 @@ class OptimizationVector:
 
         ocp = self.ocp
         param.cx = param.cx if param.cx is not None else ocp.cx.sym(param.name, param.size, 1)
+        param.mx = MX.sym(f"{param.name}_MX", param.size, 1)
 
         if param.name in self.parameters_in_list:
             # Sanity check, you can only add a parameter with the same name if they do the same thing
@@ -406,6 +407,7 @@ class OptimizationVector:
                 raise RuntimeError("Pre dynamic function of same parameters must be the same")
             self.parameters_in_list[i].size += param.size
             self.parameters_in_list[i].cx = vertcat(self.parameters_in_list[i].cx, param.cx)
+            self.parameters_in_list[i].mx = vertcat(self.parameters_in_list[i].mx, param.mx)
             self.parameters_in_list[i].scaling = vertcat(self.parameters_in_list[i].scaling, param.scaling)
             if param.params != self.parameters_in_list[i].params:
                 raise RuntimeError("Extra parameters of same parameters must be the same")

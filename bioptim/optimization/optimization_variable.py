@@ -82,6 +82,7 @@ class OptimizationVariableList:
         self.elements: list = []
         self._cx: Union[MX, SX, np.ndarray] = np.array([])
         self._cx_end: Union[MX, SX, np.ndarray] = np.array([])
+        self.mx_reduced: MX = MX.sym("var", 0, 0)
 
     def __getitem__(self, item: Union[int, str]):
         """
@@ -142,6 +143,7 @@ class OptimizationVariableList:
         index = range(self._cx.shape[0], self._cx.shape[0] + cx[0].shape[0])
         self._cx = vertcat(self._cx, cx[0])
         self._cx_end = vertcat(self._cx_end, cx[1])
+        self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape))
 
         self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
 

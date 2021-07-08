@@ -181,8 +181,7 @@ class ConfigureProblem:
             )
 
         if with_contact:
-            raise NotImplementedError("Muscles with contact is not implemented yet")
-            # ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_muscle_driven)
+            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_muscle_driven)
 
     @staticmethod
     def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
@@ -199,25 +198,21 @@ class ConfigureProblem:
             The function to get the derivative of the states
         """
 
-        mx_symbolic_states = MX.sym("x", nlp.states.shape, 1)
-        mx_symbolic_controls = MX.sym("u", nlp.controls.shape, 1)
-
         nlp.parameters = ocp.v.parameters_in_list
-        mx_symbolic_params = MX.sym("p", nlp.parameters.shape, 1)
 
-        dynamics = dyn_func(mx_symbolic_states, mx_symbolic_controls, mx_symbolic_params, nlp, **extra_params)
+        dynamics = dyn_func(nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params)
         if isinstance(dynamics, (list, tuple)):
             dynamics = vertcat(*dynamics)
         nlp.dynamics_func = Function(
             "ForwardDyn",
-            [mx_symbolic_states, mx_symbolic_controls, mx_symbolic_params],
+            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
             [dynamics],
             ["x", "u", "p"],
             ["xdot"],
         ).expand()
 
     @staticmethod
-    def configure_contact_function(ocp, nlp, dyn_func: Callable):
+    def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
         """
         Configure the contact points
 
@@ -231,13 +226,10 @@ class ConfigureProblem:
             The function to get the values of contact forces from the dynamics
         """
 
-        symbolic_states = MX.sym("x", nlp.states.shape, 1)
-        symbolic_controls = MX.sym("u", nlp.controls.shape, 1)
-        symbolic_param = MX.sym("p", nlp.parameters.shape, 1)
         nlp.contact_forces_func = Function(
             "contact_forces_func",
-            [symbolic_states, symbolic_controls, symbolic_param],
-            [dyn_func(symbolic_states, symbolic_controls, symbolic_param, nlp)],
+            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+            [dyn_func(nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx, nlp, **extra_params)],
             ["x", "u", "p"],
             ["contact_forces"],
         ).expand()
@@ -276,17 +268,19 @@ class ConfigureProblem:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
         legend = [f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx]
 
-        mx = MX()
+        mx_states = MX()
+        mx_controls = MX()
         for i in nlp.variable_mappings[name].to_second.map_idx:
             if i is None:
                 continue
             sign = "-" if np.sign(i) < 0 else ""
-            mx = vertcat(mx, MX.sym(f"{sign}{name}_{name_elements[abs(i)]}_MX", 1, 1))
+            mx_states = vertcat(mx_states, MX.sym(f"{sign}{name}_{name_elements[abs(i)]}_MX", 1, 1))
+            mx_controls = vertcat(mx_controls, MX.sym(f"{sign}{name}_{name_elements[abs(i)]}_MX", 1, 1))
 
         if as_states:
             cx = define_cx(n_col=2)
 
-            nlp.states.append(name, cx, mx, nlp.variable_mappings[name])
+            nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
             nlp.plot[f"{name}_states"] = CustomPlot(
                 lambda x, u, p: x[nlp.states[name].index, :],
                 plot_type=PlotType.INTEGRATED,
@@ -297,7 +291,7 @@ class ConfigureProblem:
         if as_controls:
             cx = define_cx(n_col=2)
 
-            nlp.controls.append(name, cx, mx, nlp.variable_mappings[name])
+            nlp.controls.append(name, cx, mx_controls, nlp.variable_mappings[name])
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
             nlp.plot[f"{name}_controls"] = CustomPlot(
                 lambda x, u, p: u[nlp.controls[name].index, :],

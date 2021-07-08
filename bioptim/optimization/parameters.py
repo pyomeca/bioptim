@@ -108,6 +108,7 @@ class Parameter(PenaltyOption):
             penalty_list = penalty_list_tp
         self.penalty_list = penalty_list
         self.cx = cx
+        self.mx = None
 
     @property
     def shape(self):
@@ -388,10 +389,7 @@ class ParameterList(UniquePerProblemOptionList):
 
     @property
     def mx(self):
-        import warnings
-
-        warnings.warn("mx is not implemented!")
-        return MX()
+        return vertcat(*[p.mx for p in self])
 
     @property
     def bounds(self):
