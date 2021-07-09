@@ -182,11 +182,10 @@ class PenaltyOption(OptionGeneric):
         if self.target.shape[-1] == 1:
             self.target = np.repeat(self.target, n_time_expected, axis=-1)
 
-        if self.target.shape != (
-            (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
-        ):
+        shape = (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
+        if self.target.shape != shape:
             raise RuntimeError(
-                f"target {self.target.shape} does not correspond to expected size {(len(self.rows), n_time_expected)}"
+                f"target {self.target.shape} does not correspond to expected size {shape} for penalty {self.name}"
             )
 
         # If the target is on controls and control is constant, there will be one value missing
