@@ -56,7 +56,7 @@ def test_torque_driven(with_contact, with_external_force, cx):
         if with_external_force:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
-                [0.8631034, 0.3251833, 0.1195942, 0.4937956, -8.0213588, -7.8230534, 22.409133, -17.0076859],
+                [0.8631034, 0.3251833, 0.1195942, 0.4937956, -7.7700092, -7.5782306,  21.7073786, -16.3059315],
             )
             np.testing.assert_almost_equal(contact_out[:, 0], [-47.8131136, 111.1726516, -24.4449121])
         else:
