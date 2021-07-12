@@ -300,7 +300,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return slipping
 
         @staticmethod
-        def torque_max_from_actuators(
+        def torque_max_from_q_and_qdot(
             constraint: Constraint,
             all_pn: PenaltyNodeList,
             min_torque=None,
@@ -440,7 +440,7 @@ class ConstraintFcn(Enum):
     TRACK_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
-    TORQUE_MAX_FROM_ACTUATORS = (ConstraintFunction.Functions.torque_max_from_actuators,)
+    TORQUE_MAX_FROM_Q_AND_QDOT = (ConstraintFunction.Functions.torque_max_from_q_and_qdot,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
 
     @staticmethod
