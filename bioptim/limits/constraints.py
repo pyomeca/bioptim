@@ -61,34 +61,11 @@ class Constraint(PenaltyOption):
         self.bounds = Bounds(interpolation=InterpolationType.CONSTANT)
 
     def set_penalty(self, penalty: Union[MX, SX], all_pn: PenaltyNodeList):
-        """
-        Prepare the dimension and index of the penalty (including the target)
-
-        Parameters
-        ----------
-        penalty: Union[MX, SX],
-            The actual penalty function
-        all_pn: PenaltyNodeList
-            The penalty node elements
-        """
-
         super(Constraint, self).set_penalty(penalty, all_pn)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
-        """
-        Doing some configuration before calling the super.add_or_replace_to_penalty_pool function that prepares the adding of the
-        constraint to the constraint pool
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        """
-
         if self.type == ConstraintFcn.TIME_CONSTRAINT:
             self.node = Node.END
 
@@ -114,15 +91,6 @@ class Constraint(PenaltyOption):
             raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
     def _add_penalty_to_pool(self, all_pn: PenaltyNodeList):
-        """
-        Add the objective function to the objective pool
-
-        Parameters
-        ----------
-        all_pn: PenaltyNodeList
-                The penalty node elements
-        """
-
         if self.is_internal:
             pool = all_pn.nlp.g_internal if all_pn is not None and all_pn.nlp else all_pn.ocp.g_internal
         else:
@@ -130,17 +98,6 @@ class Constraint(PenaltyOption):
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
-        """
-        Resets a constraint. A negative penalty index creates a new empty constraint.
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        """
-
         if self.is_internal:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
         else:
@@ -204,16 +161,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
     Methods
     -------
-    inter_phase_continuity(ocp: OptimalControlProgram, pt: "PhaseTransition")
+    inner_phase_continuity(ocp)
+        Add continuity constraints between each nodes of a phase.
+    inter_phase_continuity(ocp)
         Add phase transition constraints between two phases.
-    add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodeList, val: Union[MX, SX], penalty: Constraint)
-        Add the constraint to the constraint pool
     clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Constraint)
         Resets a penalty. A negative penalty index creates a new empty penalty.
-    _parameter_modifier(constraint: Constraint)
-        Apply some default parameters
-    _span_checker(constraint, nlp)
-        Check for any non sense in the requested times for the constraint. Raises an error if so
     penalty_nature() -> str
         Get the nature of the penalty
     """
@@ -221,19 +174,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
     class Functions:
         """
         Implementation of all the constraint functions
-
-        Methods
-        -------
-        time_constraint(constraint: Constraint, pn: PenaltyNodeList)
-            The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
-        torque_max_from_actuators(constraint: Constraint, pn: PenaltyNodeList, min_torque=None)
-            Non linear maximal values of joint torques computed from the torque-position-velocity relationship
-        non_slipping(constraint: Constraint, pn: PenaltyNodeList,
-                tangential_component_idx: int, normal_component_idx: int, static_friction_coefficient: float)
-            Add a constraint of static friction at contact points allowing for small tangential forces. This constraint
-            assumes that the normal forces is positive
-        contact_force(constraint: Constraint, pn: PenaltyNodeList, contact_force_idx: int)
-            Add a constraint of contact forces given by any forward dynamics with contact
         """
 
         @staticmethod
@@ -300,11 +240,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return slipping
 
         @staticmethod
-        def torque_max_from_q_and_qdot(
-            constraint: Constraint,
-            all_pn: PenaltyNodeList,
-            min_torque=None,
-        ):
+        def torque_max_from_q_and_qdot(constraint: Constraint, all_pn: PenaltyNodeList, min_torque=None):
             """
             Non linear maximal values of joint torques computed from the torque-position-velocity relationship
 
@@ -347,17 +283,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return value
 
         @staticmethod
-        def time_constraint(
-            constraint: Constraint,
-            all_pn: PenaltyNodeList,
-            **unused_param,
-        ):
+        def time_constraint(_: Constraint, all_pn: PenaltyNodeList, **unused_param):
             """
             The time constraint is taken care elsewhere, but must be declared here. This function therefore does nothing
 
             Parameters
             ----------
-            constraint: Constraint
+            _: Constraint
                 The actual constraint to declare
             all_pn: PenaltyNodeList
                 The penalty node elements
@@ -377,6 +309,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         ocp: OptimalControlProgram
             A reference to the ocp
         """
+
         # Dynamics must be sound within phases
         for i, nlp in enumerate(ocp.nlp):
             penalty = Constraint(ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, is_internal=True)
@@ -404,14 +337,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
     @staticmethod
     def penalty_nature() -> str:
-        """
-        Get the nature of the penalty
-
-        Returns
-        -------
-        The nature of the penalty
-        """
-
         return "constraints"
 
 

@@ -311,6 +311,8 @@ class Bounds(OptionGeneric):
         of required elements and time. If the function exit, then everything is okay
     concatenate(self, other: "Bounds")
         Vertical concatenate of two Bounds
+    scale(self, scaling: Union[float, np.ndarray])
+        Scaling a Bound
     __getitem__(self, slice_list: slice) -> "Bounds"
         Allows to get from square brackets
     __setitem__(self, slice: slice, value: Union[np.ndarray, list, float])
@@ -646,10 +648,14 @@ class InitialGuess(OptionGeneric):
         of required elements and time. If the function exit, then everything is okay
     concatenate(self, other: "InitialGuess")
         Vertical concatenate of two InitialGuess
+    scale(self, scaling: float)
+        Scaling an InitialGuess
     __bool__(self) -> bool
         Get if the initial guess is empty
     shape(self) -> int
         Get the size of the initial guess
+    __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float])
+        Allows to set from square brackets
     """
 
     def __init__(

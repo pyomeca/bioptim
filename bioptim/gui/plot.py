@@ -37,8 +37,10 @@ class CustomPlot:
         The style of the line as specified in matplotlib
     ylim: Union[tuple[float, float], list[float, float]]
         The ylim of the axes as specified in matplotlib
-    bounds:
+    bounds: Bounds
         The bounds to show on the graph
+    parameters: Any
+        The parameters of the function
     """
 
     def __init__(
@@ -580,9 +582,15 @@ class PlotOcp:
                             state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
                         )
                     except ValueError:
+                        val = self.plot_func[key][i].function(
+                            state[:, ::step_size],
+                            control,
+                            data_params_in_dyn,
+                            **self.plot_func[key][i].parameters
+                        ).shape
                         raise ValueError(
                             f"Wrong dimensions for plot {key}. Got "
-                            f"{self.plot_func[key][i].function(state[:, ::step_size], control, data_params_in_dyn, ** self.plot_func[key][i].parameters).shape}"
+                            f"{val}"
                             f", but expected {y.shape}"
                         )
                     self.__append_to_ydata(y)
@@ -930,8 +938,8 @@ class OnlineCallback(Callback):
             """
 
             while not self.pipe.empty():
-                V = self.pipe.get()
-                self.plot.update_data(V)
+                v = self.pipe.get()
+                self.plot.update_data(v)
 
             for i, fig in enumerate(self.plot.all_figures):
                 fig.canvas.draw()

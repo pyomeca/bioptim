@@ -205,6 +205,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
 
 class NonlinearModelPredictiveControl(RecedingHorizonOptimization):
+    """
+    NMPC version of receding horizon optimization
+    """
+
     def __init__(
         self,
         biorbd_model: Union[str, biorbd.Model, list, tuple],
@@ -220,6 +224,10 @@ class NonlinearModelPredictiveControl(RecedingHorizonOptimization):
 
 
 class MovingHorizonEstimator(RecedingHorizonOptimization):
+    """
+    MHE version of receding horizon optimization
+    """
+
     def __init__(
         self,
         biorbd_model: Union[str, biorbd.Model, list, tuple],

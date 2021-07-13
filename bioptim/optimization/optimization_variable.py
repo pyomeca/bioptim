@@ -18,6 +18,19 @@ class OptimizationVariable:
         The MX variable associated with this variable
     index: range
         The indices to find this variable
+    mapping: BiMapping
+        The mapping of the MX
+    parent_list: OptimizationVariableList
+        The parent that added this entry
+
+    Methods
+    -------
+    __len__(self)
+        The len of the MX reduced
+    cx(self)
+        The CX of the variable (starting point)
+    cx_end(self)
+        The CX of the variable (ending point)
     """
 
     def __init__(self, name: str, mx: MX, index: [range, list], mapping: BiMapping = None, parent_list=None):
@@ -41,6 +54,8 @@ class OptimizationVariable:
 
     def __len__(self):
         """
+        The len of the MX reduced
+
         Returns
         -------
         The number of element (correspond to the nrows of the MX)
@@ -49,6 +64,10 @@ class OptimizationVariable:
 
     @property
     def cx(self):
+        """
+        The CX of the variable
+        """
+
         if self.parent_list is None:
             raise RuntimeError(
                 "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
@@ -75,7 +94,28 @@ class OptimizationVariableList:
     elements: list
         Each of the variable separated
     _cx: Union[MX, SX]
-        The symbolic MX or SX of the list
+        The symbolic MX or SX of the list (starting point)
+    _cx_end: Union[MX, SX]
+        The symbolic MX or SX of the list (ending point)
+    mx_reduced: MX
+        The reduced MX to the size of _cx
+
+    Methods
+    -------
+    __getitem__(self, item: Union[int, str])
+        Get a specific variable in the list, whether by name or by index
+    append(self, name: str, cx: list, mx: MX, bimapping: BiMapping)
+        Add a new variable to the list
+    cx(self)
+        The the cx of all elements together (starting point)
+    cx_end(self)
+        The the cx of all elements together (ending point)
+    mx(self)
+        The MX of all variable concatenated together
+    shape(self)
+        The size of the CX
+    __len__(self)
+        The number of variables in the list
     """
 
     def __init__(self):
@@ -149,10 +189,18 @@ class OptimizationVariableList:
 
     @property
     def cx(self):
+        """
+        The the cx of all elements together (starting point)
+        """
+
         return self._cx[:, 0]
 
     @property
     def cx_end(self):
+        """
+        The the cx of all elements together (ending point)
+        """
+
         return self._cx_end[:, 0]
 
     @property
@@ -167,12 +215,6 @@ class OptimizationVariableList:
 
     def __contains__(self, item: str):
         """
-        Parameters
-        ----------
-        item: str
-            The name of the item
-        Returns
-        -------
         If the item of name item is in the list
         """
 
@@ -184,8 +226,6 @@ class OptimizationVariableList:
 
     def keys(self):
         """
-        Returns
-        -------
         All the names of the elements in the list
         """
 
@@ -194,8 +234,6 @@ class OptimizationVariableList:
     @property
     def shape(self):
         """
-        Returns
-        -------
         The size of the CX
         """
 
@@ -203,10 +241,9 @@ class OptimizationVariableList:
 
     def __len__(self):
         """
-        Returns
-        -------
         The number of variables in the list
         """
+
         return len(self.elements)
 
     def __iter__(self):

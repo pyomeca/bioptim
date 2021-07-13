@@ -1,8 +1,4 @@
 from typing import Union
-import numpy as np
-from casadi import Function, sum1, sum2, MX, SX
-
-from ..misc.enums import Node
 
 
 class SolverInterface:

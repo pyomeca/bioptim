@@ -17,7 +17,46 @@ class ConfigureProblem:
 
     Methods
     -------
-
+    initialize(ocp, nlp)
+        Call the dynamics a first time
+    custom(ocp, nlp, **extra_params)
+        Call the user-defined dynamics configuration function
+    torque_driven(ocp, nlp, with_contact=False)
+        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
+    torque_derivative_driven(ocp, nlp, with_contact=False)
+        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
+    torque_activations_driven(ocp, nlp, with_contact=False)
+        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
+        The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
+        relationship
+    muscle_driven(
+        ocp, nlp, with_excitations: bool = False, with_residual_torque: bool = False, with_contact: bool = False
+    )
+        Configure the dynamics for a muscle driven program.
+        If with_excitations is set to True, then the muscle muscle activations are computed from the muscle dynamics.
+        The tau from muscle is computed using the muscle activations.
+        If with_residual_torque is set to True, then tau are used as supplementary force in the
+        case muscles are too weak.
+    configure_dynamics_function(ocp, nlp, dyn_func, **extra_params)
+        Configure the dynamics of the system
+    configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params)
+        Configure the contact points
+    configure_new_variable(
+        name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_plot: bool = False
+    )
+        Add a new variable to the states/controls pool
+    configure_q(nlp, as_states: bool, as_controls: bool)
+        Configure the generalized coordinates
+    configure_qdot(nlp, as_states: bool, as_controls: bool)
+        Configure the generalized velocities
+    configure_tau(nlp, as_states: bool, as_controls: bool)
+        Configure the generalized forces
+    configure_taudot(nlp, as_states: bool, as_controls: bool)
+        Configure the generalized forces derivative
+    configure_muscles(nlp, as_states: bool, as_controls: bool)
+        Configure the muscles
+    _adjust_mapping(key_to_adjust: str, reference_keys: list, nlp)
+        Automatic mapping duplicator basing the values on the another mapping
     """
 
     @staticmethod
@@ -186,7 +225,7 @@ class ConfigureProblem:
     @staticmethod
     def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
         """
-        Configure the forward dynamics
+        Configure the dynamics of the system
 
         Parameters
         ----------
@@ -254,19 +293,38 @@ class ConfigureProblem:
     def configure_new_variable(
         name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_plot: bool = False
     ):
+        """
+        Add a new variable to the states/controls pool
+
+        Parameters
+        ----------
+        name: str
+            The name of the new variable to add
+        name_elements: list[str]
+            The name of each element of the vector
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the new variable should be added to the state variable set
+        as_controls: bool
+            If the new variable should be added to the control variable set
+        combine_plot: bool
+            If states and controls plot should be combined. Only effective if as_states and as_controls are both True
+        """
+
         def define_cx(n_col: int) -> list:
-            cx = [nlp.cx() for _ in range(n_col)]
+            _cx = [nlp.cx() for _ in range(n_col)]
             for idx in nlp.variable_mappings[name].to_first.map_idx:
                 if idx is None:
                     continue
-                for j in range(len(cx)):
+                for j in range(len(_cx)):
                     sign = "-" if np.sign(idx) < 0 else ""
-                    cx[j] = vertcat(cx[j], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{j}", 1, 1))
-            return cx
+                    _cx[j] = vertcat(_cx[j], nlp.cx.sym(f"{sign}{name}_{name_elements[abs(idx)]}_{j}", 1, 1))
+            return _cx
 
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
-        legend = [f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx  if idx is not None]
+        legend = [f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx if idx is not None]
 
         mx_states = []
         mx_controls = []
@@ -335,7 +393,7 @@ class ConfigureProblem:
         """
 
         name_qdot = [str(i) for i in range(nlp.model.nbQdot())]
-        ConfigureProblem._adjust_mapping_against_q("qdot", ["qdot", "taudot"], nlp)
+        ConfigureProblem._adjust_mapping("qdot", ["qdot", "taudot"], nlp)
         ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls)
 
     @staticmethod
@@ -354,13 +412,13 @@ class ConfigureProblem:
         """
 
         name_tau = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
-        ConfigureProblem._adjust_mapping_against_q("tau", ["qdot", "taudot"], nlp)
+        ConfigureProblem._adjust_mapping("tau", ["qdot", "taudot"], nlp)
         ConfigureProblem.configure_new_variable("tau", name_tau, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_taudot(nlp, as_states: bool, as_controls: bool):
         """
-        Configure the generalized forces
+        Configure the generalized forces derivative
 
         Parameters
         ----------
@@ -373,7 +431,7 @@ class ConfigureProblem:
         """
 
         name_tau = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
-        ConfigureProblem._adjust_mapping_against_q("taudot", ["qdot", "tau"], nlp)
+        ConfigureProblem._adjust_mapping("taudot", ["qdot", "tau"], nlp)
         ConfigureProblem.configure_new_variable("taudot", name_tau, nlp, as_states, as_controls, False)
 
     @staticmethod
@@ -395,26 +453,26 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable("muscles", muscle_names, nlp, as_states, as_controls, True)
 
     @staticmethod
-    def _adjust_mapping_against_q(name_to_adjust, names_to_compare, nlp):
-        if "q" in nlp.variable_mappings and name_to_adjust not in nlp.variable_mappings:
-            if nlp.model.nbQuat() > 0:
-                for n in names_to_compare:
-                    if n in nlp.variable_mappings:
-                        nlp.variable_mappings[name_to_adjust] = nlp.variable_mappings[n]
-                        break
-                else:
-                    q_map = list(nlp.variable_mappings["q"].to_first.map_idx)
-                    target = list(range(nlp.model.nbQ()))
-                    if q_map != target or q_map != target:
-                        raise RuntimeError(
-                            "It is not possible to define a q mapping without a qdot or tau mapping"
-                            "while the model has quaternions"
-                        )
-                    nlp.variable_mappings[name_to_adjust] = BiMapping(
-                        range(nlp.model.nbGeneralizedTorque()), range(nlp.model.nbGeneralizedTorque())
-                    )
-            else:
-                nlp.variable_mappings[name_to_adjust] = nlp.variable_mappings["q"]
+    def _adjust_mapping(key_to_adjust: str, reference_keys: list, nlp):
+        """
+        Automatic mapping duplicator basing the values on the another mapping
+
+        Parameters
+        ----------
+        key_to_adjust: str
+            The name of the variable to create if not already defined
+        reference_keys: list[str]
+            The reference keys, as soon one is found, it is used and the function returns
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+
+        if key_to_adjust not in nlp.variable_mappings:
+            for n in reference_keys:
+                if n in nlp.variable_mappings:
+                    nlp.variable_mappings[key_to_adjust] = nlp.variable_mappings[n]
+                    break
+            raise RuntimeError("Could not adjust mapping with the reference_keys provided")
 
 
 class DynamicsFcn(Enum):
@@ -440,6 +498,8 @@ class Dynamics(OptionGeneric):
     configure: Callable
         The configuration function provided by the user that declares the NLP (states and controls),
         usually only necessary when defining custom functions
+    expand: bool
+        If the continuity constraint should be expand. This can be extensive on RAM
 
     """
 
@@ -450,20 +510,14 @@ class Dynamics(OptionGeneric):
         **params: Any,
     ):
         """
-        configure: Callable
-            The configuration function provided by the user that declares the NLP (states and controls),
-            usually only necessary when defining custom functions
-        expand: bool
-            If the continuity constraint should be expand. This can be extensive on RAM
-        dynamic_function: Callable
-            The custom dynamic function provided by the user
-
         Parameters
         ----------
         dynamics_type: Union[Callable, DynamicsFcn]
             The chosen dynamic functions
         params: Any
             Any parameters to pass to the dynamic and configure functions
+        expand: bool
+            If the continuity constraint should be expand. This can be extensive on RAM
         """
 
         configure = None

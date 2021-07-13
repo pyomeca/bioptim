@@ -20,14 +20,68 @@ class PenaltyOption(OptionGeneric):
         The node within a phase on which the penalty is acting on
     quadratic: bool
         If the penalty is quadratic
-    index: list
-        The component index the penalty is acting on
+    rows: Union[list, tuple, range, np.ndarray]
+        The index of the rows in the penalty to keep
+    cols: Union[list, tuple, range, np.ndarray]
+        The index of the columns in the penalty to keep
+    expand: bool
+        If the penalty should be expanded or not
     target: np.array(target)
         A target to track for the penalty
+    target_plot_name: str
+        The plot name of the target
+    target_to_plot: np.ndarray
+        The subset of the target to plot
+    plot_target: bool
+        If the target should be plotted
     custom_function: Callable
         A user defined function to call to get the penalty
+    node_idx: Union[list, tuple, Node]
+        The index in nlp to apply the penalty to
+    dt: float
+        The delta time
+    function: Function
+        The casadi function of the penalty
+    weighted_function: Function
+        The casadi function of the penalty weighted
     derivative: bool
-        If the minimization is applied on the numerical derivative of the state
+        If the minimization is applied on the numerical derivative of the state [f(t+1) - f(t)]
+    explicit_derivative: bool
+        If the minimization is applied to derivative of the penalty [f(t, t+1)]
+    transition: bool
+        If the penalty is a transition
+    phase_pre_idx: int
+        The index of the nlp of pre when penalty is transition
+    phase_post_idx: int
+        The index of the nlp of post when penalty is transition
+    is_internal: bool
+        If the penalty is from the user or from bioptim
+    multi_thread: bool
+        If the penalty is multithreaded
+
+    Methods
+    -------
+    set_penalty(self, penalty: Union[MX, SX], all_pn: PenaltyNodeList)
+        Prepare the dimension and index of the penalty (including the target)
+    _set_dim_idx(self, dim: Union[list, tuple, range, np.ndarray], n_rows: int)
+        Checks if the variable index is consistent with the requested variable.
+    _check_target_dimensions(self, all_pn: PenaltyNodeList, n_time_expected: int)
+        Checks if the variable index is consistent with the requested variable.
+        If the function returns, all is okay
+    _set_penalty_function(self, all_pn: Union[PenaltyNodeList, list, tuple], fcn: Union[MX, SX])
+        Finalize the preparation of the penalty (setting function and weighted_function)
+    add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str)
+        Interface to the plot so it can be properly added to the proper plot
+    _finish_add_target_to_plot(self, all_pn: PenaltyNodeList)
+        Internal interface to add (after having check the target dimensions) the target to the plot if needed
+    add_or_replace_to_penalty_pool(self, ocp, nlp)
+        Doing some configuration on the penalty and add it to the list of penalty
+    _add_penalty_to_pool(self, all_pn: PenaltyNodeList)
+        Return the penalty pool for the specified penalty (abstract)
+    clear_penalty(self, ocp, nlp)
+        Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
+    _get_penalty_node_list(self, ocp, nlp) -> PenaltyNodeList
+        Get the actual node (time, X and U) specified in the penalty
     """
 
     def __init__(
@@ -79,7 +133,7 @@ class PenaltyOption(OptionGeneric):
         """
 
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
-        self.node = node
+        self.node: Union[Node, list, tuple] = node
         self.quadratic = quadratic
 
         if index is not None and rows is not None:
@@ -109,6 +163,8 @@ class PenaltyOption(OptionGeneric):
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
         self.transition = False
+        self.phase_pre_idx = None
+        self.phase_post_idx = None
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be both True")
         self.is_internal = is_internal
@@ -200,7 +256,18 @@ class PenaltyOption(OptionGeneric):
                     raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                 self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
-    def _set_penalty_function(self, all_pn: [PenaltyNodeList, list, tuple], fcn: Union[MX, SX]):
+    def _set_penalty_function(self, all_pn: Union[PenaltyNodeList, list, tuple], fcn: Union[MX, SX]):
+        """
+        Finalize the preparation of the penalty (setting function and weighted_function)
+
+        Parameters
+        ----------
+        all_pn: PenaltyNodeList
+            The nodes
+        fcn: Union[MX, SX]
+            The value of the penalty function
+        """
+
         # Sanity checks
         if self.transition and self.explicit_derivative:
             raise ValueError("transition and explicit_derivative cannot be true simultaneously")
@@ -285,11 +352,7 @@ class PenaltyOption(OptionGeneric):
             self.function = self.function.expand()
             self.weighted_function = self.weighted_function.expand()
 
-    def add_target_to_plot(
-        self,
-        all_pn: PenaltyNodeList,
-        combine_to: str,
-    ):
+    def add_target_to_plot(self, all_pn: PenaltyNodeList, combine_to: str):
         """
         Interface to the plot so it can be properly added to the proper plot
 
@@ -313,6 +376,7 @@ class PenaltyOption(OptionGeneric):
     def _finish_add_target_to_plot(self, all_pn: PenaltyNodeList):
         """
         Internal interface to add (after having check the target dimensions) the target to the plot if needed
+
         Parameters
         ----------
         all_pn: PenaltyNodeList

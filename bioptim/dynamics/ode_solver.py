@@ -19,7 +19,6 @@ class OdeSolverBase:
     -------
     integrator(self, ocp, nlp) -> list
         The interface of the OdeSolver to the corresponding integrator
-    @staticmethod
     prepare_dynamic_integrator(ocp, nlp)
         Properly set the integration in an nlp
     """
@@ -177,7 +176,7 @@ class OdeSolver:
 
         Attributes
         ----------
-        polynome_degree: int
+        polynomial_degree: int
             The degree of the implicit RK
 
         Methods
@@ -186,16 +185,16 @@ class OdeSolver:
             The interface of the OdeSolver to the corresponding integrator
         """
 
-        def __init__(self, polynome_degree: int = 4):
+        def __init__(self, polynomial_degree: int = 4):
             """
             Parameters
             ----------
-            polynome_degree: int
+            polynomial_degree: int
                 The degree of the implicit RK
             """
 
             super(OdeSolver.IRK, self).__init__()
-            self.polynome_degree = polynome_degree
+            self.polynomial_degree = polynomial_degree
             self.rk_integrator = IRK
 
         def integrator(self, ocp, nlp) -> list:
@@ -223,7 +222,7 @@ class OdeSolver:
             if nlp.model.nbQuat() > 0:
                 raise NotImplementedError(
                     "Quaternions can't be used with IRK yet. If you get this error, please notify the "
-                    "developers and ping EveCharbie"
+                    "developers and ping @EveCharbie"
                 )
 
             ode = {"x": nlp.states.cx, "p": nlp.controls.cx, "ode": nlp.dynamics_func}
@@ -235,7 +234,7 @@ class OdeSolver:
                 "cx": nlp.cx,
                 "idx": 0,
                 "control_type": nlp.control_type,
-                "irk_polynomial_interpolation_degree": self.polynome_degree,
+                "irk_polynomial_interpolation_degree": self.polynomial_degree,
             }
             return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 

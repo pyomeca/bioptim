@@ -3,12 +3,11 @@ from warnings import warn
 from enum import Enum
 
 import biorbd
-from casadi import horzcat, vertcat, MX, Function
+from casadi import vertcat, MX
 
-from .constraints import ConstraintFunction, Constraint
+from .constraints import Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
-from ..interfaces.biorbd_interface import BiorbdInterface
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
 from ..misc.enums import Node, InterpolationType
 from ..misc.options import UniquePerPhaseOptionList
@@ -20,18 +19,32 @@ class PhaseTransition(Constraint):
 
     Attributes
     ----------
-    base: ConstraintFunction
-        The type of penalty the phase transition is (Constraint if no weight, Mayer otherwise)
-    casadi_function: Function
-        The casadi function of the cost function
-    custom_function: Callable
-        The function to call if a custom transition function is provided
-    phase_pre_idx: int
-        The index of the phase right before the transition
+    min_bound: list
+        The minimal bound of the phase transition
+    max_bound: list
+        The maximal bound of the phase transition
+    bounds: Bounds
+        The bounds (will be filled with min_bound/max_bound)
+    weight: float
+        The weight of the cost function
     quadratic: bool
         If the objective function is quadratic
-    weight: float
-        The weight of the objective function. The transition is a constraint if weight is not specified
+    phase_pre_idx: int
+        The index of the phase right before the transition
+    phase_post_idx: int
+        The index of the phase right after the transition
+    node: Node
+        The kind of node
+    dt: float
+        The delta time
+    node_idx: int
+        The index of the node in nlp pre
+    transition: bool
+        The nature of the cost function is transition
+    is_internal: bool
+        Phase transition are considered internal cost functions
+
+
     """
 
     def __init__(
@@ -73,15 +86,6 @@ class PhaseTransition(Constraint):
         self.is_internal = True
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
-        """
-        Add the objective function to the objective pool
-
-        Parameters
-        ----------
-        all_pn: Union[PenaltyNodeList, list, tuple)
-                The penalty node elements
-        """
-
         ocp = all_pn[0].ocp
         nlp = all_pn[0].nlp
         if self.weight == 0:
@@ -91,17 +95,6 @@ class PhaseTransition(Constraint):
         pool[self.list_index] = self
 
     def clear_penalty(self, ocp, nlp):
-        """
-        Resets a constraint. A negative penalty index creates a new empty constraint.
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the current phase of the ocp
-        """
-
         if self.weight == 0:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
         else:
@@ -131,6 +124,8 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         Add a new PhaseTransition to the list
     print(self)
         Print the PhaseTransitionList to the console
+    prepare_phase_transitions(self, ocp) -> list
+        Configure all the phase transitions and put them in a list
     """
 
     def add(self, transition: Any, **extra_arguments: Any):
@@ -206,39 +201,21 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 class PhaseTransitionFunctions(PenaltyFunctionAbstract):
     """
     Internal implementation of the phase transitions
-
-    Methods
-    -------
-    prepare_phase_transitions(ocp: OptimalControlProgram, phase_transitions: PhaseTransitionList) -> list
-        Configure all the phase transitions and put them in a list
     """
 
     class Functions:
         """
         Implementation of all the phase transitions
-
-        Methods
-        -------
-        continuous(ocp: OptimalControlProgram, transition: PhaseTransition)
-            The most common continuity function, that is state before equals state after
-        cyclic(ocp: OptimalControlProgram" transition: PhaseTransition)
-            The continuity function applied to the last to first node
-        impact(ocp: OptimalControlProgram, transition: PhaseTransition)
-            A discontinuous function that simulates an inelastic impact of a new contact point
-        custom(ocp: OptimalControlProgram, transition: PhaseTransition)
-            Calls the custom transition function provided by the user
-        __get_nlp_pre_and_post(ocp: OptimalControlProgram, phase_pre_idx: int)
-            Get two consecutive nlp. If the "pre" phase is the last, then the next one is the first (circular)
         """
 
         @staticmethod
-        def continuous(transition, all_pn):
+        def continuous(_, all_pn):
             """
             The most common continuity function, that is state before equals state after
 
             Parameters
             ----------
-            transition: PhaseTransition
+            _: PhaseTransition
                 A reference to the phase transition
             all_pn: PenaltyNodeList
                     The penalty node elements

@@ -13,6 +13,8 @@ class BiorbdInterface:
     -------
     convert_array_to_external_forces(all_f_ext: Union[list, tuple]) -> list[list[biorbd.VecBiorbdSpatialVector]]
         Convert external forces np.ndarray lists of external forces to values understood by biorbd
+    mx_to_cx(name: str, function: Union[Callable, SX, MX], *all_param: Any) -> Function
+        Add to the pool of declared casadi function. If the function already exists, it is skipped
     """
 
     @staticmethod

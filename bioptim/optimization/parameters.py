@@ -5,17 +5,20 @@ from casadi import MX, SX, vertcat, Function
 import numpy as np
 
 from ..misc.enums import Node
-from ..limits.objective_functions import ObjectiveFcn, ObjectiveFunction, Objective, ObjectiveList
+from ..limits.objective_functions import ObjectiveFcn, Objective, ObjectiveList
 from ..limits.path_conditions import InitialGuess, InitialGuessList, Bounds, BoundsList
 from ..limits.penalty_node import PenaltyNodeList
 from ..limits.penalty import PenaltyOption
 from ..misc.enums import InterpolationType
-from ..misc.options import UniquePerProblemOptionList, OptionGeneric
+from ..misc.options import UniquePerProblemOptionList
 
 
 class Parameter(PenaltyOption):
     """
     A placeholder for a parameter
+
+    Attributes
+    ----------
     function: Callable[OptimalControlProgram, MX]
             The user defined function that modify the model
     initial_guess: Union[InitialGuess, InitialGuessList]
@@ -30,6 +33,8 @@ class Parameter(PenaltyOption):
         The list of objective associated with this parameter
     cx: Union[MX, SX]
         The type of casadi variable
+    mx: MX
+        The MX vector of the parameter
     """
 
     def __init__(
@@ -252,11 +257,22 @@ class ParameterList(UniquePerProblemOptionList):
         Print the ParameterList to the console
     __contains__(self, item: str) -> bool
         Allow for `str in ParameterList`
-    @property
     names(self) -> list:
         Get all the name of the Parameter in the List
     index(self, item: str) -> int
         Get the index of a specific Parameter in the list
+    scaling(self)
+        The scaling of the parameters
+    cx(self)
+        The CX vector of all parameters
+    mx(self)
+        The MX vector of all parameters
+    bounds(self)
+        The bounds of all parameters
+    initial_guess(self)
+        The initial guess of all parameters
+    shape(self)
+        The size of all parameters vector
     """
 
     def add(
@@ -342,9 +358,6 @@ class ParameterList(UniquePerProblemOptionList):
         return False
 
     def print(self):
-        """
-        Print the ParameterList to the console
-        """
         # TODO: Print all elements in the console
         raise NotImplementedError("Printing of ParameterList is not ready yet")
 
@@ -381,18 +394,34 @@ class ParameterList(UniquePerProblemOptionList):
 
     @property
     def scaling(self):
+        """
+        The scaling of all parameters
+        """
+
         return np.vstack([p.scaling for p in self]) if len(self) else np.array([[1.0]])
 
     @property
     def cx(self):
+        """
+        The CX vector of all parameters
+        """
+
         return vertcat(*[p.cx for p in self])
 
     @property
     def mx(self):
+        """
+        The MX vector of all parameters
+        """
+
         return vertcat(*[p.mx for p in self])
 
     @property
     def bounds(self):
+        """
+        The bounds of all parameters
+        """
+
         _bounds = Bounds(interpolation=InterpolationType.CONSTANT)
         for p in self:
             _bounds.concatenate(p.bounds)
@@ -400,6 +429,10 @@ class ParameterList(UniquePerProblemOptionList):
 
     @property
     def initial_guess(self):
+        """
+        The initial guess of all parameters
+        """
+
         _init = InitialGuess(interpolation=InterpolationType.CONSTANT)
         for p in self:
             _init.concatenate(p.initial_guess)
@@ -407,6 +440,7 @@ class ParameterList(UniquePerProblemOptionList):
 
     @property
     def shape(self):
+        """"""
         return sum([p.shape for p in self])
 
 
@@ -416,8 +450,6 @@ class Parameters:
 
     Methods
     -------
-    add_or_replace(ocp, _, parameter: Parameter)
-        Doing some configuration on the parameter and add it to the list of parameter_to_optimize
     get_type()
         Returns the type of the penalty
     penalty_nature() -> str

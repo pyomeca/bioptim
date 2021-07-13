@@ -10,18 +10,6 @@ from ..misc.options import OptionList
 class Objective(PenaltyOption):
     """
     A placeholder for an objective function
-
-    Attributes
-    ----------
-    weight: float
-        The weighting applied to this specific objective function
-
-    Functions
-    ---------
-    clear_penalty(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Objective)
-        Resets a objective function. A negative penalty index creates a new empty objective function.
-    add_or_replace_to_penalty_pool(ocp: OptimalControlProgram, nlp: NonLinearProgram, objective: Objective)
-        Add the objective function to the objective pool
     """
 
     def __init__(self, objective: Any, custom_type: Any = None, phase: int = 0, **params: Any):
@@ -63,15 +51,6 @@ class Objective(PenaltyOption):
         super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
 
     def _add_penalty_to_pool(self, all_pn: Union[PenaltyNodeList, list, tuple]):
-        """
-        Add the objective function to the objective pool
-
-        Parameters
-        ----------
-        all_pn: Union[PenaltyNodeList, list, tuple]
-                The penalty node elements
-        """
-
         if isinstance(all_pn, (list, tuple)):
             pool = all_pn[0].nlp.J if all_pn[0] is not None and all_pn[0].nlp else all_pn[0].ocp.J
         else:
@@ -91,23 +70,23 @@ class Objective(PenaltyOption):
         """
 
         if nlp:
-            J_to_add_to = nlp.J
+            j_to_add_to = nlp.J
         else:
-            J_to_add_to = ocp.J
+            j_to_add_to = ocp.J
 
         if self.list_index < 0:
             # Add a new one
-            for i, j in enumerate(J_to_add_to):
+            for i, j in enumerate(j_to_add_to):
                 if not j:
                     self.list_index = i
                     return
             else:
-                J_to_add_to.append([])
-                self.list_index = len(J_to_add_to) - 1
+                j_to_add_to.append([])
+                self.list_index = len(j_to_add_to) - 1
         else:
-            while self.list_index >= len(J_to_add_to):
-                J_to_add_to.append([])
-            J_to_add_to[self.list_index] = []
+            while self.list_index >= len(j_to_add_to):
+                j_to_add_to.append([])
+            j_to_add_to[self.list_index] = []
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         if self.type.get_type() == ObjectiveFunction.LagrangeFunction:
@@ -154,9 +133,6 @@ class ObjectiveList(OptionList):
             super(ObjectiveList, self)._add(option_type=Objective, objective=objective, **extra_arguments)
 
     def print(self):
-        """
-        Print the ObjectiveList to the console
-        """
         raise NotImplementedError("Printing of ObjectiveList is not ready yet")
 
 
@@ -166,42 +142,28 @@ class ObjectiveFunction:
 
     Methods
     -------
-    add_to_penalty(ocp: OptimalControlProgram, pn: PenaltyNodeList, val: Union[MX, SX], penalty: Objective, dt:float=0)
-        Add the objective function to the objective pool
+    update_target(ocp_or_nlp: Any, list_index: int, new_target: Any)
+        Update a specific target
     """
 
     class LagrangeFunction(PenaltyFunctionAbstract):
         """
         Internal (re)implementation of the penalty functions
-
-        Methods
-        -------
-        _parameter_modifier(objective: Objective)
-            Apply some default parameters
-        _span_checker(objective: Objective, pn: PenaltyNodeList)
-            Check for any non sense in the requested times for the constraint. Raises an error if so
-        penalty_nature() -> str
-            Get the nature of the penalty
         """
 
         class Functions:
             """
             Implementation of all the Lagrange objective functions
-
-            Methods
-            -------
-            minimize_time(penalty: ObjectiveFcn.Lagrange, pn: PenaltyNodeList)
-                Minimizes the duration of the phase
             """
 
             @staticmethod
-            def minimize_time(penalty: Objective, all_pn: PenaltyNodeList):
+            def minimize_time(_: Objective, all_pn: PenaltyNodeList):
                 """
                 Minimizes the duration of the phase
 
                 Parameters
                 ----------
-                penalty: Objective,
+                _: Objective,
                     The actual constraint to declare
                 all_pn: PenaltyNodeList
                     The penalty node elements
@@ -215,45 +177,21 @@ class ObjectiveFunction:
 
         @staticmethod
         def penalty_nature() -> str:
-            """
-            Get the nature of the penalty
-
-            Returns
-            -------
-            The nature of the penalty
-            """
-
             return "objective_functions"
 
     class MayerFunction(PenaltyFunctionAbstract):
         """
         Internal (re)implementation of the penalty functions
-
-        Methods
-        -------
-        inter_phase_continuity(ocp: OptimalControlProgram, pt: "PhaseTransition")
-            Add phase transition objective between two phases.
-        _parameter_modifier(objective: Objective)
-            Apply some default parameters
-        _span_checker(objective: Objective, pn: PenaltyNodeList)
-            Check for any non sense in the requested times for the constraint. Raises an error if so
-        penalty_nature() -> str
-            Get the nature of the penalty
         """
 
         class Functions:
             """
             Implementation of all the Mayer objective functions
-
-            Methods
-            -------
-            minimize_time(penalty: "ObjectiveFcn.Lagrange", pn: PenaltyNodeList)
-                Minimizes the duration of the phase
             """
 
             @staticmethod
             def minimize_time(
-                penalty: Objective,
+                _: Objective,
                 all_pn: PenaltyNodeList,
                 min_bound: float = None,
                 max_bound: float = None,
@@ -263,7 +201,7 @@ class ObjectiveFunction:
 
                 Parameters
                 ----------
-                penalty: Objective,
+                _: Objective,
                     The actual constraint to declare
                 all_pn: PenaltyNodeList
                     The penalty node elements
@@ -283,28 +221,11 @@ class ObjectiveFunction:
 
         @staticmethod
         def penalty_nature() -> str:
-            """
-            Get the nature of the penalty
-
-            Returns
-            -------
-            The nature of the penalty
-            """
-
             return "objective_functions"
 
     class ParameterFunction(PenaltyFunctionAbstract):
         """
         Internal (re)implementation of the penalty functions
-
-        add_to_penalty(ocp: OptimalControlProgram, _, val: Union[MX, SX], penalty: Objective)
-            Add the objective function to the objective pool
-        _parameter_modifier(objective: Objective)
-            Apply some default parameters
-        _span_checker(objective: Objective, pn: PenaltyNodeList)
-            Check for any non sense in the requested times for the constraint. Raises an error if so
-        penalty_nature() -> str
-            Get the nature of the penalty
         """
 
         class Functions:
@@ -316,18 +237,23 @@ class ObjectiveFunction:
 
         @staticmethod
         def penalty_nature() -> str:
-            """
-            Get the nature of the penalty
-
-            Returns
-            -------
-            The nature of the penalty
-            """
-
             return "parameters"
 
     @staticmethod
-    def update_target(ocp_or_nlp, list_index, new_target):
+    def update_target(ocp_or_nlp: Any, list_index: int, new_target: Any):
+        """
+        Update a specific target
+
+        Parameters
+        ----------
+        ocp_or_nlp: Union[OptimalControlProgram, NonLinearProgram]
+            The reference to where to find J
+        list_index: int
+            The index in J
+        new_target
+            The target to modify
+        """
+
         if list_index >= len(ocp_or_nlp.J) or list_index < 0:
             raise ValueError("'list_index' must be defined properly")
 

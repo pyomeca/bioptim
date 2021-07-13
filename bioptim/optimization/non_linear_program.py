@@ -65,24 +65,26 @@ class NonLinearProgram:
         The time stamp of the beginning of the phase
     tf: float
         The time stamp of the end of the phase
+    t_initial_guess: float
+        The initial guess of the time
     variable_mappings: BiMappingList
         The list of mapping for all the variables
-    U: list[Union[MX, SX]]
-        The casadi variables for the integration at each node of the phase
     u_bounds = Bounds()
         The bounds for the controls
     u_init = InitialGuess()
         The initial guess for the controls
+    U: list[Union[MX, SX]]
+        The casadi variables for the integration at each node of the phase
     controls: OptimizationVariableList
         A list of all the control variables
-    states: OptimizationVariableList
-        A list of all the state variables
-    X: list[Union[MX, SX]]
-        The casadi variables for the integration at each node of the phase
     x_bounds = Bounds()
         The bounds for the states
     x_init = InitialGuess()
         The initial guess for the states
+    X: list[Union[MX, SX]]
+        The casadi variables for the integration at each node of the phase
+    states: OptimizationVariableList
+        A list of all the state variables
 
     Methods
     -------
@@ -91,6 +93,8 @@ class NonLinearProgram:
     add(ocp: OptimalControlProgram, param_name: str, param: Any, duplicate_singleton: bool,
             _type: Any = None, name: str = None)
         Set a parameter to their respective nlp
+    __setattr(nlp, name: Union[str, None], param_name: str, param: Any)
+        Add a new element to the nlp of the format 'nlp.param_name = param' or 'nlp.name["param_name"] = param'
     add_path_condition(ocp: OptimalControlProgram, var: Any, path_name: str, type_option: Any, type_list: Any)
         Interface to add for PathCondition classes
     def add_casadi_func(self, name: str, function: Callable, *all_param: Any) -> casadi.Function:

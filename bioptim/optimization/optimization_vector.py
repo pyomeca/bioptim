@@ -39,18 +39,12 @@ class OptimizationVector:
 
     Methods
     -------
-    @property
     vector(self)
         Format the x, u and p so they are in one nice (and useful) vector
-    @property
     bounds(self)
         Format the x, u and p bounds so they are in one nice (and useful) vector
-    @property
     init(self)
         Format the x, u and p init so they are in one nice (and useful) vector
-    @property
-    parameters(self)
-        Get the parameters in one single Parameter class
     extract_phase_time(self, data: Union[np.array, DM]) -> list
         Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
     to_dictionaries(self, data: Union[np.array, DM]) -> tuple
@@ -147,33 +141,6 @@ class OptimizationVector:
             v_init.concatenate(u_init)
         v_init.concatenate(self.parameters_in_list.initial_guess)
         return v_init
-
-    # @property
-    # def parameters(self):
-    #     """
-    #     Get the parameters in one single Parameter class
-    #
-    #     Returns
-    #     -------
-    #     The parameters in one single Parameter class
-    #     """
-    #
-    #     param = Parameter(
-    #         cx=self.ocp.cx(),
-    #         bounds=Bounds(interpolation=InterpolationType.CONSTANT),
-    #         initial_guess=InitialGuess(),
-    #         size=0,
-    #     )
-    #     for p in self.parameters_in_list:
-    #         param.cx = vertcat(param.cx, p.cx)
-    #         param.size += p.size if p else 0
-    #
-    #         param.bounds.concatenate(p.bounds)
-    #         param.bounds.check_and_adjust_dimensions(param.size, 1)
-    #
-    #         param.initial_guess.concatenate(p.initial_guess)
-    #         param.initial_guess.check_and_adjust_dimensions(param.size, 1)
-    #     return param
 
     def extract_phase_time(self, data: Union[np.array, DM]) -> list:
         """

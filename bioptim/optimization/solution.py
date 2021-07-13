@@ -71,7 +71,8 @@ class Solution:
     @property
     controls(self) -> Union[list, dict]
         Returns the controls in list if more than one phases, otherwise it returns the only dict
-    integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keepdims: bool = True, merge_phases: bool = False, continuous: bool = True) -> Solution
+    integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keepdims: bool = True,
+              merge_phases: bool = False, continuous: bool = True) -> Solution
         Integrate the states
     interpolate(self, n_frames: Union[int, list, tuple]) -> Solution
         Interpolate the states
@@ -81,7 +82,8 @@ class Solution:
         Actually performing the phase merging
     _complete_control(self)
         Controls don't necessarily have dimensions that matches the states. This method aligns them
-    graphs(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool, show_now: bool, shooting_type: Shooting)
+    graphs(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool,
+           show_now: bool, shooting_type: Shooting)
         Show the graphs of the simulation
     animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> Union[None, list]
         Animate the simulation
@@ -90,6 +92,10 @@ class Solution:
     """
 
     class SimplifiedOptimizationVariable:
+        """
+        Simplified version of OptimizationVariable (compatible with pickle)
+        """
+
         def __init__(self, other: OptimizationVariable):
             self.name = other.name
             self.index = other.index
@@ -99,6 +105,10 @@ class Solution:
             return len(self.index)
 
     class SimplifiedOptimizationVariableList:
+        """
+        Simplified version of OptimizationVariableList (compatible with pickle)
+        """
+
         def __init__(self, other: Union[OptimizationVariableList]):
             self.elements = []
             if isinstance(other, Solution.SimplifiedOptimizationVariableList):
@@ -147,7 +157,7 @@ class Solution:
 
     class SimplifiedNLP:
         """
-        A simplified version of the NonLinearProgram structure
+        A simplified version of the NonLinearProgram structure (compatible with pickle)
 
         Attributes
         ----------
@@ -194,7 +204,7 @@ class Solution:
 
     class SimplifiedOCP:
         """
-        A simplified version of the NonLinearProgram structure
+        A simplified version of the NonLinearProgram structure (compatible with pickle)
 
         Attributes
         ----------
@@ -265,71 +275,71 @@ class Solution:
         self._states, self._controls, self.parameters = {}, {}, {}
         self.phase_time = []
 
-        def init_from_dict(sol: dict):
+        def init_from_dict(_sol: dict):
             """
             Initialize all the attributes from an Ipopt-like dictionary data structure
 
             Parameters
             ----------
-            sol: dict
+            _sol: dict
                 The solution in a Ipopt-like dictionary
             """
 
-            self.vector = sol["x"] if isinstance(sol, dict) and "x" in sol else sol
-            self._cost = sol["f"] if isinstance(sol, dict) and "f" in sol else None
-            self.constraints = sol["g"] if isinstance(sol, dict) and "g" in sol else None
+            self.vector = _sol["x"] if isinstance(_sol, dict) and "x" in _sol else _sol
+            self._cost = _sol["f"] if isinstance(_sol, dict) and "f" in _sol else None
+            self.constraints = _sol["g"] if isinstance(_sol, dict) and "g" in _sol else None
 
-            self.lam_g = sol["lam_g"] if isinstance(sol, dict) and "lam_g" in sol else None
-            self.lam_p = sol["lam_p"] if isinstance(sol, dict) and "lam_p" in sol else None
-            self.lam_x = sol["lam_x"] if isinstance(sol, dict) and "lam_x" in sol else None
-            self.inf_pr = sol["inf_pr"] if isinstance(sol, dict) and "inf_pr" in sol else None
-            self.inf_du = sol["inf_du"] if isinstance(sol, dict) and "inf_du" in sol else None
-            self.time_to_optimize = sol["time_tot"] if isinstance(sol, dict) and "time_tot" in sol else None
+            self.lam_g = _sol["lam_g"] if isinstance(_sol, dict) and "lam_g" in _sol else None
+            self.lam_p = _sol["lam_p"] if isinstance(_sol, dict) and "lam_p" in _sol else None
+            self.lam_x = _sol["lam_x"] if isinstance(_sol, dict) and "lam_x" in _sol else None
+            self.inf_pr = _sol["inf_pr"] if isinstance(_sol, dict) and "inf_pr" in _sol else None
+            self.inf_du = _sol["inf_du"] if isinstance(_sol, dict) and "inf_du" in _sol else None
+            self.time_to_optimize = _sol["time_tot"] if isinstance(_sol, dict) and "time_tot" in _sol else None
             self.real_time_to_optimize = self.time_to_optimize
-            self.iterations = sol["iter"] if isinstance(sol, dict) and "iter" in sol else None
-            self.status = sol["status"] if isinstance(sol, dict) and "status" in sol else None
+            self.iterations = _sol["iter"] if isinstance(_sol, dict) and "iter" in _sol else None
+            self.status = _sol["status"] if isinstance(_sol, dict) and "status" in _sol else None
 
             # Extract the data now for further use
             self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
 
-        def init_from_initial_guess(sol: list):
+        def init_from_initial_guess(_sol: list):
             """
             Initialize all the attributes from a list of initial guesses (states, controls)
 
             Parameters
             ----------
-            sol: list
+            _sol: list
                 The list of initial guesses
             """
 
             n_param = len(ocp.v.parameters_in_list)
 
             # Sanity checks
-            for i in range(len(sol)):  # Convert to list if necessary and copy for as many phases there are
-                if isinstance(sol[i], InitialGuess):
+            for i in range(len(_sol)):  # Convert to list if necessary and copy for as many phases there are
+                if isinstance(_sol[i], InitialGuess):
                     tp = InitialGuessList()
                     for _ in range(len(self.ns)):
-                        tp.add(deepcopy(sol[i].init), interpolation=sol[i].init.type)
-                    sol[i] = tp
-            if sum([isinstance(s, InitialGuessList) for s in sol]) != 2:
+                        tp.add(deepcopy(_sol[i].init), interpolation=_sol[i].init.type)
+                    _sol[i] = tp
+            if sum([isinstance(s, InitialGuessList) for s in _sol]) != 2:
                 raise ValueError(
                     "solution must be a solution dict, "
                     "an InitialGuess[List] of len 2 or 3 (states, controls, parameters), "
                     "or a None"
                 )
-            if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(sol)]) != 0:
+            if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:
                 raise ValueError("The InitialGuessList len must match the number of phases")
             if n_param != 0:
-                if len(sol) != 3 and len(sol[2]) != 1 and sol[2][0].shape != (n_param, 1):
+                if len(_sol) != 3 and len(_sol[2]) != 1 and _sol[2][0].shape != (n_param, 1):
                     raise ValueError(
                         "The 3rd element is the InitialGuess of the parameter and "
                         "should be a unique vector of size equal to n_param"
                     )
 
             self.vector = np.ndarray((0, 1))
-            sol_states, sol_controls = sol[0], sol[1]
+            sol_states, sol_controls = _sol[0], _sol[1]
             for p, s in enumerate(sol_states):
                 ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
                 s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states.shape, ns, "states")
@@ -348,7 +358,7 @@ class Solution:
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
 
             if n_param:
-                sol_params = sol[2]
+                sol_params = _sol[2]
                 for p, s in enumerate(sol_params):
                     self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
 
@@ -356,17 +366,17 @@ class Solution:
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
 
-        def init_from_vector(sol: Union[np.ndarray, DM]):
+        def init_from_vector(_sol: Union[np.ndarray, DM]):
             """
             Initialize all the attributes from a vector of solution
 
             Parameters
             ----------
-            sol: Union[np.ndarray, DM]
+            _sol: Union[np.ndarray, DM]
                 The solution in vector format
             """
 
-            self.vector = sol
+            self.vector = _sol
             self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
@@ -509,11 +519,12 @@ class Solution:
 
         if shooting_type == Shooting.MULTIPLE and keepdims:
             raise ValueError(
-                "Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing"
+                "Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing"
             )
         if keepdims and not continuous:
             raise ValueError(
-                "continuous=False and keepdims=True cannot be used simultanously since it would necessarily change the dimension"
+                "continuous=False and keepdims=True cannot be used simultaneously since it would necessarily "
+                "change the dimension"
             )
 
         # Copy the data
@@ -906,7 +917,7 @@ class Solution:
 
             return running_total
 
-        def print_objective_functions(ocp, sol):
+        def print_objective_functions(ocp):
             """
             Print the values of each objective function to the console
             """
@@ -946,7 +957,7 @@ class Solution:
             print(f"------------------------------")
 
         if cost_type == CostType.OBJECTIVES:
-            print_objective_functions(self.ocp, self)
+            print_objective_functions(self.ocp)
         elif cost_type == CostType.CONSTRAINTS:
             print_constraints(self.ocp, self)
         elif cost_type == CostType.ALL:
