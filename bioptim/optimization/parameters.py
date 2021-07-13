@@ -440,7 +440,7 @@ class ParameterList(UniquePerProblemOptionList):
 
     @property
     def shape(self):
-        """"""
+        """ """
         return sum([p.shape for p in self])
 
 

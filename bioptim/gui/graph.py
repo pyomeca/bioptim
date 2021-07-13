@@ -155,11 +155,15 @@ class GraphAbstract:
             if isinstance(obj.type, ObjectiveFcn.Lagrange):
                 if obj.target is not None:
                     if obj.quadratic:
-                        lagrange_str += f"({obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])})" \
-                                        f"{self._squared}{self._return_line}"
+                        lagrange_str += (
+                            f"({obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])})"
+                            f"{self._squared}{self._return_line}"
+                        )
                     else:
-                        lagrange_str += f"{obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])}" \
-                                        f"{self._return_line}"
+                        lagrange_str += (
+                            f"{obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])}"
+                            f"{self._return_line}"
+                        )
                 else:
                     if obj.quadratic:
                         lagrange_str += f"({obj.name}){self._squared}{self._return_line}"
@@ -188,14 +192,20 @@ class GraphAbstract:
             for i in obj.node_idx:
                 if isinstance(obj.type, ObjectiveFcn.Mayer):
                     mayer_str = ""
-                    mayer_objective: Union[list, tuple] = [obj.node[0]] if isinstance(obj.node, (list, tuple)) else [obj.node]
+                    mayer_objective: Union[list, tuple] = (
+                        [obj.node[0]] if isinstance(obj.node, (list, tuple)) else [obj.node]
+                    )
                     if obj.target is not None:
                         if obj.quadratic:
-                            mayer_str += f"({obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])})" \
-                                         f"{self._squared}{self._return_line}"
+                            mayer_str += (
+                                f"({obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])})"
+                                f"{self._squared}{self._return_line}"
+                            )
                         else:
-                            mayer_str += f"{obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])}" \
-                                         f"{self._return_line}"
+                            mayer_str += (
+                                f"{obj.name} - {self._vector_layout(obj.target[:, obj.node_idx.index(i)])}"
+                                f"{self._return_line}"
+                            )
                     else:
                         if obj.quadratic:
                             mayer_str += f"({obj.name}){self._squared}{self._return_line}"
@@ -520,8 +530,10 @@ class OcpToGraph(GraphAbstract):
             The index of the current phase
         """
 
-        node_str = f"<b>Model</b>: {self.ocp.nlp[phase_idx].model.path().filename().to_string()}" \
-                   f".{self.ocp.nlp[phase_idx].model.path().extension().to_string()}<br/>"
+        node_str = (
+            f"<b>Model</b>: {self.ocp.nlp[phase_idx].model.path().filename().to_string()}"
+            f".{self.ocp.nlp[phase_idx].model.path().extension().to_string()}<br/>"
+        )
         node_str += f"<b>Phase duration</b>: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"
         node_str += f"<b>Dynamics</b>: {self.ocp.nlp[phase_idx].dynamics_type.type.name}<br/>"

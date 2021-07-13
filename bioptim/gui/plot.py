@@ -582,17 +582,14 @@ class PlotOcp:
                             state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
                         )
                     except ValueError:
-                        val = self.plot_func[key][i].function(
-                            state[:, ::step_size],
-                            control,
-                            data_params_in_dyn,
-                            **self.plot_func[key][i].parameters
-                        ).shape
-                        raise ValueError(
-                            f"Wrong dimensions for plot {key}. Got "
-                            f"{val}"
-                            f", but expected {y.shape}"
+                        val = (
+                            self.plot_func[key][i]
+                            .function(
+                                state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                            )
+                            .shape
                         )
+                        raise ValueError(f"Wrong dimensions for plot {key}. Got " f"{val}" f", but expected {y.shape}")
                     self.__append_to_ydata(y)
         self.__update_axes()
 

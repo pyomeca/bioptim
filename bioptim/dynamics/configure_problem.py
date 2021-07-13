@@ -324,7 +324,9 @@ class ConfigureProblem:
 
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
-        legend = [f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx if idx is not None]
+        legend = [
+            f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx if idx is not None
+        ]
 
         mx_states = []
         mx_controls = []

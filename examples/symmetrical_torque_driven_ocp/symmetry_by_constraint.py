@@ -76,7 +76,7 @@ def prepare_ocp(
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
     x_bounds[0][2, :] = 0  # Third dof is set to zero
-    x_bounds[0][biorbd_model.nbQ():, [0, -1]] = 0  # Velocity is 0 at start and end
+    x_bounds[0][biorbd_model.nbQ() :, [0, -1]] = 0  # Velocity is 0 at start and end
 
     # Initial guess
     x_init = InitialGuessList()

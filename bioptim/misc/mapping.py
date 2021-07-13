@@ -32,7 +32,12 @@ class Mapping(OptionGeneric):
         Get the len of the mapping
     """
 
-    def __init__(self, map_idx: Union[list, tuple, range, np.ndarray], oppose: Union[int, list, tuple, range, np.ndarray] = None, **params):
+    def __init__(
+        self,
+        map_idx: Union[list, tuple, range, np.ndarray],
+        oppose: Union[int, list, tuple, range, np.ndarray] = None,
+        **params
+    ):
         """
         Parameters
         ----------
@@ -192,13 +197,26 @@ class BiMappingList(OptionDict):
         if isinstance(bimapping, BiMapping):
             if to_second is not None or to_first is not None:
                 raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
-            self.add(name, phase=phase, to_second=bimapping.to_second, to_first=bimapping.to_first, oppose_to_second=oppose_to_second, oppose_to_first=oppose_to_first)
+            self.add(
+                name,
+                phase=phase,
+                to_second=bimapping.to_second,
+                to_first=bimapping.to_first,
+                oppose_to_second=oppose_to_second,
+                oppose_to_first=oppose_to_first,
+            )
 
         else:
             if to_second is None or to_first is None:
                 raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
             super(BiMappingList, self)._add(
-                key=name, phase=phase, option_type=BiMapping, to_second=to_second, to_first=to_first, oppose_to_second=oppose_to_second, oppose_to_first=oppose_to_first
+                key=name,
+                phase=phase,
+                option_type=BiMapping,
+                to_second=to_second,
+                to_first=to_first,
+                oppose_to_second=oppose_to_second,
+                oppose_to_first=oppose_to_first,
             )
 
     def __getitem__(self, item) -> Union[dict, BiMapping]:

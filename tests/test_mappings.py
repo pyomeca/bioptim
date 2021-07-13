@@ -9,7 +9,9 @@ def test_mapping():
 
     np.testing.assert_almost_equal(Mapping([0, 2]).map(obj_to_map), [[0, 1, 2], [6, 7, 8]])
     np.testing.assert_almost_equal(Mapping([None, 2, None]).map(obj_to_map), [[0, 0, 0], [6, 7, 8], [0, 0, 0]])
-    np.testing.assert_almost_equal(Mapping([None, 2, 1], oppose=[1, 2]).map(obj_to_map), [[0, 0, 0], [-6, -7, -8], [-3, -4, -5]])
+    np.testing.assert_almost_equal(
+        Mapping([None, 2, 1], oppose=[1, 2]).map(obj_to_map), [[0, 0, 0], [-6, -7, -8], [-3, -4, -5]]
+    )
     np.testing.assert_almost_equal(Mapping([None, 0], oppose=1).map(obj_to_map), [[0, 0, 0], [0, -1, -2]])
 
 
