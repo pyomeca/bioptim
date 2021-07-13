@@ -27,12 +27,21 @@ install:
   - conda env update -n bioptim -f environment.yml
   - conda activate bioptim
   - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
-  - if [[ "$CI_LINUX" == true ]]; then conda install xorg-libx11 xorg-libxtst -cconda-forge; fi
+  - sh: if [[ "$CI_LINUX" == true ]]; then conda install xorg-libx11 xorg-libxtst -cconda-forge; fi
   - conda list
   - cd external
   - sh: if [[ "$CI_LINUX" == true ]]; then  ./acados_install_linux.sh; else ./acados_install_mac.sh; fi
   - cd ..
-
+  
+# to run your custom scripts instead of automatic tests
+test_script:
+  - bioptim_folder=`pwd`
+  - sh: if [[ "$CI_LINUX" == true ]]; then  black . -l120 --exclude "external/*" --check; fi
+  - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
+  - python setup.py install
+  - cd
+  - python -c "import bioptim"
+  - cd $bioptim_folder
 
 
 #---------------------------------#
