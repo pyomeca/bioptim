@@ -4,8 +4,8 @@
 
 # Build worker image (VM template)
 image:
-  - Visual Studio 2019
   - Ubuntu2004
+  - Visual Studio 2019
   - macos
 
 # set clone depth
@@ -18,7 +18,7 @@ build: off
 install:
   - sh: if [[ $CI_LINUX == true ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; bash miniconda.sh -b -p $HOME/miniconda; export PATH="$HOME/miniconda/bin:$PATH"; else curl https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -L -o miniconda.sh; bash miniconda.sh -b -p $HOME/miniconda; export PATH="$HOME/miniconda/bin:$PATH"; fi
   - sh: hash -r
-  - cmd: SET PATH="C:\\Miniconda-x64";"C:\\Miniconda-x64\\Scripts";%PATH%
+  - cmd: SET PATH="C:\\Miniconda38-x64";"C:\\Miniconda38-x64\\Scripts";%PATH%
   - conda config --set always_yes yes --set changeps1 no
   - conda config --set auto_update_conda no
   - cmd: conda update -q conda
@@ -31,6 +31,17 @@ install:
   - cd external
   - sh: if [[ "$CI_LINUX" == true ]]; then  ./acados_install_linux.sh; else ./acados_install_mac.sh; fi
   - cd ..
+
+# to run your custom scripts instead of automatic tests
+test_script:
+  - bioptim_folder=`pwd`
+  - sh: if [[ "$CI_LINUX" == true ]]; then  black . -l120 --exclude "external/*" --check; fi
+  - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
+  - python setup.py install
+  - cd
+  - python -c "import bioptim"
+  - cd $bioptim_folder
+
 
 #---------------------------------#
 #        global handlers          #
