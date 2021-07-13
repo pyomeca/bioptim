@@ -266,16 +266,16 @@ class ConfigureProblem:
 
         if name not in nlp.variable_mappings:
             nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
-        legend = [f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx]
+        legend = [f"{name}_{name_elements[idx]}" for idx in nlp.variable_mappings[name].to_first.map_idx  if idx is not None]
 
-        mx_states = MX()
-        mx_controls = MX()
+        mx_states = []
+        mx_controls = []
         for i in nlp.variable_mappings[name].to_second.map_idx:
-            if i is None:
-                continue
-            sign = "-" if np.sign(i) < 0 else ""
-            mx_states = vertcat(mx_states, MX.sym(f"{sign}{name}_{name_elements[abs(i)]}_MX", 1, 1))
-            mx_controls = vertcat(mx_controls, MX.sym(f"{sign}{name}_{name_elements[abs(i)]}_MX", 1, 1))
+            var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
+            mx_states.append(MX.sym(var_name, 1, 1))
+            mx_controls.append(MX.sym(var_name, 1, 1))
+        mx_states = vertcat(*mx_states)
+        mx_controls = vertcat(*mx_controls)
 
         if as_states:
             cx = define_cx(n_col=2)

@@ -62,7 +62,7 @@ def prepare_ocp(
     final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
     dof_mappings = BiMappingList()
-    dof_mappings.add("q", [0, 1, 2, -2], [0, 1, 2])
+    dof_mappings.add("q", [0, 1, None, 2, -2], [0, 1, 3])
 
     # Add objective functions
     objective_functions = ObjectiveList()

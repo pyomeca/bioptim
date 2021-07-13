@@ -581,7 +581,7 @@ class QAndQDotBounds(Bounds):
     def __init__(
         self,
         biorbd_model,
-        dof_mappings: BiMappingList = None,
+        dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
