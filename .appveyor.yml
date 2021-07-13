@@ -4,8 +4,8 @@
 
 # Build worker image (VM template)
 image:
-  - Ubuntu2004
   - Visual Studio 2019
+  - Ubuntu2004
   - macos
 
 # set clone depth
@@ -16,24 +16,24 @@ build: off
 
 # scripts that run after cloning repository
 install:
-  - bash if [[ $CI_LINUX == true ]]; then 
+# IF LINUX OR MAC
+  - sh: if [[ $CI_LINUX == true ]]; then 
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
       bash miniconda.sh -b -p $HOME/miniconda;
       export PATH="$HOME/miniconda/bin:$PATH";
-    elif [[ $CI_WINDOWS == true ]]; then
-      choco install miniconda3 --params="'/AddToPath:1'";
-      export PATH="/c/tools/miniconda3/scripts:/c/tools/miniconda3/:/c/Program Files/Git/miniconda3/bin/:$PATH";
     else
       curl https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -L -o miniconda.sh;
       bash miniconda.sh -b -p $HOME/miniconda;
       export PATH="$HOME/miniconda/bin:$PATH";
     fi
+# ELIF WINDOWS
+  - cmd: choco install miniconda3 --params="'/AddToPath:1'"
+  - cmd: export PATH="/c/tools/miniconda3/scripts:/c/tools/miniconda3/:/c/Program Files/Git/miniconda3/bin/:$PATH"
+#FI
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda config --set auto_update_conda no
-  - if [[ "$CI_WINDOWS" == false ]]; then 
-      conda update -q conda; 
-    fi
+  - cmd: conda update -q conda
   - source activate
   - conda env update -n bioptim -f environment.yml
   - conda activate bioptim
@@ -43,9 +43,10 @@ install:
     fi
   - conda list
   - cd external
-  - if [[ "$CI_LINUX" == true ]]; then 
+# IF LINUX ELSE MAC
+  - sh: if [[ "$CI_LINUX" == true ]]; then 
       ./acados_install_linux.sh;
-    elif [[ "$CI_WINDOWS" == false ]]; then
+    else
       ./acados_install_mac.sh;
     fi
   - cd ..
@@ -53,7 +54,7 @@ install:
 # to run your custom scripts instead of automatic tests
 test_script:
   - bioptim_folder=`pwd`
-  - if [[ "$CI_LINUX" == true ]]; then 
+  - sh: if [[ "$CI_LINUX" == true ]]; then 
       black . -l120 --exclude "external/*" --check;
     fi
   - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
@@ -69,7 +70,7 @@ test_script:
 
 # on successful build
 on_success:
-  - if [[ "$CI_LINUX" == true ]]; then 
+  - sh: if [[ "$CI_LINUX" == true ]]; then 
       codecov;
     fi
 
