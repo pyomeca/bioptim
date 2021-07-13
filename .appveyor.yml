@@ -18,7 +18,7 @@ build: off
 install:
   - sh: if [[ $CI_LINUX == true ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; bash miniconda.sh -b -p $HOME/miniconda; export PATH="$HOME/miniconda/bin:$PATH"; else curl https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -L -o miniconda.sh; bash miniconda.sh -b -p $HOME/miniconda; export PATH="$HOME/miniconda/bin:$PATH"; fi
   - cmd: choco install miniconda3 --params="'/AddToPath:1'"
-  - cmd: export PATH="/c/tools/miniconda3/scripts:/c/tools/miniconda3/:/c/Program Files/Git/miniconda3/bin/:$PATH"
+  - cmd: setx path "%path%;C:/tools/miniconda3/scripts;C:/tools/miniconda3/;C:/Program Files/Git/miniconda3/bin/"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda config --set auto_update_conda no
