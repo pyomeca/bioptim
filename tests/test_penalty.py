@@ -550,7 +550,7 @@ def test_tau_max_from_actuators(value, threshold):
     t = [0]
     x = [DM.zeros((6, 1)), DM.zeros((6, 1))]
     u = [DM.ones((3, 1)) * value, DM.ones((3, 1)) * value]
-    penalty_type = ConstraintFcn.TORQUE_MAX_FROM_ACTUATORS
+    penalty_type = ConstraintFcn.TORQUE_MAX_FROM_Q_AND_QDOT
     penalty = Constraint(penalty_type, min_torque=threshold)
     if threshold and threshold < 0:
         with pytest.raises(ValueError, match="min_torque cannot be negative in tau_max_from_actuators"):
