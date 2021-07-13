@@ -46,6 +46,7 @@ class PenaltyOption(OptionGeneric):
         custom_function: Callable = None,
         is_internal: bool = False,
         multi_thread: bool = None,
+        expand: bool = True,
         **params: Any,
     ):
         """
@@ -85,7 +86,7 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")
         self.rows = rows if rows is not None else index
         self.cols = cols
-        self.expand = True
+        self.expand = expand
 
         self.target = None
         if target is not None:
