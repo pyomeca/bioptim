@@ -50,8 +50,6 @@ test_script:
 
 # on successful build
 on_success:
-  - sh: if [[ "$CI_LINUX" == true ]]; then 
-      codecov;
-    fi
+  - sh: if [[ "$CI_LINUX" == true ]]; then codecov; fi
 
 
