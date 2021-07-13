@@ -16,13 +16,21 @@ build: off
 
 # scripts that run after cloning repository
 install:
+  - sh: if [[ $CI_LINUX == true ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; bash miniconda.sh -b -p $HOME/miniconda; export PATH="$HOME/miniconda/bin:$PATH"; else curl https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -L -o miniconda.sh; bash miniconda.sh -b -p $HOME/miniconda; export PATH="$HOME/miniconda/bin:$PATH"; fi
   - sh: hash -r
   - cmd: SET PATH="C:\\Miniconda-x64";"C:\\Miniconda-x64\\Scripts";%PATH%
   - conda config --set always_yes yes --set changeps1 no
   - conda config --set auto_update_conda no
   - cmd: conda update -q conda
-  - source activate
-
+  - sh: source activate
+  - conda env update -n bioptim -f environment.yml
+  - conda activate bioptim
+  - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
+  - if [[ "$CI_LINUX" == true ]]; then conda install xorg-libx11 xorg-libxtst -cconda-forge; fi
+  - conda list
+  - cd external
+  - sh: if [[ "$CI_LINUX" == true ]]; then  ./acados_install_linux.sh; else ./acados_install_mac.sh; fi
+  - cd ..
 
 #---------------------------------#
 #        global handlers          #
