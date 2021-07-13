@@ -393,7 +393,7 @@ class ConfigureProblem:
         """
 
         name_qdot = [str(i) for i in range(nlp.model.nbQdot())]
-        ConfigureProblem._adjust_mapping("qdot", ["qdot", "taudot"], nlp)
+        ConfigureProblem._adjust_mapping("qdot", ["q", "qdot", "taudot"], nlp)
         ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls)
 
     @staticmethod
@@ -470,8 +470,20 @@ class ConfigureProblem:
         if key_to_adjust not in nlp.variable_mappings:
             for n in reference_keys:
                 if n in nlp.variable_mappings:
-                    nlp.variable_mappings[key_to_adjust] = nlp.variable_mappings[n]
-                    break
+                    if n == "q":
+                        q_map = list(nlp.variable_mappings[n].to_first.map_idx)
+                        target = list(range(nlp.model.nbQ()))
+                        if nlp.model.nbQuat() > 0:
+                            if q_map != target:
+                                raise RuntimeError(
+                                    "It is not possible to define a q mapping without a qdot or tau mapping"
+                                    "while the model has quaternions"
+                                )
+                            target = list(range(nlp.model.nbQdot()))
+                        nlp.variable_mappings[key_to_adjust] = BiMapping(target, target)
+                    else:
+                        nlp.variable_mappings[key_to_adjust] = nlp.variable_mappings[n]
+                    return
             raise RuntimeError("Could not adjust mapping with the reference_keys provided")
 
 

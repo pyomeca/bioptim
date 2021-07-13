@@ -151,13 +151,6 @@ class OptimizationVariableList:
                 if item == elt.name:
                     return elt
             raise KeyError(f"{item} is not in the list")
-        elif isinstance(item, (list, tuple)):
-            mx = [elt.mx for elt in self.elements if elt.name in item]
-            index = []
-            for elt in self.elements:
-                if elt.name in item:
-                    index.extend(list(elt.index))
-            return OptimizationVariable("some", mx, index)
         else:
             raise ValueError("OptimizationVariableList can be sliced with int or str only")
 
