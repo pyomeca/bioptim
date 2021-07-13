@@ -21,6 +21,8 @@ class Mapping(OptionGeneric):
     ----------
     map_idx: list[int]
         The actual index list that links to the other set, an negative value links to a numerical 0
+    oppose: list[int]
+        Index to multiply by -1
 
     Methods
     -------
@@ -30,15 +32,23 @@ class Mapping(OptionGeneric):
         Get the len of the mapping
     """
 
-    def __init__(self, map_idx: Union[list, tuple, range, np.ndarray], **params):
+    def __init__(self, map_idx: Union[list, tuple, range, np.ndarray], oppose: Union[int, list, tuple, range, np.ndarray] = None, **params):
         """
         Parameters
         ----------
         map_idx: Union[list, tuple, range]
             The actual index list that links to the other set
+        oppose: Union[list, tuple, range]
+            Index to multiply by -1
         """
         super(Mapping, self).__init__(**params)
         self.map_idx = map_idx
+        self.oppose = [1] * len(self.map_idx)
+        if oppose is not None:
+            if isinstance(oppose, int):
+                oppose = [oppose]
+            for i in oppose:
+                self.oppose[i] = -1
 
     def map(self, obj: Union[tuple, list, np.ndarray, MX, SX, DM]) -> Union[np.ndarray, MX, SX, DM]:
         """
@@ -67,13 +77,18 @@ class Mapping(OptionGeneric):
             raise RuntimeError("map must be applied on np.ndarray, MX or SX")
 
         # Fill the positive values
-        index_plus_in_origin = [abs(v) for v in self.map_idx if v is not None and v >= 0]
-        index_plus_in_new = [i for i, v in enumerate(self.map_idx) if v is not None and v >= 0]
+        index_plus_in_origin = []
+        index_plus_in_new = []
+        index_minus_in_origin = []
+        index_minus_in_new = []
+        for i, v in enumerate(self.map_idx):
+            if v is not None and self.oppose[i] > 0:
+                index_plus_in_origin.append(v)
+                index_plus_in_new.append(i)
+            elif v is not None and self.oppose[i] < 0:
+                index_minus_in_origin.append(v)
+                index_minus_in_new.append(i)
         mapped_obj[index_plus_in_new, :] = obj[index_plus_in_origin, :]  # Fill the non zeros values
-
-        # Fill the negative values
-        index_minus_in_origin = [abs(v) for v in self.map_idx if v is not None and v < 0]
-        index_minus_in_new = [i for i, v in enumerate(self.map_idx) if v is not None and v < 0]
         mapped_obj[index_minus_in_new, :] = -obj[index_minus_in_origin, :]  # Fill the non zeros values
 
         return mapped_obj
@@ -106,6 +121,8 @@ class BiMapping(OptionGeneric):
         self,
         to_second: Union[Mapping, int, list, tuple, range],
         to_first: Union[Mapping, int, list, tuple, range],
+        oppose_to_second: Union[Mapping, int, list, tuple, range] = None,
+        oppose_to_first: Union[Mapping, int, list, tuple, range] = None,
         **params
     ):
         """
@@ -115,13 +132,17 @@ class BiMapping(OptionGeneric):
             The mapping that links the first index set to the second
         to_first: Union[Mapping, list[int], tuple[int], range]
             The mapping that links the second index set to the first
+        oppose_to_second: Union[list, tuple, range]
+            Index to multiply by -1 of the to_second mapping
+        oppose_to_first: Union[list, tuple, range]
+            Index to multiply by -1 of the to_first mapping
         """
         super(BiMapping, self).__init__(**params)
 
         if isinstance(to_second, (list, tuple, range)):
-            to_second = Mapping(map_idx=to_second)
+            to_second = Mapping(map_idx=to_second, oppose=oppose_to_second)
         if isinstance(to_first, (list, tuple, range)):
-            to_first = Mapping(map_idx=to_first)
+            to_first = Mapping(map_idx=to_first, oppose=oppose_to_first)
 
         if not isinstance(to_second, Mapping):
             raise RuntimeError("to_second must be a Mapping class")
@@ -141,6 +162,8 @@ class BiMappingList(OptionDict):
         name: str,
         to_second: Union[Mapping, int, list, tuple, range] = None,
         to_first: Union[Mapping, int, list, tuple, range] = None,
+        oppose_to_second: Union[Mapping, int, list, tuple, range] = None,
+        oppose_to_first: Union[Mapping, int, list, tuple, range] = None,
         bimapping: BiMapping = None,
         phase: int = 0,
     ):
@@ -155,6 +178,10 @@ class BiMappingList(OptionDict):
             The mapping that links the first variable to the second
         to_first: Mapping
             The mapping that links the second variable to the first
+        oppose_to_second: Union[list, tuple, range]
+            Index to multiply by -1 of the to_second mapping
+        oppose_to_first: Union[list, tuple, range]
+            Index to multiply by -1 of the to_first mapping
         bimapping: BiMapping
             The BiMapping to copy
         """
@@ -165,13 +192,13 @@ class BiMappingList(OptionDict):
         if isinstance(bimapping, BiMapping):
             if to_second is not None or to_first is not None:
                 raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
-            self.add(name, phase=phase, to_second=bimapping.to_second, to_first=bimapping.to_first)
+            self.add(name, phase=phase, to_second=bimapping.to_second, to_first=bimapping.to_first, oppose_to_second=oppose_to_second, oppose_to_first=oppose_to_first)
 
         else:
             if to_second is None or to_first is None:
                 raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
             super(BiMappingList, self)._add(
-                key=name, phase=phase, option_type=BiMapping, to_second=to_second, to_first=to_first
+                key=name, phase=phase, option_type=BiMapping, to_second=to_second, to_first=to_first, oppose_to_second=oppose_to_second, oppose_to_first=oppose_to_first
             )
 
     def __getitem__(self, item) -> Union[dict, BiMapping]:

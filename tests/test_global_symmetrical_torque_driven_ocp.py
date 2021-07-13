@@ -9,7 +9,7 @@ from .utils import TestUtils
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_symmetry_by_construction(ode_solver):
+def test_symmetry_by_mapping(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     sym = TestUtils.load_module(bioptim_folder + "/examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py")
     ode_solver = ode_solver()
