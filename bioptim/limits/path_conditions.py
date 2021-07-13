@@ -743,6 +743,20 @@ class InitialGuess(OptionGeneric):
 
         return self.init.shape
 
+    def __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float]):
+        """
+        Allows to set from square brackets
+
+        Parameters
+        ----------
+        _slice: Union[slice, list, tuple]
+            The slice where to put the data
+        value: Union[np.ndarray, float]
+            The value to set
+        """
+
+        self.init[_slice] = value
+
 
 class InitialGuessList(UniquePerPhaseOptionList):
     """
