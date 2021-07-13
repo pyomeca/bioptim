@@ -18,6 +18,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
+    Node,
 )
 
 
@@ -58,7 +59,8 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Path constraint
     n_q = biorbd_model.nbQ()

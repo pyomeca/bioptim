@@ -26,6 +26,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
+    Node,
 )
 
 
@@ -63,31 +64,39 @@ def generate_data(
     else:
         nu = n_mus
 
+    nlp = NonLinearProgram()
+    nlp.model = biorbd_model
+    nlp.variable_mappings = {
+        "q": BiMapping(range(n_q), range(n_q)),
+        "qdot": BiMapping(range(n_qdot), range(n_qdot)),
+        "tau": BiMapping(range(n_tau), range(n_tau)),
+        "muscles": BiMapping(range(n_mus), range(n_mus)),
+    }
+
     # Casadi related stuff
     symbolic_q = MX.sym("q", n_q, 1)
     symbolic_qdot = MX.sym("qdot", n_qdot, 1)
-    symbolic_controls = MX.sym("u", nu, 1)
+    symbolic_tau = MX.sym("tau", n_tau, 1)
+    symbolic_mus = MX.sym("muscles", n_mus, 1)
     symbolic_parameters = MX.sym("params", 0, 0)
     markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_q)
 
-    nlp = NonLinearProgram()
-    nlp.model = biorbd_model
-    nlp.shape = {"muscle": n_mus}
-    nlp.mapping = {
-        "q": BiMapping(range(n_q), range(n_q)),
-        "qdot": BiMapping(range(n_qdot), range(n_qdot)),
-    }
+    nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
+    nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
 
     if use_residual_torque:
-        nlp.shape["tau"] = n_tau
-        nlp.mapping["tau"] = BiMapping(range(n_tau), range(n_tau))
-        dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_and_torque_driven
-    else:
-        dyn_func = DynamicsFunctions.forward_dynamics_muscle_activations_driven
+        nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
+    nlp.controls.append("muscles", [symbolic_mus, symbolic_mus], symbolic_mus, nlp.variable_mappings["muscles"])
+
+    if use_residual_torque:
+        nlp.variable_mappings["tau"] = BiMapping(range(n_tau), range(n_tau))
+    dyn_func = DynamicsFunctions.muscles_driven
 
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot))
+    symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
+
     dynamics_func = biorbd.to_casadi_func(
-        "ForwardDyn", dyn_func, symbolic_states, symbolic_controls, symbolic_parameters, nlp
+        "ForwardDyn", dyn_func, symbolic_states, symbolic_controls, symbolic_parameters, nlp, False
     )
 
     def dyn_interface(t, x, u):
@@ -160,26 +169,21 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL, target=activations_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=activations_ref)
 
     if use_residual_torque:
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     if kin_data_to_track == "markers":
         objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)
     elif kin_data_to_track == "q":
-        objective_functions.add(
-            ObjectiveFcn.Lagrange.TRACK_STATE, weight=100, target=q_ref, index=range(biorbd_model.nbQ())
-        )
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q", weight=100, target=q_ref, node=Node.ALL)
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
     dynamics = DynamicsList()
-    if use_residual_torque:
-        dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN)
-    else:
-        dynamics.add(DynamicsFcn.MUSCLE_ACTIVATIONS_DRIVEN)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=use_residual_torque, expand=False)
 
     # Path constraint
     x_bounds = BoundsList()

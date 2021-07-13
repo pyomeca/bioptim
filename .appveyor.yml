@@ -4,9 +4,9 @@
 
 # Build worker image (VM template)
 image:
+  - Ubuntu2004
   - Visual Studio 2019
   - macos
-  - Ubuntu2004
 
 # set clone depth
 clone_depth: 5                      # clone entire repository history if not defined

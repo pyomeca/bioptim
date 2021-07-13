@@ -8,8 +8,7 @@ endsegment
 
 segment Seg1
     parent Seg0
-    rotations	x
-    ranges  -pi pi
+    rotations	zx
 	mass 1
 	inertia
 	  1 0 0

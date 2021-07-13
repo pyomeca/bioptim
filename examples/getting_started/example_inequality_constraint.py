@@ -22,7 +22,7 @@ from bioptim import (
     ObjectiveFcn,
     DynamicsList,
     DynamicsFcn,
-    BiMapping,
+    BiMappingList,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -35,7 +35,8 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
     # Model path
     biorbd_model = biorbd.Model(biorbd_model_path)
     tau_min, tau_max, tau_init = -500, 500, 0
-    tau_mapping = BiMapping([None, None, None, 0], [3])
+    dof_mapping = BiMappingList()
+    dof_mapping.add("tau", [None, None, None, 0], [3])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -43,27 +44,27 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False)
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        ConstraintFcn.CONTACT_FORCE,
+        ConstraintFcn.TRACK_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
-        node=Node.ALL,
-        contact_force_idx=1,
+        node=Node.ALL_SHOOTING,
+        contact_index=1,
     )
     constraints.add(
-        ConstraintFcn.CONTACT_FORCE,
+        ConstraintFcn.TRACK_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
-        node=Node.ALL,
-        contact_force_idx=2,
+        node=Node.ALL_SHOOTING,
+        contact_index=2,
     )
     constraints.add(
         ConstraintFcn.NON_SLIPPING,
-        node=Node.ALL,
+        node=Node.ALL_SHOOTING,
         normal_component_idx=(1, 2),
         tangential_component_idx=0,
         static_friction_coefficient=mu,
@@ -85,10 +86,10 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * tau_mapping.to_first.len, [tau_max] * tau_mapping.to_first.len)
+    u_bounds.add([tau_min] * len(dof_mapping["tau"].to_first), [tau_max] * len(dof_mapping["tau"].to_first))
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * tau_mapping.to_first.len)
+    u_init.add([tau_init] * len(dof_mapping["tau"].to_first))
 
     return OptimalControlProgram(
         biorbd_model,
@@ -101,7 +102,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
         u_bounds,
         objective_functions,
         constraints,
-        tau_mapping=tau_mapping,
+        variable_mappings=dof_mapping,
         ode_solver=ode_solver,
     )
 

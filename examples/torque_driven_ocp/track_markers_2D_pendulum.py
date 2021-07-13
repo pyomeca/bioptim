@@ -25,6 +25,7 @@ from bioptim import (
     Axis,
     PlotType,
     OdeSolver,
+    Node,
 )
 
 # Load track_segment_on_rt
@@ -93,13 +94,18 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        ObjectiveFcn.Lagrange.TRACK_MARKERS, axis_to_track=[Axis.Y, Axis.Z], weight=100, target=markers_ref
+        ObjectiveFcn.Lagrange.TRACK_MARKERS,
+        axes=[Axis.Y, Axis.Z],
+        node=Node.ALL,
+        weight=100,
+        target=markers_ref[1:, :, :],
     )
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_TORQUE, target=tau_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="tau", target=tau_ref)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Path constraint
     x_bounds = BoundsList()

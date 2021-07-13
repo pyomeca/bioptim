@@ -25,32 +25,29 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Node,
-    PenaltyNode,
+    PenaltyNodeList,
     PhaseTransitionList,
     PhaseTransitionFcn,
     ParameterList,
+    BiorbdInterface,
 )
 
+from bioptim.gui.graph import OcpToGraph
 from .utils import TestUtils
 
 
-def minimize_difference(all_pn: PenaltyNode):
-    return all_pn[0].u[0] - all_pn[1].u[0]
+def minimize_difference(all_pn: PenaltyNodeList):
+    return all_pn[0].nlp.controls["tau"].cx_end - all_pn[1].nlp.controls["tau"].cx
 
 
-def custom_func_track_markers(pn: PenaltyNode, first_marker: str, second_marker: str) -> MX:
-    # Get the index of the markers
-    marker_0_idx = biorbd.marker_index(pn.nlp.model, first_marker)
-    marker_1_idx = biorbd.marker_index(pn.nlp.model, second_marker)
+def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str) -> MX:
+    # Get the index of the markers from their name
+    marker_0_idx = biorbd.marker_index(all_pn.nlp.model, first_marker)
+    marker_1_idx = biorbd.marker_index(all_pn.nlp.model, second_marker)
 
-    # Store the casadi function. Using add_casadi_func allow to skip if the function already exists
-    markers_func = pn.nlp.add_casadi_func("markers", pn.nlp.model.markers, pn.nlp.q)
-
-    # Get the marker positions and compute the difference
-    nq = pn.nlp.shape["q"]
-    q = pn.x[:nq]
-    markers = markers_func(q)
-    return markers[:, marker_0_idx] - markers[:, marker_1_idx]
+    # Convert the function to the required format and then subtract
+    markers = BiorbdInterface.mx_to_cx("markers", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
+    return markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
 
 def prepare_ocp_phase_transitions(
@@ -86,22 +83,23 @@ def prepare_ocp_phase_transitions(
     # Add objective functions
     objective_functions = ObjectiveList()
     if with_lagrange:
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=1)
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=3)
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, weight=0, phase=3, axis=None)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=3)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, weight=0, phase=3)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=0, phase=3, marker_index=[0, 1])
 
     if with_mayer:
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, phase=0, node=1)
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, weight=0, phase=3, marker_index=[0, 1])
         objective_functions.add(
             minimize_difference,
             custom_type=ObjectiveFcn.Mayer,
             node=Node.TRANSITION,
             weight=100,
             phase=1,
-            get_all_nodes_at_once=True,
             quadratic=True,
         )
 
@@ -190,7 +188,7 @@ def prepare_ocp_phase_transitions(
     # Define phase transitions
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(PhaseTransitionFcn.IMPACT, phase_pre_idx=1)
-    phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=2, idx_1=1, idx_2=3)
+    phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=2)
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
 
     return OptimalControlProgram(
@@ -279,7 +277,7 @@ def prepare_ocp_parameters(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=10)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=10)
 
     # Dynamics
@@ -384,7 +382,7 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, list_index=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", list_index=1)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, list_index=2)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=2, list_index=3)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=3, list_index=4)
@@ -408,7 +406,7 @@ def prepare_ocp_custom_objectives(biorbd_model_path, ode_solver=OdeSolver.RK4())
         weight=1000,
         list_index=6,
     )
-    target = np.array([[1, 2, 3], [4, 5, 6]]).T[:, :, np.newaxis]
+    target = np.array([[1, 2, 3], [4, 5, 6]])[:, :, np.newaxis]
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, list_index=7, index=[1, 2], target=target)
 
     # Dynamics
@@ -456,8 +454,10 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
         model_path, with_mayer=with_mayer, with_lagrange=with_lagrange, with_constraints=with_constraints
     )
     if with_lagrange and with_mayer is not False:
-        ocp.nlp[0].J[0][0]["objective"].quadratic = False
-    ocp.print(to_console=True, to_graph=True)
+        ocp.nlp[0].J[0].quadratic = False
+        ocp.nlp[0].J[0].target = np.array([[2]])
+    ocp.print(to_console=True, to_graph=False)  # False so it does not attack the programmer with lot of graphs!
+    OcpToGraph(ocp)._prepare_print()
 
 
 def test_parameters():
@@ -483,7 +483,8 @@ def test_parameters():
     )
     ocp.nlp[0].parameters.options[0][0].penalty_list.type = None
     ocp.nlp[0].parameters.options[0][0].penalty_list.name = "custom_gravity"
-    ocp.print(to_console=True, to_graph=True)
+    ocp.print(to_console=True, to_graph=False)  # False so it does not attack the programmer with lot of graphs!
+    OcpToGraph(ocp)._prepare_print()
 
 
 @pytest.mark.parametrize("quadratic", [True, False])
@@ -494,8 +495,7 @@ def test_objectives_target(quadratic):
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
     ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path)
-    ocp.nlp[0].J[1][0]["objective"].quadratic = quadratic
-    ocp.nlp[0].J[1][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    ocp.nlp[0].J[2][0]["objective"].quadratic = quadratic
-    ocp.nlp[0].J[2][0]["objective"].sliced_target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    ocp.print()
+    ocp.nlp[0].J[1].quadratic = quadratic
+    ocp.nlp[0].J[1].target = np.repeat([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], ocp.nlp[0].ns, axis=0).T
+    ocp.print(to_graph=False)  # False so it does not attack the programmer with lot of graphs!
+    OcpToGraph(ocp)._prepare_print()

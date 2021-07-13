@@ -35,6 +35,7 @@ from .utils import TestUtils
 def test_acados_no_obj(cost_type):
     if platform == "win32":
         return
+
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/acados/cube.py")
     ocp = cube.prepare_ocp(
@@ -63,7 +64,7 @@ def test_acados_one_mayer(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=np.array([[1.0]]).T)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=np.array([[1.0]]).T)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -90,8 +91,8 @@ def test_acados_several_mayer(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0, 1], target=np.array([[1.0, 2.0]]).T)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[2], target=np.array([[3.0]]))
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0, 1], target=np.array([[1.0, 2.0]]).T)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[2], target=np.array([[3.0]]))
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -123,7 +124,15 @@ def test_acados_one_lagrange(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, weight=10, index=[0], target=target)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.TRACK_STATE,
+        key="q",
+        node=Node.ALL,
+        weight=10,
+        index=[0],
+        target=target,
+        multi_thread=False,
+    )
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -153,8 +162,18 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, weight=10, index=[0], target=target)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target[:, -1:])
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.TRACK_STATE,
+        key="q",
+        node=Node.ALL,
+        weight=10,
+        index=[0],
+        target=target,
+        multi_thread=False,
+    )
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=target[:, -1:], multi_thread=False
+    )
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -183,10 +202,10 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
         tf=2,
     )
     objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", multi_thread=False)
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_ALL_CONTROLS,
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=target, weight=1000, multi_thread=False
     )
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=[0], target=target, weight=1000)
     ocp.update_objectives(objective_functions)
 
     sol = ocp.solve(solver=Solver.ACADOS, solver_options={"cost_type": cost_type})
@@ -299,7 +318,7 @@ def test_acados_custom_dynamics(problem_type_custom):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((0, 9.81, -2.27903226)))
 
 
 def test_acados_one_parameter():
@@ -324,10 +343,10 @@ def test_acados_one_parameter():
     )
     model = ocp.nlp[0].model
     objectives = ObjectiveList()
-    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[0, 1], target=np.array([[0, 3.14]]).T, weight=100000)
-    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[2, 3], target=np.array([[0, 0]]).T, weight=100)
-    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, index=1, weight=10)
-    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=[2, 3], weight=0.000000010)
+    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, key="q", target=np.array([[0, 3.14]]).T, weight=100000)
+    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, key="qdot", target=np.array([[0, 0]]).T, weight=100)
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", index=1, weight=10, multi_thread=False)
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.000000010, multi_thread=False)
     ocp.update_objectives(objectives)
 
     # Path constraint
@@ -379,10 +398,14 @@ def test_acados_several_parameter():
     )
     model = ocp.nlp[0].model
     objectives = ObjectiveList()
-    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[0, 1], target=np.array([[0, 3.14]]).T, weight=100000)
-    objectives.add(ObjectiveFcn.Mayer.TRACK_STATE, index=[2, 3], target=np.array([[0, 0]]).T, weight=100)
-    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, index=1, weight=10)
-    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=[2, 3], weight=0.000000010)
+    objectives.add(
+        ObjectiveFcn.Mayer.TRACK_STATE, key="q", target=np.array([[0, 3.14]]).T, weight=100000, multi_thread=False
+    )
+    objectives.add(
+        ObjectiveFcn.Mayer.TRACK_STATE, key="qdot", target=np.array([[0, 0]]).T, weight=100, multi_thread=False
+    )
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", index=1, weight=10, multi_thread=False)
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.000000010, multi_thread=False)
     ocp.update_objectives(objectives)
 
     # Path constraint
@@ -433,8 +456,10 @@ def test_acados_one_end_constraints():
 
     model = ocp.nlp[0].model
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.TRACK_STATE, index=0, weight=100, target=np.array([[1]]))
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.TRACK_STATE, index=0, key="q", weight=100, target=np.array([[1]]), multi_thread=False
+    )
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, multi_thread=False)
     ocp.update_objectives(objective_functions)
 
     # Path constraint
@@ -457,7 +482,7 @@ def test_acados_one_end_constraints():
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((2.72727272, 9.81, 0)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-2.72727272, 9.81, 0)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-2.72727272, 9.81, 0)), decimal=6)
 
 
 def test_acados_constraints_all():
@@ -477,7 +502,7 @@ def test_acados_constraints_all():
 
     constraints = ConstraintList()
     constraints.add(
-        ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker="m1", segment="seg_rt", axis=(Axis.X)
+        ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker="m1", segment="seg_rt", axis=Axis.X
     )
     ocp.update_constraints(constraints)
 
@@ -487,15 +512,15 @@ def test_acados_constraints_all():
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.8385190835, 0, 0, -0.212027938]), decimal=6)
-    np.testing.assert_almost_equal(q[:, -1], np.array((0.8385190835, 0, 1.57, -0.212027938)), decimal=6)
+    np.testing.assert_almost_equal(q[:, 0], np.array([2.28988221, 0, 0, 2.95087911e-01]), decimal=6)
+    np.testing.assert_almost_equal(q[:, -1], np.array((2.28215749, 0, 1.57, 6.62470772e-01)), decimal=6)
 
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=6)
     np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 0, 0]), decimal=6)
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226, 0)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226, 0)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, 0], np.array((0.04483914, 9.90739842, 2.24951691, 0.78496612)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -2], np.array((0.15945561, 10.03978178, -2.36075327, 0.07267697)), decimal=6)
 
 
 def test_acados_constraints_end_all():
@@ -516,7 +541,7 @@ def test_acados_constraints_end_all():
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m5")
     constraints.add(
-        ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker="m1", segment="seg_rt", axis=(Axis.X)
+        ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL_SHOOTING, marker="m1", segment="seg_rt", axis=Axis.X
     )
     ocp.update_constraints(constraints)
 
@@ -526,15 +551,15 @@ def test_acados_constraints_end_all():
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([2, 0, 0, -0.139146705]), decimal=6)
-    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57, -0.139146705)), decimal=6)
+    np.testing.assert_almost_equal(q[:, 0], np.array([2.01701330, 0, 0, 3.20057865e-01]), decimal=6)
+    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57, 7.85398168e-01)), decimal=6)
 
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=6)
     np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 0, 0]), decimal=6)
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226, 0)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226, 0)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, 0], np.array((0.04648408, 9.88616194, 2.24285498, 0.864213)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -2], np.array((0.19389194, 9.99905781, -2.37713652, -0.19858311)), decimal=6)
 
 
 @pytest.mark.parametrize("failing", ["u_bounds", "x_bounds"])

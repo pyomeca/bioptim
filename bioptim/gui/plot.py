@@ -37,8 +37,10 @@ class CustomPlot:
         The style of the line as specified in matplotlib
     ylim: Union[tuple[float, float], list[float, float]]
         The ylim of the axes as specified in matplotlib
-    bounds:
+    bounds: Bounds
         The bounds to show on the graph
+    parameters: Any
+        The parameters of the function
     """
 
     def __init__(
@@ -46,7 +48,7 @@ class CustomPlot:
         update_function: Callable,
         plot_type: PlotType = PlotType.PLOT,
         axes_idx: Union[Mapping, tuple, list] = None,
-        legend: Union[tuple, list] = (),
+        legend: Union[tuple, list] = None,
         combine_to: str = None,
         color: str = None,
         linestyle: str = None,
@@ -87,7 +89,7 @@ class CustomPlot:
             self.phase_mappings = axes_idx
         else:
             raise RuntimeError("phase_mapping must be a list or a Mapping")
-        self.legend = legend
+        self.legend = legend if legend is not None else ()
         self.combine_to = combine_to
         self.color = color
         self.linestyle = linestyle
@@ -197,7 +199,7 @@ class PlotOcp:
             The type of integration method
         """
         for i in range(1, ocp.n_phases):
-            if ocp.nlp[0].shape["q"] != ocp.nlp[i].shape["q"]:
+            if len(ocp.nlp[0].states["q"]) != len(ocp.nlp[i].states["q"]):
                 raise RuntimeError("Graphs with nbQ different at each phase is not implemented yet")
 
         self.ocp = ocp
@@ -232,12 +234,12 @@ class PlotOcp:
         self.all_figures = []
 
         self.automatically_organize = automatically_organize
-        self.n_vertical_windows = None
-        self.n_horizontal_windows = None
-        self.top_margin = None
-        self.height_step = None
-        self.width_step = None
-        self._organize_windows(len(self.ocp.nlp[0].var_states) + len(self.ocp.nlp[0].var_controls))
+        self.n_vertical_windows: Union[int, None] = None
+        self.n_horizontal_windows: Union[int, None] = None
+        self.top_margin: Union[int, None] = None
+        self.height_step: Union[int, None] = None
+        self.width_step: Union[int, None] = None
+        self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
 
         self.plot_func = {}
         self.variable_sizes = []
@@ -303,9 +305,9 @@ class PlotOcp:
                         size = (
                             nlp.plot[key]
                             .function(
-                                np.zeros((nlp.nx, 1)),
-                                np.zeros((nlp.nu, 1)),
-                                np.zeros((nlp.np, 1)),
+                                np.zeros((nlp.states.shape, 1)),
+                                np.zeros((nlp.controls.shape, 1)),
+                                np.zeros((len(nlp.parameters), 1)),
                                 **nlp.plot[key].parameters,
                             )
                             .shape[0]
@@ -343,9 +345,12 @@ class PlotOcp:
 
                 t = self.t[i]
                 if variable not in self.plot_func:
-                    self.plot_func[variable] = [None] * self.ocp.n_phases
-                self.plot_func[variable][i] = nlp.plot[variable]
+                    self.plot_func[variable] = [
+                        nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
+                    ]
 
+                if not self.plot_func[variable][i]:
+                    continue
                 mapping = self.plot_func[variable][i].phase_mappings.map_idx
                 for ctr, k in enumerate(mapping):
                     ax = axes[k]
@@ -520,7 +525,7 @@ class PlotOcp:
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
-                    self.tf[i_in_tf] = data_params["time"][i_in_time]
+                    self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):
@@ -528,13 +533,13 @@ class PlotOcp:
             n_elements = nlp.ns * step_size + 1
 
             state = np.ndarray((0, n_elements))
-            for s in nlp.var_states:
+            for s in nlp.states:
                 if isinstance(data_states, (list, tuple)):
                     state = np.concatenate((state, data_states[i][s]))
                 else:
                     state = np.concatenate((state, data_states[s]))
             control = np.ndarray((0, nlp.ns + 1))
-            for s in nlp.var_controls:
+            for s in nlp.controls:
                 if isinstance(data_controls, (list, tuple)):
                     control = np.concatenate((control, data_controls[i][s]))
                 else:
@@ -548,6 +553,9 @@ class PlotOcp:
                 raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
             for key in self.variable_sizes[i]:
+                if not self.plot_func[key][i]:
+                    continue
+
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
                     all_y = []
                     for idx, t in enumerate(self.t_integrated[i]):
@@ -574,11 +582,14 @@ class PlotOcp:
                             state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
                         )
                     except ValueError:
-                        raise ValueError(
-                            f"Wrong dimensions for plot {key}. Got "
-                            f"{self.plot_func[key][i].function(state[:, ::step_size], control, data_params_in_dyn, ** self.plot_func[key][i].parameters).shape}"
-                            f", but expected {y.shape}"
+                        val = (
+                            self.plot_func[key][i]
+                            .function(
+                                state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                            )
+                            .shape
                         )
+                        raise ValueError(f"Wrong dimensions for plot {key}. Got " f"{val}" f", but expected {y.shape}")
                     self.__append_to_ydata(y)
         self.__update_axes()
 
@@ -753,7 +764,7 @@ class OnlineCallback(Callback):
         Send the current data to the plotter
     """
 
-    def __init__(self, ocp, opts: dict = {}):
+    def __init__(self, ocp, opts: dict = None):
         """
         Parameters
         ----------
@@ -762,6 +773,9 @@ class OnlineCallback(Callback):
         opts: dict
             Option to AnimateCallback method of CasADi
         """
+        if opts is None:
+            opts = {}
+
         Callback.__init__(self)
         self.ocp = ocp
         self.nx = self.ocp.v.vector.shape[0]
@@ -919,9 +933,11 @@ class OnlineCallback(Callback):
             -------
             True if everything went well
             """
+
             while not self.pipe.empty():
-                V = self.pipe.get()
-                self.plot.update_data(V)
+                v = self.pipe.get()
+                self.plot.update_data(v)
+
             for i, fig in enumerate(self.plot.all_figures):
                 fig.canvas.draw()
             return True

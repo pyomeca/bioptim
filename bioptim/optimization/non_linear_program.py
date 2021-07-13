@@ -2,7 +2,9 @@ from typing import Callable, Any, Union
 
 import biorbd
 import casadi
+from casadi import SX, MX
 
+from .optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess, BoundsList
 from ..misc.enums import ControlType
@@ -35,30 +37,20 @@ class NonLinearProgram:
         The external forces acting at the center of mass of the designated segment
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase
+    g_internal: list[list[Constraint]]
+        All the constraints internally defined by the OCP at each of the node of the phase
     J: list[list[Objective]]
         All the objectives at each of the node of the phase
-    mapping: dict
-        All the BiMapping of the states and controls
+    J_internal: list[list[Objective]]
+        All the objectives internally defined by the phase at each of the node of the phase
     model: biorbd.Model
         The biorbd model associated with the phase
-    muscleNames: list[str]
-        List of all the muscle names
-    muscles: MX
-        The casadi variables for the muscles
     n_threads: int
         The number of thread to use
-    np: int
-        The number of parameters
     ns: int
         The number of shooting points
-    nu: int
-        The number of controls
-    nx: int
-        The number of states
     ode_solver: OdeSolver
         The chosen ode solver
-    p: MX
-        The casadi variables for the parameters
     parameters: ParameterList
         Reference to the optimized parameters in the underlying ocp
     par_dynamics: casadi.Function
@@ -67,38 +59,32 @@ class NonLinearProgram:
         The index of the current nlp in the ocp.nlp structure
     plot: dict
         The collection of plot for each of the variables
-    q: MX
-        The casadi variables for the generalized coordinates
-    qdot: MX
-        The casadi variables for the generalized velocities
-    shape: dict
-        A collection of the dimension of each of the variables
-    tau: MX
-        The casadi variables for the generalized torques
+    plot_mapping: list
+        The mapping for the plots
     t0: float
         The time stamp of the beginning of the phase
     tf: float
         The time stamp of the end of the phase
-    u: MX
-        The casadi variables for the controls
-    U: list[Union[MX, SX]]
-        The casadi variables for the integration at each node of the phase
+    t_initial_guess: float
+        The initial guess of the time
+    variable_mappings: BiMappingList
+        The list of mapping for all the variables
     u_bounds = Bounds()
         The bounds for the controls
     u_init = InitialGuess()
         The initial guess for the controls
-    var_controls: dict
-        The number of elements for each control the key is the name of the control
-    var_states: dict
-        The number of elements for each state the key is the name of the state
-    x: MX
-        The casadi variables for the states
-    X: list[Union[MX, SX]]
+    U: list[Union[MX, SX]]
         The casadi variables for the integration at each node of the phase
+    controls: OptimizationVariableList
+        A list of all the control variables
     x_bounds = Bounds()
         The bounds for the states
     x_init = InitialGuess()
         The initial guess for the states
+    X: list[Union[MX, SX]]
+        The casadi variables for the integration at each node of the phase
+    states: OptimizationVariableList
+        A list of all the state variables
 
     Methods
     -------
@@ -107,6 +93,8 @@ class NonLinearProgram:
     add(ocp: OptimalControlProgram, param_name: str, param: Any, duplicate_singleton: bool,
             _type: Any = None, name: str = None)
         Set a parameter to their respective nlp
+    __setattr(nlp, name: Union[str, None], param_name: str, param: Any)
+        Add a new element to the nlp of the format 'nlp.param_name = param' or 'nlp.name["param_name"] = param'
     add_path_condition(ocp: OptimalControlProgram, var: Any, path_name: str, type_option: Any, type_list: Any)
         Interface to add for PathCondition classes
     def add_casadi_func(self, name: str, function: Callable, *all_param: Any) -> casadi.Function:
@@ -124,40 +112,30 @@ class NonLinearProgram:
         self.dynamics_type = None
         self.external_forces = []
         self.g = []
+        self.g_internal = []
         self.J = []
-        self.mapping = {}
+        self.J_internal = []
         self.model = None
-        self.muscleNames = None
-        self.muscles = None
         self.n_threads = None
-        self.np = None
         self.ns = None
-        self.nu = None
-        self.nx = None
         self.ode_solver = OdeSolver.RK4()
-        self.p = None
-        self.p_scaling = None
         self.parameters = []
         self.par_dynamics = None
         self.phase_idx = None
         self.plot = {}
-        self.q = None
-        self.qdot = None
-        self.shape = {}
-        self.tau = None
+        self.plot_mapping = {}
         self.t0 = None
         self.tf = None
         self.t_initial_guess = None
-        self.u = None
-        self.U = None
+        self.variable_mappings = {}
         self.u_bounds = Bounds()
         self.u_init = InitialGuess()
-        self.var_controls = {}
-        self.var_states = {}
-        self.x = None
-        self.X = None
+        self.U = None
+        self.controls = OptimizationVariableList()
         self.x_bounds = Bounds()
         self.x_init = InitialGuess()
+        self.X = None
+        self.states = OptimizationVariableList()
 
     def initialize(self, cx: Callable = None):
         """
@@ -169,15 +147,13 @@ class NonLinearProgram:
             The type of casadi variable
 
         """
-        self.shape = {"q": 0, "qdot": 0, "tau": 0, "muscle": 0}
         self.plot = {}
-        self.var_states = {}
-        self.var_controls = {}
         self.cx = cx
-        self.x = self.cx()
-        self.u = self.cx()
+        self.states._cx = self.cx()
+        self.controls._cx = self.cx()
         self.J = []
         self.g = []
+        self.g_internal = []
         self.casadi_func = {}
 
     @staticmethod
@@ -291,7 +267,7 @@ class NonLinearProgram:
             raise RuntimeError(f"{path_name} should be built from a {name} or {name}List")
         NonLinearProgram.add(ocp, path_name, var, False)
 
-    def add_casadi_func(self, name: str, function: Callable, *all_param: Any) -> casadi.Function:
+    def add_casadi_func(self, name: str, function: Union[Callable, SX, MX], *all_param: Any) -> casadi.Function:
         """
         Add to the pool of declared casadi function. If the function already exists, it is skipped
 
@@ -304,8 +280,10 @@ class NonLinearProgram:
         all_param: dict
             Any parameters to pass to the biorbd function
         """
+
         if name in self.casadi_func:
             return self.casadi_func[name]
         else:
-            self.casadi_func[name] = biorbd.to_casadi_func(name, function, *all_param)
+            mx = [var.mx if isinstance(var, OptimizationVariable) else var for var in all_param]
+            self.casadi_func[name] = biorbd.to_casadi_func(name, function, *mx)
         return self.casadi_func[name]

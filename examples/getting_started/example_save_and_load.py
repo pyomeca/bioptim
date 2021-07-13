@@ -82,10 +82,11 @@ def prepare_ocp(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE_DERIVATIVE)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", derivative=True)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)
@@ -129,10 +130,8 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, n_threads=4)
 
     # --- Solve the program --- #
-    tic = time()
-    sol = ocp.solve(show_online_optim=True)
-    toc = time() - tic
-    print(f"Time to solve : {toc}sec")
+    sol = ocp.solve(show_online_optim=False)
+    print(f"Time to solve : {sol.time_to_optimize}sec")
 
     # --- Print objective cost  --- #
     print(f"Final objective value : {np.nansum(sol.cost)} \n")

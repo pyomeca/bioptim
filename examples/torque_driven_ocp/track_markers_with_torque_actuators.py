@@ -64,26 +64,27 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
     dynamics = DynamicsList()
     if actuator_type:
         if actuator_type == 1:
-            dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN)
+            dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, expand=False)
         elif actuator_type == 2:
-            dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+            dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=False)
         else:
             raise ValueError("actuator_type is 1 (torque activations) or 2 (torque max constraints)")
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+        expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
     if actuator_type == 2:
-        constraints.add(ConstraintFcn.TORQUE_MAX_FROM_ACTUATORS, node=Node.ALL, min_torque=7.5)
+        constraints.add(ConstraintFcn.TORQUE_MAX_FROM_Q_AND_QDOT, node=Node.ALL, min_torque=7.5)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -124,7 +125,7 @@ def main():
     Prepares and solves an ocp with torque actuators, the animates it
     """
 
-    ocp = prepare_ocp("cube.bioMod", n_shooting=30, final_time=2, actuator_type=1)
+    ocp = prepare_ocp("cube.bioMod", n_shooting=30, final_time=2, actuator_type=2)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

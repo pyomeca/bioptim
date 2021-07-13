@@ -25,7 +25,7 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
-    BiMapping,
+    BiMappingList,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -61,15 +61,17 @@ def prepare_ocp(
     n_shooting = 30
     final_time = 2
     tau_min, tau_max, tau_init = -100, 100, 0
-    all_generalized_mapping = BiMapping([0, 1, 2, -2], [0, 1, 2])
+    dof_mappings = BiMappingList()
+    dof_mappings.add("q", [0, 1, None, 2, 2], [0, 1, 3], 4)
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Constraints
     constraints = ConstraintList()
@@ -78,19 +80,19 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=QAndQDotBounds(biorbd_model, all_generalized_mapping))
+    x_bounds.add(bounds=QAndQDotBounds(biorbd_model, dof_mappings[0]))
     x_bounds[0][3:6, [0, -1]] = 0
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * all_generalized_mapping.to_first.len * 2)
+    x_init.add([0] * len(dof_mappings["q"].to_first) * 2)
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * all_generalized_mapping.to_first.len, [tau_max] * all_generalized_mapping.to_first.len)
+    u_bounds.add([tau_min] * len(dof_mappings["q"].to_first), [tau_max] * len(dof_mappings["q"].to_first))
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * all_generalized_mapping.to_first.len)
+    u_init.add([tau_init] * len(dof_mappings["q"].to_first))
 
     # ------------- #
 
@@ -106,7 +108,7 @@ def prepare_ocp(
         objective_functions,
         constraints,
         ode_solver=ode_solver,
-        all_generalized_mapping=all_generalized_mapping,
+        variable_mappings=dof_mappings,
     )
 
 

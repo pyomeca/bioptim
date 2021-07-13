@@ -36,7 +36,7 @@ def test_track_markers(ode_solver, actuator_type):
     if not actuator_type:
         np.testing.assert_equal(g.shape, (186, 1))
     else:
-        np.testing.assert_equal(g.shape, (366, 1))
+        np.testing.assert_equal(g.shape, (372, 1))
     np.testing.assert_almost_equal(g[:186], np.zeros((186, 1)))
 
     # Check some of the results
@@ -50,7 +50,7 @@ def test_track_markers(ode_solver, actuator_type):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
@@ -103,7 +103,7 @@ def test_track_markers_changing_constraints(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((4.2641129, 9.81, 2.27903226)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((1.36088709, 9.81, -2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((1.36088709, 9.81, -2.27903226)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -143,7 +143,7 @@ def test_track_markers_changing_constraints(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-5.625, 21.06, 2.2790323)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.625, 21.06, -2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-5.625, 21.06, -2.27903226)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -189,7 +189,7 @@ def test_track_markers_with_actuators(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.2140175, 0.981, 0.3360075)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-0.2196496, 0.981, -0.3448498)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-0.2196496, 0.981, -0.3448498)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
@@ -243,7 +243,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((0.98431048, -13.78108592)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15668869, 0.77410131)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-0.15668869, 0.77410131)))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
@@ -261,7 +261,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((0.98436218, -13.78113709)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15666471, 0.77420505)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-0.15666471, 0.77420505)))
 
     else:
         # Check objective function value
@@ -279,7 +279,7 @@ def test_track_marker_2D_pendulum(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((0.98431925, -13.78108143)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-0.15666955, 0.77421434)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-0.15666955, 0.77421434)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
@@ -309,143 +309,7 @@ def test_trampo_quaternions():
     # Check constraints
     g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (130, 1))
-    np.testing.assert_almost_equal(
-        g,
-        np.array(
-            [
-                [-2.62869726e-11],
-                [-2.59978705e-11],
-                [-4.68713957e-11],
-                [-7.22507609e-11],
-                [6.04819528e-11],
-                [5.10899975e-10],
-                [3.54277866e-08],
-                [1.47388822e-07],
-                [2.76794123e-08],
-                [5.62982064e-08],
-                [-1.05090022e-07],
-                [2.02544745e-08],
-                [1.50100370e-07],
-                [9.03570907e-08],
-                [-1.33880640e-09],
-                [-1.48755586e-09],
-                [-2.29075248e-09],
-                [-2.99122663e-09],
-                [3.34152594e-09],
-                [2.07377712e-08],
-                [-3.93602084e-09],
-                [-6.26294314e-08],
-                [7.85837972e-09],
-                [3.33429790e-08],
-                [-2.90390112e-09],
-                [4.12724077e-10],
-                [-5.35571587e-12],
-                [3.77520237e-12],
-                [4.38094006e-12],
-                [-7.72493181e-13],
-                [-3.12296855e-11],
-                [-3.95635608e-12],
-                [-1.05131891e-09],
-                [1.52380329e-08],
-                [2.24447717e-11],
-                [-1.63395921e-10],
-                [-5.72631709e-09],
-                [-6.14008504e-10],
-                [-1.25496301e-08],
-                [-5.51599033e-09],
-                [-2.75368173e-10],
-                [1.35714551e-10],
-                [1.30859767e-10],
-                [-1.28282301e-10],
-                [-1.31088629e-09],
-                [6.71719014e-10],
-                [-4.43085968e-09],
-                [1.01520671e-08],
-                [-1.01466322e-08],
-                [-5.75423542e-09],
-                [2.76743517e-10],
-                [-3.61604069e-09],
-                [-3.26538796e-12],
-                [5.21938048e-12],
-                [5.92281779e-12],
-                [4.31099600e-13],
-                [-3.27530780e-11],
-                [1.72692416e-12],
-                [-9.25327218e-10],
-                [1.50035209e-08],
-                [-4.03308265e-10],
-                [-3.72501890e-10],
-                [-5.91380533e-09],
-                [-5.09477224e-10],
-                [-1.28129521e-08],
-                [-5.35508871e-09],
-                [-1.90380156e-10],
-                [1.84304128e-10],
-                [2.01880290e-10],
-                [-3.19055615e-11],
-                [-1.34893363e-09],
-                [5.37814016e-10],
-                [-5.33846300e-10],
-                [8.35767588e-09],
-                [-9.56881263e-09],
-                [-5.56975732e-09],
-                [-8.59005533e-10],
-                [-3.53006502e-09],
-                [-8.01581024e-13],
-                [6.03117556e-12],
-                [6.84563517e-12],
-                [1.71107573e-12],
-                [-3.20352633e-11],
-                [6.41613151e-12],
-                [-7.36204347e-10],
-                [1.45070870e-08],
-                [-9.15970327e-10],
-                [-5.83527560e-10],
-                [-6.16792484e-09],
-                [-4.00933266e-10],
-                [-1.27920323e-08],
-                [-5.25297139e-09],
-                [-9.00550745e-11],
-                [2.09417372e-10],
-                [2.46619170e-10],
-                [6.06714401e-11],
-                [-1.29745592e-09],
-                [4.13145851e-10],
-                [2.37002595e-09],
-                [6.36820452e-09],
-                [-8.36713410e-09],
-                [-5.64461144e-09],
-                [-2.15799734e-09],
-                [-3.31499672e-09],
-                [1.76303416e-12],
-                [6.24700291e-12],
-                [7.05746572e-12],
-                [2.60091948e-12],
-                [-2.93295388e-11],
-                [1.16103932e-11],
-                [-5.20448004e-10],
-                [1.37706937e-08],
-                [-1.50919800e-09],
-                [-7.92144378e-10],
-                [-6.48559595e-09],
-                [-3.03825201e-10],
-                [-1.24819112e-08],
-                [-5.19425047e-09],
-                [1.43227652e-11],
-                [2.12847517e-10],
-                [2.61523248e-10],
-                [1.30651323e-10],
-                [-1.16898646e-09],
-                [3.63143182e-10],
-                [4.07144851e-09],
-                [4.31356673e-09],
-                [-6.69863010e-09],
-                [-5.99857852e-09],
-                [-3.62082897e-09],
-                [-2.98583003e-09],
-            ]
-        ),
-    )
+    np.testing.assert_almost_equal(g, np.zeros((130, 1)), decimal=6)
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -535,44 +399,8 @@ def test_trampo_quaternions():
     )
 
     # initial and final controls
-    np.testing.assert_almost_equal(
-        tau[:, 0],
-        np.array(
-            [
-                3.90118808e-12,
-                1.37003760e-12,
-                2.36150621e-12,
-                -3.06473544e-12,
-                -1.97308650e-11,
-                -2.15361747e-10,
-                6.08890889e-10,
-                5.34191006e-10,
-                -3.06474069e-08,
-                -3.11346548e-10,
-                1.92411028e-10,
-                -1.36507313e-08,
-            ]
-        ),
-    )
-    np.testing.assert_almost_equal(
-        tau[:, -1],
-        np.array(
-            [
-                4.16625669e-12,
-                2.78293338e-12,
-                1.88352712e-13,
-                -9.54764334e-12,
-                -2.45115795e-11,
-                -2.66890608e-10,
-                6.44153858e-10,
-                4.51256175e-10,
-                -2.48333899e-08,
-                -4.08869506e-10,
-                2.70999557e-10,
-                -8.94752188e-09,
-            ]
-        ),
-    )
+    np.testing.assert_almost_equal(tau[:, 0], np.zeros((12,)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -2], np.zeros((12,)), decimal=6)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

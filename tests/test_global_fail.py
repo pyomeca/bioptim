@@ -17,7 +17,8 @@ def test_custom_constraint_mx_fail():
     def custom_mx_fail(pn):
         if pn.u is None:
             return None
-        return MX.zeros(pn.u.shape), pn.u, MX.zeros(pn.u.shape)
+        u = pn.nlp.controls
+        return MX.zeros(u.shape), u.cx, MX.zeros(u.shape)
 
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
@@ -25,11 +26,7 @@ def test_custom_constraint_mx_fail():
     constraints.add(custom_mx_fail, node=Node.ALL)
 
     ocp = OptimalControlProgram(
-        biorbd.Model(model_path),
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN),
-        30,
-        2,
-        constraints=constraints,
+        biorbd.Model(model_path), Dynamics(DynamicsFcn.TORQUE_DRIVEN), 30, 2, constraints=constraints
     )
 
     with pytest.raises(RuntimeError, match="Ipopt doesn't support SX/MX types in constraints bounds"):
