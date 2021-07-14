@@ -35,13 +35,16 @@ install:
   
 # to run your custom scripts instead of automatic tests
 test_script:
-  - bioptim_folder=`pwd`
+  - sh: bioptim_folder=`pwd`
+  - cmd: SET bioptim_folder=%cd%
   - sh: if [[ "$CI_LINUX" == true ]]; then  black . -l120 --exclude "external/*" --check; fi
   - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
   - python setup.py install
-  - cd
+  - sh: cd
+  - cmd: cd C:/
   - python -c "import bioptim"
-  - cd $bioptim_folder
+  - sh: cd $bioptim_folder
+  - cmd: cd %bioptim_folder%
 
 
 #---------------------------------#
