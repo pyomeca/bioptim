@@ -15,29 +15,33 @@ clone_depth: 5                      # clone entire repository history if not def
 build: off
 
 # scripts that run after cloning repository
-install:
+before_install:
   - sh: if [[ $CI_LINUX == true ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; bash miniconda.sh -b -p $HOME/miniconda; export PATH="$HOME/miniconda/bin:$PATH"; else curl https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -L -o miniconda.sh; bash miniconda.sh -b -p $HOME/miniconda; export PATH="$HOME/miniconda/bin:$PATH"; fi
-  - cmd: SET PATH="C:\\Miniconda38-x64";"C:\\Miniconda38-x64\\Scripts";%PATH%
-  - conda config --set always_yes yes --set changeps1 no
-  - conda config --set auto_update_conda no
   - sh: hash -r
   - sh: source activate
-  - cmd: conda update -q conda
+  - cmd: SET PATH="C:\\Miniconda38-x64";"C:\\Miniconda38-x64\\Scripts";%PATH%
   - cmd: conda init cmd.exe
+  - conda config --set always_yes yes --set changeps1 no
+  - conda config --set auto_update_conda no
+  - conda update -q conda
+  
+  # Set environment variables  
+  - sh: bioptim_folder=`pwd`
+  - cmd: SET bioptim_folder=%cd%
+  
+install:
   - conda env update -n bioptim -f environment.yml
   - conda activate bioptim
   - conda install pytest-cov black pytest pytest-cov codecov -cconda-forge
-  - sh: if [[ "$CI_LINUX" == true ]]; then conda install xorg-libx11 xorg-libxtst -cconda-forge; fi
+  - sh: if [[ $CI_LINUX == true ]]; then conda install xorg-libx11 xorg-libxtst -cconda-forge; fi
   - conda list
   - cd external
-  - sh: if [[ "$CI_LINUX" == true ]]; then  ./acados_install_linux.sh; else ./acados_install_mac.sh; fi
+  - sh: if [[ $CI_LINUX == true ]]; then  ./acados_install_linux.sh; else ./acados_install_mac.sh; fi
   - cd ..
   
 # to run your custom scripts instead of automatic tests
 test_script:
-  - sh: bioptim_folder=`pwd`
-  - cmd: SET bioptim_folder=%cd%
-  - sh: if [[ "$CI_LINUX" == true ]]; then  black . -l120 --exclude "external/*" --check; fi
+  - sh: if [[ $CI_LINUX == true ]]; then  black . -l120 --exclude "external/*" --check; fi
   - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
   - python setup.py install
   - sh: cd
@@ -53,6 +57,6 @@ test_script:
 
 # on successful build
 on_success:
-  - sh: if [[ "$CI_LINUX" == true ]]; then codecov; fi
+  - sh: if [[ $CI_LINUX == true ]]; then codecov; fi
 
 
