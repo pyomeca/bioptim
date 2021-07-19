@@ -10,7 +10,7 @@ The difference between muscle activation and excitation is that the latter is th
 
 from scipy.integrate import solve_ivp
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from casadi import MX, vertcat
 from matplotlib import pyplot as plt
 from bioptim import (
@@ -27,6 +27,7 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuessList,
     OdeSolver,
+    Node,
 )
 
 
@@ -82,14 +83,19 @@ def generate_data(
     }
     markers_func = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_q)
 
-    nlp.states.cx = MX()
-    nlp.controls.cx = MX()
-    nlp.states.append("q", symbolic_q, symbolic_q, nlp.variable_mappings["q"])
-    nlp.states.append("qdot", symbolic_qdot, symbolic_qdot, nlp.variable_mappings["qdot"])
-    nlp.states.append("muscles", symbolic_mus_states, symbolic_mus_states, nlp.variable_mappings["muscles"])
+    nlp.states.append("q", [symbolic_q, symbolic_q], symbolic_q, nlp.variable_mappings["q"])
+    nlp.states.append("qdot", [symbolic_qdot, symbolic_qdot], symbolic_qdot, nlp.variable_mappings["qdot"])
+    nlp.states.append(
+        "muscles", [symbolic_mus_states, symbolic_mus_states], symbolic_mus_states, nlp.variable_mappings["muscles"]
+    )
 
-    nlp.controls.append("tau", symbolic_tau, symbolic_tau, nlp.variable_mappings["tau"])
-    nlp.controls.append("muscles", symbolic_mus_controls, symbolic_mus_controls, nlp.variable_mappings["muscles"])
+    nlp.controls.append("tau", [symbolic_tau, symbolic_tau], symbolic_tau, nlp.variable_mappings["tau"])
+    nlp.controls.append(
+        "muscles",
+        [symbolic_mus_controls, symbolic_mus_controls],
+        symbolic_mus_controls,
+        nlp.variable_mappings["muscles"],
+    )
 
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
@@ -169,21 +175,28 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL, target=excitations_ref)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=excitations_ref)
     if use_residual_torque:
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     if kin_data_to_track == "markers":
-        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, node=Node.ALL, weight=100, target=markers_ref)
     elif kin_data_to_track == "q":
         objective_functions.add(
-            ObjectiveFcn.Lagrange.TRACK_STATE, weight=100, target=q_ref, index=range(biorbd_model.nbQ())
+            ObjectiveFcn.Lagrange.TRACK_STATE,
+            key="q",
+            weight=100,
+            node=Node.ALL,
+            target=q_ref,
+            index=range(biorbd_model.nbQ()),
         )
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=use_residual_torque)
+    dynamics.add(
+        DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=use_residual_torque, expand=False
+    )
 
     # Path constraint
     x_bounds = BoundsList()

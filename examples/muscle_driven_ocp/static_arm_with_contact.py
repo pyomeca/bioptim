@@ -7,7 +7,7 @@ Please note that using show_meshes=True in the animator may be long due to the c
 mesh points.
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
@@ -54,7 +54,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MUSCLES_CONTROL)
     objective_functions.add(
         ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, first_marker="target", second_marker="COM_hand", weight=weight
@@ -62,7 +62,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True, expand=False)
     raise RuntimeError("This example is broken, since contact dynamics with muscle is not implemented")
 
     # Path constraint

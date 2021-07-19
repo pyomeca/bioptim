@@ -4,7 +4,7 @@ import shutil
 from sys import platform
 
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Solver,
     MovingHorizonEstimator,
@@ -60,12 +60,12 @@ def test_mhe(solver):
         u_init=u_init,
     ).solve(update_functions, **pendulum.get_solver_options(solver))
 
-    # Clean test folder
     if solver == Solver.ACADOS:
         # Compare the position on the first few frames (only ACADOS, since IPOPT is not precise with current options)
         np.testing.assert_almost_equal(
             sol.states["q"][:, : -2 * window_len], target_q[:nq, : -3 * window_len - 1], decimal=3
         )
+        # Clean test folder
         os.remove(f"./acados_ocp.json")
         shutil.rmtree(f"./c_generated_code/")
 

@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import casadi as cas
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     MovingHorizonEstimator,
     Dynamics,
@@ -31,6 +31,7 @@ from bioptim import (
     InitialGuess,
     InterpolationType,
     Solver,
+    Node,
 )
 
 
@@ -89,7 +90,7 @@ def generate_data(biorbd_model, tf, x0, t_max, n_shoot, noise_std, show_plots=Fa
 
 
 def prepare_mhe(biorbd_model, window_len, window_duration, max_torque, x_init, u_init):
-    new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, weight=1000, list_index=0)
+    new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS, node=Node.ALL, weight=1000, list_index=0)
 
     return MovingHorizonEstimator(
         biorbd_model,

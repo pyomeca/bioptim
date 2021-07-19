@@ -7,7 +7,7 @@ sufficient.
 More specifically this example reproduces the behavior of the SUPERIMPOSE_MARKERS constraint.
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     Node,
@@ -17,45 +17,56 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     ConstraintList,
-    PenaltyNode,
+    PenaltyNodeList,
     Bounds,
     QAndQDotBounds,
     InitialGuess,
     OdeSolver,
+    BiorbdInterface,
 )
 
 
-def custom_func_track_markers(pn: PenaltyNode, first_marker: str, second_marker: str) -> MX:
+def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str, method) -> MX:
     """
-    The used-defined constraint function (This particular one mimics the ConstraintFcn.SUPERIMPOSE_MARKERS)
+    The used-defined objective function (This particular one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
 
     Parameters
     ----------
-    pn: PenaltyNode
+    all_pn: PenaltyNodeList
         The penalty node elements
     first_marker: str
         The index of the first marker in the bioMod
     second_marker: str
         The index of the second marker in the bioMod
+    method: int
+        Two identical ways are shown to help the new user to navigate the biorbd API
 
     Returns
     -------
-    The value that should be constrained in the MX format
+    The cost that should be minimize in the MX format. If the cost is quadratic, do not put
+    the square here, but use the quadratic=True parameter instead
     """
-    # Get the index of the markers
-    marker_0_idx = biorbd.marker_index(pn.nlp.model, first_marker)
-    marker_1_idx = biorbd.marker_index(pn.nlp.model, second_marker)
 
-    # Store the casadi function. Using add_casadi_func allow to skip if the function already exists
-    markers_func = pn.nlp.add_casadi_func("markers", pn.nlp.model.markers, pn.nlp.states["q"].mx)
+    # Get the index of the markers from their name
+    marker_0_idx = biorbd.marker_index(all_pn.nlp.model, first_marker)
+    marker_1_idx = biorbd.marker_index(all_pn.nlp.model, second_marker)
 
-    # Get the marker positions and compute the difference
-    markers = markers_func(pn["q"])
-    return markers[:, marker_0_idx] - markers[:, marker_1_idx]
+    if method == 0:
+        # Convert the function to the required format and then subtract
+        markers = BiorbdInterface.mx_to_cx("markers", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
+        markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
+
+    else:
+        # Do the calculation in biorbd API and then convert to the required format
+        markers = all_pn.nlp.model.markers(all_pn.nlp.states["q"].mx)
+        markers_diff = markers[marker_1_idx].to_mx() - markers[marker_0_idx].to_mx()
+        markers_diff = BiorbdInterface.mx_to_cx("markers", markers_diff, all_pn.nlp.states["q"])
+
+    return markers_diff
 
 
-def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.RK4()) -> OptimalControlProgram:
+def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.IRK()) -> OptimalControlProgram:
     """
     Prepare the program
 
@@ -81,15 +92,16 @@ def prepare_ocp(biorbd_model_path: str, ode_solver: OdeSolver = OdeSolver.RK4())
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(custom_func_track_markers, node=Node.START, first_marker="m0", second_marker="m1")
-    constraints.add(custom_func_track_markers, node=Node.END, first_marker="m0", second_marker="m2")
+    constraints.add(custom_func_track_markers, node=Node.START, first_marker="m0", second_marker="m1", method=0)
+    constraints.add(custom_func_track_markers, node=Node.END, first_marker="m0", second_marker="m2", method=1)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)

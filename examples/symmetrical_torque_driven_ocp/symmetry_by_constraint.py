@@ -13,7 +13,7 @@ Please note that even though removing a degree of freedom seems a good idea, it 
 solving with IPOPT.
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -57,22 +57,26 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, index=[0, 1, 3], key="tau", weight=100)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
-    constraints.add(ConstraintFcn.PROPORTIONAL_STATE, node=Node.ALL, first_dof=2, second_dof=3, coef=-1)
+    constraints.add(
+        ConstraintFcn.PROPORTIONAL_CONTROL, key="tau", node=Node.ALL_SHOOTING, first_dof=3, second_dof=4, coef=-1
+    )
 
     # Path constraint
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-    x_bounds[0][4:8, [0, -1]] = 0
+    x_bounds[0][2, :] = 0  # Third dof is set to zero
+    x_bounds[0][biorbd_model.nbQ() :, [0, -1]] = 0  # Velocity is 0 at start and end
 
     # Initial guess
     x_init = InitialGuessList()
@@ -81,6 +85,7 @@ def prepare_ocp(
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add([tau_min] * biorbd_model.nbQ(), [tau_max] * biorbd_model.nbQ())
+    u_bounds[0][2, :] = 0  # Third dof is left uncontrolled
 
     u_init = InitialGuessList()
     u_init.add([tau_init] * biorbd_model.nbQ())

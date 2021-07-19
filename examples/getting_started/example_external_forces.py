@@ -14,7 +14,7 @@ np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz]
 """
 
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -57,11 +57,12 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Constraints
     constraints = ConstraintList()

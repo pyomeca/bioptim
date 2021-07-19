@@ -1,8 +1,8 @@
-from typing import Union
+from typing import Union, Callable, Any
 
 import numpy as np
-from casadi import MX
-import biorbd
+from casadi import MX, SX, Function
+import biorbd_casadi as biorbd
 
 
 class BiorbdInterface:
@@ -13,6 +13,8 @@ class BiorbdInterface:
     -------
     convert_array_to_external_forces(all_f_ext: Union[list, tuple]) -> list[list[biorbd.VecBiorbdSpatialVector]]
         Convert external forces np.ndarray lists of external forces to values understood by biorbd
+    mx_to_cx(name: str, function: Union[Callable, SX, MX], *all_param: Any) -> Function
+        Add to the pool of declared casadi function. If the function already exists, it is skipped
     """
 
     @staticmethod
@@ -60,3 +62,25 @@ class BiorbdInterface:
             sv_over_all_phases.append(sv_over_phase)
 
         return sv_over_all_phases
+
+    @staticmethod
+    def mx_to_cx(name: str, function: Union[Callable, SX, MX], *all_param: Any) -> Function:
+        """
+        Add to the pool of declared casadi function. If the function already exists, it is skipped
+
+        Parameters
+        ----------
+        name: str
+            The unique name of the function to add to the casadi functions pool
+        function: Callable
+            The biorbd function to add
+        all_param: dict
+            Any parameters to pass to the biorbd function
+        """
+        from ..optimization.optimization_variable import OptimizationVariable, OptimizationVariableList
+        from ..optimization.parameters import Parameter, ParameterList
+
+        cx_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
+        mx = [var.mx if isinstance(var, cx_types) else var for var in all_param]
+        cx = [var.mapping.to_second.map(var.cx) for var in all_param if isinstance(var, cx_types)]
+        return biorbd.to_casadi_func(name, function, *mx)(*cx)

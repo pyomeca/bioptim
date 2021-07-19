@@ -5,7 +5,7 @@ It is designed to give a sense of the goal of the different MINIMIZE_COM functio
 weight=-1 to maximize instead of minimizing.
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
     OptimalControlProgram,
@@ -75,17 +75,17 @@ def prepare_ocp(
     if objective_name == "MINIMIZE_PREDICTED_COM_HEIGHT":
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
     elif objective_name == "MINIMIZE_COM_POSITION":
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, axis=Axis.Z, weight=-1)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, node=Node.ALL, axes=Axis.Z, weight=-1)
     elif objective_name == "MINIMIZE_COM_VELOCITY":
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, axis=Axis.Z, weight=-1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=1 / 100)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_VELOCITY, node=Node.ALL, axes=Axis.Z, weight=-1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1 / 100)
 
     # Dynamics
     dynamics = DynamicsList()
     if use_actuators:
-        dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=True)
+        dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=True, expand=False)
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False)
 
     # Constraints
     constraints = ConstraintList()

@@ -11,7 +11,7 @@ from typing import Any
 
 import numpy as np
 from casadi import MX
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     Dynamics,
@@ -138,7 +138,7 @@ def prepare_ocp(
     n_tau = biorbd_model.nbGeneralizedTorque()
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=10)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)

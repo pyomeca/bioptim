@@ -7,8 +7,8 @@ sufficient.
 More specifically this example reproduces the behavior of the Mayer.SUPERIMPOSE_MARKERS objective function.
 """
 
-import biorbd
-from casadi import vertcat, MX
+import biorbd_casadi as biorbd
+from casadi import MX
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -20,23 +20,26 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     OdeSolver,
-    PenaltyNode,
+    PenaltyNodeList,
+    BiorbdInterface,
 )
 
 
-def custom_func_track_markers(pn: PenaltyNode, first_marker: str, second_marker: str) -> MX:
+def custom_func_track_markers(all_pn: PenaltyNodeList, first_marker: str, second_marker: str, method: int) -> MX:
     """
     The used-defined objective function (This particular one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
 
     Parameters
     ----------
-    pn: PenaltyNode
+    all_pn: PenaltyNodeList
         The penalty node elements
     first_marker: str
         The index of the first marker in the bioMod
     second_marker: str
         The index of the second marker in the bioMod
+    method: int
+        Two identical ways are shown to help the new user to navigate the biorbd API
 
     Returns
     -------
@@ -44,16 +47,22 @@ def custom_func_track_markers(pn: PenaltyNode, first_marker: str, second_marker:
     the square here, but use the quadratic=True parameter instead
     """
 
-    # Get the index of the markers
-    marker_0_idx = biorbd.marker_index(pn.nlp.model, first_marker)
-    marker_1_idx = biorbd.marker_index(pn.nlp.model, second_marker)
+    # Get the index of the markers from their name
+    marker_0_idx = biorbd.marker_index(all_pn.nlp.model, first_marker)
+    marker_1_idx = biorbd.marker_index(all_pn.nlp.model, second_marker)
 
-    # Store the casadi function. Using add_casadi_func allow to skip if the function already exists
-    markers_func = pn.nlp.add_casadi_func("markers", pn.nlp.model.markers, pn.nlp.states["q"].mx)
+    if method == 0:
+        # Convert the function to the required format and then subtract
+        markers = BiorbdInterface.mx_to_cx("markers", all_pn.nlp.model.markers, all_pn.nlp.states["q"])
+        markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
-    # Get the marker positions and compute the difference
-    markers = markers_func(pn["q"])
-    return markers[:, marker_0_idx] - markers[:, marker_1_idx]
+    else:
+        # Do the calculation in biorbd API and then convert to the required format
+        markers = all_pn.nlp.model.markers(all_pn.nlp.states["q"].mx)
+        markers_diff = markers[marker_1_idx].to_mx() - markers[marker_0_idx].to_mx()
+        markers_diff = BiorbdInterface.mx_to_cx("markers", markers_diff, all_pn.nlp.states["q"])
+
+    return markers_diff
 
 
 def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControlProgram:
@@ -83,7 +92,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     objective_functions.add(
         custom_func_track_markers,
         custom_type=ObjectiveFcn.Mayer,
@@ -92,6 +101,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
         first_marker="m0",
         second_marker="m1",
         weight=1000,
+        method=0,
     )
     objective_functions.add(
         custom_func_track_markers,
@@ -101,6 +111,7 @@ def prepare_ocp(biorbd_model_path, ode_solver=OdeSolver.RK4()) -> OptimalControl
         first_marker="m0",
         second_marker="m2",
         weight=1000,
+        method=1,
     )
 
     # Dynamics

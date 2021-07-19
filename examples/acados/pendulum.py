@@ -7,7 +7,7 @@ This simple example is a good place to start investigating bioptim using ACADOS 
 dynamics out there (the joint torque driven), it defines an objective function and some boundaries and initial guesses
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
     OptimalControlProgram,
@@ -46,24 +46,22 @@ def prepare_ocp(
     """
 
     biorbd_model = biorbd.Model(biorbd_model_path)
-    n_q = biorbd_model.nbQ()
-    n_qdot = biorbd_model.nbQdot()
+    nq = biorbd_model.nbQ()
+    nqdot = biorbd_model.nbQdot()
 
-    data_to_track = np.zeros((n_shooting + 1, n_q + n_qdot))
-    data_to_track[:, 1] = 3.14
+    target = np.zeros((nq + nqdot, 1))
+    target[1, 0] = 3.14
 
     # Add objective functions
     objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100.0, multi_thread=False)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1.0, multi_thread=False)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=1.0, multi_thread=False)
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_TORQUE,
-        weight=100.0,
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=50000, key="q", target=target[:nq, :], multi_thread=False
     )
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, weight=1.0)
     objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_STATE,
-        weight=50000.0,
-        target=data_to_track[-1:, :].T,
-        node=Node.END,
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=50000, key="qdot", target=target[nq:, :], multi_thread=False
     )
 
     # Dynamics
@@ -77,7 +75,7 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (n_q + n_qdot))
+    x_init.add([0] * (nq + nqdot))
 
     # Define control path constraint
     n_tau = biorbd_model.nbGeneralizedTorque()

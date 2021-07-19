@@ -16,7 +16,7 @@ InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -161,7 +161,7 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)

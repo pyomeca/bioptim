@@ -9,7 +9,7 @@ import importlib.util
 from pathlib import Path
 
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,
@@ -47,7 +47,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True, expand=False)
 
     # Path constraint
     n_q = biorbd_model.nbQ()
