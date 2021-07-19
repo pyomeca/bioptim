@@ -205,7 +205,7 @@ Please note that this tutorial is designed to recreate the `examples/getting_sta
 ## The import
 We won't spend time explaining the import, since every one of them will be explained in details later, and that it is pretty straightforward anyway.
 ```python
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
@@ -333,7 +333,7 @@ You will find that the file is a bit different from the `example/getting_started
 
 ### The pendulum.py file
 ```python
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,

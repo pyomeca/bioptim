@@ -2,7 +2,7 @@ from typing import Callable, Union, Any
 from warnings import warn
 from enum import Enum
 
-import biorbd
+import biorbd_casadi as biorbd
 from casadi import vertcat, MX
 
 from .constraints import Constraint

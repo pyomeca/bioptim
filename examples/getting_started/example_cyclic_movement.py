@@ -9,7 +9,7 @@ if weight is <= 0 [or if no weight is provided], or as a soft penalty (objective
 """
 
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,

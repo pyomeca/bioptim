@@ -2,7 +2,7 @@ import numpy as np
 from casadi import MX
 import pytest
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     BoundsList,
     Bounds,

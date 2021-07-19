@@ -1,6 +1,6 @@
 from typing import Callable, Any, Union
 
-import biorbd
+import biorbd_casadi as biorbd
 import casadi
 from casadi import SX, MX
 

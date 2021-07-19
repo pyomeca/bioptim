@@ -2,7 +2,7 @@ from typing import Union, Any
 from math import inf
 import inspect
 
-import biorbd
+import biorbd_casadi as biorbd
 from casadi import horzcat
 
 from .penalty_option import PenaltyOption

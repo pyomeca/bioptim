@@ -7,7 +7,7 @@ The difference between Mayer and Lagrange minimization time is that the former c
 the values, while the latter is the most common way to define optimal time
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,

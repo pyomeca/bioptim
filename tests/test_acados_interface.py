@@ -8,7 +8,7 @@ import shutil
 import pytest
 from sys import platform
 
-import biorbd
+import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
     Axis,

@@ -6,7 +6,7 @@ forces to interact with the body.
 
 from casadi import MX
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     Dynamics,

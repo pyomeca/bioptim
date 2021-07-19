@@ -7,7 +7,7 @@ It is designed to show how one can define a multiphase optimal control program
 """
 
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     PenaltyNode,
     OptimalControlProgram,

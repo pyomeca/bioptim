@@ -19,7 +19,7 @@ Please note that even though removing a degree of freedom seems a good idea, it 
 solving with IPOPT.
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,

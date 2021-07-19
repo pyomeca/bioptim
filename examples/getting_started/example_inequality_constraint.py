@@ -12,7 +12,7 @@ of equality constraints, which can be used with any ConstraintFcn
 """
 
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,

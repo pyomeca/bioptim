@@ -11,7 +11,7 @@ from typing import Any
 
 import numpy as np
 from casadi import MX
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     Dynamics,

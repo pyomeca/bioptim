@@ -2,7 +2,7 @@ from typing import Union, Callable
 from time import time
 
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 
 from .optimal_control_program import OptimalControlProgram
 from .solution import Solution

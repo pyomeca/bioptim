@@ -5,7 +5,7 @@ It is designed to give a sense of the goal of the different MINIMIZE_COM functio
 weight=-1 to maximize instead of minimizing.
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 import numpy as np
 from bioptim import (
     OptimalControlProgram,

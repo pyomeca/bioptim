@@ -15,7 +15,7 @@ InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,

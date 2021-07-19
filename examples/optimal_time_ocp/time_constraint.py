@@ -4,7 +4,7 @@ the time to perform the task is now free for the solver to change. This example 
 control program
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     Dynamics,

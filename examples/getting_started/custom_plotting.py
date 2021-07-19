@@ -4,7 +4,7 @@ plots and how to expand pre-existing one with new information
 """
 
 from casadi import MX
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     Dynamics,

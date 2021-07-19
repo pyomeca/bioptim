@@ -14,7 +14,7 @@ np.array of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz]
 """
 
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,

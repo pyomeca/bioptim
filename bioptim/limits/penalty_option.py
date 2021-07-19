@@ -1,6 +1,6 @@
 from typing import Any, Union, Callable
 
-import biorbd
+import biorbd_casadi as biorbd
 from casadi import horzcat, Function, MX, SX
 import numpy as np
 

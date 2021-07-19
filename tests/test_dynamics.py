@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 from casadi import MX, SX
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim.dynamics.configure_problem import ConfigureProblem
 from bioptim.dynamics.dynamics_functions import DynamicsFunctions
 from bioptim.interfaces.biorbd_interface import BiorbdInterface

@@ -3,7 +3,7 @@ Test for file IO
 """
 import pytest
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import OdeSolver
 
 from .utils import TestUtils

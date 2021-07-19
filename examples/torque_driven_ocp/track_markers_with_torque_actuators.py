@@ -7,7 +7,7 @@ to not converge when it is used on more complicated model. A solution that defin
 better idea. An example of which can be found with the bioptim paper.
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,

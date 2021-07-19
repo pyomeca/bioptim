@@ -8,7 +8,7 @@ the values, while the latter is the most common way to define optimal time
 """
 
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,

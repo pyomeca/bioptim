@@ -4,7 +4,7 @@ import pickle
 from copy import deepcopy
 from math import inf
 
-import biorbd
+import biorbd_casadi as biorbd
 import casadi
 from casadi import MX, SX
 
@@ -31,7 +31,7 @@ from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
-check_version(biorbd, "1.6.0", "1.7.0")
+check_version(biorbd, "1.6.1", "1.7.0")
 
 
 class OptimalControlProgram:

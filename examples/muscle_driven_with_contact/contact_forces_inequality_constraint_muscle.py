@@ -6,7 +6,7 @@ It is not really relevant and will be removed when unitary tests for the dynamic
 
 from matplotlib import pyplot as plt
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,

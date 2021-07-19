@@ -7,7 +7,7 @@ sufficient.
 More specifically this example reproduces the behavior of the SUPERIMPOSE_MARKERS constraint.
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     Node,

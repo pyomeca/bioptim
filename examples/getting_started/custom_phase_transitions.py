@@ -7,7 +7,7 @@ More specifically, this example mimics the behaviour of the most common PhaseTra
 """
 
 from casadi import MX
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,

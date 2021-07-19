@@ -4,7 +4,7 @@ movement. The initial and final position of the box are dictated, the rest is fu
 to show how one can use the tracking function to track a marker with a body segment
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     Axis,

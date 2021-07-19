@@ -7,7 +7,7 @@ sufficient.
 More specifically this example reproduces the behavior of the Mayer.SUPERIMPOSE_MARKERS objective function.
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     Node,

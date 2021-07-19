@@ -5,7 +5,7 @@ the rest is fully optimized. It is designed to show how one can use the tracking
 any RT (for instance Inertial Measurement Unit [IMU]) with a body segment
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,

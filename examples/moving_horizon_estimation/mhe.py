@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 import casadi as cas
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     MovingHorizonEstimator,
     Dynamics,

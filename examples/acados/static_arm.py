@@ -6,7 +6,7 @@ ACADOS and Ipopt.
 """
 
 
-import biorbd
+import biorbd_casadi as biorbd
 from time import time
 import numpy as np
 from bioptim import (

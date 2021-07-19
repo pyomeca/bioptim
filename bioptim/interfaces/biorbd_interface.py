@@ -2,7 +2,7 @@ from typing import Union, Callable, Any
 
 import numpy as np
 from casadi import MX, SX, Function
-import biorbd
+import biorbd_casadi as biorbd
 
 
 class BiorbdInterface:

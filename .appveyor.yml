@@ -19,15 +19,16 @@ install:
   - sh: if [[ $CI_LINUX == true ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; bash miniconda.sh -b -p $HOME/miniconda; export PATH="$HOME/miniconda/bin:$PATH"; else curl https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -L -o miniconda.sh; bash miniconda.sh -b -p $HOME/miniconda; export PATH="$HOME/miniconda/bin:$PATH"; fi
   - sh: hash -r
   - sh: source activate
-  - cmd: SET PATH="C:\\Miniconda38-x64";"C:\\Miniconda38-x64\\Scripts";%PATH%
+  - cmd: SET MINICONDA_PATH="C:\\Miniconda38-x64"
+  - cmd: SET PATH=%MINICONDA_PATH%;%MINICONDA_PATH%"\\Scripts";%PATH%
   - cmd: conda init cmd.exe
   - conda config --set always_yes yes --set changeps1 no
   - conda config --set auto_update_conda no
   - conda update -q conda
   
   # Set environment variables  
-  - sh: bioptim_folder=`pwd`
-  - cmd: SET bioptim_folder=%cd%
+  - sh: BIOPTIM_FOLDER=`pwd`
+  - cmd: SET BIOPTIM_FOLDER=%cd%
   
   # Setup the conda environment
   - conda env update -n bioptim -f environment.yml
@@ -43,14 +44,14 @@ install:
   
 # to run your custom scripts instead of automatic tests
 test_script:
-  - sh: if [[ $CI_LINUX == true ]]; then  black . -l120 --exclude "external/*" --check; fi
+  - sh: if [[ $CI_LINUX == true ]]; then black . -l120 --exclude "external/*" --check; fi
   - pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
   - python setup.py install
   - sh: cd
   - cmd: cd C:/
   - python -c "import bioptim"
-  - sh: cd $bioptim_folder
-  - cmd: cd %bioptim_folder%
+  - sh: cd $BIOPTIM_FOLDER
+  - cmd: cd %BIOPTIM_FOLDER%
 
 
 #---------------------------------#
@@ -60,5 +61,4 @@ test_script:
 # on successful build
 on_success:
   - sh: if [[ $CI_LINUX == true ]]; then codecov; fi
-
 

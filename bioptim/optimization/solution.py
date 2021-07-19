@@ -1,7 +1,7 @@
 from typing import Any, Union
 from copy import deepcopy
 
-import biorbd
+import biorbd_casadi as biorbd
 import numpy as np
 from scipy import interpolate as sci_interp
 from casadi import horzcat, DM, Function
@@ -859,7 +859,7 @@ class Solution:
                 if param.function:
                     param.function(nlp.model, self.parameters[param.name], **param.params)
 
-            all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
+            all_bioviz.append(bioviz.Viz(self.ocp.nlp[idx_phase].model.path().absolutePath().to_string(), **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
 
         if show_now:

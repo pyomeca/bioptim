@@ -10,7 +10,7 @@ from typing import Callable, Union
 import importlib.util
 from pathlib import Path
 
-import biorbd
+import biorbd_casadi as biorbd
 import numpy as np
 from casadi import MX, horzcat, DM
 from bioptim import (

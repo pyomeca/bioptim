@@ -4,7 +4,7 @@ phase with one of its corner. The time is free for each phase
 It is designed to show how one can define a multi-phase ocp problem with free time.
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,

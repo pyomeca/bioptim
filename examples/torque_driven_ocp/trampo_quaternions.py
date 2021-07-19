@@ -6,7 +6,7 @@ It is designed to show how to use a model that has quaternions in their degrees 
 
 
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,
