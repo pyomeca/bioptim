@@ -264,7 +264,7 @@ def test_integrate_non_continuous(shooting, merge):
         with pytest.raises(
             ValueError,
             match="continuous=False and keepdims=True cannot be used simultaneously since "
-                  "it would necessarily change the dimension",
+            "it would necessarily change the dimension",
         ):
             _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
 
@@ -429,7 +429,7 @@ def test_integrate_multiphase_merged_non_continuous(shooting):
         with pytest.raises(
             ValueError,
             match="continuous=False and keepdims=True cannot be used simultaneously since "
-                  "it would necessarily change the dimension",
+            "it would necessarily change the dimension",
         ):
             _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
 
