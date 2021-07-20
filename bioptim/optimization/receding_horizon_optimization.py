@@ -2,7 +2,7 @@ from typing import Union, Callable
 from time import time
 
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 
 from .optimal_control_program import OptimalControlProgram
 from .solution import Solution
@@ -146,6 +146,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             dynamics=self.original_values["dynamics"][0],
             n_shooting=t - 1,
             phase_time=t * self.nlp[0].dt,
+            skip_continuity=True,
         )
 
         states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
@@ -204,6 +205,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
 
 class NonlinearModelPredictiveControl(RecedingHorizonOptimization):
+    """
+    NMPC version of receding horizon optimization
+    """
+
     def __init__(
         self,
         biorbd_model: Union[str, biorbd.Model, list, tuple],
@@ -219,6 +224,10 @@ class NonlinearModelPredictiveControl(RecedingHorizonOptimization):
 
 
 class MovingHorizonEstimator(RecedingHorizonOptimization):
+    """
+    MHE version of receding horizon optimization
+    """
+
     def __init__(
         self,
         biorbd_model: Union[str, biorbd.Model, list, tuple],

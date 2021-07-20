@@ -33,7 +33,7 @@ class PenaltyNodeList:
         self.t = t
         self.x = x
         self.u = u
-        self.p = vertcat(p)
+        self.p = vertcat(p) if p is not None else p
 
     def __len__(self):
         return len(self.t)

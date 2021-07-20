@@ -4,7 +4,7 @@ import pickle
 from copy import deepcopy
 from math import inf
 
-import biorbd
+import biorbd_casadi as biorbd
 import casadi
 from casadi import MX, SX
 
@@ -17,7 +17,7 @@ from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
-from ..limits.phase_transition import PhaseTransitionFunctions, PhaseTransitionList
+from ..limits.phase_transition import PhaseTransitionList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -31,7 +31,7 @@ from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
-check_version(biorbd, "1.5.3", "1.6.0")
+check_version(biorbd, "1.6.1", "1.7.0")
 
 
 class OptimalControlProgram:
@@ -45,6 +45,8 @@ class OptimalControlProgram:
         The base type for the symbolic casadi variables
     g: list
         Constraints that are not phase dependent (mostly parameters and continuity constraints)
+    g_internal: list[list[Constraint]]
+        All the constraints internally defined by the OCP at each of the node of the phase
     J: list
         Objective values that are not phase dependent (mostly parameters)
     isdef_x_init: bool
@@ -98,7 +100,8 @@ class OptimalControlProgram:
         The main user interface to add initial guesses in the ocp
     add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any)
         The main user interface to add a new plot to the ocp
-    prepare_plots(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool, shooting_type: Shooting) -> PlotOCP
+    prepare_plots(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool,
+            shooting_type: Shooting) -> PlotOCP
         Create all the plots associated with the OCP
     solve(self, solver: Solver, show_online_optim: bool, solver_options: dict) -> Solution
         Call the solver to actually solve the ocp
@@ -137,6 +140,7 @@ class OptimalControlProgram:
         phase_transitions: PhaseTransitionList = None,
         n_threads: int = 1,
         use_sx: bool = False,
+        skip_continuity: bool = False,
     ):
         """
         Parameters
@@ -179,6 +183,8 @@ class OptimalControlProgram:
             The number of thread to use while solving (multi-threading if > 1)
         use_sx: bool
             The nature of the casadi variables. MX are used if False.
+        skip_continuity: bool
+            This is mainly for internal purposes when creating an OCP not destined to be solved
         """
 
         if isinstance(biorbd_model, str):
@@ -322,7 +328,9 @@ class OptimalControlProgram:
 
         # Declare optimization variables
         self.J = []
+        self.J_internal = []
         self.g = []
+        self.g_internal = []
         self.v = OptimizationVector(self)
 
         # nlp is the core of a phase
@@ -389,10 +397,12 @@ class OptimalControlProgram:
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
-        self.phase_transitions = PhaseTransitionFunctions.prepare_phase_transitions(self, phase_transitions)
+        self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
 
-        # Inner- and inter-phase continuity
-        ContinuityFunctions.continuity(self)
+        # Skipping creates a valid but unsolvable OCP class
+        if not skip_continuity:
+            # Inner- and inter-phase continuity
+            ContinuityFunctions.continuity(self)
 
         self.isdef_x_init = False
         self.isdef_u_init = False
@@ -787,11 +797,11 @@ class OptimalControlProgram:
         def define_parameters_phase_time(
             ocp: OptimalControlProgram,
             penalty_functions: Union[ObjectiveList, ConstraintList],
-            initial_time_guess: list,
-            phase_time: list,
-            time_min: list,
-            time_max: list,
-            has_penalty: list = None,
+            _initial_time_guess: list,
+            _phase_time: list,
+            _time_min: list,
+            _time_max: list,
+            _has_penalty: list = None,
         ) -> list:
             """
             Sanity check to ensure that only one time optimization is defined per phase. It also creates the time vector
@@ -803,15 +813,15 @@ class OptimalControlProgram:
                 A reference to the ocp
             penalty_functions: Union[ObjectiveList, ConstraintList]
                 The list to parse to ensure no double free times are declared
-            initial_time_guess: list
+            _initial_time_guess: list
                 The list of all initial guesses for the free time optimization
-            phase_time: list
+            _phase_time: list
                 Replaces the values where free time is found for MX or SX
-            time_min: list
+            _time_min: list
                 Minimal bounds for the time parameter
-            time_max: list
+            _time_max: list
                 Maximal bounds for the time parameter
-            has_penalty: list[bool]
+            _has_penalty: list[bool]
                 If a penalty was previously found. This should be None on the first call to ensure proper initialization
 
             Returns
@@ -819,8 +829,8 @@ class OptimalControlProgram:
             The state of has_penalty
             """
 
-            if has_penalty is None:
-                has_penalty = [False] * ocp.n_phases
+            if _has_penalty is None:
+                _has_penalty = [False] * ocp.n_phases
 
             for i, penalty_functions_phase in enumerate(penalty_functions):
                 for pen_fun in penalty_functions_phase:
@@ -831,19 +841,19 @@ class OptimalControlProgram:
                         or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
                         or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
                     ):
-                        if has_penalty[i]:
+                        if _has_penalty[i]:
                             raise RuntimeError("Time constraint/objective cannot declare more than once")
-                        has_penalty[i] = True
+                        _has_penalty[i] = True
 
-                        initial_time_guess.append(phase_time[i])
-                        phase_time[i] = ocp.cx.sym(f"time_phase_{i}", 1, 1)
+                        _initial_time_guess.append(_phase_time[i])
+                        _phase_time[i] = ocp.cx.sym(f"time_phase_{i}", 1, 1)
                         if pen_fun.type.get_type() == ConstraintFunction:
-                            time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
-                            time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
+                            _time_min.append(pen_fun.min_bound if pen_fun.min_bound else 0)
+                            _time_max.append(pen_fun.max_bound if pen_fun.max_bound else inf)
                         else:
-                            time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
-                            time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
-            return has_penalty
+                            _time_min.append(pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0)
+                            _time_max.append(pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf)
+            return _has_penalty
 
         NLP.add(self, "t_initial_guess", phase_time, False)
         self.original_phase_time = phase_time
@@ -855,7 +865,7 @@ class OptimalControlProgram:
             self, objective_functions, initial_time_guess, phase_time, time_min, time_max
         )
         define_parameters_phase_time(
-            self, constraints, initial_time_guess, phase_time, time_min, time_max, has_penalty=has_penalty
+            self, constraints, initial_time_guess, phase_time, time_min, time_max, _has_penalty=has_penalty
         )
 
         # Add to the nlp
@@ -893,4 +903,4 @@ class OptimalControlProgram:
         # Copy to self.original_values so it can be save/load
         pen = new_penalty.type.get_type()
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
-        pen.add_or_replace(self, self.nlp[phase_idx], new_penalty)
+        new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])

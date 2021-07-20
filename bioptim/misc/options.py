@@ -238,31 +238,6 @@ class OptionList:
 class OptionDict(OptionList):
     """
     A list of OptionGeneric if more than one is required
-
-    Attributes
-    options: list
-        A list [phase] of list [OptionGeneric]
-
-    Methods
-    -------
-    __len__(self)
-        Allow for len(option) to be called
-    __iter__(self)
-        Allow for the list to be used in a for loop
-    __next__(self):
-        Get the next phase of the option list
-    __getitem__(self, i) -> list
-        Get the ith phase list of the option list
-    _add(self, option_type: Callable = OptionGeneric, phase: int = 0, list_index: int = -1, **extra_arguments)
-        Add a new option to the list
-    copy(self, option: OptionGeneric)
-        Deepcopy of an option in the list
-    __prepare_option_list(self, phase: int, list_index: int) -> int
-        Reshape the option according to the requested phase and index
-    __bool__(self) -> bool
-        Check if the list is empty
-    print(self)
-        Print the option to the console
     """
 
     def __init__(self):
@@ -270,56 +245,14 @@ class OptionDict(OptionList):
         self.options = [{}]
 
     def _add(self, key: str, option_type: Callable = OptionGeneric, phase: int = 0, **extra_arguments: Any):
-        """
-        Add a new option to the list
-
-        Parameters
-        ----------
-        option_type: Callable
-            The type of option
-        phase: int
-            The phase the option is associated with
-        list_index: int
-            The index of the option in the list. If list_index < 0, the option is appended at the end. If the list_index
-            refers to a previously declare, the latter override the former
-        extra_arguments: dict
-            Any extra parameters that did not fall in any category
-        """
-
         self.__prepare_option_list(phase, key)
         self.options[phase][key] = option_type(phase=phase, **extra_arguments)
 
     def copy(self, option: OptionGeneric, key: str):
-        """
-        Deepcopy of an option in the list
-
-        Parameters
-        ----------
-        option: OptionGeneric
-            The option to copy
-        key: str
-            The key to copy
-        """
-
         self.__prepare_option_list(option.phase, key)
         self.options[option.phase][key] = option
 
     def __prepare_option_list(self, phase: int, key: str):
-        """
-        Reshape the option according to the requested phase and index
-
-        Parameters
-        ----------
-        phase: int
-            The phase index to add the option to
-        key: str
-            The key of the option in a specific phase.
-
-        Returns
-        -------
-        The list_index that may have been modify (if -1)
-        """
-
         for i in range(len(self.options), phase + 1):
             self.options.append({})
         return
@@ -342,153 +275,48 @@ class OptionDict(OptionList):
 class UniquePerPhaseOptionList(OptionList):
     """
     OptionList that does not allow for more than one element per phase
-
-    Methods
-    -------
-    _add(self, phase: int = -1, **extra_arguments)
-        Add a new option to the list
-    copy(self, option: OptionGeneric)
-        Deepcopy of an option in the list
-    __getitem__(self, i_phase) -> Any
-        Get the ith option of the list
-    __next__(self) -> int
-        Get the next option of the list
-    print(self):
-        Print the UniquePerPhaseOptionList to the console
     """
 
     def _add(self, phase: int = -1, **extra_arguments: Any):
-        """
-        Add a new option to the list
-
-        Parameters
-        ----------
-        phase: int
-            The phase the option is associated with
-        extra_arguments: dict
-            Everything but phase which is passed to OptionList, with list_index set to 0
-        """
-
         if phase == -1:
             phase = len(self)
         super(UniquePerPhaseOptionList, self)._add(phase=phase, list_index=0, **extra_arguments)
 
     def copy(self, option: OptionGeneric):
-        """
-        Deepcopy of an option in the list
-
-        Parameters
-        ----------
-        """
-
         if option.phase == -1:
             option.phase = len(self)
         super(UniquePerPhaseOptionList, self).copy(option)
 
     def __getitem__(self, i_phase) -> Any:
-        """
-        Get the ith option of the list
-
-        Parameters
-        ----------
-        i_phase: int
-            The index of the option to get
-
-        Returns
-        -------
-        The ith option of the list
-        """
-
         return super(UniquePerPhaseOptionList, self).__getitem__(i_phase)[0]
 
     def __next__(self) -> int:
-        """
-        Get the next option of the list
-
-        Returns
-        -------
-        The next option of the list
-        """
         self._iter_idx += 1
         if self._iter_idx > len(self):
             raise StopIteration
         return self.options[self._iter_idx - 1][0]
 
     def print(self):
-        """
-        Print the UniquePerPhaseOptionList to the console
-        """
         raise NotImplementedError("Printing of UniquePerPhaseOptionList is not ready yet")
 
 
 class UniquePerProblemOptionList(OptionList):
     """
     OptionList that cannot change throughout phases (e.g., parameters)
-
-    Methods
-    -------
-    _add(self, phase: int = -1, **extra_arguments)
-        Add a new option to the list
-    copy(self, option: OptionGeneric)
-        Deepcopy of an option in the list
-    __getitem__(self, i_phase) -> Any
-        Get the ith option of the list
-    __next__(self) -> int
-        Get the next option of the list
-    print(self):
-        Print the UniquePerPhaseOptionList to the console
     """
 
     def _add(self, list_index: int = -1, **extra_arguments: Any):
-        """
-        Add a new option to the list
-
-        Parameters
-        ----------
-        phase: int
-            The phase the option is associated with
-        extra_arguments: dict
-            Everything but phase which is passed to OptionList, with list_index set to 0
-        """
-
         super(UniquePerProblemOptionList, self)._add(phase=0, list_index=list_index, **extra_arguments)
 
     def copy(self, option: OptionGeneric):
-        """
-        Deepcopy of an option in the list
-
-        Parameters
-        ----------
-        """
-
         if option.list_index == -1:
             option.list_index = len(self)
         super(UniquePerProblemOptionList, self).copy(option)
 
     def __getitem__(self, index) -> Any:
-        """
-        Get the ith option of the list
-
-        Parameters
-        ----------
-        index: int
-            The index of the option to get
-
-        Returns
-        -------
-        The ith option of the list
-        """
-
         return super(UniquePerProblemOptionList, self).__getitem__(0)[index]
 
     def __next__(self) -> int:
-        """
-        Get the next option of the list
-
-        Returns
-        -------
-        The next option of the list
-        """
         self._iter_idx += 1
         if self._iter_idx > len(self):
             raise StopIteration

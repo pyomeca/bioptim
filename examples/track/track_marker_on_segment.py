@@ -4,7 +4,7 @@ movement. The initial and final position of the box are dictated, the rest is fu
 to show how one can use the tracking function to track a marker with a body segment
 """
 
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     Axis,
@@ -60,11 +60,12 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, multi_thread=False)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Constraints
     if constr:

@@ -1,10 +1,10 @@
 from typing import Any, Union
 from copy import deepcopy
 
-import biorbd
+import biorbd_casadi as biorbd
 import numpy as np
 from scipy import interpolate as sci_interp
-from casadi import Function, DM
+from casadi import horzcat, DM, Function
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -71,7 +71,8 @@ class Solution:
     @property
     controls(self) -> Union[list, dict]
         Returns the controls in list if more than one phases, otherwise it returns the only dict
-    integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keepdims: bool = True, merge_phases: bool = False, continuous: bool = True) -> Solution
+    integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keepdims: bool = True,
+              merge_phases: bool = False, continuous: bool = True) -> Solution
         Integrate the states
     interpolate(self, n_frames: Union[int, list, tuple]) -> Solution
         Interpolate the states
@@ -81,7 +82,8 @@ class Solution:
         Actually performing the phase merging
     _complete_control(self)
         Controls don't necessarily have dimensions that matches the states. This method aligns them
-    graphs(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool, show_now: bool, shooting_type: Shooting)
+    graphs(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool,
+           show_now: bool, shooting_type: Shooting)
         Show the graphs of the simulation
     animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> Union[None, list]
         Animate the simulation
@@ -90,14 +92,23 @@ class Solution:
     """
 
     class SimplifiedOptimizationVariable:
+        """
+        Simplified version of OptimizationVariable (compatible with pickle)
+        """
+
         def __init__(self, other: OptimizationVariable):
             self.name = other.name
             self.index = other.index
+            self.mapping = other.mapping
 
         def __len__(self):
             return len(self.index)
 
     class SimplifiedOptimizationVariableList:
+        """
+        Simplified version of OptimizationVariableList (compatible with pickle)
+        """
+
         def __init__(self, other: Union[OptimizationVariableList]):
             self.elements = []
             if isinstance(other, Solution.SimplifiedOptimizationVariableList):
@@ -146,7 +157,7 @@ class Solution:
 
     class SimplifiedNLP:
         """
-        A simplified version of the NonLinearProgram structure
+        A simplified version of the NonLinearProgram structure (compatible with pickle)
 
         Attributes
         ----------
@@ -176,6 +187,7 @@ class Solution:
                 A reference to the NonLinearProgram to strip
             """
 
+            self.phase_idx = nlp.phase_idx
             self.model = nlp.model
             self.states = Solution.SimplifiedOptimizationVariableList(nlp.states)
             self.controls = Solution.SimplifiedOptimizationVariableList(nlp.controls)
@@ -184,13 +196,15 @@ class Solution:
             self.variable_mappings = nlp.variable_mappings
             self.control_type = nlp.control_type
             self.J = nlp.J
+            self.J_internal = nlp.J_internal
             self.g = nlp.g
+            self.g_internal = nlp.g_internal
             self.ns = nlp.ns
             self.parameters = nlp.parameters
 
     class SimplifiedOCP:
         """
-        A simplified version of the NonLinearProgram structure
+        A simplified version of the NonLinearProgram structure (compatible with pickle)
 
         Attributes
         ----------
@@ -219,7 +233,9 @@ class Solution:
             self.nlp = [Solution.SimplifiedNLP(nlp) for nlp in ocp.nlp]
             self.v = ocp.v
             self.J = ocp.J
+            self.J_internal = ocp.J_internal
             self.g = ocp.g
+            self.g_internal = ocp.g_internal
             self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
 
@@ -256,74 +272,74 @@ class Solution:
         self.status = None
 
         # Extract the data now for further use
-        self._states, self._controls, self.parameters = [], [], {}
+        self._states, self._controls, self.parameters = {}, {}, {}
         self.phase_time = []
 
-        def init_from_dict(sol: dict):
+        def init_from_dict(_sol: dict):
             """
             Initialize all the attributes from an Ipopt-like dictionary data structure
 
             Parameters
             ----------
-            sol: dict
+            _sol: dict
                 The solution in a Ipopt-like dictionary
             """
 
-            self.vector = sol["x"] if isinstance(sol, dict) and "x" in sol else sol
-            self._cost = sol["f"] if isinstance(sol, dict) and "f" in sol else None
-            self.constraints = sol["g"] if isinstance(sol, dict) and "g" in sol else None
+            self.vector = _sol["x"] if isinstance(_sol, dict) and "x" in _sol else _sol
+            self._cost = _sol["f"] if isinstance(_sol, dict) and "f" in _sol else None
+            self.constraints = _sol["g"] if isinstance(_sol, dict) and "g" in _sol else None
 
-            self.lam_g = sol["lam_g"] if isinstance(sol, dict) and "lam_g" in sol else None
-            self.lam_p = sol["lam_p"] if isinstance(sol, dict) and "lam_p" in sol else None
-            self.lam_x = sol["lam_x"] if isinstance(sol, dict) and "lam_x" in sol else None
-            self.inf_pr = sol["inf_pr"] if isinstance(sol, dict) and "inf_pr" in sol else None
-            self.inf_du = sol["inf_du"] if isinstance(sol, dict) and "inf_du" in sol else None
-            self.time_to_optimize = sol["time_tot"] if isinstance(sol, dict) and "time_tot" in sol else None
+            self.lam_g = _sol["lam_g"] if isinstance(_sol, dict) and "lam_g" in _sol else None
+            self.lam_p = _sol["lam_p"] if isinstance(_sol, dict) and "lam_p" in _sol else None
+            self.lam_x = _sol["lam_x"] if isinstance(_sol, dict) and "lam_x" in _sol else None
+            self.inf_pr = _sol["inf_pr"] if isinstance(_sol, dict) and "inf_pr" in _sol else None
+            self.inf_du = _sol["inf_du"] if isinstance(_sol, dict) and "inf_du" in _sol else None
+            self.time_to_optimize = _sol["time_tot"] if isinstance(_sol, dict) and "time_tot" in _sol else None
             self.real_time_to_optimize = self.time_to_optimize
-            self.iterations = sol["iter"] if isinstance(sol, dict) and "iter" in sol else None
-            self.status = sol["status"] if isinstance(sol, dict) and "status" in sol else None
+            self.iterations = _sol["iter"] if isinstance(_sol, dict) and "iter" in _sol else None
+            self.status = _sol["status"] if isinstance(_sol, dict) and "status" in _sol else None
 
             # Extract the data now for further use
             self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
 
-        def init_from_initial_guess(sol: list):
+        def init_from_initial_guess(_sol: list):
             """
             Initialize all the attributes from a list of initial guesses (states, controls)
 
             Parameters
             ----------
-            sol: list
+            _sol: list
                 The list of initial guesses
             """
 
             n_param = len(ocp.v.parameters_in_list)
 
             # Sanity checks
-            for i in range(len(sol)):  # Convert to list if necessary and copy for as many phases there are
-                if isinstance(sol[i], InitialGuess):
+            for i in range(len(_sol)):  # Convert to list if necessary and copy for as many phases there are
+                if isinstance(_sol[i], InitialGuess):
                     tp = InitialGuessList()
                     for _ in range(len(self.ns)):
-                        tp.add(deepcopy(sol[i].init), interpolation=sol[i].init.type)
-                    sol[i] = tp
-            if sum([isinstance(s, InitialGuessList) for s in sol]) != 2:
+                        tp.add(deepcopy(_sol[i].init), interpolation=_sol[i].init.type)
+                    _sol[i] = tp
+            if sum([isinstance(s, InitialGuessList) for s in _sol]) != 2:
                 raise ValueError(
                     "solution must be a solution dict, "
                     "an InitialGuess[List] of len 2 or 3 (states, controls, parameters), "
                     "or a None"
                 )
-            if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(sol)]) != 0:
+            if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:
                 raise ValueError("The InitialGuessList len must match the number of phases")
             if n_param != 0:
-                if len(sol) != 3 and len(sol[2]) != 1 and sol[2][0].shape != (n_param, 1):
+                if len(_sol) != 3 and len(_sol[2]) != 1 and _sol[2][0].shape != (n_param, 1):
                     raise ValueError(
                         "The 3rd element is the InitialGuess of the parameter and "
                         "should be a unique vector of size equal to n_param"
                     )
 
             self.vector = np.ndarray((0, 1))
-            sol_states, sol_controls = sol[0], sol[1]
+            sol_states, sol_controls = _sol[0], _sol[1]
             for p, s in enumerate(sol_states):
                 ns = self.ocp.nlp[p].ns + 1 if s.init.type != InterpolationType.EACH_FRAME else self.ocp.nlp[p].ns
                 s.init.check_and_adjust_dimensions(self.ocp.nlp[p].states.shape, ns, "states")
@@ -342,7 +358,7 @@ class Solution:
                     self.vector = np.concatenate((self.vector, s.init.evaluate_at(i)[:, np.newaxis]))
 
             if n_param:
-                sol_params = sol[2]
+                sol_params = _sol[2]
                 for p, s in enumerate(sol_params):
                     self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
 
@@ -350,17 +366,17 @@ class Solution:
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
 
-        def init_from_vector(sol: Union[np.ndarray, DM]):
+        def init_from_vector(_sol: Union[np.ndarray, DM]):
             """
             Initialize all the attributes from a vector of solution
 
             Parameters
             ----------
-            sol: Union[np.ndarray, DM]
+            _sol: Union[np.ndarray, DM]
                 The solution in vector format
             """
 
-            self.vector = sol
+            self.vector = _sol
             self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
@@ -378,69 +394,16 @@ class Solution:
 
     @property
     def cost(self):
-        def get_objective_functions(ocp, sol):
-            """
-            Print the values of each objective function to the console
-            """
-
-            def __extract_objective(pen: dict):
-                """
-                Extract objective function from a penalty
-
-                Parameters
-                ----------
-                pen: dict
-                    The penalty to extract the value from
-
-                Returns
-                -------
-                The value extract
-                """
-
-                # TODO: This should be done in bounds and objective functions, so it is available for all the code
-                val_tp = Function("val_tp", [ocp.v.vector], [pen["val"]]).expand()(sol.vector)
-                if pen["target"] is not None:
-                    # TODO Target should be available to constraint?
-                    nan_idx = np.isnan(pen["target"])
-                    pen["target"][nan_idx] = 0
-                    val_tp -= pen["target"]
-                    if np.any(nan_idx):
-                        val_tp[np.where(nan_idx)] = 0
-
-                if pen["objective"].quadratic:
-                    val_tp *= val_tp
-
-                val = np.sum(val_tp)
-
-                dt = Function("dt", [ocp.v.vector], [pen["dt"]]).expand()(sol.vector)
-                val_weighted = pen["objective"].weight * val * dt
-                return val, val_weighted
-
-            running_total = 0
-            for J in ocp.J:
-                val = []
-                val_weighted = []
-                for j in J:
-                    out = __extract_objective(j)
-                    val.append(out[0])
-                    val_weighted.append(out[1])
-                sum_val_weighted = sum(val_weighted)
-                running_total += sum_val_weighted
-
-            for idx_phase, nlp in enumerate(ocp.nlp):
-                for J in nlp.J:
-                    val = []
-                    val_weighted = []
-                    for j in J:
-                        out = __extract_objective(j)
-                        val.append(out[0])
-                        val_weighted.append(out[1])
-                    sum_val_weighted = sum(val_weighted)
-                    running_total += sum_val_weighted
-            return running_total
-
         if self._cost is None:
-            self._cost = get_objective_functions(self.ocp, self)
+            self._cost = 0
+            for J in self.ocp.J:
+                _, val_weighted = self._get_penalty_cost(None, J)
+                self._cost += val_weighted
+
+            for idx_phase, nlp in enumerate(self.ocp.nlp):
+                for J in nlp.J:
+                    _, val_weighted = self._get_penalty_cost(nlp, J)
+                    self._cost += val_weighted
         return self._cost
 
     def copy(self, skip_data: bool = False) -> Any:
@@ -556,11 +519,12 @@ class Solution:
 
         if shooting_type == Shooting.MULTIPLE and keepdims:
             raise ValueError(
-                "Shooting.MULTIPLE and keepdims=True cannot be used simultanously since it would do nothing"
+                "Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing"
             )
         if keepdims and not continuous:
             raise ValueError(
-                "continuous=False and keepdims=True cannot be used simultanously since it would necessarily change the dimension"
+                "continuous=False and keepdims=True cannot be used simultaneously since it would necessarily "
+                "change the dimension"
             )
 
         # Copy the data
@@ -593,7 +557,7 @@ class Solution:
             if shooting_type == Shooting.SINGLE_CONTINUOUS:
                 if p != 0:
                     u0 = self._controls[p - 1]["all"][:, -1]
-                    val = self.ocp.phase_transitions[p - 1].casadi_function(x0, u0, x0, u0, params)
+                    val = self.ocp.phase_transitions[p - 1].function(horzcat(x0, x0), horzcat(u0, u0), params)
                     if val.shape[0] != x0.shape[0]:
                         raise RuntimeError(
                             f"Phase transition must have the same number of states ({val.shape[0]}) "
@@ -807,7 +771,7 @@ class Solution:
             if nlp.control_type == ControlType.CONSTANT:
                 for key in self._controls[p]:
                     self._controls[p][key] = np.concatenate(
-                        (self._controls[p][key], self._controls[p][key][:, -1][:, np.newaxis]), axis=1
+                        (self._controls[p][key], np.nan * np.zeros((self._controls[p][key].shape[0], 1))), axis=1
                     )
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 pass
@@ -895,7 +859,7 @@ class Solution:
                 if param.function:
                     param.function(nlp.model, self.parameters[param.name], **param.params)
 
-            all_bioviz.append(bioviz.Viz(loaded_model=self.ocp.nlp[idx_phase].model, **kwargs))
+            all_bioviz.append(bioviz.Viz(self.ocp.nlp[idx_phase].model.path().absolutePath().to_string(), **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
 
         if show_now:
@@ -910,6 +874,23 @@ class Solution:
         else:
             return all_bioviz
 
+    def _get_penalty_cost(self, nlp, penalty):
+        phase_idx = nlp.phase_idx
+        x = self._states[phase_idx]["all"][:, penalty.node_idx] if nlp is not None else []
+        u = self._controls[phase_idx]["all"][:, penalty.node_idx] if nlp is not None else []
+        p = self.parameters["all"]
+        target = penalty.target if penalty.target is not None else []
+        dt = (
+            Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
+            if "time" in self.parameters
+            else penalty.dt
+        )
+
+        val = np.nansum(penalty.function(x, u, p))
+        val_weighted = np.nansum(penalty.weighted_function(x, u, p, penalty.weight, target, dt))
+
+        return val, val_weighted
+
     def print(self, cost_type: CostType = CostType.ALL):
         """
         Print the objective functions and/or constraints to the console
@@ -920,77 +901,36 @@ class Solution:
             The type of cost to console print
         """
 
-        def print_objective_functions(ocp, sol):
+        def print_penalty_list(nlp, penalties, print_only_weighted):
+            running_total = 0
+
+            for penalty in penalties:
+                if not penalty:
+                    continue
+
+                val, val_weighted = self._get_penalty_cost(nlp, penalty)
+                running_total += val_weighted
+                if print_only_weighted:
+                    print(f"{penalty.name}: {val_weighted}")
+                else:
+                    print(f"{penalty.name}: {val: .2f} (weighted {val_weighted})")
+
+            return running_total
+
+        def print_objective_functions(ocp):
             """
             Print the values of each objective function to the console
             """
-
-            def __extract_objective(pen: dict):
-                """
-                Extract objective function from a penalty
-
-                Parameters
-                ----------
-                pen: dict
-                    The penalty to extract the value from
-
-                Returns
-                -------
-                The value extract
-                """
-
-                # TODO: This should be done in bounds and objective functions, so it is available for all the code
-                val_tp = Function("val_tp", [ocp.v.vector], [pen["val"]]).expand()(sol.vector)
-                if pen["target"] is not None:
-                    # TODO Target should be available to constraint?
-                    nan_idx = np.isnan(pen["target"])
-                    pen["target"][nan_idx] = 0
-                    val_tp -= pen["target"]
-                    if np.any(nan_idx):
-                        val_tp[np.where(nan_idx)] = 0
-
-                if pen["objective"].quadratic:
-                    val_tp *= val_tp
-
-                val = np.sum(val_tp)
-
-                dt = Function("dt", [ocp.v.vector], [pen["dt"]]).expand()(sol.vector)
-                val_weighted = pen["objective"].weight * val * dt
-                return val, val_weighted
-
             print(f"\n---- COST FUNCTION VALUES ----")
-            has_global = False
-            running_total = 0
-            for J in ocp.J:
-                if not J:
-                    continue
-                has_global = True
-                val = []
-                val_weighted = []
-                for j in J:
-                    out = __extract_objective(j)
-                    val.append(out[0])
-                    val_weighted.append(out[1])
-                sum_val_weighted = sum(val_weighted)
-                print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
-                running_total += sum_val_weighted
-            if has_global:
+            running_total = print_penalty_list(None, ocp.J_internal, False)
+            running_total += print_penalty_list(None, ocp.J, False)
+            if running_total:
                 print("")
 
-            for idx_phase, nlp in enumerate(ocp.nlp):
-                print(f"PHASE {idx_phase}")
-                for J in nlp.J:
-                    if not J:
-                        continue
-                    val = []
-                    val_weighted = []
-                    for j in J:
-                        out = __extract_objective(j)
-                        val.append(out[0])
-                        val_weighted.append(out[1])
-                    sum_val_weighted = sum(val_weighted)
-                    print(f"{J[0]['objective'].name}: {sum(val)} (weighted {sum_val_weighted})")
-                    running_total += sum_val_weighted
+            for nlp in ocp.nlp:
+                print(f"PHASE {nlp.phase_idx}")
+                running_total += print_penalty_list(nlp, nlp.J_internal, False)
+                running_total += print_penalty_list(nlp, nlp.J, False)
                 print("")
 
             print(f"Sum cost functions: {running_total}")
@@ -1006,33 +946,18 @@ class Solution:
 
             # Todo, min/mean/max
             print(f"\n--------- CONSTRAINTS ---------")
-            idx = 0
-            has_global = False
-            for G in ocp.g:
-                has_global = True
-                g, next_idx = None, None
-                for g in G:
-                    next_idx = idx + g["val"].shape[0]
-                if g:
-                    print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
-                idx = next_idx
-            if has_global:
+            if print_penalty_list(None, ocp.g_internal, True) + print_penalty_list(None, ocp.g, True):
                 print("")
 
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
-                for G in nlp.g:
-                    g, next_idx = None, idx
-                    for g in G:
-                        next_idx += g["val"].shape[0]
-                    if g:
-                        print(f"{g['constraint'].name}: {np.sum(sol.constraints[idx:next_idx])}")
-                    idx = next_idx
+                print_penalty_list(nlp, nlp.g_internal, True)
+                print_penalty_list(nlp, nlp.g, True)
                 print("")
             print(f"------------------------------")
 
         if cost_type == CostType.OBJECTIVES:
-            print_objective_functions(self.ocp, self)
+            print_objective_functions(self.ocp)
         elif cost_type == CostType.CONSTRAINTS:
             print_constraints(self.ocp, self)
         elif cost_type == CostType.ALL:

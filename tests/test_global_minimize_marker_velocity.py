@@ -3,7 +3,7 @@ Test for file IO
 """
 import pytest
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,
@@ -15,6 +15,7 @@ from bioptim import (
     InitialGuessList,
     ControlType,
     OdeSolver,
+    Node,
 )
 
 from .utils import TestUtils
@@ -62,39 +63,40 @@ def prepare_ocp(
         coordinates_system_idx = 0
     else:
         # Marker should be static in global reference frame
-        coordinates_system_idx = -1
+        coordinates_system_idx = None
 
     objective_functions = ObjectiveList()
     if marker_velocity_or_displacement == "disp":
         objective_functions.add(
-            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_DISPLACEMENT,
-            coordinates_system_idx=coordinates_system_idx,
-            index=6,
+            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS,
+            derivative=True,
+            reference_jcs=coordinates_system_idx,
+            marker_index=6,
             weight=1000,
         )
     elif marker_velocity_or_displacement == "velo":
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, index=6, weight=1000)
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.MINIMIZE_MARKERS_VELOCITY, node=Node.ALL, marker_index=6, weight=1000
+        )
     else:
         raise RuntimeError(
             f"Wrong choice of marker_velocity_or_displacement, actual value is "
             f"{marker_velocity_or_displacement}, should be 'velo' or 'disp'."
         )
     # Make sure the segments actually moves (in order to test the relative speed objective)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=6, weight=-1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, index=7, weight=-1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", node=Node.ALL, index=[2, 3], weight=-1)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
 
     # Path constraint
     nq = biorbd_model.nbQ()
     x_bounds = BoundsList()
     x_bounds.add(bounds=QAndQDotBounds(biorbd_model))
-
-    for i in range(nq, 2 * nq):
-        x_bounds[0].min[i, :] = -10
-        x_bounds[0].max[i, :] = 10
+    x_bounds[0].min[nq:, :] = -10
+    x_bounds[0].max[nq:, :] = 10
 
     # Initial guess
     x_init = InitialGuessList()
@@ -159,7 +161,7 @@ def test_track_and_minimize_marker_displacement_global(ode_solver):
         tau[:, 0], np.array([-4.52595667e-02, 9.25475333e-01, -4.34001849e-08, -9.24667407e01]), decimal=2
     )
     np.testing.assert_almost_equal(
-        tau[:, -1], np.array([4.42976253e-02, 1.40077846e00, -7.28864793e-13, 9.24667396e01]), decimal=2
+        tau[:, -2], np.array([4.42976253e-02, 1.40077846e00, -7.28864793e-13, 9.24667396e01]), decimal=2
     )
 
     # save and load
@@ -198,17 +200,15 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver):
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.02595694, -0.57073004, -1.00000001, 1.57079633]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.05351275, -0.44696334, 1.00000001, 1.57079633]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.07221334, -0.4578082, -3.00436948, 1.57079633]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.05754807, -0.43931116, 2.99563057, 1.57079633]))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([5.03822848, 4.6993718, 10.0, -10.0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([-4.76267039, -3.46170478, 10.0, 10.0]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([5.17192208, 2.3422717, 10.0, -10.0]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.56965109, -4.36318589, 10.0, 10.0]))
     # initial and final controls
+    np.testing.assert_almost_equal(tau[:, 0], np.array([-3.21817755e01, 1.55202948e01, 7.42730542e-13, 2.61513401e-08]))
     np.testing.assert_almost_equal(
-        tau[:, 0], np.array([-2.62720589e01, 4.40828815e00, -5.68180291e-08, 2.61513716e-08])
-    )
-    np.testing.assert_almost_equal(
-        tau[:, -1], np.array([-2.62720590e01, 4.40828815e00, 5.68179790e-08, 2.61513677e-08])
+        tau[:, -2], np.array([-1.97981112e01, -9.89876772e-02, 4.34033234e-08, 2.61513636e-08])
     )
 
     # save and load
@@ -254,7 +254,7 @@ def test_track_and_minimize_marker_velocity(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array([3.77168521e-01, -3.40782793, 10, 0]))
     # # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-4.52216174e-02, 9.25170010e-01, 0, 0]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([4.4260355e-02, 1.4004583, 0, 0]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([4.4260355e-02, 1.4004583, 0, 0]))
 
     # # save and load
     TestUtils.save_and_load(sol, ocp, False)

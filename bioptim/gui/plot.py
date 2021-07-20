@@ -37,8 +37,10 @@ class CustomPlot:
         The style of the line as specified in matplotlib
     ylim: Union[tuple[float, float], list[float, float]]
         The ylim of the axes as specified in matplotlib
-    bounds:
+    bounds: Bounds
         The bounds to show on the graph
+    parameters: Any
+        The parameters of the function
     """
 
     def __init__(
@@ -343,8 +345,12 @@ class PlotOcp:
 
                 t = self.t[i]
                 if variable not in self.plot_func:
-                    self.plot_func[variable] = [nlp.plot[variable]] * self.ocp.n_phases
+                    self.plot_func[variable] = [
+                        nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
+                    ]
 
+                if not self.plot_func[variable][i]:
+                    continue
                 mapping = self.plot_func[variable][i].phase_mappings.map_idx
                 for ctr, k in enumerate(mapping):
                     ax = axes[k]
@@ -519,7 +525,7 @@ class PlotOcp:
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
-                    self.tf[i_in_tf] = data_params["time"][i_in_time]
+                    self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):
@@ -547,6 +553,9 @@ class PlotOcp:
                 raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
             for key in self.variable_sizes[i]:
+                if not self.plot_func[key][i]:
+                    continue
+
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
                     all_y = []
                     for idx, t in enumerate(self.t_integrated[i]):
@@ -573,11 +582,14 @@ class PlotOcp:
                             state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
                         )
                     except ValueError:
-                        raise ValueError(
-                            f"Wrong dimensions for plot {key}. Got "
-                            f"{self.plot_func[key][i].function(state[:, ::step_size], control, data_params_in_dyn, ** self.plot_func[key][i].parameters).shape}"
-                            f", but expected {y.shape}"
+                        val = (
+                            self.plot_func[key][i]
+                            .function(
+                                state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                            )
+                            .shape
                         )
+                        raise ValueError(f"Wrong dimensions for plot {key}. Got " f"{val}" f", but expected {y.shape}")
                     self.__append_to_ydata(y)
         self.__update_axes()
 
@@ -921,9 +933,11 @@ class OnlineCallback(Callback):
             -------
             True if everything went well
             """
+
             while not self.pipe.empty():
-                V = self.pipe.get()
-                self.plot.update_data(V)
+                v = self.pipe.get()
+                self.plot.update_data(v)
+
             for i, fig in enumerate(self.plot.all_figures):
                 fig.canvas.draw()
             return True

@@ -6,14 +6,17 @@ import sys
 import os
 import pytest
 
-import matplotlib
+from casadi import Function, MX
 
-matplotlib.use("Agg")
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import OptimalControlProgram
 
 from .utils import TestUtils
+
+import matplotlib
+
+matplotlib.use("Agg")
 
 
 def test_plot_graphs_one_phase():
@@ -123,20 +126,33 @@ def test_console_objective_functions():
     # Create some consistent answer
     sol.time_to_optimize = 1.2345
     sol.real_time_to_optimize = 5.4321
-    cmp = 1
 
-    def override_penalty(pen, cmp):
-        for P in pen:
-            for p in P:
-                if p:
-                    p["val"] = np.array([range(cmp, p["val"].shape[0] + cmp)]).T
+    def override_penalty(pen):
+        for cmp, p in enumerate(pen):
+            if p:
+                name = p.name.replace("->", "_").replace(" ", "_")
+                x = MX.sym("x", *p.weighted_function.sparsity_in("i0").shape)
+                u = MX.sym("u", *p.weighted_function.sparsity_in("i1").shape)
+                param = MX.sym("param", *p.weighted_function.sparsity_in("i2").shape)
+                weight = MX.sym("weight", *p.weighted_function.sparsity_in("i3").shape)
+                target = MX.sym("target", *p.weighted_function.sparsity_in("i4").shape)
+                dt = MX.sym("dt", *p.weighted_function.sparsity_in("i5").shape)
 
-    override_penalty(ocp.g, cmp)  # Override constraints in the ocp
-    override_penalty(ocp.J, cmp)  # Override objectives in the ocp
+                p.function = Function(name, [x, u, param], [np.array([range(cmp, len(p.rows) + cmp)]).T])
+                p.weighted_function = Function(
+                    name, [x, u, param, weight, target, dt], [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T]
+                )
+
+    override_penalty(ocp.g_internal)  # Override constraints in the ocp
+    override_penalty(ocp.g)  # Override constraints in the ocp
+    override_penalty(ocp.J_internal)  # Override objectives in the ocp
+    override_penalty(ocp.J)  # Override objectives in the ocp
 
     for nlp in ocp.nlp:
-        override_penalty(nlp.g, cmp)  # Override constraints in the nlp
-        override_penalty(nlp.J, cmp)  # Override objectives in the nlp
+        override_penalty(nlp.g_internal)  # Override constraints in the nlp
+        override_penalty(nlp.g)  # Override constraints in the nlp
+        override_penalty(nlp.J_internal)  # Override objectives in the nlp
+        override_penalty(nlp.J)  # Override objectives in the nlp
 
     captured_output = io.StringIO()  # Create StringIO object
     sys.stdout = captured_output  # and redirect stdout.
@@ -146,36 +162,34 @@ def test_console_objective_functions():
         "Elapsed time: 5.4321 sec\n"
         "\n"
         "---- COST FUNCTION VALUES ----\n"
-        "minimize_difference: 14.0 (weighted 1400)\n"
-        "\n"
         "PHASE 0\n"
-        "MINIMIZE_TORQUE: 280.0 (weighted 2800)\n"
+        "MINIMIZE_CONTROL:  3.00 (weighted 6.0)\n"
         "\n"
         "PHASE 1\n"
-        "MINIMIZE_TORQUE: 420.0 (weighted 7000)\n"
+        "MINIMIZE_CONTROL:  3.00 (weighted 6.0)\n"
+        "minimize_difference:  6.00 (weighted 9.0)\n"
         "\n"
         "PHASE 2\n"
-        "MINIMIZE_TORQUE: 280.0 (weighted 5600)\n"
+        "MINIMIZE_CONTROL:  3.00 (weighted 6.0)\n"
         "\n"
-        "Sum cost functions: 16800\n"
+        "Sum cost functions: 27.0\n"
         "------------------------------\n"
         "\n"
         "--------- CONSTRAINTS ---------\n"
-        "CONTINUITY 0: 1.5\n"
-        "CONTINUITY 1: 5.1\n"
-        "CONTINUITY 2: 8.7\n"
-        "PHASE_TRANSITION 0->1: 12.3\n"
-        "PHASE_TRANSITION 1->2: 15.9\n"
-        "\n"
         "PHASE 0\n"
-        "SUPERIMPOSE_MARKERS: 9.3\n"
-        "SUPERIMPOSE_MARKERS: 10.2\n"
+        "CONTINUITY: 21.0\n"
+        "PHASE_TRANSITION 0->1: 27.0\n"
+        "SUPERIMPOSE_MARKERS: 6.0\n"
+        "SUPERIMPOSE_MARKERS: 9.0\n"
         "\n"
         "PHASE 1\n"
-        "SUPERIMPOSE_MARKERS: 11.100000000000001\n"
+        "CONTINUITY: 21.0\n"
+        "PHASE_TRANSITION 1->2: 27.0\n"
+        "SUPERIMPOSE_MARKERS: 6.0\n"
         "\n"
         "PHASE 2\n"
-        "SUPERIMPOSE_MARKERS: 12.0\n"
+        "CONTINUITY: 21.0\n"
+        "SUPERIMPOSE_MARKERS: 6.0\n"
         "\n"
         "------------------------------\n"
     )

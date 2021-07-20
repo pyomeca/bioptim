@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     OptimalControlProgram,

@@ -2,8 +2,10 @@
 Test for file IO
 """
 import pytest
+import re
+
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     ConstraintList,
     ConstraintFcn,
@@ -62,7 +64,7 @@ def test_pendulum_min_time_mayer(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((59.9535415, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99980138, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99980138, 0)))
 
         # optimized time
         np.testing.assert_almost_equal(tf, 0.6209187886055388)
@@ -75,7 +77,7 @@ def test_pendulum_min_time_mayer(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((59.95408901, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.9998014, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.9998014, 0)))
 
         # optimized time
         np.testing.assert_almost_equal(tf, 0.6209191238682122)
@@ -88,7 +90,7 @@ def test_pendulum_min_time_mayer(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99980141, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99980141, 0)))
 
         # optimized time
         np.testing.assert_almost_equal(tf, 0.6209213032003106)
@@ -119,7 +121,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
     # Check constraints
     g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -141,17 +143,17 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
     if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((24.34465091, 0)), decimal=2)
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-53.24135804, 0)), decimal=2)
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-53.24135804, 0)), decimal=2)
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((24.24625693, 0)), decimal=3)
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-45.58969963, 0)), decimal=3)
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-45.58969963, 0)), decimal=3)
 
     else:
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((24.71677932, 0)), decimal=3)
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-53.6692385, 0)), decimal=3)
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-53.6692385, 0)), decimal=3)
 
     # optimized time
     np.testing.assert_almost_equal(tf, 1.0)
@@ -205,12 +207,12 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
     if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final controls
         np.testing.assert_almost_equal(tau[1, 0], np.array(0))
-        np.testing.assert_almost_equal(tau[1, -1], np.array(0))
+        np.testing.assert_almost_equal(tau[1, -2], np.array(0))
 
     else:
         # initial and final controls
         np.testing.assert_almost_equal(tau[1, 0], np.array(0))
-        np.testing.assert_almost_equal(tau[1, -1], np.array(0))
+        np.testing.assert_almost_equal(tau[1, -2], np.array(0))
 
     # optimized time
     np.testing.assert_almost_equal(tf, 1.0)
@@ -258,40 +260,40 @@ def test_pendulum_min_time_lagrange(ode_solver):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.06209245173245879)
+        np.testing.assert_almost_equal(f[0, 0], 0.6209187886055383)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95201483, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99803395, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9535415, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.9998014, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.6209245173245879)
+        np.testing.assert_almost_equal(tf, 0.6209187886055383)
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.062092495597983965)
+        np.testing.assert_almost_equal(f[0, 0], 0.6209192272155531)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9525622, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99803401, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.954089, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.9998014, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.6209249559798397)
+        np.testing.assert_almost_equal(tf, 0.6209192272155531)
 
     else:
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.062092703196434854)
+        np.testing.assert_almost_equal(f[0, 0], 0.6209213032003107)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9529745, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.9980341, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99980141, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.6209270319643485)
+        np.testing.assert_almost_equal(tf, 0.6209213032003107)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -317,10 +319,7 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
-    with pytest.raises(
-        RuntimeError,
-        match="ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have min_bound. Please either use MAYER or constraint",
-    ):
+    with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'min_bound'")):
         OptimalControlProgram(biorbd_model, dynamics, 10, 2, objective_functions=objective_functions)
 
 
@@ -334,17 +333,14 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weigth=-1, max_bound=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=-1, max_bound=1)
 
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
     # ------------- #
 
-    with pytest.raises(
-        RuntimeError,
-        match="ObjectiveFcn.Lagrange.MINIMIZE_TIME cannot have max_bound. Please either use MAYER or constraint",
-    ):
+    with pytest.raises(TypeError, match=re.escape("minimize_time() got an unexpected keyword argument 'max_bound'")):
         OptimalControlProgram(biorbd_model, dynamics, 10, 2, objective_functions=objective_functions)
 
 
@@ -367,8 +363,8 @@ def test_time_constraint(ode_solver):
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+    np.testing.assert_equal(g.shape, (41, 1))
+    np.testing.assert_almost_equal(g, np.concatenate((np.zeros((40, 1)), [[1]])))
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -393,7 +389,7 @@ def test_time_constraint(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((22.49949667, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-33.90954581, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-33.90954581, 0)))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
@@ -403,7 +399,7 @@ def test_time_constraint(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((22.49725311, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-33.90337682, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-33.90337682, 0)))
 
     else:
         # Check objective function value
@@ -413,7 +409,7 @@ def test_time_constraint(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((22.49775, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-33.9047809, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-33.9047809, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -442,12 +438,12 @@ def test_monophase_time_constraint(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 10826.61745874204)
+    np.testing.assert_almost_equal(f[0, 0], 10826.61745902614)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (126, 1))
-    np.testing.assert_almost_equal(g, np.zeros((126, 1)))
+    np.testing.assert_equal(g.shape, (127, 1))
+    np.testing.assert_almost_equal(g, np.concatenate((np.zeros((126, 1)), [[1]])))
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -463,7 +459,7 @@ def test_monophase_time_constraint(ode_solver):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.71428583, 9.81, 0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-5.71428583, 9.81, 0)))
 
     # optimized time
     np.testing.assert_almost_equal(tf, 1.0)
@@ -495,18 +491,21 @@ def test_multiphase_time_constraint(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 55582.04125059745)
+    np.testing.assert_almost_equal(f[0, 0], 55582.04125083612)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (444, 1))
-    np.testing.assert_almost_equal(g, np.zeros((444, 1)))
+    np.testing.assert_equal(g.shape, (447, 1))
+    np.testing.assert_almost_equal(
+        g, np.concatenate((np.zeros((132, 1)), [[1]], np.zeros((189, 1)), [[3]], np.zeros((123, 1)), [[0.8]]))
+    )
 
     # Check some of the results
     sol_merged = sol.merge_phases()
     states, controls = sol_merged.states, sol_merged.controls
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-    tf = sol_merged.parameters["time"][0, 0]
+    tf_all = sol.parameters["time"]
+    tf = sol_merged.phase_time[1]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -518,10 +517,11 @@ def test_multiphase_time_constraint(ode_solver):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-8.92857121, 9.81, -14.01785679)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-8.92857121, 9.81, -14.01785679)))
 
     # optimized time
-    np.testing.assert_almost_equal(tf, 1.0)
+    np.testing.assert_almost_equal(tf_all.T, [[1.0, 3, 0.8]])
+    np.testing.assert_almost_equal(tf, np.sum(tf_all))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -658,7 +658,7 @@ def test_mayer1_neg_multiphase_time_constraint():
     ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
@@ -698,7 +698,7 @@ def test_mayer2_neg_multiphase_time_constraint():
     ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=2)
 
     constraints = ConstraintList()
@@ -738,7 +738,7 @@ def test_mayer_multiphase_time_constraint():
     ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()
@@ -777,7 +777,7 @@ def test_lagrange_neg_monophase_time_constraint():
     ) = partial_ocp_parameters(n_phases=1)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME)
 
     constraints = ConstraintList()
@@ -818,7 +818,7 @@ def test_lagrange1_neg_multiphase_time_constraint():
         ) = partial_ocp_parameters(n_phases=3)
 
         objective_functions = ObjectiveList()
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=0)
 
         constraints = ConstraintList()
@@ -860,7 +860,7 @@ def test_lagrange2_neg_multiphase_time_constraint():
         ) = partial_ocp_parameters(n_phases=3)
 
         objective_functions = ObjectiveList()
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=2)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=2)
 
         constraints = ConstraintList()
@@ -901,7 +901,7 @@ def test_lagrange_multiphase_time_constraint():
     ) = partial_ocp_parameters(n_phases=3)
 
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, phase=0)
 
     constraints = ConstraintList()

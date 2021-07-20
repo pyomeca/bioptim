@@ -10,7 +10,7 @@ More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE
 from typing import Union
 
 from casadi import MX, SX
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -126,14 +126,15 @@ def prepare_ocp(
     final_time = 2
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, weight=100)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, multi_thread=False)
 
     # Dynamics
     dynamics = DynamicsList()
+    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
     if problem_type_custom:
-        dynamics.add(custom_configure, dynamic_function=custom_dynamic, my_additional_factor=1)
+        dynamics.add(custom_configure, dynamic_function=custom_dynamic, my_additional_factor=1, expand=expand)
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, dynamic_function=custom_dynamic)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, dynamic_function=custom_dynamic, expand=expand)
 
     # Constraints
     constraints = ConstraintList()

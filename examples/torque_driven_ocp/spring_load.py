@@ -6,7 +6,7 @@ forces to interact with the body.
 
 from casadi import MX
 import numpy as np
-import biorbd
+import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
     Dynamics,
@@ -78,7 +78,7 @@ def prepare_ocp(biorbd_model_path: str = "mass_point.bioMod"):
     m.setGravity(np.array((0, 0, 0)))
 
     # Add objective functions (high upward velocity at end point)
-    objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=1, weight=-1)
+    objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", index=0, weight=-1)
 
     # Dynamics
     dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic)

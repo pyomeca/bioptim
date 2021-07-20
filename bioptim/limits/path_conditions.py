@@ -5,7 +5,7 @@ from casadi import MX, SX, vertcat
 from scipy.interpolate import interp1d
 
 from ..misc.enums import InterpolationType
-from ..misc.mapping import BiMapping
+from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 
 
@@ -311,6 +311,8 @@ class Bounds(OptionGeneric):
         of required elements and time. If the function exit, then everything is okay
     concatenate(self, other: "Bounds")
         Vertical concatenate of two Bounds
+    scale(self, scaling: Union[float, np.ndarray])
+        Scaling a Bound
     __getitem__(self, slice_list: slice) -> "Bounds"
         Allows to get from square brackets
     __setitem__(self, slice: slice, value: Union[np.ndarray, list, float])
@@ -489,7 +491,7 @@ class Bounds(OptionGeneric):
         return len(self.min) > 0
 
     @property
-    def shape(self) -> int:
+    def shape(self) -> list:
         """
         Get the size of the Bounds
 
@@ -581,7 +583,7 @@ class QAndQDotBounds(Bounds):
     def __init__(
         self,
         biorbd_model,
-        dof_mappings: dict = None,
+        dof_mappings: Union[BiMapping, BiMappingList] = None,
     ):
         """
         Parameters
@@ -646,10 +648,14 @@ class InitialGuess(OptionGeneric):
         of required elements and time. If the function exit, then everything is okay
     concatenate(self, other: "InitialGuess")
         Vertical concatenate of two InitialGuess
+    scale(self, scaling: float)
+        Scaling an InitialGuess
     __bool__(self) -> bool
         Get if the initial guess is empty
     shape(self) -> int
         Get the size of the initial guess
+    __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float])
+        Allows to set from square brackets
     """
 
     def __init__(
@@ -742,6 +748,20 @@ class InitialGuess(OptionGeneric):
         """
 
         return self.init.shape
+
+    def __setitem__(self, _slice: Union[slice, list, tuple], value: Union[np.ndarray, list, float]):
+        """
+        Allows to set from square brackets
+
+        Parameters
+        ----------
+        _slice: Union[slice, list, tuple]
+            The slice where to put the data
+        value: Union[np.ndarray, float]
+            The value to set
+        """
+
+        self.init[_slice] = value
 
 
 class InitialGuessList(UniquePerPhaseOptionList):

@@ -18,9 +18,22 @@ class OptimizationVariable:
         The MX variable associated with this variable
     index: range
         The indices to find this variable
+    mapping: BiMapping
+        The mapping of the MX
+    parent_list: OptimizationVariableList
+        The parent that added this entry
+
+    Methods
+    -------
+    __len__(self)
+        The len of the MX reduced
+    cx(self)
+        The CX of the variable (starting point)
+    cx_end(self)
+        The CX of the variable (ending point)
     """
 
-    def __init__(self, name: str, mx: MX, index: range, mapping: BiMapping):
+    def __init__(self, name: str, mx: MX, index: [range, list], mapping: BiMapping = None, parent_list=None):
         """
         Parameters
         ----------
@@ -28,21 +41,48 @@ class OptimizationVariable:
             The name of the variable
         mx: MX
             The MX variable associated with this variable
-        index: range
+        index: [range, list]
             The indices to find this variable
+        parent_list: OptimizationVariableList
+            The list the OptimizationVariable is in
         """
         self.name: str = name
         self.mx: MX = mx
-        self.index: range = index
+        self.index: [range, list] = index
         self.mapping: BiMapping = mapping
+        self.parent_list: OptimizationVariableList = parent_list
 
     def __len__(self):
         """
+        The len of the MX reduced
+
         Returns
         -------
         The number of element (correspond to the nrows of the MX)
         """
         return len(self.index)
+
+    @property
+    def cx(self):
+        """
+        The CX of the variable
+        """
+
+        if self.parent_list is None:
+            raise RuntimeError(
+                "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
+                "Typically 'all' cannot be used"
+            )
+        return self.parent_list.cx[self.index, :]
+
+    @property
+    def cx_end(self):
+        if self.parent_list is None:
+            raise RuntimeError(
+                "OptimizationVariable must have been created by OptimizationVariableList to have a cx. "
+                "Typically 'all' cannot be used"
+            )
+        return self.parent_list.cx_end[self.index, :]
 
 
 class OptimizationVariableList:
@@ -53,13 +93,36 @@ class OptimizationVariableList:
     ----------
     elements: list
         Each of the variable separated
-    cx: Union[MX, SX]
-        The symbolic MX or SX of the list
+    _cx: Union[MX, SX]
+        The symbolic MX or SX of the list (starting point)
+    _cx_end: Union[MX, SX]
+        The symbolic MX or SX of the list (ending point)
+    mx_reduced: MX
+        The reduced MX to the size of _cx
+
+    Methods
+    -------
+    __getitem__(self, item: Union[int, str])
+        Get a specific variable in the list, whether by name or by index
+    append(self, name: str, cx: list, mx: MX, bimapping: BiMapping)
+        Add a new variable to the list
+    cx(self)
+        The the cx of all elements together (starting point)
+    cx_end(self)
+        The the cx of all elements together (ending point)
+    mx(self)
+        The MX of all variable concatenated together
+    shape(self)
+        The size of the CX
+    __len__(self)
+        The number of variables in the list
     """
 
     def __init__(self):
         self.elements: list = []
-        self.cx: Union[MX, SX, np.ndarray] = np.array([])
+        self._cx: Union[MX, SX, np.ndarray] = np.array([])
+        self._cx_end: Union[MX, SX, np.ndarray] = np.array([])
+        self.mx_reduced: MX = MX.sym("var", 0, 0)
 
     def __getitem__(self, item: Union[int, str]):
         """
@@ -78,6 +141,12 @@ class OptimizationVariableList:
         if isinstance(item, int):
             return self.elements[item]
         elif isinstance(item, str):
+            if item == "all":
+                index = []
+                for elt in self.elements:
+                    index.extend(list(elt.index))
+                return OptimizationVariable("all", self.mx, index)
+
             for elt in self.elements:
                 if item == elt.name:
                     return elt
@@ -85,7 +154,7 @@ class OptimizationVariableList:
         else:
             raise ValueError("OptimizationVariableList can be sliced with int or str only")
 
-    def append(self, name: str, cx: Union[MX, SX], mx: MX, bimapping: BiMapping):
+    def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
         """
         Add a new variable to the list
 
@@ -93,17 +162,39 @@ class OptimizationVariableList:
         ----------
         name: str
             The name of the variable
-        cx: Union[MX, SX]
-            The SX or MX variable associated with this variable
+        cx: list
+            The list of SX or MX variable associated with this variable
         mx: MX
             The MX variable associated with this variable
         bimapping: BiMapping
             The Mapping of the MX against CX
         """
 
-        index = range(self.cx.shape[0], self.cx.shape[0] + cx.shape[0])
-        self.cx = vertcat(self.cx, cx)
-        self.elements.append(OptimizationVariable(name, mx, index, bimapping))
+        if len(cx) != 2:
+            raise NotImplementedError("Appending optimization_variable without cx.shape = [n, 2] is not implemented")
+
+        index = range(self._cx.shape[0], self._cx.shape[0] + cx[0].shape[0])
+        self._cx = vertcat(self._cx, cx[0])
+        self._cx_end = vertcat(self._cx_end, cx[1])
+        self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape))
+
+        self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
+
+    @property
+    def cx(self):
+        """
+        The the cx of all elements together (starting point)
+        """
+
+        return self._cx[:, 0]
+
+    @property
+    def cx_end(self):
+        """
+        The the cx of all elements together (ending point)
+        """
+
+        return self._cx_end[:, 0]
 
     @property
     def mx(self):
@@ -117,12 +208,6 @@ class OptimizationVariableList:
 
     def __contains__(self, item: str):
         """
-        Parameters
-        ----------
-        item: str
-            The name of the item
-        Returns
-        -------
         If the item of name item is in the list
         """
 
@@ -134,8 +219,6 @@ class OptimizationVariableList:
 
     def keys(self):
         """
-        Returns
-        -------
         All the names of the elements in the list
         """
 
@@ -144,19 +227,16 @@ class OptimizationVariableList:
     @property
     def shape(self):
         """
-        Returns
-        -------
         The size of the CX
         """
 
-        return self.cx.shape[0]
+        return self._cx.shape[0]
 
     def __len__(self):
         """
-        Returns
-        -------
         The number of variables in the list
         """
+
         return len(self.elements)
 
     def __iter__(self):
