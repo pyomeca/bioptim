@@ -21,10 +21,21 @@ from bioptim import (
     ObjectiveFcn,
     Objective,
     PlotType,
+    ObjectiveList,
 )
 
 
-def plot_objectives(ocp, x, u, p):
+def plot_objectives(ocp):
+
+    def plot_obj(x, u, p, j):
+        plot_returned = cas.DM()
+        for i in range(np.shape(x)[1]):
+            if j.target is not None:
+                Plot = j.weighted_function(x[:, i], u, p, cas.DM(j.weight), cas.DM(j.target), cas.DM(dt))
+            else:
+                Plot = j.weighted_function(x[:, i], u, p, cas.DM(j.weight), [], cas.DM(dt))
+            plot_returned = cas.horzcat(plot_returned, Plot[:, 0])
+            return plot_returned
 
     for nlp in ocp.nlp:
         for j in nlp.J:
@@ -33,18 +44,9 @@ def plot_objectives(ocp, x, u, p):
             else:
                 dt = j.dt
 
-            # if j.plot_target:
-            #     Plot = j.weighted_function - j.target_to_plot
-            # else:
-            if np.shape(x)[1] == 1:
-                Plot = j.weighted_function(x, u, p, cas.DM(j.weight), cas.DM(j.weight), cas.DM(dt))
-                plot_returned = Plot[:, 0]
-            else:
-                plot_returned = cas.DM()
-                for i in range(np.shape(x)[1]):
-                    Plot = j.weighted_function(x[:, i], u, p, cas.DM(j.weight), cas.DM(j.weight), cas.DM(dt))
-                    plot_returned = cas.horzcat(plot_returned, Plot[:, 0])
-    return plot_returned
+            ocp.add_plot(f"Objective_{j.name}", lambda x, u, p, j: plot_obj(x, u, p, j), plot_type=PlotType.INTEGRATED, j=j)
+
+    return
 
 
 def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> OptimalControlProgram:
@@ -68,7 +70,9 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau"))
+    objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q"))
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -114,7 +118,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100)
 
     # Custom plots
-    ocp.add_plot("Objective", lambda x, u, p : plot_objectives(ocp, x, u, p), plot_type=PlotType.INTEGRATED) # legend, target
+    plot_objectives(ocp)
 
     # --- Print ocp structure --- #
     # ocp.print(to_console=False, to_graph=True)
@@ -124,6 +128,7 @@ def main():
 
     # --- Show the results in a bioviz animation --- #
     sol.print()
+    sol.graphs()
     sol.animate()
 
 
