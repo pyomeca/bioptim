@@ -8,6 +8,7 @@ This simple example is a good place to start investigating bioptim as it describ
 During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
+import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
 import biorbd_casadi as biorbd
@@ -23,9 +24,33 @@ from bioptim import (
     PlotType,
     ObjectiveList,
 )
-
-
 def plot_objectives(ocp):
+
+    # TODO : Add a label tag to CustomPlot for the legend on the graph
+
+    number_of_plots = 0
+    objective_names = []
+    same_objectives = [[], []]
+    number_of_same_objectives = 0
+    for nlp in ocp.nlp:
+        for j in nlp.J:
+            if j.name in objective_names:
+                same_objectives[0].append(objective_names.index(j.name))
+                same_objectives[1].append(number_of_plots)
+                number_of_same_objectives += 1
+            else:
+                objective_names.append(j.name)
+            number_of_plots += 1
+
+    step_size = 1 / (number_of_plots - number_of_same_objectives)
+    color = []
+    unique_color = 0
+    for i in range(number_of_plots):
+        if i in same_objectives[1]:
+            color += [plt.cm.viridis(step_size * same_objectives[0][same_objectives[1].index(i)])]
+        else:
+            color += [plt.cm.viridis(step_size * unique_color)]
+            unique_color += 1
 
     def plot_obj(x, u, p, j):
         plot_returned = cas.DM()
@@ -37,14 +62,16 @@ def plot_objectives(ocp):
             plot_returned = cas.horzcat(plot_returned, Plot[:, 0])
             return plot_returned
 
-    for nlp in ocp.nlp:
+    number_of_plots = 0
+    for i_phase, nlp in enumerate(ocp.nlp):
         for j in nlp.J:
             if "time" in nlp.parameters.names:
                 dt = cas.Function("time", [nlp.parameters.cx], [j.dt])(j.parameters["time"])
             else:
                 dt = j.dt
 
-            ocp.add_plot(f"Objective_{j.name}", lambda x, u, p, j: plot_obj(x, u, p, j), plot_type=PlotType.INTEGRATED, j=j)
+            ocp.add_plot(f"Objectives", lambda x, u, p, j: plot_obj(x, u, p, j), plot_type=PlotType.INTEGRATED, phase=i_phase, j=j, color=color[number_of_plots])
+            number_of_plots += 1
 
     return
 
