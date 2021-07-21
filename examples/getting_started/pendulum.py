@@ -70,7 +70,9 @@ def plot_objectives(ocp):
             else:
                 dt = j.dt
 
-            ocp.add_plot(f"Objectives", lambda x, u, p, j: plot_obj(x, u, p, j), plot_type=PlotType.INTEGRATED, phase=i_phase, j=j, color=color[number_of_plots])
+
+            ## if mayer ...
+            ocp.add_plot(f"Objectives", lambda x, u, p, j: plot_obj(x, u, p, j), plot_type=PlotType.POINT, phase=i_phase, j=j, color=color[number_of_plots])
             number_of_plots += 1
 
     return
@@ -98,8 +100,9 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau"))
-    objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q"))
+    # objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau"))
+    # objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q"))
+    objective_functions.add(Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=0, key="q"))
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)

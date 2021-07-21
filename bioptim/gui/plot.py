@@ -207,6 +207,7 @@ class PlotOcp:
             "general_options": {"use_tight_layout": False},
             "non_integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
             "integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
+            "point_plots": {"linestyle": None, "marker": ".", "markersize": 3},
             "bounds": {"color": "k", "linewidth": 0.4, "linestyle": "-"},
             "grid": {"color": "k", "linestyle": "-", "linewidth": 0.15},
             "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
@@ -217,6 +218,7 @@ class PlotOcp:
 
         self.t = []
         self.t_integrated = []
+        self.t_to_plot = []
         if isinstance(self.ocp.original_phase_time, (int, float)):
             self.tf = [self.ocp.original_phase_time]
         else:
@@ -273,6 +275,7 @@ class PlotOcp:
 
         self.t = []
         self.t_integrated = []
+        self.t_to_plot = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
             n_int_steps = nlp.ode_solver.steps
@@ -343,7 +346,6 @@ class PlotOcp:
                     axes = self.__add_new_axis(variable, nb, n_rows, n_cols)
                     self.axes[variable] = [nlp.plot[variable], axes]
 
-                t = self.t[i]
                 if variable not in self.plot_func:
                     self.plot_func[variable] = [
                         nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
@@ -370,9 +372,14 @@ class PlotOcp:
                             y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[k] for j in range(nlp.ns)])
                         y_range, _ = self.__compute_ylim(y_min, y_max, 1.25)
                         ax.set_ylim(y_range)
-                    zero = np.zeros((t.shape[0], 1))
                     plot_type = self.plot_func[variable][i].type
+                    if plot_type == PlotType.POINT:
+                        if self.t_to_plot == self.t[i]:
+                            t = self.t[i]
+                    else:
+                        t = self.t[i]
                     if plot_type == PlotType.PLOT:
+                        zero = np.zeros((t.shape[0], 1))
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:green"
                         self.plots.append(
                             [
@@ -382,6 +389,7 @@ class PlotOcp:
                             ]
                         )
                     elif plot_type == PlotType.INTEGRATED:
+                        zero = np.zeros((t.shape[0], 1))
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         plots_integrated = []
                         n_int_steps = nlp.ode_solver.steps
@@ -395,14 +403,26 @@ class PlotOcp:
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
-
                     elif plot_type == PlotType.STEP:
+                        zero = np.zeros((t.shape[0], 1))
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:orange"
                         linestyle = (
                             self.plot_func[variable][i].linestyle if self.plot_func[variable][i].linestyle else "-"
                         )
                         self.plots.append(
                             [plot_type, i, ax.step(t, zero, linestyle, where="post", color=color, zorder=0)[0]]
+                        )
+                    elif plot_type == PlotType.POINT:
+                        zero = np.zeros((1, 1))
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][
+                            i].color else "tab:purple"
+                        self.plots.append(
+                            [
+                                plot_type,
+                                i,
+                                ax.plot(t, zero, color=color, zorder=0,
+                                        **self.plot_options["point_plots"])[0],
+                            ]
                         )
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
@@ -574,8 +594,8 @@ class PlotOcp:
                         for y in all_y:
                             y_tp.append(y[idx, :])
                         self.__append_to_ydata([y_tp])
-                else:
-                    y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
+                elif self.plot_func[key][i].type == PlotType.POINT:
+                    y = np.empty((self.variable_sizes[i][key], len(self.t_to_plot[i])))
                     y.fill(np.nan)
                     try:
                         y[:, :] = self.plot_func[key][i].function(
@@ -588,6 +608,23 @@ class PlotOcp:
                                 state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
                             )
                             .shape
+                        )
+                        raise ValueError(f"Wrong dimensions for plot {key}. Got " f"{val}" f", but expected {y.shape}")
+                    self.__append_to_ydata(y)
+                else:
+                    y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
+                    y.fill(np.nan)
+                    try:
+                        y[:, :] = self.plot_func[key][i].function(
+                            state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                        )
+                    except ValueError:
+                        val = (
+                            self.plot_func[key][i]
+                                .function(
+                                state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                            )
+                                .shape
                         )
                         raise ValueError(f"Wrong dimensions for plot {key}. Got " f"{val}" f", but expected {y.shape}")
                     self.__append_to_ydata(y)
