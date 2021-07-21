@@ -537,7 +537,8 @@ class OcpToGraph(GraphAbstract):
         node_str += f"<b>Phase duration</b>: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"
         node_str += f"<b>Dynamics</b>: {self.ocp.nlp[phase_idx].dynamics_type.type.name}<br/>"
-        node_str += f"<b>ODE</b>: {self.ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}"
+        node_str += f"<b>ODE</b>: {self.ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}<br/>"
+        node_str += f"<b>Control type</b>: {self.ocp.nlp[phase_idx].control_type.name}"
         g.node(f"nlp_node_{phase_idx}", f"""<{node_str}>""")
 
     def _draw_lagrange_node(self, g, phase_idx: int):
