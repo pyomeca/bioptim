@@ -8,7 +8,10 @@ from matplotlib import pyplot as plt
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
+    Node,
     OptimalControlProgram,
+    ConstraintList,
+    ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
     DynamicsList,
@@ -36,6 +39,23 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True, expand=False)
+
+    # Constraints
+    constraints = ConstraintList()
+    constraints.add(
+        ConstraintFcn.TRACK_CONTACT_FORCES,
+        min_bound=min_bound,
+        max_bound=max_bound,
+        node=Node.ALL,
+        contact_index=1,
+    )
+    constraints.add(
+        ConstraintFcn.TRACK_CONTACT_FORCES,
+        min_bound=min_bound,
+        max_bound=max_bound,
+        node=Node.ALL,
+        contact_index=2,
+    )
 
     # Path constraint
     n_q = biorbd_model.nbQ()
@@ -72,6 +92,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
         x_bounds,
         u_bounds,
         objective_functions,
+        constraints=constraints,
         variable_mappings=dof_mapping,
     )
 
