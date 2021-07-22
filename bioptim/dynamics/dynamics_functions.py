@@ -76,7 +76,7 @@ class DynamicsFunctions:
         parameters: MX.sym,
         nlp,
         with_contact: bool,
-        fatigue: list = None,
+        fatigue: list,
     ) -> MX:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
@@ -101,8 +101,6 @@ class DynamicsFunctions:
         MX.sym
             The derivative of the states
         """
-        if fatigue is None:
-            fatigue = []
 
         if Fatigue.TAU in fatigue and Fatigue.TAU_STATE_ONLY in fatigue:
             raise RuntimeError("fatigue can not be set with both Fatigue.TAU and Fatigue.TAU_STATE_ONLY")

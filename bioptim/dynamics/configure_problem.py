@@ -5,7 +5,7 @@ from casadi import MX, vertcat, Function
 import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
-from ..misc.enums import PlotType, ControlType
+from ..misc.enums import PlotType, ControlType, Fatigue
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..gui.plot import CustomPlot
@@ -90,7 +90,7 @@ class ConfigureProblem:
         nlp.dynamics_type.configure(ocp, nlp, **extra_params)
 
     @staticmethod
-    def torque_driven(ocp, nlp, with_contact=False):
+    def torque_driven(ocp, nlp, with_contact: bool = False, fatigue: list = None):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
 
@@ -102,21 +102,28 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
+        fatigue: list
+            A list of fatigue elements
         """
+        if fatigue is None:
+            fatigue = []
+
+        with_fatigue = True if Fatigue.TAU in fatigue or Fatigue.TAU_STATE_ONLY in fatigue else False
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
-        ConfigureProblem.configure_tau(nlp, False, True)
+        ConfigureProblem.configure_tau(nlp, False, True, with_fatigue)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
             ConfigureProblem.configure_dynamics_function(
-                ocp, nlp, DynamicsFunctions.torque_driven, with_contact=with_contact
+                ocp, nlp, DynamicsFunctions.torque_driven, with_contact=with_contact, fatigue=fatigue
             )
 
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+
 
     @staticmethod
     def torque_derivative_driven(ocp, nlp, with_contact=False):
@@ -399,7 +406,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls)
 
     @staticmethod
-    def configure_tau(nlp, as_states: bool, as_controls: bool):
+    def configure_tau(nlp, as_states: bool, as_controls: bool, with_fatigue: bool = False):
         """
         Configure the generalized forces
 
@@ -411,11 +418,40 @@ class ConfigureProblem:
             If the generalized forces should be a state
         as_controls: bool
             If the generalized forces should be a control
+        with_fatigue: bool
+            If the dynamics with fatigue should be declared
         """
 
         name_tau = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
-        ConfigureProblem._adjust_mapping("tau", ["qdot", "taudot"], nlp)
-        ConfigureProblem.configure_new_variable("tau", name_tau, nlp, as_states, as_controls)
+
+        if with_fatigue:
+            for direction in ["minus", "plus"]:
+                ConfigureProblem._adjust_mapping(f"tau_{direction}", ["qdot", "taudot"], nlp)
+                ConfigureProblem.configure_new_variable(f"tau_{direction}", name_tau, nlp, as_states, as_controls)
+                for params in ["ma", "mr", "mf"]:
+                    ConfigureProblem._adjust_mapping(f"tau_{params}_{direction}", ["q"], nlp)
+                    ConfigureProblem.configure_new_variable(
+                        f"tau_{params}_{direction}", name_tau, nlp, True, False, combine_plot=True
+                    )
+
+            tau_nlp = nlp.controls if "tau_minus" in nlp.controls else nlp.states
+
+            # Create a fake "tau" accessor
+            index = list(tau_nlp["tau_minus"].index) + list(tau_nlp["tau_plus"].index)
+            mx = vertcat(tau_nlp["tau_minus"].mx, tau_nlp["tau_plus"].mx)
+            name = "tau"
+            to_second = list(tau_nlp["tau_minus"].mapping.to_second.map_idx) + list(
+                np.array(tau_nlp["tau_plus"].mapping.to_second.map_idx) + len(tau_nlp["tau_minus"])
+            )
+            to_first = list(tau_nlp["tau_minus"].mapping.to_first.map_idx) + list(
+                np.array(tau_nlp["tau_plus"].mapping.to_first.map_idx) + len(tau_nlp["tau_minus"])
+            )
+            mapping = BiMapping(to_second, to_first)
+            tau_nlp.append_fake(name, index, mx, mapping)
+
+        else:
+            ConfigureProblem._adjust_mapping("tau", ["qdot", "taudot"], nlp)
+            ConfigureProblem.configure_new_variable("tau", name_tau, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_taudot(nlp, as_states: bool, as_controls: bool):
