@@ -2,8 +2,9 @@ from typing import Union
 
 from casadi import horzcat, vertcat, MX, SX
 
-from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariable
+from ..optimization.non_linear_program import NonLinearProgram
+from ..misc.enums import Fatigue
 
 
 class DynamicsFunctions:
@@ -67,8 +68,16 @@ class DynamicsFunctions:
         qdot, qddot = nlp.dynamics_type.dynamic_function(states, controls, parameters, nlp)
         return vertcat(qdot, qddot)
 
+
     @staticmethod
-    def torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
+    def torque_driven(
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_contact: bool,
+        fatigue: list = None,
+    ) -> MX:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
 
@@ -84,23 +93,62 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
+        fatigue : list
+            A list of fatigue elements
 
         Returns
         ----------
         MX.sym
             The derivative of the states
         """
+        if fatigue is None:
+            fatigue = []
+
+        if Fatigue.TAU in fatigue and Fatigue.TAU_STATE_ONLY in fatigue:
+            raise RuntimeError("fatigue can not be set with both Fatigue.TAU and Fatigue.TAU_STATE_ONLY")
 
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+
+        if Fatigue.TAU in fatigue or Fatigue.TAU_STATE_ONLY in fatigue:
+            if Fatigue.TAU in fatigue:
+                tau_min = []
+                tau_max = []
+                direction_list = ["plus", "minus"]
+                for i, direction in enumerate(direction_list):
+                    for fatigue_tau_param in nlp.fatigue_dynamics[Fatigue.TAU][i]:
+                        tau_max.append(fatigue_tau_param.tau_max) if direction == "plus" else tau_min.append(
+                            fatigue_tau_param.tau_max
+                        )
+                tau = MX()
+                for i in range(len(tau_min)):
+                    tau = vertcat(
+                        tau,
+                        DynamicsFunctions.get(nlp.states["tau_ma_minus"], states)[i] * tau_min[i]
+                        + DynamicsFunctions.get(nlp.states["tau_ma_plus"], states)[i] * tau_max[i],
+                    )
+            else:
+                tau = DynamicsFunctions.get(nlp.controls["tau_minus"], controls) + DynamicsFunctions.get(
+                    nlp.controls["tau_plus"], controls
+                )
+        else:
+            tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        dq = horzcat(*[dq for _ in range(ddq.shape[1])])
-        return vertcat(dq, ddq)
+        dxdt = MX(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
+
+        if Fatigue.TAU in fatigue or Fatigue.TAU_STATE_ONLY in fatigue:
+            direction_list = ["plus", "minus"]
+            for i, direction in enumerate(direction_list):
+                dxdt = nlp.fatigue_dynamics[Fatigue.TAU][i].dynamics(dxdt, nlp, states, controls)
+
+        return dxdt
+
 
     @staticmethod
     def torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact) -> MX:
