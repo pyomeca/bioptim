@@ -99,11 +99,13 @@ def prepare_ocp(
 
     fatigue_dynamics.add_torque(
         XiaTorqueFatigue(LD=100, LR=100, F=0.9, R=0.01, tau_max=-100),
-        XiaTorqueFatigue(LD=100, LR=100, F=0.9, R=0.01, tau_max=100), index=0
+        XiaTorqueFatigue(LD=100, LR=100, F=0.9, R=0.01, tau_max=100),
+        index=0,
     )
     fatigue_dynamics.add_torque(
         XiaTorqueFatigue(LD=100, LR=100, F=0.9, R=0.01, tau_max=-100),
-        XiaTorqueFatigue(LD=100, LR=100, F=0.9, R=0.01, tau_max=100), index=1
+        XiaTorqueFatigue(LD=100, LR=100, F=0.9, R=0.01, tau_max=100),
+        index=1,
     )
 
     return OptimalControlProgram(
@@ -130,7 +132,7 @@ def main():
         biorbd_model_path="../getting_started/pendulum.bioMod",
         final_time=3,
         n_shooting=100,
-        fatigue=[Fatigue.TAU_STATE_ONLY]
+        fatigue=[Fatigue.TAU_STATE_ONLY],
     )
 
     # --- Print ocp structure --- #

@@ -68,7 +68,6 @@ class DynamicsFunctions:
         qdot, qddot = nlp.dynamics_type.dynamic_function(states, controls, parameters, nlp)
         return vertcat(qdot, qddot)
 
-
     @staticmethod
     def torque_driven(
         states: MX.sym,
@@ -146,7 +145,6 @@ class DynamicsFunctions:
                 dxdt = nlp.fatigue_dynamics[Fatigue.TAU][i].dynamics(dxdt, nlp, states, controls)
 
         return dxdt
-
 
     @staticmethod
     def torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact) -> MX:
@@ -294,13 +292,13 @@ class DynamicsFunctions:
 
     @staticmethod
     def muscles_driven(
-            states: MX.sym,
-            controls: MX.sym,
-            parameters: MX.sym,
-            nlp,
-            with_contact: bool,
-            with_residual_torque: bool,
-            fatigue: list = [],  # TODO Do not use mutable as default
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_contact: bool,
+        with_residual_torque: bool,
+        fatigue: list = [],  # TODO Do not use mutable as default
     ) -> MX:
         """
         Forward dynamics driven by muscle.

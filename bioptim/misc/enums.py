@@ -94,6 +94,7 @@ class ControlType(Enum):
     LINEAR_CONTINUOUS = 2  # Linear interpolation between integration steps (=2 columns)
     NONE = 0  # Undeclared control type
 
+
 class Fatigue:
     """
     Selection of valid fatigue

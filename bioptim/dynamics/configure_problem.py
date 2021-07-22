@@ -124,7 +124,6 @@ class ConfigureProblem:
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
-
     @staticmethod
     def torque_derivative_driven(ocp, nlp, with_contact=False):
         """

@@ -631,6 +631,7 @@ class QAndQDotBounds(Bounds):
 
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
+
 class XiaFatigueStateBounds(Bounds):
     """
     Specialized Bounds that reads a model to automatically extract fatigue state bounds
