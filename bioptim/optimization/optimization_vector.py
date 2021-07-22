@@ -250,7 +250,7 @@ class OptimizationVector:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
-                if k != nlp.ns and (isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) and not isinstance(nlp.ode_solver, OdeSolver.IRK)):
+                if k != nlp.ns and nlp.ode_solver.is_direct_collocation:
                     x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape, nlp.ode_solver.polynomial_degree + 1))
                 else:
                     x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape, 1))
@@ -292,7 +292,7 @@ class OptimizationVector:
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             nx = nlp.states.shape
-            if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) and not isinstance(nlp.ode_solver, OdeSolver.IRK):
+            if nlp.ode_solver.is_direct_collocation:
                 all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                 outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
                 repeat = nlp.ode_solver.polynomial_degree + 1
@@ -346,7 +346,7 @@ class OptimizationVector:
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             nx = nlp.states.shape
-            if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) and not isinstance(nlp.ode_solver, OdeSolver.IRK):
+            if nlp.ode_solver.is_direct_collocation:
                 all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
                 outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
                 repeat = nlp.ode_solver.polynomial_degree + 1

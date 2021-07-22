@@ -524,7 +524,7 @@ class COLLOCATION(Integrator):
 
         # Concatenate constraints
         defects = vertcat(*defects)
-        return states_end, defects, horzcat(states[0], states_end)
+        return states_end, horzcat(states[0], states_end), defects
 
     def _finish_init(self):
         """
@@ -536,7 +536,7 @@ class COLLOCATION(Integrator):
             [horzcat(*self.x_sym), self.u_sym, self.param_sym],
             self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
             ["x0", "p", "params"],
-            ["xf", "defects", "xall"],
+            ["xf", "xall", "defects"],
         )
 
 
@@ -585,7 +585,7 @@ class IRK(COLLOCATION):
         """
 
         nx = states[0].shape[0]
-        _, defect, _ = super(IRK, self).dxdt(h, states, controls, params)
+        _, _, defect = super(IRK, self).dxdt(h, states, controls, params)
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         vfcn = Function("vfcn", [vertcat(*states[1:]), states[0], controls, params], [defect]).expand()

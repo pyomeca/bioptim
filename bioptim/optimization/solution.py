@@ -7,6 +7,7 @@ from scipy import interpolate as sci_interp
 from casadi import horzcat, DM, Function
 from matplotlib import pyplot as plt
 
+from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import ControlType, CostType, Shooting, InterpolationType
 from ..misc.utils import check_version
@@ -527,9 +528,46 @@ class Solution:
                 "change the dimension"
             )
 
+        out = self.__perform_integration(shooting_type, keepdims, continuous)
+
+        if merge_phases:
+            if continuous:
+                out = out.interpolate(sum(out.ns) + 1)
+            else:
+                out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
+                out.is_merged = True
+        out.is_integrated = True
+
+        return out
+
+    def __perform_integration(self, shooting_type: Shooting, keepdims: bool, continuous: bool):
+
+        n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
+        if n_direct_collocation > 0:
+            if n_direct_collocation != len(self.ocp.nlp):
+                raise RuntimeError("It is not possible to integrate mixture of direct collocation and shooting")
+
+            if not continuous:
+                raise RuntimeError("Direct collocation integration must be continuous")
+
+            out = self.copy()
+            for p, state in enumerate(out._states):
+                nlp = self.ocp.nlp[p]
+                steps = int((state["all"].shape[1] - 1) / (nlp.ode_solver.steps + 1))
+                new_states = {"all": np.ndarray((state["all"].shape[0],  state["all"].shape[1] + steps))}
+                for s in range(steps):
+                    t_span_right = slice(s * (nlp.ode_solver.steps + 1), (s+1) * (nlp.ode_solver.steps + 1) + 1)
+                    t_span_left = slice(s * (nlp.ode_solver.steps + 2), (s+1) * (nlp.ode_solver.steps + 2))
+                    new_states["all"][:, t_span_left] = state["all"][:, t_span_right]
+
+                for key in state:
+                    if key == "all":
+                        continue
+                    new_states[key] = new_states["all"][nlp.states[key].index, :]
+            return out
+
         # Copy the data
         out = self.copy(skip_data=True)
-
         ocp = out.ocp
         out._states = []
         for _ in range(len(self._states)):
@@ -605,14 +643,6 @@ class Solution:
                 out._states[p][key] = out._states[p]["all"][off : off + len(ocp.nlp[p].states[key]), :]
                 off += len(ocp.nlp[p].states[key])
 
-        if merge_phases:
-            if continuous:
-                out = out.interpolate(sum(out.ns) + 1)
-            else:
-                out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
-                out.is_merged = True
-
-        out.is_integrated = True
         return out
 
     def interpolate(self, n_frames: Union[int, list, tuple]) -> Any:

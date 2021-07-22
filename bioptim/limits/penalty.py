@@ -512,7 +512,7 @@ class PenaltyFunctionAbstract:
             penalty.expand = all_pn.nlp.dynamics_type.expand
 
             continuity = nlp.states.cx_end
-            if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) and not isinstance(nlp.ode_solver, OdeSolver.IRK):
+            if nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([nlp.states.cx] + nlp.states.cx_intermediates_list))
                 continuity -= nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["xf"]
                 continuity = vertcat(continuity, nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["defects"])

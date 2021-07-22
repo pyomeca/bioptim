@@ -26,6 +26,8 @@ class OdeSolverBase:
     def __init__(self):
         self.steps = 1
         self.rk_integrator = None
+        self.is_direct_collocation = False
+        self.is_direct_shooting = False
 
     def integrator(self, ocp, nlp) -> list:
         """
@@ -85,6 +87,7 @@ class RK(OdeSolverBase):
 
         super(RK, self).__init__()
         self.steps = n_integration_steps
+        self.is_direct_shooting = True
 
     def integrator(self, ocp, nlp) -> list:
         """
@@ -197,6 +200,8 @@ class OdeSolver:
             self.polynomial_degree = polynomial_degree
             self.rk_integrator = COLLOCATION
             self.method = method
+            self.is_direct_collocation = True
+            self.steps = self.polynomial_degree
 
         def integrator(self, ocp, nlp) -> list:
             """
@@ -262,6 +267,9 @@ class OdeSolver:
 
             super(OdeSolver.IRK, self).__init__(polynomial_degree=polynomial_degree, method=method)
             self.rk_integrator = IRK
+            self.is_direct_collocation = False
+            self.is_direct_shooting = True
+            self.steps = 1
 
         def integrator(self, ocp, nlp) -> list:
             """
