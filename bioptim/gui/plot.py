@@ -39,6 +39,8 @@ class CustomPlot:
         The ylim of the axes as specified in matplotlib
     bounds: Bounds
         The bounds to show on the graph
+    node_to_plot : list
+        The node time to be plotted on the graphs
     parameters: Any
         The parameters of the function
     """
@@ -54,6 +56,7 @@ class CustomPlot:
         linestyle: str = None,
         ylim: Union[tuple, list] = None,
         bounds: Bounds = None,
+        node_to_plot: list = None,
         **parameters: Any,
     ):
         """
@@ -77,6 +80,8 @@ class CustomPlot:
             The ylim of the axes as specified in matplotlib
         bounds:
             The bounds to show on the graph
+        node_to_plot:
+            The node time to be plotted on the graphs
         """
 
         self.function = update_function
@@ -95,6 +100,7 @@ class CustomPlot:
         self.linestyle = linestyle
         self.ylim = ylim
         self.bounds = bounds
+        self.node_to_plot = node_to_plot
         self.parameters = parameters
 
 
@@ -291,6 +297,7 @@ class PlotOcp:
             time_phase = np.linspace(last_t, last_t + self.tf[phase_idx], nlp.ns + 1)
             last_t += self.tf[phase_idx]
             self.t.append(time_phase)
+            self.t_to_plot.append(time_phase[self.node_to_plot])
 
     def __create_plots(self):
         """
@@ -374,7 +381,7 @@ class PlotOcp:
                         ax.set_ylim(y_range)
                     plot_type = self.plot_func[variable][i].type
                     if plot_type == PlotType.POINT:
-                        if self.t_to_plot == self.t[i]:
+                        if self.t[i] in self.t_to_plot:
                             t = self.t[i]
                     else:
                         t = self.t[i]
@@ -389,7 +396,7 @@ class PlotOcp:
                             ]
                         )
                     elif plot_type == PlotType.INTEGRATED:
-                        zero = np.zeros((t.shape[0], 1))
+                        zero = np.zeros(n_int_steps + 1)
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         plots_integrated = []
                         n_int_steps = nlp.ode_solver.steps
@@ -397,7 +404,7 @@ class PlotOcp:
                             plots_integrated.append(
                                 ax.plot(
                                     self.t_integrated[i][cmp],
-                                    np.zeros(n_int_steps + 1),
+                                    zero,
                                     color=color,
                                     **self.plot_options["integrated_plots"],
                                 )[0]
@@ -413,9 +420,8 @@ class PlotOcp:
                             [plot_type, i, ax.step(t, zero, linestyle, where="post", color=color, zorder=0)[0]]
                         )
                     elif plot_type == PlotType.POINT:
-                        zero = np.zeros((1, 1))
-                        color = self.plot_func[variable][i].color if self.plot_func[variable][
-                            i].color else "tab:purple"
+                        zero = np.zeros((t.shape[0], 1))
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:purple"
                         self.plots.append(
                             [
                                 plot_type,

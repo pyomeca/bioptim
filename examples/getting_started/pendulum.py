@@ -71,8 +71,10 @@ def plot_objectives(ocp):
                 dt = j.dt
 
 
-            ## if mayer ...
-            ocp.add_plot(f"Objectives", lambda x, u, p, j: plot_obj(x, u, p, j), plot_type=PlotType.POINT, phase=i_phase, j=j, color=color[number_of_plots])
+            if j.type in ObjectiveFcn.Mayer:
+                ocp.add_plot(f"Objectives", lambda x, u, p, j: plot_obj(x, u, p, j), plot_type=PlotType.POINT, phase=i_phase, j=j, color=color[number_of_plots], node_to_plot=j.node_idx)
+            else:
+                ocp.add_plot(f"Objectives", lambda x, u, p, j: plot_obj(x, u, p, j), plot_type=PlotType.POINT, phase=i_phase, j=j, color=color[number_of_plots])
             number_of_plots += 1
 
     return
