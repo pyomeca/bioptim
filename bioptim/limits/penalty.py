@@ -3,12 +3,13 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat
+from casadi import horzcat, vertcat
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, Axis, ControlType
+from ..dynamics.ode_solver import OdeSolver
 
 
 class PenaltyFunctionAbstract:
@@ -509,8 +510,16 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("continuity should be called one node at a time")
 
             penalty.expand = all_pn.nlp.dynamics_type.expand
-            end_node = nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
-            continuity = nlp.states.cx_end - end_node
+
+            continuity = nlp.states.cx_end
+            if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) and not isinstance(nlp.ode_solver, OdeSolver.IRK):
+                cx = horzcat(*([nlp.states.cx] + nlp.states.cx_intermediates_list))
+                continuity -= nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["xf"]
+                continuity = vertcat(continuity, nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["defects"])
+                penalty.integrate = True
+            else:
+                continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
+
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 

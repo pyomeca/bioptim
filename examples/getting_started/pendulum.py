@@ -19,6 +19,7 @@ from bioptim import (
     InitialGuess,
     ObjectiveFcn,
     Objective,
+    OdeSolver,
 )
 
 
@@ -46,7 +47,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=False)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)
@@ -76,7 +77,11 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        use_sx=True,
+        # ode_solver=OdeSolver.COLLOCATION(method="legendre"),
+        ode_solver=OdeSolver.IRK(method="legendre"),
+        # ode_solver=OdeSolver.RK4(),
+        use_sx=False,
+        n_threads=1,
     )
 
 
@@ -89,14 +94,14 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100)
 
     # --- Print ocp structure --- #
-    ocp.print(to_console=False, to_graph=True)
+    # ocp.print(to_console=False, to_graph=True)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(show_online_optim=True)
+    sol = ocp.solve(show_online_optim=False)
 
     # --- Show the results in a bioviz animation --- #
-    sol.print()
-    sol.animate()
+    # sol.graphs()
+    # sol.animate()
 
 
 if __name__ == "__main__":

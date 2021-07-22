@@ -393,7 +393,7 @@ class RK8(RK4):
         return x_prev + h / 840 * (41 * k1 + 27 * k4 + 272 * k5 + 27 * k6 + 216 * k7 + 216 * k9 + 41 * k10)
 
 
-class IRK(Integrator):
+class COLLOCATION(Integrator):
     """
     Numerical integration using implicit Runge-Kutta method.
 
@@ -420,8 +420,47 @@ class IRK(Integrator):
             The ode options
         """
 
-        super(IRK, self).__init__(ode, ode_opt)
+        super(COLLOCATION, self).__init__(ode, ode_opt)
+
+        self.method = ode_opt["method"]
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
+
+        # Coefficients of the collocation equation
+        self._c = self.cx.zeros((self.degree + 1, self.degree + 1))
+
+        # Coefficients of the continuity equation
+        self._d = self.cx.zeros(self.degree + 1)
+
+        # Choose collocation points
+        time_points = [0] + collocation_points(self.degree, self.method)
+
+        # Dimensionless time inside one control interval
+        time_control_interval = self.cx.sym("time_control_interval")
+
+        # For all collocation points
+        for j in range(self.degree + 1):
+            # Construct Lagrange polynomials to get the polynomial basis at the collocation point
+            _l = 1
+            for r in range(self.degree + 1):
+                if r != j:
+                    _l *= (time_control_interval - time_points[r]) / (time_points[j] - time_points[r])
+
+            # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
+            lfcn = Function("lfcn", [time_control_interval], [_l])
+            self._d[j] = lfcn(1.0)
+
+            # Construct Lagrange polynomials to get the polynomial basis at the collocation point
+            _l = 1
+            for r in range(self.degree + 1):
+                if r != j:
+                    _l *= (time_control_interval - time_points[r]) / (time_points[j] - time_points[r])
+
+            # Evaluate the time derivative of the polynomial at all collocation points to get
+            # the coefficients of the continuity equation
+            tfcn = Function("tfcn", [time_control_interval], [tangent(_l, time_control_interval)])
+            for r in range(self.degree + 1):
+                self._c[j, r] = tfcn(time_points[r])
+
         self._finish_init()
 
     def get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray:
@@ -441,7 +480,7 @@ class IRK(Integrator):
         """
 
         if self.control_type == ControlType.CONSTANT:
-            return super(IRK, self).get_u(u, dt_norm)
+            return super(COLLOCATION, self).get_u(u, dt_norm)
         else:
             raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with IRK")
 
@@ -465,73 +504,113 @@ class IRK(Integrator):
         The derivative of the states
         """
 
-        nx = states.shape[0]
-
-        # Choose collocation points
-        time_points = [0] + collocation_points(self.degree, "legendre")
-
-        # Coefficients of the collocation equation
-        _c = self.cx.zeros((self.degree + 1, self.degree + 1))
-
-        # Coefficients of the continuity equation
-        _d = self.cx.zeros(self.degree + 1)
-
-        # Dimensionless time inside one control interval
-        time_control_interval = self.cx.sym("time_control_interval")
-
-        # For all collocation points
-        for j in range(self.degree + 1):
-            # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-            _l = 1
-            for r in range(self.degree + 1):
-                if r != j:
-                    _l *= (time_control_interval - time_points[r]) / (time_points[j] - time_points[r])
-
-            # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-            lfcn = Function("lfcn", [time_control_interval], [_l])
-            _d[j] = lfcn(1.0)
-
-            # Evaluate the time derivative of the polynomial at all collocation points to get
-            # the coefficients of the continuity equation
-            tfcn = Function("tfcn", [time_control_interval], [tangent(_l, time_control_interval)])
-            for r in range(self.degree + 1):
-                _c[j, r] = tfcn(time_points[r])
-
         # Total number of variables for one finite element
-        x0 = states
-        u = controls
-
-        x_irk_points = [self.cx.sym(f"X_irk_{j}", nx, 1) for j in range(1, self.degree + 1)]
-        x = [x0] + x_irk_points
-
-        x_irk_points_eq = []
+        states_end = self._d[0] * states[0]
+        defects = []
         for j in range(1, self.degree + 1):
 
             t_norm_init = (j - 1) / self.degree  # normalized time
             # Expression for the state derivative at the collocation point
             xp_j = 0
             for r in range(self.degree + 1):
-                xp_j += _c[r, j] * x[r]
+                xp_j += self._c[r, j] * states[r]
 
             # Append collocation equations
-            f_j = self.fun(x[j], self.get_u(u, t_norm_init), params)[:, self.idx]
-            x_irk_points_eq.append(h * f_j - xp_j)
+            f_j = self.fun(states[j], self.get_u(controls, t_norm_init), params)[:, self.idx]
+            defects.append(h * f_j - xp_j)
+
+            # Add contribution to the end state
+            states_end = states_end + self._d[j]*states[j-1]
 
         # Concatenate constraints
-        x_irk_points = vertcat(*x_irk_points)
-        x_irk_points_eq = vertcat(*x_irk_points_eq)
+        defects = vertcat(*defects)
+        return states_end, defects, horzcat(states[0], states_end)
 
-        # Root-finding function, implicitly defines x_irk_points as a function of x0 and p
-        vfcn = Function("vfcn", [x_irk_points, x0, u, params], [x_irk_points_eq]).expand()
+    def _finish_init(self):
+        """
+        Prepare the CasADi function from dxdt
+        """
+
+        self.function = Function(
+            "integrator",
+            [horzcat(*self.x_sym), self.u_sym, self.param_sym],
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
+            ["x0", "p", "params"],
+            ["xf", "defects", "xall"],
+        )
+
+
+class IRK(COLLOCATION):
+    """
+    Numerical integration using implicit Runge-Kutta method.
+
+    Methods
+    -------
+    get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
+        Get the control at a given time
+    dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple[SX, list[SX]]
+        The dynamics of the system
+    """
+
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
+        super(IRK, self).__init__(ode, ode_opt)
+
+    def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple:
+        """
+        The dynamics of the system
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        states: Union[MX, SX]
+            The states of the system
+        controls: Union[MX, SX]
+            The controls of the system
+        params: Union[MX, SX]
+            The parameters of the system
+
+        Returns
+        -------
+        The derivative of the states
+        """
+
+        nx = states[0].shape[0]
+        _, defect, _ = super(IRK, self).dxdt(h, states, controls, params)
+
+        # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
+        vfcn = Function("vfcn", [vertcat(*states[1:]), states[0], controls, params], [defect]).expand()
 
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
-        x_irk_points = ifcn(self.cx(), x0, u, params)
-        x = [x0 if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
+        x_irk_points = ifcn(self.cx(), states[0], controls, params)
+        x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element
         xf = self.cx.zeros(nx, self.degree + 1)  # 0 #
         for r in range(self.degree + 1):
-            xf[:, r] = xf[:, r - 1] + _d[r] * x[r]
+            xf[:, r] = xf[:, r - 1] + self._d[r] * x[r]
 
-        return xf[:, -1], horzcat(x0, xf[:, -1])
+        return xf[:, -1], horzcat(states[0], xf[:, -1])
+
+    def _finish_init(self):
+        """
+        Prepare the CasADi function from dxdt
+        """
+
+        self.function = Function(
+            "integrator",
+            [self.x_sym[0], self.u_sym, self.param_sym],
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym * self.param_scaling),
+            ["x0", "p", "params"],
+            ["xf", "xall"],
+        )
