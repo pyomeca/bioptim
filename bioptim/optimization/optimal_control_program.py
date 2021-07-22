@@ -28,6 +28,7 @@ from ..misc.__version__ import __version__
 from ..misc.enums import ControlType, Solver, Shooting
 from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
+from ..dynamics.fatigue_dynamics import FatigueDynamicsList
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
@@ -140,6 +141,7 @@ class OptimalControlProgram:
         phase_transitions: PhaseTransitionList = None,
         n_threads: int = 1,
         use_sx: bool = False,
+        fatigue_dynamics: FatigueDynamicsList = None,
         skip_continuity: bool = False,
     ):
         """
@@ -183,6 +185,8 @@ class OptimalControlProgram:
             The number of thread to use while solving (multi-threading if > 1)
         use_sx: bool
             The nature of the casadi variables. MX are used if False.
+        fatigue_dynamics: FatigueDynamicsList
+            Include all the fatigue parameters (ie. tau_min, tau_max, LD, LR, F and R) for each fatigable control variable.
         skip_continuity: bool
             This is mainly for internal purposes when creating an OCP not destined to be solved
         """
@@ -227,6 +231,7 @@ class OptimalControlProgram:
             "phase_transitions": phase_transitions,
             "n_threads": n_threads,
             "use_sx": use_sx,
+            "fatigue_dynamics": fatigue_dynamics,
         }
 
         # Check integrity of arguments
@@ -302,6 +307,9 @@ class OptimalControlProgram:
         elif not isinstance(constraints, ConstraintList):
             raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
 
+        if fatigue_dynamics is not None and not isinstance(fatigue_dynamics, FatigueDynamicsList):
+            raise RuntimeError("fatigue_dynamics should be built from a FatigueDynamicsList")
+
         if parameters is None:
             parameters = ParameterList()
         elif not isinstance(parameters, ParameterList):
@@ -374,6 +382,9 @@ class OptimalControlProgram:
         NLP.add(self, "dynamics_type", dynamics, False)
         NLP.add(self, "ode_solver", ode_solver, True)
         NLP.add(self, "control_type", control_type, True)
+
+        # Add fatigue parameters to NLP
+        NLP.add(self, "fatigue_dynamics", fatigue_dynamics, True)
 
         # Prepare the variable mappings
         if variable_mappings is None:
