@@ -30,7 +30,7 @@ def minimize_difference(all_pn: PenaltyNode):
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "cube.bioMod", ode_solver: OdeSolver = OdeSolver.RK4(), long_optim: bool = False
+    biorbd_model_path: str = "cube.bioMod", ode_solver: OdeSolver = OdeSolver.COLLOCATION(), long_optim: bool = False
 ) -> OptimalControlProgram:
     """
     Prepare the ocp

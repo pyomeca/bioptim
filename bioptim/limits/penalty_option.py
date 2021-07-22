@@ -338,7 +338,7 @@ class PenaltyOption(OptionGeneric):
             name, [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
         )
 
-        if all_pn.ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
+        if ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
             self.function = self.function.map(len(self.node_idx), "thread", ocp.n_threads)
             self.weighted_function = self.weighted_function.map(len(self.node_idx), "thread", ocp.n_threads)
         else:

@@ -97,11 +97,10 @@ def main():
     # ocp.print(to_console=False, to_graph=True)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(show_online_optim=False)
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show the results in a bioviz animation --- #
-    # sol.graphs()
-    # sol.animate()
+    sol.animate()
 
 
 if __name__ == "__main__":
