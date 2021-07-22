@@ -190,7 +190,12 @@ class ConfigureProblem:
 
     @staticmethod
     def muscle_driven(
-        ocp, nlp, with_excitations: bool = False, with_residual_torque: bool = False, with_contact: bool = False
+        ocp,
+        nlp,
+        fatigue: list = [],  # TODO Do not use mutable as Default
+        with_excitations: bool = False,
+        with_residual_torque: bool = False,
+        with_contact: bool = False,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -205,6 +210,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
+        fatigue: list
+            To define fatigue elements
         with_excitations: bool
             If the dynamic should include the muscle dynamics
         with_residual_torque: bool
@@ -213,17 +220,28 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         """
 
+        if Fatigue.TAU in fatigue or Fatigue.TAU_STATE_ONLY in fatigue:
+            if not with_residual_torque:
+                raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
+
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
         if with_residual_torque:
-            ConfigureProblem.configure_tau(nlp, False, True)
-        ConfigureProblem.configure_muscles(nlp, with_excitations, True)
+            with_fatigue_torque = True if Fatigue.TAU in fatigue or Fatigue.TAU_STATE_ONLY in fatigue else False
+            ConfigureProblem.configure_tau(nlp, False, True, with_fatigue=with_fatigue_torque)
+        with_fatigue_muscles = True if Fatigue.MUSCLES in fatigue or Fatigue.MUSCLES_STATE_ONLY in fatigue else False
+        ConfigureProblem.configure_muscles(nlp, with_excitations, True, with_fatigue=with_fatigue_muscles)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
             ConfigureProblem.configure_dynamics_function(
-                ocp, nlp, DynamicsFunctions.muscles_driven, with_contact=with_contact
+                ocp,
+                nlp,
+                DynamicsFunctions.muscles_driven,
+                with_contact=with_contact,
+                fatigue=fatigue,
+                with_residual_torque=with_residual_torque,
             )
 
         if with_contact:
@@ -473,7 +491,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable("taudot", name_tau, nlp, as_states, as_controls, False)
 
     @staticmethod
-    def configure_muscles(nlp, as_states: bool, as_controls: bool):
+    def configure_muscles(nlp, as_states: bool, as_controls: bool, with_fatigue: bool = False):
         """
         Configure the muscles
 
@@ -489,6 +507,9 @@ class ConfigureProblem:
 
         muscle_names = [names.to_string() for names in nlp.model.muscleNames()]
         ConfigureProblem.configure_new_variable("muscles", muscle_names, nlp, as_states, as_controls, True)
+        if with_fatigue:
+            for params in ["muscles_ma", "muscles_mr", "muscles_mf"]:
+                ConfigureProblem.configure_new_variable(f"{params}", muscle_names, nlp, True, False, combine_plot=True)
 
     @staticmethod
     def _adjust_mapping(key_to_adjust: str, reference_keys: list, nlp):

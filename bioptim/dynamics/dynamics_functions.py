@@ -293,7 +293,15 @@ class DynamicsFunctions:
         return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
 
     @staticmethod
-    def muscles_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
+    def muscles_driven(
+            states: MX.sym,
+            controls: MX.sym,
+            parameters: MX.sym,
+            nlp,
+            with_contact: bool,
+            with_residual_torque: bool,
+            fatigue: list = [],  # TODO Do not use mutable as default
+    ) -> MX:
         """
         Forward dynamics driven by muscle.
 
@@ -309,6 +317,10 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
+        fatigue: list
+            To define fatigue elements
+        with_residual_torque: bool
+            If the dynamic should be added with residual torques
 
         Returns
         ----------
@@ -316,28 +328,70 @@ class DynamicsFunctions:
             The derivative of the states
         """
 
+        if Fatigue.TAU in fatigue and Fatigue.TAU_STATE_ONLY in fatigue:
+            raise RuntimeError("fatigue can not be set with both Fatigue.TAU and Fatigue.TAU_STATE_ONLY")
+
+        if Fatigue.MUSCLES in fatigue and Fatigue.MUSCLES_STATE_ONLY in fatigue:
+            raise RuntimeError("fatigue can not be set with both Fatigue.MUSCLES and Fatigue.MUSCLES_STATE_ONLY")
+
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        residual_tau = DynamicsFunctions.get(nlp.controls["tau"], controls) if "tau" in nlp.controls else None
 
-        mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
-        mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
+        if Fatigue.TAU in fatigue or Fatigue.TAU_STATE_ONLY in fatigue:
+            if not with_residual_torque:
+                raise NotImplementedError("Residual torques need to be defined")
+            if Fatigue.TAU in fatigue:
+                tau_min = []
+                tau_max = []
+                direction_list = ["plus", "minus"]
+                for i, direction in enumerate(direction_list):
+                    for fatigue_tau_param in nlp.fatigue_dynamics[Fatigue.TAU][i]:
+                        tau_max.append(fatigue_tau_param.tau_max) if direction == "plus" else tau_min.append(
+                            fatigue_tau_param.tau_max
+                        )
+                residual_tau = MX()
+                for i in range(len(tau_min)):
+                    residual_tau = vertcat(
+                        residual_tau,
+                        DynamicsFunctions.get(nlp.states["tau_ma_minus"], states)[i] * tau_min[i]
+                        + DynamicsFunctions.get(nlp.states["tau_ma_plus"], states)[i] * tau_max[i],
+                    )
+            else:
+                residual_tau = DynamicsFunctions.get(nlp.controls["tau_minus"], controls) + DynamicsFunctions.get(
+                    nlp.controls["tau_plus"], controls
+                )
+        else:
+            residual_tau = DynamicsFunctions.get(nlp.controls["tau"], controls) if "tau" in nlp.controls else None
+
+        if Fatigue.MUSCLES in fatigue:
+            mus_activations = DynamicsFunctions.get(nlp.states["muscles_ma"], states)
+        else:  # No fatigue or MUSCLE_STATE_ONLY in fatigue
+            mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
+            mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        dq = horzcat(*[dq for _ in range(ddq.shape[1])])
-        dxdt = vertcat(dq, ddq)
+        dxdt = MX(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
 
         has_excitation = True if "muscles" in nlp.states else False
         if has_excitation:
             mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
             dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations)
-            dmus = horzcat(*[dmus for _ in range(ddq.shape[1])])
-            dxdt = vertcat(dxdt, dmus)
+            dxdt[nlp.states["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
+
+        if Fatigue.TAU in fatigue or Fatigue.TAU_STATE_ONLY in fatigue:
+            direction_list = ["plus", "minus"]
+            for i, direction in enumerate(direction_list):
+                dxdt = nlp.fatigue_dynamics[Fatigue.TAU][i].dynamics(dxdt, nlp, states, controls)
+
+        if Fatigue.MUSCLES in fatigue or Fatigue.MUSCLES_STATE_ONLY in fatigue:
+            dxdt = nlp.fatigue_dynamics[Fatigue.MUSCLES].dynamics(dxdt, nlp, states, controls)
 
         return dxdt
 
