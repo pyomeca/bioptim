@@ -120,6 +120,7 @@ class OptimizationVariableList:
 
     def __init__(self):
         self.elements: list = []
+        self.fake_elements: list = []
         self._cx: Union[MX, SX, np.ndarray] = np.array([])
         self._cx_end: Union[MX, SX, np.ndarray] = np.array([])
         self.mx_reduced: MX = MX.sym("var", 0, 0)
@@ -150,9 +151,37 @@ class OptimizationVariableList:
             for elt in self.elements:
                 if item == elt.name:
                     return elt
+            for elt in self.fake_elements:
+                if item == elt.name:
+                    return elt
             raise KeyError(f"{item} is not in the list")
+        elif isinstance(item, (list, tuple)):
+            mx = vertcat([elt.mx for elt in self.elements if elt.name in item])
+            index = []
+            for elt in self.elements:
+                if elt.name in item:
+                    index.extend(list(elt.index))
+            return OptimizationVariable("some", mx, index)
         else:
             raise ValueError("OptimizationVariableList can be sliced with int or str only")
+
+    def append_fake(self, name: str, index: Union[MX, SX, list], mx: MX, bimapping: BiMapping):
+        """
+        Add a new variable to the fake list which add something without changing the size of the normal elements
+
+        Parameters
+        ----------
+        name: str
+            The name of the variable
+        index: Union[MX, SX]
+            The SX or MX variable associated with this variable. Is interpreted as index if is_fake is true
+        mx: MX
+            The MX variable associated with this variable
+        bimapping: BiMapping
+            The Mapping of the MX against CX
+        """
+
+        self.fake_elements.append(OptimizationVariable(name, mx, index, bimapping, self))
 
     def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
         """
@@ -172,7 +201,6 @@ class OptimizationVariableList:
 
         if len(cx) != 2:
             raise NotImplementedError("Appending optimization_variable without cx.shape = [n, 2] is not implemented")
-
         index = range(self._cx.shape[0], self._cx.shape[0] + cx[0].shape[0])
         self._cx = vertcat(self._cx, cx[0])
         self._cx_end = vertcat(self._cx_end, cx[1])
@@ -212,6 +240,9 @@ class OptimizationVariableList:
         """
 
         for elt in self.elements:
+            if item == elt.name:
+                return True
+        for elt in self.fake_elements:
             if item == elt.name:
                 return True
         else:

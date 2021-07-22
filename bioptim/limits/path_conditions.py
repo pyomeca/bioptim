@@ -631,6 +631,108 @@ class QAndQDotBounds(Bounds):
 
         super(QAndQDotBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
+class XiaFatigueStateBounds(Bounds):
+    """
+    Specialized Bounds that reads a model to automatically extract fatigue state bounds
+    """
+
+    def __init__(
+        self,
+        biorbd_model,
+        has_muscles: bool = False,
+        has_torque: bool = False,
+    ):
+        """
+        Parameters
+        ----------
+        biorbd_model: biorbd.Model
+            A reference to the model
+        has_muscles: bool
+            Applying fatigue on muscles or not
+        has_torque: bool
+            Applying fatigue on torques or not
+        """
+        if has_torque is False:
+            if has_muscles is False:
+                raise RuntimeError("Please make sure that fatigue states have been defined")
+
+        n_tau = biorbd_model.nbGeneralizedTorque()
+        n_muscles = biorbd_model.nbMuscleTotal()
+        x_min = []
+        x_max = []
+        ma_bounds_tau = [0, 1]
+        mr_bounds_tau = [0, 1]
+        mf_bounds_tau = [0, 1]
+        ma_bounds_mus = [0, 1]
+        mr_bounds_mus = [0, 1]
+        mf_bounds_mus = [0, 1]
+
+        if has_torque:
+            for _ in range(2):  # minus and plus
+                x_min += [ma_bounds_tau[0]] * n_tau + [mr_bounds_tau[0]] * n_tau + [mf_bounds_tau[0]] * n_tau
+                x_max += [ma_bounds_tau[1]] * n_tau + [mr_bounds_tau[1]] * n_tau + [mf_bounds_tau[1]] * n_tau
+
+        if has_muscles:
+            x_min += [ma_bounds_mus[0]] * n_muscles + [mr_bounds_mus[0]] * n_muscles + [mf_bounds_mus[0]] * n_muscles
+            x_max += [ma_bounds_mus[1]] * n_muscles + [mr_bounds_mus[1]] * n_muscles + [mf_bounds_mus[1]] * n_muscles
+
+        super(XiaFatigueStateBounds, self).__init__(min_bound=x_min, max_bound=x_max)
+
+
+class XiaFatigueControlsBounds(Bounds):
+    """
+    Specialized Bounds that defines bounds when fatigue is applied on torques
+    """
+
+    def __init__(
+        self,
+        biorbd_model,
+        torque: Bounds = None,
+        muscles: Bounds = None,
+    ):
+        """
+        Parameters
+        ----------
+        biorbd_model: biorbd.Model
+            A reference to the model
+        torque: Bounds
+            Bounds applied on torques
+        muscles: Bounds
+            Bounds applied on muscles
+        """
+        if torque is None:
+            if muscles is None:
+                raise RuntimeError("Please make sure that control variables have been defined")
+
+        n_tau = biorbd_model.nbGeneralizedTorque()
+        n_muscles = biorbd_model.nbMuscleTotal()
+
+        muscles_min = []
+        muscles_max = []
+        torque_min = []
+        torque_max = []
+
+        if muscles is not None:
+            for i in range(n_muscles):
+                muscles_min.append([float(muscles.min[i][j]) for j in range(3)])
+                muscles_max.append([float(muscles.max[i][j]) for j in range(3)])
+
+        if torque is not None:
+            for i in range(n_tau):
+                torque_min.append([float(torque.min[i][j]) for j in range(3)])
+                torque_max.append([float(torque.max[i][j]) for j in range(3)])
+            if muscles is not None:
+                u_min = torque_min + [[0, 0, 0]] * n_tau + muscles_min
+                u_max = [[0, 0, 0]] * n_tau + torque_max + muscles_max
+            else:
+                u_min = torque_min + [[0, 0, 0]] * n_tau
+                u_max = [[0, 0, 0]] * n_tau + torque_max
+        else:
+            u_min = muscles_min
+            u_max = muscles_max
+
+        super(XiaFatigueControlsBounds, self).__init__(min_bound=u_min, max_bound=u_max)
+
 
 class InitialGuess(OptionGeneric):
     """
@@ -762,6 +864,89 @@ class InitialGuess(OptionGeneric):
         """
 
         self.init[_slice] = value
+
+
+class XiaFatigueStateInitialGuess(InitialGuess):
+    """
+    Specialized InitialGuess that defines initial guess for each fatigue state
+    """
+
+    def __init__(
+        self,
+        biorbd_model,
+        muscle_init: float = 1,
+        tau_init: float = 0,
+        tau_max: float = 1,
+        has_muscles: bool = False,
+        has_torque: bool = False,
+    ):
+        """
+        Parameters
+        ----------
+        biorbd_model: biorbd.Model
+            A reference to the model
+        has_muscles: bool
+            Applying fatigue on muscles or not
+        has_torque: bool
+            Applying fatigue on torques or not
+        """
+        if has_muscles is False:
+            if has_torque is False:
+                raise RuntimeError("Please make sure that fatigue states have been defined")
+
+        n_tau = biorbd_model.nbGeneralizedTorque()
+        n_muscles = biorbd_model.nbMuscleTotal()
+        x_init = []
+
+        if has_torque:
+            ma_init_tau = tau_init / tau_max
+            mr_init_tau = 1 - ma_init_tau
+            mf_init_tau = 0
+            for _ in range(2):  # minus, plus
+                x_init += [ma_init_tau] * n_tau + [mr_init_tau] * n_tau + [mf_init_tau] * n_tau
+
+        if has_muscles:
+            ma_init_mus = muscle_init
+            mr_init_mus = 1 - ma_init_mus
+            mf_init_mus = 0
+            x_init += [ma_init_mus] * n_muscles + [mr_init_mus] * n_muscles + [mf_init_mus] * n_muscles
+
+        super(XiaFatigueStateInitialGuess, self).__init__(initial_guess=x_init)
+
+
+class XiaFatigueControlsInitialGuess(InitialGuess):
+    """
+    Specialized InitialGuess that defines initial guess for each fatigue state
+    """
+
+    def __init__(
+        self,
+        biorbd_model,
+        muscles: InitialGuess = None,
+        torque: InitialGuess = None,
+    ):
+        """
+        Parameters
+        ----------
+        biorbd_model: biorbd.Model
+            A reference to the model
+        tau_init: InitialGuess
+            The initial guess for the torques
+        muscle_init: InitialGuess
+            The initial guess for the muscles
+        """
+        n_tau = biorbd_model.nbGeneralizedTorque()
+        n_muscles = biorbd_model.nbMuscleTotal()
+
+        if torque is None and muscles is None:
+            raise RuntimeError("Please make sure that fatigue control variables have been defined")
+        elif torque is not None:
+            u_init = [torque.init.max()] * n_tau * 2
+            u_init += [muscles.init.max()] * n_muscles if muscles is not None else []
+        else:
+            u_init = [muscles.init.max()] * n_muscles
+
+        super(XiaFatigueControlsInitialGuess, self).__init__(initial_guess=u_init)
 
 
 class InitialGuessList(UniquePerPhaseOptionList):
