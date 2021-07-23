@@ -76,9 +76,9 @@ def plot_objectives(ocp):
     for i_phase, nlp in enumerate(ocp.nlp):
         for j in nlp.J:
             if j.type in ObjectiveFcn.Mayer:
-                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.POINT, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots], node_idx=j.node_idx)
+                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.POINT, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots], node_idx=j.node_idx, label=j.name)
             else:
-                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.INTEGRATED, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots])
+                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.INTEGRATED, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots], label=j.name)
             number_of_plots += 1
 
     return

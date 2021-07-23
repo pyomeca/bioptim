@@ -57,6 +57,7 @@ class CustomPlot:
         ylim: Union[tuple, list] = None,
         bounds: Bounds = None,
         node_idx: list = None,
+        label: list = None,
         **parameters: Any,
     ):
         """
@@ -82,6 +83,8 @@ class CustomPlot:
             The bounds to show on the graph
         node_idx:
             The node time to be plotted on the graphs
+        label:
+            Label of the curve to plot (to be added to the legend)
         """
 
         self.function = update_function
@@ -101,6 +104,7 @@ class CustomPlot:
         self.ylim = ylim
         self.bounds = bounds
         self.node_idx = node_idx
+        self.label = label
         self.parameters = parameters
 
 
@@ -381,6 +385,10 @@ class PlotOcp:
                         t = self.t[i][nlp.plot[variable].node_idx]
                     else:
                         t = self.t[i]
+                    if self.plot_func[variable][i].label:
+                        label = self.plot_func[variable][i].label
+                    else:
+                        label = '_'
                     if plot_type == PlotType.PLOT:
                         zero = np.zeros((t.shape[0], 1))
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:green"
@@ -388,7 +396,8 @@ class PlotOcp:
                             [
                                 plot_type,
                                 i,
-                                ax.plot(t, zero, color=color, zorder=0, **self.plot_options["non_integrated_plots"])[0],
+                                ax.plot(t, zero, color=color, zorder=0, label=label,
+                                        **self.plot_options["non_integrated_plots"])[0],
                             ]
                         )
                     elif plot_type == PlotType.INTEGRATED:
@@ -402,6 +411,7 @@ class PlotOcp:
                                     self.t_integrated[i][cmp],
                                     zero,
                                     color=color,
+                                    label=label,
                                     **self.plot_options["integrated_plots"],
                                 )[0]
                             )
@@ -413,7 +423,9 @@ class PlotOcp:
                             self.plot_func[variable][i].linestyle if self.plot_func[variable][i].linestyle else "-"
                         )
                         self.plots.append(
-                            [plot_type, i, ax.step(t, zero, linestyle, where="post", color=color, zorder=0)[0]]
+                            [plot_type, i,
+                             ax.step(t, zero, linestyle, where="post", color=color, zorder=0,
+                                     label=label)[0]]
                         )
                     elif plot_type == PlotType.POINT:
                         zero = np.zeros((t.shape[0], 1))
@@ -422,7 +434,7 @@ class PlotOcp:
                             [
                                 plot_type,
                                 i,
-                                ax.plot(t, zero, color=color, zorder=0,
+                                ax.plot(t, zero, color=color, zorder=0, label=label,
                                         **self.plot_options["point_plots"])[0],
                             ]
                         )
@@ -524,6 +536,7 @@ class PlotOcp:
         Force the show of the graphs. This is a blocking function
         """
 
+        # plt.legend()
         plt.show()
 
     def update_data(self, v: dict):
