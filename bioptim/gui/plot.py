@@ -39,7 +39,7 @@ class CustomPlot:
         The ylim of the axes as specified in matplotlib
     bounds: Bounds
         The bounds to show on the graph
-    node_to_plot : list
+    node_idx : list
         The node time to be plotted on the graphs
     parameters: Any
         The parameters of the function
@@ -56,7 +56,7 @@ class CustomPlot:
         linestyle: str = None,
         ylim: Union[tuple, list] = None,
         bounds: Bounds = None,
-        node_to_plot: list = None,
+        node_idx: list = None,
         **parameters: Any,
     ):
         """
@@ -80,7 +80,7 @@ class CustomPlot:
             The ylim of the axes as specified in matplotlib
         bounds:
             The bounds to show on the graph
-        node_to_plot:
+        node_idx:
             The node time to be plotted on the graphs
         """
 
@@ -100,7 +100,7 @@ class CustomPlot:
         self.linestyle = linestyle
         self.ylim = ylim
         self.bounds = bounds
-        self.node_to_plot = node_to_plot
+        self.node_idx = node_idx
         self.parameters = parameters
 
 
@@ -213,7 +213,7 @@ class PlotOcp:
             "general_options": {"use_tight_layout": False},
             "non_integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
             "integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
-            "point_plots": {"linestyle": None, "marker": ".", "markersize": 3},
+            "point_plots": {"linestyle": None, "marker": ".", "markersize": 5},
             "bounds": {"color": "k", "linewidth": 0.4, "linestyle": "-"},
             "grid": {"color": "k", "linestyle": "-", "linewidth": 0.15},
             "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
@@ -224,7 +224,6 @@ class PlotOcp:
 
         self.t = []
         self.t_integrated = []
-        self.t_to_plot = []
         if isinstance(self.ocp.original_phase_time, (int, float)):
             self.tf = [self.ocp.original_phase_time]
         else:
@@ -281,7 +280,6 @@ class PlotOcp:
 
         self.t = []
         self.t_integrated = []
-        self.t_to_plot = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
             n_int_steps = nlp.ode_solver.steps
@@ -297,7 +295,6 @@ class PlotOcp:
             time_phase = np.linspace(last_t, last_t + self.tf[phase_idx], nlp.ns + 1)
             last_t += self.tf[phase_idx]
             self.t.append(time_phase)
-            self.t_to_plot.append(time_phase[self.node_to_plot])
 
     def __create_plots(self):
         """
@@ -381,8 +378,7 @@ class PlotOcp:
                         ax.set_ylim(y_range)
                     plot_type = self.plot_func[variable][i].type
                     if plot_type == PlotType.POINT:
-                        if self.t[i] in self.t_to_plot:
-                            t = self.t[i]
+                        t = self.t[i][nlp.plot[variable].node_idx]
                     else:
                         t = self.t[i]
                     if plot_type == PlotType.PLOT:
@@ -396,10 +392,10 @@ class PlotOcp:
                             ]
                         )
                     elif plot_type == PlotType.INTEGRATED:
-                        zero = np.zeros(n_int_steps + 1)
-                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         plots_integrated = []
                         n_int_steps = nlp.ode_solver.steps
+                        zero = np.zeros(n_int_steps + 1)
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         for cmp in range(nlp.ns):
                             plots_integrated.append(
                                 ax.plot(
@@ -548,11 +544,12 @@ class PlotOcp:
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "time"]).squeeze()
 
-        for _ in self.ocp.nlp:
+        for i, nlp in enumerate(self.ocp.nlp):
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
                     self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
-            self.__update_xdata()
+                for key in self.variable_sizes[i]:
+                    self.__update_xdata(key=key)
 
         for i, nlp in enumerate(self.ocp.nlp):
             step_size = nlp.ode_solver.steps + 1
@@ -602,7 +599,7 @@ class PlotOcp:
                         self.__append_to_ydata([y_tp])
                 else:
                     if self.plot_func[key][i].type == PlotType.POINT:
-                        y = np.empty((self.variable_sizes[i][key], len(self.t_to_plot[i])))
+                        y = np.empty((self.variable_sizes[i][key], len(self.plot_func[key][i].node_idx)))
                     else:
                         y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
@@ -622,7 +619,7 @@ class PlotOcp:
                     self.__append_to_ydata(y)
         self.__update_axes()
 
-    def __update_xdata(self):
+    def __update_xdata(self, key=None):
         """
         Update of the time axes in plots
         """
@@ -634,6 +631,9 @@ class PlotOcp:
                 for cmp, p in enumerate(plot[2]):
                     p.set_xdata(self.t_integrated[phase_idx][cmp])
                 ax = plot[2][-1].axes
+            elif plot[0] == PlotType.POINT:
+                plot[2].set_xdata(self.t[phase_idx][np.array(self.plot_func[key][phase_idx].node_idx)])
+                ax = plot[2].axes
             else:
                 plot[2].set_xdata(self.t[phase_idx])
                 ax = plot[2].axes

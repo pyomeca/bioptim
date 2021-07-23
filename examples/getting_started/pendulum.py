@@ -23,6 +23,7 @@ from bioptim import (
     Objective,
     PlotType,
     ObjectiveList,
+    Node,
 )
 def plot_objectives(ocp):
 
@@ -75,7 +76,7 @@ def plot_objectives(ocp):
     for i_phase, nlp in enumerate(ocp.nlp):
         for j in nlp.J:
             if j.type in ObjectiveFcn.Mayer:
-                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.POINT, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots], node_to_plot=j.node_idx)
+                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.POINT, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots], node_idx=j.node_idx)
             else:
                 ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.INTEGRATED, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots])
             number_of_plots += 1
@@ -107,7 +108,8 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
     objective_functions = ObjectiveList()
     objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau"))
     objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q"))
-    # objective_functions.add(Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=0, key="q"))
+    objective_functions.add(Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=0, key="q"))
+    objective_functions.add(Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, node=Node.MID, index=1, key="q"))
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
