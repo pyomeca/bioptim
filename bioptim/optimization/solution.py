@@ -554,10 +554,10 @@ class Solution:
             for p, state in enumerate(out._states):
                 nlp = self.ocp.nlp[p]
                 steps = int((state["all"].shape[1] - 1) / (nlp.ode_solver.steps + 1))
-                new_states = {"all": np.ndarray((state["all"].shape[0],  state["all"].shape[1] + steps))}
+                new_states = {"all": np.ndarray((state["all"].shape[0], state["all"].shape[1] + steps))}
                 for s in range(steps):
-                    t_span_right = slice(s * (nlp.ode_solver.steps + 1), (s+1) * (nlp.ode_solver.steps + 1) + 1)
-                    t_span_left = slice(s * (nlp.ode_solver.steps + 2), (s+1) * (nlp.ode_solver.steps + 2))
+                    t_span_right = slice(s * (nlp.ode_solver.steps + 1), (s + 1) * (nlp.ode_solver.steps + 1) + 1)
+                    t_span_left = slice(s * (nlp.ode_solver.steps + 2), (s + 1) * (nlp.ode_solver.steps + 2))
                     new_states["all"][:, t_span_left] = state["all"][:, t_span_right]
 
                 for key in state:
@@ -777,7 +777,7 @@ class Solution:
                 ns = self.ns[p] * (ode.steps + 1) if is_state and ode.is_direct_collocation else self.ns[p]
                 d = data[p]
                 for key in d:
-                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, : ns]), axis=1)
+                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, :ns]), axis=1)
             for key in data[-1]:
                 data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
 

@@ -24,12 +24,12 @@ from bioptim import (
 
 
 def prepare_ocp(
-        biorbd_model_path: str,
-        final_time: float,
-        n_shooting: int,
-        ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
-        use_sx: bool = True,
-        n_threads: int = 1
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    use_sx: bool = True,
+    n_threads: int = 1,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp

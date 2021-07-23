@@ -520,7 +520,7 @@ class COLLOCATION(Integrator):
             defects.append(h * f_j - xp_j)
 
             # Add contribution to the end state
-            states_end = states_end + self._d[j]*states[j-1]
+            states_end = states_end + self._d[j] * states[j - 1]
 
         # Concatenate constraints
         defects = vertcat(*defects)

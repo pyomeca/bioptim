@@ -246,7 +246,9 @@ class IpoptInterface(SolverInterface):
 
             if penalty.multi_thread:
                 if penalty.target is not None and len(penalty.target.shape) != 2:
-                    raise NotImplementedError("multi_thread penalty with target shape != [n x m] is not implemented yet")
+                    raise NotImplementedError(
+                        "multi_thread penalty with target shape != [n x m] is not implemented yet"
+                    )
                 target = penalty.target if penalty.target is not None else []
 
                 x = nlp.cx()

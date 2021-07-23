@@ -251,7 +251,13 @@ class OptimizationVector:
 
             for k in range(nlp.ns + 1):
                 if k != nlp.ns and nlp.ode_solver.is_direct_collocation:
-                    x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape, nlp.ode_solver.polynomial_degree + 1))
+                    x.append(
+                        nlp.cx.sym(
+                            "X_" + str(nlp.phase_idx) + "_" + str(k),
+                            nlp.states.shape,
+                            nlp.ode_solver.polynomial_degree + 1,
+                        )
+                    )
                 else:
                     x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape, 1))
 

@@ -228,7 +228,11 @@ class OdeSolver:
                     "developers and ping @EveCharbie"
                 )
 
-            ode = {"x": [nlp.states.cx] + nlp.states.cx_intermediates_list, "p": nlp.controls.cx, "ode": nlp.dynamics_func}
+            ode = {
+                "x": [nlp.states.cx] + nlp.states.cx_intermediates_list,
+                "p": nlp.controls.cx,
+                "ode": nlp.dynamics_func,
+            }
             ode_opt = {
                 "t0": 0,
                 "tf": nlp.dt,

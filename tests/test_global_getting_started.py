@@ -685,12 +685,12 @@ def test_example_multiphase(ode_solver):
 
     # initial and final controls
     if isinstance(ode_solver, OdeSolver.COLLOCATION) and not isinstance(ode_solver, OdeSolver.IRK):
-        np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((2.33123354, 9.81      , 0.01834561)))
-        np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array((-2.33123354,  9.81      , -0.01834561)))
-        np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array((-0.37187204,  9.81      ,  0.02897681)))
-        np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array((0.48256419, 9.81      , 0.46639468)))
-        np.testing.assert_almost_equal(controls[2]["tau"][:, 0], np.array((0.50233065, 9.81      , 0.55485387)))
-        np.testing.assert_almost_equal(controls[2]["tau"][:, -2], np.array((-0.59127973,  9.81      , -0.95292025)))
+        np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((2.33123354, 9.81, 0.01834561)))
+        np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array((-2.33123354, 9.81, -0.01834561)))
+        np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array((-0.37187204, 9.81, 0.02897681)))
+        np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array((0.48256419, 9.81, 0.46639468)))
+        np.testing.assert_almost_equal(controls[2]["tau"][:, 0], np.array((0.50233065, 9.81, 0.55485387)))
+        np.testing.assert_almost_equal(controls[2]["tau"][:, -2], np.array((-0.59127973, 9.81, -0.95292025)))
     else:
         np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((1.42857142, 9.81, 0.01124212)))
         np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array((-1.42857144, 9.81, -0.01124212)))
