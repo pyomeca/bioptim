@@ -9,7 +9,7 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 import matplotlib.pyplot as plt
-from casadi import DM, horzcat, Function
+from casadi import DM, horzcat, Function, sum1
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
@@ -44,7 +44,7 @@ def plot_objectives(ocp):
                 number_of_plots += 1
         return number_of_plots, number_of_same_objectives, same_objectives
 
-    number_of_plots, number_of_same_objectives, same_objectives = penalty_plot_count(ocp)
+    number_of_plots, number_of_same_objectives, same_objectives = penalty_plot_count()
 
     step_size = 1 / (number_of_plots - number_of_same_objectives)
     color = []
@@ -68,7 +68,8 @@ def plot_objectives(ocp):
             else:
                 plot_values = j.weighted_function(x[:, i], u, p, DM(j.weight), [], DM(dt))
             plot_returned = horzcat(plot_values_returned, plot_values[:, 0])
-            return plot_returned
+            plot_values_combined = sum1(plot_returned) # Est-ce que le quadratique est déjà dans la fonction ?
+            return plot_values_combined
 
     number_of_plots = 0
     for i_phase, nlp in enumerate(ocp.nlp):
@@ -76,7 +77,7 @@ def plot_objectives(ocp):
             if j.type in ObjectiveFcn.Mayer:
                 ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.POINT, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots], node_to_plot=j.node_idx)
             else:
-                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.POINT, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots])
+                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.INTEGRATED, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots])
             number_of_plots += 1
 
     return
@@ -104,9 +105,9 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    # objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau"))
-    # objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q"))
-    objective_functions.add(Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=0, key="q"))
+    objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau"))
+    objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q"))
+    # objective_functions.add(Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=0, key="q"))
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
