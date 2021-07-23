@@ -54,17 +54,19 @@ def plot_objectives(ocp):
                 unique_color += 1
         return color
 
-    def get_plotting_penalty_values(x, u, p, j, nlp):
-        if "time" in nlp.parameters.names:
-            dt = Function("time", [nlp.parameters.cx], [j.dt])(j.parameters["time"])
-        else:
-            dt = j.dt
+    def get_plotting_penalty_values(x, u, p, j, dt):
         plot_values_returned = DM()
         for i in range(np.shape(x)[1]):
             if j.target is not None:
-                plot_values = j.weighted_function(x[:, i], u, p, DM(j.weight), DM(j.target), DM(dt))
+                try:
+                    plot_values = j.weighted_function(x[:, i], u, p, DM(j.weight), DM(j.target), DM(dt))
+                except AttributeError:
+                    print('here')
             else:
-                plot_values = j.weighted_function(x[:, i], u, p, DM(j.weight), [], DM(dt))
+                try:
+                    plot_values = j.weighted_function(x[:, i], u, p, DM(j.weight), [], DM(dt))
+                except AttributeError:
+                    print('here')
             plot_returned = horzcat(plot_values_returned, plot_values[:, 0])
             plot_values_combined = sum1(plot_returned)  # Est-ce que le quadratique est déjà dans la fonction ?
         return plot_values_combined
@@ -75,10 +77,15 @@ def plot_objectives(ocp):
     number_of_plots = 0
     for i_phase, nlp in enumerate(ocp.nlp):
         for j in nlp.J:
-            if j.type in ObjectiveFcn.Mayer:
-                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.POINT, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots], node_idx=j.node_idx, label=j.name)
+            if "time" in nlp.parameters.names:
+                if j.name == 'MINIMIZE_TIME':
+                    dt = Function("time", [nlp.parameters.cx], [j.dt])(nlp.parameters[nlp.parameters.names.index('time')].dt)
             else:
-                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.INTEGRATED, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots], label=j.name)
+                dt = j.dt
+            if j.type in ObjectiveFcn.Mayer:
+                ocp.add_plot(f"Objectives", lambda x, u, p, j, dt: get_plotting_penalty_values(x, u, p, j, dt), plot_type=PlotType.POINT, phase=i_phase, j=j, dt=dt, color=color[number_of_plots], node_idx=j.node_idx, label=j.name)
+            else:
+                ocp.add_plot(f"Objectives", lambda x, u, p, j, dt: get_plotting_penalty_values(x, u, p, j, dt), plot_type=PlotType.INTEGRATED, phase=i_phase, j=j, dt=dt, color=color[number_of_plots], label=j.name)
             number_of_plots += 1
 
     return
@@ -155,10 +162,10 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100)
 
     # Custom plots
-    # plot_objectives(ocp)
+    plot_objectives(ocp)
 
-    # --- Print ocp structure --- #
-    ocp.print(to_console=False, to_graph=True)
+    # # --- Print ocp structure --- #
+    # ocp.print(to_console=False, to_graph=True)
 
     # --- Solve the ocp --- #
     sol = ocp.solve(show_online_optim=True)
