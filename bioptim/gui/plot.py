@@ -304,6 +304,10 @@ class PlotOcp:
         """
         Setup the plots
         """
+        def legend_without_duplicate_labels(ax):
+            handles, labels = ax.get_legend_handles_labels()
+            unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
+            ax.legend(*zip(*unique))
 
         variable_sizes = []
         for i, nlp in enumerate(self.ocp.nlp):
@@ -441,6 +445,8 @@ class PlotOcp:
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
+                legend_without_duplicate_labels(ax)
+
                 for j, ax in enumerate(axes):
                     intersections_time = self.find_phases_intersections()
                     for time in intersections_time:
@@ -536,7 +542,6 @@ class PlotOcp:
         Force the show of the graphs. This is a blocking function
         """
 
-        # plt.legend()
         plt.show()
 
     def update_data(self, v: dict):
