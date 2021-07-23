@@ -600,25 +600,11 @@ class PlotOcp:
                         for y in all_y:
                             y_tp.append(y[idx, :])
                         self.__append_to_ydata([y_tp])
-                elif self.plot_func[key][i].type == PlotType.POINT:
-                    y = np.empty((self.variable_sizes[i][key], len(self.t_to_plot[i])))
-                    y.fill(np.nan)
-                    try:
-                        y[:, :] = self.plot_func[key][i].function(
-                            state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
-                        )
-                    except ValueError:
-                        val = (
-                            self.plot_func[key][i]
-                            .function(
-                                state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
-                            )
-                            .shape
-                        )
-                        raise ValueError(f"Wrong dimensions for plot {key}. Got " f"{val}" f", but expected {y.shape}")
-                    self.__append_to_ydata(y)
                 else:
-                    y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
+                    if self.plot_func[key][i].type == PlotType.POINT:
+                        y = np.empty((self.variable_sizes[i][key], len(self.t_to_plot[i])))
+                    else:
+                        y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
                     try:
                         y[:, :] = self.plot_func[key][i].function(

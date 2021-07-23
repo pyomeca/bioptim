@@ -9,7 +9,7 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 import matplotlib.pyplot as plt
-import casadi as cas
+from casadi import DM, horzcat, Function
 import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
@@ -28,19 +28,23 @@ def plot_objectives(ocp):
 
     # TODO : Add a label tag to CustomPlot for the legend on the graph
 
-    number_of_plots = 0
-    objective_names = []
-    same_objectives = [[], []]
-    number_of_same_objectives = 0
-    for nlp in ocp.nlp:
-        for j in nlp.J:
-            if j.name in objective_names:
-                same_objectives[0].append(objective_names.index(j.name))
-                same_objectives[1].append(number_of_plots)
-                number_of_same_objectives += 1
-            else:
-                objective_names.append(j.name)
-            number_of_plots += 1
+    def penalty_plot_count():
+        number_of_plots = 0
+        objective_names = []
+        same_objectives = [[], []]
+        number_of_same_objectives = 0
+        for nlp in ocp.nlp:
+            for j in nlp.J:
+                if j.name in objective_names:
+                    same_objectives[0].append(objective_names.index(j.name))
+                    same_objectives[1].append(number_of_plots)
+                    number_of_same_objectives += 1
+                else:
+                    objective_names.append(j.name)
+                number_of_plots += 1
+        return number_of_plots, number_of_same_objectives, same_objectives
+
+    number_of_plots, number_of_same_objectives, same_objectives = penalty_plot_count(ocp)
 
     step_size = 1 / (number_of_plots - number_of_same_objectives)
     color = []
@@ -52,29 +56,27 @@ def plot_objectives(ocp):
             color += [plt.cm.viridis(step_size * unique_color)]
             unique_color += 1
 
-    def plot_obj(x, u, p, j):
-        plot_returned = cas.DM()
+    def get_plotting_penalty_values(x, u, p, j, nlp):
+        if "time" in nlp.parameters.names:
+            dt = Function("time", [nlp.parameters.cx], [j.dt])(j.parameters["time"])
+        else:
+            dt = j.dt
+        plot_values_returned = DM()
         for i in range(np.shape(x)[1]):
             if j.target is not None:
-                Plot = j.weighted_function(x[:, i], u, p, cas.DM(j.weight), cas.DM(j.target), cas.DM(dt))
+                plot_values = j.weighted_function(x[:, i], u, p, DM(j.weight), DM(j.target), DM(dt))
             else:
-                Plot = j.weighted_function(x[:, i], u, p, cas.DM(j.weight), [], cas.DM(dt))
-            plot_returned = cas.horzcat(plot_returned, Plot[:, 0])
+                plot_values = j.weighted_function(x[:, i], u, p, DM(j.weight), [], DM(dt))
+            plot_returned = horzcat(plot_values_returned, plot_values[:, 0])
             return plot_returned
 
     number_of_plots = 0
     for i_phase, nlp in enumerate(ocp.nlp):
         for j in nlp.J:
-            if "time" in nlp.parameters.names:
-                dt = cas.Function("time", [nlp.parameters.cx], [j.dt])(j.parameters["time"])
-            else:
-                dt = j.dt
-
-
             if j.type in ObjectiveFcn.Mayer:
-                ocp.add_plot(f"Objectives", lambda x, u, p, j: plot_obj(x, u, p, j), plot_type=PlotType.POINT, phase=i_phase, j=j, color=color[number_of_plots], node_to_plot=j.node_idx)
+                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.POINT, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots], node_to_plot=j.node_idx)
             else:
-                ocp.add_plot(f"Objectives", lambda x, u, p, j: plot_obj(x, u, p, j), plot_type=PlotType.POINT, phase=i_phase, j=j, color=color[number_of_plots])
+                ocp.add_plot(f"Objectives", lambda x, u, p, j, nlp: get_plotting_penalty_values(x, u, p, j, nlp), plot_type=PlotType.POINT, phase=i_phase, j=j, nlp=nlp, color=color[number_of_plots])
             number_of_plots += 1
 
     return
