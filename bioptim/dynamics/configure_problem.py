@@ -522,7 +522,7 @@ class Dynamics(OptionGeneric):
     def __init__(
         self,
         dynamics_type: Union[Callable, DynamicsFcn],
-        expand: bool = True,
+        expand: bool = False,
         **params: Any,
     ):
         """

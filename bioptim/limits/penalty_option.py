@@ -101,7 +101,7 @@ class PenaltyOption(OptionGeneric):
         custom_function: Callable = None,
         is_internal: bool = False,
         multi_thread: bool = None,
-        expand: bool = True,
+        expand: bool = False,
         **params: Any,
     ):
         """

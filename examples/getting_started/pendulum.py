@@ -23,7 +23,14 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> OptimalControlProgram:
+def prepare_ocp(
+        biorbd_model_path: str,
+        final_time: float,
+        n_shooting: int,
+        ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+        use_sx: bool = True,
+        n_threads: int = 1
+) -> OptimalControlProgram:
     """
     The initialization of an ocp
 
@@ -35,6 +42,12 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
+    ode_solver: OdeSolver = OdeSolver.RK4()
+        Which type of OdeSolver to use
+    use_sx: bool
+        If the SX variable should be used instead of MX (can be extensive on RAM)
+    n_threads: int
+        The number of threads to use in the paralleling (1 = no parallel computing)
 
     Returns
     -------
@@ -47,7 +60,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=False)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)
@@ -77,11 +90,9 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        # ode_solver=OdeSolver.COLLOCATION(method="legendre"),
-        ode_solver=OdeSolver.IRK(method="legendre"),
-        # ode_solver=OdeSolver.RK4(),
-        use_sx=False,
-        n_threads=1,
+        ode_solver=ode_solver,
+        use_sx=use_sx,
+        n_threads=n_threads,
     )
 
 
