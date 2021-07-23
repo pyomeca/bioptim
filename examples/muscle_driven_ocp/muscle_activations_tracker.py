@@ -175,7 +175,7 @@ def prepare_ocp(
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     if kin_data_to_track == "markers":
-        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref)
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref[:, :, :-1])
     elif kin_data_to_track == "q":
         objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q", weight=100, target=q_ref, node=Node.ALL)
     else:

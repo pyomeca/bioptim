@@ -410,7 +410,7 @@ class AcadosInterface(SolverInterface):
                 raise RuntimeError(f"{objectives.type.name} is an incompatible objective term with LINEAR_LS cost type")
 
         def add_nonlinear_ls_lagrange(acados, objectives, x, u, p):
-            acados.lagrange_costs = vertcat(acados.lagrange_costs, objectives.function(x, u, p))
+            acados.lagrange_costs = vertcat(acados.lagrange_costs, objectives.function(x, u, p).reshape((-1, 1)))
             acados.W = linalg.block_diag(acados.W, np.diag([objectives.weight] * objectives.function.numel_out()))
 
             node_idx = objectives.node_idx[:-1] if objectives.node[0] == Node.ALL else objectives.node_idx
@@ -423,7 +423,7 @@ class AcadosInterface(SolverInterface):
             acados.W_e = linalg.block_diag(acados.W_e, np.diag([objectives.weight] * objectives.function.numel_out()))
             x = x if objectives.function.sparsity_in("i0").shape != (0, 0) else []
             u = u if objectives.function.sparsity_in("i1").shape != (0, 0) else []
-            acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function(x, u, p))
+            acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function(x, u, p).reshape((-1, 1)))
 
             if objectives.target is not None:
                 acados.y_ref_end.append(objectives.target[..., -1].T.reshape((-1, 1)))
@@ -598,10 +598,7 @@ class AcadosInterface(SolverInterface):
                     self.acados_ocp.dims.N,
                     "x",
                     np.concatenate(
-                        (
-                            self.params_initial_guess.init[:, 0],
-                            self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N],
-                        )
+                        (self.params_initial_guess.init[:, 0], self.ocp.nlp[0].x_init.init[:, self.acados_ocp.dims.N])
                     ),
                 )
             else:
