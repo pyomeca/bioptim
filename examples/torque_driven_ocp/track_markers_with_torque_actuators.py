@@ -84,7 +84,7 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
     if actuator_type == 2:
-        constraints.add(ConstraintFcn.TORQUE_MAX_FROM_Q_AND_QDOT, node=Node.ALL, min_torque=7.5)
+        constraints.add(ConstraintFcn.TORQUE_MAX_FROM_Q_AND_QDOT, node=Node.ALL_SHOOTING, min_torque=7.5)
 
     # Path constraint
     x_bounds = BoundsList()
