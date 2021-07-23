@@ -27,7 +27,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolver = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
 ) -> OptimalControlProgram:
