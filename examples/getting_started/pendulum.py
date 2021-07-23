@@ -26,9 +26,6 @@ from bioptim import (
     Node,
 )
 def plot_objectives(ocp):
-
-    # TODO : Add a label tag to CustomPlot for the legend on the graph
-
     def penalty_plot_count():
         number_of_plots = 0
         objective_names = []
@@ -45,17 +42,17 @@ def plot_objectives(ocp):
                 number_of_plots += 1
         return number_of_plots, number_of_same_objectives, same_objectives
 
-    number_of_plots, number_of_same_objectives, same_objectives = penalty_plot_count()
-
-    step_size = 1 / (number_of_plots - number_of_same_objectives)
-    color = []
-    unique_color = 0
-    for i in range(number_of_plots):
-        if i in same_objectives[1]:
-            color += [plt.cm.viridis(step_size * same_objectives[0][same_objectives[1].index(i)])]
-        else:
-            color += [plt.cm.viridis(step_size * unique_color)]
-            unique_color += 1
+    def penalty_color(number_of_plots, number_of_same_objectives):
+        step_size = 1 / (number_of_plots - number_of_same_objectives)
+        color = []
+        unique_color = 0
+        for i in range(number_of_plots):
+            if i in same_objectives[1]:
+                color += [plt.cm.viridis(step_size * same_objectives[0][same_objectives[1].index(i)])]
+            else:
+                color += [plt.cm.viridis(step_size * unique_color)]
+                unique_color += 1
+        return color
 
     def get_plotting_penalty_values(x, u, p, j, nlp):
         if "time" in nlp.parameters.names:
@@ -69,8 +66,11 @@ def plot_objectives(ocp):
             else:
                 plot_values = j.weighted_function(x[:, i], u, p, DM(j.weight), [], DM(dt))
             plot_returned = horzcat(plot_values_returned, plot_values[:, 0])
-            plot_values_combined = sum1(plot_returned) # Est-ce que le quadratique est déjà dans la fonction ?
-            return plot_values_combined
+            plot_values_combined = sum1(plot_returned)  # Est-ce que le quadratique est déjà dans la fonction ?
+        return plot_values_combined
+
+    number_of_plots, number_of_same_objectives, same_objectives = penalty_plot_count()
+    color = penalty_color(number_of_plots, number_of_same_objectives)
 
     number_of_plots = 0
     for i_phase, nlp in enumerate(ocp.nlp):
@@ -155,10 +155,10 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100)
 
     # Custom plots
-    plot_objectives(ocp)
+    # plot_objectives(ocp)
 
     # --- Print ocp structure --- #
-    # ocp.print(to_console=False, to_graph=True)
+    ocp.print(to_console=False, to_graph=True)
 
     # --- Solve the ocp --- #
     sol = ocp.solve(show_online_optim=True)
