@@ -4,6 +4,7 @@ import numpy as np
 from casadi import vertcat, DM, MX, SX
 
 from .parameters import ParameterList, Parameter
+from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds, InitialGuess
 from ..misc.enums import ControlType, InterpolationType
 
@@ -104,7 +105,8 @@ class OptimizationVector:
         The vector of all variables
         """
 
-        return vertcat(*self.x, *self.u, self.parameters_in_list.cx)
+        x = [x.reshape((-1, 1)) for x in self.x]
+        return vertcat(*x, *self.u, self.parameters_in_list.cx)
 
     @property
     def bounds(self):
@@ -248,7 +250,16 @@ class OptimizationVector:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
-                x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape))
+                if k != nlp.ns and nlp.ode_solver.is_direct_collocation:
+                    x.append(
+                        nlp.cx.sym(
+                            "X_" + str(nlp.phase_idx) + "_" + str(k),
+                            nlp.states.shape,
+                            nlp.ode_solver.polynomial_degree + 1,
+                        )
+                    )
+                else:
+                    x.append(nlp.cx.sym("X_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.shape, 1))
 
                 if nlp.control_type != ControlType.CONSTANT or (
                     nlp.control_type == ControlType.CONSTANT and k != nlp.ns
@@ -256,7 +267,7 @@ class OptimizationVector:
                     u.append(nlp.cx.sym("U_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.shape, 1))
 
             nlp.X = x
-            self.x[nlp.phase_idx] = vertcat(*x)
+            self.x[nlp.phase_idx] = vertcat(*[x_tp.reshape((-1, 1)) for x_tp in x])
             self.n_phase_x[nlp.phase_idx] = self.x[nlp.phase_idx].size()[0]
 
             nlp.U = u
@@ -274,24 +285,34 @@ class OptimizationVector:
         ocp = self.ocp
 
         # Sanity check
-        for i in range(ocp.n_phases):
-            ocp.nlp[i].x_bounds.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ocp.nlp[i].ns)
-            if ocp.nlp[i].control_type == ControlType.CONSTANT:
-                ocp.nlp[i].u_bounds.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns - 1)
-            elif ocp.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                ocp.nlp[i].u_bounds.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns)
+        for nlp in ocp.nlp:
+            nlp.x_bounds.check_and_adjust_dimensions(nlp.states.shape, nlp.ns)
+            if nlp.control_type == ControlType.CONSTANT:
+                nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns - 1)
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                nlp.u_bounds.check_and_adjust_dimensions(nlp.controls.shape, nlp.ns)
             else:
-                raise NotImplementedError(f"Plotting {ocp.nlp[i].control_type} is not implemented yet")
+                raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
 
         # Declare phases dimensions
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             nx = nlp.states.shape
-            all_nx = nx * (nlp.ns + 1)
+            if nlp.ode_solver.is_direct_collocation:
+                all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
+                outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
+                repeat = nlp.ode_solver.polynomial_degree + 1
+            else:
+                all_nx = nx * (nlp.ns + 1)
+                outer_offset = nx
+                repeat = 1
             x_bounds = Bounds([0] * all_nx, [0] * all_nx, interpolation=InterpolationType.CONSTANT)
             for k in range(nlp.ns + 1):
-                x_bounds.min[k * nx : (k + 1) * nx, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=k)
-                x_bounds.max[k * nx : (k + 1) * nx, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=k)
+                for p in range(repeat if k != nlp.ns else 1):
+                    span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
+                    point = k if k != 0 else 0 if p == 0 else 1
+                    x_bounds.min[span, 0] = nlp.x_bounds.min.evaluate_at(shooting_point=point)
+                    x_bounds.max[span, 0] = nlp.x_bounds.max.evaluate_at(shooting_point=point)
 
             # For controls
             if nlp.control_type == ControlType.CONSTANT:
@@ -331,10 +352,20 @@ class OptimizationVector:
         for i_phase, nlp in enumerate(ocp.nlp):
             # For states
             nx = nlp.states.shape
-            all_nx = nx * (nlp.ns + 1)
+            if nlp.ode_solver.is_direct_collocation:
+                all_nx = nx * nlp.ns * (nlp.ode_solver.polynomial_degree + 1) + nx
+                outer_offset = nx * (nlp.ode_solver.polynomial_degree + 1)
+                repeat = nlp.ode_solver.polynomial_degree + 1
+            else:
+                all_nx = nx * (nlp.ns + 1)
+                outer_offset = nx
+                repeat = 1
             x_init = InitialGuess([0] * all_nx, interpolation=InterpolationType.CONSTANT)
             for k in range(nlp.ns + 1):
-                x_init.init[k * nx : (k + 1) * nx, 0] = nlp.x_init.init.evaluate_at(shooting_point=k)
+                for p in range(repeat if k != nlp.ns else 1):
+                    span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
+                    point = k if k != 0 else 0 if p == 0 else 1
+                    x_init.init[span, 0] = nlp.x_init.init.evaluate_at(shooting_point=point)
 
             # For controls
             if nlp.control_type == ControlType.CONSTANT:

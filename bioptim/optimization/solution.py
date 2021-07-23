@@ -7,6 +7,7 @@ from scipy import interpolate as sci_interp
 from casadi import horzcat, DM, Function
 from matplotlib import pyplot as plt
 
+from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import ControlType, CostType, Shooting, InterpolationType
 from ..misc.utils import check_version
@@ -527,9 +528,46 @@ class Solution:
                 "change the dimension"
             )
 
+        out = self.__perform_integration(shooting_type, keepdims, continuous)
+
+        if merge_phases:
+            if continuous:
+                out = out.interpolate(sum(out.ns) + 1)
+            else:
+                out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
+                out.is_merged = True
+        out.is_integrated = True
+
+        return out
+
+    def __perform_integration(self, shooting_type: Shooting, keepdims: bool, continuous: bool):
+
+        n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
+        if n_direct_collocation > 0:
+            if n_direct_collocation != len(self.ocp.nlp):
+                raise RuntimeError("It is not possible to integrate mixture of direct collocation and shooting")
+
+            if not continuous:
+                raise RuntimeError("Direct collocation integration must be continuous")
+
+            out = self.copy()
+            for p, state in enumerate(out._states):
+                nlp = self.ocp.nlp[p]
+                steps = int((state["all"].shape[1] - 1) / (nlp.ode_solver.steps + 1))
+                new_states = {"all": np.ndarray((state["all"].shape[0], state["all"].shape[1] + steps))}
+                for s in range(steps):
+                    t_span_right = slice(s * (nlp.ode_solver.steps + 1), (s + 1) * (nlp.ode_solver.steps + 1) + 1)
+                    t_span_left = slice(s * (nlp.ode_solver.steps + 2), (s + 1) * (nlp.ode_solver.steps + 2))
+                    new_states["all"][:, t_span_left] = state["all"][:, t_span_right]
+
+                for key in state:
+                    if key == "all":
+                        continue
+                    new_states[key] = new_states["all"][nlp.states[key].index, :]
+            return out
+
         # Copy the data
         out = self.copy(skip_data=True)
-
         ocp = out.ocp
         out._states = []
         for _ in range(len(self._states)):
@@ -605,14 +643,6 @@ class Solution:
                 out._states[p][key] = out._states[p]["all"][off : off + len(ocp.nlp[p].states[key]), :]
                 off += len(ocp.nlp[p].states[key])
 
-        if merge_phases:
-            if continuous:
-                out = out.interpolate(sum(out.ns) + 1)
-            else:
-                out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
-                out.is_merged = True
-
-        out.is_integrated = True
         return out
 
     def interpolate(self, n_frames: Union[int, list, tuple]) -> Any:
@@ -711,7 +741,7 @@ class Solution:
         if self.is_merged:
             return deepcopy(self._states), deepcopy(self._controls), deepcopy(self.phase_time), deepcopy(self.ns)
 
-        def _merge(data: list) -> Union[list, dict]:
+        def _merge(data: list, is_state: bool = False, is_control: bool = False) -> Union[list, dict]:
             """
             Merge the phases of a states or controls data structure
 
@@ -719,7 +749,10 @@ class Solution:
             ----------
             data: list
                 The data to structure to merge the phases
-
+            is_state: bool
+                If the merging is performed on a state
+            is_control: bool
+                If the merge is performed on a control
             Returns
             -------
             The data merged
@@ -740,9 +773,11 @@ class Solution:
                 data_out[0][key] = np.ndarray((sizes[i], 0))
 
             for p in range(len(data)):
+                ode = self.ocp.nlp[p].ode_solver
+                ns = self.ns[p] * (ode.steps + 1) if is_state and ode.is_direct_collocation else self.ns[p]
                 d = data[p]
                 for key in d:
-                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, : self.ns[p]]), axis=1)
+                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, :ns]), axis=1)
             for key in data[-1]:
                 data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
 
@@ -751,12 +786,12 @@ class Solution:
         if len(self._states) == 1:
             out_states = deepcopy(self._states)
         else:
-            out_states = _merge(self.states) if not skip_states and self._states else None
+            out_states = _merge(self.states, is_state=True) if not skip_states and self._states else None
 
         if len(self._controls) == 1:
             out_controls = deepcopy(self._controls)
         else:
-            out_controls = _merge(self.controls) if not skip_controls and self._controls else None
+            out_controls = _merge(self.controls, is_control=True) if not skip_controls and self._controls else None
         phase_time = [0] + [sum([self.phase_time[i + 1] for i in range(len(self.phase_time) - 1)])]
         ns = [sum(self.ns)]
 
@@ -835,7 +870,7 @@ class Solution:
             import bioviz
         except ModuleNotFoundError:
             raise RuntimeError("bioviz must be install to animate the model")
-        check_version(bioviz, "2.1.0", "2.2.0")
+        check_version(bioviz, "2.1.1", "2.2.0")
 
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:

@@ -38,7 +38,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True, expand=False)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True)
 
     # Constraints
     constraints = ConstraintList()
@@ -46,14 +46,14 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
         ConstraintFcn.TRACK_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
-        node=Node.ALL,
+        node=Node.ALL_SHOOTING,
         contact_index=1,
     )
     constraints.add(
         ConstraintFcn.TRACK_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
-        node=Node.ALL,
+        node=Node.ALL_SHOOTING,
         contact_index=2,
     )
 

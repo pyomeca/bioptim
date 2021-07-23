@@ -225,7 +225,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            if all_pn[0].x[0].shape != all_pn[1].x[0].shape:
+            if all_pn[0].x[0].shape[0] != all_pn[1].x[0].shape[0]:
                 raise RuntimeError(
                     "Continuous phase transition without same number of states is not possible, "
                     "please provide a custom phase transition"

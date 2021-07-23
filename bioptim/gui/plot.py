@@ -517,7 +517,8 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution(self.ocp, v)
-        data_states = sol.integrate(continuous=False, shooting_type=self.shooting_type, keepdims=False).states
+        continuous = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
+        data_states = sol.integrate(continuous=continuous, shooting_type=self.shooting_type, keepdims=False).states
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "time"]).squeeze()

@@ -193,7 +193,7 @@ class Parameter(PenaltyOption):
         penalty: Union[MX, SX],
         combine_to: str = None,
         target_ns: int = -1,
-        expand: bool = True,
+        expand: bool = False,
     ):
         objective.rows = self._set_dim_idx(self.rows, penalty.rows())
         objective.cols = self._set_dim_idx(self.cols, penalty.columns())
@@ -205,7 +205,7 @@ class Parameter(PenaltyOption):
                 objective.add_target_to_plot(None, combine_to)
         self._set_penalty_function(ocp, objective, penalty, expand)
 
-    def _set_penalty_function(self, ocp, objective, fcn: Union[MX, SX], expand: bool = True):
+    def _set_penalty_function(self, ocp, objective, fcn: Union[MX, SX], expand: bool = False):
         # Do not use nlp.add_casadi_func because all functions must be registered
         state_cx = ocp.cx(0, 0)
         control_cx = ocp.cx(0, 0)
