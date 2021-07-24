@@ -7,7 +7,7 @@ from itertools import accumulate
 import numpy as np
 from matplotlib import pyplot as plt, lines
 from matplotlib.ticker import StrMethodFormatter
-from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM, collocation_points
 
 from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting
@@ -280,7 +280,12 @@ class PlotOcp:
             time_phase_integrated = []
             last_t_int = copy(last_t)
             for _ in range(nlp.ns):
-                time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
+                if nlp.ode_solver.is_direct_collocation:
+                    tp = [0] + collocation_points(nlp.ode_solver.polynomial_degree, nlp.ode_solver.method) #+ [1]
+                    time_phase_integrated.append(np.asarray(tp)*dt_ns+last_t_int)
+                else:
+                    time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
+
                 last_t_int += dt_ns
             self.t_integrated.append(time_phase_integrated)
 

@@ -510,10 +510,10 @@ class COLLOCATION(Integrator):
         for j in range(1, self.degree+1):
 
             # Expression for the state derivative at the collocation point
-            #xp_j = 0
-            xp_j = self._c[0, j] * states[0]
-            for r in range(self.degree):
-                xp_j += self._c[r+1, j] * states[r+1]
+            xp_j = 0
+            #xp_j = self._c[0, j] * states[0]
+            for r in range(self.degree+1):
+                xp_j += self._c[r, j] * states[r]
 
             # Append collocation equations
             f_j = self.fun(states[j-1], self.get_u(controls, self._t[j]), params)[:, self.idx]
