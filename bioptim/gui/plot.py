@@ -281,8 +281,8 @@ class PlotOcp:
             last_t_int = copy(last_t)
             for _ in range(nlp.ns):
                 if nlp.ode_solver.is_direct_collocation:
-                    tp = [0] + collocation_points(nlp.ode_solver.polynomial_degree, nlp.ode_solver.method) #+ [1]
-                    time_phase_integrated.append(np.asarray(tp)*dt_ns+last_t_int)
+                    tp = [0] + collocation_points(nlp.ode_solver.polynomial_degree, nlp.ode_solver.method)  # + [1]
+                    time_phase_integrated.append(np.asarray(tp) * dt_ns + last_t_int)
                 else:
                     time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
 
@@ -562,7 +562,11 @@ class PlotOcp:
                 if not self.plot_func[key][i]:
                     continue
                 # Automatically find u_modifier if the function is a casadi function otherwise fallback to default
-                u_mod2 = self.plot_func[key][i].function.size2_in(1) if hasattr(self.plot_func[key][i].function, "size2_in") else u_mod
+                u_mod2 = (
+                    self.plot_func[key][i].function.size2_in(1)
+                    if hasattr(self.plot_func[key][i].function, "size2_in")
+                    else u_mod
+                )
 
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
                     all_y = []

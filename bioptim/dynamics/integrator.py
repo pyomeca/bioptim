@@ -443,7 +443,7 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - self._t[r]) / ( self._t[j] - self._t[r])
+                    _l *= (time_control_interval - self._t[r]) / (self._t[j] - self._t[r])
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
             lfcn = Function("lfcn", [time_control_interval], [_l])
@@ -507,19 +507,19 @@ class COLLOCATION(Integrator):
         # Total number of variables for one finite element
         states_end = self._d[0] * states[0]
         defects = []
-        for j in range(1, self.degree+1):
+        for j in range(1, self.degree + 1):
 
             # Expression for the state derivative at the collocation point
             xp_j = 0
-            for r in range(self.degree+1):
+            for r in range(self.degree + 1):
                 xp_j += self._c[r, j] * states[r]
 
             # Append collocation equations
-            f_j = self.fun(states[j-1], self.get_u(controls, self._t[j]), params)[:, self.idx]
+            f_j = self.fun(states[j - 1], self.get_u(controls, self._t[j]), params)[:, self.idx]
             defects.append(h * f_j - xp_j)
 
             # Add contribution to the end state
-            states_end = states_end + self._d[j]*states[j]
+            states_end = states_end + self._d[j] * states[j]
 
         # Concatenate constraints
         defects = vertcat(*defects)
