@@ -432,7 +432,7 @@ class COLLOCATION(Integrator):
         self._d = self.cx.zeros(self.degree + 1)
 
         # Choose collocation points
-        time_points = [0] + collocation_points(self.degree, self.method)
+        self._t = [0] + collocation_points(self.degree, self.method)
 
         # Dimensionless time inside one control interval
         time_control_interval = self.cx.sym("time_control_interval")
@@ -443,7 +443,7 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - time_points[r]) / (time_points[j] - time_points[r])
+                    _l *= (time_control_interval - self._t[r]) / ( self._t[j] - self._t[r])
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
             lfcn = Function("lfcn", [time_control_interval], [_l])
@@ -453,13 +453,13 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - time_points[r]) / (time_points[j] - time_points[r])
+                    _l *= (time_control_interval - self._t[r]) / (self._t[j] - self._t[r])
 
             # Evaluate the time derivative of the polynomial at all collocation points to get
             # the coefficients of the continuity equation
             tfcn = Function("tfcn", [time_control_interval], [tangent(_l, time_control_interval)])
             for r in range(self.degree + 1):
-                self._c[j, r] = tfcn(time_points[r])
+                self._c[j, r] = tfcn(self._t[r])
 
         self._finish_init()
 
@@ -507,20 +507,20 @@ class COLLOCATION(Integrator):
         # Total number of variables for one finite element
         states_end = self._d[0] * states[0]
         defects = []
-        for j in range(1, self.degree + 1):
+        for j in range(1, self.degree+1):
 
-            t_norm_init = (j - 1) / self.degree  # normalized time
             # Expression for the state derivative at the collocation point
-            xp_j = 0
-            for r in range(self.degree + 1):
-                xp_j += self._c[r, j] * states[r]
+            #xp_j = 0
+            xp_j = self._c[0, j] * states[0]
+            for r in range(self.degree):
+                xp_j += self._c[r+1, j] * states[r+1]
 
             # Append collocation equations
-            f_j = self.fun(states[j], self.get_u(controls, t_norm_init), params)[:, self.idx]
+            f_j = self.fun(states[j-1], self.get_u(controls, self._t[j]), params)[:, self.idx]
             defects.append(h * f_j - xp_j)
 
             # Add contribution to the end state
-            states_end = states_end + self._d[j]*states[j-1]
+            states_end = states_end + self._d[j]*states[j]
 
         # Concatenate constraints
         defects = vertcat(*defects)
