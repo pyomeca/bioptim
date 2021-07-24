@@ -105,9 +105,6 @@ class RK(OdeSolverBase):
         A list of integrators
         """
 
-        if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-            raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
-
         ode_opt = {
             "t0": 0,
             "tf": nlp.dt,

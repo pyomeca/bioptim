@@ -556,6 +556,8 @@ class PlotOcp:
             for key in self.variable_sizes[i]:
                 if not self.plot_func[key][i]:
                     continue
+                # Automatically find u_modifier if the function is a casadi function otherwise fallback to default
+                u_mod2 = self.plot_func[key][i].function.size2_in(1) if hasattr(self.plot_func[key][i].function, "size2_in") else u_mod
 
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
                     all_y = []
@@ -564,7 +566,7 @@ class PlotOcp:
                         y_tp.fill(np.nan)
                         y_tp[:, :] = self.plot_func[key][i].function(
                             state[:, step_size * idx : step_size * (idx + 1)],
-                            control[:, idx : idx + u_mod],
+                            control[:, idx : idx + u_mod2],
                             data_params_in_dyn,
                             **self.plot_func[key][i].parameters,
                         )
