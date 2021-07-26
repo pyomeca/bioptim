@@ -895,18 +895,36 @@ class Solution:
 
     def _get_penalty_cost(self, nlp, penalty):
         phase_idx = nlp.phase_idx
-        x = self._states[phase_idx]["all"][:, penalty.node_idx] if nlp is not None else []
-        u = self._controls[phase_idx]["all"][:, penalty.node_idx] if nlp is not None else []
+        steps = nlp.ode_solver.steps + 1 if nlp.ode_solver.is_direct_collocation else 1
+
+        val = []
+        val_weighted = []
         p = self.parameters["all"]
-        target = penalty.target if penalty.target is not None else []
         dt = (
             Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
             if "time" in self.parameters
             else penalty.dt
         )
+        for idx in penalty.node_idx:
+            x = []
+            u = []
+            target = []
+            if nlp is not None:
+                col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
+                col_u_idx = [idx]
+                if penalty.derivative or penalty.explicit_derivative:
+                    col_x_idx.append((idx + 1) * steps)
+                    col_u_idx.append((idx + 1))
 
-        val = np.nansum(penalty.function(x, u, p))
-        val_weighted = np.nansum(penalty.weighted_function(x, u, p, penalty.weight, target, dt))
+                x = self._states[phase_idx]["all"][:, col_x_idx]
+                u = self._controls[phase_idx]["all"][:, col_u_idx]
+                target = penalty.target[:, idx] if penalty.target else []
+
+            val.append(penalty.function(x, u, p))
+            val_weighted.append(penalty.weighted_function(x, u, p, penalty.weight, target, dt))
+
+        val = np.nansum(val)
+        val_weighted = np.nansum(val_weighted)
 
         return val, val_weighted
 
