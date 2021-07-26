@@ -25,6 +25,7 @@ class OdeSolverBase:
 
     def __init__(self):
         self.steps = 1
+        self.steps_scipy = 5  # Number of steps while integrating with scipy
         self.rk_integrator = None
         self.is_direct_collocation = False
         self.is_direct_shooting = False

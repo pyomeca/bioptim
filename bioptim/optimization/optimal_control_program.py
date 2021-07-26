@@ -618,6 +618,7 @@ class OptimalControlProgram:
         automatically_organize: bool = True,
         adapt_graph_size_to_bounds: bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
+        use_scipy_integrator: bool = False
     ) -> PlotOcp:
         """
         Create all the plots associated with the OCP
@@ -630,6 +631,8 @@ class OptimalControlProgram:
             If the ylim should fit the bounds
         shooting_type: Shooting
             What type of integration
+        use_scipy_integrator: bool
+            Use the scipy solve_ivp integrator for RungeKutta 45 instead of currently defined integrator
 
         Returns
         -------
@@ -641,6 +644,7 @@ class OptimalControlProgram:
             automatically_organize=automatically_organize,
             adapt_graph_size_to_bounds=adapt_graph_size_to_bounds,
             shooting_type=shooting_type,
+            use_scipy_integrator=use_scipy_integrator
         )
 
     def solve(
