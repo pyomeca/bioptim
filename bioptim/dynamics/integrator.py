@@ -482,7 +482,7 @@ class COLLOCATION(Integrator):
         if self.control_type == ControlType.CONSTANT:
             return super(COLLOCATION, self).get_u(u, dt_norm)
         else:
-            raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with IRK")
+            raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
 
     def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple:
         """
