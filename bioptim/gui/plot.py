@@ -281,8 +281,7 @@ class PlotOcp:
             last_t_int = copy(last_t)
             for _ in range(nlp.ns):
                 if nlp.ode_solver.is_direct_collocation:
-                    tp = [0] + collocation_points(nlp.ode_solver.polynomial_degree, nlp.ode_solver.method)  # + [1]
-                    time_phase_integrated.append(np.asarray(tp) * dt_ns + last_t_int)
+                    time_phase_integrated.append(np.array(nlp.dynamics[0].step_time) * dt_ns + last_t_int)
                 else:
                     time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
 
@@ -522,8 +521,7 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution(self.ocp, v)
-        continuous = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
-        data_states = sol.integrate(continuous=continuous, shooting_type=self.shooting_type, keepdims=False).states
+        data_states = sol.integrate(continuous=False, shooting_type=self.shooting_type, keep_intermediate_points=True).states
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "time"]).squeeze()

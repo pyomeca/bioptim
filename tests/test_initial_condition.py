@@ -186,7 +186,7 @@ def test_simulate_from_initial_multiple_shoot():
 
     sol = Solution(ocp, [X, U])
     controls = sol.controls
-    sol = sol.integrate(shooting_type=Shooting.MULTIPLE, keepdims=False)
+    sol = sol.integrate(shooting_type=Shooting.MULTIPLE, keep_intermediate_points=True)
     states = sol.states
 
     # Check some of the results
@@ -221,7 +221,7 @@ def test_simulate_from_initial_single_shoot():
 
     sol = Solution(ocp, [X, U])
     controls = sol.controls
-    sol = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS, keepdims=False)
+    sol = sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS, keep_intermediate_points=True)
 
     # Check some of the results
     states = sol.states

@@ -432,7 +432,7 @@ class COLLOCATION(Integrator):
         self._d = self.cx.zeros(self.degree + 1)
 
         # Choose collocation points
-        self._t = [0] + collocation_points(self.degree, self.method)
+        self.step_time = [0] + collocation_points(self.degree, self.method)
 
         # Dimensionless time inside one control interval
         time_control_interval = self.cx.sym("time_control_interval")
@@ -443,7 +443,7 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - self._t[r]) / (self._t[j] - self._t[r])
+                    _l *= (time_control_interval - self.step_time[r]) / (self.step_time[j] - self.step_time[r])
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
             lfcn = Function("lfcn", [time_control_interval], [_l])
@@ -453,13 +453,13 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - self._t[r]) / (self._t[j] - self._t[r])
+                    _l *= (time_control_interval - self.step_time[r]) / (self.step_time[j] - self.step_time[r])
 
             # Evaluate the time derivative of the polynomial at all collocation points to get
             # the coefficients of the continuity equation
             tfcn = Function("tfcn", [time_control_interval], [tangent(_l, time_control_interval)])
             for r in range(self.degree + 1):
-                self._c[j, r] = tfcn(self._t[r])
+                self._c[j, r] = tfcn(self.step_time[r])
 
         self._finish_init()
 
@@ -515,11 +515,11 @@ class COLLOCATION(Integrator):
                 xp_j += self._c[r, j] * states[r]
 
             # Append collocation equations
-            f_j = self.fun(states[j - 1], self.get_u(controls, self._t[j]), params)[:, self.idx]
+            f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
             defects.append(h * f_j - xp_j)
 
             # Add contribution to the end state
-            states_end = states_end + self._d[j] * states[j]
+            states_end += self._d[j] * states[j]
 
         # Concatenate constraints
         defects = vertcat(*defects)

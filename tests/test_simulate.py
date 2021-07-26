@@ -166,7 +166,7 @@ def test_integrate():
     )
 
     sol = ocp.solve()
-    sol_integrated = sol.integrate(shooting_type=Shooting.MULTIPLE, keepdims=False)
+    sol_integrated = sol.integrate(shooting_type=Shooting.MULTIPLE, keep_intermediate_points=True)
     shapes = (4, 2, 2)
 
     for i, key in enumerate(sol.states):
@@ -183,7 +183,7 @@ def test_integrate():
         _ = sol_integrated.controls
 
 
-def test_integrate_keepdims():
+def test_integrate_keep_intermediate_points():
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
@@ -198,13 +198,13 @@ def test_integrate_keepdims():
     sol = ocp.solve()
     with pytest.raises(
         ValueError,
-        match="Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing",
+        match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
     ):
-        _ = sol.integrate(shooting_type=Shooting.MULTIPLE, keepdims=True)
+        _ = sol.integrate(shooting_type=Shooting.MULTIPLE, keep_intermediate_points=False)
 
 
-@pytest.mark.parametrize("keepdims", [False, True])
-def test_integrate_single_shoot(keepdims):
+@pytest.mark.parametrize("keep_intermediate_points", [False, True])
+def test_integrate_single_shoot(keep_intermediate_points):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
@@ -217,13 +217,13 @@ def test_integrate_single_shoot(keepdims):
     )
 
     sol = ocp.solve()
-    sol_integrated = sol.integrate(keepdims=keepdims)
+    sol_integrated = sol.integrate(keep_intermediate_points=keep_intermediate_points)
     shapes = (4, 2, 2)
 
     for i, key in enumerate(sol.states):
         np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]])
 
-        if keepdims:
+        if keep_intermediate_points:
             np.testing.assert_almost_equal(sol_integrated.states[key], sol.states[key])
             assert sol_integrated.states[key].shape == (shapes[i], n_shooting + 1)
         else:
@@ -257,18 +257,18 @@ def test_integrate_non_continuous(shooting, merge):
     if shooting == Shooting.MULTIPLE:
         with pytest.raises(
             ValueError,
-            match="Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing",
+            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
         ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
+            _ = sol.integrate(shooting_type=shooting, continuous=False, keep_intermediate_points=False)
     else:
         with pytest.raises(
             ValueError,
-            match="continuous=False and keepdims=True cannot be used simultaneously since "
+            match="continuous=False and keep_intermediate_points=False cannot be used simultaneously since "
             "it would necessarily change the dimension",
         ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
+            _ = sol.integrate(shooting_type=shooting, continuous=False, keep_intermediate_points=False)
 
-    sol_integrated = sol.integrate(shooting_type=shooting, continuous=False, merge_phases=merge, keepdims=False)
+    sol_integrated = sol.integrate(shooting_type=shooting, continuous=False, merge_phases=merge, keep_intermediate_points=True)
     shapes = (4, 2, 2)
 
     for i, key in enumerate(sol.states):
@@ -287,8 +287,8 @@ def test_integrate_non_continuous(shooting, merge):
 
 
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
-@pytest.mark.parametrize("keepdims", [True, False])
-def test_integrate_multiphase(shooting, keepdims):
+@pytest.mark.parametrize("keep_intermediate_points", [True, False])
+def test_integrate_multiphase(shooting, keep_intermediate_points):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
@@ -299,21 +299,21 @@ def test_integrate_multiphase(shooting, keepdims):
 
     sol = ocp.solve()
     n_shooting = [20, 30, 20]
-    if shooting == Shooting.MULTIPLE and keepdims:
+    if shooting == Shooting.MULTIPLE and keep_intermediate_points:
         with pytest.raises(
             ValueError,
-            match="Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing",
+            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
         ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=keepdims)
+            _ = sol.integrate(shooting_type=shooting, continuous=False, keep_intermediate_points=keep_intermediate_points)
         return
-    sol_integrated = sol.integrate(shooting_type=shooting, keepdims=keepdims)
+    sol_integrated = sol.integrate(shooting_type=shooting, keep_intermediate_points=keep_intermediate_points)
     shapes = (6, 3, 3)
 
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
             np.testing.assert_almost_equal(sol_integrated.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]])
 
-            if keepdims:
+            if keep_intermediate_points:
                 np.testing.assert_almost_equal(sol_integrated.states[i][key], sol.states[i][key])
                 assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
             else:
@@ -329,8 +329,8 @@ def test_integrate_multiphase(shooting, keepdims):
 
 
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
-@pytest.mark.parametrize("keepdims", [True, False])
-def test_integrate_multiphase_merged(shooting, keepdims):
+@pytest.mark.parametrize("keep_intermediate_points", [True, False])
+def test_integrate_multiphase_merged(shooting, keep_intermediate_points):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
@@ -340,23 +340,23 @@ def test_integrate_multiphase_merged(shooting, keepdims):
     )
 
     sol = ocp.solve()
-    if shooting == Shooting.MULTIPLE and keepdims:
+    if shooting == Shooting.MULTIPLE and keep_intermediate_points:
         with pytest.raises(
             ValueError,
-            match="Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing",
+            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
         ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=keepdims)
+            _ = sol.integrate(shooting_type=shooting, continuous=False, keep_intermediate_points=keep_intermediate_points)
         return
 
     n_shooting = [20, 30, 20]
-    sol_integrated = sol.integrate(shooting_type=shooting, merge_phases=True, keepdims=keepdims)
+    sol_integrated = sol.integrate(shooting_type=shooting, merge_phases=True, keep_intermediate_points=keep_intermediate_points)
     shapes = (6, 3, 3)
 
     for k, key in enumerate(sol.states[0]):
         expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
         np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected)
 
-        if keepdims:
+        if keep_intermediate_points:
             # The interpolation prevents from comparing all points
             expected = np.concatenate((sol.states[0][key][:, 0:1], sol.states[-1][key][:, -1][:, np.newaxis]), axis=1)
             np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected)
@@ -388,7 +388,7 @@ def test_integrate_multiphase_non_continuous(shooting):
 
     sol = ocp.solve()
     n_shooting = [20, 30, 20]
-    sol_integrated = sol.integrate(shooting_type=shooting, continuous=False, keepdims=False)
+    sol_integrated = sol.integrate(shooting_type=shooting, continuous=False, keep_intermediate_points=True)
     shapes = (6, 3, 3)
 
     for i in range(len(sol_integrated.states)):
@@ -422,19 +422,19 @@ def test_integrate_multiphase_merged_non_continuous(shooting):
     if shooting == Shooting.MULTIPLE:
         with pytest.raises(
             ValueError,
-            match="Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing",
+            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
         ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
+            _ = sol.integrate(shooting_type=shooting, continuous=False, keep_intermediate_points=False)
     else:
         with pytest.raises(
             ValueError,
-            match="continuous=False and keepdims=True cannot be used simultaneously since "
+            match="continuous=False and keep_intermediate_points=False cannot be used simultaneously since "
             "it would necessarily change the dimension",
         ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
+            _ = sol.integrate(shooting_type=shooting, continuous=False, keep_intermediate_points=False)
 
     n_shooting = [20, 30, 20]
-    sol_integrated = sol.integrate(shooting_type=shooting, merge_phases=True, continuous=False, keepdims=False)
+    sol_integrated = sol.integrate(shooting_type=shooting, merge_phases=True, continuous=False, keep_intermediate_points=True)
     shapes = (6, 3, 3)
 
     for k, key in enumerate(sol.states[0]):
