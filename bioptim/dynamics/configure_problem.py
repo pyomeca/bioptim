@@ -344,9 +344,7 @@ class ConfigureProblem:
 
             nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
             nlp.plot[f"{name}_states"] = CustomPlot(
-                lambda x, u, p: x[nlp.states[name].index, :],
-                plot_type=PlotType.INTEGRATED,
-                legend=legend
+                lambda x, u, p: x[nlp.states[name].index, :], plot_type=PlotType.INTEGRATED, legend=legend
             )
 
         if as_controls:

@@ -840,9 +840,7 @@ class Solution:
         if self.is_merged or self.is_interpolated or self.is_integrated:
             raise NotImplementedError("It is not possible to graph a modified Solution yet")
 
-        plot_ocp = self.ocp.prepare_plots(
-            automatically_organize, show_bounds, shooting_type, use_scipy_integrator
-        )
+        plot_ocp = self.ocp.prepare_plots(automatically_organize, show_bounds, shooting_type, use_scipy_integrator)
         plot_ocp.update_data(self.vector)
         if show_now:
             plt.show()
