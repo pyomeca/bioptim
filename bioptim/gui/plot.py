@@ -183,7 +183,7 @@ class PlotOcp:
         automatically_organize: bool = True,
         adapt_graph_size_to_bounds: bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
-        use_scipy_integrator: bool = False
+        use_scipy_integrator: bool = False,
     ):
         """
         Prepares the figures during the simulation
@@ -525,7 +525,12 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution(self.ocp, v)
-        data_states = sol.integrate(continuous=False, shooting_type=self.shooting_type, keep_intermediate_points=True, use_scipy_integrator=self.use_scipy_integrator).states
+        data_states = sol.integrate(
+            continuous=False,
+            shooting_type=self.shooting_type,
+            keep_intermediate_points=True,
+            use_scipy_integrator=self.use_scipy_integrator,
+        ).states
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "time"]).squeeze()

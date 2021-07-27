@@ -90,7 +90,12 @@ class TestUtils:
                 sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
             return
 
-        sol_single = sol.integrate(merge_phases=True, shooting_type=Shooting.SINGLE_CONTINUOUS, keep_intermediate_points=True, use_scipy_integrator=False)
+        sol_single = sol.integrate(
+            merge_phases=True,
+            shooting_type=Shooting.SINGLE_CONTINUOUS,
+            keep_intermediate_points=True,
+            use_scipy_integrator=False,
+        )
 
         # Evaluate the final error of the single shooting integration versus the finale node
         np.testing.assert_almost_equal(
