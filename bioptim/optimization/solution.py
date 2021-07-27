@@ -527,11 +527,6 @@ class Solution:
                 "Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously "
                 "since it would do nothing"
             )
-        if not keep_intermediate_points and not continuous:
-            raise ValueError(
-                "continuous=False and keep_intermediate_points=False cannot be used simultaneously "
-                "since it would necessarily change the dimension"
-            )
 
         out = self.__perform_integration(shooting_type, keep_intermediate_points, continuous, use_scipy_integrator)
 
@@ -567,13 +562,11 @@ class Solution:
             param_scaling = nlp.parameters.scaling
             n_states = self._states[p]["all"].shape[0]
             n_steps = nlp.ode_solver.steps_scipy if use_scipy_integrator else nlp.ode_solver.steps
-            if continuous:
-                if keep_intermediate_points:
-                    out.ns[p] *= nlp.ode_solver.steps
-            else:
+            if not continuous:
                 n_steps += 1
-                if keep_intermediate_points:
-                    out.ns[p] *= n_steps
+            if keep_intermediate_points:
+                out.ns[p] *= n_steps
+
             out._states[p]["all"] = np.ndarray((n_states, out.ns[p] + 1))
 
             # Get the first frame of the phase
@@ -603,17 +596,21 @@ class Solution:
                 if use_scipy_integrator:
                     t_init = sum(out.phase_time[:p]) / nlp.ns
                     t_end = sum(out.phase_time[:(p + 2)]) / nlp.ns
-                    t_eval = np.linspace(t_init, t_end, n_steps) if keep_intermediate_points else [t_init, t_end]
-                    integrated = solve_ivp(lambda t, x: np.array(nlp.dynamics_func(x, u, params / param_scaling))[:, 0], [t_init, t_end], x0, t_eval=t_eval).y
+                    n_points = n_steps + 1 if continuous else n_steps
+                    t_eval = np.linspace(t_init, t_end, n_points) if keep_intermediate_points else [t_init, t_end]
+                    integrated = solve_ivp(lambda t, x: np.array(nlp.dynamics_func(x, u, params))[:, 0], [t_init, t_end], x0, t_eval=t_eval).y
 
                     next_state_col = (s + 1) * (nlp.ode_solver.steps + 1) if nlp.ode_solver.is_direct_collocation else s + 1
-                    cols_in_out = [s * n_steps, (s + 1) * n_steps] if keep_intermediate_points else [s, s + 1]
-                    cols_in_out = range(cols_in_out[0], cols_in_out[1] + 1 if continuous else cols_in_out[1])
+                    cols_in_out = [s * n_steps, (s + 1) * n_steps] if keep_intermediate_points else [s, s + 2]
 
                 else:
                     if nlp.ode_solver.is_direct_collocation:
-                        integrated = x0  # That is only for continuous=False
-                        cols_in_out = slice(s * n_steps, (s + 1) * n_steps)
+                        if keep_intermediate_points:
+                            integrated = x0  # That is only for continuous=False
+                            cols_in_out = [s * n_steps, (s + 1) * n_steps]
+                        else:
+                            integrated = x0[:, [0, -1]]
+                            cols_in_out = [s, s + 2]
                         next_state_col = slice((s + 1) * n_steps, (s + 2) * n_steps)
 
                     else:
@@ -625,10 +622,10 @@ class Solution:
                                 (x0[:, np.newaxis], nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xf"]),
                                 axis=1,
                             )
-                            cols_in_out = [s, s + 1]
-                        cols_in_out = range(cols_in_out[0], cols_in_out[1] + 1 if continuous else cols_in_out[1])
+                            cols_in_out = [s, s + 2]
                         next_state_col = s + 1
 
+                cols_in_out = slice(cols_in_out[0], cols_in_out[1] + 1 if continuous and keep_intermediate_points else cols_in_out[1])
                 out._states[p]["all"][:, cols_in_out] = integrated
                 x0 = (
                     np.array(self._states[p]["all"][:, next_state_col])
@@ -741,7 +738,7 @@ class Solution:
         if self.is_merged:
             return deepcopy(self._states), deepcopy(self._controls), deepcopy(self.phase_time), deepcopy(self.ns)
 
-        def _merge(data: list, is_state: bool = False, is_control: bool = False) -> Union[list, dict]:
+        def _merge(data: list) -> Union[list, dict]:
             """
             Merge the phases of a states or controls data structure
 
@@ -749,10 +746,6 @@ class Solution:
             ----------
             data: list
                 The data to structure to merge the phases
-            is_state: bool
-                If the merging is performed on a state
-            is_control: bool
-                If the merge is performed on a control
             Returns
             -------
             The data merged
@@ -773,11 +766,9 @@ class Solution:
                 data_out[0][key] = np.ndarray((sizes[i], 0))
 
             for p in range(len(data)):
-                ode = self.ocp.nlp[p].ode_solver
-                ns = self.ns[p] * (ode.steps + 1) if is_state and ode.is_direct_collocation else self.ns[p]
                 d = data[p]
                 for key in d:
-                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, :ns]), axis=1)
+                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, :self.ns[p]]), axis=1)
             for key in data[-1]:
                 data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
 
@@ -786,12 +777,12 @@ class Solution:
         if len(self._states) == 1:
             out_states = deepcopy(self._states)
         else:
-            out_states = _merge(self.states, is_state=True) if not skip_states and self._states else None
+            out_states = _merge(self.states) if not skip_states and self._states else None
 
         if len(self._controls) == 1:
             out_controls = deepcopy(self._controls)
         else:
-            out_controls = _merge(self.controls, is_control=True) if not skip_controls and self._controls else None
+            out_controls = _merge(self.controls) if not skip_controls and self._controls else None
         phase_time = [0] + [sum([self.phase_time[i + 1] for i in range(len(self.phase_time) - 1)])]
         ns = [sum(self.ns)]
 
