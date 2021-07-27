@@ -83,7 +83,7 @@ class Solution:
         Actually performing the phase merging
     _complete_control(self)
         Controls don't necessarily have dimensions that matches the states. This method aligns them
-    graphs(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool,
+    graphs(self, automatically_organize: bool, show_bounds: bool,
            show_now: bool, shooting_type: Shooting)
         Show the graphs of the simulation
     animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> Union[None, list]
@@ -815,7 +815,7 @@ class Solution:
     def graphs(
         self,
         automatically_organize: bool = True,
-        adapt_graph_size_to_bounds: bool = False,
+        show_bounds: bool = False,
         show_now: bool = True,
         shooting_type: Shooting = Shooting.MULTIPLE,
         use_scipy_integrator: bool = False,
@@ -827,7 +827,7 @@ class Solution:
         ----------
         automatically_organize: bool
             If the figures should be spread on the screen automatically
-        adapt_graph_size_to_bounds: bool
+        show_bounds: bool
             If the plot should adapt to bounds (True) or to data (False)
         show_now: bool
             If the show method should be called. This is blocking
@@ -841,7 +841,7 @@ class Solution:
             raise NotImplementedError("It is not possible to graph a modified Solution yet")
 
         plot_ocp = self.ocp.prepare_plots(
-            automatically_organize, adapt_graph_size_to_bounds, shooting_type, use_scipy_integrator
+            automatically_organize, show_bounds, shooting_type, use_scipy_integrator
         )
         plot_ocp.update_data(self.vector)
         if show_now:

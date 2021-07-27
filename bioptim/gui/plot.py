@@ -102,7 +102,7 @@ class PlotOcp:
     """
     Attributes
     ----------
-    adapt_graph_size_to_bounds: bool
+    show_bounds: bool
         If the plot should adapt to bounds or to ydata
     all_figures: list
         The list of handlers to the matplotlib figures
@@ -181,7 +181,7 @@ class PlotOcp:
         self,
         ocp,
         automatically_organize: bool = True,
-        adapt_graph_size_to_bounds: bool = False,
+        show_bounds: bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
         use_scipy_integrator: bool = False,
     ):
@@ -194,7 +194,7 @@ class PlotOcp:
             A reference to the ocp to show
         automatically_organize: bool
             If the figures should be spread on the screen automatically
-        adapt_graph_size_to_bounds: bool
+        show_bounds: bool
             If the axes should fit the bounds (True) or the data (False)
         shooting_type: Shooting
             The type of integration method
@@ -247,7 +247,7 @@ class PlotOcp:
 
         self.plot_func = {}
         self.variable_sizes = []
-        self.adapt_graph_size_to_bounds = adapt_graph_size_to_bounds
+        self.show_bounds = show_bounds
         self.__create_plots()
         self.shooting_type = shooting_type
 
@@ -368,10 +368,10 @@ class PlotOcp:
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp.plot[variable].ylim:
                         ax.set_ylim(nlp.plot[variable].ylim)
-                    elif self.adapt_graph_size_to_bounds and nlp.plot[variable].bounds:
+                    elif self.show_bounds and nlp.plot[variable].bounds:
                         if nlp.plot[variable].bounds.type != InterpolationType.CUSTOM:
-                            y_min = nlp.plot[variable].bounds.min[ctr].min()
-                            y_max = nlp.plot[variable].bounds.max[ctr].max()
+                            y_min = nlp.plot[variable].bounds.min[ctr, :].min()
+                            y_max = nlp.plot[variable].bounds.max[ctr, :].max()
                         else:
                             nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping), nlp.ns)
                             y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[k] for j in range(nlp.ns)])
@@ -420,7 +420,7 @@ class PlotOcp:
                     for time in intersections_time:
                         self.plots_vertical_lines.append(ax.axvline(time, **self.plot_options["vertical_lines"]))
 
-                    if nlp.plot[variable].bounds and self.adapt_graph_size_to_bounds:
+                    if nlp.plot[variable].bounds and self.show_bounds:
                         if nlp.plot[variable].bounds.type == InterpolationType.EACH_FRAME:
                             ns = nlp.plot[variable].bounds.min.shape[1] - 1
                         else:
@@ -674,15 +674,15 @@ class PlotOcp:
             p.set_ydata((np.nan, np.nan))
 
         for key in self.axes:
-            if (not self.adapt_graph_size_to_bounds) or (self.axes[key][0].bounds is None):
+            if (not self.show_bounds) or (self.axes[key][0].bounds is None):
                 for i, ax in enumerate(self.axes[key][1]):
                     if not self.axes[key][0].ylim:
                         y_max = -np.inf
                         y_min = np.inf
                         for p in ax.get_children():
                             if isinstance(p, lines.Line2D):
-                                y_min = min(y_min, np.min(p.get_ydata()))
-                                y_max = max(y_max, np.max(p.get_ydata()))
+                                y_min = min(y_min, np.nanmin(p.get_ydata()))
+                                y_max = max(y_max, np.nanmax(p.get_ydata()))
                         y_range, data_range = self.__compute_ylim(y_min, y_max, 1.25)
                         ax.set_ylim(y_range)
                         ax.set_yticks(
@@ -783,7 +783,7 @@ class OnlineCallback(Callback):
         Send the current data to the plotter
     """
 
-    def __init__(self, ocp, opts: dict = None):
+    def __init__(self, ocp, opts: dict = None, show_options: dict = None):
         """
         Parameters
         ----------
@@ -791,6 +791,8 @@ class OnlineCallback(Callback):
             A reference to the ocp to show
         opts: dict
             Option to AnimateCallback method of CasADi
+        show_options: dict
+            The options to pass to PlotOcp
         """
         if opts is None:
             opts = {}
@@ -803,7 +805,7 @@ class OnlineCallback(Callback):
 
         self.queue = mp.Queue()
         self.plotter = self.ProcessPlotter(self.ocp)
-        self.plot_process = mp.Process(target=self.plotter, args=(self.queue,), daemon=True)
+        self.plot_process = mp.Process(target=self.plotter, args=(self.queue, show_options), daemon=True)
         self.plot_process.start()
 
     @staticmethod
@@ -929,16 +931,18 @@ class OnlineCallback(Callback):
 
             self.ocp = ocp
 
-        def __call__(self, pipe: mp.Queue):
+        def __call__(self, pipe: mp.Queue, show_options: dict):
             """
             Parameters
             ----------
             pipe: mp.Queue
                 The multiprocessing queue to evaluate
+            show_options: dict
+                The option to pass to PlotOcp
             """
 
             self.pipe = pipe
-            self.plot = PlotOcp(self.ocp)
+            self.plot = PlotOcp(self.ocp, **show_options)
             timer = self.plot.all_figures[0].canvas.new_timer(interval=10)
             timer.add_callback(self.callback)
             timer.start()
