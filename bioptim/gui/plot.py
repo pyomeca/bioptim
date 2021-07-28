@@ -941,6 +941,8 @@ class OnlineCallback(Callback):
                 The option to pass to PlotOcp
             """
 
+            if show_options is None:
+                show_options = {}
             self.pipe = pipe
             self.plot = PlotOcp(self.ocp, **show_options)
             timer = self.plot.all_figures[0].canvas.new_timer(interval=10)
