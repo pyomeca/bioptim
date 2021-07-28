@@ -252,12 +252,13 @@ class Solution:
         """
 
         self.ocp = Solution.SimplifiedOCP(ocp) if ocp else None
-        self.ns = [nlp.ns * nlp.ode_solver.steps if nlp.ode_solver.is_direct_collocation else nlp.ns for nlp in self.ocp.nlp]
+        self.ns = [nlp.ns for nlp in self.ocp.nlp]
 
         # Current internal state of the data
         self.is_interpolated = False
         self.is_integrated = False
         self.is_merged = False
+        self.recomputed_time_steps = False
 
         self.vector = None
         self._cost = None
@@ -543,7 +544,6 @@ class Solution:
     def __perform_integration(
         self, shooting_type: Shooting, keep_intermediate_points: bool, continuous: bool, use_scipy_integrator: bool
     ):
-
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
         if n_direct_collocation > 0 and not use_scipy_integrator:
             if continuous:
@@ -554,6 +554,7 @@ class Solution:
 
         # Copy the data
         out = self.copy(skip_data=True)
+        out.recomputed_time_steps = use_scipy_integrator
         out._states = []
         for _ in range(len(self._states)):
             out._states.append({})
@@ -668,16 +669,14 @@ class Solution:
         out = self.copy(skip_data=True)
 
         t_all = []
-        last_t_int = 0
         for p, data in enumerate(self._states):
             nlp = self.ocp.nlp[p]
-            if nlp.ode_solver.is_direct_collocation:  # and not self.use_scipy_integrator:
-                t_tp = []
-                dt = (out.phase_time[p + 1] - out.phase_time[p]) / nlp.ns
-                for _ in range(nlp.ns):
-                    t_tp.extend(np.array(nlp.dynamics[0].step_time) * dt + last_t_int)
-                    last_t_int = t_tp[-1]
-                t_all.append(t_tp)
+            if nlp.ode_solver.is_direct_collocation and not self.recomputed_time_steps:
+                time_offset = sum(out.phase_time[: p + 1])
+                step_time = np.array(nlp.dynamics[0].step_time)
+                dt = out.phase_time[p + 1] / nlp.ns
+                t_tp = np.array([step_time * dt + s * dt + time_offset for s in range(nlp.ns)]).reshape(-1, 1)
+                t_all.append(np.concatenate((t_tp, [[t_tp[-1, 0]]]))[:, 0])
             else:
                 t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), out.ns[p] + 1))
 
@@ -702,11 +701,12 @@ class Solution:
             n_elements = x_phase.shape[0]
 
             t_phase = t_all[p]
+            t_phase, time_index = np.unique(t_phase, return_index=True)
             t_int = np.linspace(t_phase[0], t_phase[-1], n_frames[p])
 
             x_interpolate = np.ndarray((n_elements, n_frames[p]))
             for j in range(n_elements):
-                s = sci_interp.splrep(t_phase, x_phase[j, :])
+                s = sci_interp.splrep(t_phase, x_phase[j, time_index])
                 x_interpolate[j, :] = sci_interp.splev(t_int, s)
             out._states[p]["all"] = x_interpolate
 
