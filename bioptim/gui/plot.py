@@ -102,7 +102,7 @@ class PlotOcp:
     """
     Attributes
     ----------
-    adapt_graph_size_to_bounds: bool
+    show_bounds: bool
         If the plot should adapt to bounds or to ydata
     all_figures: list
         The list of handlers to the matplotlib figures
@@ -181,8 +181,9 @@ class PlotOcp:
         self,
         ocp,
         automatically_organize: bool = True,
-        adapt_graph_size_to_bounds: bool = False,
+        show_bounds: bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
+        use_scipy_integrator: bool = False,
     ):
         """
         Prepares the figures during the simulation
@@ -193,10 +194,12 @@ class PlotOcp:
             A reference to the ocp to show
         automatically_organize: bool
             If the figures should be spread on the screen automatically
-        adapt_graph_size_to_bounds: bool
+        show_bounds: bool
             If the axes should fit the bounds (True) or the data (False)
         shooting_type: Shooting
             The type of integration method
+        use_scipy_integrator: bool
+            Use the scipy solve_ivp integrator for RungeKutta 45 instead of currently defined integrator
         """
         for i in range(1, ocp.n_phases):
             if len(ocp.nlp[0].states["q"]) != len(ocp.nlp[i].states["q"]):
@@ -217,6 +220,7 @@ class PlotOcp:
 
         self.t = []
         self.t_integrated = []
+        self.use_scipy_integrator = use_scipy_integrator
         if isinstance(self.ocp.original_phase_time, (int, float)):
             self.tf = [self.ocp.original_phase_time]
         else:
@@ -243,7 +247,7 @@ class PlotOcp:
 
         self.plot_func = {}
         self.variable_sizes = []
-        self.adapt_graph_size_to_bounds = adapt_graph_size_to_bounds
+        self.show_bounds = show_bounds
         self.__create_plots()
         self.shooting_type = shooting_type
 
@@ -275,12 +279,16 @@ class PlotOcp:
         self.t_integrated = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
-            n_int_steps = nlp.ode_solver.steps
+            n_int_steps = nlp.ode_solver.steps_scipy if self.use_scipy_integrator else nlp.ode_solver.steps
             dt_ns = self.tf[phase_idx] / nlp.ns
             time_phase_integrated = []
             last_t_int = copy(last_t)
             for _ in range(nlp.ns):
-                time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
+                if nlp.ode_solver.is_direct_collocation and not self.use_scipy_integrator:
+                    time_phase_integrated.append(np.array(nlp.dynamics[0].step_time) * dt_ns + last_t_int)
+                else:
+                    time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
+
                 last_t_int += dt_ns
             self.t_integrated.append(time_phase_integrated)
 
@@ -360,10 +368,10 @@ class PlotOcp:
                     ax.set_xlim(0, self.t[-1][-1])
                     if nlp.plot[variable].ylim:
                         ax.set_ylim(nlp.plot[variable].ylim)
-                    elif self.adapt_graph_size_to_bounds and nlp.plot[variable].bounds:
+                    elif self.show_bounds and nlp.plot[variable].bounds:
                         if nlp.plot[variable].bounds.type != InterpolationType.CUSTOM:
-                            y_min = nlp.plot[variable].bounds.min[ctr].min()
-                            y_max = nlp.plot[variable].bounds.max[ctr].max()
+                            y_min = nlp.plot[variable].bounds.min[ctr, :].min()
+                            y_max = nlp.plot[variable].bounds.max[ctr, :].max()
                         else:
                             nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping), nlp.ns)
                             y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[k] for j in range(nlp.ns)])
@@ -384,7 +392,7 @@ class PlotOcp:
                     elif plot_type == PlotType.INTEGRATED:
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         plots_integrated = []
-                        n_int_steps = nlp.ode_solver.steps
+                        n_int_steps = nlp.ode_solver.steps_scipy if self.use_scipy_integrator else nlp.ode_solver.steps
                         for cmp in range(nlp.ns):
                             plots_integrated.append(
                                 ax.plot(
@@ -412,7 +420,7 @@ class PlotOcp:
                     for time in intersections_time:
                         self.plots_vertical_lines.append(ax.axvline(time, **self.plot_options["vertical_lines"]))
 
-                    if nlp.plot[variable].bounds and self.adapt_graph_size_to_bounds:
+                    if nlp.plot[variable].bounds and self.show_bounds:
                         if nlp.plot[variable].bounds.type == InterpolationType.EACH_FRAME:
                             ns = nlp.plot[variable].bounds.min.shape[1] - 1
                         else:
@@ -517,8 +525,12 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution(self.ocp, v)
-        continuous = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
-        data_states = sol.integrate(continuous=continuous, shooting_type=self.shooting_type, keepdims=False).states
+        data_states = sol.integrate(
+            continuous=False,
+            shooting_type=self.shooting_type,
+            keep_intermediate_points=True,
+            use_scipy_integrator=self.use_scipy_integrator,
+        ).states
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "time"]).squeeze()
@@ -530,7 +542,7 @@ class PlotOcp:
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):
-            step_size = nlp.ode_solver.steps + 1
+            step_size = nlp.ode_solver.steps_scipy + 1 if self.use_scipy_integrator else nlp.ode_solver.steps + 1
             n_elements = nlp.ns * step_size + 1
 
             state = np.ndarray((0, n_elements))
@@ -556,6 +568,12 @@ class PlotOcp:
             for key in self.variable_sizes[i]:
                 if not self.plot_func[key][i]:
                     continue
+                # Automatically find u_modifier if the function is a casadi function otherwise fallback to default
+                u_mod2 = (
+                    self.plot_func[key][i].function.size2_in(1)
+                    if hasattr(self.plot_func[key][i].function, "size2_in")
+                    else u_mod
+                )
 
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
                     all_y = []
@@ -564,7 +582,7 @@ class PlotOcp:
                         y_tp.fill(np.nan)
                         y_tp[:, :] = self.plot_func[key][i].function(
                             state[:, step_size * idx : step_size * (idx + 1)],
-                            control[:, idx : idx + u_mod],
+                            control[:, idx : idx + u_mod2],
                             data_params_in_dyn,
                             **self.plot_func[key][i].parameters,
                         )
@@ -656,15 +674,15 @@ class PlotOcp:
             p.set_ydata((np.nan, np.nan))
 
         for key in self.axes:
-            if (not self.adapt_graph_size_to_bounds) or (self.axes[key][0].bounds is None):
+            if (not self.show_bounds) or (self.axes[key][0].bounds is None):
                 for i, ax in enumerate(self.axes[key][1]):
                     if not self.axes[key][0].ylim:
                         y_max = -np.inf
                         y_min = np.inf
                         for p in ax.get_children():
                             if isinstance(p, lines.Line2D):
-                                y_min = min(y_min, np.min(p.get_ydata()))
-                                y_max = max(y_max, np.max(p.get_ydata()))
+                                y_min = min(y_min, np.nanmin(p.get_ydata()))
+                                y_max = max(y_max, np.nanmax(p.get_ydata()))
                         y_range, data_range = self.__compute_ylim(y_min, y_max, 1.25)
                         ax.set_ylim(y_range)
                         ax.set_yticks(
@@ -765,7 +783,7 @@ class OnlineCallback(Callback):
         Send the current data to the plotter
     """
 
-    def __init__(self, ocp, opts: dict = None):
+    def __init__(self, ocp, opts: dict = None, show_options: dict = None):
         """
         Parameters
         ----------
@@ -773,6 +791,8 @@ class OnlineCallback(Callback):
             A reference to the ocp to show
         opts: dict
             Option to AnimateCallback method of CasADi
+        show_options: dict
+            The options to pass to PlotOcp
         """
         if opts is None:
             opts = {}
@@ -785,7 +805,7 @@ class OnlineCallback(Callback):
 
         self.queue = mp.Queue()
         self.plotter = self.ProcessPlotter(self.ocp)
-        self.plot_process = mp.Process(target=self.plotter, args=(self.queue,), daemon=True)
+        self.plot_process = mp.Process(target=self.plotter, args=(self.queue, show_options), daemon=True)
         self.plot_process.start()
 
     @staticmethod
@@ -911,16 +931,18 @@ class OnlineCallback(Callback):
 
             self.ocp = ocp
 
-        def __call__(self, pipe: mp.Queue):
+        def __call__(self, pipe: mp.Queue, show_options: dict):
             """
             Parameters
             ----------
             pipe: mp.Queue
                 The multiprocessing queue to evaluate
+            show_options: dict
+                The option to pass to PlotOcp
             """
 
             self.pipe = pipe
-            self.plot = PlotOcp(self.ocp)
+            self.plot = PlotOcp(self.ocp, **show_options)
             timer = self.plot.all_figures[0].canvas.new_timer(interval=10)
             timer.add_callback(self.callback)
             timer.start()

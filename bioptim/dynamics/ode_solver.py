@@ -25,6 +25,7 @@ class OdeSolverBase:
 
     def __init__(self):
         self.steps = 1
+        self.steps_scipy = 5  # Number of steps while integrating with scipy
         self.rk_integrator = None
         self.is_direct_collocation = False
         self.is_direct_shooting = False
@@ -104,9 +105,6 @@ class RK(OdeSolverBase):
         -------
         A list of integrators
         """
-
-        if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-            raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
 
         ode_opt = {
             "t0": 0,

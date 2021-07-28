@@ -49,7 +49,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
     elif isinstance(ode_solver, OdeSolver.IRK):
         np.testing.assert_almost_equal(f[0, 0], 84.30183665763425)
     elif isinstance(ode_solver, OdeSolver.COLLOCATION):
-        np.testing.assert_almost_equal(f[0, 0], 530.6488048497716)
+        np.testing.assert_almost_equal(f[0, 0], 84.41192087513045)
     else:
         np.testing.assert_almost_equal(f[0, 0], 84.30287609)
 
@@ -82,8 +82,8 @@ def test_pendulum(ode_solver, use_sx, n_threads):
         np.testing.assert_almost_equal(tau[:, 0], np.array((7.1454158, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-7.0868975, 0)))
     elif isinstance(ode_solver, OdeSolver.COLLOCATION):
-        np.testing.assert_almost_equal(tau[:, 0], np.array((24.5979283, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-26.3161326, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((7.231104, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-7.0029995, 0)))
     else:
         np.testing.assert_almost_equal(tau[:, 0], np.array((7.14605229, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-7.08672862, 0)))
@@ -650,10 +650,7 @@ def test_example_multiphase(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    if isinstance(ode_solver, OdeSolver.COLLOCATION) and not isinstance(ode_solver, OdeSolver.IRK):
-        np.testing.assert_almost_equal(f[0, 0], 106467.68682071107)
-    else:
-        np.testing.assert_almost_equal(f[0, 0], 106088.01707867868)
+    np.testing.assert_almost_equal(f[0, 0], 106088.01707867868)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -684,20 +681,12 @@ def test_example_multiphase(ode_solver):
     np.testing.assert_almost_equal(states[2]["qdot"][:, -1], np.array((0, 0, 0)))
 
     # initial and final controls
-    if isinstance(ode_solver, OdeSolver.COLLOCATION) and not isinstance(ode_solver, OdeSolver.IRK):
-        np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((2.33123354, 9.81, 0.01834561)))
-        np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array((-2.33123354, 9.81, -0.01834561)))
-        np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array((-0.37187204, 9.81, 0.02897681)))
-        np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array((0.48256419, 9.81, 0.46639468)))
-        np.testing.assert_almost_equal(controls[2]["tau"][:, 0], np.array((0.50233065, 9.81, 0.55485387)))
-        np.testing.assert_almost_equal(controls[2]["tau"][:, -2], np.array((-0.59127973, 9.81, -0.95292025)))
-    else:
-        np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((1.42857142, 9.81, 0.01124212)))
-        np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array((-1.42857144, 9.81, -0.01124212)))
-        np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array((-0.22788183, 9.81, 0.01775688)))
-        np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array((0.2957136, 9.81, 0.285805)))
-        np.testing.assert_almost_equal(controls[2]["tau"][:, 0], np.array((0.3078264, 9.81, 0.34001243)))
-        np.testing.assert_almost_equal(controls[2]["tau"][:, -2], np.array((-0.36233407, 9.81, -0.58394606)))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((1.42857142, 9.81, 0.01124212)))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array((-1.42857144, 9.81, -0.01124212)))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array((-0.22788183, 9.81, 0.01775688)))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array((0.2957136, 9.81, 0.285805)))
+    np.testing.assert_almost_equal(controls[2]["tau"][:, 0], np.array((0.3078264, 9.81, 0.34001243)))
+    np.testing.assert_almost_equal(controls[2]["tau"][:, -2], np.array((-0.36233407, 9.81, -0.58394606)))
 
     # save and load
     with pytest.raises(pickle.PickleError):

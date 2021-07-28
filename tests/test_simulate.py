@@ -1,7 +1,7 @@
 import pytest
 
 import numpy as np
-from bioptim import Shooting
+from bioptim import Shooting, OdeSolver
 
 from .utils import TestUtils
 
@@ -153,82 +153,104 @@ def test_interpolate_multiphases_merge_phase():
         _ = sol_interp.controls
 
 
-def test_integrate():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize("use_scipy", [False, True])
+def test_integrate(use_scipy, ode_solver):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
-    n_shooting = 10
+    n_shooting = 20
 
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
+        final_time=3,
         n_shooting=n_shooting,
+        ode_solver=ode_solver(),
     )
 
     sol = ocp.solve()
-    sol_integrated = sol.integrate(shooting_type=Shooting.MULTIPLE, keepdims=False)
-    shapes = (4, 2, 2)
 
-    for i, key in enumerate(sol.states):
-        np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]])
-
-        assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
-        assert sol.states[key].shape == (shapes[i], n_shooting + 1)
-
-    with pytest.raises(
-        RuntimeError,
-        match="There is no controls in the solution. This may happen in previously "
-        "integrated and interpolated structure",
-    ):
-        _ = sol_integrated.controls
-
-
-def test_integrate_keepdims():
-    # Load pendulum
-    bioptim_folder = TestUtils.bioptim_folder()
-    pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
-    n_shooting = 10
-
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
-        n_shooting=n_shooting,
-    )
-
-    sol = ocp.solve()
+    opts = {"shooting_type": Shooting.MULTIPLE, "keep_intermediate_points": False, "use_scipy_integrator": use_scipy}
     with pytest.raises(
         ValueError,
-        match="Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing",
+        match="Shooting.MULTIPLE and keep_intermediate_points=False "
+        "cannot be used simultaneously since it would do nothing",
     ):
-        _ = sol.integrate(shooting_type=Shooting.MULTIPLE, keepdims=True)
+        _ = sol.integrate(**opts)
+
+    opts["keep_intermediate_points"] = True
+    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+        with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
+            sol.integrate(**opts)
+        return
+
+    sol_integrated = sol.integrate(**opts)
+    shapes = (4, 2, 2)
+
+    decimal = 5 if use_scipy else 8
+    for i, key in enumerate(sol.states):
+        np.testing.assert_almost_equal(
+            sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal
+        )
+
+        assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
+        if ode_solver == OdeSolver.COLLOCATION:
+            assert sol.states[key].shape == (shapes[i], n_shooting * 5 + 1)
+        else:
+            assert sol.states[key].shape == (shapes[i], n_shooting + 1)
+
+    with pytest.raises(
+        RuntimeError,
+        match="There is no controls in the solution. "
+        "This may happen in previously integrated and interpolated structure",
+    ):
+        _ = sol_integrated.controls
 
 
-@pytest.mark.parametrize("keepdims", [False, True])
-def test_integrate_single_shoot(keepdims):
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize("keep_intermediate_points", [False, True])
+@pytest.mark.parametrize("use_scipy", [False, True])
+def test_integrate_single_shoot(keep_intermediate_points, use_scipy, ode_solver):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
-    n_shooting = 10
+    n_shooting = 20
 
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
+        final_time=3,
         n_shooting=n_shooting,
+        ode_solver=ode_solver(),
     )
 
     sol = ocp.solve()
-    sol_integrated = sol.integrate(keepdims=keepdims)
+
+    opts = {"keep_intermediate_points": keep_intermediate_points, "use_scipy_integrator": use_scipy}
+    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+        with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
+            sol.integrate(**opts)
+        return
+
+    sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
 
+    decimal = 1 if use_scipy else 8
     for i, key in enumerate(sol.states):
-        np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]])
+        np.testing.assert_almost_equal(
+            sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal
+        )
 
-        if keepdims:
-            np.testing.assert_almost_equal(sol_integrated.states[key], sol.states[key])
-            assert sol_integrated.states[key].shape == (shapes[i], n_shooting + 1)
-        else:
+        if keep_intermediate_points or (ode_solver == OdeSolver.COLLOCATION and not use_scipy):
             assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
-        assert sol.states[key].shape == (shapes[i], n_shooting + 1)
+        else:
+            if not (ode_solver == OdeSolver.COLLOCATION and use_scipy):
+                np.testing.assert_almost_equal(sol_integrated.states[key], sol.states[key], decimal=decimal)
+            assert sol_integrated.states[key].shape == (shapes[i], n_shooting + 1)
+
+        if ode_solver == OdeSolver.COLLOCATION and use_scipy:
+            assert sol.states[key].shape == (shapes[i], n_shooting * 5 + 1)
+        else:
+            assert sol.states[key].shape == (shapes[i], n_shooting + 1)
 
     with pytest.raises(
         RuntimeError,
@@ -238,45 +260,69 @@ def test_integrate_single_shoot(keepdims):
         _ = sol_integrated.controls
 
 
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
 @pytest.mark.parametrize("merge", [False, True])
-def test_integrate_non_continuous(shooting, merge):
+@pytest.mark.parametrize("use_scipy", [False, True])
+def test_integrate_non_continuous(shooting, merge, use_scipy, ode_solver):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
-    n_shooting = 10
+    n_shooting = 20
 
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
+        final_time=3,
         n_shooting=n_shooting,
+        ode_solver=ode_solver(),
     )
 
     sol = ocp.solve()
 
+    opts = {
+        "shooting_type": shooting,
+        "continuous": False,
+        "keep_intermediate_points": False,
+        "use_scipy_integrator": use_scipy,
+    }
     if shooting == Shooting.MULTIPLE:
         with pytest.raises(
             ValueError,
-            match="Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing",
+            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
         ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
-    else:
-        with pytest.raises(
-            ValueError,
-            match="continuous=False and keepdims=True cannot be used simultaneously since "
-            "it would necessarily change the dimension",
-        ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
+            _ = sol.integrate(**opts)
 
-    sol_integrated = sol.integrate(shooting_type=shooting, continuous=False, merge_phases=merge, keepdims=False)
+    opts["keep_intermediate_points"] = True
+    opts["merge_phases"] = merge
+    if ode_solver == OdeSolver.COLLOCATION and shooting != Shooting.MULTIPLE and not use_scipy:
+        with pytest.raises(
+            RuntimeError,
+            match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE",
+        ):
+            sol.integrate(**opts)
+        return
+
+    sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
 
+    decimal = 1 if use_scipy or ode_solver == OdeSolver.COLLOCATION else 8
     for i, key in enumerate(sol.states):
-        np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]])
-        np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -2]], sol.states[key][:, [0, -1]])
+        np.testing.assert_almost_equal(
+            sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal
+        )
+        np.testing.assert_almost_equal(
+            sol_integrated.states[key][:, [0, -2]], sol.states[key][:, [0, -1]], decimal=decimal
+        )
 
-        assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (5 + 1) + 1)
-        assert sol.states[key].shape == (shapes[i], n_shooting + 1)
+        if ode_solver == OdeSolver.COLLOCATION:
+            if use_scipy:
+                assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (5 + 1) + 1)
+            else:
+                assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (4 + 1) + 1)
+            assert sol.states[key].shape == (shapes[i], n_shooting * 5 + 1)
+        else:
+            assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (5 + 1) + 1)
+            assert sol.states[key].shape == (shapes[i], n_shooting + 1)
 
     with pytest.raises(
         RuntimeError,
@@ -286,39 +332,74 @@ def test_integrate_non_continuous(shooting, merge):
         _ = sol_integrated.controls
 
 
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
-@pytest.mark.parametrize("keepdims", [True, False])
-def test_integrate_multiphase(shooting, keepdims):
+@pytest.mark.parametrize("keep_intermediate_points", [True, False])
+@pytest.mark.parametrize("use_scipy", [False, True])
+def test_integrate_multiphase(shooting, keep_intermediate_points, use_scipy, ode_solver):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
 
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver()
     )
 
     sol = ocp.solve()
     n_shooting = [20, 30, 20]
-    if shooting == Shooting.MULTIPLE and keepdims:
+
+    opts = {
+        "shooting_type": shooting,
+        "continuous": False,
+        "keep_intermediate_points": keep_intermediate_points,
+        "use_scipy_integrator": use_scipy,
+    }
+    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+        if shooting != Shooting.MULTIPLE:
+            with pytest.raises(
+                RuntimeError, match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE"
+            ):
+                _ = sol.integrate(**opts)
+            return
+
+    if shooting == Shooting.MULTIPLE and not keep_intermediate_points:
         with pytest.raises(
             ValueError,
-            match="Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing",
+            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
         ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=keepdims)
+            _ = sol.integrate(**opts)
         return
-    sol_integrated = sol.integrate(shooting_type=shooting, keepdims=keepdims)
+
+    opts["continuous"] = True
+    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+        with pytest.raises(
+            RuntimeError,
+            match="Integration with direct collocation must be not continuous",
+        ):
+            sol.integrate(**opts)
+        return
+
+    sol_integrated = sol.integrate(**opts)
     shapes = (6, 3, 3)
 
+    decimal = 1 if use_scipy else 8
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
-            np.testing.assert_almost_equal(sol_integrated.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]])
+            if not use_scipy or shooting == Shooting.MULTIPLE:
+                np.testing.assert_almost_equal(
+                    sol_integrated.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
+                )
 
-            if keepdims:
-                np.testing.assert_almost_equal(sol_integrated.states[i][key], sol.states[i][key])
-                assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
-            else:
+            if keep_intermediate_points:
                 assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
-            assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
+            else:
+                if not use_scipy or shooting == Shooting.MULTIPLE:
+                    np.testing.assert_almost_equal(sol_integrated.states[i][key], sol.states[i][key])
+                assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
+            if ode_solver == OdeSolver.COLLOCATION:
+                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
+            else:
+                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
 
     with pytest.raises(
         RuntimeError,
@@ -328,45 +409,81 @@ def test_integrate_multiphase(shooting, keepdims):
         _ = sol_integrated.controls
 
 
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
-@pytest.mark.parametrize("keepdims", [True, False])
-def test_integrate_multiphase_merged(shooting, keepdims):
+@pytest.mark.parametrize("keep_intermediate_points", [True, False])
+@pytest.mark.parametrize("use_scipy", [False, True])
+def test_integrate_multiphase_merged(shooting, keep_intermediate_points, use_scipy, ode_solver):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
 
     ocp = cube.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
+        ode_solver=ode_solver(),
     )
 
     sol = ocp.solve()
-    if shooting == Shooting.MULTIPLE and keepdims:
+
+    opts = {
+        "shooting_type": shooting,
+        "continuous": False,
+        "keep_intermediate_points": keep_intermediate_points,
+        "use_scipy_integrator": use_scipy,
+    }
+    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+        if shooting != Shooting.MULTIPLE:
+            with pytest.raises(
+                RuntimeError, match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE"
+            ):
+                _ = sol.integrate(**opts)
+            return
+
+    if shooting == Shooting.MULTIPLE and not keep_intermediate_points:
         with pytest.raises(
             ValueError,
-            match="Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing",
+            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
         ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=keepdims)
+            _ = sol.integrate(**opts)
+        return
+
+    opts["merge_phases"] = True
+    opts["continuous"] = True
+    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+        with pytest.raises(
+            RuntimeError,
+            match="Integration with direct collocation must be not continuous",
+        ):
+            sol.integrate(**opts)
         return
 
     n_shooting = [20, 30, 20]
-    sol_integrated = sol.integrate(shooting_type=shooting, merge_phases=True, keepdims=keepdims)
+    sol_integrated = sol.integrate(**opts)
     shapes = (6, 3, 3)
 
+    decimal = 0 if use_scipy else 8
     for k, key in enumerate(sol.states[0]):
         expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
-        np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected)
+        if not use_scipy or shooting == Shooting.MULTIPLE:
+            np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected, decimal=decimal)
 
-        if keepdims:
-            # The interpolation prevents from comparing all points
-            expected = np.concatenate((sol.states[0][key][:, 0:1], sol.states[-1][key][:, -1][:, np.newaxis]), axis=1)
-            np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected)
-            assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) + 1)
-        else:
+        if keep_intermediate_points:
             assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * 5 + 1)
+        else:
+            # The interpolation prevents from comparing all points
+            if not use_scipy or shooting == Shooting.MULTIPLE:
+                expected = np.concatenate(
+                    (sol.states[0][key][:, 0:1], sol.states[-1][key][:, -1][:, np.newaxis]), axis=1
+                )
+                np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected)
+            assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) + 1)
 
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
-            assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
+            if ode_solver == OdeSolver.COLLOCATION:
+                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
+            else:
+                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
 
     with pytest.raises(
         RuntimeError,
@@ -376,28 +493,58 @@ def test_integrate_multiphase_merged(shooting, keepdims):
         _ = sol_integrated.controls
 
 
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
-def test_integrate_multiphase_non_continuous(shooting):
+@pytest.mark.parametrize("use_scipy", [False, True])
+def test_integrate_multiphase_non_continuous(shooting, use_scipy, ode_solver):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
 
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver()
     )
 
     sol = ocp.solve()
     n_shooting = [20, 30, 20]
-    sol_integrated = sol.integrate(shooting_type=shooting, continuous=False, keepdims=False)
+
+    opts = {
+        "shooting_type": shooting,
+        "continuous": False,
+        "keep_intermediate_points": True,
+        "use_scipy_integrator": use_scipy,
+    }
+    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+        if shooting != Shooting.MULTIPLE:
+            with pytest.raises(
+                RuntimeError, match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE"
+            ):
+                _ = sol.integrate(**opts)
+            return
+
+    sol_integrated = sol.integrate(**opts)
     shapes = (6, 3, 3)
 
+    decimal = 1 if use_scipy or ode_solver == OdeSolver.COLLOCATION else 8
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
-            np.testing.assert_almost_equal(sol_integrated.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]])
-            np.testing.assert_almost_equal(sol_integrated.states[i][key][:, [0, -2]], sol.states[i][key][:, [0, -1]])
+            if not use_scipy or shooting == Shooting.MULTIPLE:
+                np.testing.assert_almost_equal(
+                    sol_integrated.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
+                )
+                np.testing.assert_almost_equal(
+                    sol_integrated.states[i][key][:, [0, -2]], sol.states[i][key][:, [0, -1]], decimal=decimal
+                )
 
-            assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * (5 + 1) + 1)
-            assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
+            if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+                assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * (4 + 1) + 1)
+            else:
+                assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * (5 + 1) + 1)
+
+            if ode_solver == OdeSolver.COLLOCATION:
+                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
+            else:
+                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
 
     with pytest.raises(
         RuntimeError,
@@ -407,46 +554,63 @@ def test_integrate_multiphase_non_continuous(shooting):
         _ = sol_integrated.controls
 
 
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE_CONTINUOUS, Shooting.MULTIPLE, Shooting.SINGLE])
-def test_integrate_multiphase_merged_non_continuous(shooting):
+@pytest.mark.parametrize("use_scipy", [False, True])
+def test_integrate_multiphase_merged_non_continuous(shooting, use_scipy, ode_solver):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
 
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver()
     )
 
     sol = ocp.solve()
 
+    opts = {
+        "shooting_type": shooting,
+        "continuous": False,
+        "keep_intermediate_points": False,
+        "use_scipy_integrator": use_scipy,
+    }
     if shooting == Shooting.MULTIPLE:
         with pytest.raises(
             ValueError,
-            match="Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing",
+            match="Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously since it would do nothing",
         ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
+            _ = sol.integrate(**opts)
     else:
-        with pytest.raises(
-            ValueError,
-            match="continuous=False and keepdims=True cannot be used simultaneously since "
-            "it would necessarily change the dimension",
-        ):
-            _ = sol.integrate(shooting_type=shooting, continuous=False, keepdims=True)
+        if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+            with pytest.raises(
+                RuntimeError,
+                match="Integration with direct collocation must using shooting_type=Shooting.MULTIPLE",
+            ):
+                _ = sol.integrate(**opts)
+            return
 
+    opts["merge_phases"] = True
+    opts["keep_intermediate_points"] = True
     n_shooting = [20, 30, 20]
-    sol_integrated = sol.integrate(shooting_type=shooting, merge_phases=True, continuous=False, keepdims=False)
+    sol_integrated = sol.integrate(**opts)
     shapes = (6, 3, 3)
 
+    decimal = 0 if use_scipy or ode_solver == OdeSolver.COLLOCATION else 8
+    steps = 4 if not use_scipy and ode_solver == OdeSolver.COLLOCATION else 5
     for k, key in enumerate(sol.states[0]):
         expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
-        np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected)
-        np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -2]], expected)
+        if not use_scipy or shooting == Shooting.MULTIPLE:
+            np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected, decimal=decimal)
+            np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -2]], expected, decimal=decimal)
 
-        assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * (5 + 1) + 1)
+        assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * (steps + 1) + 1)
 
     for i in range(len(sol_integrated.states)):
         for k, key in enumerate(sol.states[i]):
-            assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
+            if ode_solver == OdeSolver.COLLOCATION:
+                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
+            else:
+                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
 
     with pytest.raises(
         RuntimeError,

@@ -432,7 +432,7 @@ class COLLOCATION(Integrator):
         self._d = self.cx.zeros(self.degree + 1)
 
         # Choose collocation points
-        time_points = [0] + collocation_points(self.degree, self.method)
+        self.step_time = [0] + collocation_points(self.degree, self.method)
 
         # Dimensionless time inside one control interval
         time_control_interval = self.cx.sym("time_control_interval")
@@ -443,7 +443,7 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - time_points[r]) / (time_points[j] - time_points[r])
+                    _l *= (time_control_interval - self.step_time[r]) / (self.step_time[j] - self.step_time[r])
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
             lfcn = Function("lfcn", [time_control_interval], [_l])
@@ -453,13 +453,13 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - time_points[r]) / (time_points[j] - time_points[r])
+                    _l *= (time_control_interval - self.step_time[r]) / (self.step_time[j] - self.step_time[r])
 
             # Evaluate the time derivative of the polynomial at all collocation points to get
             # the coefficients of the continuity equation
             tfcn = Function("tfcn", [time_control_interval], [tangent(_l, time_control_interval)])
             for r in range(self.degree + 1):
-                self._c[j, r] = tfcn(time_points[r])
+                self._c[j, r] = tfcn(self.step_time[r])
 
         self._finish_init()
 
@@ -482,7 +482,7 @@ class COLLOCATION(Integrator):
         if self.control_type == ControlType.CONSTANT:
             return super(COLLOCATION, self).get_u(u, dt_norm)
         else:
-            raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with IRK")
+            raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
 
     def dxdt(self, h: float, states: Union[MX, SX], controls: Union[MX, SX], params: Union[MX, SX]) -> tuple:
         """
@@ -509,18 +509,17 @@ class COLLOCATION(Integrator):
         defects = []
         for j in range(1, self.degree + 1):
 
-            t_norm_init = (j - 1) / self.degree  # normalized time
             # Expression for the state derivative at the collocation point
             xp_j = 0
             for r in range(self.degree + 1):
                 xp_j += self._c[r, j] * states[r]
 
             # Append collocation equations
-            f_j = self.fun(states[j], self.get_u(controls, t_norm_init), params)[:, self.idx]
+            f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params)[:, self.idx]
             defects.append(h * f_j - xp_j)
 
             # Add contribution to the end state
-            states_end = states_end + self._d[j] * states[j - 1]
+            states_end += self._d[j] * states[j]
 
         # Concatenate constraints
         defects = vertcat(*defects)

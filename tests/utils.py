@@ -5,6 +5,7 @@ from typing import Any
 import pickle
 
 import numpy as np
+import pytest
 
 from casadi import MX
 import biorbd_casadi as biorbd
@@ -84,7 +85,17 @@ class TestUtils:
     @staticmethod
     def simulate(sol, decimal_value=7):
         sol_merged = sol.merge_phases()
-        sol_single = sol.integrate(merge_phases=True, shooting_type=Shooting.SINGLE_CONTINUOUS, keepdims=False)
+        if sum([nlp.ode_solver.is_direct_collocation for nlp in sol.ocp.nlp]):
+            with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
+                sol.integrate(shooting_type=Shooting.SINGLE_CONTINUOUS)
+            return
+
+        sol_single = sol.integrate(
+            merge_phases=True,
+            shooting_type=Shooting.SINGLE_CONTINUOUS,
+            keep_intermediate_points=True,
+            use_scipy_integrator=False,
+        )
 
         # Evaluate the final error of the single shooting integration versus the finale node
         np.testing.assert_almost_equal(

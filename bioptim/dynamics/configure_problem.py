@@ -344,10 +344,7 @@ class ConfigureProblem:
 
             nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
             nlp.plot[f"{name}_states"] = CustomPlot(
-                lambda x, u, p: x[nlp.states[name].index, :],
-                plot_type=PlotType.INTEGRATED,
-                legend=legend,
-                # bounds=nlp.x_bounds[nlp.states[name].index],  # TODO This is empty (this is a bug)
+                lambda x, u, p: x[nlp.states[name].index, :], plot_type=PlotType.INTEGRATED, legend=legend
             )
 
         if as_controls:
@@ -359,7 +356,6 @@ class ConfigureProblem:
                 lambda x, u, p: u[nlp.controls[name].index, :],
                 plot_type=plot_type,
                 legend=legend,
-                # bounds=nlp.u_bounds[nlp.controls[name].index],  # TODO This is empty (this is a bug)
                 combine_to=f"{name}_states" if as_states and combine_plot else None,
             )
 

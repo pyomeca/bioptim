@@ -66,7 +66,7 @@ class IpoptInterface(SolverInterface):
         self.lam_g = None
         self.lam_x = None
 
-    def online_optim(self, ocp):
+    def online_optim(self, ocp, show_options: dict = None):
         """
         Declare the online callback to update the graphs while optimizing
 
@@ -74,10 +74,13 @@ class IpoptInterface(SolverInterface):
         ----------
         ocp: OptimalControlProgram
             A reference to the current OptimalControlProgram
+        show_options: dict
+            The options to pass to PlotOcp
         """
+
         if platform == "win32":
             raise RuntimeError("Online graphics are not available on Windows")
-        self.options_common["iteration_callback"] = OnlineCallback(ocp)
+        self.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
 
     def configure(self, solver_options: dict):
         """
