@@ -252,7 +252,7 @@ class Solution:
         """
 
         self.ocp = Solution.SimplifiedOCP(ocp) if ocp else None
-        self.ns = [nlp.ns for nlp in self.ocp.nlp]
+        self.ns = [nlp.ns * nlp.ode_solver.steps if nlp.ode_solver.is_direct_collocation else nlp.ns for nlp in self.ocp.nlp]
 
         # Current internal state of the data
         self.is_interpolated = False
@@ -668,8 +668,18 @@ class Solution:
         out = self.copy(skip_data=True)
 
         t_all = []
+        last_t_int = 0
         for p, data in enumerate(self._states):
-            t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), data["all"].shape[1]))
+            nlp = self.ocp.nlp[p]
+            if nlp.ode_solver.is_direct_collocation:  # and not self.use_scipy_integrator:
+                t_tp = []
+                dt = (out.phase_time[p + 1] - out.phase_time[p]) / nlp.ns
+                for _ in range(nlp.ns):
+                    t_tp.extend(np.array(nlp.dynamics[0].step_time) * dt + last_t_int)
+                    last_t_int = t_tp[-1]
+                t_all.append(t_tp)
+            else:
+                t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), out.ns[p] + 1))
 
         if isinstance(n_frames, int):
             data_states, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
