@@ -260,7 +260,9 @@ class IpoptInterface(SolverInterface):
                     x_tp, u_tp = get_x_and_u_at_idx(penalty, idx)
                     x = horzcat(x, x_tp)
                     u = horzcat(u, u_tp)
-                if (penalty.derivative or penalty.explicit_derivative or penalty.node[0] == Node.ALL) and nlp.control_type == ControlType.CONSTANT:
+                if (
+                    penalty.derivative or penalty.explicit_derivative or penalty.node[0] == Node.ALL
+                ) and nlp.control_type == ControlType.CONSTANT:
                     u = horzcat(u, u[:, -1])
 
                 p = reshape(penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt), -1, 1)

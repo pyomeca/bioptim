@@ -107,12 +107,14 @@ def test_interpolate_multiphases(ode_solver):
 
     decimal = 2 if ode_solver == OdeSolver.COLLOCATION else 8
     for i, key in enumerate(sol.states[0]):
-        np.testing.assert_almost_equal(sol_interp.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal)
+        np.testing.assert_almost_equal(
+            sol_interp.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
+        )
         assert sol_interp.states[i][key].shape == (shapes[i], n_frames)
         if ode_solver == OdeSolver.COLLOCATION:
             assert sol.states[i][key].shape == (shapes[i], n_shooting[i] * 5 + 1)
         else:
-            assert sol.states[i][key].shape == (shapes[i], n_shooting[i]+ 1)
+            assert sol.states[i][key].shape == (shapes[i], n_shooting[i] + 1)
 
     with pytest.raises(
         RuntimeError,
