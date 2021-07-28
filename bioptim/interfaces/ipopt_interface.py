@@ -2,12 +2,12 @@ from time import time
 from sys import platform
 
 import numpy as np
-from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
+from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, MX_nan, reshape
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
-from ..misc.enums import InterpolationType, ControlType
+from ..misc.enums import InterpolationType, ControlType, Node
 from ..optimization.solution import Solution
 
 
@@ -260,8 +260,9 @@ class IpoptInterface(SolverInterface):
                     x_tp, u_tp = get_x_and_u_at_idx(penalty, idx)
                     x = horzcat(x, x_tp)
                     u = horzcat(u, u_tp)
-                if (penalty.derivative or penalty.explicit_derivative) and nlp.control_type == ControlType.CONSTANT:
-                    u = horzcat(u, u[:, -1])
+                if (penalty.derivative or penalty.explicit_derivative or penalty.node[0] == Node.ALL) and nlp.control_type == ControlType.CONSTANT:
+                    u = horzcat(u, MX_nan(u.shape[0], 1))
+
                 p = reshape(penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt), -1, 1)
 
             else:
