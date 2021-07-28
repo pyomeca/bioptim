@@ -97,7 +97,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
 
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_save_and_load.py")

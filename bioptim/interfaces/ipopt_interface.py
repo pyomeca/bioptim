@@ -2,7 +2,7 @@ from time import time
 from sys import platform
 
 import numpy as np
-from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, MX_nan, reshape
+from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
@@ -261,7 +261,7 @@ class IpoptInterface(SolverInterface):
                     x = horzcat(x, x_tp)
                     u = horzcat(u, u_tp)
                 if (penalty.derivative or penalty.explicit_derivative or penalty.node[0] == Node.ALL) and nlp.control_type == ControlType.CONSTANT:
-                    u = horzcat(u, MX_nan(u.shape[0], 1))
+                    u = horzcat(u, u[:, -1])
 
                 p = reshape(penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt), -1, 1)
 
