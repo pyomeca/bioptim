@@ -89,13 +89,14 @@ def test_interpolate():
         sol.interpolate([n_frames, n_frames])
 
 
-def test_interpolate_multiphases():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
+def test_interpolate_multiphases(ode_solver):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     cube = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
 
     ocp = cube.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver()
     )
 
     sol = ocp.solve()
@@ -103,10 +104,15 @@ def test_interpolate_multiphases():
     n_shooting = [20, 30, 20]
     sol_interp = sol.interpolate([n_frames, n_frames, n_frames])
     shapes = (6, 3, 3)
+
+    decimal = 2 if ode_solver == OdeSolver.COLLOCATION else 8
     for i, key in enumerate(sol.states[0]):
-        np.testing.assert_almost_equal(sol_interp.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]])
+        np.testing.assert_almost_equal(sol_interp.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal)
         assert sol_interp.states[i][key].shape == (shapes[i], n_frames)
-        assert sol.states[i][key].shape == (shapes[i], n_shooting[i] + 1)
+        if ode_solver == OdeSolver.COLLOCATION:
+            assert sol.states[i][key].shape == (shapes[i], n_shooting[i] * 5 + 1)
+        else:
+            assert sol.states[i][key].shape == (shapes[i], n_shooting[i]+ 1)
 
     with pytest.raises(
         RuntimeError,
