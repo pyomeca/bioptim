@@ -54,14 +54,11 @@ def prepare_ocp(
     with_residual_torque: bool
         True if we use residual torque
     fatigue: list
-        A list of fatigue elements
+        The type of fatigue applied on the system
     Returns
     -------
     The OptimalControlProgram ready to be solved
     """
-
-    if fatigue is None:
-        fatigue = []
 
     biorbd_model = biorbd.Model(biorbd_model_path)
 
