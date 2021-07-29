@@ -191,7 +191,7 @@ class ConfigureProblem:
     def muscle_driven(
         ocp,
         nlp,
-        fatigue: list = [],  # TODO Do not use mutable as Default
+        fatigue: list = None,
         with_excitations: bool = False,
         with_residual_torque: bool = False,
         with_contact: bool = False,
@@ -218,6 +218,9 @@ class ConfigureProblem:
         with_contact: bool
             If the dynamic with contact should be used
         """
+
+        if fatigue is None:
+            fatigue = []
 
         if Fatigue.TAU in fatigue or Fatigue.TAU_STATE_ONLY in fatigue:
             if not with_residual_torque:
