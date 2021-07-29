@@ -97,7 +97,7 @@ def test_pendulum(ode_solver, use_sx, n_threads):
 
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_save_and_load.py")
@@ -158,8 +158,8 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
     else:
         ocp = pendulum.prepare_ocp(
             biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-            final_time=2,
-            n_shooting=10,
+            final_time=3,
+            n_shooting=20,
             n_threads=n_threads,
             use_sx=use_sx,
             ode_solver=ode_solver,
@@ -167,17 +167,24 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
         sol = ocp.solve()
 
         # Check objective function value
+        is_collocation = isinstance(ode_solver, OdeSolver.COLLOCATION) and not isinstance(ode_solver, OdeSolver.IRK)
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         if isinstance(ode_solver, OdeSolver.RK8):
-            np.testing.assert_almost_equal(f[0, 0], 6654.69715318338)
+            np.testing.assert_almost_equal(f[0, 0], 25.112329110399067)
+        elif is_collocation:
+            np.testing.assert_almost_equal(f[0, 0], 25.385276822713028)
         else:
-            np.testing.assert_almost_equal(f[0, 0], 6657.974502951726)
+            np.testing.assert_almost_equal(f[0, 0], 25.112616259944502)
 
         # Check constraints
         g = np.array(sol.constraints)
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+        if is_collocation:
+            np.testing.assert_equal(g.shape, (400, 1))
+            np.testing.assert_almost_equal(g, np.zeros((400, 1)))
+        else:
+            np.testing.assert_equal(g.shape, (80, 1))
+            np.testing.assert_almost_equal(g, np.zeros((80, 1)))
 
         # Check some of the results
         q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -192,11 +199,14 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
 
         # initial and final controls
         if isinstance(ode_solver, OdeSolver.RK8):
-            np.testing.assert_almost_equal(tau[:, 0], np.array((16.2560473, 0)))
-            np.testing.assert_almost_equal(tau[:, -2], np.array((-25.5991168, 0)))
+            np.testing.assert_almost_equal(tau[:, 0], np.array((9.1224216, 0)))
+            np.testing.assert_almost_equal(tau[:, -2], np.array((-6.5728715, 0)))
+        elif is_collocation:
+            np.testing.assert_almost_equal(tau[:, 0], np.array((9.1064486, 0)))
+            np.testing.assert_almost_equal(tau[:, -2], np.array((-6.568512, 0)))
         else:
-            np.testing.assert_almost_equal(tau[:, 0], np.array((16.25734477, 0)))
-            np.testing.assert_almost_equal(tau[:, -2], np.array((-25.59944635, 0)))
+            np.testing.assert_almost_equal(tau[:, 0], np.array((9.1224768, 0)))
+            np.testing.assert_almost_equal(tau[:, -2], np.array((-6.5728942, 0)))
 
         # save and load
         TestUtils.save_and_load(sol, ocp, True)
