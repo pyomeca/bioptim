@@ -1,7 +1,7 @@
 from typing import Union
 
 import numpy as np
-from casadi import MX, SX, vertcat
+from casadi import MX, SX, vertcat, horzcat
 
 from ..misc.mapping import BiMapping
 
@@ -123,6 +123,7 @@ class OptimizationVariableList:
         self.fake_elements: list = []
         self._cx: Union[MX, SX, np.ndarray] = np.array([])
         self._cx_end: Union[MX, SX, np.ndarray] = np.array([])
+        self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
 
     def __getitem__(self, item: Union[int, str]):
@@ -199,11 +200,14 @@ class OptimizationVariableList:
             The Mapping of the MX against CX
         """
 
-        if len(cx) != 2:
-            raise NotImplementedError("Appending optimization_variable without cx.shape = [n, 2] is not implemented")
         index = range(self._cx.shape[0], self._cx.shape[0] + cx[0].shape[0])
         self._cx = vertcat(self._cx, cx[0])
-        self._cx_end = vertcat(self._cx_end, cx[1])
+        self._cx_end = vertcat(self._cx_end, cx[-1])
+        for i, c in enumerate(cx[1:-1]):
+            if i >= len(self._cx_intermediates):
+                self._cx_intermediates.append(c)
+            else:
+                self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
         self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape))
 
         self.elements.append(OptimizationVariable(name, mx, index, bimapping, self))
@@ -223,6 +227,14 @@ class OptimizationVariableList:
         """
 
         return self._cx_end[:, 0]
+
+    @property
+    def cx_intermediates_list(self):
+        """
+        The the cx of all elements together (starting point)
+        """
+
+        return self._cx_intermediates
 
     @property
     def mx(self):

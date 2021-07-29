@@ -434,7 +434,7 @@ class Bounds(OptionGeneric):
         The bound sliced
         """
         if isinstance(slice_list, range):
-            slice_list = slice(slice_list[0], slice_list[-1])
+            slice_list = slice(slice_list[0], slice_list[-1] + 1)
 
         if isinstance(slice_list, slice):
             t = self.min.t
@@ -444,8 +444,8 @@ class Bounds(OptionGeneric):
                 min_bound = self.min.custom_function
                 max_bound = self.max.custom_function
             else:
-                min_bound = np.array(self.min[slice_list.start : slice_list.stop : slice_list.step])
-                max_bound = np.array(self.max[slice_list.start : slice_list.stop : slice_list.step])
+                min_bound = np.array(self.min[slice_list.start : slice_list.stop : slice_list.step, :])
+                max_bound = np.array(self.max[slice_list.start : slice_list.stop : slice_list.step, :])
             bounds_sliced = Bounds(
                 min_bound=min_bound,
                 max_bound=max_bound,

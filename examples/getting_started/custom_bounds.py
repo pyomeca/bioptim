@@ -253,7 +253,7 @@ def main():
         print("\n")
 
         # Print the last solution
-        sol.graphs(adapt_graph_size_to_bounds=True)
+        sol.graphs(show_bounds=True)
 
     for interpolation_type in InterpolationType:
         print(f"Solving problem using {interpolation_type} bounds")
@@ -262,7 +262,7 @@ def main():
         print("\n")
 
         # Print the last solution
-        sol.graphs(adapt_graph_size_to_bounds=False)
+        sol.graphs(show_bounds=False)
 
 
 if __name__ == "__main__":

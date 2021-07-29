@@ -269,7 +269,7 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
     ode_solver = ode_solver()
     if isinstance(ode_solver, OdeSolver.IRK):
         with pytest.raises(
-            NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with IRK"
+            NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"
         ):
             prepare_ocp(
                 biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/cube_and_line.bioMod",

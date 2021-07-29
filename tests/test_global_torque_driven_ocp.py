@@ -36,7 +36,7 @@ def test_track_markers(ode_solver, actuator_type):
     if not actuator_type:
         np.testing.assert_equal(g.shape, (186, 1))
     else:
-        np.testing.assert_equal(g.shape, (372, 1))
+        np.testing.assert_equal(g.shape, (366, 1))
     np.testing.assert_almost_equal(g[:186], np.zeros((186, 1)))
 
     # Check some of the results

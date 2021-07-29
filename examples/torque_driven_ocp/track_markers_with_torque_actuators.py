@@ -70,9 +70,9 @@ def prepare_ocp(
     dynamics = DynamicsList()
     if actuator_type:
         if actuator_type == 1:
-            dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, expand=False)
+            dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN)
         elif actuator_type == 2:
-            dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=False)
+            dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
         else:
             raise ValueError("actuator_type is 1 (torque activations) or 2 (torque max constraints)")
     else:
@@ -84,7 +84,7 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
     if actuator_type == 2:
-        constraints.add(ConstraintFcn.TORQUE_MAX_FROM_Q_AND_QDOT, node=Node.ALL, min_torque=7.5)
+        constraints.add(ConstraintFcn.TORQUE_MAX_FROM_Q_AND_QDOT, node=Node.ALL_SHOOTING, min_torque=7.5)
 
     # Path constraint
     x_bounds = BoundsList()
