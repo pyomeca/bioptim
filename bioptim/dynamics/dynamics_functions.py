@@ -298,7 +298,7 @@ class DynamicsFunctions:
         nlp,
         with_contact: bool,
         with_residual_torque: bool,
-        fatigue: list = [],  # TODO Do not use mutable as default
+        fatigue: list = None,
     ) -> MX:
         """
         Forward dynamics driven by muscle.
@@ -325,6 +325,9 @@ class DynamicsFunctions:
         MX.sym
             The derivative of the states
         """
+
+        if fatigue is None:
+            fatigue = []
 
         if Fatigue.TAU in fatigue and Fatigue.TAU_STATE_ONLY in fatigue:
             raise RuntimeError("fatigue can not be set with both Fatigue.TAU and Fatigue.TAU_STATE_ONLY")
