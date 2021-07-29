@@ -30,6 +30,7 @@ from bioptim import (
     Axis,
 )
 
+
 def prepare_ocp_static_arm(
     biorbd_model_path: str,
     final_time: float,
@@ -90,9 +91,7 @@ def prepare_ocp_static_arm(
 
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, 0] = (0.07, 1.4, 0, 0)
-    x_bounds.concatenate(
-        XiaFatigueStateBounds(biorbd_model, has_muscles=True, has_torque=False)
-    )
+    x_bounds.concatenate(XiaFatigueStateBounds(biorbd_model, has_muscles=True, has_torque=False))
 
     x_init = InitialGuess([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
     x_init.concatenate(
@@ -136,7 +135,13 @@ def prepare_ocp_static_arm(
         n_threads=8,
     )
 
-def prepare_ocp_pendulum(biorbd_model_path: str, final_time: float, n_shooting: int, fatigue: list = None,) -> OptimalControlProgram:
+
+def prepare_ocp_pendulum(
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    fatigue: list = None,
+) -> OptimalControlProgram:
     """
     The initialization of an ocp
 
@@ -168,9 +173,7 @@ def prepare_ocp_pendulum(biorbd_model_path: str, final_time: float, n_shooting: 
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
-    x_bounds.concatenate(
-        XiaFatigueStateBounds(biorbd_model, has_muscles=False, has_torque=True)
-    )
+    x_bounds.concatenate(XiaFatigueStateBounds(biorbd_model, has_muscles=False, has_torque=True))
 
     # Initial guess
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -218,6 +221,7 @@ def prepare_ocp_pendulum(biorbd_model_path: str, final_time: float, n_shooting: 
         fatigue_dynamics=fatigue_dynamics,
     )
 
+
 def test_fatigable_muscles():
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/fatigue/arm26_constant.bioMod"
@@ -226,7 +230,9 @@ def test_fatigable_muscles():
         final_time=3,
         n_shooting=50,
         with_residual_torque=False,
-        fatigue=[Fatigue.MUSCLES_STATE_ONLY])
+        fatigue=[Fatigue.MUSCLES_STATE_ONLY],
+    )
+
 
 def test_fatigable_torque():
     bioptim_folder = TestUtils.bioptim_folder()

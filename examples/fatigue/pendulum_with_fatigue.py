@@ -27,12 +27,16 @@ from bioptim import (
     XiaFatigueControlsBounds,
     XiaFatigueControlsInitialGuess,
     XiaFatigueDynamicsList,
-    XiaTorqueFatigue
-
+    XiaTorqueFatigue,
 )
 
 
-def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int, fatigue: list = None,) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    fatigue: list = None,
+) -> OptimalControlProgram:
     """
     The initialization of an ocp
 
@@ -64,9 +68,7 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int, fati
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
-    x_bounds.concatenate(
-        XiaFatigueStateBounds(biorbd_model, has_muscles=False, has_torque=True)
-    )
+    x_bounds.concatenate(XiaFatigueStateBounds(biorbd_model, has_muscles=False, has_torque=True))
 
     # Initial guess
     tau_min, tau_max, tau_init = -100, 100, 0
@@ -121,7 +123,9 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, fatigue=[Fatigue.TAU_STATE_ONLY])
+    ocp = prepare_ocp(
+        biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, fatigue=[Fatigue.TAU_STATE_ONLY]
+    )
 
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=True)

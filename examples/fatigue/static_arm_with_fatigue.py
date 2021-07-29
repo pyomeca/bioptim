@@ -91,9 +91,7 @@ def prepare_ocp(
 
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, 0] = (0.07, 1.4, 0, 0)
-    x_bounds.concatenate(
-        XiaFatigueStateBounds(biorbd_model, has_muscles=True, has_torque=False)
-    )
+    x_bounds.concatenate(XiaFatigueStateBounds(biorbd_model, has_muscles=True, has_torque=False))
 
     x_init = InitialGuess([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
     x_init.concatenate(
@@ -148,7 +146,7 @@ def main():
         final_time=3,
         n_shooting=50,
         with_residual_torque=False,
-        fatigue=[Fatigue.MUSCLES_STATE_ONLY]
+        fatigue=[Fatigue.MUSCLES_STATE_ONLY],
     )
 
     # --- Solve the program --- #
