@@ -297,7 +297,7 @@ class DynamicsFunctions:
         parameters: MX.sym,
         nlp,
         with_contact: bool,
-        with_residual_torque: bool,
+        with_residual_torque: bool = False,
         fatigue: list = None,
     ) -> MX:
         """
