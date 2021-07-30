@@ -584,7 +584,7 @@ class PlotOcp:
         ).states
         data_controls = sol.controls
         data_params = sol.parameters
-        data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "time"]).squeeze()
+        data_params_in_dyn = np.array([data_params[key] for key in data_params if (key != "time" and key != "all")]).squeeze()
 
         for i, nlp in enumerate(self.ocp.nlp):
             if self.t_idx_to_optimize:
