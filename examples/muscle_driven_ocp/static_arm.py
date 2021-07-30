@@ -25,7 +25,7 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     weight: float,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -104,7 +104,7 @@ def main():
     Prepare and solve and animate a reaching task ocp
     """
 
-    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=3, n_shooting=50, weight=1000)
+    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=0.5, n_shooting=50, weight=1000)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
