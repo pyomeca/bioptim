@@ -59,11 +59,6 @@ def generate_data(
     n_mus = biorbd_model.nbMuscleTotal()
     dt = final_time / n_shooting
 
-    if use_residual_torque:
-        nu = n_tau + n_mus
-    else:
-        nu = n_mus
-
     nlp = NonLinearProgram()
     nlp.model = biorbd_model
     nlp.variable_mappings = {
@@ -136,7 +131,7 @@ def prepare_ocp(
     q_ref: np.ndarray,
     kin_data_to_track: str = "markers",
     use_residual_torque: bool = True,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp to solve
@@ -234,8 +229,8 @@ def main():
 
     # Define the problem
     biorbd_model = biorbd.Model("arm26.bioMod")
-    final_time = 2
-    n_shooting_points = 29
+    final_time = 0.5
+    n_shooting_points = 50
     use_residual_torque = True
 
     # Generate random data to fit
@@ -260,15 +255,7 @@ def main():
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show the results --- #
-    muscle_activations_ref = np.append(muscle_activations_ref, muscle_activations_ref[-1:, :], axis=0)
-
     q = sol.states["q"]
-    qdot = sol.states["qdot"]
-    mus = sol.controls["muscles"]
-
-    if use_residual_torque:
-        tau = sol.controls["tau"]
-
     n_q = ocp.nlp[0].model.nbQ()
     n_mark = ocp.nlp[0].model.nbMarkers()
     n_frames = q.shape[1]
@@ -281,9 +268,10 @@ def main():
         markers[:, :, i] = markers_func(q[:, i])
 
     plt.figure("Markers")
+    n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
     for i in range(markers.shape[1]):
-        plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
-        plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers[:, i, :].T, "r--")
+        plt.plot(np.linspace(0, final_time, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
+        plt.plot(np.linspace(0, final_time, n_shooting_points * n_steps_ode + 1), markers[:, i, :].T, "r--")
 
     # --- Plot --- #
     plt.show()
