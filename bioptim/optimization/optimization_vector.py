@@ -340,7 +340,11 @@ class OptimizationVector:
 
         # Sanity check
         for i in range(ocp.n_phases):
-            ns = ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1) if ocp.nlp[i].ode_solver.is_direct_collocation else ocp.nlp[i].ns
+            ns = (
+                ocp.nlp[i].ns * (ocp.nlp[i].ode_solver.steps + 1)
+                if ocp.nlp[i].ode_solver.is_direct_collocation
+                else ocp.nlp[i].ns
+            )
             ocp.nlp[i].x_init.check_and_adjust_dimensions(ocp.nlp[i].states.shape, ns)
             if ocp.nlp[i].control_type == ControlType.CONSTANT:
                 ocp.nlp[i].u_init.check_and_adjust_dimensions(ocp.nlp[i].controls.shape, ocp.nlp[i].ns - 1)
