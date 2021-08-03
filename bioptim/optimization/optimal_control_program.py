@@ -653,7 +653,7 @@ class OptimalControlProgram:
                     continue
 
                 dt = (
-                    Function("time", [nlp.parameters.cx], [objective.dt])(nlp.parameters["time"])
+                    Function("time", [nlp.parameters.cx], [objective.dt])(nlp.parameters[nlp.parameters.names.index('time')].dt)
                     if "time" in nlp.parameters
                     else objective.dt
                 )
