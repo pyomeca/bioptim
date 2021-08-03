@@ -315,7 +315,8 @@ class PlotOcp:
         def legend_without_duplicate_labels(ax):
             handles, labels = ax.get_legend_handles_labels()
             unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
-            ax.legend(*zip(*unique))
+            if unique:
+                ax.legend(*zip(*unique))
 
         variable_sizes = []
         for i, nlp in enumerate(self.ocp.nlp):
@@ -393,14 +394,13 @@ class PlotOcp:
                         y_range, _ = self.__compute_ylim(y_min, y_max, 1.25)
                         ax.set_ylim(y_range)
                     plot_type = self.plot_func[variable][i].type
-                    if plot_type == PlotType.POINT:
-                        t = self.t[i][nlp.plot[variable].node_idx]
-                    else:
-                        t = self.t[i]
+
+                    t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
                     if self.plot_func[variable][i].label:
                         label = self.plot_func[variable][i].label
                     else:
-                        label = '_'
+                        label = None
+
                     if plot_type == PlotType.PLOT:
                         zero = np.zeros((t.shape[0], 1))
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:green"
@@ -453,7 +453,7 @@ class PlotOcp:
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
 
-                legend_without_duplicate_labels(ax)
+                    legend_without_duplicate_labels(ax)
 
                 for j, ax in enumerate(axes):
                     intersections_time = self.find_phases_intersections()
