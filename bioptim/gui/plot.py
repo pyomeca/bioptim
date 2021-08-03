@@ -312,6 +312,7 @@ class PlotOcp:
         """
         Setup the plots
         """
+
         def legend_without_duplicate_labels(ax):
             handles, labels = ax.get_legend_handles_labels()
             unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
@@ -409,8 +410,14 @@ class PlotOcp:
                             [
                                 plot_type,
                                 i,
-                                ax.plot(t, zero, color=color, zorder=0, label=label,
-                                        **self.plot_options["non_integrated_plots"])[0],
+                                ax.plot(
+                                    t,
+                                    zero,
+                                    color=color,
+                                    zorder=0,
+                                    label=label,
+                                    **self.plot_options["non_integrated_plots"],
+                                )[0],
                             ]
                         )
                     elif plot_type == PlotType.INTEGRATED:
@@ -436,9 +443,11 @@ class PlotOcp:
                             self.plot_func[variable][i].linestyle if self.plot_func[variable][i].linestyle else "-"
                         )
                         self.plots.append(
-                            [plot_type, i,
-                             ax.step(t, zero, linestyle, where="post", color=color, zorder=0,
-                                     label=label)[0]]
+                            [
+                                plot_type,
+                                i,
+                                ax.step(t, zero, linestyle, where="post", color=color, zorder=0, label=label)[0],
+                            ]
                         )
                     elif plot_type == PlotType.POINT:
                         zero = np.zeros((t.shape[0], 1))
@@ -447,8 +456,9 @@ class PlotOcp:
                             [
                                 plot_type,
                                 i,
-                                ax.plot(t, zero, color=color, zorder=0, label=label,
-                                        **self.plot_options["point_plots"])[0],
+                                ax.plot(
+                                    t, zero, color=color, zorder=0, label=label, **self.plot_options["point_plots"]
+                                )[0],
                             ]
                         )
                     else:
@@ -632,7 +642,8 @@ class PlotOcp:
                         )
                         if val.shape != y_tp.shape:
                             raise RuntimeError(
-                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}")
+                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}"
+                            )
                         y_tp[:, :] = val
                         all_y.append(y_tp)
 
@@ -647,11 +658,16 @@ class PlotOcp:
                         y = np.empty((self.variable_sizes[i][key], 1))
                         y.fill(np.nan)
                         val = self.plot_func[key][i].function(
-                            node_idx, state[:, node_idx], control[:, node_idx], data_params_in_dyn, **self.plot_func[key][i].parameters
+                            node_idx,
+                            state[:, node_idx],
+                            control[:, node_idx],
+                            data_params_in_dyn,
+                            **self.plot_func[key][i].parameters,
                         )
                         if val.shape != y.shape:
                             raise RuntimeError(
-                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}")
+                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}"
+                            )
                         y[:, :] = val
                         self.__append_to_ydata(y)
 

@@ -287,7 +287,10 @@ class ConfigureProblem:
             phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
 
         nlp.plot["contact_forces"] = CustomPlot(
-            lambda t, x, u, p: nlp.contact_forces_func(x, u, p), plot_type=PlotType.INTEGRATED, axes_idx=phase_mappings, legend=all_contact_names
+            lambda t, x, u, p: nlp.contact_forces_func(x, u, p),
+            plot_type=PlotType.INTEGRATED,
+            axes_idx=phase_mappings,
+            legend=all_contact_names,
         )
 
     @staticmethod

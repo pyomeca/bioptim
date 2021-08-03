@@ -655,7 +655,15 @@ class OptimalControlProgram:
                     else objective.dt
                 )
 
-                plot_params = {"fig_name": "Objectives", "update_function": get_plotting_penalty_values, "phase": i_phase, "objective": objective, "dt": dt, "color": color[objective.name], "label": objective.name}
+                plot_params = {
+                    "fig_name": "Objectives",
+                    "update_function": get_plotting_penalty_values,
+                    "phase": i_phase,
+                    "objective": objective,
+                    "dt": dt,
+                    "color": color[objective.name],
+                    "label": objective.name,
+                }
                 if objective.type in ObjectiveFcn.Mayer:
                     plot_params["plot_type"] = PlotType.POINT
                     plot_params["node_idx"] = objective.node_idx
