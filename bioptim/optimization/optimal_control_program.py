@@ -4,9 +4,11 @@ import pickle
 from copy import deepcopy
 from math import inf
 
+import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX
+from casadi import MX, SX, Function, sum1
+from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
@@ -25,7 +27,7 @@ from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
-from ..misc.enums import ControlType, Solver, Shooting
+from ..misc.enums import ControlType, Solver, Shooting, PlotType
 from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
@@ -618,6 +620,49 @@ class OptimalControlProgram:
             plot_name = fig_name
 
         nlp.plot[plot_name] = custom_plot
+
+    def add_plot_objectives(self):
+        def penalty_plot_color():
+            name_unique_objective = []
+            for nlp in self.nlp:
+                for j in nlp.J:
+                    if j is None:
+                        continue
+                    name_unique_objective.append(j.name)
+            color = {}
+            for i, name in enumerate(name_unique_objective):
+                color[name] = plt.cm.viridis(i / len(name_unique_objective))
+            return color
+
+        def get_plotting_penalty_values(t, x, u, p, objective, dt):
+            _target = objective.target[:, t] if objective.target is not None else []
+            return sum1(objective.weighted_function(x, u, p, objective.weight, _target, dt))
+
+        color = penalty_plot_color()
+
+        cmp = 0
+        for i_phase, nlp in enumerate(self.nlp):
+            for objective in nlp.J:
+                if objective is None:
+                    continue
+
+                dt = (
+                    Function("time", [nlp.parameters.cx], [objective.dt])(nlp.parameters["time"])
+                    if "time" in nlp.parameters
+                    else objective.dt
+                )
+
+                plot_params = {"fig_name": "Objectives", "update_function": get_plotting_penalty_values, "phase": i_phase, "objective": objective, "dt": dt, "color": color[objective.name], "label": objective.name}
+                if objective.type in ObjectiveFcn.Mayer:
+                    plot_params["plot_type"] = PlotType.POINT
+                    plot_params["node_idx"] = objective.node_idx
+                else:
+                    plot_params["plot_type"] = PlotType.INTEGRATED
+                self.add_plot(**plot_params)
+
+                cmp += 1
+
+        return
 
     def prepare_plots(
         self,

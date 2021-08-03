@@ -29,6 +29,7 @@ def test_plot_graphs_one_phase():
         n_shooting=30,
         final_time=2,
     )
+    ocp.add_plot_objectives()
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -41,14 +42,14 @@ def test_plot_merged_graphs():
     # Define the problem
     model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
-    final_time = 0.5
-    n_shooting = 9
+    final_time = 0.1
+    n_shooting = 5
 
     # Generate random data to fit
     np.random.seed(42)
     t, markers_ref, x_ref, muscle_excitations_ref = merged_graphs.generate_data(biorbd_model, final_time, n_shooting)
 
-    biorbd_model = biorbd.Model(model_path)  # To prevent from non free variable, the model must be reloaded
+    biorbd_model = biorbd.Model(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = merged_graphs.prepare_ocp(
         biorbd_model,
         final_time,
@@ -59,6 +60,7 @@ def test_plot_merged_graphs():
         use_residual_torque=True,
         kin_data_to_track="markers",
     )
+    ocp.add_plot_objectives()
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -68,6 +70,7 @@ def test_plot_graphs_multi_phases():
     bioptim_folder = TestUtils.bioptim_folder()
     graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
     ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod")
+    ocp.add_plot_objectives()
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -90,24 +93,28 @@ def test_add_new_plot():
     ocp.save(sol, save_name)
 
     # Test 1 - Working plot
-    ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 2 - Combine using combine_to is not allowed
     ocp, sol = OptimalControlProgram.load(save_name)
     with pytest.raises(RuntimeError):
-        ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :], combine_to="NotAllowed")
+        ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :], combine_to="NotAllowed")
 
     # Test 3 - Create a completely new plot
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
-    ocp.add_plot("My Second New Plot", lambda x, p, u: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
+    ocp.add_plot("My Second New Plot", lambda t, x, p, u: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 4 - Combine to the first using fig_name
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
-    ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
+    sol.graphs(automatically_organize=False)
+
+    # Add the plot of objective to this mess
+    ocp.add_plot_objectives()
     sol.graphs(automatically_organize=False)
 
     # Delete the saved file

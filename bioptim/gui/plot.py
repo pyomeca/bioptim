@@ -7,7 +7,7 @@ from itertools import accumulate
 import numpy as np
 from matplotlib import pyplot as plt, lines
 from matplotlib.ticker import StrMethodFormatter
-from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM, sum2
 
 from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting
@@ -220,7 +220,7 @@ class PlotOcp:
             "general_options": {"use_tight_layout": False},
             "non_integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
             "integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
-            "point_plots": {"linestyle": None, "marker": ".", "markersize": 5},
+            "point_plots": {"linestyle": None, "marker": ".", "markersize": 15},
             "bounds": {"color": "k", "linewidth": 0.4, "linestyle": "-"},
             "grid": {"color": "k", "linestyle": "-", "linewidth": 0.15},
             "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
@@ -329,6 +329,7 @@ class PlotOcp:
                         size = (
                             nlp.plot[key]
                             .function(
+                                np.nan,
                                 np.zeros((nlp.states.shape, 1)),
                                 np.zeros((nlp.controls.shape, 1)),
                                 np.zeros((len(nlp.parameters), 1)),
@@ -621,12 +622,18 @@ class PlotOcp:
                     for idx, t in enumerate(self.t_integrated[i]):
                         y_tp = np.empty((self.variable_sizes[i][key], len(t)))
                         y_tp.fill(np.nan)
-                        y_tp[:, :] = self.plot_func[key][i].function(
+
+                        val = self.plot_func[key][i].function(
+                            idx,
                             state[:, step_size * idx : step_size * (idx + 1)],
                             control[:, idx : idx + u_mod2],
                             data_params_in_dyn,
                             **self.plot_func[key][i].parameters,
                         )
+                        if val.shape != y_tp.shape:
+                            raise RuntimeError(
+                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}")
+                        y_tp[:, :] = val
                         all_y.append(y_tp)
 
                     for idx in range(len(self.plot_func[key][i].phase_mappings.map_idx)):
@@ -634,26 +641,31 @@ class PlotOcp:
                         for y in all_y:
                             y_tp.append(y[idx, :])
                         self.__append_to_ydata([y_tp])
+
+                elif self.plot_func[key][i].type == PlotType.POINT:
+                    for node_idx in self.plot_func[key][i].node_idx:
+                        y = np.empty((self.variable_sizes[i][key], 1))
+                        y.fill(np.nan)
+                        val = sum2(self.plot_func[key][i].function(
+                            node_idx, state[:, node_idx], control[:, node_idx], data_params_in_dyn, **self.plot_func[key][i].parameters
+                        ))
+                        if val.shape != y.shape:
+                            raise RuntimeError(
+                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}")
+                        y[:, :] = val
+                        self.__append_to_ydata(y)
+
                 else:
-                    if self.plot_func[key][i].type == PlotType.POINT:
-                        y = np.empty((self.variable_sizes[i][key], len(self.plot_func[key][i].node_idx)))
-                    else:
-                        y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
+                    y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
-                    try:
-                        y[:, :] = self.plot_func[key][i].function(
-                            state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
-                        )
-                    except ValueError:
-                        val = (
-                            self.plot_func[key][i]
-                                .function(
-                                state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
-                            )
-                                .shape
-                        )
-                        raise ValueError(f"Wrong dimensions for plot {key}. Got " f"{val}" f", but expected {y.shape}")
+                    val = self.plot_func[key][i].function(
+                        i, state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                    )
+                    if val.shape != y.shape:
+                        raise RuntimeError(f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}")
+                    y[:, :] = val
                     self.__append_to_ydata(y)
+
         self.__update_axes()
 
     def __update_xdata(self, key=None):

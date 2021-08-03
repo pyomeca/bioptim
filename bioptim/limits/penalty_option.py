@@ -383,7 +383,7 @@ class PenaltyOption(OptionGeneric):
         if self.target_to_plot is not None:
             all_pn.ocp.add_plot(
                 self.target_plot_name,
-                lambda x, u, p: self.target_to_plot,
+                lambda t, x, u, p: self.target_to_plot,
                 color="tab:red",
                 linestyle=".-",
                 plot_type=PlotType.STEP,

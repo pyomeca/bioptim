@@ -108,7 +108,7 @@ def generate_data(
 
     def dyn_interface(t, x, u):
         u = np.concatenate([np.zeros(n_tau), u])
-        return np.array(dynamics_func(x, u, np.empty((0, 0)))).squeeze()
+        return np.array(dynamics_func(x, u, [])).squeeze()
 
     # Generate some muscle excitations
     U = np.random.rand(n_shooting, n_mus).T

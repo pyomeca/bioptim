@@ -93,13 +93,13 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50)
 
     # Add my lovely new plot
-    ocp.add_plot("My New Extra Plot", lambda x, u, p: custom_plot_callback(x, [0, 1, 3]), plot_type=PlotType.PLOT)
+    ocp.add_plot("My New Extra Plot", lambda t, x, u, p: custom_plot_callback(x, [0, 1, 3]), plot_type=PlotType.PLOT)
     ocp.add_plot(
-        "My New Extra Plot", lambda x, u, p: custom_plot_callback(x, [1, 3]), plot_type=PlotType.STEP, axes_idx=[1, 2]
+        "My New Extra Plot", lambda t, x, u, p: custom_plot_callback(x, [1, 3]), plot_type=PlotType.STEP, axes_idx=[1, 2]
     )
     ocp.add_plot(
         "My Second New Extra Plot",
-        lambda x, u, p: custom_plot_callback(x, [1, 3]),
+        lambda t, x, u, p: custom_plot_callback(x, [1, 3]),
         plot_type=PlotType.INTEGRATED,
         axes_idx=[1, 2],
     )

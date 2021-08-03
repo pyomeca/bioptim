@@ -154,6 +154,9 @@ def main():
     model_path = "cube.bioMod"
     ocp = prepare_ocp(biorbd_model_path=model_path)
 
+    # Custom plots
+    ocp.add_plot_objectives()
+
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 
