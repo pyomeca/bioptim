@@ -270,6 +270,9 @@ def main():
         kin_data_to_track="q",
     )
 
+    # Add the objective plot for more fun!
+    ocp.add_plot_objectives()
+
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 

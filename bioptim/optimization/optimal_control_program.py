@@ -7,7 +7,7 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1
+from casadi import MX, SX, Function, sum1, sum2, horzcat
 from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
@@ -635,8 +635,11 @@ class OptimalControlProgram:
             return color
 
         def get_plotting_penalty_values(t, x, u, p, objective, dt):
-            _target = objective.target[:, t] if objective.target is not None else []
-            return sum1(objective.weighted_function(x, u, p, objective.weight, _target, dt))
+            _target = objective.target[:, t] if objective.target is not None and not np.isnan(t) else []
+            out = []
+            for idx in range(x.shape[1]):
+                out.append(sum2(objective.weighted_function(x[:, idx], u, p, objective.weight, _target, dt)))
+            return sum1(horzcat(*out))
 
         color = penalty_plot_color()
 
@@ -750,7 +753,7 @@ class OptimalControlProgram:
 
         self.solver.configure(solver_options)
         if warm_start is not None:
-            OptimalControlProgram.set_warm_start(sol=warm_start)
+            self.set_warm_start(sol=warm_start)
         self.solver.solve()
 
         return Solution(self, self.solver.get_optimized_value())

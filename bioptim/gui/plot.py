@@ -7,7 +7,7 @@ from itertools import accumulate
 import numpy as np
 from matplotlib import pyplot as plt, lines
 from matplotlib.ticker import StrMethodFormatter
-from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM, sum2
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting
@@ -646,9 +646,9 @@ class PlotOcp:
                     for node_idx in self.plot_func[key][i].node_idx:
                         y = np.empty((self.variable_sizes[i][key], 1))
                         y.fill(np.nan)
-                        val = sum2(self.plot_func[key][i].function(
+                        val = self.plot_func[key][i].function(
                             node_idx, state[:, node_idx], control[:, node_idx], data_params_in_dyn, **self.plot_func[key][i].parameters
-                        ))
+                        )
                         if val.shape != y.shape:
                             raise RuntimeError(
                                 f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}")
