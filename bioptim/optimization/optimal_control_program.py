@@ -701,6 +701,7 @@ class OptimalControlProgram:
     def solve(
         self,
         solver: Solver = Solver.IPOPT,
+        warm_start: Solution = None,
         show_online_optim: bool = False,
         show_options: dict = None,
         solver_options: dict = None,
@@ -712,6 +713,8 @@ class OptimalControlProgram:
         ----------
         solver: Solver
             The solver which will be used to solve the ocp
+        warm_start: Solution
+            The solution to pass to the warm start method
         show_online_optim: bool
             If the plot should be shown while optimizing. It will slow down the optimization a bit and is only
             available with Solver.IPOPT
@@ -746,9 +749,45 @@ class OptimalControlProgram:
             self.solver.online_optim(self, show_options)
 
         self.solver.configure(solver_options)
+        if warm_start is not None:
+            OptimalControlProgram.set_warm_start(sol=warm_start)
         self.solver.solve()
 
         return Solution(self, self.solver.get_optimized_value())
+
+    def set_warm_start(self, sol: Solution):
+        """
+        Modify x and u initial guess based on a solution.
+
+        Parameters
+        ----------
+        sol: Solution
+            The solution to initiate the OCP from
+        """
+
+        state, ctrl, param = sol.states, sol.controls, sol.parameters
+        u_init_guess = InitialGuessList()
+        x_init_guess = InitialGuessList()
+        param_init_guess = InitialGuessList()
+        for i in range(self.n_phases):
+            if self.n_phases == 1:
+                if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
+                    u_init_guess.add(ctrl["all"], interpolation=InterpolationType.EACH_FRAME)
+                else:
+                    u_init_guess.add(ctrl["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
+                x_init_guess.add(state["all"], interpolation=InterpolationType.EACH_FRAME)
+            else:
+                if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
+                    u_init_guess.add(ctrl[i]["all"], interpolation=InterpolationType.EACH_FRAME)
+                else:
+                    u_init_guess.add(ctrl[i]["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
+                x_init_guess.add(state[i]["all"], interpolation=InterpolationType.EACH_FRAME)
+
+        for key in param:
+            if key != "all":
+                param_init_guess.add(param[key], name=key)
+        self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, param_init=param_init_guess)
+        self.solver.set_lagrange_multiplier(sol)
 
     def save(self, sol: Solution, file_path: str, stand_alone: bool = False):
         """
