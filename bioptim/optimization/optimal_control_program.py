@@ -637,8 +637,11 @@ class OptimalControlProgram:
         def get_plotting_penalty_values(t, x, u, p, objective, dt):
             _target = objective.target[:, t] if objective.target is not None and not np.isnan(t) else []
             out = []
-            for idx in range(x.shape[1]):
-                out.append(sum2(objective.weighted_function(x[:, idx], u, p, objective.weight, _target, dt)))
+            if len(x.shape) < 2:
+                out.append(sum2(objective.weighted_function(x, u, p, objective.weight, _target, dt)))
+            else:
+                for idx in range(x.shape[1]):
+                    out.append(sum2(objective.weighted_function(x[:, idx], u, p, objective.weight, _target, dt)))
             return sum1(horzcat(*out))
 
         color = penalty_plot_color()
