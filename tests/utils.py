@@ -83,6 +83,19 @@ class TestUtils:
                     pass
 
     @staticmethod
+    def assert_warm_start(ocp, sol, state_decimal=2, control_decimal=2, param_decimal=2):
+        ocp.set_warm_start(sol)
+        sol_warm_start = ocp.solve(solver_options={"max_iter": 0, "bound_push": 1e-10, "bound_frac": 1e-10})
+        if ocp.n_phases > 1:
+            for i in range(ocp.n_phases):
+                np.testing.assert_almost_equal(sol_warm_start.states[i]["all"], sol.states[i]["all"],  decimal=state_decimal)
+                np.testing.assert_almost_equal(sol_warm_start.controls[i]["all"], sol.controls[i]["all"],  decimal=control_decimal)
+        else:
+            np.testing.assert_almost_equal(sol_warm_start.states["all"], sol.states["all"],  decimal=state_decimal)
+            np.testing.assert_almost_equal(sol_warm_start.controls["all"], sol.controls["all"],  decimal=control_decimal)
+        np.testing.assert_almost_equal(sol_warm_start.parameters["all"], sol.parameters["all"],  decimal=param_decimal)
+
+    @staticmethod
     def simulate(sol, decimal_value=7):
         sol_merged = sol.merge_phases()
         if sum([nlp.ode_solver.is_direct_collocation for nlp in sol.ocp.nlp]):
