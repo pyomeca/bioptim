@@ -139,24 +139,26 @@ class Parameter(PenaltyOption):
         controls_cx = ocp.cx()
         parameter_cx = ocp.v.parameters_in_list.cx
         for p in ocp.v.parameters_in_list:
-            if p.penalty_list is not None:
-                for p_list in p.penalty_list[0]:
-                    if p_list.weighted_function is None:
-                        continue
-                    dt_cx = ocp.cx.sym("dt", 1, 1)
-                    weight_cx = ocp.cx.sym("weight", 1, 1)
-                    target_cx = ocp.cx.sym("target", p_list.weighted_function.numel_out(), 1)
+            if p.penalty_list is None:
+                continue
+            for p_list in p.penalty_list[0]:
+                if p_list.weighted_function is None:
+                    continue
 
-                    p_list.function = Function(
-                        p_list.function.name(),
-                        [state_cx, controls_cx, parameter_cx],
-                        [p_list.function(state_cx, controls_cx, old_parameter_cx)],
-                    )
-                    p_list.weighted_function = Function(
-                        p_list.function.name(),
-                        [state_cx, controls_cx, parameter_cx, weight_cx, target_cx, dt_cx],
-                        [p_list.weighted_function(state_cx, controls_cx, old_parameter_cx, weight_cx, target_cx, dt_cx)],
-                    )
+                dt_cx = ocp.cx.sym("dt", 1, 1)
+                weight_cx = ocp.cx.sym("weight", 1, 1)
+                target_cx = ocp.cx.sym("target", p_list.weighted_function.numel_out(), 1)
+
+                p_list.function = Function(
+                    p_list.function.name(),
+                    [state_cx, controls_cx, parameter_cx],
+                    [p_list.function(state_cx, controls_cx, old_parameter_cx)],
+                )
+                p_list.weighted_function = Function(
+                    p_list.function.name(),
+                    [state_cx, controls_cx, parameter_cx, weight_cx, target_cx, dt_cx],
+                    [p_list.weighted_function(state_cx, controls_cx, old_parameter_cx, weight_cx, target_cx, dt_cx)],
+                )
 
         if self.penalty_list:
             if ocp.phase_transitions:
