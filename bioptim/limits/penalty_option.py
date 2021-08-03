@@ -94,13 +94,14 @@ class PenaltyOption(OptionGeneric):
         weight: float = 1,
         derivative: bool = False,
         explicit_derivative: bool = False,
+        integrate: bool = False,
         index: list = None,
         rows: Union[list, tuple, range, np.ndarray] = None,
         cols: Union[list, tuple, range, np.ndarray] = None,
         custom_function: Callable = None,
         is_internal: bool = False,
         multi_thread: bool = None,
-        expand: bool = True,
+        expand: bool = False,
         **params: Any,
     ):
         """
@@ -162,6 +163,7 @@ class PenaltyOption(OptionGeneric):
         self.weighted_function: Union[Function, None] = None
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
+        self.integrate = integrate
         self.transition = False
         self.phase_pre_idx = None
         self.phase_post_idx = None
@@ -288,9 +290,15 @@ class PenaltyOption(OptionGeneric):
             ocp = all_pn.ocp
             nlp = all_pn.nlp
             name = self.name
-            state_cx = all_pn.nlp.states.cx
-            control_cx = all_pn.nlp.controls.cx
+            if self.integrate:
+                state_cx = horzcat(*([all_pn.nlp.states.cx] + all_pn.nlp.states.cx_intermediates_list))
+                control_cx = all_pn.nlp.controls.cx
+            else:
+                state_cx = all_pn.nlp.states.cx
+                control_cx = all_pn.nlp.controls.cx
             if self.explicit_derivative:
+                if self.derivative:
+                    raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
                 state_cx = horzcat(state_cx, all_pn.nlp.states.cx_end)
                 control_cx = horzcat(control_cx, all_pn.nlp.controls.cx_end)
 
@@ -300,18 +308,6 @@ class PenaltyOption(OptionGeneric):
         self.function = biorbd.to_casadi_func(
             name, fcn[self.rows, self.cols], state_cx, control_cx, param_cx, expand=self.expand
         )
-
-        # if self.integration:
-        #     if all_pn.nlp.integration == TRAPEZE
-        #         self.function = biorbd.to_casadi_func(
-        #             f"{name}",
-        #             (self.function(all_pn.nlp.states.cx_end, all_pn.nlp.controls.cx_end, param_cx) + self.function(
-        #                 state_cx, control_cx, param_cx))/2,
-        #             state_cx,
-        #             control_cx,
-        #             param_cx,
-        #         )
-
         if self.derivative:
             state_cx = horzcat(all_pn.nlp.states.cx_end, all_pn.nlp.states.cx)
             control_cx = horzcat(all_pn.nlp.controls.cx_end, all_pn.nlp.controls.cx)
@@ -342,7 +338,7 @@ class PenaltyOption(OptionGeneric):
             name, [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
         )
 
-        if self.multi_thread and len(self.node_idx) > 1:
+        if ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
             self.function = self.function.map(len(self.node_idx), "thread", ocp.n_threads)
             self.weighted_function = self.weighted_function.map(len(self.node_idx), "thread", ocp.n_threads)
         else:

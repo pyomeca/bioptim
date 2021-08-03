@@ -58,7 +58,6 @@ def generate_data(
     n_qdot = biorbd_model.nbQdot()
     n_tau = biorbd_model.nbGeneralizedTorque()
     n_mus = biorbd_model.nbMuscleTotal()
-    n_markers = biorbd_model.nbMarkers()
     dt = final_time / n_shooting
 
     # Casadi related stuff
@@ -142,7 +141,7 @@ def prepare_ocp(
     q_ref: np.ndarray,
     use_residual_torque: bool,
     kin_data_to_track: str = "markers",
-    ode_solver: OdeSolver = OdeSolver.RK4(),
+    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
 ) -> OptimalControlProgram:
     """
     Prepare the ocp to solve
@@ -194,9 +193,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=use_residual_torque, expand=False
-    )
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=use_residual_torque)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -253,13 +250,12 @@ def main():
 
     # Define the problem
     biorbd_model = biorbd.Model("arm26.bioMod")
-    final_time = 1.5
-    n_shooting_points = 29
+    final_time = 0.5
+    n_shooting_points = 30
     use_residual_torque = True
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_excitations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
-    muscle_activations_ref = x_ref[biorbd_model.nbQ() + biorbd_model.nbQdot() :, :].T
 
     # Track these data
     biorbd_model = biorbd.Model("arm26.bioMod")  # To allow for non free variable, the model must be reloaded
@@ -278,17 +274,9 @@ def main():
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show the results --- #
-    muscle_excitations_ref = np.append(muscle_excitations_ref, muscle_excitations_ref[-1:, :], axis=0)
-
     q = sol.states["q"]
-    qdot = sol.states["qdot"]
-    activations = sol.states["muscles"]
-    if use_residual_torque:
-        tau = sol.controls["tau"]
-    excitations = sol.controls["muscles"]
 
     n_q = ocp.nlp[0].model.nbQ()
-    n_qdot = ocp.nlp[0].model.nbQdot()
     n_mark = ocp.nlp[0].model.nbMarkers()
     n_frames = q.shape[1]
 
@@ -299,9 +287,10 @@ def main():
         markers[:, :, i] = markers_func(q[:, i])
 
     plt.figure("Markers")
+    n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
     for i in range(markers.shape[1]):
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
-        plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers[:, i, :].T, "r--")
+        plt.plot(np.linspace(0, 2, n_shooting_points * n_steps_ode + 1), markers[:, i, :].T, "r--")
     plt.xlabel("Time")
     plt.ylabel("Markers Position")
 

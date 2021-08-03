@@ -5,6 +5,7 @@ from casadi import MX, vertcat, Function
 import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
+from .ode_solver import OdeSolver
 from ..misc.enums import PlotType, ControlType
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
@@ -338,14 +339,12 @@ class ConfigureProblem:
         mx_controls = vertcat(*mx_controls)
 
         if as_states:
-            cx = define_cx(n_col=2)
+            n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 2
+            cx = define_cx(n_col=n_cx)
 
             nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
             nlp.plot[f"{name}_states"] = CustomPlot(
-                lambda x, u, p: x[nlp.states[name].index, :],
-                plot_type=PlotType.INTEGRATED,
-                legend=legend,
-                # bounds=nlp.x_bounds[nlp.states[name].index],  # TODO This is empty (this is a bug)
+                lambda x, u, p: x[nlp.states[name].index, :], plot_type=PlotType.INTEGRATED, legend=legend
             )
 
         if as_controls:
@@ -357,7 +356,6 @@ class ConfigureProblem:
                 lambda x, u, p: u[nlp.controls[name].index, :],
                 plot_type=plot_type,
                 legend=legend,
-                # bounds=nlp.u_bounds[nlp.controls[name].index],  # TODO This is empty (this is a bug)
                 combine_to=f"{name}_states" if as_states and combine_plot else None,
             )
 
@@ -520,7 +518,7 @@ class Dynamics(OptionGeneric):
     def __init__(
         self,
         dynamics_type: Union[Callable, DynamicsFcn],
-        expand: bool = True,
+        expand: bool = False,
         **params: Any,
     ):
         """

@@ -31,7 +31,7 @@ from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
-check_version(biorbd, "1.6.1", "1.7.0")
+check_version(biorbd, "1.7.1", "1.8.0")
 
 
 class OptimalControlProgram:
@@ -100,7 +100,7 @@ class OptimalControlProgram:
         The main user interface to add initial guesses in the ocp
     add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any)
         The main user interface to add a new plot to the ocp
-    prepare_plots(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool,
+    prepare_plots(self, automatically_organize: bool, show_bounds: bool,
             shooting_type: Shooting) -> PlotOCP
         Create all the plots associated with the OCP
     solve(self, solver: Solver, show_online_optim: bool, solver_options: dict) -> Solution
@@ -524,6 +524,12 @@ class OptimalControlProgram:
         if self.isdef_x_bounds and self.isdef_u_bounds:
             self.v.define_ocp_bounds()
 
+        for nlp in self.nlp:
+            for key in nlp.states.keys():
+                nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
+            for key in nlp.controls.keys():
+                nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
+
     def update_initial_guess(
         self,
         x_init: Union[InitialGuess, InitialGuessList] = InitialGuessList(),
@@ -616,8 +622,9 @@ class OptimalControlProgram:
     def prepare_plots(
         self,
         automatically_organize: bool = True,
-        adapt_graph_size_to_bounds: bool = False,
+        show_bounds: bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
+        use_scipy_integrator: bool = False,
     ) -> PlotOcp:
         """
         Create all the plots associated with the OCP
@@ -626,10 +633,12 @@ class OptimalControlProgram:
         ----------
         automatically_organize: bool
             If the graphs should be parsed on the screen
-        adapt_graph_size_to_bounds: bool
+        show_bounds: bool
             If the ylim should fit the bounds
         shooting_type: Shooting
             What type of integration
+        use_scipy_integrator: bool
+            Use the scipy solve_ivp integrator for RungeKutta 45 instead of currently defined integrator
 
         Returns
         -------
@@ -639,14 +648,16 @@ class OptimalControlProgram:
         return PlotOcp(
             self,
             automatically_organize=automatically_organize,
-            adapt_graph_size_to_bounds=adapt_graph_size_to_bounds,
+            show_bounds=show_bounds,
             shooting_type=shooting_type,
+            use_scipy_integrator=use_scipy_integrator,
         )
 
     def solve(
         self,
         solver: Solver = Solver.IPOPT,
         show_online_optim: bool = False,
+        show_options: dict = None,
         solver_options: dict = None,
     ) -> Solution:
         """
@@ -659,6 +670,8 @@ class OptimalControlProgram:
         show_online_optim: bool
             If the plot should be shown while optimizing. It will slow down the optimization a bit and is only
             available with Solver.IPOPT
+        show_options: dict
+            The graphs option to pass to PlotOcp
         solver_options: dict
             Any options to change the behavior of the solver. To know which options are available, you can refer to the
             manual of the corresponding solver
@@ -685,7 +698,7 @@ class OptimalControlProgram:
         self.solver_type = solver
 
         if show_online_optim:
-            self.solver.online_optim(self)
+            self.solver.online_optim(self, show_options)
 
         self.solver.configure(solver_options)
         self.solver.solve()

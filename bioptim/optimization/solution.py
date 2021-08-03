@@ -4,6 +4,7 @@ from copy import deepcopy
 import biorbd_casadi as biorbd
 import numpy as np
 from scipy import interpolate as sci_interp
+from scipy.integrate import solve_ivp
 from casadi import horzcat, DM, Function
 from matplotlib import pyplot as plt
 
@@ -71,7 +72,7 @@ class Solution:
     @property
     controls(self) -> Union[list, dict]
         Returns the controls in list if more than one phases, otherwise it returns the only dict
-    integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keepdims: bool = True,
+    integrate(self, shooting_type: Shooting = Shooting.MULTIPLE, keep_intermediate_points: bool = True,
               merge_phases: bool = False, continuous: bool = True) -> Solution
         Integrate the states
     interpolate(self, n_frames: Union[int, list, tuple]) -> Solution
@@ -82,7 +83,7 @@ class Solution:
         Actually performing the phase merging
     _complete_control(self)
         Controls don't necessarily have dimensions that matches the states. This method aligns them
-    graphs(self, automatically_organize: bool, adapt_graph_size_to_bounds: bool,
+    graphs(self, automatically_organize: bool, show_bounds: bool,
            show_now: bool, shooting_type: Shooting)
         Show the graphs of the simulation
     animate(self, n_frames: int = 0, show_now: bool = True, **kwargs: Any) -> Union[None, list]
@@ -192,6 +193,7 @@ class Solution:
             self.states = Solution.SimplifiedOptimizationVariableList(nlp.states)
             self.controls = Solution.SimplifiedOptimizationVariableList(nlp.controls)
             self.dynamics = nlp.dynamics
+            self.dynamics_func = nlp.dynamics_func
             self.ode_solver = nlp.ode_solver
             self.variable_mappings = nlp.variable_mappings
             self.control_type = nlp.control_type
@@ -256,6 +258,7 @@ class Solution:
         self.is_interpolated = False
         self.is_integrated = False
         self.is_merged = False
+        self.recomputed_time_steps = False
 
         self.vector = None
         self._cost = None
@@ -484,9 +487,10 @@ class Solution:
     def integrate(
         self,
         shooting_type: Shooting = Shooting.SINGLE_CONTINUOUS,
-        keepdims: bool = True,
+        keep_intermediate_points: bool = False,
         merge_phases: bool = False,
         continuous: bool = True,
+        use_scipy_integrator: bool = False,
     ) -> Any:
         """
         Integrate the states
@@ -495,7 +499,7 @@ class Solution:
         ----------
         shooting_type: Shooting
             Which type of integration
-        keepdims: bool
+        keep_intermediate_points: bool
             If the integration should returns the intermediate values of the integration [False]
             or only keep the node [True] effective keeping the initial size of the states
         merge_phases: bool
@@ -503,6 +507,8 @@ class Solution:
         continuous: bool
             If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
             arrival node and the beginning of the next one are expected to be almost equal when the problem converged
+        use_scipy_integrator: bool
+            Ignore the dynamics defined by OCP and use an separate integrator provided by scipy
 
         Returns
         -------
@@ -517,43 +523,56 @@ class Solution:
         if self.is_merged:
             raise RuntimeError("Cannot integrate after merging phases")
 
-        if shooting_type == Shooting.MULTIPLE and keepdims:
+        if shooting_type == Shooting.MULTIPLE and not keep_intermediate_points:
             raise ValueError(
-                "Shooting.MULTIPLE and keepdims=True cannot be used simultaneously since it would do nothing"
+                "Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously "
+                "since it would do nothing"
             )
-        if keepdims and not continuous:
-            raise ValueError(
-                "continuous=False and keepdims=True cannot be used simultaneously since it would necessarily "
-                "change the dimension"
-            )
+
+        out = self.__perform_integration(shooting_type, keep_intermediate_points, continuous, use_scipy_integrator)
+
+        if merge_phases:
+            if continuous:
+                out = out.interpolate(sum(out.ns) + 1)
+            else:
+                out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
+                out.is_merged = True
+        out.is_integrated = True
+
+        return out
+
+    def __perform_integration(
+        self, shooting_type: Shooting, keep_intermediate_points: bool, continuous: bool, use_scipy_integrator: bool
+    ):
+        n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
+        if n_direct_collocation > 0 and not use_scipy_integrator:
+            if continuous:
+                raise RuntimeError("Integration with direct collocation must be not continuous")
+
+            if shooting_type != Shooting.MULTIPLE:
+                raise RuntimeError("Integration with direct collocation must using shooting_type=Shooting.MULTIPLE")
 
         # Copy the data
         out = self.copy(skip_data=True)
-
-        ocp = out.ocp
+        out.recomputed_time_steps = use_scipy_integrator
         out._states = []
         for _ in range(len(self._states)):
             out._states.append({})
 
         params = self.parameters["all"]
         x0 = self._states[0]["all"][:, 0]
-        for p in range(len(self._states)):
-            param_scaling = self.ocp.nlp[p].parameters.scaling
-            shape = self._states[p]["all"].shape
-            if continuous:
-                n_steps = ocp.nlp[p].ode_solver.steps
-                if not keepdims:
-                    out.ns[p] *= ocp.nlp[p].ode_solver.steps
-            else:
-                n_steps = ocp.nlp[p].ode_solver.steps + 1
-                if not keepdims:
-                    out.ns[p] *= ocp.nlp[p].ode_solver.steps + 1
-            if keepdims:
-                out._states[p]["all"] = np.ndarray((shape[0], shape[1]))
-            else:
-                out._states[p]["all"] = np.ndarray((shape[0], (shape[1] - 1) * n_steps + 1))
+        for p, nlp in enumerate(self.ocp.nlp):
+            param_scaling = nlp.parameters.scaling
+            n_states = self._states[p]["all"].shape[0]
+            n_steps = nlp.ode_solver.steps_scipy if use_scipy_integrator else nlp.ode_solver.steps
+            if not continuous:
+                n_steps += 1
+            if keep_intermediate_points:
+                out.ns[p] *= n_steps
 
-            # Integrate
+            out._states[p]["all"] = np.ndarray((n_states, out.ns[p] + 1))
+
+            # Get the first frame of the phase
             if shooting_type == Shooting.SINGLE_CONTINUOUS:
                 if p != 0:
                     u0 = self._controls[p - 1]["all"][:, -1]
@@ -566,32 +585,59 @@ class Solution:
                         )
                     x0 += np.array(val)[:, 0]
             else:
-                x0 = self._states[p]["all"][:, 0]
-            for n in range(self.ns[p]):
-                if self.ocp.nlp[p].control_type == ControlType.CONSTANT:
-                    u = self._controls[p]["all"][:, n]
-                elif self.ocp.nlp[p].control_type == ControlType.LINEAR_CONTINUOUS:
-                    u = self._controls[p]["all"][:, n : n + 2]
-                else:
-                    raise NotImplementedError(
-                        f"ControlType {self.ocp.nlp[p].control_type} " f"not yet implemented in integrating"
-                    )
+                col = slice(0, n_steps) if nlp.ode_solver.is_direct_collocation and not use_scipy_integrator else 0
+                x0 = self._states[p]["all"][:, col]
 
-                if keepdims:
-                    integrated = np.concatenate(
-                        (x0[:, np.newaxis], ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params / param_scaling)["xf"]),
-                        axis=1,
-                    )
-                    cols = [n, n + 1]
+            for s in range(self.ns[p]):
+                if nlp.control_type == ControlType.CONSTANT:
+                    u = self._controls[p]["all"][:, s]
+                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    u = self._controls[p]["all"][:, s : s + 2]
                 else:
-                    integrated = np.array(ocp.nlp[p].dynamics[n](x0=x0, p=u, params=params / param_scaling)["xall"])
-                    cols = [n * n_steps, (n + 1) * n_steps]
-                cols[1] = cols[1] + 1 if continuous else cols[1]
-                cols = range(cols[0], cols[1])
+                    raise NotImplementedError(f"ControlType {nlp.control_type} " f"not yet implemented in integrating")
 
-                out._states[p]["all"][:, cols] = integrated
+                if use_scipy_integrator:
+                    t_init = sum(out.phase_time[:p]) / nlp.ns
+                    t_end = sum(out.phase_time[: (p + 2)]) / nlp.ns
+                    n_points = n_steps + 1 if continuous else n_steps
+                    t_eval = np.linspace(t_init, t_end, n_points) if keep_intermediate_points else [t_init, t_end]
+                    integrated = solve_ivp(
+                        lambda t, x: np.array(nlp.dynamics_func(x, u, params))[:, 0], [t_init, t_end], x0, t_eval=t_eval
+                    ).y
+
+                    next_state_col = (
+                        (s + 1) * (nlp.ode_solver.steps + 1) if nlp.ode_solver.is_direct_collocation else s + 1
+                    )
+                    cols_in_out = [s * n_steps, (s + 1) * n_steps] if keep_intermediate_points else [s, s + 2]
+
+                else:
+                    if nlp.ode_solver.is_direct_collocation:
+                        if keep_intermediate_points:
+                            integrated = x0  # That is only for continuous=False
+                            cols_in_out = [s * n_steps, (s + 1) * n_steps]
+                        else:
+                            integrated = x0[:, [0, -1]]
+                            cols_in_out = [s, s + 2]
+                        next_state_col = slice((s + 1) * n_steps, (s + 2) * n_steps)
+
+                    else:
+                        if keep_intermediate_points:
+                            integrated = np.array(nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xall"])
+                            cols_in_out = [s * n_steps, (s + 1) * n_steps]
+                        else:
+                            integrated = np.concatenate(
+                                (x0[:, np.newaxis], nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xf"]),
+                                axis=1,
+                            )
+                            cols_in_out = [s, s + 2]
+                        next_state_col = s + 1
+
+                cols_in_out = slice(
+                    cols_in_out[0], cols_in_out[1] + 1 if continuous and keep_intermediate_points else cols_in_out[1]
+                )
+                out._states[p]["all"][:, cols_in_out] = integrated
                 x0 = (
-                    np.array(self._states[p]["all"][:, n + 1])
+                    np.array(self._states[p]["all"][:, next_state_col])
                     if shooting_type == Shooting.MULTIPLE
                     else integrated[:, -1]
                 )
@@ -600,19 +646,9 @@ class Solution:
                 out._states[p]["all"][:, -1] = self._states[p]["all"][:, -1]
 
             # Dispatch the integrated values to all the keys
-            off = 0
-            for key in ocp.nlp[p].states:
-                out._states[p][key] = out._states[p]["all"][off : off + len(ocp.nlp[p].states[key]), :]
-                off += len(ocp.nlp[p].states[key])
+            for key in nlp.states:
+                out._states[p][key] = out._states[p]["all"][nlp.states[key].index, :]
 
-        if merge_phases:
-            if continuous:
-                out = out.interpolate(sum(out.ns) + 1)
-            else:
-                out._states, _, out.phase_time, out.ns = out._merge_phases(skip_controls=True)
-                out.is_merged = True
-
-        out.is_integrated = True
         return out
 
     def interpolate(self, n_frames: Union[int, list, tuple]) -> Any:
@@ -634,7 +670,15 @@ class Solution:
 
         t_all = []
         for p, data in enumerate(self._states):
-            t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), data["all"].shape[1]))
+            nlp = self.ocp.nlp[p]
+            if nlp.ode_solver.is_direct_collocation and not self.recomputed_time_steps:
+                time_offset = sum(out.phase_time[: p + 1])
+                step_time = np.array(nlp.dynamics[0].step_time)
+                dt = out.phase_time[p + 1] / nlp.ns
+                t_tp = np.array([step_time * dt + s * dt + time_offset for s in range(nlp.ns)]).reshape(-1, 1)
+                t_all.append(np.concatenate((t_tp, [[t_tp[-1, 0]]]))[:, 0])
+            else:
+                t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), out.ns[p] + 1))
 
         if isinstance(n_frames, int):
             data_states, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
@@ -657,11 +701,12 @@ class Solution:
             n_elements = x_phase.shape[0]
 
             t_phase = t_all[p]
+            t_phase, time_index = np.unique(t_phase, return_index=True)
             t_int = np.linspace(t_phase[0], t_phase[-1], n_frames[p])
 
             x_interpolate = np.ndarray((n_elements, n_frames[p]))
             for j in range(n_elements):
-                s = sci_interp.splrep(t_phase, x_phase[j, :])
+                s = sci_interp.splrep(t_phase, x_phase[j, time_index])
                 x_interpolate[j, :] = sci_interp.splev(t_int, s)
             out._states[p]["all"] = x_interpolate
 
@@ -719,7 +764,6 @@ class Solution:
             ----------
             data: list
                 The data to structure to merge the phases
-
             Returns
             -------
             The data merged
@@ -781,9 +825,10 @@ class Solution:
     def graphs(
         self,
         automatically_organize: bool = True,
-        adapt_graph_size_to_bounds: bool = False,
+        show_bounds: bool = False,
         show_now: bool = True,
         shooting_type: Shooting = Shooting.MULTIPLE,
+        use_scipy_integrator: bool = False,
     ):
         """
         Show the graphs of the simulation
@@ -792,18 +837,20 @@ class Solution:
         ----------
         automatically_organize: bool
             If the figures should be spread on the screen automatically
-        adapt_graph_size_to_bounds: bool
+        show_bounds: bool
             If the plot should adapt to bounds (True) or to data (False)
         show_now: bool
             If the show method should be called. This is blocking
         shooting_type: Shooting
             The type of interpolation
+        use_scipy_integrator: bool
+            Use the scipy solve_ivp integrator for RungeKutta 45 instead of currently defined integrator
         """
 
         if self.is_merged or self.is_interpolated or self.is_integrated:
             raise NotImplementedError("It is not possible to graph a modified Solution yet")
 
-        plot_ocp = self.ocp.prepare_plots(automatically_organize, adapt_graph_size_to_bounds, shooting_type)
+        plot_ocp = self.ocp.prepare_plots(automatically_organize, show_bounds, shooting_type, use_scipy_integrator)
         plot_ocp.update_data(self.vector)
         if show_now:
             plt.show()
@@ -835,7 +882,7 @@ class Solution:
             import bioviz
         except ModuleNotFoundError:
             raise RuntimeError("bioviz must be install to animate the model")
-        check_version(bioviz, "2.1.0", "2.2.0")
+        check_version(bioviz, "2.1.1", "2.2.0")
 
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:
@@ -876,18 +923,36 @@ class Solution:
 
     def _get_penalty_cost(self, nlp, penalty):
         phase_idx = nlp.phase_idx
-        x = self._states[phase_idx]["all"][:, penalty.node_idx] if nlp is not None else []
-        u = self._controls[phase_idx]["all"][:, penalty.node_idx] if nlp is not None else []
+        steps = nlp.ode_solver.steps + 1 if nlp.ode_solver.is_direct_collocation else 1
+
+        val = []
+        val_weighted = []
         p = self.parameters["all"]
-        target = penalty.target if penalty.target is not None else []
         dt = (
             Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
             if "time" in self.parameters
             else penalty.dt
         )
+        for idx in penalty.node_idx:
+            x = []
+            u = []
+            target = []
+            if nlp is not None:
+                col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
+                col_u_idx = [idx]
+                if penalty.derivative or penalty.explicit_derivative:
+                    col_x_idx.append((idx + 1) * steps)
+                    col_u_idx.append((idx + 1))
 
-        val = np.nansum(penalty.function(x, u, p))
-        val_weighted = np.nansum(penalty.weighted_function(x, u, p, penalty.weight, target, dt))
+                x = self._states[phase_idx]["all"][:, col_x_idx]
+                u = self._controls[phase_idx]["all"][:, col_u_idx]
+                target = penalty.target[:, idx] if penalty.target is not None else []
+
+            val.append(penalty.function(x, u, p))
+            val_weighted.append(penalty.weighted_function(x, u, p, penalty.weight, target, dt))
+
+        val = np.nansum(val)
+        val_weighted = np.nansum(val_weighted)
 
         return val, val_weighted
 

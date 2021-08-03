@@ -21,6 +21,7 @@ from bioptim import (
     InitialGuess,
     ObjectiveFcn,
     Objective,
+    OdeSolver,
     PlotType,
     ObjectiveList,
     Node,
@@ -91,7 +92,14 @@ def plot_objectives(ocp):
     return
 
 
-def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> OptimalControlProgram:
+def prepare_ocp(
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
+    use_sx: bool = True,
+    n_threads: int = 1,
+) -> OptimalControlProgram:
     """
     The initialization of an ocp
 
@@ -103,6 +111,12 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
+    ode_solver: OdeSolver = OdeSolver.RK4()
+        Which type of OdeSolver to use
+    use_sx: bool
+        If the SX variable should be used instead of MX (can be extensive on RAM)
+    n_threads: int
+        The number of threads to use in the paralleling (1 = no parallel computing)
 
     Returns
     -------
@@ -149,7 +163,9 @@ def prepare_ocp(biorbd_model_path: str, final_time: float, n_shooting: int) -> O
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        use_sx=True,
+        ode_solver=ode_solver,
+        use_sx=use_sx,
+        n_threads=n_threads,
     )
 
 
@@ -172,7 +188,6 @@ def main():
 
     # --- Show the results in a bioviz animation --- #
     sol.print()
-    sol.graphs()
     sol.animate()
 
 

@@ -7,7 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
-from ..misc.enums import InterpolationType, ControlType
+from ..misc.enums import InterpolationType, ControlType, Node
 from ..optimization.solution import Solution
 
 
@@ -66,7 +66,7 @@ class IpoptInterface(SolverInterface):
         self.lam_g = None
         self.lam_x = None
 
-    def online_optim(self, ocp):
+    def online_optim(self, ocp, show_options: dict = None):
         """
         Declare the online callback to update the graphs while optimizing
 
@@ -74,10 +74,13 @@ class IpoptInterface(SolverInterface):
         ----------
         ocp: OptimalControlProgram
             A reference to the current OptimalControlProgram
+        show_options: dict
+            The options to pass to PlotOcp
         """
+
         if platform == "win32":
             raise RuntimeError("Online graphics are not available on Windows")
-        self.options_common["iteration_callback"] = OnlineCallback(ocp)
+        self.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
 
     def configure(self, solver_options: dict):
         """
@@ -221,6 +224,23 @@ class IpoptInterface(SolverInterface):
                     raise NotImplementedError("penalty target with dimension != 2 or 3 is not implemented yet")
             return target_out
 
+        def get_x_and_u_at_idx(_penalty, _idx):
+            if _penalty.transition:
+                ocp = self.ocp
+                _x = horzcat(ocp.nlp[_penalty.phase_pre_idx].X[-1][:, 0], ocp.nlp[_penalty.phase_post_idx].X[0][:, 0])
+                _u = horzcat(ocp.nlp[_penalty.phase_pre_idx].U[-1][:, 0], ocp.nlp[_penalty.phase_post_idx].U[0][:, 0])
+            else:
+                if _penalty.integrate:
+                    _x = nlp.X[_idx]
+                    _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+                else:
+                    _x = nlp.X[_idx][:, 0]
+                    _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+                if _penalty.derivative or _penalty.explicit_derivative:
+                    _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
+                    _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
+            return _x, _u
+
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)
         out = self.ocp.cx()
         for penalty in penalties:
@@ -229,20 +249,22 @@ class IpoptInterface(SolverInterface):
 
             if penalty.multi_thread:
                 if penalty.target is not None and len(penalty.target.shape) != 2:
-                    raise NotImplementedError("Multithread penalty with target shape != [n x m] is not implemented yet")
+                    raise NotImplementedError(
+                        "multi_thread penalty with target shape != [n x m] is not implemented yet"
+                    )
                 target = penalty.target if penalty.target is not None else []
 
                 x = nlp.cx()
                 u = nlp.cx()
                 for idx in penalty.node_idx:
-                    if penalty.derivative or penalty.explicit_derivative:
-                        x = horzcat(x, horzcat(*nlp.X[idx : idx + 2]))
-                        u = horzcat(u, horzcat(*nlp.U[idx : idx + 2]))
-                    else:
-                        x = horzcat(x, nlp.X[idx])
-                        u = horzcat(u, nlp.U[idx] if idx < len(nlp.U) else np.zeros(nlp.U[-1].shape))
-                if (penalty.derivative or penalty.explicit_derivative) and nlp.control_type == ControlType.CONSTANT:
+                    x_tp, u_tp = get_x_and_u_at_idx(penalty, idx)
+                    x = horzcat(x, x_tp)
+                    u = horzcat(u, u_tp)
+                if (
+                    penalty.derivative or penalty.explicit_derivative or penalty.node[0] == Node.ALL
+                ) and nlp.control_type == ControlType.CONSTANT:
                     u = horzcat(u, u[:, -1])
+
                 p = reshape(penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt), -1, 1)
 
             else:
@@ -257,17 +279,7 @@ class IpoptInterface(SolverInterface):
                         x = []
                         u = []
                     else:
-                        if penalty.derivative or penalty.explicit_derivative:
-                            x = horzcat(*nlp.X[idx : idx + 2])
-                            u = horzcat(*nlp.U[idx : idx + 2]) if idx < len(nlp.U) else []
-                        elif penalty.transition:
-                            ocp = self.ocp
-                            x = horzcat(ocp.nlp[penalty.phase_pre_idx].X[-1], ocp.nlp[penalty.phase_post_idx].X[0])
-                            u = horzcat(ocp.nlp[penalty.phase_pre_idx].U[-1], ocp.nlp[penalty.phase_post_idx].U[0])
-                        else:
-                            x = nlp.X[idx]
-                            u = nlp.U[idx] if idx < len(nlp.U) else []
-
+                        x, u = get_x_and_u_at_idx(penalty, idx)
                     p = vertcat(p, penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt))
             out = vertcat(out, sum2(p))
         return out
