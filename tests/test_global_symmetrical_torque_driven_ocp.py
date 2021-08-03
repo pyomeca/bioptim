@@ -8,15 +8,14 @@ from bioptim import OdeSolver
 from .utils import TestUtils
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_symmetry_by_mapping(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     sym = TestUtils.load_module(bioptim_folder + "/examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py")
-    ode_solver = ode_solver()
 
     ocp = sym.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
-        ode_solver=ode_solver,
+        ode_solver=ode_solver(),
     )
     sol = ocp.solve()
 
@@ -27,8 +26,12 @@ def test_symmetry_by_mapping(ode_solver):
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (186, 1))
-    np.testing.assert_almost_equal(g, np.zeros((186, 1)))
+    if ode_solver == OdeSolver.COLLOCATION:
+        np.testing.assert_equal(g.shape, (181 * 5 + 1, 1))
+        np.testing.assert_almost_equal(g, np.zeros((181 * 5 + 1, 1)))
+    else:
+        np.testing.assert_equal(g.shape, (186, 1))
+        np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -50,27 +53,31 @@ def test_symmetry_by_mapping(ode_solver):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_symmetry_by_constraint(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     sym = TestUtils.load_module(bioptim_folder + "/examples/symmetrical_torque_driven_ocp/symmetry_by_constraint.py")
-    ode_solver = ode_solver()
 
     ocp = sym.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
-        ode_solver=ode_solver,
+        ode_solver=ode_solver(),
     )
     sol = ocp.solve()
 
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 216.56763999010465)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (336, 1))
-    np.testing.assert_almost_equal(g, np.zeros((336, 1)))
+    if ode_solver == OdeSolver.COLLOCATION:
+        np.testing.assert_almost_equal(f[0, 0], 216.567618843852)
+        np.testing.assert_equal(g.shape, (300 * 5 + 36, 1))
+        np.testing.assert_almost_equal(g, np.zeros((300 * 5 + 36, 1)))
+    else:
+        np.testing.assert_almost_equal(f[0, 0], 216.56763999010465)
+        np.testing.assert_equal(g.shape, (336, 1))
+        np.testing.assert_almost_equal(g, np.zeros((336, 1)))
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
