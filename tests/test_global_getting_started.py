@@ -548,6 +548,9 @@ def test_parameter_optimization(ode_solver):
     # simulate
     TestUtils.simulate(sol)
 
+    # Test warm starting
+    TestUtils.assert_warm_start(ocp, sol, param_decimal=0)
+
 
 @pytest.mark.parametrize("problem_type_custom", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -650,10 +653,9 @@ def test_example_external_forces(ode_solver):
 def test_example_multiphase(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     multiphase = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
-    ode_solver = ode_solver()
 
     ocp = multiphase.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod", ode_solver=ode_solver()
     )
     sol = ocp.solve()
 
@@ -664,7 +666,7 @@ def test_example_multiphase(ode_solver):
 
     # Check constraints
     g = np.array(sol.constraints)
-    if ode_solver.is_direct_collocation:
+    if ode_solver().is_direct_collocation:
         np.testing.assert_equal(g.shape, (2124, 1))
         np.testing.assert_almost_equal(g, np.zeros((2124, 1)))
     else:
@@ -704,6 +706,12 @@ def test_example_multiphase(ode_solver):
 
     # simulate
     TestUtils.simulate(sol)
+
+    # Test warm start
+    if ode_solver == OdeSolver.COLLOCATION:
+        TestUtils.assert_warm_start(ocp, sol, state_decimal=0)
+    else:
+        TestUtils.assert_warm_start(ocp, sol)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
