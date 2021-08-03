@@ -8,6 +8,7 @@ This simple example is a good place to start investigating bioptim as it describ
 During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
+
 import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
@@ -19,8 +20,6 @@ from bioptim import (
     ObjectiveFcn,
     Objective,
     OdeSolver,
-    ObjectiveList,
-    Node,
 )
 
 
@@ -58,11 +57,7 @@ def prepare_ocp(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = ObjectiveList()
-    objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau"))
-    objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q"))
-    objective_functions.add(Objective(ObjectiveFcn.Mayer.MINIMIZE_MARKERS))
-    objective_functions.add(Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, node=Node.MID, index=1, key="q"))
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -112,15 +107,14 @@ def main():
     # Custom plots
     ocp.add_plot_objectives()
 
-    # # --- Print ocp structure --- #
-    # ocp.print(to_console=False, to_graph=True)
+    # --- Print ocp structure --- #
+    ocp.print(to_console=False, to_graph=True)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(show_online_optim=False)
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show the results in a bioviz animation --- #
     sol.print()
-    sol.graphs()
     sol.animate()
 
 
