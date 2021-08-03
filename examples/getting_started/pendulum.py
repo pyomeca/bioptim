@@ -8,7 +8,9 @@ This simple example is a good place to start investigating bioptim as it describ
 During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
-
+import matplotlib.pyplot as plt
+from casadi import DM, horzcat, Function, sum1
+import numpy as np
 import biorbd_casadi as biorbd
 from bioptim import (
     OptimalControlProgram,
@@ -20,7 +22,74 @@ from bioptim import (
     ObjectiveFcn,
     Objective,
     OdeSolver,
+    PlotType,
+    ObjectiveList,
+    Node,
 )
+def plot_objectives(ocp):
+    def penalty_plot_count():
+        number_of_plots = 0
+        objective_names = []
+        same_objectives = [[], []]
+        number_of_same_objectives = 0
+        for nlp in ocp.nlp:
+            for j in nlp.J:
+                if j.name in objective_names:
+                    same_objectives[0].append(objective_names.index(j.name))
+                    same_objectives[1].append(number_of_plots)
+                    number_of_same_objectives += 1
+                else:
+                    objective_names.append(j.name)
+                number_of_plots += 1
+        return number_of_plots, number_of_same_objectives, same_objectives
+
+    def penalty_color(number_of_plots, number_of_same_objectives):
+        step_size = 1 / (number_of_plots - number_of_same_objectives)
+        color = []
+        unique_color = 0
+        for i in range(number_of_plots):
+            if i in same_objectives[1]:
+                color += [plt.cm.viridis(step_size * same_objectives[0][same_objectives[1].index(i)])]
+            else:
+                color += [plt.cm.viridis(step_size * unique_color)]
+                unique_color += 1
+        return color
+
+    def get_plotting_penalty_values(x, u, p, j, dt):
+        plot_values_returned = DM()
+        for i in range(np.shape(x)[1]):
+            if j.target is not None:
+                try:
+                    plot_values = j.weighted_function(x[:, i], u, p, DM(j.weight), DM(j.target), DM(dt))
+                except AttributeError:
+                    print('here')
+            else:
+                try:
+                    plot_values = j.weighted_function(x[:, i], u, p, DM(j.weight), [], DM(dt))
+                except AttributeError:
+                    print('here')
+            plot_returned = horzcat(plot_values_returned, plot_values[:, 0])
+            plot_values_combined = sum1(plot_returned)  # Est-ce que le quadratique est déjà dans la fonction ?
+        return plot_values_combined
+
+    number_of_plots, number_of_same_objectives, same_objectives = penalty_plot_count()
+    color = penalty_color(number_of_plots, number_of_same_objectives)
+
+    number_of_plots = 0
+    for i_phase, nlp in enumerate(ocp.nlp):
+        for j in nlp.J:
+            if "time" in nlp.parameters.names:
+                if j.name == 'MINIMIZE_TIME':
+                    dt = Function("time", [nlp.parameters.cx], [j.dt])(nlp.parameters[nlp.parameters.names.index('time')].dt)
+            else:
+                dt = j.dt
+            if j.type in ObjectiveFcn.Mayer:
+                ocp.add_plot(f"Objectives", lambda x, u, p, j, dt: get_plotting_penalty_values(x, u, p, j, dt), plot_type=PlotType.POINT, phase=i_phase, j=j, dt=dt, color=color[number_of_plots], node_idx=j.node_idx, label=j.name)
+            else:
+                ocp.add_plot(f"Objectives", lambda x, u, p, j, dt: get_plotting_penalty_values(x, u, p, j, dt), plot_type=PlotType.INTEGRATED, phase=i_phase, j=j, dt=dt, color=color[number_of_plots], label=j.name)
+            number_of_plots += 1
+
+    return
 
 
 def prepare_ocp(
@@ -57,7 +126,11 @@ def prepare_ocp(
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    objective_functions = ObjectiveList()
+    objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau"))
+    objective_functions.add(Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q"))
+    objective_functions.add(Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, index=0, key="q"))
+    objective_functions.add(Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, node=Node.MID, index=1, key="q"))
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -104,7 +177,10 @@ def main():
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100)
 
-    # --- Print ocp structure --- #
+    # Custom plots
+    plot_objectives(ocp)
+
+    # # --- Print ocp structure --- #
     # ocp.print(to_console=False, to_graph=True)
 
     # --- Solve the ocp --- #
