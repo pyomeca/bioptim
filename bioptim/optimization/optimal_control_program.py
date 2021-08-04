@@ -635,13 +635,19 @@ class OptimalControlProgram:
             return color
 
         def get_plotting_penalty_values(t, x, u, p, objective, dt):
+            if len(x.shape) < 2:
+                x = x.reshape((-1, 1))
+
+            if isinstance(dt, Function):
+                # The division is to account for the steps in the integration. The else is for Mayer term
+                dt = dt(p)
+            dt = dt / (x.shape[1] - 1) if x.shape[1] > 1 else dt
+
             _target = objective.target[:, t] if objective.target is not None and not np.isnan(t) else []
             out = []
-            if len(x.shape) < 2:
-                out.append(sum2(objective.weighted_function(x, u, p, objective.weight, _target, dt)))
-            else:
-                for idx in range(x.shape[1]):
-                    out.append(sum2(objective.weighted_function(x[:, idx], u, p, objective.weight, _target, dt)))
+
+            for idx in range(x.shape[1]):
+                out.append(sum2(objective.weighted_function(x[:, idx], u, p, objective.weight, _target, dt)))
             return sum1(horzcat(*out))
 
         color = penalty_plot_color()
@@ -652,11 +658,12 @@ class OptimalControlProgram:
                 if objective is None:
                     continue
 
-                dt = (
-                    Function("time", [nlp.parameters.cx], [objective.dt])(nlp.parameters[nlp.parameters.names.index('time')].dt)
-                    if "time" in nlp.parameters
-                    else objective.dt
-                )
+                dt = objective.dt
+                if "time" in nlp.parameters:
+                    if isinstance(objective.type, ObjectiveFcn.Mayer):
+                        dt = 1
+                    else:
+                        dt = Function("time", [nlp.parameters.cx], [nlp.parameters.cx / nlp.ns])
 
                 plot_params = {
                     "fig_name": "Objectives",
@@ -667,7 +674,7 @@ class OptimalControlProgram:
                     "color": color[objective.name],
                     "label": objective.name,
                 }
-                if objective.type in ObjectiveFcn.Mayer:
+                if isinstance(objective.type, ObjectiveFcn.Mayer):
                     plot_params["plot_type"] = PlotType.POINT
                     plot_params["node_idx"] = objective.node_idx
                 else:

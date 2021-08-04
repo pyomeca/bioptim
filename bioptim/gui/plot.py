@@ -459,6 +459,7 @@ class PlotOcp:
                                 ax.plot(
                                     t, zero, color=color, zorder=0, label=label, **self.plot_options["point_plots"]
                                 )[0],
+                                variable,
                             ]
                         )
                     else:
@@ -584,16 +585,13 @@ class PlotOcp:
         ).states
         data_controls = sol.controls
         data_params = sol.parameters
-        data_params_in_dyn = np.array(
-            [data_params[key] for key in data_params if (key != "time" and key != "all")]
-        ).squeeze()
+        data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
 
-        for i, nlp in enumerate(self.ocp.nlp):
+        for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
                 for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
                     self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
-                for key in self.variable_sizes[i]:
-                    self.__update_xdata(key=key)
+            self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):
             step_size = nlp.ode_solver.steps_scipy + 1 if self.use_scipy_integrator else nlp.ode_solver.steps + 1
@@ -686,7 +684,7 @@ class PlotOcp:
 
         self.__update_axes()
 
-    def __update_xdata(self, key=None):
+    def __update_xdata(self):
         """
         Update of the time axes in plots
         """
@@ -699,7 +697,7 @@ class PlotOcp:
                     p.set_xdata(self.t_integrated[phase_idx][cmp])
                 ax = plot[2][-1].axes
             elif plot[0] == PlotType.POINT:
-                plot[2].set_xdata(self.t[phase_idx][np.array(self.plot_func[key][phase_idx].node_idx)])
+                plot[2].set_xdata(self.t[phase_idx][np.array(self.plot_func[plot[3]][phase_idx].node_idx)])
                 ax = plot[2].axes
             else:
                 plot[2].set_xdata(self.t[phase_idx])
