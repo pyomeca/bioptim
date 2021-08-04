@@ -621,20 +621,26 @@ class OptimalControlProgram:
 
         nlp.plot[plot_name] = custom_plot
 
-    def add_plot_objectives(self):
+    def add_plot_penalty(self, key: str):
         def penalty_plot_color():
             name_unique_objective = []
             for nlp in self.nlp:
-                for j in nlp.J:
-                    if j is None:
+                if key == 'objectives':
+                    penalties = nlp.J
+                elif key == 'constraints':
+                    penalties = nlp.g
+                else:
+                    raise RuntimeError(f"key parameter {key} is not valid, please use 'objectives' or 'constraints'.")
+                for penalty in penalties:
+                    if penalty is None:
                         continue
-                    name_unique_objective.append(j.name)
+                    name_unique_objective.append(penalty.name)
             color = {}
             for i, name in enumerate(name_unique_objective):
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def get_plotting_penalty_values(t, x, u, p, objective, dt):
+        def get_plotting_penalty_values(t, x, u, p, penalty, dt):
             if len(x.shape) < 2:
                 x = x.reshape((-1, 1))
 
@@ -643,44 +649,50 @@ class OptimalControlProgram:
                 dt = dt(p)
             dt = dt / (x.shape[1] - 1) if x.shape[1] > 1 else dt
 
-            if not isinstance(objective.dt, (float, int)):
+            if not isinstance(penalty.dt, (float, int)):
                 if dt.shape[0] > 1:
-                    dt = dt[objective.phase]
+                    dt = dt[penalty.phase]
 
-            _target = objective.target[:, t] if objective.target is not None and not np.isnan(t) else []
+            _target = penalty.target[:, t] if penalty.target is not None and not np.isnan(t) else []
             out = []
 
             for idx in range(x.shape[1]):
-                out.append(sum2(objective.weighted_function(x[:, idx], u, p, objective.weight, _target, dt)))
+                out.append(sum2(penalty.weighted_function(x[:, idx], u, p, penalty.weight, _target, dt)))
             return sum1(horzcat(*out))
 
         color = penalty_plot_color()
 
         cmp = 0
         for i_phase, nlp in enumerate(self.nlp):
-            for objective in nlp.J:
-                if objective is None:
+            if key == 'objectives':
+                penalties = nlp.J
+            elif key == 'constraints':
+                penalties = nlp.g
+            else:
+                raise RuntimeError(f"key parameter {key} is not valid, please use 'objectives' or 'constraints'.")
+            for penalty in penalties:
+                if penalty is None:
                     continue
 
-                dt = objective.dt
+                dt = penalty.dt
                 if "time" in nlp.parameters:
-                    if isinstance(objective.type, ObjectiveFcn.Mayer):
+                    if isinstance(penalty.type, ObjectiveFcn.Mayer):
                         dt = 1
-                    else:
+                    elif isinstance(penalty.type, ObjectiveFcn.Lagrange):
                         dt = Function("time", [nlp.parameters.cx[i_phase]], [nlp.parameters.cx[i_phase] / nlp.ns])
 
                 plot_params = {
-                    "fig_name": "Objectives",
+                    "fig_name": key,
                     "update_function": get_plotting_penalty_values,
                     "phase": i_phase,
-                    "objective": objective,
+                    "penalty": penalty,
                     "dt": dt,
-                    "color": color[objective.name],
-                    "label": objective.name,
+                    "color": color[penalty.name],
+                    "label": penalty.name,
                 }
-                if isinstance(objective.type, ObjectiveFcn.Mayer):
+                if isinstance(penalty.type, ObjectiveFcn.Mayer) or isinstance(penalty.type, ConstraintFcn):
                     plot_params["plot_type"] = PlotType.POINT
-                    plot_params["node_idx"] = objective.node_idx
+                    plot_params["node_idx"] = penalty.node_idx
                 else:
                     plot_params["plot_type"] = PlotType.INTEGRATED
                 self.add_plot(**plot_params)

@@ -734,8 +734,7 @@ class PlotOcp:
         """
         Update the plotted data from ydata
         """
-
-        assert len(self.plots) == len(self.ydata)
+        # assert len(self.plots) == len(self.ydata)
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
 
