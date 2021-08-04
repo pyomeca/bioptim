@@ -643,6 +643,10 @@ class OptimalControlProgram:
                 dt = dt(p)
             dt = dt / (x.shape[1] - 1) if x.shape[1] > 1 else dt
 
+            if not isinstance(objective.dt, (float, int)):
+                if dt.shape[0] > 1:
+                    dt = dt[objective.phase]
+
             _target = objective.target[:, t] if objective.target is not None and not np.isnan(t) else []
             out = []
 
@@ -663,7 +667,7 @@ class OptimalControlProgram:
                     if isinstance(objective.type, ObjectiveFcn.Mayer):
                         dt = 1
                     else:
-                        dt = Function("time", [nlp.parameters.cx], [nlp.parameters.cx / nlp.ns])
+                        dt = Function("time", [nlp.parameters.cx[i_phase]], [nlp.parameters.cx[i_phase] / nlp.ns])
 
                 plot_params = {
                     "fig_name": "Objectives",
