@@ -384,11 +384,10 @@ class PenaltyOption(OptionGeneric):
             all_pn.ocp.add_plot(
                 self.target_plot_name,
                 lambda t, x, u, p: self.target_to_plot,
-                color="tab:red",
-                linestyle=".-",
-                plot_type=PlotType.STEP,
+                plot_type=PlotType.POINT,
                 phase=all_pn.nlp.phase_idx,
                 axes_idx=Mapping(self.rows),
+                node_idx=self.node_idx,
             )
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
