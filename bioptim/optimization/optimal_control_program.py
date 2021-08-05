@@ -630,15 +630,16 @@ class OptimalControlProgram:
         key: str
             The name of the penalty to be plotted (objectives, contraints)
         """
+
         def penalty_plot_color():
             """
             Penalty plot with different name have a different color on the graph
             """
             name_unique_objective = []
             for nlp in self.nlp:
-                if key == 'objectives':
+                if key == "objectives":
                     penalties = nlp.J
-                elif key == 'constraints':
+                elif key == "constraints":
                     penalties = nlp.g
                 else:
                     raise RuntimeError(f"key parameter {key} is not valid, please use 'objectives' or 'constraints'.")
@@ -675,9 +676,9 @@ class OptimalControlProgram:
 
         cmp = 0
         for i_phase, nlp in enumerate(self.nlp):
-            if key == 'objectives':
+            if key == "objectives":
                 penalties = nlp.J
-            elif key == 'constraints':
+            elif key == "constraints":
                 penalties = nlp.g
             else:
                 raise RuntimeError(f"key parameter {key} is not valid, please use 'objectives' or 'constraints'.")
@@ -692,7 +693,9 @@ class OptimalControlProgram:
                     elif isinstance(penalty.type, ObjectiveFcn.Lagrange):
                         if not isinstance(penalty.dt, (float, int)):
                             if i_phase in self.time_param_phases_idx:
-                                dt = Function("time", [nlp.parameters.cx[i_phase]], [nlp.parameters.cx[i_phase] / nlp.ns])
+                                dt = Function(
+                                    "time", [nlp.parameters.cx[i_phase]], [nlp.parameters.cx[i_phase] / nlp.ns]
+                                )
 
                 plot_params = {
                     "fig_name": key,

@@ -105,7 +105,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100)
 
     # Custom plots
-    ocp.add_plot_penalty(key='objectives')
+    ocp.add_plot_penalty(key="objectives")
 
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=True)

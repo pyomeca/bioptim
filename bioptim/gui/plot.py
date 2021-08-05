@@ -654,7 +654,7 @@ class PlotOcp:
                         self.__append_to_ydata([y_tp])
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
-                    y = np.empty((len(self.plot_func[key][i].node_idx), ))
+                    y = np.empty((len(self.plot_func[key][i].node_idx),))
                     y.fill(np.nan)
                     i_node = 0
                     for node_idx in self.plot_func[key][i].node_idx:
