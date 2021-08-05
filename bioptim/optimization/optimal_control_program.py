@@ -679,7 +679,9 @@ class OptimalControlProgram:
                     if isinstance(penalty.type, ObjectiveFcn.Mayer):
                         dt = 1
                     elif isinstance(penalty.type, ObjectiveFcn.Lagrange):
-                        dt = Function("time", [nlp.parameters.cx[i_phase]], [nlp.parameters.cx[i_phase] / nlp.ns])
+                        if not isinstance(penalty.dt, (float, int)):
+                            if i_phase in self.time_param_phases_idx:
+                                dt = Function("time", [nlp.parameters.cx[i_phase]], [nlp.parameters.cx[i_phase] / nlp.ns])
 
                 plot_params = {
                     "fig_name": key,
@@ -1009,6 +1011,7 @@ class OptimalControlProgram:
 
         # Add to the v vector
         i = 0
+        time_param_phases_idx = []
         for nlp in self.nlp:
             if isinstance(nlp.tf, self.cx):
                 time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
@@ -1017,7 +1020,10 @@ class OptimalControlProgram:
                     cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
                 )
                 self.v.add_parameter(time_param)
+                time_param_phases_idx += [i]
                 i += 1
+
+        self.time_param_phases_idx = time_param_phases_idx
 
     def __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter]):
         """
