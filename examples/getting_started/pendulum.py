@@ -106,7 +106,6 @@ def main():
 
     # Custom plots
     ocp.add_plot_penalty(key='objectives')
-    ocp.add_plot_penalty(key='constraints')
 
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=True)

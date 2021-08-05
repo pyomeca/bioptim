@@ -114,6 +114,10 @@ def main():
 
     ocp = prepare_ocp()
 
+    # Objective and constraints plots
+    ocp.add_plot_penalty('objectives')
+    ocp.add_plot_penalty('constraints')
+
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 
