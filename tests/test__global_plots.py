@@ -29,7 +29,8 @@ def test_plot_graphs_one_phase():
         n_shooting=30,
         final_time=2,
     )
-    ocp.add_plot_objectives()
+    ocp.add_plot_penalty('objectives')
+    ocp.add_plot_penalty('constraints')
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -60,7 +61,8 @@ def test_plot_merged_graphs():
         use_residual_torque=True,
         kin_data_to_track="markers",
     )
-    ocp.add_plot_objectives()
+    ocp.add_plot_penalty('objectives')
+    ocp.add_plot_penalty('constraints')
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -70,7 +72,8 @@ def test_plot_graphs_multi_phases():
     bioptim_folder = TestUtils.bioptim_folder()
     graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
     ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod")
-    ocp.add_plot_objectives()
+    ocp.add_plot_penalty('objectives')
+    ocp.add_plot_penalty('constraints')
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -113,8 +116,9 @@ def test_add_new_plot():
     ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
-    # Add the plot of objective to this mess
-    ocp.add_plot_objectives()
+    # Add the plot of objectives and constraints to this mess
+    ocp.add_plot_penalty('objectives')
+    ocp.add_plot_penalty('constraints')
     sol.graphs(automatically_organize=False)
 
     # Delete the saved file
