@@ -665,7 +665,15 @@ class OptimalControlProgram:
                 if dt.shape[0] > 1:
                     dt = dt[penalty.phase]
 
-            _target = penalty.target[:, t] if penalty.target is not None and not np.isnan(t) else []
+            if penalty.target is not None:
+                if penalty.target is np.isnan(t):
+                    raise RuntimeError("oupsi it went badly (t in nan), please submit an issue on github pinging EveCharbie")
+                _target = penalty.target
+                if penalty.target.shape[0] > len(penalty.node_idx):
+                    _target = _target[:, t]
+            else:
+                _target = []
+
             out = []
 
             for idx in range(x.shape[1]):
