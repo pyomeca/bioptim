@@ -654,9 +654,10 @@ class PlotOcp:
                         self.__append_to_ydata([y_tp])
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
+                    y = np.empty((len(self.plot_func[key][i].node_idx), ))
+                    y.fill(np.nan)
+                    i_node = 0
                     for node_idx in self.plot_func[key][i].node_idx:
-                        y = np.empty((self.variable_sizes[i][key], 1))
-                        y.fill(np.nan)
                         val = self.plot_func[key][i].function(
                             node_idx,
                             state[:, node_idx],
@@ -664,12 +665,9 @@ class PlotOcp:
                             data_params_in_dyn,
                             **self.plot_func[key][i].parameters,
                         )
-                        if val.shape != y.shape:
-                            raise RuntimeError(
-                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}"
-                            )
-                        y[:, :] = val
-                        self.__append_to_ydata(y)
+                        y[i_node] = val
+                        i_node += 1
+                    self.ydata.append(y)
 
                 else:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
@@ -734,7 +732,7 @@ class PlotOcp:
         """
         Update the plotted data from ydata
         """
-        # assert len(self.plots) == len(self.ydata)
+        assert len(self.plots) == len(self.ydata)
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
 
