@@ -311,6 +311,12 @@ sol = ocp.solve(show_online_optim=True)
 ```
 If you feel fancy, you can even activate the online optimization graphs!
 However, for such an easy problem, `Ipopt` won't leave you the time to appreciate the realtime updates of the graph...
+For a more complicated problem, you may also wish to visualize the objectives and constraints during the optimization 
+(usefull when debugging, because who codes the right thing the first time). You can do it by calling
+```python
+ocp.add_plot_penalty('objectives')
+ocp.add_plot_penalty('constraints')
+```
 That's it!
 
 ## Show the results
