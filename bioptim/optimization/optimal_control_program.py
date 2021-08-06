@@ -639,14 +639,20 @@ class OptimalControlProgram:
             for nlp in self.nlp:
                 if key == "objectives":
                     penalties = nlp.J
+                    penalties_internal = nlp.J_internal
                 elif key == "constraints":
                     penalties = nlp.g
+                    penalties_internal = nlp.g_internal
                 else:
                     raise RuntimeError(f"key parameter {key} is not valid, please use 'objectives' or 'constraints'.")
                 for penalty in penalties:
                     if penalty is None:
                         continue
                     name_unique_objective.append(penalty.name)
+                for penalty_internal in penalties_internal:
+                    if penalty_internal is None:
+                        continue
+                    name_unique_objective.append(penalty_internal.name)
             color = {}
             for i, name in enumerate(name_unique_objective):
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
@@ -680,16 +686,7 @@ class OptimalControlProgram:
                 out.append(sum2(penalty.weighted_function(x[:, idx], u, p, penalty.weight, _target, dt)))
             return sum1(horzcat(*out))
 
-        color = penalty_plot_color()
-
-        cmp = 0
-        for i_phase, nlp in enumerate(self.nlp):
-            if key == "objectives":
-                penalties = nlp.J
-            elif key == "constraints":
-                penalties = nlp.g
-            else:
-                raise RuntimeError(f"key parameter {key} is not valid, please use 'objectives' or 'constraints'.")
+        def penalty_loop(penalties):
             for penalty in penalties:
                 if penalty is None:
                     continue
@@ -721,8 +718,22 @@ class OptimalControlProgram:
                     plot_params["plot_type"] = PlotType.INTEGRATED
                 self.add_plot(**plot_params)
 
-                cmp += 1
+            return
 
+        color = penalty_plot_color()
+
+        for i_phase, nlp in enumerate(self.nlp):
+            if key == "objectives":
+                penalties = nlp.J
+                penalties_internal = nlp.J_internal
+            elif key == "constraints":
+                penalties = nlp.g
+                penalties_internal = nlp.g_internal
+            else:
+                raise RuntimeError(f"key parameter {key} is not valid, please use 'objectives' or 'constraints'.")
+
+            penalty_loop(penalties)
+            penalty_loop(penalties_internal)
         return
 
     def prepare_plots(
