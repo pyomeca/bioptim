@@ -10,7 +10,7 @@ from casadi import Function, MX
 
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim import OptimalControlProgram
+from bioptim import OptimalControlProgram, CostType, OdeSolver
 
 from .utils import TestUtils
 
@@ -29,8 +29,7 @@ def test_plot_graphs_one_phase():
         n_shooting=30,
         final_time=2,
     )
-    ocp.add_plot_penalty(CostType.OBJECTIVES)
-    ocp.add_plot_penalty(CostType.CONSTRAINTS)
+    ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -58,11 +57,10 @@ def test_plot_merged_graphs():
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
+        ode_solver=OdeSolver.RK4(),
         use_residual_torque=True,
         kin_data_to_track="markers",
     )
-    ocp.add_plot_penalty(CostType.CONSTRAINTS)
-    ocp.add_plot_penalty(CostType.CONSTRAINTS)
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -72,8 +70,6 @@ def test_plot_graphs_multi_phases():
     bioptim_folder = TestUtils.bioptim_folder()
     graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
     ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod")
-    ocp.add_plot_penalty(CostType.OBJECTIVES)
-    ocp.add_plot_penalty(CostType.CONSTRAINTS)
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -117,8 +113,7 @@ def test_add_new_plot():
     sol.graphs(automatically_organize=False)
 
     # Add the plot of objectives and constraints to this mess
-    ocp.add_plot_penalty(CostType.OBJECTIVES)
-    ocp.add_plot_penalty(CostType.CONSTRAINTS)
+    ocp.add_plot_penalty(CostType.ALL)
     sol.graphs(automatically_organize=False)
 
     # Delete the saved file

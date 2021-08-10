@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
 from ..dynamics.configure_problem import DynamicsList, Dynamics
-from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
+from ..dynamics.ode_solver import RK as OdeSolverRK, OdeSolver, OdeSolverBase
 from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
@@ -27,7 +27,7 @@ from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
-from ..misc.enums import ControlType, Solver, Shooting, PlotType
+from ..misc.enums import ControlType, Solver, Shooting, PlotType, CostType
 from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
@@ -621,30 +621,29 @@ class OptimalControlProgram:
 
         nlp.plot[plot_name] = custom_plot
 
-    def add_plot_penalty(self, key: str):
+    def add_plot_penalty(self, cost_type: CostType = None):
         """
         To add penlaty (objectivs and constraints) plots
 
         Parameters
         ----------
-        key: str
-            The name of the penalty to be plotted (objectives, contraints)
+        cost_type: str
+            The name of the penalty to be plotted (objectives, constraints)
         """
 
-        def penalty_plot_color():
+        def penalty_color():
             """
             Penalty plot with different name have a different color on the graph
             """
             name_unique_objective = []
             for nlp in self.nlp:
-                if key == "objectives":
+                if cost_type == CostType.OBJECTIVES:
                     penalties = nlp.J
                     penalties_internal = nlp.J_internal
-                elif key == "constraints":
+                else:  # Constraints
                     penalties = nlp.g
                     penalties_internal = nlp.g_internal
-                else:
-                    raise RuntimeError(f"key parameter {key} is not valid, please use 'objectives' or 'constraints'.")
+
                 for penalty in penalties:
                     if penalty is None:
                         continue
@@ -658,7 +657,7 @@ class OptimalControlProgram:
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def get_plotting_penalty_values(t, x, u, p, penalty, dt):
+        def compute_penalty_values(t, x, u, p, penalty, dt):
             if len(x.shape) < 2:
                 x = x.reshape((-1, 1))
 
@@ -666,28 +665,24 @@ class OptimalControlProgram:
                 # The division is to account for the steps in the integration. The else is for Mayer term
                 dt = dt(p)
             dt = dt / (x.shape[1] - 1) if x.shape[1] > 1 else dt
-
             if not isinstance(penalty.dt, (float, int)):
                 if dt.shape[0] > 1:
                     dt = dt[penalty.phase]
 
-            if penalty.target is not None:
-                if penalty.target is np.isnan(t):
-                    raise RuntimeError("oupsi it went badly (t in nan), please submit an issue on github pinging EveCharbie")
-                _target = penalty.target
-                if penalty.target.shape[0] > len(penalty.node_idx):
-                    _target = _target[:, t]
-            else:
-                _target = []
+            _target = penalty.target[..., t] if penalty.target is not None and isinstance(t, int) else []
 
             out = []
-
-            for idx in range(x.shape[1]):
-                out.append(sum2(penalty.weighted_function(x[:, idx], u, p, penalty.weight, _target, dt)))
+            if penalty.transition:
+                raise NotImplementedError("add_plot_penalty with phase transition is not implemented yet")
+            elif penalty.derivative or penalty.explicit_derivative:
+                out.append(penalty.weighted_function(x, u, p, penalty.weight, _target, dt))
+            else:
+                _u = u if penalty.weighted_function.sparsity_in(1).shape[1] > 1 else u[:, :-1]
+                out.append(penalty.weighted_function(x[:, :-1], _u, p, penalty.weight, _target, dt))
             return sum1(horzcat(*out))
 
-        def penalty_loop(penalties):
-            for penalty in penalties:
+        def add_penalty(_penalties):
+            for penalty in _penalties:
                 if penalty is None:
                     continue
 
@@ -703,15 +698,20 @@ class OptimalControlProgram:
                                 )
 
                 plot_params = {
-                    "fig_name": key,
-                    "update_function": get_plotting_penalty_values,
+                    "fig_name": cost_type.name,
+                    "update_function": compute_penalty_values,
                     "phase": i_phase,
                     "penalty": penalty,
                     "dt": dt,
                     "color": color[penalty.name],
                     "label": penalty.name,
+                    "manually_compute_derivative": True,
                 }
-                if isinstance(penalty.type, ObjectiveFcn.Mayer) or isinstance(penalty.type, ConstraintFcn):
+                if (
+                    isinstance(penalty.type, ObjectiveFcn.Mayer)
+                    or isinstance(penalty.type, ConstraintFcn)
+                    or penalty.transition
+                ):
                     plot_params["plot_type"] = PlotType.POINT
                     plot_params["node_idx"] = penalty.node_idx
                 else:
@@ -720,20 +720,29 @@ class OptimalControlProgram:
 
             return
 
-        color = penalty_plot_color()
+        if cost_type is None:
+            cost_type = CostType.ALL
 
+        color = penalty_color()
         for i_phase, nlp in enumerate(self.nlp):
-            if key == "objectives":
+            if not isinstance(nlp.ode_solver, OdeSolverRK):
+                raise NotImplementedError("add_plot_penalty is only available for RK based integration yet")
+
+            if cost_type == CostType.OBJECTIVES:
                 penalties = nlp.J
                 penalties_internal = nlp.J_internal
-            elif key == "constraints":
+            elif cost_type == CostType.CONSTRAINTS:
                 penalties = nlp.g
                 penalties_internal = nlp.g_internal
+            elif cost_type == CostType.ALL:
+                self.add_plot_penalty(CostType.OBJECTIVES)
+                self.add_plot_penalty(CostType.CONSTRAINTS)
+                return
             else:
-                raise RuntimeError(f"key parameter {key} is not valid, please use 'objectives' or 'constraints'.")
+                raise RuntimeError(f"cost_type parameter {cost_type} is not valid.")
 
-            penalty_loop(penalties)
-            penalty_loop(penalties_internal)
+            add_penalty(penalties)
+            add_penalty(penalties_internal)
         return
 
     def prepare_plots(

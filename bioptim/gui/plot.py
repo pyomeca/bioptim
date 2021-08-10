@@ -58,6 +58,7 @@ class CustomPlot:
         bounds: Bounds = None,
         node_idx: list = None,
         label: list = None,
+        manually_compute_derivative: bool = False,
         **parameters: Any,
     ):
         """
@@ -79,12 +80,14 @@ class CustomPlot:
             The style of the line as specified in matplotlib
         ylim: Union[tuple[float, float], list[float, float]]
             The ylim of the axes as specified in matplotlib
-        bounds:
+        bounds: Bounds
             The bounds to show on the graph
-        node_idx:
+        node_idx: list
             The node time to be plotted on the graphs
-        label:
+        label: list
             Label of the curve to plot (to be added to the legend)
+        manually_compute_derivative: bool
+            If the function should send the next node with x and u. Prevents from computing all at once (therefore a bit slower)
         """
 
         self.function = update_function
@@ -105,6 +108,7 @@ class CustomPlot:
         self.bounds = bounds
         self.node_idx = node_idx
         self.label = label
+        self.manually_compute_derivative = manually_compute_derivative
         self.parameters = parameters
 
 
@@ -331,9 +335,9 @@ class PlotOcp:
                             nlp.plot[key]
                             .function(
                                 np.nan,
-                                np.zeros((nlp.states.shape, 1)),
-                                np.zeros((nlp.controls.shape, 1)),
-                                np.zeros((len(nlp.parameters), 1)),
+                                np.zeros((nlp.states.shape, 2)),
+                                np.zeros((nlp.controls.shape, 2)),
+                                np.zeros((len(nlp.parameters), 2)),
                                 **nlp.plot[key].parameters,
                             )
                             .shape[0]
@@ -633,10 +637,11 @@ class PlotOcp:
                         y_tp = np.empty((self.variable_sizes[i][key], len(t)))
                         y_tp.fill(np.nan)
 
+                        mod = 1 if self.plot_func[key][i].manually_compute_derivative else 0
                         val = self.plot_func[key][i].function(
                             idx,
-                            state[:, step_size * idx : step_size * (idx + 1)],
-                            control[:, idx : idx + u_mod2],
+                            state[:, step_size * idx : step_size * (idx + 1) + mod],
+                            control[:, idx : idx + u_mod2 + 1],
                             data_params_in_dyn,
                             **self.plot_func[key][i].parameters,
                         )
@@ -656,28 +661,40 @@ class PlotOcp:
                 elif self.plot_func[key][i].type == PlotType.POINT:
                     y = np.empty((len(self.plot_func[key][i].node_idx),))
                     y.fill(np.nan)
-                    i_node = 0
-                    for node_idx in self.plot_func[key][i].node_idx:
+                    mod = 1 if self.plot_func[key][i].manually_compute_derivative else 0
+                    for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
                         val = self.plot_func[key][i].function(
                             node_idx,
-                            state[:, node_idx],
-                            control[:, node_idx],
+                            state[:, node_idx * step_size : (node_idx + 1) * step_size + mod : step_size],
+                            control[:, node_idx : node_idx + 1 + mod],
                             data_params_in_dyn,
                             **self.plot_func[key][i].parameters,
                         )
                         y[i_node] = val
-                        i_node += 1
                     self.ydata.append(y)
 
                 else:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
-                    val = self.plot_func[key][i].function(
-                        i, state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
-                    )
-                    if val.shape != y.shape:
-                        raise RuntimeError(f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}")
-                    y[:, :] = val
+                    if self.plot_func[key][i].manually_compute_derivative:
+                        for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
+                            val = self.plot_func[key][i].function(
+                                node_idx,
+                                state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
+                                control[:, node_idx : node_idx + 1 + 1],
+                                data_params_in_dyn,
+                                **self.plot_func[key][i].parameters,
+                            )
+                            y[:, i_node] = val
+                    else:
+                        val = self.plot_func[key][i].function(
+                            i, state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                        )
+                        if val.shape != y.shape:
+                            raise RuntimeError(
+                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}"
+                            )
+                        y[:, :] = val
                     self.__append_to_ydata(y)
 
         self.__update_axes()

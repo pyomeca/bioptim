@@ -272,8 +272,7 @@ def main():
     )
 
     # Add the objective plot for more fun!
-    ocp.add_plot_penalty(CostType.OBJECTIVES)
-    ocp.add_plot_penalty(CostType.CONSTRAINTS)
+    ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

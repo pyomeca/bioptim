@@ -106,15 +106,13 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100)
 
     # Custom plots
-    ocp.add_plot_penalty(CostType.OBJECTIVES)
-    ocp.add_plot_penalty(CostType.CONSTRAINTS)
+    ocp.add_plot_penalty(CostType.ALL)
 
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
     sol = ocp.solve(show_online_optim=False)
-
     sol.graphs()
 
     # --- Show the results in a bioviz animation --- #
