@@ -39,6 +39,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         window_size: Union[int, list[int]]
             The number of shooting point of the moving window
         """
+        self.states = []
+        self.controls = []
 
         if isinstance(biorbd_model, (list, tuple)) and len(biorbd_model) > 1:
             raise ValueError("Receding horizon optimization must be defined using only one biorbd_model")
@@ -58,6 +60,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         solver: Solver = Solver.ACADOS,
         solver_options: dict = None,
         solver_options_first_iter: dict = None,
+        mhe_options: dict = None,
     ) -> Solution:
         """
         Solve MHE program. The program runs until 'update_function' returns False. This function can be used to
@@ -93,12 +96,19 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         t = 0
         sol = None
-        states = []
-        controls = []
         if solver_options_first_iter is None and solver_options is not None:
             solver_options_first_iter = solver_options
             solver_options = None
         solver_option_current = solver_options_first_iter if solver_options_first_iter else solver_options
+
+        if mhe_options is None:
+            mhe_options = {"frame_to_export": 0}
+        else:
+            if "frame_to_export" not in mhe_options:
+                mhe_options["frame_to_export"] = 0
+
+        if isinstance(mhe_options["frame_to_export"], int):
+            mhe_options["frame_to_export"] = slice(mhe_options["frame_to_export"], mhe_options["frame_to_export"] + 1)
 
         total_time = 0
         real_time = 0
@@ -106,16 +116,15 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             sol = super(RecedingHorizonOptimization, self).solve(solver=solver, solver_options=solver_option_current)
             solver_option_current = solver_options if t == 0 else None
 
-            total_time += sol.time_to_optimize
+            total_time += sol.real_time_to_optimize
             if t == 0:
                 real_time = time()  # Skip the compile time (so skip the first call to solve)
 
             # Solve and save the current window
-            states.append(sol.states["all"][:, 0:1])
-            controls.append(sol.controls["all"][:, 0:1])
+            self.export_current_window(sol, mhe_options["frame_to_export"])
 
             # Update the initial frame bounds and initial guess
-            self._advance_windows(sol)
+            self.advance_window(sol)
 
             t += 1
         real_time = time() - real_time
@@ -129,14 +138,14 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             skip_continuity=True,
         )
 
-        states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        sol = Solution(solution_ocp, [states, controls])
+        self.states = InitialGuess(np.concatenate(self.states, axis=1), interpolation=InterpolationType.EACH_FRAME)
+        self.controls = InitialGuess(np.concatenate(self.controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
+        sol = Solution(solution_ocp, [self.states, self.controls])
         sol.time_to_optimize = total_time
         sol.real_time_to_optimize = real_time
         return sol
 
-    def _advance_windows(self, sol: Solution, steps: int = 0):
+    def advance_window(self, sol: Solution, steps: int = 0):
         # Update the initial frame bounds
         if self.nlp[0].x_bounds.type != InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             if self.nlp[0].x_bounds.type == InterpolationType.CONSTANT:
@@ -156,16 +165,26 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 np.ndarray(sol.states["all"].shape), interpolation=InterpolationType.EACH_FRAME
             )
             self.nlp[0].x_init.check_and_adjust_dimensions(self.nlp[0].states.shape, self.nlp[0].ns)
+
+        if self.nlp[0].u_init.type != InterpolationType.EACH_FRAME:
+            self.nlp[0].u_init = InitialGuess(
+                np.ndarray(sol.controls["all"].shape), interpolation=InterpolationType.EACH_FRAME
+            )
+            self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls.shape, self.nlp[0].ns)
+
         self.nlp[0].x_init.init[:, :] = np.concatenate(
             (sol.states["all"][:, 1:], sol.states["all"][:, -1][:, np.newaxis]), axis=1
         )
 
-    def _define_time(
-        self,
-        phase_time: Union[int, float, list, tuple],
-        objective_functions,
-        constraints,
-    ):
+        self.nlp[0].u_init.init[:, :] = np.concatenate(
+            (sol.controls["all"][:, 1:], sol.controls["all"][:, -2:-1][:, np.newaxis]), axis=1
+        )
+
+    def export_current_window(self, sol, frame):
+        self.states.append(sol.states["all"][:, frame])
+        self.controls.append(sol.controls["all"][:, frame])
+
+    def _define_time(self, phase_time: Union[int, float, list, tuple], objective_functions, constraints):
         """
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
         a sanity check is perform and the values of initial guess and bounds for these particular phases
