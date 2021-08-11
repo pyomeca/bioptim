@@ -114,6 +114,9 @@ def main():
 
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50)
 
+    # Let's show the objectives
+    ocp.add_plot_penalty("objectives")
+
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 

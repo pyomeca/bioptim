@@ -82,6 +82,7 @@ class PlotType(Enum):
     PLOT = 0  # Linking between points
     INTEGRATED = 1  # Linking between interpolated points
     STEP = 2  # Step plot
+    POINT = 3  # Point plot
 
 
 class ControlType(Enum):

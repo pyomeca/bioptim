@@ -39,6 +39,8 @@ class CustomPlot:
         The ylim of the axes as specified in matplotlib
     bounds: Bounds
         The bounds to show on the graph
+    node_idx : list
+        The node time to be plotted on the graphs
     parameters: Any
         The parameters of the function
     """
@@ -54,6 +56,9 @@ class CustomPlot:
         linestyle: str = None,
         ylim: Union[tuple, list] = None,
         bounds: Bounds = None,
+        node_idx: list = None,
+        label: list = None,
+        manually_compute_derivative: bool = False,
         **parameters: Any,
     ):
         """
@@ -75,8 +80,14 @@ class CustomPlot:
             The style of the line as specified in matplotlib
         ylim: Union[tuple[float, float], list[float, float]]
             The ylim of the axes as specified in matplotlib
-        bounds:
+        bounds: Bounds
             The bounds to show on the graph
+        node_idx: list
+            The node time to be plotted on the graphs
+        label: list
+            Label of the curve to plot (to be added to the legend)
+        manually_compute_derivative: bool
+            If the function should send the next node with x and u. Prevents from computing all at once (therefore a bit slower)
         """
 
         self.function = update_function
@@ -95,6 +106,9 @@ class CustomPlot:
         self.linestyle = linestyle
         self.ylim = ylim
         self.bounds = bounds
+        self.node_idx = node_idx
+        self.label = label
+        self.manually_compute_derivative = manually_compute_derivative
         self.parameters = parameters
 
 
@@ -210,6 +224,7 @@ class PlotOcp:
             "general_options": {"use_tight_layout": False},
             "non_integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
             "integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
+            "point_plots": {"linestyle": None, "marker": ".", "markersize": 15},
             "bounds": {"color": "k", "linewidth": 0.4, "linestyle": "-"},
             "grid": {"color": "k", "linestyle": "-", "linewidth": 0.15},
             "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
@@ -302,6 +317,12 @@ class PlotOcp:
         Setup the plots
         """
 
+        def legend_without_duplicate_labels(ax):
+            handles, labels = ax.get_legend_handles_labels()
+            unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
+            if unique:
+                ax.legend(*zip(*unique))
+
         variable_sizes = []
         for i, nlp in enumerate(self.ocp.nlp):
             variable_sizes.append({})
@@ -313,9 +334,10 @@ class PlotOcp:
                         size = (
                             nlp.plot[key]
                             .function(
-                                np.zeros((nlp.states.shape, 1)),
-                                np.zeros((nlp.controls.shape, 1)),
-                                np.zeros((len(nlp.parameters), 1)),
+                                np.nan,
+                                np.zeros((nlp.states.shape, 2)),
+                                np.zeros((nlp.controls.shape, 2)),
+                                np.zeros((len(nlp.parameters), 2)),
                                 **nlp.plot[key].parameters,
                             )
                             .shape[0]
@@ -351,7 +373,6 @@ class PlotOcp:
                     axes = self.__add_new_axis(variable, nb, n_rows, n_cols)
                     self.axes[variable] = [nlp.plot[variable], axes]
 
-                t = self.t[i]
                 if variable not in self.plot_func:
                     self.plot_func[variable] = [
                         nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
@@ -378,42 +399,77 @@ class PlotOcp:
                             y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[k] for j in range(nlp.ns)])
                         y_range, _ = self.__compute_ylim(y_min, y_max, 1.25)
                         ax.set_ylim(y_range)
-                    zero = np.zeros((t.shape[0], 1))
                     plot_type = self.plot_func[variable][i].type
+
+                    t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
+                    if self.plot_func[variable][i].label:
+                        label = self.plot_func[variable][i].label
+                    else:
+                        label = None
+
                     if plot_type == PlotType.PLOT:
+                        zero = np.zeros((t.shape[0], 1))
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:green"
                         self.plots.append(
                             [
                                 plot_type,
                                 i,
-                                ax.plot(t, zero, color=color, zorder=0, **self.plot_options["non_integrated_plots"])[0],
+                                ax.plot(
+                                    t,
+                                    zero,
+                                    color=color,
+                                    zorder=0,
+                                    label=label,
+                                    **self.plot_options["non_integrated_plots"],
+                                )[0],
                             ]
                         )
                     elif plot_type == PlotType.INTEGRATED:
-                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         plots_integrated = []
                         n_int_steps = nlp.ode_solver.steps_scipy if self.use_scipy_integrator else nlp.ode_solver.steps
+                        zero = np.zeros(n_int_steps + 1)
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         for cmp in range(nlp.ns):
                             plots_integrated.append(
                                 ax.plot(
                                     self.t_integrated[i][cmp],
-                                    np.zeros(n_int_steps + 1),
+                                    zero,
                                     color=color,
+                                    label=label,
                                     **self.plot_options["integrated_plots"],
                                 )[0]
                             )
                         self.plots.append([plot_type, i, plots_integrated])
-
                     elif plot_type == PlotType.STEP:
+                        zero = np.zeros((t.shape[0], 1))
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:orange"
                         linestyle = (
                             self.plot_func[variable][i].linestyle if self.plot_func[variable][i].linestyle else "-"
                         )
                         self.plots.append(
-                            [plot_type, i, ax.step(t, zero, linestyle, where="post", color=color, zorder=0)[0]]
+                            [
+                                plot_type,
+                                i,
+                                ax.step(t, zero, linestyle, where="post", color=color, zorder=0, label=label)[0],
+                            ]
+                        )
+                    elif plot_type == PlotType.POINT:
+                        zero = np.zeros((t.shape[0], 1))
+                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:purple"
+                        self.plots.append(
+                            [
+                                plot_type,
+                                i,
+                                ax.plot(
+                                    t, zero, color=color, zorder=0, label=label, **self.plot_options["point_plots"]
+                                )[0],
+                                variable,
+                            ]
                         )
                     else:
                         raise RuntimeError(f"{plot_type} is not implemented yet")
+
+                    legend_without_duplicate_labels(ax)
 
                 for j, ax in enumerate(axes):
                     intersections_time = self.find_phases_intersections()
@@ -533,7 +589,7 @@ class PlotOcp:
         ).states
         data_controls = sol.controls
         data_params = sol.parameters
-        data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "time"]).squeeze()
+        data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
 
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
@@ -580,12 +636,20 @@ class PlotOcp:
                     for idx, t in enumerate(self.t_integrated[i]):
                         y_tp = np.empty((self.variable_sizes[i][key], len(t)))
                         y_tp.fill(np.nan)
-                        y_tp[:, :] = self.plot_func[key][i].function(
-                            state[:, step_size * idx : step_size * (idx + 1)],
-                            control[:, idx : idx + u_mod2],
+
+                        mod = 1 if self.plot_func[key][i].manually_compute_derivative else 0
+                        val = self.plot_func[key][i].function(
+                            idx,
+                            state[:, step_size * idx : step_size * (idx + 1) + mod],
+                            control[:, idx : idx + u_mod2 + 1],
                             data_params_in_dyn,
                             **self.plot_func[key][i].parameters,
                         )
+                        if val.shape != y_tp.shape:
+                            raise RuntimeError(
+                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}"
+                            )
+                        y_tp[:, :] = val
                         all_y.append(y_tp)
 
                     for idx in range(len(self.plot_func[key][i].phase_mappings.map_idx)):
@@ -593,23 +657,46 @@ class PlotOcp:
                         for y in all_y:
                             y_tp.append(y[idx, :])
                         self.__append_to_ydata([y_tp])
+
+                elif self.plot_func[key][i].type == PlotType.POINT:
+                    y = np.empty((len(self.plot_func[key][i].node_idx),))
+                    y.fill(np.nan)
+                    mod = 1 if self.plot_func[key][i].manually_compute_derivative else 0
+                    for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
+                        val = self.plot_func[key][i].function(
+                            node_idx,
+                            state[:, node_idx * step_size : (node_idx + 1) * step_size + mod : step_size],
+                            control[:, node_idx : node_idx + 1 + mod],
+                            data_params_in_dyn,
+                            **self.plot_func[key][i].parameters,
+                        )
+                        y[i_node] = val
+                    self.ydata.append(y)
+
                 else:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
-                    try:
-                        y[:, :] = self.plot_func[key][i].function(
-                            state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
-                        )
-                    except ValueError:
-                        val = (
-                            self.plot_func[key][i]
-                            .function(
-                                state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                    if self.plot_func[key][i].manually_compute_derivative:
+                        for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
+                            val = self.plot_func[key][i].function(
+                                node_idx,
+                                state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
+                                control[:, node_idx : node_idx + 1 + 1],
+                                data_params_in_dyn,
+                                **self.plot_func[key][i].parameters,
                             )
-                            .shape
+                            y[:, i_node] = val
+                    else:
+                        val = self.plot_func[key][i].function(
+                            i, state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
                         )
-                        raise ValueError(f"Wrong dimensions for plot {key}. Got " f"{val}" f", but expected {y.shape}")
+                        if val.shape != y.shape:
+                            raise RuntimeError(
+                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}"
+                            )
+                        y[:, :] = val
                     self.__append_to_ydata(y)
+
         self.__update_axes()
 
     def __update_xdata(self):
@@ -624,6 +711,9 @@ class PlotOcp:
                 for cmp, p in enumerate(plot[2]):
                     p.set_xdata(self.t_integrated[phase_idx][cmp])
                 ax = plot[2][-1].axes
+            elif plot[0] == PlotType.POINT:
+                plot[2].set_xdata(self.t[phase_idx][np.array(self.plot_func[plot[3]][phase_idx].node_idx)])
+                ax = plot[2].axes
             else:
                 plot[2].set_xdata(self.t[phase_idx])
                 ax = plot[2].axes
@@ -659,7 +749,6 @@ class PlotOcp:
         """
         Update the plotted data from ydata
         """
-
         assert len(self.plots) == len(self.ydata)
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
