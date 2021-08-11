@@ -11,6 +11,7 @@ from .solver_interface import SolverInterface
 from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType
+from time import time
 
 
 class AcadosInterface(SolverInterface):
@@ -128,6 +129,7 @@ class AcadosInterface(SolverInterface):
         self.W_e = np.zeros((0, 0))
         self.status = None
         self.out = {}
+        self.total_time_to_optimize = 0
 
         self.all_constr = None
         self.end_constr = SX()
@@ -679,6 +681,7 @@ class AcadosInterface(SolverInterface):
             "time_tot": self.ocp_solver.get_stats("time_tot")[0],
             "iter": self.ocp_solver.get_stats("sqp_iter")[0],
             "status": self.status,
+            "total_time_to_optimize": self.total_time_to_optimize,
         }
 
         out["x"] = vertcat(out["x"], acados_x.reshape(-1, 1, order="F"))
@@ -700,6 +703,7 @@ class AcadosInterface(SolverInterface):
         A reference to the solution
         """
 
+        tic = time()
         # Populate costs and constraints vectors
         self.__set_costs(self.ocp)
         self.__set_constraints(self.ocp)
@@ -708,5 +712,6 @@ class AcadosInterface(SolverInterface):
         self.__update_solver()
 
         self.status = self.ocp_solver.solve()
+        self.total_time_to_optimize = time() - tic
         self.get_optimized_value()
         return self

@@ -298,7 +298,9 @@ class Solution:
             self.inf_pr = _sol["inf_pr"] if isinstance(_sol, dict) and "inf_pr" in _sol else None
             self.inf_du = _sol["inf_du"] if isinstance(_sol, dict) and "inf_du" in _sol else None
             self.time_to_optimize = _sol["time_tot"] if isinstance(_sol, dict) and "time_tot" in _sol else None
-            self.real_time_to_optimize = self.time_to_optimize
+            self.real_time_to_optimize = (
+                _sol["total_time_to_optimize"] if "total_time_to_optimize" in _sol else self.time_to_optimize
+            )
             self.iterations = _sol["iter"] if isinstance(_sol, dict) and "iter" in _sol else None
             self.status = _sol["status"] if isinstance(_sol, dict) and "status" in _sol else None
 
