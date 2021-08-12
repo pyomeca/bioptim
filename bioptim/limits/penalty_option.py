@@ -288,8 +288,7 @@ class PenaltyOption(OptionGeneric):
             state_cx = horzcat(vertcat(*[nlp.states.cx[i] for i in self.states_pre_idx]),
                                vertcat(*[nlp_post.states.cx[i] for i in self.states_post_idx]))
             # Simulates a phase transition involving continuity on controls (Currently, no transition use this concept)
-            control_cx = horzcat(nlp.controls.cx, nlp.controls.cx_end)
-            # control_cx = horzcat(nlp.controls.cx_end, nlp_post.controls.cx)
+            control_cx = horzcat(nlp.controls.cx_end, nlp_post.controls.cx)
 
         else:
             ocp = all_pn.ocp
