@@ -380,7 +380,17 @@ class OptimalControlProgram:
         # Prepare the variable mappings
         if variable_mappings is None:
             variable_mappings = BiMappingList()
-        NLP.add(self, "variable_mappings", variable_mappings, True)
+
+        variable_mappings_per_phase = [{} for _ in range(self.n_phases)]
+        for mappings in variable_mappings:
+            for mapping in mappings:
+                if mappings[mapping].phase == -1:
+                    for i_phase in range(self.n_phases):
+                        variable_mappings_per_phase[i_phase][mapping] = mappings[mapping]
+                else:
+                    variable_mappings_per_phase[mappings[mapping].phase][mapping] = mappings[mapping]
+
+        NLP.add(self, "variable_mappings", variable_mappings_per_phase, True)
 
         # Prepare the dynamics
         for i in range(self.n_phases):
