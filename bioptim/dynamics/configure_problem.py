@@ -8,6 +8,7 @@ from .dynamics_functions import DynamicsFunctions
 from .fatigue_dynamics import FatigueList
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
+from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
@@ -44,7 +45,7 @@ class ConfigureProblem:
     configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params)
         Configure the contact points
     configure_new_variable(
-        name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_plot: bool = False
+        name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_state_control_plot: bool = False
     )
         Add a new variable to the states/controls pool
     configure_q(nlp, as_states: bool, as_controls: bool)
@@ -315,7 +316,7 @@ class ConfigureProblem:
 
     @staticmethod
     def configure_new_variable(
-        name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_plot: bool = False
+        name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_name: str = None, combine_state_control_plot: bool = False, skip_plot: bool = False
     ):
         """
         Add a new variable to the states/controls pool
@@ -332,9 +333,16 @@ class ConfigureProblem:
             If the new variable should be added to the state variable set
         as_controls: bool
             If the new variable should be added to the control variable set
-        combine_plot: bool
+        combine_name: str
+            The name of a previously added plot to combine to
+        combine_state_control_plot: bool
             If states and controls plot should be combined. Only effective if as_states and as_controls are both True
+        skip_plot: bool
+            If no plot should be automatically added
         """
+
+        if combine_state_control_plot and combine_name is not None:
+            raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
 
         def define_cx(n_col: int) -> list:
             _cx = [nlp.cx() for _ in range(n_col)]
@@ -366,21 +374,23 @@ class ConfigureProblem:
             cx = define_cx(n_col=n_cx)
 
             nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
-            nlp.plot[f"{name}_states"] = CustomPlot(
-                lambda t, x, u, p: x[nlp.states[name].index, :], plot_type=PlotType.INTEGRATED, legend=legend
-            )
+            if not skip_plot:
+                nlp.plot[f"{name}_states"] = CustomPlot(
+                    lambda t, x, u, p: x[nlp.states[name].index, :], plot_type=PlotType.INTEGRATED, legend=legend, combine_to=combine_name
+                )
 
         if as_controls:
             cx = define_cx(n_col=2)
 
             nlp.controls.append(name, cx, mx_controls, nlp.variable_mappings[name])
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
-            nlp.plot[f"{name}_controls"] = CustomPlot(
-                lambda t, x, u, p: u[nlp.controls[name].index, :],
-                plot_type=plot_type,
-                legend=legend,
-                combine_to=f"{name}_states" if as_states and combine_plot else None,
-            )
+            if not skip_plot:
+                nlp.plot[f"{name}_controls"] = CustomPlot(
+                    lambda t, x, u, p: u[nlp.controls[name].index, :],
+                    plot_type=plot_type,
+                    legend=legend,
+                    combine_to=f"{name}_states" if as_states and combine_state_control_plot else combine_name,
+                )
 
     @staticmethod
     def configure_q(nlp, as_states: bool, as_controls: bool):
@@ -448,15 +458,40 @@ class ConfigureProblem:
                     raise ValueError("Fatigue for tau must be of all same types")
 
             tau_keys = []
-            for tau_suffix in fatigue_tau.suffix:
+
+            # Prepare the plot that will combine everything
+            n_tau = len(name_tau)
+            tau_legend = [f"tau_{i}" for i in name_tau]
+            tau_color = ["tab:orange", "tab:green"]
+            fatigue_tau_color = ["tab:green", "tab:orange", "tab:red"]
+            fatigue_mod = [-1, 1]
+            nlp.plot[f"tau_controls"] = CustomPlot(lambda t, x, u, p: u[: n_tau, :] * np.nan, plot_type=PlotType.STEP, legend=tau_legend)
+            nlp.plot[f"fatigue_tau"] = CustomPlot(lambda t, x, u, p: x[: n_tau, :] * np.nan, plot_type=PlotType.INTEGRATED, legend=tau_legend, bounds=Bounds(-1, 1))
+
+            for i, tau_suffix in enumerate(fatigue_tau.suffix):
                 tau_keys.append(f"tau_{tau_suffix}")
 
                 ConfigureProblem._adjust_mapping(tau_keys[-1], ["qdot", "taudot"], nlp)
-                ConfigureProblem.configure_new_variable(tau_keys[-1], name_tau, nlp, as_states, as_controls)
-                for params in fatigue_suffix:
-                    ConfigureProblem._adjust_mapping(f"tau_{params}_{tau_suffix}", ["q"], nlp)
-                    ConfigureProblem.configure_new_variable(
-                        f"tau_{params}_{tau_suffix}", name_tau, nlp, True, False, combine_plot=True
+                ConfigureProblem.configure_new_variable(tau_keys[-1], name_tau, nlp, as_states, as_controls, skip_plot=True)
+                nlp.plot[f"{tau_keys[-1]}_controls"] = CustomPlot(
+                    lambda t, x, u, p, key: u[nlp.controls[key].index, :],
+                    plot_type=PlotType.STEP,
+                    combine_to="tau_controls",
+                    key=tau_keys[-1],
+                    color=tau_color[i],
+                )
+
+                for p, params in enumerate(fatigue_suffix):
+                    name = f"tau_{params}_{tau_suffix}"
+                    ConfigureProblem._adjust_mapping(name, ["q"], nlp)
+                    ConfigureProblem.configure_new_variable(name, name_tau, nlp, True, False, skip_plot=True)
+                    nlp.plot[f"{name}_controls"] = CustomPlot(
+                        lambda t, x, u, p, key, mod: mod * x[nlp.states[key].index, :],
+                        plot_type=PlotType.INTEGRATED,
+                        combine_to="fatigue_tau",
+                        key=name,
+                        color=fatigue_tau_color[p],
+                        mod=fatigue_mod[i],
                     )
 
             # Create a fake "tau" accessor
@@ -528,12 +563,25 @@ class ConfigureProblem:
         """
 
         muscle_names = [names.to_string() for names in nlp.model.muscleNames()]
-        ConfigureProblem.configure_new_variable("muscles", muscle_names, nlp, as_states, as_controls, True)
+        ConfigureProblem.configure_new_variable("muscles", muscle_names, nlp, as_states, as_controls, combine_state_control_plot=True)
         if fatigue is not None and "muscles" in fatigue:
+
+            # Prepare the plot that will combine everything
+            n_mus = len(muscle_names)
+            fatigue_color = ["tab:green", "tab:orange", "tab:red"]
+            nlp.plot[f"fatigue_muscles"] = CustomPlot(lambda t, x, u, p: x[: n_mus, :] * np.nan, plot_type=PlotType.INTEGRATED, legend=muscle_names, bounds=Bounds(0, 1))
+
             if len(fatigue["muscles"]) != len(muscle_names):
                 raise NotImplementedError("Fatiguing a subset of muscles is not supported yet")
-            for suffix in fatigue["muscles"].suffix:
-                ConfigureProblem.configure_new_variable(f"muscles_{suffix}", muscle_names, nlp, True, False, combine_plot=True)
+            for s, suffix in enumerate(fatigue["muscles"].suffix):
+                ConfigureProblem.configure_new_variable(f"muscles_{suffix}", muscle_names, nlp, as_states=True, as_controls=False, skip_plot=True)
+                nlp.plot[f"muscles_{suffix}"] = CustomPlot(
+                    lambda t, x, u, p, key: x[nlp.states[key].index, :],
+                    plot_type=PlotType.INTEGRATED,
+                    combine_to="fatigue_muscles",
+                    key=f"muscles_{suffix}",
+                    color=fatigue_color[s],
+                )
 
     @staticmethod
     def _adjust_mapping(key_to_adjust: str, reference_keys: list, nlp):

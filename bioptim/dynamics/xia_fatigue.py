@@ -45,7 +45,7 @@ class XiaFatigue(FatigueModel):
 
     @staticmethod
     def default_initial_guess() -> list:
-        return [0, 0, 0]
+        return [0, 1, 0]
 
     @staticmethod
     def default_bounds() -> list:

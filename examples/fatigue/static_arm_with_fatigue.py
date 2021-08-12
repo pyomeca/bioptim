@@ -61,7 +61,7 @@ def prepare_ocp(
 
     n_tau = biorbd_model.nbGeneralizedTorque()
     n_muscles = biorbd_model.nbMuscleTotal()
-    tau_min, tau_max = -1, 1
+    tau_min, tau_max = -10, 10
 
     # Define fatigue parameters for each muscle and residual torque
     fatigue_dynamics = FatigueList()
@@ -71,10 +71,10 @@ def prepare_ocp(
         for i in range(n_tau):
             fatigue_dynamics.add(
                 XiaTauFatigue(
-                    XiaFatigue(LD=10, LR=10, F=0.01, R=0.002, scale=tau_min),
-                    XiaFatigue(LD=10, LR=10, F=0.01, R=0.002, scale=tau_max)
+                    XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_min),
+                    XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_max)
                 ),
-                state_only=False
+                state_only=True
             )
 
     # Dynamics
@@ -133,7 +133,7 @@ def main():
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path="arm26_constant.bioMod", final_time=3, n_shooting=150, torque_level=2,
+        biorbd_model_path="arm26_constant.bioMod", final_time=0.8, n_shooting=50, torque_level=1,
     )
 
     # --- Solve the program --- #

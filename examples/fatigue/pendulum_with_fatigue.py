@@ -67,8 +67,8 @@ def prepare_ocp(
     for i in range(n_tau):
         fatigue_dynamics.add(
             XiaTauFatigue(
-                XiaFatigue(LD=100, LR=100, F=0.9, R=0.01, scale=tau_min),
-                XiaFatigue(LD=100, LR=100, F=0.9, R=0.01, scale=tau_max)), state_only=False
+                XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_min),
+                XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_max)), state_only=False
         )
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=fatigue_dynamics)
 
@@ -111,7 +111,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100)
 
     # --- Print ocp structure --- #
-    # ocp.print(to_console=False, to_graph=True)
+    ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
     sol = ocp.solve(show_online_optim=True)
