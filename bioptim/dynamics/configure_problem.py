@@ -314,7 +314,10 @@ class ConfigureProblem:
             phase_mappings = Mapping([i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase])
 
         nlp.plot["contact_forces"] = CustomPlot(
-            nlp.contact_forces_func, plot_type=PlotType.INTEGRATED, axes_idx=phase_mappings, legend=all_contact_names
+            lambda t, x, u, p: nlp.contact_forces_func(x, u, p),
+            plot_type=PlotType.INTEGRATED,
+            axes_idx=phase_mappings,
+            legend=all_contact_names,
         )
 
     @staticmethod
@@ -371,7 +374,7 @@ class ConfigureProblem:
 
             nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
             nlp.plot[f"{name}_states"] = CustomPlot(
-                lambda x, u, p: x[nlp.states[name].index, :], plot_type=PlotType.INTEGRATED, legend=legend
+                lambda t, x, u, p: x[nlp.states[name].index, :], plot_type=PlotType.INTEGRATED, legend=legend
             )
 
         if as_controls:
@@ -380,7 +383,7 @@ class ConfigureProblem:
             nlp.controls.append(name, cx, mx_controls, nlp.variable_mappings[name])
             plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
             nlp.plot[f"{name}_controls"] = CustomPlot(
-                lambda x, u, p: u[nlp.controls[name].index, :],
+                lambda t, x, u, p: u[nlp.controls[name].index, :],
                 plot_type=plot_type,
                 legend=legend,
                 combine_to=f"{name}_states" if as_states and combine_plot else None,

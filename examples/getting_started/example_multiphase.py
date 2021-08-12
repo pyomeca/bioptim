@@ -138,8 +138,11 @@ def main():
 
     ocp = prepare_ocp(long_optim=True)
 
+    # Custom plots
+    ocp.add_plot_objectives()
+
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=False)
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     sol.animate()

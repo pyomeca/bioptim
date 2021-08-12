@@ -139,9 +139,12 @@ class Parameter(PenaltyOption):
         controls_cx = ocp.cx()
         parameter_cx = ocp.v.parameters_in_list.cx
         for p in ocp.v.parameters_in_list:
+            if p.penalty_list is None:
+                continue
             for p_list in p.penalty_list[0]:
                 if p_list.weighted_function is None:
                     continue
+
                 dt_cx = ocp.cx.sym("dt", 1, 1)
                 weight_cx = ocp.cx.sym("weight", 1, 1)
                 target_cx = ocp.cx.sym("target", p_list.weighted_function.numel_out(), 1)

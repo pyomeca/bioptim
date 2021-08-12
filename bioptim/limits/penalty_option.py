@@ -381,14 +381,18 @@ class PenaltyOption(OptionGeneric):
         """
 
         if self.target_to_plot is not None:
+            if self.target_to_plot.shape[0] > 1:
+                plot_type = PlotType.STEP
+            else:
+                plot_type = PlotType.POINT
             all_pn.ocp.add_plot(
                 self.target_plot_name,
-                lambda x, u, p: self.target_to_plot,
+                lambda t, x, u, p: self.target_to_plot,
                 color="tab:red",
-                linestyle=".-",
-                plot_type=PlotType.STEP,
+                plot_type=plot_type,
                 phase=all_pn.nlp.phase_idx,
                 axes_idx=Mapping(self.rows),
+                node_idx=self.node_idx,
             )
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):

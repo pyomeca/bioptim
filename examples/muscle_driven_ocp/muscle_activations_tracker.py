@@ -97,7 +97,7 @@ def generate_data(
     def dyn_interface(t, x, u):
         if use_residual_torque:
             u = np.concatenate([np.zeros(n_tau), u])
-        return np.array(dynamics_func(x, u, np.empty((0, 0)))).squeeze()
+        return np.array(dynamics_func(x, u, [])).squeeze()
 
     # Generate some muscle activation
     U = np.random.rand(n_shooting, n_mus).T
