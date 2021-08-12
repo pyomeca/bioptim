@@ -274,9 +274,9 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
-@pytest.mark.parametrize("with_residual_torque", [False, True])
+@pytest.mark.parametrize("with_torque", [False, True])
 @pytest.mark.parametrize("with_excitations", [False, True])
-def test_muscle_driven(with_excitations, with_contact, with_residual_torque, with_external_force, cx):
+def test_muscle_driven(with_excitations, with_contact, with_torque, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
     nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/arm26_with_contact.bioMod")
@@ -292,7 +292,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
         "dynamics_type",
         Dynamics(
             DynamicsFcn.MUSCLE_DRIVEN,
-            with_residual_torque=with_residual_torque,
+            with_torque=with_torque,
             with_excitations=with_excitations,
             with_contact=with_contact,
         ),
@@ -314,7 +314,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
     x_out = np.array(nlp.dynamics_func(states, controls, params))
 
     if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
-        if with_residual_torque:
+        if with_torque:
             if with_excitations:
                 if with_external_force:
                     np.testing.assert_almost_equal(
@@ -420,7 +420,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
                     )
 
     else:
-        if with_residual_torque:
+        if with_torque:
             if with_excitations:
                 if with_external_force:
                     np.testing.assert_almost_equal(

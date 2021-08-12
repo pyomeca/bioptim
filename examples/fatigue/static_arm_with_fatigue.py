@@ -8,7 +8,6 @@ mesh points.
 
 import biorbd_casadi as biorbd
 
-from bioptim.misc.enums import Fatigue
 from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
@@ -18,16 +17,17 @@ from bioptim import (
     QAndQDotBounds,
     InitialGuess,
     OdeSolver,
-    Bounds,
     Constraint,
     ConstraintFcn,
-    XiaFatigueDynamicsList,
-    XiaFatigueStateInitialGuess,
-    XiaFatigueStateBounds,
-    XiaFatigueControlsBounds,
-    XiaFatigueControlsInitialGuess,
+    FatigueList,
+    FatigueBounds,
+    FatigueInitialGuess,
+    Bounds,
+    XiaFatigue,
+    XiaTauFatigue,
     Node,
     Axis,
+    VariableType,
 )
 
 
@@ -35,9 +35,8 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
-    with_residual_torque: bool = False,
-    fatigue: list = None,
+    ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
+    torque_level: int = 0,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -51,10 +50,8 @@ def prepare_ocp(
         The number of shooting points
     ode_solver: OdeSolver
         The ode solver to use
-    with_residual_torque: bool
-        True if we use residual torque
-    fatigue: list
-        The type of fatigue applied on the system
+    torque_level: int
+        0 no residual torque, 1 with residual torque, 2 with fatigable residual torque
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -62,23 +59,34 @@ def prepare_ocp(
 
     biorbd_model = biorbd.Model(biorbd_model_path)
 
+    n_tau = biorbd_model.nbGeneralizedTorque()
     n_muscles = biorbd_model.nbMuscleTotal()
-    muscle_min, muscle_max, muscle_init = 0, 1, 0.3
+    tau_min, tau_max = -1, 1
 
-    tau_min, tau_max, tau_init = -1, 1, 0
+    # Define fatigue parameters for each muscle and residual torque
+    fatigue_dynamics = FatigueList()
+    for i in range(n_muscles):
+        fatigue_dynamics.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
+    if torque_level >= 2:
+        for i in range(n_tau):
+            fatigue_dynamics.add(
+                XiaTauFatigue(
+                    XiaFatigue(LD=10, LR=10, F=0.01, R=0.002, scale=tau_min),
+                    XiaFatigue(LD=10, LR=10, F=0.01, R=0.002, scale=tau_max)
+                ),
+                state_only=False
+            )
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue, with_residual_torque=with_residual_torque
-    )
+    dynamics = Dynamics(DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue_dynamics, with_torque=torque_level > 0)
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles")
     objective_functions.add(
         ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, first_marker="target", second_marker="COM_hand", weight=0.01
     )
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="muscles_mf", weight=10000)  # Minimize fatigue
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_FATIGUE, key="muscles", weight=10000)
 
     # Constraint
     constraint = Constraint(
@@ -91,32 +99,16 @@ def prepare_ocp(
 
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, 0] = (0.07, 1.4, 0, 0)
-    x_bounds.concatenate(XiaFatigueStateBounds(biorbd_model, has_muscles=True, has_torque=False))
+    x_bounds.concatenate(FatigueBounds(fatigue_dynamics))
 
     x_init = InitialGuess([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
-    x_init.concatenate(
-        XiaFatigueStateInitialGuess(
-            biorbd_model,
-            has_muscles=True,
-            has_torque=False,
-            muscle_init=muscle_init,
-            tau_init=tau_init,
-            tau_max=tau_max,
-        )
-    )
+    x_init.concatenate(FatigueInitialGuess(fatigue_dynamics))
 
     # Define control path constraint
-    muscle_bounds = Bounds([muscle_min] * n_muscles, [muscle_max] * n_muscles)
-    muscle_init = InitialGuess([muscle_init] * n_muscles)
-    u_bounds = XiaFatigueControlsBounds(biorbd_model, muscles=muscle_bounds)
-    u_init = XiaFatigueControlsInitialGuess(biorbd_model, muscles=muscle_init)
-
-    # Define fatigue parameters for each muscle and residual torque
-    fatigue_dynamics = XiaFatigueDynamicsList()
-    for _ in range(n_muscles):
-        fatigue_dynamics.add_muscle(LD=10, LR=10, F=0.01, R=0.002)
-
-    # ------------- #
+    u_bounds = Bounds([tau_min] * n_tau, [tau_max] * n_tau) if torque_level == 1 else Bounds()
+    u_bounds.concatenate(FatigueBounds(fatigue_dynamics, variable_type=VariableType.CONTROLS))
+    u_init = InitialGuess([0] * n_tau) if torque_level == 1 else InitialGuess()
+    u_init.concatenate(FatigueInitialGuess(fatigue_dynamics, variable_type=VariableType.CONTROLS))
 
     return OptimalControlProgram(
         biorbd_model,
@@ -130,7 +122,6 @@ def prepare_ocp(
         objective_functions,
         constraint,
         ode_solver=ode_solver,
-        fatigue_dynamics=fatigue_dynamics,
         use_sx=False,
         n_threads=8,
     )
@@ -142,11 +133,7 @@ def main():
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path="arm26_constant.bioMod",
-        final_time=3,
-        n_shooting=50,
-        with_residual_torque=False,
-        fatigue=[Fatigue.MUSCLES_STATE_ONLY],
+        biorbd_model_path="arm26_constant.bioMod", final_time=3, n_shooting=150, torque_level=2,
     )
 
     # --- Solve the program --- #

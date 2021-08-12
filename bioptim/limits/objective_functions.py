@@ -277,6 +277,7 @@ class ObjectiveFcn:
 
         MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+        MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
         MINIMIZE_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
         TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
         SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)

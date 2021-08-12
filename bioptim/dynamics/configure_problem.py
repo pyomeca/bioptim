@@ -5,11 +5,12 @@ from casadi import MX, vertcat, Function
 import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
-from ..misc.enums import PlotType, ControlType, Fatigue
+from .fatigue_dynamics import FatigueList
 from .ode_solver import OdeSolver
+from ..gui.plot import CustomPlot
+from ..misc.enums import PlotType, ControlType
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..gui.plot import CustomPlot
 
 
 class ConfigureProblem:
@@ -31,12 +32,12 @@ class ConfigureProblem:
         The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
         relationship
     muscle_driven(
-        ocp, nlp, with_excitations: bool = False, with_residual_torque: bool = False, with_contact: bool = False
+        ocp, nlp, with_excitations: bool = False, with_torque: bool = False, with_contact: bool = False
     )
         Configure the dynamics for a muscle driven program.
         If with_excitations is set to True, then the muscle muscle activations are computed from the muscle dynamics.
         The tau from muscle is computed using the muscle activations.
-        If with_residual_torque is set to True, then tau are used as supplementary force in the
+        If with_torque is set to True, then tau are used as supplementary force in the
         case muscles are too weak.
     configure_dynamics_function(ocp, nlp, dyn_func, **extra_params)
         Configure the dynamics of the system
@@ -91,7 +92,7 @@ class ConfigureProblem:
         nlp.dynamics_type.configure(ocp, nlp, **extra_params)
 
     @staticmethod
-    def torque_driven(ocp, nlp, with_contact: bool = False, fatigue: list = None):
+    def torque_driven(ocp, nlp, with_contact: bool = False, fatigue: FatigueList = None):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
 
@@ -103,17 +104,13 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
-        fatigue: list
+        fatigue: FatigueList
             A list of fatigue elements
         """
-        if fatigue is None:
-            fatigue = []
-
-        with_fatigue = True if Fatigue.TAU in fatigue or Fatigue.TAU_STATE_ONLY in fatigue else False
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
-        ConfigureProblem.configure_tau(nlp, False, True, with_fatigue)
+        ConfigureProblem.configure_tau(nlp, False, True, fatigue)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -192,16 +189,16 @@ class ConfigureProblem:
     def muscle_driven(
         ocp,
         nlp,
-        fatigue: list = None,
         with_excitations: bool = False,
-        with_residual_torque: bool = False,
+        fatigue: FatigueList = None,
+        with_torque: bool = False,
         with_contact: bool = False,
     ):
         """
         Configure the dynamics for a muscle driven program.
         If with_excitations is set to True, then the muscle muscle activations are computed from the muscle dynamics.
         The tau from muscle is computed using the muscle activations.
-        If with_residual_torque is set to True, then tau are used as supplementary force in the
+        If with_torque is set to True, then tau are used as supplementary force in the
         case muscles are too weak.
 
         Parameters
@@ -210,30 +207,26 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        fatigue: list
-            To define fatigue elements
         with_excitations: bool
             If the dynamic should include the muscle dynamics
-        with_residual_torque: bool
+        fatigue: FatigueList
+            The list of fatigue parameters
+        with_torque: bool
             If the dynamic should be added with residual torques
         with_contact: bool
             If the dynamic with contact should be used
         """
 
-        if fatigue is None:
-            fatigue = []
-
-        if Fatigue.TAU in fatigue or Fatigue.TAU_STATE_ONLY in fatigue:
-            if not with_residual_torque:
-                raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
+        # fatigue["muscles"][0].params["fatigue"].LD
+        if "tau" in fatigue and not with_torque:
+            raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
+        # sum([muscles.params["fatigue"].state_only for muscles in fatigue["muscles"]])
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
-        if with_residual_torque:
-            with_fatigue_torque = True if Fatigue.TAU in fatigue or Fatigue.TAU_STATE_ONLY in fatigue else False
-            ConfigureProblem.configure_tau(nlp, False, True, with_fatigue=with_fatigue_torque)
-        with_fatigue_muscles = True if Fatigue.MUSCLES in fatigue or Fatigue.MUSCLES_STATE_ONLY in fatigue else False
-        ConfigureProblem.configure_muscles(nlp, with_excitations, True, with_fatigue=with_fatigue_muscles)
+        if with_torque:
+            ConfigureProblem.configure_tau(nlp, False, True, fatigue=fatigue)
+        ConfigureProblem.configure_muscles(nlp, with_excitations, True, fatigue=fatigue)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -244,7 +237,7 @@ class ConfigureProblem:
                 DynamicsFunctions.muscles_driven,
                 with_contact=with_contact,
                 fatigue=fatigue,
-                with_residual_torque=with_residual_torque,
+                with_torque=with_torque,
             )
 
         if with_contact:
@@ -427,7 +420,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable("qdot", name_qdot, nlp, as_states, as_controls)
 
     @staticmethod
-    def configure_tau(nlp, as_states: bool, as_controls: bool, with_fatigue: bool = False):
+    def configure_tau(nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
         """
         Configure the generalized forces
 
@@ -439,40 +432,64 @@ class ConfigureProblem:
             If the generalized forces should be a state
         as_controls: bool
             If the generalized forces should be a control
-        with_fatigue: bool
+        fatigue: FatigueList
             If the dynamics with fatigue should be declared
         """
 
         name_tau = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
 
-        if with_fatigue:
-            for direction in ["minus", "plus"]:
-                ConfigureProblem._adjust_mapping(f"tau_{direction}", ["qdot", "taudot"], nlp)
-                ConfigureProblem.configure_new_variable(f"tau_{direction}", name_tau, nlp, as_states, as_controls)
-                for params in ["ma", "mr", "mf"]:
-                    ConfigureProblem._adjust_mapping(f"tau_{params}_{direction}", ["q"], nlp)
+        if "tau" in fatigue:
+            fatigue_tau = fatigue["tau"]
+
+            # Only homogeneous fatigue model are implement
+            fatigue_suffix = getattr(fatigue_tau[0].model, fatigue_tau.suffix[0]).suffix()
+            for dof in fatigue_tau:
+                if getattr(dof.model, fatigue_tau.suffix[0]).suffix() != fatigue_suffix or getattr(dof.model, fatigue_tau.suffix[1]).suffix() != fatigue_suffix:
+                    raise ValueError("Fatigue for tau must be of all same types")
+
+            tau_keys = []
+            for tau_suffix in fatigue_tau.suffix:
+                tau_keys.append(f"tau_{tau_suffix}")
+
+                ConfigureProblem._adjust_mapping(tau_keys[-1], ["qdot", "taudot"], nlp)
+                ConfigureProblem.configure_new_variable(tau_keys[-1], name_tau, nlp, as_states, as_controls)
+                for params in fatigue_suffix:
+                    ConfigureProblem._adjust_mapping(f"tau_{params}_{tau_suffix}", ["q"], nlp)
                     ConfigureProblem.configure_new_variable(
-                        f"tau_{params}_{direction}", name_tau, nlp, True, False, combine_plot=True
+                        f"tau_{params}_{tau_suffix}", name_tau, nlp, True, False, combine_plot=True
                     )
 
-            tau_nlp = nlp.controls if "tau_minus" in nlp.controls else nlp.states
-
             # Create a fake "tau" accessor
-            index = list(tau_nlp["tau_minus"].index) + list(tau_nlp["tau_plus"].index)
-            mx = vertcat(tau_nlp["tau_minus"].mx, tau_nlp["tau_plus"].mx)
-            name = "tau"
-            to_second = list(tau_nlp["tau_minus"].mapping.to_second.map_idx) + list(
-                np.array(tau_nlp["tau_plus"].mapping.to_second.map_idx) + len(tau_nlp["tau_minus"])
-            )
-            to_first = list(tau_nlp["tau_minus"].mapping.to_first.map_idx) + list(
-                np.array(tau_nlp["tau_plus"].mapping.to_first.map_idx) + len(tau_nlp["tau_minus"])
-            )
-            mapping = BiMapping(to_second, to_first)
-            tau_nlp.append_fake(name, index, mx, mapping)
+            ConfigureProblem.append_faked_optim_var("tau", nlp.controls if as_controls else nlp.states, tau_keys)
 
         else:
             ConfigureProblem._adjust_mapping("tau", ["qdot", "taudot"], nlp)
             ConfigureProblem.configure_new_variable("tau", name_tau, nlp, as_states, as_controls)
+
+    @staticmethod
+    def append_faked_optim_var(name, optim_var, keys: list):
+        """
+        Add a fake optim var by combining vars in keys
+
+        Parameters
+        ----------
+        optim_var: OptimizationVariableList
+            states or controls
+        keys: list
+            The list of keys to combine
+        """
+
+        index = []
+        mx = MX()
+        to_second = []
+        to_first = []
+        for key in keys:
+            index.extend(list(optim_var[key].index))
+            mx = vertcat(mx, optim_var[key].mx)
+            to_second.extend(list(np.array(optim_var[key].mapping.to_second.map_idx) + len(to_second)))
+            to_first.extend(list(np.array(optim_var[key].mapping.to_first.map_idx) + len(to_first)))
+
+        optim_var.append_fake(name, index, mx, BiMapping(to_second, to_first))
 
     @staticmethod
     def configure_taudot(nlp, as_states: bool, as_controls: bool):
@@ -494,7 +511,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable("taudot", name_tau, nlp, as_states, as_controls, False)
 
     @staticmethod
-    def configure_muscles(nlp, as_states: bool, as_controls: bool, with_fatigue: bool = False):
+    def configure_muscles(nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
         """
         Configure the muscles
 
@@ -506,13 +523,17 @@ class ConfigureProblem:
             If the muscles should be a state
         as_controls: bool
             If the muscles should be a control
+        fatigue: FatigueList
+            The list of fatigue parameters
         """
 
         muscle_names = [names.to_string() for names in nlp.model.muscleNames()]
         ConfigureProblem.configure_new_variable("muscles", muscle_names, nlp, as_states, as_controls, True)
-        if with_fatigue:
-            for params in ["muscles_ma", "muscles_mr", "muscles_mf"]:
-                ConfigureProblem.configure_new_variable(f"{params}", muscle_names, nlp, True, False, combine_plot=True)
+        if fatigue is not None and "muscles" in fatigue:
+            if len(fatigue["muscles"]) != len(muscle_names):
+                raise NotImplementedError("Fatiguing a subset of muscles is not supported yet")
+            for suffix in fatigue["muscles"].suffix:
+                ConfigureProblem.configure_new_variable(f"muscles_{suffix}", muscle_names, nlp, True, False, combine_plot=True)
 
     @staticmethod
     def _adjust_mapping(key_to_adjust: str, reference_keys: list, nlp):

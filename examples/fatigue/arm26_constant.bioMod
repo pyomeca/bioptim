@@ -12,7 +12,7 @@ endvariables
 // SEGMENT DEFINITION
 
 segment base
-    meshfile ground_ribs.vtp
+    meshfile mesh_arm26/ground_ribs.vtp
 endsegment
 
 
@@ -81,7 +81,7 @@ segment r_humerus
         0.0    0.004551    0.0
         0.0    0.0    0.013193
     com    0 -0.18049599999999999 0
-    meshfile arm_r_humerus.vtp
+    meshfile mesh_arm26/arm_r_humerus.vtp
 endsegment
 
     // Markers
@@ -148,7 +148,7 @@ segment r_ulna_radius_hand
         0.0    0.001571    0.0
         0.0    0.0    0.020062
     com    0 -0.181479 0
-    meshfile arm_r_ulna.vtp
+    meshfile mesh_arm26/arm_r_ulna.vtp
 endsegment
 
 

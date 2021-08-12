@@ -36,7 +36,7 @@ def prepare_ocp_static_arm(
     final_time: float,
     n_shooting: int,
     ode_solver: OdeSolver = OdeSolver.RK4(),
-    with_residual_torque: bool = False,
+    with_torque: bool = False,
     fatigue: list = None,
 ) -> OptimalControlProgram:
     """
@@ -51,7 +51,7 @@ def prepare_ocp_static_arm(
         The number of shooting points
     ode_solver: OdeSolver
         The ode solver to use
-    with_residual_torque: bool
+    with_torque: bool
         True if we use residual torque
     fatigue: list
         The type of fatigue applied on the system
@@ -69,7 +69,7 @@ def prepare_ocp_static_arm(
 
     # Dynamics
     dynamics = Dynamics(
-        DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue, with_residual_torque=with_residual_torque
+        DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue, with_torque=with_torque
     )
 
     # Add objective functions
@@ -229,7 +229,7 @@ def test_fatigable_muscles():
         biorbd_model_path=model_path,
         final_time=3,
         n_shooting=50,
-        with_residual_torque=False,
+        with_torque=False,
         fatigue=[Fatigue.MUSCLES_STATE_ONLY],
     )
 

@@ -96,17 +96,10 @@ class ControlType(Enum):
     NONE = 0  # Undeclared control type
 
 
-class Fatigue:
+class VariableType(Enum):
     """
-    Selection of valid fatigue
-
-    MUSCLES is used to apply fatigue on muscles by taking fatigue states into account in the dynamics
-    MUSCLES_STATE_ONLY is used to calculate fatigue states without taking them into account in the dynamics
-    TAU is used to apply fatigue on torques by taking fatigue states into account in the dynamics
-    TAU_STATE_ONLY is used to calculate fatigue states without taking them into account in the dynamics
+    Selection of valid variable types
     """
 
-    MUSCLES = 0
-    MUSCLES_STATE_ONLY = 2
-    TAU = 1
-    TAU_STATE_ONLY = 3
+    STATES = "states"
+    CONTROLS = "controls"
