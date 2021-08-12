@@ -50,6 +50,8 @@ class PhaseTransition(Constraint):
     def __init__(
         self,
         phase_pre_idx: int = None,
+        states_pre_idx: int = None,
+        states_post_idx: int = None,
         transition: Union[Callable, Any] = None,
         weight: float = 0,
         custom_function: Callable = None,
@@ -79,6 +81,8 @@ class PhaseTransition(Constraint):
         self.quadratic = True
         self.phase_pre_idx = phase_pre_idx
         self.phase_post_idx = None
+        self.states_pre_idx = states_pre_idx
+        self.states_post_idx = states_post_idx
         self.node = Node.TRANSITION
         self.dt = 1
         self.node_idx = [0]
@@ -323,7 +327,11 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            val = transition.custom_function(nlp_pre.states, nlp_post.states, **extra_params)
+
+            states_pre = vertcat(*[nlp_pre.states.cx[i] for i in transition.states_pre_idx])
+            states_post = vertcat(*[nlp_post.states.cx[i] for i in transition.states_post_idx])
+            val = transition.custom_function(states_pre, states_post, **extra_params)
+
             return val
 
 

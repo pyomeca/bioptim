@@ -405,6 +405,7 @@ class OptimalControlProgram:
             # Inner- and inter-phase continuity
             ContinuityFunctions.continuity(self)
 
+        # @TODO: ajouter un check
         self.isdef_x_init = False
         self.isdef_u_init = False
         self.isdef_x_bounds = False

@@ -1,7 +1,7 @@
 from typing import Any, Union, Callable
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, Function, MX, SX
+from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
@@ -167,6 +167,8 @@ class PenaltyOption(OptionGeneric):
         self.transition = False
         self.phase_pre_idx = None
         self.phase_post_idx = None
+        self.states_pre_idx = None
+        self.states_post_idx = None
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be both True")
         self.is_internal = is_internal
@@ -283,8 +285,11 @@ class PenaltyOption(OptionGeneric):
             nlp = all_pn[0].nlp
             nlp_post = all_pn[1].nlp
             name = self.name.replace("->", "_").replace(" ", "_")
-            state_cx = horzcat(nlp.states.cx_end, nlp_post.states.cx)
-            control_cx = horzcat(nlp.controls.cx_end, nlp_post.controls.cx)
+            state_cx = horzcat(vertcat(*[nlp.states.cx[i] for i in self.states_pre_idx]),
+                               vertcat(*[nlp_post.states.cx[i] for i in self.states_post_idx]))
+            # Simulates a phase transition involving continuity on controls (Currently, no transition use this concept)
+            control_cx = horzcat(nlp.controls.cx, nlp.controls.cx_end)
+            # control_cx = horzcat(nlp.controls.cx_end, nlp_post.controls.cx)
 
         else:
             ocp = all_pn.ocp
@@ -419,6 +424,8 @@ class PenaltyOption(OptionGeneric):
             self.dt = 1
             self.phase_pre_idx = nlp.phase_idx
             self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
+            self.states_pre_idx = self.states_pre_idx
+            self.states_post_idx = self.states_post_idx
 
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
             all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
