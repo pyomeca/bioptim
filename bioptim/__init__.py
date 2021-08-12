@@ -44,7 +44,8 @@ Solver
     Selection of valid nonlinear solvers
 ControlType
     Selection of valid controls
-
+CostType
+    Selection of valid penalty type
 
 # --- Managing the dynamics --- #
 ConfigureProblem
