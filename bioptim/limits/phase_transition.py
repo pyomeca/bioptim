@@ -240,7 +240,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
-                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the pre-transition phase and {states_post.shape} post-transition phase.")
+                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in "
+                    f"the pre-transition phase and {states_post.shape} post-transition phase.")
 
             continuity = states_pre - states_post
             return continuity
