@@ -29,7 +29,9 @@ class FatigueBounds(Bounds):
             if len(sides) != 2:
                 raise NotImplementedError("The required suffix for tau fatigue is not implemented yet")
 
-            suffix = getattr(fatigue["tau"][0].model, sides[0]).suffix() if variable_type == VariableType.STATES else [0]
+            suffix = (
+                getattr(fatigue["tau"][0].model, sides[0]).suffix() if variable_type == VariableType.STATES else [0]
+            )
             for i, side in enumerate(sides):
                 for s in range(len(suffix)):
                     for f in fatigue["tau"]:
@@ -75,7 +77,9 @@ class FatigueInitialGuess(InitialGuess):
         x_init = []
         if "tau" in fatigue and len(fatigue["tau"]) > 0:
             sides = fatigue["tau"][0].model.suffix()
-            suffix = getattr(fatigue["tau"][0].model, sides[0]).suffix() if variable_type == VariableType.STATES else [0]
+            suffix = (
+                getattr(fatigue["tau"][0].model, sides[0]).suffix() if variable_type == VariableType.STATES else [0]
+            )
             for side in sides:
                 for s in range(len(suffix)):
                     for f in fatigue["tau"]:

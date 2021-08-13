@@ -71,7 +71,6 @@ class FatigueModel(ABC):
 
 
 class TauFatigue(FatigueModel, ABC):
-
     def __init__(self, minus: FatigueModel, plus: FatigueModel):
         """
         Parameters

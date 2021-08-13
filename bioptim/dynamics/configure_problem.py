@@ -316,7 +316,14 @@ class ConfigureProblem:
 
     @staticmethod
     def configure_new_variable(
-        name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_name: str = None, combine_state_control_plot: bool = False, skip_plot: bool = False
+        name: str,
+        name_elements: list,
+        nlp,
+        as_states: bool,
+        as_controls: bool,
+        combine_name: str = None,
+        combine_state_control_plot: bool = False,
+        skip_plot: bool = False,
     ):
         """
         Add a new variable to the states/controls pool
@@ -376,7 +383,10 @@ class ConfigureProblem:
             nlp.states.append(name, cx, mx_states, nlp.variable_mappings[name])
             if not skip_plot:
                 nlp.plot[f"{name}_states"] = CustomPlot(
-                    lambda t, x, u, p: x[nlp.states[name].index, :], plot_type=PlotType.INTEGRATED, legend=legend, combine_to=combine_name
+                    lambda t, x, u, p: x[nlp.states[name].index, :],
+                    plot_type=PlotType.INTEGRATED,
+                    legend=legend,
+                    combine_to=combine_name,
                 )
 
         if as_controls:
@@ -454,7 +464,10 @@ class ConfigureProblem:
             # Only homogeneous fatigue model are implement
             fatigue_suffix = getattr(fatigue_tau[0].model, fatigue_tau.suffix[0]).suffix()
             for dof in fatigue_tau:
-                if getattr(dof.model, fatigue_tau.suffix[0]).suffix() != fatigue_suffix or getattr(dof.model, fatigue_tau.suffix[1]).suffix() != fatigue_suffix:
+                if (
+                    getattr(dof.model, fatigue_tau.suffix[0]).suffix() != fatigue_suffix
+                    or getattr(dof.model, fatigue_tau.suffix[1]).suffix() != fatigue_suffix
+                ):
                     raise ValueError("Fatigue for tau must be of all same types")
 
             tau_keys = []
@@ -465,14 +478,23 @@ class ConfigureProblem:
             tau_color = ["tab:orange", "tab:green"]
             fatigue_tau_color = ["tab:green", "tab:orange", "tab:red"]
             fatigue_mod = [-1, 1]
-            nlp.plot[f"tau_controls"] = CustomPlot(lambda t, x, u, p: u[: n_tau, :] * np.nan, plot_type=PlotType.STEP, legend=tau_legend)
-            nlp.plot[f"fatigue_tau"] = CustomPlot(lambda t, x, u, p: x[: n_tau, :] * np.nan, plot_type=PlotType.INTEGRATED, legend=tau_legend, bounds=Bounds(-1, 1))
+            nlp.plot[f"tau_controls"] = CustomPlot(
+                lambda t, x, u, p: u[:n_tau, :] * np.nan, plot_type=PlotType.STEP, legend=tau_legend
+            )
+            nlp.plot[f"fatigue_tau"] = CustomPlot(
+                lambda t, x, u, p: x[:n_tau, :] * np.nan,
+                plot_type=PlotType.INTEGRATED,
+                legend=tau_legend,
+                bounds=Bounds(-1, 1),
+            )
 
             for i, tau_suffix in enumerate(fatigue_tau.suffix):
                 tau_keys.append(f"tau_{tau_suffix}")
 
                 ConfigureProblem._adjust_mapping(tau_keys[-1], ["qdot", "taudot"], nlp)
-                ConfigureProblem.configure_new_variable(tau_keys[-1], name_tau, nlp, as_states, as_controls, skip_plot=True)
+                ConfigureProblem.configure_new_variable(
+                    tau_keys[-1], name_tau, nlp, as_states, as_controls, skip_plot=True
+                )
                 nlp.plot[f"{tau_keys[-1]}_controls"] = CustomPlot(
                     lambda t, x, u, p, key: u[nlp.controls[key].index, :],
                     plot_type=PlotType.STEP,
@@ -563,18 +585,27 @@ class ConfigureProblem:
         """
 
         muscle_names = [names.to_string() for names in nlp.model.muscleNames()]
-        ConfigureProblem.configure_new_variable("muscles", muscle_names, nlp, as_states, as_controls, combine_state_control_plot=True)
+        ConfigureProblem.configure_new_variable(
+            "muscles", muscle_names, nlp, as_states, as_controls, combine_state_control_plot=True
+        )
         if fatigue is not None and "muscles" in fatigue:
 
             # Prepare the plot that will combine everything
             n_mus = len(muscle_names)
             fatigue_color = ["tab:green", "tab:orange", "tab:red"]
-            nlp.plot[f"fatigue_muscles"] = CustomPlot(lambda t, x, u, p: x[: n_mus, :] * np.nan, plot_type=PlotType.INTEGRATED, legend=muscle_names, bounds=Bounds(0, 1))
+            nlp.plot[f"fatigue_muscles"] = CustomPlot(
+                lambda t, x, u, p: x[:n_mus, :] * np.nan,
+                plot_type=PlotType.INTEGRATED,
+                legend=muscle_names,
+                bounds=Bounds(0, 1),
+            )
 
             if len(fatigue["muscles"]) != len(muscle_names):
                 raise NotImplementedError("Fatiguing a subset of muscles is not supported yet")
             for s, suffix in enumerate(fatigue["muscles"].suffix):
-                ConfigureProblem.configure_new_variable(f"muscles_{suffix}", muscle_names, nlp, as_states=True, as_controls=False, skip_plot=True)
+                ConfigureProblem.configure_new_variable(
+                    f"muscles_{suffix}", muscle_names, nlp, as_states=True, as_controls=False, skip_plot=True
+                )
                 nlp.plot[f"muscles_{suffix}"] = CustomPlot(
                     lambda t, x, u, p, key: x[nlp.states[key].index, :],
                     plot_type=PlotType.INTEGRATED,

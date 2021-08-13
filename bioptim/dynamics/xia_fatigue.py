@@ -59,12 +59,8 @@ class XiaFatigue(FatigueModel):
         # Implementation of Xia dynamics
         c = if_else(
             lt(ma, target_load),
-            if_else(
-                gt(mr, target_load - ma),
-                self.LD * (target_load - ma),
-                self.LD * mr
-            ),
-            self.LR * (target_load - ma)
+            if_else(gt(mr, target_load - ma), self.LD * (target_load - ma), self.LD * mr),
+            self.LR * (target_load - ma),
         )
         ma_dot = c - self.F * ma
         mr_dot = -c + self.R * mf
@@ -124,7 +120,10 @@ class XiaTauFatigue(TauFatigue):
     def _dynamics_per_suffix(self, dxdt, suffix, nlp, index, states, controls):
         var = getattr(self, suffix)
         target_load = self._get_target_load(var, suffix, nlp, controls, index)
-        fatigue = [DynamicsFunctions.get(nlp.states[f"tau_{dyn_suffix}_{suffix}"], states)[index, :] for dyn_suffix in var.suffix()]
+        fatigue = [
+            DynamicsFunctions.get(nlp.states[f"tau_{dyn_suffix}_{suffix}"], states)[index, :]
+            for dyn_suffix in var.suffix()
+        ]
         current_dxdt = var.apply_dynamics(target_load, *fatigue)
 
         for i, dyn_suffix in enumerate(var.suffix()):

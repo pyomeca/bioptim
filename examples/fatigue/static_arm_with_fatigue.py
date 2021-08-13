@@ -72,9 +72,9 @@ def prepare_ocp(
             fatigue_dynamics.add(
                 XiaTauFatigue(
                     XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_min),
-                    XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_max)
+                    XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_max),
                 ),
-                state_only=True
+                state_only=True,
             )
 
     # Dynamics
@@ -133,7 +133,10 @@ def main():
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path="arm26_constant.bioMod", final_time=0.8, n_shooting=50, torque_level=1,
+        biorbd_model_path="arm26_constant.bioMod",
+        final_time=0.8,
+        n_shooting=50,
+        torque_level=1,
     )
 
     # --- Solve the program --- #

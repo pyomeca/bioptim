@@ -68,7 +68,9 @@ def prepare_ocp(
         fatigue_dynamics.add(
             XiaTauFatigue(
                 XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_min),
-                XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_max)), state_only=False
+                XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_max),
+            ),
+            state_only=False,
         )
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=fatigue_dynamics)
 

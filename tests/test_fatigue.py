@@ -68,9 +68,7 @@ def prepare_ocp_static_arm(
     tau_min, tau_max, tau_init = -1, 1, 0
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue, with_torque=with_torque
-    )
+    dynamics = Dynamics(DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue, with_torque=with_torque)
 
     # Add objective functions
     objective_functions = ObjectiveList()
