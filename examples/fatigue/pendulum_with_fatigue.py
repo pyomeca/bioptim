@@ -33,6 +33,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
+    use_sx: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -45,8 +46,8 @@ def prepare_ocp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
-    fatigue: list
-        The type of fatigue applied on the system
+    use_sx: bool
+        If the program should be built from SX (True) or MX (False)
 
     Returns
     -------
@@ -58,9 +59,7 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
-
-    # Dynamics
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", expand=True)
 
     # Fatigue parameters
     fatigue_dynamics = FatigueList()
@@ -72,13 +71,17 @@ def prepare_ocp(
             ),
             state_only=False,
         )
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=fatigue_dynamics)
+
+    # Dynamics
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=fatigue_dynamics, expand=True)
 
     # Path constraint
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics))
+    x_bounds[[5, 11], :] = 0  # The rotation dof is passive (fatigue_ma = 0)
+    x_bounds[[7, 13], :] = 1  # The rotation dof is passive (fatigue_mr = 1)
 
     # Initial guess
     n_q = biorbd_model.nbQ()
@@ -88,6 +91,7 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = FatigueBounds(fatigue_dynamics, variable_type=VariableType.CONTROLS)
+    u_bounds[[1, 3], :] = 0  # The rotation dof is passive
     u_init = FatigueInitialGuess(fatigue_dynamics, variable_type=VariableType.CONTROLS)
 
     return OptimalControlProgram(
@@ -100,7 +104,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        use_sx=True,
+        use_sx=use_sx,
     )
 
 
@@ -110,9 +114,10 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100)
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=50)
 
     # --- Print ocp structure --- #
+    ocp.add_plot_penalty()
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
@@ -120,7 +125,7 @@ def main():
 
     # --- Show the results in a bioviz animation --- #
     sol.print()
-    sol.animate()
+    sol.animate(n_frames=100)
 
 
 if __name__ == "__main__":

@@ -218,10 +218,8 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         """
 
-        # fatigue["muscles"][0].params["fatigue"].LD
-        if "tau" in fatigue and not with_torque:
+        if fatigue is not None and "tau" in fatigue and not with_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
-        # sum([muscles.params["fatigue"].state_only for muscles in fatigue["muscles"]])
 
         ConfigureProblem.configure_q(nlp, True, False)
         ConfigureProblem.configure_qdot(nlp, True, False)
@@ -458,7 +456,7 @@ class ConfigureProblem:
 
         name_tau = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
 
-        if "tau" in fatigue:
+        if fatigue is not None and "tau" in fatigue:
             fatigue_tau = fatigue["tau"]
 
             # Only homogeneous fatigue model are implement
@@ -565,7 +563,7 @@ class ConfigureProblem:
 
         name_tau = [str(i) for i in range(nlp.model.nbGeneralizedTorque())]
         ConfigureProblem._adjust_mapping("taudot", ["qdot", "tau"], nlp)
-        ConfigureProblem.configure_new_variable("taudot", name_tau, nlp, as_states, as_controls, False)
+        ConfigureProblem.configure_new_variable("taudot", name_tau, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_muscles(nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):

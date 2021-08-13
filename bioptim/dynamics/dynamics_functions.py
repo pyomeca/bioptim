@@ -113,7 +113,7 @@ class DynamicsFunctions:
         dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[nlp.states["qdot"].index, :] = ddq
 
-        if "tau" in fatigue:
+        if fatigue is not None and "tau" in fatigue:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
         return dxdt
@@ -141,7 +141,7 @@ class DynamicsFunctions:
 
         tau_var, tau_mx = (nlp.controls, controls) if "tau" in nlp.controls else (nlp.states, states)
         tau = DynamicsFunctions.get(tau_var["tau"], tau_mx)
-        if "tau" in fatigue:
+        if fatigue is not None and "tau" in fatigue:
             tau_fatigue = fatigue["tau"]
             tau_suffix = fatigue["tau"].suffix
 
@@ -352,7 +352,7 @@ class DynamicsFunctions:
 
         mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
-        if "muscles" in fatigue:
+        if fatigue is not None and "muscles" in fatigue:
             mus_fatigue = fatigue["muscles"]
 
             # Sanity check
@@ -383,7 +383,7 @@ class DynamicsFunctions:
             dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations)
             dxdt[nlp.states["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
 
-        if "muscles" in fatigue:
+        if fatigue is not None and "muscles" in fatigue:
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
         return dxdt
