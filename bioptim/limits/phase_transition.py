@@ -50,8 +50,8 @@ class PhaseTransition(Constraint):
     def __init__(
         self,
         phase_pre_idx: int = None,
-        states_pre_idx: int = None,
-        states_post_idx: int = None,
+        states_pre_idx: Union[list, tuple, slice] = None,
+        states_post_idx: Union[list, tuple, slice] = None,
         transition: Union[Callable, Any] = None,
         weight: float = 0,
         custom_function: Callable = None,
@@ -213,13 +213,13 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def continuous(_, all_pn):
+        def continuous(transition, all_pn):
             """
             The most common continuity function, that is state before equals state after
 
             Parameters
             ----------
-            _: PhaseTransition
+            transition : PhaseTransition
                 A reference to the phase transition
             all_pn: PenaltyNodeList
                     The penalty node elements
@@ -229,13 +229,20 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            if all_pn[0].x[0].shape[0] != all_pn[1].x[0].shape[0]:
-                raise RuntimeError(
-                    "Continuous phase transition without same number of states is not possible, "
-                    "please provide a custom phase transition"
-                )
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            continuity = nlp_pre.states.cx_end - nlp_post.states.cx
+
+            if transition.states_pre_idx is None:
+                transition.states_pre_idx = list(range(nlp_pre.states.cx.shape[0]))
+                transition.states_post_idx = list(range(nlp_post.states.cx.shape[0]))
+
+            states_pre = vertcat(*[nlp_pre.states.cx_end[i] for i in transition.states_pre_idx])
+            states_post = vertcat(*[nlp_post.states.cx[i] for i in transition.states_post_idx])
+
+            if states_pre.shape != states_post.shape:
+                raise RuntimeError(
+                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the pre-transition phase and {states_post.shape} post-transition phase.")
+
+            continuity = states_pre - states_post
             return continuity
 
         @staticmethod
@@ -325,15 +332,21 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             -------
             The expected difference between the last and first node provided by the user
             """
-
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
 
-            states_pre = vertcat(*[nlp_pre.states.cx[i] for i in transition.states_pre_idx])
+            if transition.states_pre_idx is None:
+                transition.states_pre_idx = list(range(nlp_pre.states.cx.shape[0]))
+                transition.states_post_idx = list(range(nlp_post.states.cx.shape[0]))
+
+            states_pre = vertcat(*[nlp_pre.states.cx_end[i] for i in transition.states_pre_idx])
             states_post = vertcat(*[nlp_post.states.cx[i] for i in transition.states_post_idx])
-            val = transition.custom_function(states_pre, states_post, **extra_params)
+            continuity = transition.custom_function(states_pre, states_post, **extra_params)
 
-            return val
+            if states_pre.shape != states_post.shape:
+                raise RuntimeError(
+                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the pre-transition phase and {states_post.shape} post-transition phase.")
 
+            return continuity
 
 class PhaseTransitionFcn(Enum):
     """

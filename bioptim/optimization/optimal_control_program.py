@@ -396,11 +396,6 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
-            if (
-                self.nlp[0].states.shape != self.nlp[i].states.shape
-                or self.nlp[0].controls.shape != self.nlp[i].controls.shape
-            ):
-                raise RuntimeError("Dynamics with different nx or nu is not supported yet")
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
         # Define the actual NLP problem
@@ -416,7 +411,6 @@ class OptimalControlProgram:
             # Inner- and inter-phase continuity
             ContinuityFunctions.continuity(self)
 
-        # @TODO: ajouter un check
         self.isdef_x_init = False
         self.isdef_u_init = False
         self.isdef_x_bounds = False
