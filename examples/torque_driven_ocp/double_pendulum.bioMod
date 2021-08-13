@@ -2,7 +2,7 @@ version 4
 
 segment Seg1
     rotations  x
-    ranges -2*pi 2*pi
+    ranges -10*pi 10*pi
     mass 1
     inertia
         1 0 0
@@ -54,7 +54,7 @@ endsegment
     rotations x
     rtinmatrix 0
     rt 0 0 0 xyz 0.1 0.1 -1
-    ranges -2*pi 2*pi
+    ranges -10*pi 10*pi
     mass 2
     inertia
         1 0 0
