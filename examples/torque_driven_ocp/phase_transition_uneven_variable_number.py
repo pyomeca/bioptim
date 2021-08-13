@@ -24,7 +24,7 @@ def custom_dof_matcher(state_pre: MX, state_post: MX) -> MX:
 
 def prepare_ocp(
         biorbd_model_path: str = "double_pendulum.bioMod",
-        biorbd_model_path_withTranslations: str = "double_pendulum_WithTranslations.bioMod"
+        biorbd_model_path_withTranslations: str = "double_pendulum_with_translations.bioMod"
         ) -> OptimalControlProgram:
 
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path_withTranslations))
