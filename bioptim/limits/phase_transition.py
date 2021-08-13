@@ -235,8 +235,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 transition.states_pre_idx = list(range(nlp_pre.states.cx.shape[0]))
                 transition.states_post_idx = list(range(nlp_post.states.cx.shape[0]))
 
-            states_pre = vertcat(*[nlp_pre.states.cx_end[i] for i in transition.states_pre_idx])
-            states_post = vertcat(*[nlp_post.states.cx[i] for i in transition.states_post_idx])
+            states_pre = nlp_pre.states.cx_end[transition.states_pre_idx]
+            states_post = nlp_post.states.cx[transition.states_post_idx]
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
@@ -338,8 +338,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 transition.states_pre_idx = list(range(nlp_pre.states.cx.shape[0]))
                 transition.states_post_idx = list(range(nlp_post.states.cx.shape[0]))
 
-            states_pre = vertcat(*[nlp_pre.states.cx_end[i] for i in transition.states_pre_idx])
-            states_post = vertcat(*[nlp_post.states.cx[i] for i in transition.states_post_idx])
+            states_pre = nlp_pre.states.cx_end[transition.states_pre_idx]
+            states_post = nlp_post.states.cx[transition.states_post_idx]
             continuity = transition.custom_function(states_pre, states_post, **extra_params)
 
             if states_pre.shape != states_post.shape:

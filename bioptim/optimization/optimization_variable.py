@@ -125,7 +125,7 @@ class OptimizationVariableList:
         self._cx_intermediates: list = []
         self.mx_reduced: MX = MX.sym("var", 0, 0)
 
-    def __getitem__(self, item: Union[int, str]):
+    def __getitem__(self, item: Union[int, str, list, range]):
         """
         Get a specific variable in the list, whether by name or by index
 
@@ -141,6 +141,8 @@ class OptimizationVariableList:
 
         if isinstance(item, int):
             return self.elements[item]
+        elif isinstance(item, list) or isinstance(item, range):
+            return vertcat(*[self[i] for i in item])
         elif isinstance(item, str):
             if item == "all":
                 index = []
@@ -153,7 +155,7 @@ class OptimizationVariableList:
                     return elt
             raise KeyError(f"{item} is not in the list")
         else:
-            raise ValueError("OptimizationVariableList can be sliced with int or str only")
+            raise ValueError("OptimizationVariableList can be sliced with int, list, range or str only")
 
     def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
         """
