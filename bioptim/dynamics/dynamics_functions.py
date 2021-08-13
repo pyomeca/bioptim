@@ -2,8 +2,9 @@ from typing import Union
 
 from casadi import horzcat, vertcat, MX, SX
 
-from ..optimization.non_linear_program import NonLinearProgram
+from .fatigue_dynamics import FatigueList
 from ..optimization.optimization_variable import OptimizationVariable
+from ..optimization.non_linear_program import NonLinearProgram
 
 
 class DynamicsFunctions:
@@ -68,7 +69,14 @@ class DynamicsFunctions:
         return vertcat(qdot, qddot)
 
     @staticmethod
-    def torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
+    def torque_driven(
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_contact: bool,
+        fatigue: FatigueList,
+    ) -> MX:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
 
@@ -84,6 +92,8 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
+        fatigue : FatigueList
+            A list of fatigue elements
 
         Returns
         ----------
@@ -94,13 +104,66 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+        tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        dq = horzcat(*[dq for _ in range(ddq.shape[1])])
-        return vertcat(dq, ddq)
+        dxdt = MX(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
+
+        if fatigue is not None and "tau" in fatigue:
+            dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
+
+        return dxdt
+
+    @staticmethod
+    def __get_fatigable_tau(nlp: NonLinearProgram, states: MX, controls: MX, fatigue: FatigueList) -> MX:
+        """
+        Apply the forward dynamics including (or not) the torque fatigue
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The current phase
+        states: MX
+            The states variable that may contains the tau and the tau fatigue variables
+        controls: MX
+            The controls variable that may contains the tau
+        fatigue: FatigueList
+            The dynamics for the torque fatigue
+
+        Returns
+        -------
+        The generalized accelerations
+        """
+
+        tau_var, tau_mx = (nlp.controls, controls) if "tau" in nlp.controls else (nlp.states, states)
+        tau = DynamicsFunctions.get(tau_var["tau"], tau_mx)
+        if fatigue is not None and "tau" in fatigue:
+            tau_fatigue = fatigue["tau"]
+            tau_suffix = fatigue["tau"].suffix
+
+            # Only homogeneous state_only is implemented yet
+            n_state_only = sum([t.state_only for t in tau_fatigue])
+            if 0 < n_state_only < len(fatigue["tau"]):
+                raise NotImplementedError("fatigue list without homogeneous state_only flag is not supported yet")
+
+            if n_state_only > 0:
+                tau = sum([DynamicsFunctions.get(tau_var[f"tau_{suffix}"], tau_mx) for suffix in tau_suffix])
+            else:
+                tau = MX()
+                for i, t in enumerate(tau_fatigue):
+                    tau_tp = MX(1, 1)
+                    for suffix in tau_suffix:
+                        model = getattr(t.model, suffix)
+                        tau_tp += (
+                            DynamicsFunctions.get(nlp.states[f"tau_{model.dynamics_suffix()}_{suffix}"], states)[i]
+                            * model.scale
+                        )
+                    tau = vertcat(tau, tau_tp)
+        return tau
 
     @staticmethod
     def torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact) -> MX:
@@ -247,7 +310,15 @@ class DynamicsFunctions:
         return DynamicsFunctions.contact_forces(nlp, q, qdot, tau)
 
     @staticmethod
-    def muscles_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
+    def muscles_driven(
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        nlp,
+        with_contact: bool,
+        with_torque: bool = False,
+        fatigue=None,
+    ) -> MX:
         """
         Forward dynamics driven by muscle.
 
@@ -263,6 +334,10 @@ class DynamicsFunctions:
             The definition of the system
         with_contact: bool
             If the dynamic with contact should be used
+        fatigue: FatigueDynamicsList
+            To define fatigue elements
+        with_torque: bool
+            If the dynamic should be added with residual torques
 
         Returns
         ----------
@@ -273,25 +348,43 @@ class DynamicsFunctions:
         DynamicsFunctions.apply_parameters(parameters, nlp)
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        residual_tau = DynamicsFunctions.get(nlp.controls["tau"], controls) if "tau" in nlp.controls else None
+        residual_tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_torque else None
 
         mus_act_nlp, mus_act = (nlp.states, states) if "muscles" in nlp.states else (nlp.controls, controls)
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
+        if fatigue is not None and "muscles" in fatigue:
+            mus_fatigue = fatigue["muscles"]
+
+            # Sanity check
+            n_state_only = sum([m.state_only for m in mus_fatigue])
+            if 0 < n_state_only < len(fatigue["muscles"]):
+                raise NotImplementedError("fatigue list without homogeneous state_only flag is not supported yet")
+
+            dyn_suffix = mus_fatigue[0].model.dynamics_suffix()
+            for m in mus_fatigue:
+                if m.model.dynamics_suffix() != dyn_suffix:
+                    raise ValueError("fatigue must be of all same types")
+
+            if n_state_only == 0:
+                mus_activations = DynamicsFunctions.get(nlp.states[f"muscles_{dyn_suffix}"], states)
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
 
-        dq = horzcat(*[dq for _ in range(ddq.shape[1])])
-        dxdt = vertcat(dq, ddq)
+        dxdt = MX(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
 
         has_excitation = True if "muscles" in nlp.states else False
         if has_excitation:
             mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
             dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations)
-            dmus = horzcat(*[dmus for _ in range(ddq.shape[1])])
-            dxdt = vertcat(dxdt, dmus)
+            dxdt[nlp.states["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
+
+        if fatigue is not None and "muscles" in fatigue:
+            dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
         return dxdt
 

@@ -148,14 +148,17 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 from .misc.__version__ import __version__
 from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
+from .dynamics.fatigue_dynamics import FatigueList
+from .dynamics.xia_fatigue import XiaFatigue, XiaTauFatigue
 from .dynamics.ode_solver import OdeSolver
 from .interfaces.biorbd_interface import BiorbdInterface
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
+from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_node import PenaltyNode, PenaltyNodeList
-from .misc.enums import Axis, Node, InterpolationType, PlotType, Solver, ControlType, CostType, Shooting
+from .misc.enums import Axis, Node, InterpolationType, PlotType, Solver, ControlType, CostType, Shooting, VariableType
 from .misc.mapping import BiMappingList, BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram

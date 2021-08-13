@@ -143,7 +143,7 @@ class OptionList:
 
         Parameters
         ----------
-        i: int
+        i: int, str
             The index of the option to get
 
         Returns
@@ -270,6 +270,9 @@ class OptionDict(OptionList):
                 raise ValueError("slicing an OptionDict must specify the phase if n_phase > 1")
 
         return self.options[phase][item]
+
+    def keys(self, phase: int = 0):
+        return self.options[phase].keys()
 
 
 class UniquePerPhaseOptionList(OptionList):

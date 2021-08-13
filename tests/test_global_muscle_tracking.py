@@ -229,7 +229,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_muscle_excitation_with_residual_torque_and_markers_tracking(ode_solver):
+def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
     # Load muscle_excitations_tracker
     bioptim_folder = TestUtils.bioptim_folder()
     tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py")
