@@ -618,7 +618,11 @@ class PlotOcp:
                 if not self.plot_func[key][i]:
                     continue
                 x_mod = 1 if self.plot_func[key][i].compute_derivative else 0
-                u_mod = 1 if nlp.control_type == ControlType.LINEAR_CONTINUOUS or self.plot_func[key][i].compute_derivative else 0
+                u_mod = (
+                    1
+                    if nlp.control_type == ControlType.LINEAR_CONTINUOUS or self.plot_func[key][i].compute_derivative
+                    else 0
+                )
 
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
                     all_y = []
@@ -680,8 +684,15 @@ class PlotOcp:
                             )
                             y[:, i_node] = val
                     else:
+                        nodes = self.plot_func[key][i].node_idx
+                        if nodes:
+                            nodes += [] if len(nodes) == round(state.shape[1] / step_size) + 1 else [nodes[-1] + 1]
                         val = self.plot_func[key][i].function(
-                            i, state[:, ::step_size], control, data_params_in_dyn, **self.plot_func[key][i].parameters
+                            nodes,
+                            state[:, ::step_size],
+                            control,
+                            data_params_in_dyn,
+                            **self.plot_func[key][i].parameters,
                         )
                         if val.shape != y.shape:
                             raise RuntimeError(
