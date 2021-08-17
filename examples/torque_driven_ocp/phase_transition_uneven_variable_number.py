@@ -17,15 +17,16 @@ from bioptim import (
     PhaseTransitionList,
 )
 
+
 def custom_dof_matcher(state_pre: MX, state_post: MX) -> MX:
     transition_penalty = state_pre - state_post
     return transition_penalty
 
 
 def prepare_ocp(
-        biorbd_model_path: str = "double_pendulum.bioMod",
-        biorbd_model_path_withTranslations: str = "double_pendulum_with_translations.bioMod"
-        ) -> OptimalControlProgram:
+    biorbd_model_path: str = "double_pendulum.bioMod",
+    biorbd_model_path_withTranslations: str = "double_pendulum_with_translations.bioMod",
+) -> OptimalControlProgram:
 
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path_withTranslations))
 
@@ -43,8 +44,12 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=1)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=Node.END, weight=-1000, axes=Axis.Z, phase=1, quadratic=False)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=2, node=Node.END, weight=-100, phase=1, quadratic=False)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=Node.END, weight=-1000, axes=Axis.Z, phase=1, quadratic=False
+    )
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=2, node=Node.END, weight=-100, phase=1, quadratic=False
+    )
 
     # Constraints
     constraints = ConstraintList()
@@ -64,11 +69,11 @@ def prepare_ocp(
     # Phase 0
     x_bounds[0][1, 0] = 0
     x_bounds[0][0, 0] = 3.14
-    x_bounds[0].min[0, -1] = 2*3.14
+    x_bounds[0].min[0, -1] = 2 * 3.14
 
     # Phase 1
     x_bounds[1][[0, 1, 4, 5], 0] = 0
-    x_bounds[1].min[2, -1] = 3*3.14
+    x_bounds[1].min[2, -1] = 3 * 3.14
 
     # Initial guess
     x_init = InitialGuessList()
@@ -86,7 +91,9 @@ def prepare_ocp(
     u_init.add([tau_init] * len(tau_mappings[1]["tau"].to_first))
 
     phase_transitions = PhaseTransitionList()
-    phase_transitions.add(custom_dof_matcher, phase_pre_idx=0, states_pre_idx=[0, 1, 2, 3], states_post_idx=[2, 3, 6, 7])
+    phase_transitions.add(
+        custom_dof_matcher, phase_pre_idx=0, states_pre_idx=[0, 1, 2, 3], states_post_idx=[2, 3, 6, 7]
+    )
 
     return OptimalControlProgram(
         biorbd_model,
@@ -103,6 +110,7 @@ def prepare_ocp(
         phase_transitions=phase_transitions,
     )
 
+
 def main():
 
     # --- Prepare the ocp --- #
@@ -113,7 +121,6 @@ def main():
     sol.print()
     sol.animate()
 
+
 if __name__ == "__main__":
     main()
-
-

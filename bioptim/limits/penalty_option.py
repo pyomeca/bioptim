@@ -289,7 +289,9 @@ class PenaltyOption(OptionGeneric):
             states_pre = vertcat(*[nlp.states.cx_end[i] for i in self.states_pre_idx])
             states_post = vertcat(*[nlp_post.states.cx[i] for i in self.states_post_idx])
             if states_pre.shape != states_post.shape:
-                raise RuntimeError(f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the pre-transition phase and {states_post.shape} post-transition phase.")
+                raise RuntimeError(
+                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the pre-transition phase and {states_post.shape} post-transition phase."
+                )
             state_cx = horzcat(states_pre, states_post)
             # Simulates a phase transition involving continuity on controls (Currently, no transition use this concept)
             control_cx = horzcat(nlp.controls.cx_end, nlp_post.controls.cx)

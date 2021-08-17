@@ -243,7 +243,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
                     f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
-                    f"pre-transition phase and {states_post.shape} post-transition phase.")
+                    f"pre-transition phase and {states_post.shape} post-transition phase."
+                )
 
             continuity = states_pre - states_post
 
@@ -353,13 +354,15 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
                     f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
-                    f"pre-transition phase and {states_post.shape} post-transition phase.")
+                    f"pre-transition phase and {states_post.shape} post-transition phase."
+                )
 
             continuity = transition.custom_function(states_pre, states_post, **extra_params)
 
             name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
             func = Function(name, [states_pre, states_post], [continuity])(states_pre, states_post)
             return func
+
 
 class PhaseTransitionFcn(Enum):
     """
