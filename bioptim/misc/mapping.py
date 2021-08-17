@@ -190,16 +190,6 @@ class BiMappingList(OptionDict):
         bimapping: BiMapping
             The BiMapping to copy
         """
-        # To be removed when the check is ok in option.py line 27
-        self.automatic_multiple_phase = False
-        if phase == -1:
-            self.automatic_multiple_phase = True
-            if name in self.options:
-                raise ValueError(f"BiMapping name should be unique inside each phase. {name} is not unique.")
-        else:
-            if len(self.options) > phase:
-                if name in self.options[phase]:
-                    raise ValueError(f"BiMapping name should be unique inside each phase. {name} is not unique.")
 
         if isinstance(bimapping, BiMapping):
             if to_second is not None or to_first is not None:
@@ -225,6 +215,17 @@ class BiMappingList(OptionDict):
                 oppose_to_second=oppose_to_second,
                 oppose_to_first=oppose_to_first,
             )
+
+    def variable_mapping_fill_phases(self, n_phases):
+        for mappings in self.options:
+            for key in mappings:
+                if mappings[key].automatic_multiple_phase:
+                    for i_phase in range(n_phases):
+                        if i_phase == 0:
+                            mappings[key].phase = 0
+                        else:
+                            self.add(name=key, bimapping=mappings[key], phase=i_phase)
+        return self
 
     def __getitem__(self, item) -> Union[dict, BiMapping]:
         return super(BiMappingList, self).__getitem__(item)
