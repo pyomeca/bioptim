@@ -284,9 +284,9 @@ class PenaltyOption(OptionGeneric):
             nlp_post = all_pn[1].nlp
             name = self.name.replace("->", "_").replace(" ", "_")
             if self.states_pre_idx is None:
-                self.states_pre_idx = list(range(nlp.states.cx.shape[0]))
+                self.states_pre_idx = list(range(nlp.states.cx_end.shape[0]))
                 self.states_post_idx = list(range(nlp.states.cx.shape[0]))
-            states_pre = vertcat(*[nlp.states.cx[i] for i in self.states_pre_idx])
+            states_pre = vertcat(*[nlp.states.cx_end[i] for i in self.states_pre_idx])
             states_post = vertcat(*[nlp_post.states.cx[i] for i in self.states_post_idx])
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the pre-transition phase and {states_post.shape} post-transition phase.")
@@ -432,7 +432,7 @@ class PenaltyOption(OptionGeneric):
             self.phase_pre_idx = nlp.phase_idx
             self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
             if not hasattr(self, "states_pre_idx"):
-                self.states_pre_idx = list(range(nlp.states.cx.shape[0]))
+                self.states_pre_idx = list(range(nlp.states.cx_end.shape[0]))
                 self.states_post_idx = list(range(nlp.states.cx.shape[0]))
 
             all_pn.append(self._get_penalty_node_list(ocp, nlp))

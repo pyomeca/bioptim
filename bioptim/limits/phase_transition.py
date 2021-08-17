@@ -3,7 +3,7 @@ from warnings import warn
 from enum import Enum
 
 import biorbd_casadi as biorbd
-from casadi import vertcat, MX
+from casadi import vertcat, MX, Function
 
 from .constraints import Constraint
 from .path_conditions import Bounds
@@ -228,23 +228,28 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             -------
             The difference between the state after and before
             """
-
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
 
             if transition.states_pre_idx is None:
-                transition.states_pre_idx = list(range(nlp_pre.states.cx.shape[0]))
+                transition.states_pre_idx = list(range(nlp_pre.states.cx_end.shape[0]))
                 transition.states_post_idx = list(range(nlp_post.states.cx.shape[0]))
 
-            states_pre = nlp_pre.states.cx_end[transition.states_pre_idx]
-            states_post = nlp_post.states.cx[transition.states_post_idx]
+            states_pre = []
+            states_post = []
+            for idx in range(len(transition.states_pre_idx)):
+                states_pre = vertcat(states_pre, nlp_pre.states.cx_end[transition.states_pre_idx[idx]])
+                states_post = vertcat(states_post, nlp_post.states.cx[transition.states_post_idx[idx]])
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
-                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in "
-                    f"the pre-transition phase and {states_post.shape} post-transition phase.")
+                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
+                    f"pre-transition phase and {states_post.shape} post-transition phase.")
 
             continuity = states_pre - states_post
-            return continuity
+
+            name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
+            func = Function(name, [states_pre, states_post], [continuity])(states_pre, states_post)
+            return func
 
         @staticmethod
         def cyclic(transition, all_pn) -> MX:
@@ -336,18 +341,25 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
 
             if transition.states_pre_idx is None:
-                transition.states_pre_idx = list(range(nlp_pre.states.cx.shape[0]))
+                transition.states_pre_idx = list(range(nlp_pre.states.cx_end.shape[0]))
                 transition.states_post_idx = list(range(nlp_post.states.cx.shape[0]))
 
-            states_pre = nlp_pre.states.cx_end[transition.states_pre_idx]
-            states_post = nlp_post.states.cx[transition.states_post_idx]
-            continuity = transition.custom_function(states_pre, states_post, **extra_params)
+            states_pre = []
+            states_post = []
+            for idx in range(len(transition.states_pre_idx)):
+                states_pre = vertcat(states_pre, nlp_pre.states.cx_end[transition.states_pre_idx[idx]])
+                states_post = vertcat(states_post, nlp_post.states.cx[transition.states_post_idx[idx]])
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
-                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the pre-transition phase and {states_post.shape} post-transition phase.")
+                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
+                    f"pre-transition phase and {states_post.shape} post-transition phase.")
 
-            return continuity
+            continuity = transition.custom_function(states_pre, states_post, **extra_params)
+
+            name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
+            func = Function(name, [states_pre, states_post], [continuity])(states_pre, states_post)
+            return func
 
 class PhaseTransitionFcn(Enum):
     """
