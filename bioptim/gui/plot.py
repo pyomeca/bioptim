@@ -656,19 +656,20 @@ class PlotOcp:
                         self.__append_to_ydata([y_tp])
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
-                    y = np.empty((len(self.plot_func[key][i].node_idx),))
-                    y.fill(np.nan)
-                    mod = 1 if self.plot_func[key][i].compute_derivative else 0
-                    for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
-                        val = self.plot_func[key][i].function(
-                            node_idx,
-                            state[:, node_idx * step_size : (node_idx + 1) * step_size + mod : step_size],
-                            control[:, node_idx : node_idx + 1 + mod],
-                            data_params_in_dyn,
-                            **self.plot_func[key][i].parameters,
-                        )
-                        y[i_node] = val
-                    self.ydata.append(y)
+                    for i_var in range(self.variable_sizes[i][key]):
+                        y = np.empty((len(self.plot_func[key][i].node_idx),))
+                        y.fill(np.nan)
+                        mod = 1 if self.plot_func[key][i].compute_derivative else 0
+                        for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
+                            val = self.plot_func[key][i].function(
+                                node_idx,
+                                state[:, node_idx * step_size : (node_idx + 1) * step_size + mod : step_size],
+                                control[:, node_idx : node_idx + 1 + mod],
+                                data_params_in_dyn,
+                                **self.plot_func[key][i].parameters,
+                            )
+                            y[i_node] = val[i_var]
+                        self.ydata.append(y)
 
                 else:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
@@ -685,8 +686,11 @@ class PlotOcp:
                             y[:, i_node] = val
                     else:
                         nodes = self.plot_func[key][i].node_idx
-                        if nodes:
-                            nodes += [] if len(nodes) == round(state.shape[1] / step_size) + 1 else [nodes[-1] + 1]
+                        if nodes and len(nodes) > 1 and len(nodes) == round(state.shape[1] / step_size):
+                            # Assume we are integrating but did not specify plot as such.
+                            # Therefore the arrival point is missing
+                            nodes += [nodes[-1] + 1]
+
                         val = self.plot_func[key][i].function(
                             nodes,
                             state[:, ::step_size],

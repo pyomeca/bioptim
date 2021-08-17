@@ -382,14 +382,21 @@ class PenaltyOption(OptionGeneric):
 
         """
 
+        def plot_function(t, x, u, p):
+            if isinstance(t, (list, tuple)):
+                return self.target_to_plot[:, [self.node_idx.index(_t) for _t in t]]
+            else:
+                return self.target_to_plot[:, self.node_idx.index(t)]
+
         if self.target_to_plot is not None:
-            if self.target_to_plot.shape[0] > 1:
+            if self.target_to_plot.shape[1] > 1:
                 plot_type = PlotType.STEP
             else:
                 plot_type = PlotType.POINT
+
             all_pn.ocp.add_plot(
                 self.target_plot_name,
-                lambda t, x, u, p: self.target_to_plot[:, t],
+                plot_function,
                 color="tab:red",
                 plot_type=plot_type,
                 phase=all_pn.nlp.phase_idx,
