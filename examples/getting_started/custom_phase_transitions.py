@@ -47,7 +47,7 @@ def custom_phase_transition(state_pre: MX, state_post: MX, idx_1: int, idx_2: in
     The constraint such that: c(x) = 0
     """
 
-    return state_pre.cx_end[idx_1:idx_2, :] - state_post.cx[idx_1:idx_2, :]
+    return state_pre[idx_1:idx_2, :] - state_post[idx_1:idx_2, :]
 
 
 def prepare_ocp(
