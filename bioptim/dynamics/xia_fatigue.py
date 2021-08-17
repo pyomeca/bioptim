@@ -121,13 +121,13 @@ class XiaTauFatigue(TauFatigue):
         var = getattr(self, suffix)
         target_load = self._get_target_load(var, suffix, nlp, controls, index)
         fatigue = [
-            DynamicsFunctions.get(nlp.states[f"tau_{dyn_suffix}_{suffix}"], states)[index, :]
+            DynamicsFunctions.get(nlp.states[f"tau_{suffix}_{dyn_suffix}"], states)[index, :]
             for dyn_suffix in var.suffix()
         ]
         current_dxdt = var.apply_dynamics(target_load, *fatigue)
 
         for i, dyn_suffix in enumerate(var.suffix()):
-            dxdt[nlp.states[f"tau_{dyn_suffix}_{suffix}"].index[index], :] = current_dxdt[i]
+            dxdt[nlp.states[f"tau_{suffix}_{dyn_suffix}"].index[index], :] = current_dxdt[i]
 
         return dxdt
 

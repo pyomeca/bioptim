@@ -502,7 +502,7 @@ class ConfigureProblem:
                 )
 
                 for p, params in enumerate(fatigue_suffix):
-                    name = f"tau_{params}_{tau_suffix}"
+                    name = f"tau_{tau_suffix}_{params}"
                     ConfigureProblem._adjust_mapping(name, ["q"], nlp)
                     ConfigureProblem.configure_new_variable(name, name_tau, nlp, True, False, skip_plot=True)
                     nlp.plot[f"{name}_controls"] = CustomPlot(
