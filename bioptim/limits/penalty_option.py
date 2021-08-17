@@ -387,7 +387,7 @@ class PenaltyOption(OptionGeneric):
                 plot_type = PlotType.POINT
             all_pn.ocp.add_plot(
                 self.target_plot_name,
-                lambda t, x, u, p: self.target_to_plot,
+                lambda t, x, u, p: self.target_to_plot[:, t],
                 color="tab:red",
                 plot_type=plot_type,
                 phase=all_pn.nlp.phase_idx,

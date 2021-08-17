@@ -647,11 +647,11 @@ class OptimalControlProgram:
                     penalties_internal = nlp.g_internal
 
                 for penalty in penalties:
-                    if penalty is None:
+                    if not penalty:
                         continue
                     name_unique_objective.append(penalty.name)
                 for penalty_internal in penalties_internal:
-                    if penalty_internal is None:
+                    if not penalty_internal:
                         continue
                     name_unique_objective.append(penalty_internal.name)
             color = {}
@@ -685,7 +685,7 @@ class OptimalControlProgram:
 
         def add_penalty(_penalties):
             for penalty in _penalties:
-                if penalty is None:
+                if not penalty:
                     continue
 
                 dt = penalty.dt
