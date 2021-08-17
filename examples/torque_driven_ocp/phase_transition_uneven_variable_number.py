@@ -43,12 +43,13 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=0)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=1)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=Node.END, weight=-1000, axes=Axis.Z, phase=1)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_COM_POSITION, node=Node.END, weight=-1000, axes=Axis.Z, phase=1, quadratic=False)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=2, node=Node.END, weight=-100, phase=1, quadratic=False)
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=0.01, max_bound=3, phase=0)
-    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=0.01, max_bound=3, phase=1)
+    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=0.3, max_bound=3, phase=0)
+    constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=0.3, max_bound=3, phase=1)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -63,6 +64,11 @@ def prepare_ocp(
     # Phase 0
     x_bounds[0][1, 0] = 0
     x_bounds[0][0, 0] = 3.14
+    x_bounds[0].min[0, -1] = 2*3.14
+
+    # Phase 1
+    x_bounds[1][[0, 1, 4, 5], 0] = 0
+    x_bounds[1].min[2, -1] = 3*3.14
 
     # Initial guess
     x_init = InitialGuessList()
