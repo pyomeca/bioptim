@@ -677,10 +677,9 @@ class OptimalControlProgram:
             if penalty.transition:
                 raise NotImplementedError("add_plot_penalty with phase transition is not implemented yet")
             elif penalty.derivative or penalty.explicit_derivative:
-                out.append(penalty.weighted_function(x, u, p, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
             else:
-                _u = u if penalty.weighted_function.sparsity_in(1).shape[1] > 1 else u[:, :-1]
-                out.append(penalty.weighted_function(x[:, :-1], _u, p, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, _target, dt))
             return sum1(horzcat(*out))
 
         def add_penalty(_penalties):
@@ -707,7 +706,7 @@ class OptimalControlProgram:
                     "dt": dt,
                     "color": color[penalty.name],
                     "label": penalty.name,
-                    "manually_compute_derivative": True,
+                    "compute_derivative": penalty.derivative or penalty.explicit_derivative or penalty.integrate,
                 }
                 if (
                     isinstance(penalty.type, ObjectiveFcn.Mayer)

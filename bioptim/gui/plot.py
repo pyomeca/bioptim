@@ -58,7 +58,7 @@ class CustomPlot:
         bounds: Bounds = None,
         node_idx: list = None,
         label: list = None,
-        manually_compute_derivative: bool = False,
+        compute_derivative: bool = False,
         **parameters: Any,
     ):
         """
@@ -86,7 +86,7 @@ class CustomPlot:
             The node time to be plotted on the graphs
         label: list
             Label of the curve to plot (to be added to the legend)
-        manually_compute_derivative: bool
+        compute_derivative: bool
             If the function should send the next node with x and u. Prevents from computing all at once (therefore a bit slower)
         """
 
@@ -108,7 +108,7 @@ class CustomPlot:
         self.bounds = bounds
         self.node_idx = node_idx
         self.label = label
-        self.manually_compute_derivative = manually_compute_derivative
+        self.compute_derivative = compute_derivative
         self.parameters = parameters
 
 
@@ -614,22 +614,11 @@ class PlotOcp:
                 else:
                     control = np.concatenate((control, data_controls[s]))
 
-            if nlp.control_type == ControlType.CONSTANT:
-                u_mod = 1
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                u_mod = 2
-            else:
-                raise NotImplementedError(f"Plotting {nlp.control_type} is not implemented yet")
-
             for key in self.variable_sizes[i]:
                 if not self.plot_func[key][i]:
                     continue
-                # Automatically find u_modifier if the function is a casadi function otherwise fallback to default
-                u_mod2 = (
-                    self.plot_func[key][i].function.size2_in(1)
-                    if hasattr(self.plot_func[key][i].function, "size2_in")
-                    else u_mod
-                )
+                x_mod = 1 if self.plot_func[key][i].compute_derivative else 0
+                u_mod = 1 if nlp.control_type == ControlType.LINEAR_CONTINUOUS or self.plot_func[key][i].compute_derivative else 0
 
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
                     all_y = []
@@ -637,17 +626,21 @@ class PlotOcp:
                         y_tp = np.empty((self.variable_sizes[i][key], len(t)))
                         y_tp.fill(np.nan)
 
-                        mod = 1 if self.plot_func[key][i].manually_compute_derivative else 0
                         val = self.plot_func[key][i].function(
                             idx,
-                            state[:, step_size * idx : step_size * (idx + 1) + mod],
-                            control[:, idx : idx + u_mod2 + 1],
+                            state[:, step_size * idx : step_size * (idx + 1) + x_mod],
+                            control[:, idx : idx + u_mod + 1],
                             data_params_in_dyn,
                             **self.plot_func[key][i].parameters,
                         )
+
+                        if self.plot_func[key][i].compute_derivative:
+                            # This is a special case since derivative is not properly integrated
+                            val = np.repeat(val, y_tp.shape[1])[np.newaxis, :]
+
                         if val.shape != y_tp.shape:
                             raise RuntimeError(
-                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}"
+                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y_tp.shape}"
                             )
                         y_tp[:, :] = val
                         all_y.append(y_tp)
@@ -661,7 +654,7 @@ class PlotOcp:
                 elif self.plot_func[key][i].type == PlotType.POINT:
                     y = np.empty((len(self.plot_func[key][i].node_idx),))
                     y.fill(np.nan)
-                    mod = 1 if self.plot_func[key][i].manually_compute_derivative else 0
+                    mod = 1 if self.plot_func[key][i].compute_derivative else 0
                     for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
                         val = self.plot_func[key][i].function(
                             node_idx,
@@ -676,7 +669,7 @@ class PlotOcp:
                 else:
                     y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
                     y.fill(np.nan)
-                    if self.plot_func[key][i].manually_compute_derivative:
+                    if self.plot_func[key][i].compute_derivative:
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
                             val = self.plot_func[key][i].function(
                                 node_idx,

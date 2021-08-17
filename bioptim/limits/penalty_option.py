@@ -161,6 +161,7 @@ class PenaltyOption(OptionGeneric):
         self.weight = weight
         self.function: Union[Function, None] = None
         self.weighted_function: Union[Function, None] = None
+        self.weighted_function_non_threaded: Union[Function, None] = None
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
@@ -337,6 +338,7 @@ class PenaltyOption(OptionGeneric):
         self.weighted_function = Function(
             name, [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
         )
+        self.weighted_function_non_threaded = self.weighted_function
 
         if ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
             self.function = self.function.map(len(self.node_idx), "thread", ocp.n_threads)
