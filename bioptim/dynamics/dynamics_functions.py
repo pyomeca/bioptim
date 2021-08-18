@@ -159,7 +159,7 @@ class DynamicsFunctions:
                     for suffix in tau_suffix:
                         model = getattr(t.model, suffix)
                         tau_tp += (
-                            DynamicsFunctions.get(nlp.states[f"tau_{model.dynamics_suffix()}_{suffix}"], states)[i]
+                            DynamicsFunctions.get(nlp.states[f"tau_{suffix}_{model.dynamics_suffix()}"], states)[i]
                             * model.scale
                         )
                     tau = vertcat(tau, tau_tp)
