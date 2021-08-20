@@ -116,7 +116,7 @@ def main():
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
 
-    sol = ocp.solve(show_online_optim=False)
+    sol = ocp.solve()
 
     sol.print()
     sol.animate()

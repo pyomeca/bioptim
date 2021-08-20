@@ -41,7 +41,7 @@ class OptionGeneric:
         """
 
         self.automatic_multiple_phase = False
-        if phase == -1:
+        if phase == 0:
             self.automatic_multiple_phase = True
 
         self.phase = phase
@@ -248,7 +248,7 @@ class OptionDict(OptionList):
         super(OptionDict, self).__init__()
         self.options = [{}]
 
-    def _add(self, key: str, option_type: Callable = OptionGeneric, phase: int = -1, **extra_arguments: Any):
+    def _add(self, key: str, option_type: Callable = OptionGeneric, phase: int = 0, **extra_arguments: Any):
         self.__prepare_option_list(phase, key)
         self.options[phase][key] = option_type(phase=phase, **extra_arguments)
 
