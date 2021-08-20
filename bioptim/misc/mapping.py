@@ -170,7 +170,7 @@ class BiMappingList(OptionDict):
         oppose_to_second: Union[Mapping, int, list, tuple, range] = None,
         oppose_to_first: Union[Mapping, int, list, tuple, range] = None,
         bimapping: BiMapping = None,
-        phase: int = 0,
+        phase: int = -1,
     ):
 
         """

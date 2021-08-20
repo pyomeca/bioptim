@@ -29,7 +29,7 @@ class Constraint(PenaltyOption):
         min_bound: Union[np.ndarray, float] = None,
         max_bound: Union[np.ndarray, float] = None,
         quadratic: bool = False,
-        phase: int = 0,
+        phase: int = -1,
         **params: Any,
     ):
         """

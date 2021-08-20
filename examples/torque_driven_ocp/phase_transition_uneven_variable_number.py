@@ -15,13 +15,8 @@ from bioptim import (
     BiMappingList,
     Axis,
     PhaseTransitionList,
+    PhaseTransitionFcn,
 )
-
-
-def custom_dof_matcher(state_pre: MX, state_post: MX) -> MX:
-    transition_penalty = state_pre - state_post
-    return transition_penalty
-
 
 def prepare_ocp(
     biorbd_model_path: str = "double_pendulum.bioMod",
@@ -91,9 +86,8 @@ def prepare_ocp(
     u_init.add([tau_init] * len(tau_mappings[1]["tau"].to_first))
 
     phase_transitions = PhaseTransitionList()
-    phase_transitions.add(
-        custom_dof_matcher, phase_pre_idx=0, states_pre_idx=[0, 1, 2, 3], states_post_idx=[2, 3, 6, 7]
-    )
+    phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0, states_pre_idx=[0, 1, 2, 3],
+                          states_post_idx=[2, 3, 6, 7])
 
     return OptimalControlProgram(
         biorbd_model,
