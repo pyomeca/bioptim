@@ -157,7 +157,9 @@ class OptionList:
 
         return self.options[i]
 
-    def _add(self, option_type: Callable = OptionGeneric, phase: int = -1, list_index: int = -1, **extra_arguments: Any):
+    def _add(
+        self, option_type: Callable = OptionGeneric, phase: int = -1, list_index: int = -1, **extra_arguments: Any
+    ):
         """
         Add a new option to the list
 

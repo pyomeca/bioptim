@@ -26,7 +26,7 @@ from bioptim import (
 )
 
 
-def custom_phase_transition(state_pre: MX, state_post: MX, coef : float) -> MX:
+def custom_phase_transition(state_pre: MX, state_post: MX, coef: float) -> MX:
     """
     The constraint of the transition. This function mimics the PhaseTransitionFcn.CONTINUOUS if coef = 1.
     coef_1 is a user defined extra variables and can be anything
@@ -148,8 +148,9 @@ def prepare_ocp(
     """
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(PhaseTransitionFcn.IMPACT, phase_pre_idx=1)
-    phase_transitions.add(custom_phase_transition, phase_pre_idx=2, coef=1, states_pre_idx=[0, 1, 2],
-                          states_post_idx=[0, 1, 2])
+    phase_transitions.add(
+        custom_phase_transition, phase_pre_idx=2, coef=1, states_pre_idx=[0, 1, 2], states_post_idx=[0, 1, 2]
+    )
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
 
     return OptimalControlProgram(

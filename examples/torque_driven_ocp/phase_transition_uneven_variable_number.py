@@ -18,6 +18,7 @@ from bioptim import (
     PhaseTransitionFcn,
 )
 
+
 def prepare_ocp(
     biorbd_model_path: str = "double_pendulum.bioMod",
     biorbd_model_path_withTranslations: str = "double_pendulum_with_translations.bioMod",
@@ -86,8 +87,9 @@ def prepare_ocp(
     u_init.add([tau_init] * len(tau_mappings[1]["tau"].to_first))
 
     phase_transitions = PhaseTransitionList()
-    phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0, states_pre_idx=[0, 1, 2, 3],
-                          states_post_idx=[2, 3, 6, 7])
+    phase_transitions.add(
+        PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0, states_pre_idx=[0, 1, 2, 3], states_post_idx=[2, 3, 6, 7]
+    )
 
     return OptimalControlProgram(
         biorbd_model,

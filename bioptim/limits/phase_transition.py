@@ -364,8 +364,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
 
             if transition.states_pre_idx is None:
-                transition.states_pre_idx = list(range(len(nlp_pre.states)+1))
-                transition.states_post_idx = list(range(len(nlp_post.states)+1))
+                transition.states_pre_idx = list(range(len(nlp_pre.states) + 1))
+                transition.states_post_idx = list(range(len(nlp_post.states) + 1))
 
             if len(transition.states_pre_idx) != len(transition.states_post_idx):
                 raise RuntimeError(
