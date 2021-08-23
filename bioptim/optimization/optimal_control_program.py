@@ -873,7 +873,8 @@ class OptimalControlProgram:
             if key != "all":
                 param_init_guess.add(param[key], name=key)
         self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, param_init=param_init_guess)
-        self.solver.set_lagrange_multiplier(sol)
+        if self.solver:
+            self.solver.set_lagrange_multiplier(sol)
 
     def save(self, sol: Solution, file_path: str, stand_alone: bool = False):
         """
