@@ -176,7 +176,6 @@ def prepare_ocp(
         constraints,
         ode_solver=ode_solver,
         phase_transitions=phase_transitions,
-        use_sx=False,
     )
 
 

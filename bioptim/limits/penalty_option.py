@@ -1,7 +1,7 @@
 from typing import Any, Union, Callable
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, Function, MX, SX
+from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
@@ -288,8 +288,8 @@ class PenaltyOption(OptionGeneric):
             states_post = nlp_post.states.cx
             controls_pre = nlp.controls.cx_end
             controls_post = nlp_post.controls.cx
-            state_cx = horzcat(states_pre, states_post)
-            control_cx = horzcat(controls_pre, controls_post)
+            state_cx = vertcat(states_pre, states_post)
+            control_cx = vertcat(controls_pre, controls_post)
 
         else:
             ocp = all_pn.ocp

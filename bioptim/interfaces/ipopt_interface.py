@@ -227,8 +227,8 @@ class IpoptInterface(SolverInterface):
         def get_x_and_u_at_idx(_penalty, _idx):
             if _penalty.transition:
                 ocp = self.ocp
-                _x = horzcat(ocp.nlp[_penalty.phase_pre_idx].X[-1], ocp.nlp[_penalty.phase_post_idx].X[0])
-                _u = horzcat(ocp.nlp[_penalty.phase_pre_idx].U[-1], ocp.nlp[_penalty.phase_post_idx].U[0])
+                _x = vertcat(ocp.nlp[_penalty.phase_pre_idx].X[-1], ocp.nlp[_penalty.phase_post_idx].X[0])
+                _u = vertcat(ocp.nlp[_penalty.phase_pre_idx].U[-1], ocp.nlp[_penalty.phase_post_idx].U[0])
             elif _penalty.integrate:
                 _x = nlp.X[_idx]
                 _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
