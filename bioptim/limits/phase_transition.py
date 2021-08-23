@@ -9,7 +9,6 @@ from .constraints import Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
-from ..misc.mapping import BiMapping
 from ..misc.enums import Node, InterpolationType
 from ..misc.options import UniquePerPhaseOptionList
 
@@ -51,8 +50,6 @@ class PhaseTransition(Constraint):
     def __init__(
         self,
         phase_pre_idx: int = None,
-        state_mapping: BiMapping = None,
-        control_mapping: BiMapping = None,
         transition: Union[Callable, Any] = None,
         weight: float = 0,
         custom_function: Callable = None,
@@ -82,8 +79,6 @@ class PhaseTransition(Constraint):
         self.quadratic = True
         self.phase_pre_idx = phase_pre_idx
         self.phase_post_idx = None
-        self.state_mapping = state_mapping
-        self.control_mapping = control_mapping
         self.node = Node.TRANSITION
         self.dt = 1
         self.node_idx = [0]
