@@ -142,8 +142,6 @@ class OptimizationVariableList:
 
         if isinstance(item, int):
             return self.elements[item]
-        elif isinstance(item, list) or isinstance(item, range):
-            return vertcat(*[self[i] for i in item])
         elif isinstance(item, str):
             if item == "all":
                 index = []
@@ -158,7 +156,7 @@ class OptimizationVariableList:
                 if item == elt.name:
                     return elt
             raise KeyError(f"{item} is not in the list")
-        elif isinstance(item, (list, tuple)):
+        elif isinstance(item, (list, tuple)) or isinstance(item, range):
             mx = vertcat([elt.mx for elt in self.elements if elt.name in item])
             index = []
             for elt in self.elements:

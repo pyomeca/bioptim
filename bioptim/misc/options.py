@@ -42,7 +42,6 @@ class OptionGeneric:
 
         self.automatic_multiple_phase = False
         if phase == -1:
-            phase = 0
             self.automatic_multiple_phase = True
 
         self.phase = phase
@@ -155,8 +154,10 @@ class OptionList:
         -------
         The ith phase list of the option list
         """
-
-        return self.options[i]
+        try:
+            return self.options[i]
+        except:
+            print("coucou")
 
     def _add(
         self, option_type: Callable = OptionGeneric, phase: int = -1, list_index: int = -1, **extra_arguments: Any
