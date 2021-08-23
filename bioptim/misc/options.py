@@ -42,6 +42,7 @@ class OptionGeneric:
 
         self.automatic_multiple_phase = False
         if phase == -1:
+            phase = 0
             self.automatic_multiple_phase = True
 
         self.phase = phase
