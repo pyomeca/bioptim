@@ -9,7 +9,6 @@ from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, Axis, ControlType
-from ..dynamics.ode_solver import OdeSolver
 
 
 class PenaltyFunctionAbstract:
@@ -85,6 +84,25 @@ class PenaltyFunctionAbstract:
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
             return all_pn.nlp.controls[key].cx
+
+        @staticmethod
+        def minimize_fatigue(penalty: PenaltyOption, all_pn: PenaltyNodeList, key: str):
+            """
+            Minimize the states variables.
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            all_pn: PenaltyNodeList
+                The penalty node elements
+            key: str
+                The name of the state to minimize
+            """
+
+            return PenaltyFunctionAbstract.Functions.minimize_states(penalty, all_pn, f"{key}_mf")
 
         @staticmethod
         def minimize_markers(

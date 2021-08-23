@@ -161,6 +161,7 @@ class PenaltyOption(OptionGeneric):
         self.weight = weight
         self.function: Union[Function, None] = None
         self.weighted_function: Union[Function, None] = None
+        self.weighted_function_non_threaded: Union[Function, None] = None
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
@@ -355,6 +356,7 @@ class PenaltyOption(OptionGeneric):
         self.weighted_function = Function(
             name, [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
         )
+        self.weighted_function_non_threaded = self.weighted_function
 
         if ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
             self.function = self.function.map(len(self.node_idx), "thread", ocp.n_threads)
@@ -398,14 +400,21 @@ class PenaltyOption(OptionGeneric):
 
         """
 
+        def plot_function(t, x, u, p):
+            if isinstance(t, (list, tuple)):
+                return self.target_to_plot[:, [self.node_idx.index(_t) for _t in t]]
+            else:
+                return self.target_to_plot[:, self.node_idx.index(t)]
+
         if self.target_to_plot is not None:
-            if self.target_to_plot.shape[0] > 1:
+            if self.target_to_plot.shape[1] > 1:
                 plot_type = PlotType.STEP
             else:
                 plot_type = PlotType.POINT
+
             all_pn.ocp.add_plot(
                 self.target_plot_name,
-                lambda t, x, u, p: self.target_to_plot,
+                plot_function,
                 color="tab:red",
                 plot_type=plot_type,
                 phase=all_pn.nlp.phase_idx,

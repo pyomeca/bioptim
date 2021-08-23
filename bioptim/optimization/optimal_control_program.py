@@ -525,9 +525,11 @@ class OptimalControlProgram:
 
         for nlp in self.nlp:
             for key in nlp.states.keys():
-                nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
+                if f"{key}_states" in nlp.plot:
+                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
             for key in nlp.controls.keys():
-                nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
+                if f"{key}_controls" in nlp.plot:
+                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
 
     def update_initial_guess(
         self,
@@ -642,11 +644,11 @@ class OptimalControlProgram:
                     penalties_internal = nlp.g_internal
 
                 for penalty in penalties:
-                    if penalty is None:
+                    if not penalty:
                         continue
                     name_unique_objective.append(penalty.name)
                 for penalty_internal in penalties_internal:
-                    if penalty_internal is None:
+                    if not penalty_internal:
                         continue
                     name_unique_objective.append(penalty_internal.name)
             color = {}
@@ -666,21 +668,24 @@ class OptimalControlProgram:
                 if dt.shape[0] > 1:
                     dt = dt[penalty.phase]
 
-            _target = penalty.target[..., t] if penalty.target is not None and isinstance(t, int) else []
+            _target = (
+                penalty.target[..., penalty.node_idx.index(t)]
+                if penalty.target is not None and isinstance(t, int)
+                else []
+            )
 
             out = []
             if penalty.transition:
                 raise NotImplementedError("add_plot_penalty with phase transition is not implemented yet")
             elif penalty.derivative or penalty.explicit_derivative:
-                out.append(penalty.weighted_function(x, u, p, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
             else:
-                _u = u if penalty.weighted_function.sparsity_in(1).shape[1] > 1 else u[:, :-1]
-                out.append(penalty.weighted_function(x[:, :-1], _u, p, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, _target, dt))
             return sum1(horzcat(*out))
 
         def add_penalty(_penalties):
             for penalty in _penalties:
-                if penalty is None:
+                if not penalty:
                     continue
 
                 dt = penalty.dt
@@ -702,7 +707,7 @@ class OptimalControlProgram:
                     "dt": dt,
                     "color": color[penalty.name],
                     "label": penalty.name,
-                    "manually_compute_derivative": True,
+                    "compute_derivative": penalty.derivative or penalty.explicit_derivative or penalty.integrate,
                 }
                 if (
                     isinstance(penalty.type, ObjectiveFcn.Mayer)
