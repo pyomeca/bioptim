@@ -52,6 +52,8 @@ class PhaseTransition(Constraint):
         phase_pre_idx: int = None,
         states_pre_idx: Union[list, tuple, slice] = None,
         states_post_idx: Union[list, tuple, slice] = None,
+        controls_pre_idx: Union[list, tuple, slice] = None,
+        controls_post_idx: Union[list, tuple, slice] = None,
         transition: Union[Callable, Any] = None,
         weight: float = 0,
         custom_function: Callable = None,
@@ -83,6 +85,8 @@ class PhaseTransition(Constraint):
         self.phase_post_idx = None
         self.states_pre_idx = states_pre_idx
         self.states_post_idx = states_post_idx
+        self.controls_pre_idx = controls_pre_idx
+        self.controls_post_idx = controls_post_idx
         self.node = Node.TRANSITION
         self.dt = 1
         self.node_idx = [0]
@@ -233,6 +237,9 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             if transition.states_pre_idx is None:
                 transition.states_pre_idx = list(range(nlp_pre.states.cx_end.shape[0]))
                 transition.states_post_idx = list(range(nlp_post.states.cx.shape[0]))
+            if transition.controls_pre_idx is None:
+                transition.controls_pre_idx = list(range(nlp_pre.controls.cx_end.shape[0]))
+                transition.controls_post_idx = list(range(nlp_post.controls.cx.shape[0]))
 
             states_pre = []
             states_post = []
