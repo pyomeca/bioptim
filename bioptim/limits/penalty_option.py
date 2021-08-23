@@ -1,12 +1,12 @@
 from typing import Any, Union, Callable
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, Function, MX, SX
+from casadi import horzcat, Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, PlotType, ControlType
-from ..misc.mapping import Mapping
+from ..misc.mapping import Mapping, BiMapping
 from ..misc.options import OptionGeneric
 
 
@@ -284,16 +284,10 @@ class PenaltyOption(OptionGeneric):
             nlp = all_pn[0].nlp
             nlp_post = all_pn[1].nlp
             name = self.name.replace("->", "_").replace(" ", "_")
-            if self.states_pre_idx is None:
-                self.states_pre_idx = list(range(nlp.states.cx_end.shape[0]))
-                self.states_post_idx = list(range(nlp.states.cx.shape[0]))
-            if self.controls_pre_idx is None:
-                self.controls_pre_idx = list(range(nlp.controls.cx_end.shape[0]))
-                self.controls_post_idx = list(range(nlp.controls.cx.shape[0]))
-            states_pre = vertcat(*[nlp.states.cx_end[i] for i in self.states_pre_idx])
-            states_post = vertcat(*[nlp_post.states.cx[i] for i in self.states_post_idx])
-            controls_pre = vertcat(*[nlp.controls.cx_end[i] for i in self.controls_pre_idx])
-            controls_post = vertcat(*[nlp_post.controls.cx[i] for i in self.controls_post_idx])
+            states_pre = nlp.states.cx_end
+            states_post = nlp_post.states.cx
+            controls_pre = nlp.controls.cx_end
+            controls_post = nlp_post.controls.cx
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
                     f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the pre-transition phase and {states_post.shape} post-transition phase."
@@ -450,12 +444,10 @@ class PenaltyOption(OptionGeneric):
             self.dt = 1
             self.phase_pre_idx = nlp.phase_idx
             self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
-            if not hasattr(self, "states_pre_idx"):
-                self.states_pre_idx = list(range(nlp.states.cx_end.shape[0]))
-                self.states_post_idx = list(range(nlp.states.cx.shape[0]))
-            if not hasattr(self, "controls_pre_idx"):
-                self.controls_pre_idx = list(range(nlp.controls.cx_end.shape[0]))
-                self.controls_post_idx = list(range(nlp.controls.cx.shape[0]))
+            if not self.state_mapping:  # It is in because it is a PhaseTransition
+                self.state_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
+            if not self.control_mapping:  # It is in because it is a PhaseTransition
+                self.control_mapping = BiMapping(range(nlp.controls.shape), range(nlp.controls.shape))
 
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
             all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node

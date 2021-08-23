@@ -227,24 +227,18 @@ class IpoptInterface(SolverInterface):
         def get_x_and_u_at_idx(_penalty, _idx):
             if _penalty.transition:
                 ocp = self.ocp
-                _x = horzcat(
-                    ocp.nlp[_penalty.phase_pre_idx].X[-1][_penalty.states_pre_idx, 0],
-                    ocp.nlp[_penalty.phase_post_idx].X[0][_penalty.states_post_idx, 0],
-                )
-                _u = horzcat(
-                    ocp.nlp[_penalty.phase_pre_idx].U[-1][_penalty.controls_pre_idx, 0],
-                    ocp.nlp[_penalty.phase_post_idx].U[0][_penalty.controls_post_idx, 0]
-                )
+                _x = horzcat(ocp.nlp[_penalty.phase_pre_idx].X[-1], ocp.nlp[_penalty.phase_post_idx].X[0])
+                _u = horzcat(ocp.nlp[_penalty.phase_pre_idx].U[-1], ocp.nlp[_penalty.phase_post_idx].U[0])
+            elif _penalty.integrate:
+                _x = nlp.X[_idx]
+                _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
             else:
-                if _penalty.integrate:
-                    _x = nlp.X[_idx]
-                    _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
-                else:
-                    _x = nlp.X[_idx][:, 0]
-                    _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
-                if _penalty.derivative or _penalty.explicit_derivative:
-                    _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
-                    _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
+                _x = nlp.X[_idx][:, 0]
+                _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+
+            if _penalty.derivative or _penalty.explicit_derivative:
+                _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
+                _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
             return _x, _u
 
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)

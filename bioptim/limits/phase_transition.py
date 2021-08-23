@@ -3,12 +3,13 @@ from warnings import warn
 from enum import Enum
 
 import biorbd_casadi as biorbd
-from casadi import vertcat, MX, SX, Function
+from casadi import vertcat, MX
 
 from .constraints import Constraint
 from .path_conditions import Bounds
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyNodeList
+from ..misc.mapping import BiMapping
 from ..misc.enums import Node, InterpolationType
 from ..misc.options import UniquePerPhaseOptionList
 
@@ -50,10 +51,8 @@ class PhaseTransition(Constraint):
     def __init__(
         self,
         phase_pre_idx: int = None,
-        states_pre_idx: Union[list, tuple, slice] = None,
-        states_post_idx: Union[list, tuple, slice] = None,
-        controls_pre_idx: Union[list, tuple, slice] = None,
-        controls_post_idx: Union[list, tuple, slice] = None,
+        state_mapping: BiMapping = None,
+        control_mapping: BiMapping = None,
         transition: Union[Callable, Any] = None,
         weight: float = 0,
         custom_function: Callable = None,
@@ -83,10 +82,8 @@ class PhaseTransition(Constraint):
         self.quadratic = True
         self.phase_pre_idx = phase_pre_idx
         self.phase_post_idx = None
-        self.states_pre_idx = states_pre_idx
-        self.states_post_idx = states_post_idx
-        self.controls_pre_idx = controls_pre_idx
-        self.controls_post_idx = controls_post_idx
+        self.state_mapping = state_mapping
+        self.control_mapping = control_mapping
         self.node = Node.TRANSITION
         self.dt = 1
         self.node_idx = [0]
@@ -232,32 +229,19 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             -------
             The difference between the state after and before
             """
+
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-
-            if transition.states_pre_idx is None:
-                transition.states_pre_idx = list(range(nlp_pre.states.cx_end.shape[0]))
-                transition.states_post_idx = list(range(nlp_post.states.cx.shape[0]))
-            if transition.controls_pre_idx is None:
-                transition.controls_pre_idx = list(range(nlp_pre.controls.cx_end.shape[0]))
-                transition.controls_post_idx = list(range(nlp_post.controls.cx.shape[0]))
-
-            states_pre = []
-            states_post = []
-            for idx in range(len(transition.states_pre_idx)):
-                states_pre = vertcat(states_pre, nlp_pre.states.cx_end[transition.states_pre_idx[idx]])
-                states_post = vertcat(states_post, nlp_post.states.cx[transition.states_post_idx[idx]])
+            states_pre = transition.state_mapping.to_second.map(nlp_pre.states.cx_end)
+            states_post = transition.state_mapping.to_second.map(nlp_post.states.cx)
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
                     f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
-                    f"pre-transition phase and {states_post.shape} post-transition phase."
+                    f"pre-transition phase and {states_post.shape} post-transition phase. Please use a custom "
+                    f"transition or supply state_mapping"
                 )
 
-            continuity = states_pre - states_post
-
-            name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-            func = Function(name, [states_pre, states_post], [continuity])(states_pre, states_post)
-            return func
+            return states_pre - states_post
 
         @staticmethod
         def cyclic(transition, all_pn) -> MX:
@@ -347,52 +331,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The expected difference between the last and first node provided by the user
             """
 
-            def mx_to_cx(name: str, function: Union[Callable, SX, MX], *all_param: Any) -> Function:
-                """
-                Add to the pool of declared casadi function. If the function already exists, it is skipped
-
-                Parameters
-                ----------
-                name: str
-                    The unique name of the function to add to the casadi functions pool
-                function: Callable
-                    The biorbd function to add
-                all_param: dict
-                    Any parameters to pass to the biorbd function
-                """
-                from ..optimization.optimization_variable import OptimizationVariable, OptimizationVariableList
-                from ..optimization.parameters import Parameter, ParameterList
-
-                cx_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
-                mx = [var.mx if isinstance(var, cx_types) else var for var in all_param]
-                cx = [var.cx if isinstance(var, cx_types) else var for var in all_param]
-                return Function(name, [*mx], [function])(*cx)
-
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-
-            if transition.states_pre_idx is None:
-                transition.states_pre_idx = list(range(len(nlp_pre.states) + 1))
-                transition.states_post_idx = list(range(len(nlp_post.states) + 1))
-
-            if len(transition.states_pre_idx) != len(transition.states_post_idx):
-                raise RuntimeError(
-                    f"Continuity can't be established since the number of x to be matched is {len(transition.states_pre_idx)} in the "
-                    f"pre-transition phase and {len(transition.states_post_idx)} post-transition phase."
-                )
-
-            states_pre = []
-            states_post = []
-            for idx in range(len(transition.states_pre_idx)):
-                states_pre = vertcat(states_pre, nlp_pre.states.cx_end[transition.states_pre_idx[idx]])
-                states_post = vertcat(states_post, nlp_post.states.cx[transition.states_post_idx[idx]])
-
-            continuity = transition.custom_function(states_pre, states_post, **extra_params)
-
-            name = f"PHASE_TRANSITION_{nlp_pre.phase_idx}_{nlp_post.phase_idx}"
-
-            transition_function_mx = mx_to_cx(name, continuity, states_pre, states_post)
-
-            return transition_function_mx
+            return transition.custom_function(transition, nlp_pre.states, nlp_post.states, **extra_params)
 
 
 class PhaseTransitionFcn(Enum):
