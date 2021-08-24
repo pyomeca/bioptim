@@ -170,7 +170,7 @@ class BiMappingList(OptionDict):
         oppose_to_second: Union[Mapping, int, list, tuple, range] = None,
         oppose_to_first: Union[Mapping, int, list, tuple, range] = None,
         bimapping: BiMapping = None,
-        phase: int = 0,
+        phase: int = -1,
     ):
 
         """
@@ -190,9 +190,6 @@ class BiMappingList(OptionDict):
         bimapping: BiMapping
             The BiMapping to copy
         """
-
-        if name in self:
-            raise ValueError("BiMapping name should be unique")
 
         if isinstance(bimapping, BiMapping):
             if to_second is not None or to_first is not None:
@@ -218,6 +215,17 @@ class BiMappingList(OptionDict):
                 oppose_to_second=oppose_to_second,
                 oppose_to_first=oppose_to_first,
             )
+
+    def variable_mapping_fill_phases(self, n_phases):
+        for mappings in self.options:
+            for key in mappings:
+                if mappings[key].automatic_multiple_phase:
+                    for i_phase in range(n_phases):
+                        if i_phase == 0:
+                            mappings[key].phase = 0
+                        else:
+                            self.add(name=key, bimapping=mappings[key], phase=i_phase)
+        return self
 
     def __getitem__(self, item) -> Union[dict, BiMapping]:
         return super(BiMappingList, self).__getitem__(item)

@@ -153,7 +153,7 @@ from .dynamics.xia_fatigue import XiaFatigue, XiaTauFatigue
 from .dynamics.ode_solver import OdeSolver
 from .interfaces.biorbd_interface import BiorbdInterface
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
-from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList
+from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from .limits.path_conditions import BoundsList, Bounds, InitialGuessList, InitialGuess, QAndQDotBounds
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
@@ -165,3 +165,4 @@ from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.receding_horizon_optimization import MovingHorizonEstimator, NonlinearModelPredictiveControl
 from .optimization.parameters import ParameterList
 from .optimization.solution import Solution
+from .optimization.optimization_variable import OptimizationVariableList

@@ -12,7 +12,7 @@ class Objective(PenaltyOption):
     A placeholder for an objective function
     """
 
-    def __init__(self, objective: Any, custom_type: Any = None, phase: int = 0, **params: Any):
+    def __init__(self, objective: Any, custom_type: Any = None, phase: int = -1, **params: Any):
         """
         Parameters
         ----------

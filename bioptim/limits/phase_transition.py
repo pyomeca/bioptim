@@ -209,13 +209,13 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
         """
 
         @staticmethod
-        def continuous(_, all_pn):
+        def continuous(transition, all_pn):
             """
             The most common continuity function, that is state before equals state after
 
             Parameters
             ----------
-            _: PhaseTransition
+            transition : PhaseTransition
                 A reference to the phase transition
             all_pn: PenaltyNodeList
                     The penalty node elements
@@ -225,14 +225,18 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            if all_pn[0].x[0].shape[0] != all_pn[1].x[0].shape[0]:
-                raise RuntimeError(
-                    "Continuous phase transition without same number of states is not possible, "
-                    "please provide a custom phase transition"
-                )
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            continuity = nlp_pre.states.cx_end - nlp_post.states.cx
-            return continuity
+            states_pre = transition.states_mapping.to_second.map(nlp_pre.states.cx_end)
+            states_post = transition.states_mapping.to_first.map(nlp_post.states.cx)
+
+            if states_pre.shape != states_post.shape:
+                raise RuntimeError(
+                    f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
+                    f"pre-transition phase and {states_post.shape} post-transition phase. Please use a custom "
+                    f"transition or supply states_mapping"
+                )
+
+            return states_pre - states_post
 
         @staticmethod
         def cyclic(transition, all_pn) -> MX:
@@ -323,8 +327,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            val = transition.custom_function(nlp_pre.states, nlp_post.states, **extra_params)
-            return val
+            return transition.custom_function(transition, nlp_pre.states, nlp_post.states, **extra_params)
 
 
 class PhaseTransitionFcn(Enum):
