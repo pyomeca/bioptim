@@ -40,6 +40,10 @@ class OptionGeneric:
             Any extra parameters that did not fall in any category
         """
 
+        self.automatic_multiple_phase = False
+        if phase == -1:
+            self.automatic_multiple_phase = True
+
         self.phase = phase
         self.list_index = list_index
 
@@ -150,7 +154,6 @@ class OptionList:
         -------
         The ith phase list of the option list
         """
-
         return self.options[i]
 
     def _add(self, option_type: Callable = OptionGeneric, phase: int = 0, list_index: int = -1, **extra_arguments: Any):
@@ -244,7 +247,7 @@ class OptionDict(OptionList):
         super(OptionDict, self).__init__()
         self.options = [{}]
 
-    def _add(self, key: str, option_type: Callable = OptionGeneric, phase: int = 0, **extra_arguments: Any):
+    def _add(self, key: str, option_type: Callable = OptionGeneric, phase: int = -1, **extra_arguments: Any):
         self.__prepare_option_list(phase, key)
         self.options[phase][key] = option_type(phase=phase, **extra_arguments)
 

@@ -417,12 +417,12 @@ def test_phase_transitions(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 110875.0772043361)
+    np.testing.assert_almost_equal(f[0, 0], 109443.6239236211)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (515, 1))
-    np.testing.assert_almost_equal(g, np.zeros((515, 1)))
+    np.testing.assert_equal(g.shape, (516, 1))
+    np.testing.assert_almost_equal(g, np.zeros((516, 1)))
 
     # Check some of the results
     states, controls = sol.states, sol.controls
@@ -442,12 +442,12 @@ def test_phase_transitions(ode_solver):
 
     if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final controls
-        np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((0.95986719, 9.70855983, -0.06237331)))
-        np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array((0, 1.27170519e01, 1.14878049e00)))
+        np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((0.73170732, 12.71705188, -0.0928732)))
+        np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array((0.11614402, 8.70686126, 1.05599166)))
     else:
         # initial and final controls
-        np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((0.9598672, 9.7085598, -0.0623733)))
-        np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array((0, 1.2717052e01, 1.1487805e00)))
+        np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((0.73170732, 12.71705188, -0.0928732)))
+        np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array((0.11614402, 8.70686126, 1.05599166)))
 
     # save and load
     with pytest.raises(PicklingError, match="import of module 'custom_phase_transitions' failed"):
@@ -457,7 +457,7 @@ def test_phase_transitions(ode_solver):
     with pytest.raises(
         RuntimeError,
         match=re.escape(
-            "Phase transition must have the same number of states (2) "
+            "Phase transition must have the same number of states (3) "
             "when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
             "please integrate with Shooting.SINGLE"
         ),

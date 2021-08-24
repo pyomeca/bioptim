@@ -1,12 +1,12 @@
 from typing import Any, Union, Callable
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, Function, MX, SX
+from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, PlotType, ControlType
-from ..misc.mapping import Mapping
+from ..misc.mapping import Mapping, BiMapping
 from ..misc.options import OptionGeneric
 
 
@@ -98,6 +98,7 @@ class PenaltyOption(OptionGeneric):
         index: list = None,
         rows: Union[list, tuple, range, np.ndarray] = None,
         cols: Union[list, tuple, range, np.ndarray] = None,
+        states_mapping: BiMapping = None,
         custom_function: Callable = None,
         is_internal: bool = False,
         multi_thread: bool = None,
@@ -153,6 +154,8 @@ class PenaltyOption(OptionGeneric):
         self.target_plot_name = None
         self.target_to_plot = None
         self.plot_target = True
+
+        self.states_mapping = states_mapping
 
         self.custom_function = custom_function
 
@@ -284,8 +287,12 @@ class PenaltyOption(OptionGeneric):
             nlp = all_pn[0].nlp
             nlp_post = all_pn[1].nlp
             name = self.name.replace("->", "_").replace(" ", "_")
-            state_cx = horzcat(nlp.states.cx_end, nlp_post.states.cx)
-            control_cx = horzcat(nlp.controls.cx_end, nlp_post.controls.cx)
+            states_pre = nlp.states.cx_end
+            states_post = nlp_post.states.cx
+            controls_pre = nlp.controls.cx_end
+            controls_post = nlp_post.controls.cx
+            state_cx = vertcat(states_pre, states_post)
+            control_cx = vertcat(controls_pre, controls_post)
 
         else:
             ocp = all_pn.ocp
@@ -432,6 +439,8 @@ class PenaltyOption(OptionGeneric):
             self.dt = 1
             self.phase_pre_idx = nlp.phase_idx
             self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
+            if not self.states_mapping:
+                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
 
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
             all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node

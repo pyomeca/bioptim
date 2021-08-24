@@ -23,13 +23,21 @@ from bioptim import (
     PhaseTransitionFcn,
     PhaseTransitionList,
     OdeSolver,
+    OptimizationVariableList,
+    PhaseTransition,
+    BiMapping,
 )
 
 
-def custom_phase_transition(state_pre: MX, state_post: MX, idx_1: int, idx_2: int) -> MX:
+def custom_phase_transition(
+    transition: PhaseTransition, state_pre: OptimizationVariableList, state_post: OptimizationVariableList, coef: float
+) -> MX:
     """
-    The constraint of the transition. if idx_1 is the first state and idx_2 is the last, this function mimics the
-    PhaseTransitionFcn.CONTINUOUS. idx_1 and idx_2 are user defined extra variables and can be anything
+    The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
+    determine the transition. If coef=1, then this function mimics the PhaseTransitionFcn.CONTINUOUS
+
+    coef is a user defined extra variables and can be anything. It is to show how to pass variables from the
+    PhaseTransitionList to that function
 
     Parameters
     ----------
@@ -37,17 +45,20 @@ def custom_phase_transition(state_pre: MX, state_post: MX, idx_1: int, idx_2: in
         The states at the end of a phase
     state_post: MX
         The state at the beginning of the next phase
-    idx_1: int
-        The state first index of the slicing of the states
-    idx_2: int
-        The state last index of the slicing of the states
+    coef: float
+        The coefficient of the phase transition (makes no physical sens)
 
     Returns
     -------
     The constraint such that: c(x) = 0
     """
 
-    return state_pre.cx_end[idx_1:idx_2, :] - state_post.cx[idx_1:idx_2, :]
+    # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
+    # mapping stuff (it is merely for the sake of example how to use the mappings)
+    states_pre = transition.states_mapping.to_second.map(state_pre.cx_end)
+    states_post = transition.states_mapping.to_first.map(state_post.cx)
+
+    return states_pre * coef - states_post
 
 
 def prepare_ocp(
@@ -149,8 +160,9 @@ def prepare_ocp(
     zero. It will thereafter be treated as a Mayer objective function with the specified weight.
     """
     phase_transitions = PhaseTransitionList()
+    phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0, states_mapping=BiMapping(range(3), range(3)))
     phase_transitions.add(PhaseTransitionFcn.IMPACT, phase_pre_idx=1)
-    phase_transitions.add(custom_phase_transition, phase_pre_idx=2, idx_1=1, idx_2=3)
+    phase_transitions.add(custom_phase_transition, phase_pre_idx=2, coef=0.5)
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
 
     return OptimalControlProgram(
