@@ -226,14 +226,14 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             nlp_pre, nlp_post = all_pn[0].nlp, all_pn[1].nlp
-            states_pre = transition.state_mapping.to_second.map(nlp_pre.states.cx_end)
-            states_post = transition.state_mapping.to_first.map(nlp_post.states.cx)
+            states_pre = transition.states_mapping.to_second.map(nlp_pre.states.cx_end)
+            states_post = transition.states_mapping.to_first.map(nlp_post.states.cx)
 
             if states_pre.shape != states_post.shape:
                 raise RuntimeError(
                     f"Continuity can't be established since the number of x to be matched is {states_pre.shape} in the "
                     f"pre-transition phase and {states_post.shape} post-transition phase. Please use a custom "
-                    f"transition or supply state_mapping"
+                    f"transition or supply states_mapping"
                 )
 
             return states_pre - states_post

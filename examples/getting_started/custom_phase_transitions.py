@@ -53,10 +53,10 @@ def custom_phase_transition(
     The constraint such that: c(x) = 0
     """
 
-    # state_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
+    # states_mapping can be defined in PhaseTransitionList. For this particular example, one could simply ignore the
     # mapping stuff (it is merely for the sake of example how to use the mappings)
-    states_pre = transition.state_mapping.to_second.map(state_pre.cx_end)
-    states_post = transition.state_mapping.to_first.map(state_post.cx)
+    states_pre = transition.states_mapping.to_second.map(state_pre.cx_end)
+    states_post = transition.states_mapping.to_first.map(state_post.cx)
 
     return states_pre * coef - states_post
 
@@ -160,7 +160,7 @@ def prepare_ocp(
     zero. It will thereafter be treated as a Mayer objective function with the specified weight.
     """
     phase_transitions = PhaseTransitionList()
-    phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0, state_mapping=BiMapping(range(3), range(3)))
+    phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0, states_mapping=BiMapping(range(3), range(3)))
     phase_transitions.add(PhaseTransitionFcn.IMPACT, phase_pre_idx=1)
     phase_transitions.add(custom_phase_transition, phase_pre_idx=2, coef=0.5)
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)

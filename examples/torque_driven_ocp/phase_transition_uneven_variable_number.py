@@ -88,7 +88,7 @@ def prepare_ocp(
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(
-        PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0, state_mapping=BiMapping([0, 1, 2, 3], [2, 3, 6, 7])
+        PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0, states_mapping=BiMapping([0, 1, 2, 3], [2, 3, 6, 7])
     )
 
     return OptimalControlProgram(

@@ -98,8 +98,7 @@ class PenaltyOption(OptionGeneric):
         index: list = None,
         rows: Union[list, tuple, range, np.ndarray] = None,
         cols: Union[list, tuple, range, np.ndarray] = None,
-        state_mapping: BiMapping = None,
-        control_mapping: BiMapping = None,
+        states_mapping: BiMapping = None,
         custom_function: Callable = None,
         is_internal: bool = False,
         multi_thread: bool = None,
@@ -156,8 +155,7 @@ class PenaltyOption(OptionGeneric):
         self.target_to_plot = None
         self.plot_target = True
 
-        self.state_mapping = state_mapping
-        self.control_mapping = control_mapping
+        self.states_mapping = states_mapping
 
         self.custom_function = custom_function
 
@@ -441,10 +439,8 @@ class PenaltyOption(OptionGeneric):
             self.dt = 1
             self.phase_pre_idx = nlp.phase_idx
             self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
-            if not self.state_mapping:
-                self.state_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
-            if not self.control_mapping:
-                self.control_mapping = BiMapping(range(nlp.controls.shape), range(nlp.controls.shape))
+            if not self.states_mapping:
+                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
 
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
             all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node
