@@ -25,11 +25,13 @@ from bioptim import (
     OdeSolver,
     OptimizationVariableList,
     PhaseTransition,
-    BiMapping
+    BiMapping,
 )
 
 
-def custom_phase_transition(transition: PhaseTransition, state_pre: OptimizationVariableList, state_post: OptimizationVariableList, coef: float) -> MX:
+def custom_phase_transition(
+    transition: PhaseTransition, state_pre: OptimizationVariableList, state_post: OptimizationVariableList, coef: float
+) -> MX:
     """
     The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
     determine the transition. If coef=1, then this function mimics the PhaseTransitionFcn.CONTINUOUS
@@ -158,7 +160,7 @@ def prepare_ocp(
     zero. It will thereafter be treated as a Mayer objective function with the specified weight.
     """
     phase_transitions = PhaseTransitionList()
-    phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0, state_mapping=BiMapping(range(2), range(2)))
+    phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0, state_mapping=BiMapping(range(3), range(3)))
     phase_transitions.add(PhaseTransitionFcn.IMPACT, phase_pre_idx=1)
     phase_transitions.add(custom_phase_transition, phase_pre_idx=2, coef=0.5)
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
