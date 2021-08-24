@@ -154,10 +154,7 @@ class OptionList:
         -------
         The ith phase list of the option list
         """
-        try:
-            return self.options[i]
-        except:
-            print("coucou")
+        return self.options[i]
 
     def _add(self, option_type: Callable = OptionGeneric, phase: int = 0, list_index: int = -1, **extra_arguments: Any):
         """
