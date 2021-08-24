@@ -125,7 +125,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             self._append_current_solution(sol, states, controls)
 
             # Update the initial frame bounds and initial guess
-            self._advance_windows(sol)
+            self.advance_window(sol)
 
             if "show_online_optim" in extra_options and extra_options["show_online_optim"]:
                 # Reuse the previous graphs
@@ -159,7 +159,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         states.append(sol.states["all"][:, 0:1])
         controls.append(sol.controls["all"][:, 0:1])
 
-    def _advance_windows(self, sol: Solution, steps: int = 0):
+    def advance_window(self, sol: Solution, steps: int = 0):
         # Update the initial frame bounds
         if self.nlp[0].x_bounds.type != InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             if self.nlp[0].x_bounds.type == InterpolationType.CONSTANT:
@@ -279,7 +279,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         states.append(sol.states["all"][:, :-1])
         controls.append(sol.controls["all"][:, :-1])
 
-    def _advance_windows(self, sol: Solution, steps: int = 0):
+    def advance_window(self, sol: Solution, steps: int = 0):
         # Update the initial frame bounds
         self.nlp[0].x_bounds[:, 0] = sol.states["all"][:, -1]
         self._set_cyclic_bound()
@@ -324,6 +324,13 @@ class NonlinearModelPredictiveControl(RecedingHorizonOptimization):
         )
 
 
+class CyclicNonlinearModelPredictiveControl(CyclicRecedingHorizonOptimization):
+    """
+    NMPC version of cyclic receding horizon optimization
+    """
+    pass
+
+
 class MovingHorizonEstimator(RecedingHorizonOptimization):
     """
     MHE version of receding horizon optimization
@@ -341,3 +348,10 @@ class MovingHorizonEstimator(RecedingHorizonOptimization):
         super(MovingHorizonEstimator, self).__init__(
             biorbd_model, dynamics, window_len, window_duration, use_sx, **kwargs
         )
+
+
+class CyclicMovingHorizonEstimator(CyclicRecedingHorizonOptimization):
+    """
+    MHE version of cyclic receding horizon optimization
+    """
+    pass
