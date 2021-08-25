@@ -5,7 +5,7 @@ import biorbd_casadi as biorbd
 import numpy as np
 from scipy import interpolate as sci_interp
 from scipy.integrate import solve_ivp
-from casadi import horzcat, DM, Function
+from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -578,7 +578,7 @@ class Solution:
             if shooting_type == Shooting.SINGLE_CONTINUOUS:
                 if p != 0:
                     u0 = self._controls[p - 1]["all"][:, -1]
-                    val = self.ocp.phase_transitions[p - 1].function(horzcat(x0, x0), horzcat(u0, u0), params)
+                    val = self.ocp.phase_transitions[p - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
                     if val.shape[0] != x0.shape[0]:
                         raise RuntimeError(
                             f"Phase transition must have the same number of states ({val.shape[0]}) "
@@ -940,14 +940,21 @@ class Solution:
             u = []
             target = []
             if nlp is not None:
-                col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
-                col_u_idx = [idx]
-                if penalty.derivative or penalty.explicit_derivative:
-                    col_x_idx.append((idx + 1) * steps)
-                    col_u_idx.append((idx + 1))
+                if penalty.transition:
+                    phase_post = (phase_idx + 1) % len(self._states)
+                    x = np.concatenate((self._states[phase_idx]["all"][:, -1], self._states[phase_post]["all"][:, 0]))
+                    u = np.concatenate(
+                        (self._controls[phase_idx]["all"][:, -1], self._controls[phase_post]["all"][:, 0])
+                    )
+                else:
+                    col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
+                    col_u_idx = [idx]
+                    if penalty.derivative or penalty.explicit_derivative:
+                        col_x_idx.append((idx + 1) * steps)
+                        col_u_idx.append((idx + 1))
 
-                x = self._states[phase_idx]["all"][:, col_x_idx]
-                u = self._controls[phase_idx]["all"][:, col_u_idx]
+                    x = self._states[phase_idx]["all"][:, col_x_idx]
+                    u = self._controls[phase_idx]["all"][:, col_u_idx]
                 target = penalty.target[:, penalty.node_idx.index(idx)] if penalty.target is not None else []
 
             val.append(penalty.function(x, u, p))

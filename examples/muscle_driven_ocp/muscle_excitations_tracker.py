@@ -28,6 +28,7 @@ from bioptim import (
     InitialGuessList,
     OdeSolver,
     Node,
+    CostType,
 )
 
 
@@ -108,7 +109,7 @@ def generate_data(
 
     def dyn_interface(t, x, u):
         u = np.concatenate([np.zeros(n_tau), u])
-        return np.array(dynamics_func(x, u, np.empty((0, 0)))).squeeze()
+        return np.array(dynamics_func(x, u, [])).squeeze()
 
     # Generate some muscle excitations
     U = np.random.rand(n_shooting, n_mus).T
@@ -193,7 +194,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=use_residual_torque)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_torque=use_residual_torque)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -269,6 +270,9 @@ def main():
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
     )
+
+    # Add the objective plot for more fun!
+    ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

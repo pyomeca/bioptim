@@ -97,7 +97,7 @@ def generate_data(
     def dyn_interface(t, x, u):
         if use_residual_torque:
             u = np.concatenate([np.zeros(n_tau), u])
-        return np.array(dynamics_func(x, u, np.empty((0, 0)))).squeeze()
+        return np.array(dynamics_func(x, u, [])).squeeze()
 
     # Generate some muscle activation
     U = np.random.rand(n_shooting, n_mus).T
@@ -178,7 +178,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=use_residual_torque)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=use_residual_torque)
 
     # Path constraint
     x_bounds = BoundsList()
