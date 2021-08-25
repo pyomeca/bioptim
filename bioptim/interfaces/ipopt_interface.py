@@ -7,7 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
-from ..misc.enums import InterpolationType, ControlType, Node
+from ..misc.enums import InterpolationType, ControlType, Node, Solver
 from ..optimization.solution import Solution
 
 
@@ -144,12 +144,14 @@ class IpoptInterface(SolverInterface):
         # Solve the problem
         tic = time()
         self.out = {"sol": solver.call(self.ipopt_limits)}
-        self.out["sol"]["time_tot"] = time() - tic
+        self.out["sol"]["solver_time_to_optimize"] = solver.stats()["t_wall_total"]
+        self.out["sol"]["real_time_to_optimize"] = time() - tic
         self.out["sol"]["iter"] = solver.stats()["iter_count"]
         self.out["sol"]["inf_du"] = solver.stats()["iterations"]["inf_du"] if "iteration" in solver.stats() else None
         self.out["sol"]["inf_pr"] = solver.stats()["iterations"]["inf_pr"] if "iteration" in solver.stats() else None
         # To match acados convention (0 = success, 1 = error)
         self.out["sol"]["status"] = int(not solver.stats()["success"])
+        self.out["sol"]["solver"] = Solver.IPOPT
 
         return self.out
 

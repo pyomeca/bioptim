@@ -133,7 +133,7 @@ def main():
     print("Results using ACADOS")
     print(f"Final objective: {np.nansum(sol_acados.cost)}")
     sol_acados.print()
-    print(f"Time to solve: {sol_acados.time_to_optimize}sec")
+    print(f"Time to solve: {sol_acados.solver_time_to_optimize}sec")
     print(f"")
 
     print(
@@ -142,7 +142,7 @@ def main():
     )
     print(f"Final objective : {np.nansum(sol_ipopt.cost)}")
     sol_ipopt.print()
-    print(f"Time to solve: {sol_ipopt.time_to_optimize}sec")
+    print(f"Time to solve: {sol_ipopt.solver_time_to_optimize}sec")
     print(f"")
 
     visualizer = sol_acados.animate(show_now=False)
