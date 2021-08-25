@@ -139,7 +139,7 @@ def main():
     ocp = prepare_ocp(long_optim=True)
 
     # --- Solve the program --- #
-    sol = ocp.solve(show_online_optim=False)
+    sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     sol.animate()

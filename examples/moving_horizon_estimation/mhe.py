@@ -180,7 +180,7 @@ def main():
     print("ACADOS with BiorbdOptim")
     print(f"Window size of MHE : {window_duration} s.")
     print(f"New measurement every : {1/n_shoot_per_second} s.")
-    print(f"Average time per iteration of MHE : {sol.time_to_optimize/(n_frames_total - 1)} s.")
+    print(f"Average time per iteration of MHE : {sol.solver_time_to_optimize / (n_frames_total - 1)} s.")
     print(f"Average real time per iteration of MHE : {sol.real_time_to_optimize/(n_frames_total - 1)} s.")
     print(f"Norm of the error on state = {np.linalg.norm(states[:,:n_frames_total] - sol.states['all'])}")
 

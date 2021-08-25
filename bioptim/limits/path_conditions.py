@@ -1,5 +1,6 @@
 from typing import Union, Callable, Any
 
+import biorbd_casadi as biorbd
 import numpy as np
 from casadi import MX, SX, vertcat
 from scipy.interpolate import interp1d

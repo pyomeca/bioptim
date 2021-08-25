@@ -10,7 +10,7 @@ from casadi import Function, MX
 
 import numpy as np
 import biorbd_casadi as biorbd
-from bioptim import OptimalControlProgram
+from bioptim import OptimalControlProgram, CostType, OdeSolver
 
 from .utils import TestUtils
 
@@ -29,6 +29,7 @@ def test_plot_graphs_one_phase():
         n_shooting=30,
         final_time=2,
     )
+    ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -41,14 +42,14 @@ def test_plot_merged_graphs():
     # Define the problem
     model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
-    final_time = 0.5
-    n_shooting = 9
+    final_time = 0.1
+    n_shooting = 5
 
     # Generate random data to fit
     np.random.seed(42)
     t, markers_ref, x_ref, muscle_excitations_ref = merged_graphs.generate_data(biorbd_model, final_time, n_shooting)
 
-    biorbd_model = biorbd.Model(model_path)  # To prevent from non free variable, the model must be reloaded
+    biorbd_model = biorbd.Model(model_path)  # To prevent from free variable, the model must be reloaded
     ocp = merged_graphs.prepare_ocp(
         biorbd_model,
         final_time,
@@ -56,6 +57,7 @@ def test_plot_merged_graphs():
         markers_ref,
         muscle_excitations_ref,
         x_ref[: biorbd_model.nbQ(), :].T,
+        ode_solver=OdeSolver.RK4(),
         use_residual_torque=True,
         kin_data_to_track="markers",
     )
@@ -90,24 +92,28 @@ def test_add_new_plot():
     ocp.save(sol, save_name)
 
     # Test 1 - Working plot
-    ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 2 - Combine using combine_to is not allowed
     ocp, sol = OptimalControlProgram.load(save_name)
     with pytest.raises(RuntimeError):
-        ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :], combine_to="NotAllowed")
+        ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :], combine_to="NotAllowed")
 
     # Test 3 - Create a completely new plot
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
-    ocp.add_plot("My Second New Plot", lambda x, p, u: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
+    ocp.add_plot("My Second New Plot", lambda t, x, p, u: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 4 - Combine to the first using fig_name
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
-    ocp.add_plot("My New Plot", lambda x, u, p: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
+    sol.graphs(automatically_organize=False)
+
+    # Add the plot of objectives and constraints to this mess
+    ocp.add_plot_penalty(CostType.ALL)
     sol.graphs(automatically_organize=False)
 
     # Delete the saved file
@@ -124,7 +130,7 @@ def test_console_objective_functions():
 
     sol.constraints = np.array([range(sol.constraints.shape[0])]).T / 10
     # Create some consistent answer
-    sol.time_to_optimize = 1.2345
+    sol.solver_time_to_optimize = 1.2345
     sol.real_time_to_optimize = 5.4321
 
     def override_penalty(pen):
@@ -158,8 +164,8 @@ def test_console_objective_functions():
     sys.stdout = captured_output  # and redirect stdout.
     sol.print()
     expected_output = (
-        "Solving time: 1.2345 sec\n"
-        "Elapsed time: 5.4321 sec\n"
+        "Solver reported time: 1.2345 sec\n"
+        "Real time: 5.4321 sec\n"
         "\n"
         "---- COST FUNCTION VALUES ----\n"
         "PHASE 0\n"

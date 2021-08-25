@@ -7,7 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
-from ..misc.enums import InterpolationType, ControlType, Node
+from ..misc.enums import InterpolationType, ControlType, Node, Solver
 from ..optimization.solution import Solution
 
 
@@ -144,12 +144,14 @@ class IpoptInterface(SolverInterface):
         # Solve the problem
         tic = time()
         self.out = {"sol": solver.call(self.ipopt_limits)}
-        self.out["sol"]["time_tot"] = time() - tic
+        self.out["sol"]["solver_time_to_optimize"] = solver.stats()["t_wall_total"]
+        self.out["sol"]["real_time_to_optimize"] = time() - tic
         self.out["sol"]["iter"] = solver.stats()["iter_count"]
         self.out["sol"]["inf_du"] = solver.stats()["iterations"]["inf_du"] if "iteration" in solver.stats() else None
         self.out["sol"]["inf_pr"] = solver.stats()["iterations"]["inf_pr"] if "iteration" in solver.stats() else None
         # To match acados convention (0 = success, 1 = error)
         self.out["sol"]["status"] = int(not solver.stats()["success"])
+        self.out["sol"]["solver"] = Solver.IPOPT
 
         return self.out
 
@@ -227,18 +229,18 @@ class IpoptInterface(SolverInterface):
         def get_x_and_u_at_idx(_penalty, _idx):
             if _penalty.transition:
                 ocp = self.ocp
-                _x = horzcat(ocp.nlp[_penalty.phase_pre_idx].X[-1][:, 0], ocp.nlp[_penalty.phase_post_idx].X[0][:, 0])
-                _u = horzcat(ocp.nlp[_penalty.phase_pre_idx].U[-1][:, 0], ocp.nlp[_penalty.phase_post_idx].U[0][:, 0])
+                _x = vertcat(ocp.nlp[_penalty.phase_pre_idx].X[-1], ocp.nlp[_penalty.phase_post_idx].X[0][:, 0])
+                _u = vertcat(ocp.nlp[_penalty.phase_pre_idx].U[-1], ocp.nlp[_penalty.phase_post_idx].U[0])
+            elif _penalty.integrate:
+                _x = nlp.X[_idx]
+                _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
             else:
-                if _penalty.integrate:
-                    _x = nlp.X[_idx]
-                    _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
-                else:
-                    _x = nlp.X[_idx][:, 0]
-                    _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
-                if _penalty.derivative or _penalty.explicit_derivative:
-                    _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
-                    _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
+                _x = nlp.X[_idx][:, 0]
+                _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+
+            if _penalty.derivative or _penalty.explicit_derivative:
+                _x = horzcat(_x, nlp.X[_idx + 1][:, 0])
+                _u = horzcat(_u, nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else [])
             return _x, _u
 
         param = self.ocp.cx(self.ocp.v.parameters_in_list.cx)

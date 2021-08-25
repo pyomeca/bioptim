@@ -1,12 +1,12 @@
 from typing import Any, Union, Callable
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, Function, MX, SX
+from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_node import PenaltyNodeList
 from ..misc.enums import Node, PlotType, ControlType
-from ..misc.mapping import Mapping
+from ..misc.mapping import Mapping, BiMapping
 from ..misc.options import OptionGeneric
 
 
@@ -98,6 +98,7 @@ class PenaltyOption(OptionGeneric):
         index: list = None,
         rows: Union[list, tuple, range, np.ndarray] = None,
         cols: Union[list, tuple, range, np.ndarray] = None,
+        states_mapping: BiMapping = None,
         custom_function: Callable = None,
         is_internal: bool = False,
         multi_thread: bool = None,
@@ -154,6 +155,8 @@ class PenaltyOption(OptionGeneric):
         self.target_to_plot = None
         self.plot_target = True
 
+        self.states_mapping = states_mapping
+
         self.custom_function = custom_function
 
         self.node_idx = []
@@ -161,6 +164,7 @@ class PenaltyOption(OptionGeneric):
         self.weight = weight
         self.function: Union[Function, None] = None
         self.weighted_function: Union[Function, None] = None
+        self.weighted_function_non_threaded: Union[Function, None] = None
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
@@ -283,8 +287,12 @@ class PenaltyOption(OptionGeneric):
             nlp = all_pn[0].nlp
             nlp_post = all_pn[1].nlp
             name = self.name.replace("->", "_").replace(" ", "_")
-            state_cx = horzcat(nlp.states.cx_end, nlp_post.states.cx)
-            control_cx = horzcat(nlp.controls.cx_end, nlp_post.controls.cx)
+            states_pre = nlp.states.cx_end
+            states_post = nlp_post.states.cx
+            controls_pre = nlp.controls.cx_end
+            controls_post = nlp_post.controls.cx
+            state_cx = vertcat(states_pre, states_post)
+            control_cx = vertcat(controls_pre, controls_post)
 
         else:
             ocp = all_pn.ocp
@@ -337,6 +345,7 @@ class PenaltyOption(OptionGeneric):
         self.weighted_function = Function(
             name, [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx], [modified_fcn]
         )
+        self.weighted_function_non_threaded = self.weighted_function
 
         if ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
             self.function = self.function.map(len(self.node_idx), "thread", ocp.n_threads)
@@ -380,15 +389,26 @@ class PenaltyOption(OptionGeneric):
 
         """
 
+        def plot_function(t, x, u, p):
+            if isinstance(t, (list, tuple)):
+                return self.target_to_plot[:, [self.node_idx.index(_t) for _t in t]]
+            else:
+                return self.target_to_plot[:, self.node_idx.index(t)]
+
         if self.target_to_plot is not None:
+            if self.target_to_plot.shape[1] > 1:
+                plot_type = PlotType.STEP
+            else:
+                plot_type = PlotType.POINT
+
             all_pn.ocp.add_plot(
                 self.target_plot_name,
-                lambda x, u, p: self.target_to_plot,
+                plot_function,
                 color="tab:red",
-                linestyle=".-",
-                plot_type=PlotType.STEP,
+                plot_type=plot_type,
                 phase=all_pn.nlp.phase_idx,
                 axes_idx=Mapping(self.rows),
+                node_idx=self.node_idx,
             )
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
@@ -419,6 +439,8 @@ class PenaltyOption(OptionGeneric):
             self.dt = 1
             self.phase_pre_idx = nlp.phase_idx
             self.phase_post_idx = (nlp.phase_idx + 1) % ocp.n_phases
+            if not self.states_mapping:
+                self.states_mapping = BiMapping(range(nlp.states.shape), range(nlp.states.shape))
 
             all_pn.append(self._get_penalty_node_list(ocp, nlp))
             all_pn[0].u = [nlp.U[-1]]  # Make an exception to the fact that U is not available for the last node

@@ -5,11 +5,11 @@ import biorbd_casadi as biorbd
 import numpy as np
 from scipy import interpolate as sci_interp
 from scipy.integrate import solve_ivp
-from casadi import horzcat, DM, Function
+from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import ControlType, CostType, Shooting, InterpolationType
+from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, Solver
 from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -47,7 +47,7 @@ class Solution:
         The unscaled constraint violation at each iteration
     inf_du: list
         The scaled dual infeasibility at each iteration
-    time_to_optimize: float
+    solver_time_to_optimize: float
         The total time to solve the program
     iterations: int
         The number of iterations that were required to solve the program
@@ -269,7 +269,7 @@ class Solution:
         self.lam_x = None
         self.inf_pr = None
         self.inf_du = None
-        self.time_to_optimize = None
+        self.solver_time_to_optimize = None
         self.real_time_to_optimize = None
         self.iterations = None
         self.status = None
@@ -288,21 +288,21 @@ class Solution:
                 The solution in a Ipopt-like dictionary
             """
 
-            self.vector = _sol["x"] if isinstance(_sol, dict) and "x" in _sol else _sol
-            self._cost = _sol["f"] if isinstance(_sol, dict) and "f" in _sol else None
-            self.constraints = _sol["g"] if isinstance(_sol, dict) and "g" in _sol else None
+            self.vector = _sol["x"]
+            if _sol["solver"] == Solver.IPOPT:
+                self._cost = _sol["f"]
+                self.constraints = _sol["g"]
 
-            self.lam_g = _sol["lam_g"] if isinstance(_sol, dict) and "lam_g" in _sol else None
-            self.lam_p = _sol["lam_p"] if isinstance(_sol, dict) and "lam_p" in _sol else None
-            self.lam_x = _sol["lam_x"] if isinstance(_sol, dict) and "lam_x" in _sol else None
-            self.inf_pr = _sol["inf_pr"] if isinstance(_sol, dict) and "inf_pr" in _sol else None
-            self.inf_du = _sol["inf_du"] if isinstance(_sol, dict) and "inf_du" in _sol else None
-            self.time_to_optimize = _sol["time_tot"] if isinstance(_sol, dict) and "time_tot" in _sol else None
-            self.real_time_to_optimize = (
-                _sol["total_time_to_optimize"] if "total_time_to_optimize" in _sol else self.time_to_optimize
-            )
-            self.iterations = _sol["iter"] if isinstance(_sol, dict) and "iter" in _sol else None
-            self.status = _sol["status"] if isinstance(_sol, dict) and "status" in _sol else None
+                self.lam_g = _sol["lam_g"]
+                self.lam_p = _sol["lam_p"]
+                self.lam_x = _sol["lam_x"]
+                self.inf_pr = _sol["inf_pr"]
+                self.inf_du = _sol["inf_du"]
+
+            self.solver_time_to_optimize = _sol["solver_time_to_optimize"]
+            self.real_time_to_optimize = _sol["real_time_to_optimize"]
+            self.iterations = _sol["iter"]
+            self.status = _sol["status"]
 
             # Extract the data now for further use
             self._states, self._controls, self.parameters = self.ocp.v.to_dictionaries(self.vector)
@@ -436,7 +436,7 @@ class Solution:
         new.lam_x = deepcopy(self.lam_x)
         new.inf_pr = deepcopy(self.inf_pr)
         new.inf_du = deepcopy(self.inf_du)
-        new.time_to_optimize = deepcopy(self.time_to_optimize)
+        new.solver_time_to_optimize = deepcopy(self.solver_time_to_optimize)
         new.real_time_to_optimize = deepcopy(self.real_time_to_optimize)
         new.iterations = deepcopy(self.iterations)
 
@@ -578,7 +578,7 @@ class Solution:
             if shooting_type == Shooting.SINGLE_CONTINUOUS:
                 if p != 0:
                     u0 = self._controls[p - 1]["all"][:, -1]
-                    val = self.ocp.phase_transitions[p - 1].function(horzcat(x0, x0), horzcat(u0, u0), params)
+                    val = self.ocp.phase_transitions[p - 1].function(vertcat(x0, x0), vertcat(u0, u0), params)
                     if val.shape[0] != x0.shape[0]:
                         raise RuntimeError(
                             f"Phase transition must have the same number of states ({val.shape[0]}) "
@@ -940,14 +940,21 @@ class Solution:
             u = []
             target = []
             if nlp is not None:
-                col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
-                col_u_idx = [idx]
-                if penalty.derivative or penalty.explicit_derivative:
-                    col_x_idx.append((idx + 1) * steps)
-                    col_u_idx.append((idx + 1))
+                if penalty.transition:
+                    phase_post = (phase_idx + 1) % len(self._states)
+                    x = np.concatenate((self._states[phase_idx]["all"][:, -1], self._states[phase_post]["all"][:, 0]))
+                    u = np.concatenate(
+                        (self._controls[phase_idx]["all"][:, -1], self._controls[phase_post]["all"][:, 0])
+                    )
+                else:
+                    col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
+                    col_u_idx = [idx]
+                    if penalty.derivative or penalty.explicit_derivative:
+                        col_x_idx.append((idx + 1) * steps)
+                        col_u_idx.append((idx + 1))
 
-                x = self._states[phase_idx]["all"][:, col_x_idx]
-                u = self._controls[phase_idx]["all"][:, col_u_idx]
+                    x = self._states[phase_idx]["all"][:, col_x_idx]
+                    u = self._controls[phase_idx]["all"][:, col_u_idx]
                 target = penalty.target[:, penalty.node_idx.index(idx)] if penalty.target is not None else []
 
             val.append(penalty.function(x, u, p))
@@ -1028,7 +1035,8 @@ class Solution:
         elif cost_type == CostType.CONSTRAINTS:
             print_constraints(self.ocp, self)
         elif cost_type == CostType.ALL:
-            print(f"Solving time: {self.time_to_optimize} sec\nElapsed time: {self.real_time_to_optimize} sec")
+            print(f"Solver reported time: {self.solver_time_to_optimize} sec\n"
+                  f"Real time: {self.real_time_to_optimize} sec")
             self.print(CostType.OBJECTIVES)
             self.print(CostType.CONSTRAINTS)
         else:

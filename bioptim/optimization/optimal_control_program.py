@@ -4,15 +4,16 @@ import pickle
 from copy import deepcopy
 from math import inf
 
+import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX
-import numpy as np
+from casadi import MX, SX, Function, sum1, sum2, horzcat
+from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVector
 from ..dynamics.configure_problem import DynamicsList, Dynamics
-from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
+from ..dynamics.ode_solver import RK as OdeSolverRK, OdeSolver, OdeSolverBase
 from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
@@ -26,13 +27,13 @@ from ..limits.path_conditions import InterpolationType
 from ..limits.penalty import PenaltyOption
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
-from ..misc.enums import ControlType, Solver, Shooting
+from ..misc.enums import ControlType, Solver, Shooting, PlotType, CostType
 from ..misc.mapping import BiMappingList, Mapping
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
-check_version(biorbd, "1.7.1", "1.8.0")
+check_version(biorbd, "1.7.2", "1.8.0")
 
 
 class OptimalControlProgram:
@@ -379,17 +380,14 @@ class OptimalControlProgram:
         # Prepare the variable mappings
         if variable_mappings is None:
             variable_mappings = BiMappingList()
+
+        variable_mappings = variable_mappings.variable_mapping_fill_phases(self.n_phases)
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
         # Prepare the dynamics
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
-            if (
-                self.nlp[0].states.shape != self.nlp[i].states.shape
-                or self.nlp[0].controls.shape != self.nlp[i].controls.shape
-            ):
-                raise RuntimeError("Dynamics with different nx or nu is not supported yet")
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
         # Define the actual NLP problem
@@ -527,9 +525,11 @@ class OptimalControlProgram:
 
         for nlp in self.nlp:
             for key in nlp.states.keys():
-                nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
+                if f"{key}_states" in nlp.plot:
+                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[nlp.states[key].index]
             for key in nlp.controls.keys():
-                nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
+                if f"{key}_controls" in nlp.plot:
+                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[nlp.controls[key].index]
 
     def update_initial_guess(
         self,
@@ -620,6 +620,133 @@ class OptimalControlProgram:
 
         nlp.plot[plot_name] = custom_plot
 
+    def add_plot_penalty(self, cost_type: CostType = None):
+        """
+        To add penlaty (objectivs and constraints) plots
+
+        Parameters
+        ----------
+        cost_type: str
+            The name of the penalty to be plotted (objectives, constraints)
+        """
+
+        def penalty_color():
+            """
+            Penalty plot with different name have a different color on the graph
+            """
+            name_unique_objective = []
+            for nlp in self.nlp:
+                if cost_type == CostType.OBJECTIVES:
+                    penalties = nlp.J
+                    penalties_internal = nlp.J_internal
+                else:  # Constraints
+                    penalties = nlp.g
+                    penalties_internal = nlp.g_internal
+
+                for penalty in penalties:
+                    if not penalty:
+                        continue
+                    name_unique_objective.append(penalty.name)
+                for penalty_internal in penalties_internal:
+                    if not penalty_internal:
+                        continue
+                    name_unique_objective.append(penalty_internal.name)
+            color = {}
+            for i, name in enumerate(name_unique_objective):
+                color[name] = plt.cm.viridis(i / len(name_unique_objective))
+            return color
+
+        def compute_penalty_values(t, x, u, p, penalty, dt):
+            if len(x.shape) < 2:
+                x = x.reshape((-1, 1))
+
+            if isinstance(dt, Function):
+                # The division is to account for the steps in the integration. The else is for Mayer term
+                dt = dt(p)
+            dt = dt / (x.shape[1] - 1) if x.shape[1] > 1 else dt
+            if not isinstance(penalty.dt, (float, int)):
+                if dt.shape[0] > 1:
+                    dt = dt[penalty.phase]
+
+            _target = (
+                penalty.target[..., penalty.node_idx.index(t)]
+                if penalty.target is not None and isinstance(t, int)
+                else []
+            )
+
+            out = []
+            if penalty.transition:
+                raise NotImplementedError("add_plot_penalty with phase transition is not implemented yet")
+            elif penalty.derivative or penalty.explicit_derivative:
+                out.append(penalty.weighted_function_non_threaded(x[:, [0, -1]], u, p, penalty.weight, _target, dt))
+            else:
+                out.append(penalty.weighted_function_non_threaded(x, u, p, penalty.weight, _target, dt))
+            return sum1(horzcat(*out))
+
+        def add_penalty(_penalties):
+            for penalty in _penalties:
+                if not penalty:
+                    continue
+
+                dt = penalty.dt
+                if "time" in nlp.parameters:
+                    if isinstance(penalty.type, ObjectiveFcn.Mayer):
+                        dt = 1
+                    elif isinstance(penalty.type, ObjectiveFcn.Lagrange):
+                        if not isinstance(penalty.dt, (float, int)):
+                            if i_phase in self.time_param_phases_idx:
+                                dt = Function(
+                                    "time", [nlp.parameters.cx[i_phase]], [nlp.parameters.cx[i_phase] / nlp.ns]
+                                )
+
+                plot_params = {
+                    "fig_name": cost_type.name,
+                    "update_function": compute_penalty_values,
+                    "phase": i_phase,
+                    "penalty": penalty,
+                    "dt": dt,
+                    "color": color[penalty.name],
+                    "label": penalty.name,
+                    "compute_derivative": penalty.derivative or penalty.explicit_derivative or penalty.integrate,
+                }
+                if (
+                    isinstance(penalty.type, ObjectiveFcn.Mayer)
+                    or isinstance(penalty.type, ConstraintFcn)
+                    or penalty.transition
+                ):
+                    plot_params["plot_type"] = PlotType.POINT
+                    plot_params["node_idx"] = penalty.node_idx
+                else:
+                    plot_params["plot_type"] = PlotType.INTEGRATED
+                self.add_plot(**plot_params)
+
+            return
+
+        if cost_type is None:
+            cost_type = CostType.ALL
+
+        color = penalty_color()
+        for i_phase, nlp in enumerate(self.nlp):
+            if not isinstance(nlp.ode_solver, OdeSolverRK):
+                raise NotImplementedError("add_plot_penalty is only available for RK based integration yet")
+
+            if cost_type == CostType.OBJECTIVES:
+                penalties = nlp.J
+                penalties_internal = nlp.J_internal
+            elif cost_type == CostType.CONSTRAINTS:
+                penalties = nlp.g
+                penalties_internal = nlp.g_internal
+            elif cost_type == CostType.ALL:
+                self.add_plot_penalty(CostType.OBJECTIVES)
+                self.add_plot_penalty(CostType.CONSTRAINTS)
+                return
+            else:
+                raise RuntimeError(f"cost_type parameter {cost_type} is not valid.")
+
+            add_penalty(penalties)
+            add_penalty(penalties_internal)
+        return
+
     def prepare_plots(
         self,
         automatically_organize: bool = True,
@@ -706,7 +833,7 @@ class OptimalControlProgram:
 
         self.solver.configure(solver_options)
         if warm_start is not None:
-            OptimalControlProgram.set_warm_start(sol=warm_start)
+            self.set_warm_start(sol=warm_start)
         self.solver.solve()
 
         return Solution(self, self.solver.get_optimized_value())
@@ -743,7 +870,8 @@ class OptimalControlProgram:
             if key != "all":
                 param_init_guess.add(param[key], name=key)
         self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, param_init=param_init_guess)
-        self.solver.set_lagrange_multiplier(sol)
+        if self.solver:
+            self.solver.set_lagrange_multiplier(sol)
 
     def save(self, sol: Solution, file_path: str, stand_alone: bool = False):
         """
@@ -928,6 +1056,7 @@ class OptimalControlProgram:
 
         # Add to the v vector
         i = 0
+        time_param_phases_idx = []
         for nlp in self.nlp:
             if isinstance(nlp.tf, self.cx):
                 time_bounds = Bounds(time_min[i], time_max[i], interpolation=InterpolationType.CONSTANT)
@@ -936,7 +1065,10 @@ class OptimalControlProgram:
                     cx=nlp.tf, function=None, size=1, bounds=time_bounds, initial_guess=time_init, name="time"
                 )
                 self.v.add_parameter(time_param)
+                time_param_phases_idx += [i]
                 i += 1
+
+        self.time_param_phases_idx = time_param_phases_idx
 
     def __modify_penalty(self, new_penalty: Union[PenaltyOption, Parameter]):
         """

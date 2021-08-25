@@ -1,4 +1,5 @@
 from typing import Union
+from time import time
 from datetime import datetime
 
 import numpy as np
@@ -6,12 +7,11 @@ from scipy import linalg
 from casadi import SX, vertcat
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
-from ..misc.enums import Node
 from .solver_interface import SolverInterface
+from ..misc.enums import Node, Solver
 from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType
-from time import time
 
 
 class AcadosInterface(SolverInterface):
@@ -129,7 +129,7 @@ class AcadosInterface(SolverInterface):
         self.W_e = np.zeros((0, 0))
         self.status = None
         self.out = {}
-        self.total_time_to_optimize = 0
+        self.real_time_to_optimize = -1
 
         self.all_constr = None
         self.end_constr = SX()
@@ -678,10 +678,11 @@ class AcadosInterface(SolverInterface):
         out = {
             "x": [],
             "u": acados_u,
-            "time_tot": self.ocp_solver.get_stats("time_tot")[0],
+            "solver_time_to_optimize": self.ocp_solver.get_stats("time_tot")[0],
+            "real_time_to_optimize": self.real_time_to_optimize,
             "iter": self.ocp_solver.get_stats("sqp_iter")[0],
             "status": self.status,
-            "total_time_to_optimize": self.total_time_to_optimize,
+            "solver": Solver.ACADOS
         }
 
         out["x"] = vertcat(out["x"], acados_x.reshape(-1, 1, order="F"))
@@ -694,7 +695,7 @@ class AcadosInterface(SolverInterface):
             out.append(self.out[key])
         return out[0] if len(out) == 1 else out
 
-    def solve(self) -> "AcadosInterface":
+    def solve(self) -> Union[list, dict]:
         """
         Solve the prepared ocp
 
@@ -712,6 +713,6 @@ class AcadosInterface(SolverInterface):
         self.__update_solver()
 
         self.status = self.ocp_solver.solve()
-        self.total_time_to_optimize = time() - tic
-        self.get_optimized_value()
-        return self
+        self.real_time_to_optimize = time() - tic
+
+        return self.get_optimized_value()

@@ -82,6 +82,7 @@ class PlotType(Enum):
     PLOT = 0  # Linking between points
     INTEGRATED = 1  # Linking between interpolated points
     STEP = 2  # Step plot
+    POINT = 3  # Point plot
 
 
 class ControlType(Enum):
@@ -93,3 +94,12 @@ class ControlType(Enum):
     CONSTANT = 1  # Constant over the integration step (=1 column)
     LINEAR_CONTINUOUS = 2  # Linear interpolation between integration steps (=2 columns)
     NONE = 0  # Undeclared control type
+
+
+class VariableType(Enum):
+    """
+    Selection of valid variable types
+    """
+
+    STATES = "states"
+    CONTROLS = "controls"
