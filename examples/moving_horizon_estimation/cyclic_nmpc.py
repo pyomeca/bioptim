@@ -39,8 +39,16 @@ def prepare_nmpc(model_path, window_len, window_duration, max_torque):
     x_bound = QAndQDotBounds(model)
     u_bound = Bounds([-max_torque] * model.nbQ(), [max_torque] * model.nbQ())
 
-    x_init = InitialGuess(np.zeros(model.nbQ() * 2,))
-    u_init = InitialGuess(np.zeros(model.nbQ(),))
+    x_init = InitialGuess(
+        np.zeros(
+            model.nbQ() * 2,
+        )
+    )
+    u_init = InitialGuess(
+        np.zeros(
+            model.nbQ(),
+        )
+    )
 
     new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q")
 
@@ -48,7 +56,13 @@ def prepare_nmpc(model_path, window_len, window_duration, max_torque):
     wheel_target = np.linspace(-np.pi, np.pi, window_len + 1)[np.newaxis, :]
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.ALL, target=wheel_target)
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.ALL, first_marker="wheel", second_marker="COM_hand", axes=[Axis.X, Axis.Y])
+    constraints.add(
+        ConstraintFcn.SUPERIMPOSE_MARKERS,
+        node=Node.ALL,
+        first_marker="wheel",
+        second_marker="COM_hand",
+        axes=[Axis.X, Axis.Y],
+    )
 
     return MyCyclicNMPC(
         model,

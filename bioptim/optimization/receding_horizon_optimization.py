@@ -115,7 +115,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         real_time = 0
 
         while update_function(self, t, sol):
-            sol = super(RecedingHorizonOptimization, self).solve(solver=solver, solver_options=solver_option_current, **extra_options)
+            sol = super(RecedingHorizonOptimization, self).solve(
+                solver=solver, solver_options=solver_option_current, **extra_options
+            )
             solver_option_current = solver_options if t == 0 else None
 
             total_time += sol.time_to_optimize
@@ -248,7 +250,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         self._set_cyclic_bound()
         if solver == Solver.IPOPT:
             self.update_bounds(self.nlp[0].x_bounds)
-        return super(CyclicRecedingHorizonOptimization, self).solve(update_function, solver, solver_options, solver_options_first_iter, **extra_options)
+        return super(CyclicRecedingHorizonOptimization, self).solve(
+            update_function, solver, solver_options, solver_options_first_iter, **extra_options
+        )
 
     def _initialize_solution(self, t: int, states: list, controls: list):
         states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
@@ -265,11 +269,15 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 
     def _set_cyclic_bound(self):
         if self.nlp[0].x_bounds.type != InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-            raise ValueError("Cyclic bounds for x_bounds should be of "
-                             "type InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT")
+            raise ValueError(
+                "Cyclic bounds for x_bounds should be of "
+                "type InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
+            )
         if self.nlp[0].u_bounds.type != InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-            raise ValueError("Cyclic bounds for u_bounds should be of "
-                             "type InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT")
+            raise ValueError(
+                "Cyclic bounds for u_bounds should be of "
+                "type InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
+            )
 
         range_of_motion = self.nlp[0].x_bounds.max[:, 1] - self.nlp[0].x_bounds.min[:, 1]
         self.nlp[0].x_bounds.min[:, 2] = self.nlp[0].x_bounds.min[:, 0] - range_of_motion * 0.01
@@ -329,6 +337,7 @@ class CyclicNonlinearModelPredictiveControl(CyclicRecedingHorizonOptimization):
     """
     NMPC version of cyclic receding horizon optimization
     """
+
     pass
 
 
@@ -355,4 +364,5 @@ class CyclicMovingHorizonEstimator(CyclicRecedingHorizonOptimization):
     """
     MHE version of cyclic receding horizon optimization
     """
+
     pass

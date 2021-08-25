@@ -163,7 +163,10 @@ from .misc.mapping import BiMappingList, BiMapping, Mapping
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.receding_horizon_optimization import MovingHorizonEstimator, NonlinearModelPredictiveControl
-from .optimization.receding_horizon_optimization import CyclicNonlinearModelPredictiveControl, CyclicMovingHorizonEstimator
+from .optimization.receding_horizon_optimization import (
+    CyclicNonlinearModelPredictiveControl,
+    CyclicMovingHorizonEstimator,
+)
 from .optimization.parameters import ParameterList
 from .optimization.solution import Solution
 from .optimization.optimization_variable import OptimizationVariableList
