@@ -130,7 +130,7 @@ def test_console_objective_functions():
 
     sol.constraints = np.array([range(sol.constraints.shape[0])]).T / 10
     # Create some consistent answer
-    sol.time_to_optimize = 1.2345
+    sol.solver_time_to_optimize = 1.2345
     sol.real_time_to_optimize = 5.4321
 
     def override_penalty(pen):
@@ -164,8 +164,8 @@ def test_console_objective_functions():
     sys.stdout = captured_output  # and redirect stdout.
     sol.print()
     expected_output = (
-        "Solving time: 1.2345 sec\n"
-        "Elapsed time: 5.4321 sec\n"
+        "Solver reported time: 1.2345 sec\n"
+        "Real time: 5.4321 sec\n"
         "\n"
         "---- COST FUNCTION VALUES ----\n"
         "PHASE 0\n"

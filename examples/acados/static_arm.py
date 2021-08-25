@@ -89,7 +89,6 @@ def main():
     # --- Solve the program using ACADOS --- #
     ocp_acados = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
 
-    tic = time()
     sol_acados = ocp_acados.solve(
         solver=Solver.ACADOS,
         show_online_optim=False,
@@ -99,7 +98,6 @@ def main():
             "nlp_solver_tol_stat": 1e-3,
         },
     )
-    toc_acados = time() - tic
 
     # --- Solve the program using IPOPT --- #
     x_warm = sol_acados["qqdot"] if warm_start_ipopt_from_acados_solution else None
@@ -112,7 +110,6 @@ def main():
         n_threads=6,
     )
 
-    tic = time()
     sol_ipopt = ocp_ipopt.solve(
         solver=Solver.IPOPT,
         show_online_optim=False,
@@ -126,14 +123,13 @@ def main():
             "hessian_approximation": "exact",
         },
     )
-    toc_ipopt = time() - tic
 
     # --- Show results --- #
     print("\n\n")
     print("Results using ACADOS")
     print(f"Final objective: {np.nansum(sol_acados.cost)}")
     sol_acados.print()
-    print(f"Time to solve: {sol_acados.time_to_optimize}sec")
+    print(f"Time to solve: {sol_acados.real_time_to_optimize}sec")
     print(f"")
 
     print(
@@ -142,7 +138,7 @@ def main():
     )
     print(f"Final objective : {np.nansum(sol_ipopt.cost)}")
     sol_ipopt.print()
-    print(f"Time to solve: {sol_ipopt.time_to_optimize}sec")
+    print(f"Time to solve: {sol_ipopt.real_time_to_optimize}sec")
     print(f"")
 
     visualizer = sol_acados.animate(show_now=False)
