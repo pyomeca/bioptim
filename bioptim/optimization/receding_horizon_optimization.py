@@ -103,12 +103,13 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             solver_options = None
         solver_option_current = solver_options_first_iter
 
-        if solver_options is None:
-            solver_options = solver_options_first_iter if solver_options_first_iter else {}
-        if "bound_push" not in solver_options:
-            solver_options["bound_push"] = 1e-10
-        if "bound_frac" not in solver_options:
-            solver_options["bound_frac"] = 1e-10
+        if solver == Solver.IPOPT:
+            if solver_options is None:
+                solver_options = solver_options_first_iter if solver_options_first_iter else {}
+            if "bound_push" not in solver_options:
+                solver_options["bound_push"] = 1e-10
+            if "bound_frac" not in solver_options:
+                solver_options["bound_frac"] = 1e-10
 
         total_time = 0
         real_time = 0
