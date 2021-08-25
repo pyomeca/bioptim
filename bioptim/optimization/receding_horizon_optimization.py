@@ -39,8 +39,6 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         window_size: Union[int, list[int]]
             The number of shooting point of the moving window
         """
-        self.states = []
-        self.controls = []
 
         if isinstance(biorbd_model, (list, tuple)) and len(biorbd_model) > 1:
             raise ValueError("Receding horizon optimization must be defined using only one biorbd_model")
