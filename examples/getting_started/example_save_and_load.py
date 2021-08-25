@@ -131,7 +131,7 @@ def main():
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=False)
-    print(f"Time to solve : {sol.solver_time_to_optimize}sec")
+    print(f"Time to solve : {sol.real_time_to_optimize}sec")
 
     # --- Print objective cost  --- #
     print(f"Final objective value : {np.nansum(sol.cost)} \n")
