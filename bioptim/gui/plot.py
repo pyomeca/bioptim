@@ -905,6 +905,9 @@ class OnlineCallback(Callback):
         self.plot_process = mp.Process(target=self.plotter, args=(self.queue, show_options), daemon=True)
         self.plot_process.start()
 
+    def close(self):
+        self.plot_process.kill()
+
     @staticmethod
     def get_n_in() -> int:
         """
