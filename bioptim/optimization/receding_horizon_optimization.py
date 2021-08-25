@@ -200,11 +200,11 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         if self.nlp[0].u_init.type != InterpolationType.EACH_FRAME:
             self.nlp[0].u_init = InitialGuess(
-                np.ndarray(sol.controls["all"].shape), interpolation=InterpolationType.EACH_FRAME
+                np.ndarray(sol.controls["all"][:, :-1].shape), interpolation=InterpolationType.EACH_FRAME
             )
-            self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls.shape, self.nlp[0].ns)
+            self.nlp[0].u_init.check_and_adjust_dimensions(self.nlp[0].controls.shape, self.nlp[0].ns - 1)
         self.nlp[0].u_init.init[:, :] = np.concatenate(
-            (sol.controls["all"][:, 1:], sol.controls["all"][:, -2:-1][:, np.newaxis]), axis=1
+            (sol.controls["all"][:, 1:-1], sol.controls["all"][:, -2][:, np.newaxis]), axis=1
         )
 
         if self.solver_type != Solver.ACADOS:
@@ -268,15 +268,16 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         **extra_options,
     ) -> Solution:
         self._set_cyclic_bound()
+        export_options = {"frame_to_export": slice(0, -1)}
         if solver == Solver.IPOPT:
             self.update_bounds(self.nlp[0].x_bounds)
         return super(CyclicRecedingHorizonOptimization, self).solve(
-            update_function, solver, solver_options, solver_options_first_iter, **extra_options
+            update_function, solver, solver_options, solver_options_first_iter, export_options=export_options, **extra_options
         )
 
     def _initialize_solution(self, t: int, states: list, controls: list):
-        states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
-        controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
+        _states = InitialGuess(np.concatenate(states, axis=1), interpolation=InterpolationType.EACH_FRAME)
+        _controls = InitialGuess(np.concatenate(controls, axis=1), interpolation=InterpolationType.EACH_FRAME)
 
         solution_ocp = OptimalControlProgram(
             biorbd_model=self.original_values["biorbd_model"][0],
@@ -285,7 +286,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             phase_time=t * self.nlp[0].ns * self.nlp[0].dt,
             skip_continuity=True,
         )
-        return Solution(solution_ocp, [states, controls])
+        return Solution(solution_ocp, [_states, _controls])
 
     def _set_cyclic_bound(self):
         if self.nlp[0].x_bounds.type != InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
