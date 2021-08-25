@@ -124,7 +124,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 export_options["frame_to_export"] = 0
 
         if isinstance(export_options["frame_to_export"], int):
-            export_options["frame_to_export"] = slice(export_options["frame_to_export"], export_options["frame_to_export"] + 1)
+            export_options["frame_to_export"] = slice(
+                export_options["frame_to_export"], export_options["frame_to_export"] + 1
+            )
 
         total_time = 0
         real_time = 0
@@ -272,7 +274,12 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         if solver == Solver.IPOPT:
             self.update_bounds(self.nlp[0].x_bounds)
         return super(CyclicRecedingHorizonOptimization, self).solve(
-            update_function, solver, solver_options, solver_options_first_iter, export_options=export_options, **extra_options
+            update_function,
+            solver,
+            solver_options,
+            solver_options_first_iter,
+            export_options=export_options,
+            **extra_options,
         )
 
     def _initialize_solution(self, t: int, states: list, controls: list):

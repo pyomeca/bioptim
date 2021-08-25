@@ -682,7 +682,7 @@ class AcadosInterface(SolverInterface):
             "real_time_to_optimize": self.real_time_to_optimize,
             "iter": self.ocp_solver.get_stats("sqp_iter")[0],
             "status": self.status,
-            "solver": Solver.ACADOS
+            "solver": Solver.ACADOS,
         }
 
         out["x"] = vertcat(out["x"], acados_x.reshape(-1, 1, order="F"))
