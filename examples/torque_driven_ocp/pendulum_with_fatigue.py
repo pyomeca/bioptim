@@ -27,6 +27,11 @@ from bioptim import (
     XiaFatigueControlsInitialGuess,
     XiaFatigueControlsBounds,
     XiaTorqueFatigue,
+    FatigueBounds,
+    FatigueInitialGuess,
+    FatigueList,
+    XiaFatigue,
+    XiaTauFatigue,
 )
 
 
@@ -130,7 +135,7 @@ def main():
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(
         biorbd_model_path="../getting_started/pendulum.bioMod",
-        final_time=3,
+        final_time=1,
         n_shooting=100,
         fatigue=[Fatigue.TAU_STATE_ONLY],
     )

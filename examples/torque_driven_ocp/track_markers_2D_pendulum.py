@@ -151,10 +151,10 @@ def main():
 
     biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_path)
-    final_time = 3
+    final_time = 1
     n_shooting = 20
 
-    ocp_to_track = data_to_track.prepare_ocp(biorbd_model_path=biorbd_path, final_time=3, n_shooting=19)
+    ocp_to_track = data_to_track.prepare_ocp(biorbd_model_path=biorbd_path, final_time=1, n_shooting=19)
     sol = ocp_to_track.solve()
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
     n_q = n_qdot = n_tau = biorbd_model.nbQ()
@@ -216,7 +216,7 @@ def main():
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
-    sol.animate()
+    sol.animate(n_frames=100)
 
 
 if __name__ == "__main__":

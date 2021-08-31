@@ -2,41 +2,17 @@ version 4
 
 segment Seg1
     translations yz
-    rotations  x
+    rotations	x
     ranges -10 10
            -10 10
-           -10*pi 10*pi
+        -10*pi 10*pi
     mass 1
     inertia
-        1 0 0
-        0 1 0
-        0 0 0.1
-    com 0.1 0.1 -1
-    mesh 0.0   0.0   0.0
-    mesh 0.0  -0.0  -0.9
-    mesh 0.0   0.0   0.0
-    mesh 0.0   0.2  -0.9
-    mesh 0.0   0.0   0.0
-    mesh 0.2   0.2  -0.9
-    mesh 0.0   0.0   0.0
-    mesh 0.2   0.0  -0.9
-    mesh 0.0   0.0   0.0
-    mesh 0.0  -0.0  -1.1
-    mesh 0.0   0.2  -1.1
-    mesh 0.0   0.2  -0.9
-    mesh 0.0  -0.0  -0.9
-    mesh 0.0  -0.0  -1.1
-    mesh 0.2  -0.0  -1.1
-    mesh 0.2   0.2  -1.1
-    mesh 0.0   0.2  -1.1
-    mesh 0.2   0.2  -1.1
-    mesh 0.2   0.2  -0.9
-    mesh 0.0   0.2  -0.9
-    mesh 0.2   0.2  -0.9
-    mesh 0.2  -0.0  -0.9
-    mesh 0.0  -0.0  -0.9
-    mesh 0.2  -0.0  -0.9
-    mesh 0.2  -0.0  -1.1
+        0.0391  0.0000	0.0000
+	    0.0000	0.0335	-0.0032
+	    0.0000	-0.0032	0.0090
+    com  -0.0005 0.0688 -0.9542
+    meshfile pendulum.vtp
 endsegment
 
     // Marker 1
@@ -48,57 +24,33 @@ endsegment
     // Marker 2
     marker marker_2
         parent Seg1
-        position 0.1 0.1 -1
+        position -0.0005 0.0688 -0.9542
     endmarker
 
-//Seg2
-    segment Seg2
+segment Seg2
     parent Seg1
-    rotations x
+    rotations	x
     rtinmatrix 0
-    rt 0 0 0 xyz 0.1 0.1 -1
-    ranges -pi/2 pi/2
+    rt 0 0 0 xyz -0.0005 0.0688 -0.9542
+    ranges
+        -pi/2 pi/2
     mass 1
     inertia
-        1 0 0
-        0 1 0
-        0 0 0.1
-    com 0.1 0.1 -1
-    mesh 0.0   0.0   0.0
-    mesh 0.0  -0.0  -0.9
-    mesh 0.0   0.0   0.0
-    mesh 0.0   0.2  -0.9
-    mesh 0.0   0.0   0.0
-    mesh 0.2   0.2  -0.9
-    mesh 0.0   0.0   0.0
-    mesh 0.2   0.0  -0.9
-    mesh 0.0   0.0   0.0
-    mesh 0.0  -0.0  -1.1
-    mesh 0.0   0.2  -1.1
-    mesh 0.0   0.2  -0.9
-    mesh 0.0  -0.0  -0.9
-    mesh 0.0  -0.0  -1.1
-    mesh 0.2  -0.0  -1.1
-    mesh 0.2   0.2  -1.1
-    mesh 0.0   0.2  -1.1
-    mesh 0.2   0.2  -1.1
-    mesh 0.2   0.2  -0.9
-    mesh 0.0   0.2  -0.9
-    mesh 0.2   0.2  -0.9
-    mesh 0.2  -0.0  -0.9
-    mesh 0.0  -0.0  -0.9
-    mesh 0.2  -0.0  -0.9
-    mesh 0.2  -0.0  -1.1
+        0.0391  0.0000	0.0000
+	    0.0000	0.0335	-0.0032
+	    0.0000	-0.0032	0.0090
+    com  -0.0005 0.0688 -0.9542
+    meshfile pendulum.vtp
 endsegment
 
-// Marker 3
+    // Marker 3
     marker marker_3
         parent Seg2
         position 0 0 0
     endmarker
 
-// Marker 4
+    // Marker 4
     marker marker_4
         parent Seg2
-        position 0.1 0.1 -1
+        position -0.0005 0.0688 -0.9542
     endmarker

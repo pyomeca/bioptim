@@ -27,9 +27,9 @@ def prepare_ocp(
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path_withTranslations))
 
     # Problem parameters
-    n_shooting = (20, 30)
-    final_time = (2, 3)
-    tau_min, tau_max, tau_init = -100, 100, 0
+    n_shooting = (40, 40)
+    final_time = (1.5, 2.5)
+    tau_min, tau_max, tau_init = -200, 200, 0
 
     # Mapping
     tau_mappings = BiMappingList()
@@ -112,7 +112,8 @@ def main():
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
 
-    sol = ocp.solve()
+    show_options = dict(show_bounds=True)
+    sol = ocp.solve(show_online_optim=True, show_options=show_options)
 
     sol.print()
     sol.animate()
