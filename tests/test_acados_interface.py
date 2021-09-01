@@ -228,8 +228,8 @@ def test_acados_options(cost_type):
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/acados/pendulum.py")
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/acados/pendulum.bioMod",
-        final_time=3,
-        n_shooting=12,
+        final_time=1,
+        n_shooting=200,
     )
 
     tol = [1e-1, 1e-0, 1e1]
@@ -329,7 +329,7 @@ def test_acados_one_parameter():
     parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
     ocp = parameters.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
+        final_time=1,
         n_shooting=100,
         optim_gravity=True,
         optim_mass=False,
@@ -384,7 +384,7 @@ def test_acados_several_parameter():
     parameters = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_parameters.py")
     ocp = parameters.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-        final_time=2,
+        final_time=1,
         n_shooting=100,
         optim_gravity=True,
         optim_mass=True,

@@ -24,13 +24,13 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path: str,
-    final_time: float,
-    n_shooting: int,
-    ode_solver: OdeSolver = OdeSolver.RK4(),
-    weight: float = 1,
-    min_time=0,
-    max_time=np.inf,
+        biorbd_model_path: str,
+        final_time: float,
+        n_shooting: int,
+        ode_solver: OdeSolver = OdeSolver.RK4(),
+        weight: float = 1,
+        min_time=0,
+        max_time=np.inf,
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program
@@ -113,18 +113,19 @@ def main():
     Prepare, solve and animate a time minimizer ocp using a Mayer criteria
     """
 
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50)
+    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50,
+                      ode_solver=OdeSolver.RK4())
 
     # Let's show the objectives
-    ocp.add_plot_penalty(CostType.OBJECTIVES)
+    # ocp.add_plot_penalty(CostType.OBJECTIVES)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
     print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}, good job Mayer!")
-
-    sol.animate()
+    sol.print()
+    # sol.animate()
 
 
 if __name__ == "__main__":

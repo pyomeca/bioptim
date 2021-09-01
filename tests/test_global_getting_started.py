@@ -33,8 +33,8 @@ def test_pendulum(ode_solver, use_sx, n_threads):
         return
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-        final_time=3,
-        n_shooting=20,
+        final_time=1,
+        n_shooting=30,
         n_threads=n_threads,
         use_sx=use_sx,
         ode_solver=ode_solver,
@@ -45,22 +45,22 @@ def test_pendulum(ode_solver, use_sx, n_threads):
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     if isinstance(ode_solver, OdeSolver.RK8):
-        np.testing.assert_almost_equal(f[0, 0], 84.30233965792308)
+        np.testing.assert_almost_equal(f[0, 0], 41.57063948309302)
     elif isinstance(ode_solver, OdeSolver.IRK):
-        np.testing.assert_almost_equal(f[0, 0], 84.30183665763425)
+        np.testing.assert_almost_equal(f[0, 0], 65.8236055171619)
     elif isinstance(ode_solver, OdeSolver.COLLOCATION):
-        np.testing.assert_almost_equal(f[0, 0], 84.41192087513045)
+        np.testing.assert_almost_equal(f[0, 0], 46.667345680854794)
     else:
-        np.testing.assert_almost_equal(f[0, 0], 84.30287609)
+        np.testing.assert_almost_equal(f[0, 0], 41.58259426)
 
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver.is_direct_collocation:
-        np.testing.assert_equal(g.shape, (400, 1))
-        np.testing.assert_almost_equal(g, np.zeros((400, 1)))
+        np.testing.assert_equal(g.shape, (600, 1))
+        np.testing.assert_almost_equal(g, np.zeros((600, 1)))
     else:
-        np.testing.assert_equal(g.shape, (80, 1))
-        np.testing.assert_almost_equal(g, np.zeros((80, 1)))
+        np.testing.assert_equal(g.shape, (120, 1))
+        np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
     # Check some of the results
     states, controls = sol.states, sol.controls
@@ -76,17 +76,17 @@ def test_pendulum(ode_solver, use_sx, n_threads):
 
     # initial and final controls
     if isinstance(ode_solver, OdeSolver.RK8):
-        np.testing.assert_almost_equal(tau[:, 0], np.array((7.1459594, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-7.086696, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.03763589, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.59527556, 0)))
     elif isinstance(ode_solver, OdeSolver.IRK):
-        np.testing.assert_almost_equal(tau[:, 0], np.array((7.1454158, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-7.0868975, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((5.40765381, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-25.26494109, 0)))
     elif isinstance(ode_solver, OdeSolver.COLLOCATION):
-        np.testing.assert_almost_equal(tau[:, 0], np.array((7.231104, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-7.0029995, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((5.78386563, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-18.22245512, 0)))
     else:
-        np.testing.assert_almost_equal(tau[:, 0], np.array((7.14605229, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-7.08672862, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.01549798, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.68877181, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -108,8 +108,8 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             with pytest.raises(NotImplementedError, match="use_sx=True and OdeSolver.IRK are not yet compatible"):
                 pendulum.prepare_ocp(
                     biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-                    final_time=2,
-                    n_shooting=10,
+                    final_time=1,
+                    n_shooting=30,
                     n_threads=n_threads,
                     use_sx=use_sx,
                     ode_solver=ode_solver,
@@ -117,8 +117,8 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
         else:
             ocp = pendulum.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-                final_time=2,
-                n_shooting=10,
+                final_time=1,
+                n_shooting=30,
                 n_threads=n_threads,
                 use_sx=use_sx,
                 ode_solver=ode_solver,
@@ -128,12 +128,12 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             # Check objective function value
             f = np.array(sol.cost)
             np.testing.assert_equal(f.shape, (1, 1))
-            np.testing.assert_almost_equal(f[0, 0], 6644.75968052)
+            np.testing.assert_almost_equal(f[0, 0], 12.12972557)
 
             # Check constraints
             g = np.array(sol.constraints)
-            np.testing.assert_equal(g.shape, (40, 1))
-            np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+            np.testing.assert_equal(g.shape, (120, 1))
+            np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
             # Check some of the results
             q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -147,8 +147,8 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
             np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
             # initial and final controls
-            np.testing.assert_almost_equal(tau[:, 0], np.array((16.23831574, 0)))
-            np.testing.assert_almost_equal(tau[:, -2], np.array((-25.59884582, 0)))
+            np.testing.assert_almost_equal(tau[:, 0], np.array((5.21431157, 0)))
+            np.testing.assert_almost_equal(tau[:, -2], np.array((-15.62080958, 0)))
 
             # save and load
             TestUtils.save_and_load(sol, ocp, True)
@@ -158,8 +158,8 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
     else:
         ocp = pendulum.prepare_ocp(
             biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-            final_time=3,
-            n_shooting=20,
+            final_time=1,
+            n_shooting=30,
             n_threads=n_threads,
             use_sx=use_sx,
             ode_solver=ode_solver,
@@ -171,20 +171,23 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         if isinstance(ode_solver, OdeSolver.RK8):
-            np.testing.assert_almost_equal(f[0, 0], 25.112329110399067)
+            np.testing.assert_almost_equal(f[0, 0], 9.821989132327003)
         elif is_collocation:
-            np.testing.assert_almost_equal(f[0, 0], 25.385276822713028)
+            if use_sx:
+                np.testing.assert_almost_equal(f[0, 0], 21.11538982497652)
+            else:
+                np.testing.assert_almost_equal(f[0, 0], 14.994533346959368)
         else:
-            np.testing.assert_almost_equal(f[0, 0], 25.112616259944502)
+            np.testing.assert_almost_equal(f[0, 0], 9.834017207589055)
 
         # Check constraints
         g = np.array(sol.constraints)
         if is_collocation:
-            np.testing.assert_equal(g.shape, (400, 1))
-            np.testing.assert_almost_equal(g, np.zeros((400, 1)))
+            np.testing.assert_equal(g.shape, (600, 1))
+            np.testing.assert_almost_equal(g, np.zeros((600, 1)))
         else:
-            np.testing.assert_equal(g.shape, (80, 1))
-            np.testing.assert_almost_equal(g, np.zeros((80, 1)))
+            np.testing.assert_equal(g.shape, (120, 1))
+            np.testing.assert_almost_equal(g, np.zeros((120, 1)))
 
         # Check some of the results
         q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -199,14 +202,18 @@ def test_pendulum_save_and_load(n_threads, use_sx, ode_solver):
 
         # initial and final controls
         if isinstance(ode_solver, OdeSolver.RK8):
-            np.testing.assert_almost_equal(tau[:, 0], np.array((9.1224216, 0)))
-            np.testing.assert_almost_equal(tau[:, -2], np.array((-6.5728715, 0)))
+            np.testing.assert_almost_equal(tau[:, 0], np.array((5.67291529, 0)))
+            np.testing.assert_almost_equal(tau[:, -2], np.array((-11.71262836, 0)))
         elif is_collocation:
-            np.testing.assert_almost_equal(tau[:, 0], np.array((9.1064486, 0)))
-            np.testing.assert_almost_equal(tau[:, -2], np.array((-6.568512, 0)))
+            if use_sx:
+                np.testing.assert_almost_equal(tau[:, 0], np.array((5.4941051, 0)))
+                np.testing.assert_almost_equal(tau[:, -2], np.array((-20.5390608, 0)))
+            else:
+                np.testing.assert_almost_equal(tau[:, 0], np.array((5.26692908, 0)))
+                np.testing.assert_almost_equal(tau[:, -2], np.array((-17.41195961, 0)))
         else:
-            np.testing.assert_almost_equal(tau[:, 0], np.array((9.1224768, 0)))
-            np.testing.assert_almost_equal(tau[:, -2], np.array((-6.5728942, 0)))
+            np.testing.assert_almost_equal(tau[:, 0], np.array((5.72227268, 0)))
+            np.testing.assert_almost_equal(tau[:, -2], np.array((-11.62799294, 0)))
 
         # save and load
         TestUtils.save_and_load(sol, ocp, True)
@@ -455,12 +462,12 @@ def test_phase_transitions(ode_solver):
 
     # simulate
     with pytest.raises(
-        RuntimeError,
-        match=re.escape(
-            "Phase transition must have the same number of states (3) "
-            "when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
-            "please integrate with Shooting.SINGLE"
-        ),
+            RuntimeError,
+            match=re.escape(
+                "Phase transition must have the same number of states (3) "
+                "when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
+                "please integrate with Shooting.SINGLE"
+            ),
     ):
         TestUtils.simulate(sol)
 
@@ -473,8 +480,8 @@ def test_parameter_optimization(ode_solver):
 
     ocp = parameter.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
-        final_time=3,
-        n_shooting=100,
+        final_time=1,
+        n_shooting=80,
         optim_gravity=True,
         optim_mass=False,
         min_g=np.array([-1, -1, -10]),
@@ -488,8 +495,8 @@ def test_parameter_optimization(ode_solver):
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (400, 1))
-    np.testing.assert_almost_equal(g, np.zeros((400, 1)))
+    np.testing.assert_equal(g.shape, (320, 1))
+    np.testing.assert_almost_equal(g, np.zeros((320, 1)), decimal=6)
 
     # Check some of the results
     q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_xyz"]
@@ -506,40 +513,40 @@ def test_parameter_optimization(ode_solver):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 801.7834735768548, decimal=6)
+        np.testing.assert_almost_equal(f[0, 0], 359.892132373683, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((6.3025795, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-8.8472355, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((7.73915783, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-10.24782316, 0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0, 0.0902555, -9.7896801]]).T)
+        np.testing.assert_almost_equal(gravity, np.array([[0, 0.05059018, -9.8065527 ]]).T)
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 801.7834735768548, decimal=6)
+        np.testing.assert_almost_equal(f[0, 0], 359.892132373683, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((6.3025795, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-8.8472355, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((7.73915783, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-10.24782316, 0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0, 0.0902555, -9.7896801]]).T)
+        np.testing.assert_almost_equal(gravity, np.array([[0., 0.05059018, -9.8065527]]).T)
 
     else:
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 801.7834735768548, decimal=6)
+        np.testing.assert_almost_equal(f[0, 0], 359.892132373683, decimal=6)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((6.3025795, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-8.8472355, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((7.73915783, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-10.24782316, 0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0, 0.0902555, -9.7896801]]).T)
+        np.testing.assert_almost_equal(gravity, np.array([[0, 0.05059018, -9.8065527]]).T)
 
     # save and load
     with pytest.raises(PicklingError, match="import of module 'custom_parameters' failed"):

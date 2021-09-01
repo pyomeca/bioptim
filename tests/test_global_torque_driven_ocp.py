@@ -208,21 +208,25 @@ def test_track_marker_2D_pendulum(ode_solver):
     # Define the problem
     model_path = bioptim_folder + "/examples/getting_started/pendulum.bioMod"
     biorbd_model = biorbd.Model(model_path)
-    final_time = 3
-    n_shooting = 20
+
+    final_time = 2
+    n_shooting = 30
 
     # Generate data to fit
     np.random.seed(42)
     markers_ref = np.random.rand(3, 2, n_shooting + 1)
     tau_ref = np.random.rand(2, n_shooting)
 
+    if isinstance(ode_solver, OdeSolver.IRK):
+        tau_ref = tau_ref * 5
+
     ocp = track.prepare_ocp(biorbd_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
     sol = ocp.solve()
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (80, 1))
-    np.testing.assert_almost_equal(g, np.zeros((80, 1)))
+    np.testing.assert_equal(g.shape, (n_shooting * 4, 1))
+    np.testing.assert_almost_equal(g, np.zeros((n_shooting * 4, 1)))
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -231,55 +235,55 @@ def test_track_marker_2D_pendulum(ode_solver):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 537.1178745697684)
+        np.testing.assert_almost_equal(f[0, 0], 290.6751231)
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0.9764023, 4.21321536)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.64142484, 2.85371719)))
 
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0.2645088, 3.66993626)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((3.46921861, 3.24168308)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((0.98431048, -13.78108592)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-0.15668869, 0.77410131)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((9.11770196, -13.83677175)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((1.16836132, 4.77230548)))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 537.1268848704174)
+        np.testing.assert_almost_equal(f[0, 0], 279.13695783496075)
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0.97637866, 4.2130049)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.82919942, 3.35436394)))
 
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0.26520638, 3.66961378)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((3.3021939, 3.8883104)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((0.98436218, -13.78113709)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-0.15666471, 0.77420505)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((7.15600342, -13.55148073)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((0.14051287, 0.94786043)))
 
     else:
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 537.1280965743497)
+        np.testing.assert_almost_equal(f[0, 0], 281.8560713312711)
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0.9763794, 4.2129851)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.8367364, 3.37533055)))
 
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0.26528337, 3.6696134)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((3.2688391, 3.88242643)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((0.98431925, -13.78108143)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-0.15666955, 0.77421434)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.93890241, -12.76433504)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((0.13156876, 0.93749913)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

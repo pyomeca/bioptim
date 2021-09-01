@@ -194,11 +194,11 @@ def test_simulate_from_initial_multiple_shoot():
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.7669981, -1.78295445)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.7553692, -1.6579819)))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((1.0, 0.5)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.20276328, 1.66091544)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.05240919, 2.864199)))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
@@ -216,7 +216,7 @@ def test_simulate_from_initial_single_shoot():
         n_threads=4,
     )
 
-    X = InitialGuess([-1, -2, 1, 0.5])
+    X = InitialGuess([-1, -2, 0.1, 0.2])
     U = InitialGuess(np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
 
     sol = Solution(ocp, [X, U])
@@ -229,11 +229,11 @@ def test_simulate_from_initial_single_shoot():
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.70545232, 2.02188073)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.33208579,  0.06094747)))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((1.0, 0.5)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((1.21773723, -0.77896332)))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0.1, 0.2)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-4.43192682,  6.38146735)))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))

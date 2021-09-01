@@ -114,8 +114,8 @@ def main():
     sol = ocp.solve(solver=Solver.ACADOS)
 
     # --- Show results --- #
-    sol.graphs()
     sol.print()
+    sol.graphs()
     sol.animate()
 
 

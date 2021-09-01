@@ -25,15 +25,28 @@ from .utils import TestUtils
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
+# @pytest.mark.parametrize("ode_solver", [OdeSolver.IRK])
 def test_pendulum_min_time_mayer(ode_solver):
     # Load pendulum_min_time_Mayer
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
 
+    if ode_solver == OdeSolver.IRK:
+        ft = 2
+        ns = 35
+    elif ode_solver == OdeSolver.COLLOCATION:
+        ft = 2
+        ns = 10
+    elif ode_solver == OdeSolver.RK4:
+        ft = 2
+        ns = 30
+    else:
+        raise ValueError("Test not implemented")
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
-        final_time=2,
-        n_shooting=10,
+        final_time=ft,
+        n_shooting=ns,
         ode_solver=ode_solver(),
     )
     sol = ocp.solve()
@@ -45,11 +58,11 @@ def test_pendulum_min_time_mayer(ode_solver):
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_equal(g.shape, (40 * 5, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40 * 5, 1)))
+        np.testing.assert_equal(g.shape, (ns * 20, 1))
+        np.testing.assert_almost_equal(g, np.zeros((ns * 20, 1)), decimal=6)
     else:
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+        np.testing.assert_equal(g.shape, (ns * 4, 1))
+        np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -64,34 +77,34 @@ def test_pendulum_min_time_mayer(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     if ode_solver == OdeSolver.IRK:
-        np.testing.assert_almost_equal(f[0, 0], 0.6209187886055388)
+        np.testing.assert_almost_equal(f[0, 0], 0.2855606738489079)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9535415, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99980138, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((87.13363409, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99938226, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.6209187886055388)
+        np.testing.assert_almost_equal(tf, 0.2855606738489079)
 
     elif ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(f[0, 0], 0.62091878785625)
+        np.testing.assert_almost_equal(f[0, 0], 4.216403778188963)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95354196, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99980145, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((7.75065241, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-0.69999734, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.62091878785625)
+        np.testing.assert_almost_equal(tf, 4.216403778188963)
 
     elif ode_solver == OdeSolver.RK4:
-        np.testing.assert_almost_equal(f[0, 0], 0.6209213032003106)
+        np.testing.assert_almost_equal(f[0, 0], 0.2862324498580764)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99980141, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((70.46234418, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99964325, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.6209213032003106)
+        np.testing.assert_almost_equal(tf, 0.2862324498580764)
     else:
         raise ValueError("Test not implemented")
 
@@ -99,32 +112,48 @@ def test_pendulum_min_time_mayer(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    TestUtils.simulate(sol)
+    TestUtils.simulate(sol, decimal_value=5)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
+# @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
 def test_pendulum_min_time_mayer_constrained(ode_solver):
     # Load pendulum_min_time_Mayer
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
 
+    if ode_solver == OdeSolver.IRK:
+        ft = 2
+        ns = 35
+        min_ft = 0.5
+    elif ode_solver == OdeSolver.COLLOCATION:
+        ft = 2
+        ns = 10
+        min_ft = 0.5
+    elif ode_solver == OdeSolver.RK4:
+        ft = 2
+        ns = 30
+        min_ft = 0.5
+    else:
+        raise ValueError("Test not implemented")
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
-        final_time=2,
-        n_shooting=10,
+        final_time=ft,
+        n_shooting=ns,
         ode_solver=ode_solver(),
-        min_time=1,
+        min_time=min_ft,
     )
     sol = ocp.solve()
 
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_equal(g.shape, (40 * 5, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40 * 5, 1)), decimal=6)
+        np.testing.assert_equal(g.shape, (ns * 20, 1))
+        np.testing.assert_almost_equal(g, np.zeros((ns * 20, 1)), decimal=6)
     else:
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
+        np.testing.assert_equal(g.shape, (ns * 4, 1))
+        np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -141,27 +170,32 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 1)
+    if ode_solver == OdeSolver.COLLOCATION:
+        np.testing.assert_almost_equal(f[0, 0], 1.1878186850775596)
+    else:
+        np.testing.assert_almost_equal(f[0, 0], min_ft)
 
+    # initial and final controls
     if ode_solver == OdeSolver.IRK:
-        # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((24.34465091, 0)), decimal=2)
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-53.24135804, 0)), decimal=2)
+        np.testing.assert_almost_equal(tau[:, 0], np.array((28.67596909, 0)), decimal=2)
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-94.99131882, 0)), decimal=2)
 
     elif ode_solver == OdeSolver.COLLOCATION:
-        # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((22.20405191, 0)), decimal=3)
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-64.50409123, 0)), decimal=3)
+        np.testing.assert_almost_equal(tau[:, 0], np.array((10.08290371, 0)), decimal=3)
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.25180307 , 0)), decimal=3)
 
     elif ode_solver == OdeSolver.RK4:
-        # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((24.71677932, 0)), decimal=3)
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-53.6692385, 0)), decimal=3)
+        np.testing.assert_almost_equal(tau[:, 0], np.array((22.99666272, 0)), decimal=3)
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-95.3071426, 0)), decimal=3)
+
     else:
         raise ValueError("Test not implemented")
 
     # optimized time
-    np.testing.assert_almost_equal(tf, 1.0)
+    if ode_solver == OdeSolver.COLLOCATION:
+        np.testing.assert_almost_equal(tf, 1.1878186850775596)
+    else:
+        np.testing.assert_almost_equal(tf, min_ft)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -176,12 +210,27 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
 
+    if ode_solver == OdeSolver.IRK:
+        ft = 2
+        ns = 35
+        max_ft = 1
+    elif ode_solver == OdeSolver.COLLOCATION:
+        ft = 2
+        ns = 15
+        max_ft = 1
+    elif ode_solver == OdeSolver.RK4:
+        ft = 2
+        ns = 30
+        max_ft = 1
+    else:
+        raise ValueError("Test not implemented")
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
-        final_time=2,
-        n_shooting=10,
+        final_time=ft,
+        n_shooting=ns,
         ode_solver=ode_solver(),
-        max_time=1,
+        max_time=max_ft,
         weight=-1,
     )
     sol = ocp.solve()
@@ -189,11 +238,11 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_equal(g.shape, (40 * 5, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40 * 5, 1)), decimal=6)
+        np.testing.assert_equal(g.shape, (ns * 20, 1))
+        np.testing.assert_almost_equal(g, np.zeros((ns * 20, 1)), decimal=6)
     else:
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
+        np.testing.assert_equal(g.shape, (ns * 4, 1))
+        np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -216,7 +265,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
     np.testing.assert_almost_equal(tau[1, -2], np.array(0))
 
     # optimized time
-    np.testing.assert_almost_equal(tf, 1.0)
+    np.testing.assert_almost_equal(tf, max_ft)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -231,10 +280,22 @@ def test_pendulum_min_time_lagrange(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py")
 
+    if ode_solver == OdeSolver.IRK:
+        ft = 2
+        ns = 35
+    elif ode_solver == OdeSolver.COLLOCATION:
+        ft = 2
+        ns = 15
+    elif ode_solver == OdeSolver.RK4:
+        ft = 2
+        ns = 42
+    else:
+        raise ValueError("Test not implemented")
+
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
-        final_time=2,
-        n_shooting=10,
+        final_time=ft,
+        n_shooting=ns,
         ode_solver=ode_solver(),
     )
     sol = ocp.solve()
@@ -242,11 +303,11 @@ def test_pendulum_min_time_lagrange(ode_solver):
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_equal(g.shape, (40 * 5, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40 * 5, 1)), decimal=6)
+        np.testing.assert_equal(g.shape, (ns * 20, 1))
+        np.testing.assert_almost_equal(g, np.zeros((ns * 20, 1)), decimal=6)
     else:
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)), decimal=6)
+        np.testing.assert_equal(g.shape, (ns * 4, 1))
+        np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -264,40 +325,40 @@ def test_pendulum_min_time_lagrange(ode_solver):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.6209187886055383)
+        np.testing.assert_almost_equal(f[0, 0], 0.2855606738489078)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.9535415, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.9998014, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((87.13363409, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99938226, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.6209187886055383)
+        np.testing.assert_almost_equal(tf, 0.2855606738489078)
 
     elif ode_solver == OdeSolver.COLLOCATION:
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.6209187878562501)
+        np.testing.assert_almost_equal(f[0, 0], 0.8905637018911737)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95354196, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99980145, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((19.92168227, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-11.96503358, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.62091878785625)
+        np.testing.assert_almost_equal(tf, 0.8905637018911734)
 
     elif ode_solver == OdeSolver.RK4:
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.6209213032003107)
+        np.testing.assert_almost_equal(f[0, 0], 0.28519514602152585)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((59.95450138, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99980141, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((99.99914849, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.9990543, 0)))
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.6209213032003107)
+        np.testing.assert_almost_equal(tf, 0.28519514602152585)
     else:
         raise ValueError("Test not implemented")
 
@@ -305,7 +366,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
     TestUtils.save_and_load(sol, ocp, True)
 
     # simulate
-    TestUtils.simulate(sol)
+    TestUtils.simulate(sol, decimal_value=5)
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
@@ -356,11 +417,23 @@ def test_time_constraint(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     time_constraint = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/time_constraint.py")
 
+    if ode_solver == OdeSolver.IRK:
+        ft = 2
+        ns = 35
+    elif ode_solver == OdeSolver.COLLOCATION:
+        ft = 2
+        ns = 15
+    elif ode_solver == OdeSolver.RK4:
+        ft = 2
+        ns = 42
+    else:
+        raise ValueError("Test not implemented")
+
     ocp = time_constraint.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
-        final_time=2,
-        n_shooting=10,
-        time_min=0.6,
+        final_time=ft,
+        n_shooting=ns,
+        time_min=0.2,
         time_max=1,
         ode_solver=ode_solver(),
     )
@@ -369,11 +442,11 @@ def test_time_constraint(ode_solver):
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_equal(g.shape, (40 * 5 + 1, 1))
-        np.testing.assert_almost_equal(g, np.concatenate((np.zeros((40 * 5, 1)), [[1]])))
+        np.testing.assert_equal(g.shape, (ns * 20 + 1, 1))
+        np.testing.assert_almost_equal(g, np.concatenate((np.zeros((ns * 20, 1)), [[1]])))
     else:
-        np.testing.assert_equal(g.shape, (41, 1))
-        np.testing.assert_almost_equal(g, np.concatenate((np.zeros((40, 1)), [[1]])))
+        np.testing.assert_equal(g.shape, (ns * 4 + 1, 1))
+        np.testing.assert_almost_equal(g, np.concatenate((np.zeros((ns * 4, 1)), [[1]])))
 
     # Check some of the results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
@@ -394,31 +467,31 @@ def test_time_constraint(ode_solver):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 1451.2233946787849)
+        np.testing.assert_almost_equal(f[0, 0], 57.84641870505798)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((22.49949667, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-33.90954581, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((5.33802896, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-23.69200381 , 0)))
 
     elif ode_solver == OdeSolver.COLLOCATION:
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 1451.223394769656)
+        np.testing.assert_almost_equal(f[0, 0], 90.22986699069487)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((22.49949667, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-33.90954582, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((8.48542163, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-18.13750096, 0)))
 
     elif ode_solver == OdeSolver.RK4:
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 1451.2202233368012)
+        np.testing.assert_almost_equal(f[0, 0], 39.593354247030085)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((22.49775, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-33.9047809, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.28713595, 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-12.72892599, 0)))
     else:
         raise ValueError("Test not ready")
 
