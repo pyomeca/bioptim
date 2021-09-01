@@ -112,6 +112,7 @@ def main():
 
     # --- Solve the program --- #
     sol = ocp.solve(solver=Solver.ACADOS)
+    sol.print()
 
     # --- Show results --- #
     sol.print()
