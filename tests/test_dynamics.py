@@ -27,7 +27,7 @@ class OptimalControlProgram:
 def test_torque_driven(with_contact, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/2segments_4dof_2contacts.bioMod")
+    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod")
     nlp.ns = 5
     nlp.cx = cx
 
@@ -84,7 +84,7 @@ def test_torque_driven(with_contact, with_external_force, cx):
 def test_torque_derivative_driven(with_contact, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/2segments_4dof_2contacts.bioMod")
+    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod")
     nlp.ns = 5
     nlp.cx = cx
 
@@ -196,7 +196,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx):
 def test_torque_activation_driven(with_contact, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/2segments_4dof_2contacts.bioMod")
+    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod")
     nlp.ns = 5
     nlp.cx = cx
     nlp.x_bounds = np.zeros((nlp.model.nbQ() * 2, 1))
@@ -279,7 +279,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx):
 def test_muscle_driven(with_excitations, with_contact, with_torque, with_external_force, cx):
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/arm26_with_contact.bioMod")
+    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.ns = 5
     nlp.cx = cx
 
@@ -550,7 +550,7 @@ def test_custom_dynamics(with_contact):
 
     # Prepare the program
     nlp = NonLinearProgram()
-    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/2segments_4dof_2contacts.bioMod")
+    nlp.model = biorbd.Model(TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod")
     nlp.ns = 5
     nlp.cx = MX
 

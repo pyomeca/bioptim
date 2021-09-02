@@ -25,7 +25,7 @@ def test_mhe(solver):
         return
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     pendulum = TestUtils.load_module(root_folder + "mhe.py")
-    biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
+    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
     nq = biorbd_model.nbQ()
     torque_max = 5  # Give a bit of slack on the max torque
 
@@ -50,7 +50,7 @@ def test_mhe(solver):
         mhe.update_objectives_target(target=target_func(t), list_index=0)
         return t < n_frame_by_cycle * n_cycles - window_len - 1
 
-    biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
+    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
     sol = pendulum.prepare_mhe(
         biorbd_model=biorbd_model,
         window_len=window_len,
@@ -72,7 +72,7 @@ def test_mhe(solver):
 
 def test_mhe_redim_xbounds_and_init():
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
+    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
     nq = biorbd_model.nbQ()
     ntau = biorbd_model.nbGeneralizedTorque()
 
@@ -104,7 +104,7 @@ def test_mhe_redim_xbounds_and_init():
 
 def test_mhe_redim_xbounds_not_implemented():
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    biorbd_model = biorbd.Model(root_folder + "cart_pendulum.bioMod")
+    biorbd_model = biorbd.Model(root_folder + "models/cart_pendulum.bioMod")
     nq = biorbd_model.nbQ()
     ntau = biorbd_model.nbGeneralizedTorque()
 

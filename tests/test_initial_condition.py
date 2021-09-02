@@ -108,7 +108,7 @@ def test_initial_guess_update():
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/pendulum_min_time_Mayer.py")
 
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
     )
@@ -175,7 +175,7 @@ def test_simulate_from_initial_multiple_shoot():
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_save_and_load.py")
 
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         n_threads=4,
@@ -210,7 +210,7 @@ def test_simulate_from_initial_single_shoot():
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_save_and_load.py")
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         n_threads=4,

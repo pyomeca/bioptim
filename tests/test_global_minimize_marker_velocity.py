@@ -130,7 +130,7 @@ def test_track_and_minimize_marker_displacement_global(ode_solver):
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
-        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/cube_and_line.bioMod",
+        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
         n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="disp",
@@ -176,7 +176,7 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver):
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
-        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/cube_and_line.bioMod",
+        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
         n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="disp",
@@ -223,7 +223,7 @@ def test_track_and_minimize_marker_velocity(ode_solver):
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
-        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/cube_and_line.bioMod",
+        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
         n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="velo",
@@ -272,7 +272,7 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
             NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"
         ):
             prepare_ocp(
-                biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/cube_and_line.bioMod",
+                biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
                 n_shooting=5,
                 final_time=1,
                 marker_velocity_or_displacement="velo",
@@ -282,7 +282,7 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver):
             )
     else:
         ocp = prepare_ocp(
-            biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/cube_and_line.bioMod",
+            biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
             n_shooting=5,
             final_time=1,
             marker_velocity_or_displacement="velo",

@@ -32,7 +32,7 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "cube_with_forces.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()
+    biorbd_model_path: str = "models/cube_with_forces.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()
 ) -> OptimalControlProgram:
     """
     Prepare the ocp

@@ -21,7 +21,7 @@ def test_custom_constraint_mx_fail():
         return MX.zeros(u.shape), u.cx, MX.zeros(u.shape)
 
     bioptim_folder = TestUtils.bioptim_folder()
-    model_path = bioptim_folder + "/examples/getting_started/cube.bioMod"
+    model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
     constraints = ConstraintList()
     constraints.add(custom_mx_fail, node=Node.ALL)
 

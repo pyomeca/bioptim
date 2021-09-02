@@ -25,7 +25,7 @@ def test_plot_graphs_one_phase():
     graph = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py")
 
     ocp = graph.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
     )
@@ -40,7 +40,7 @@ def test_plot_merged_graphs():
     merged_graphs = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py")
 
     # Define the problem
-    model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.1
     n_shooting = 5
@@ -69,7 +69,7 @@ def test_plot_graphs_multi_phases():
     # Load graphs_one_phase
     bioptim_folder = TestUtils.bioptim_folder()
     graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
-    ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod")
+    ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
@@ -81,7 +81,7 @@ def test_add_new_plot():
         bioptim_folder + "/examples/torque_driven_ocp/track_markers_with_torque_actuators.py"
     )
     ocp = graphs.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod",
         n_shooting=20,
         final_time=0.5,
     )
@@ -124,7 +124,7 @@ def test_console_objective_functions():
     # Load graphs_one_phase
     bioptim_folder = TestUtils.bioptim_folder()
     graphs = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
-    ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/cube.bioMod")
+    ocp = graphs.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     sol = ocp.solve()
     ocp = sol.ocp  # We will override ocp with known and controlled values for the test
 

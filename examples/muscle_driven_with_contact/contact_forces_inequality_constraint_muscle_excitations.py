@@ -101,7 +101,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
 
 
 def main():
-    biorbd_model_path = "2segments_4dof_2contacts_1muscle.bioMod"
+    biorbd_model_path = "models/2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.3
     ns = 10
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, phase_time=t, n_shooting=ns, min_bound=50)

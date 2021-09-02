@@ -222,7 +222,7 @@ def main():
     optim_gravity = True
     optim_mass = True
     ocp = prepare_ocp(
-        biorbd_model_path="pendulum.bioMod",
+        biorbd_model_path="models/pendulum.bioMod",
         final_time=3,
         n_shooting=100,
         optim_gravity=optim_gravity,

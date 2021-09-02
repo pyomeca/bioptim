@@ -43,7 +43,7 @@ def test_pendulum_min_time_mayer(ode_solver):
         raise ValueError("Test not implemented")
 
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/models/pendulum.bioMod",
         final_time=ft,
         n_shooting=ns,
         ode_solver=ode_solver(),
@@ -137,7 +137,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
         raise ValueError("Test not implemented")
 
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/models/pendulum.bioMod",
         final_time=ft,
         n_shooting=ns,
         ode_solver=ode_solver(),
@@ -225,7 +225,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver):
         raise ValueError("Test not implemented")
 
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/models/pendulum.bioMod",
         final_time=ft,
         n_shooting=ns,
         ode_solver=ode_solver(),
@@ -292,7 +292,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
         raise ValueError("Test not implemented")
 
     ocp = pendulum.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/models/pendulum.bioMod",
         final_time=ft,
         n_shooting=ns,
         ode_solver=ode_solver(),
@@ -371,7 +371,7 @@ def test_pendulum_min_time_lagrange(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_pendulum_min_time_lagrange_constrained(ode_solver):
     # Load pendulum_min_time_Lagrange
-    biorbd_model_path = (TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/pendulum.bioMod",)
+    biorbd_model_path = (TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/pendulum.bioMod",)
 
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path[0])
@@ -392,7 +392,7 @@ def test_pendulum_min_time_lagrange_constrained(ode_solver):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_pendulum_max_time_lagrange_constrained(ode_solver):
     # Load pendulum_min_time_Lagrange
-    biorbd_model_path = (TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/pendulum.bioMod",)
+    biorbd_model_path = (TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/pendulum.bioMod",)
 
     # --- Options --- #
     biorbd_model = biorbd.Model(biorbd_model_path[0])
@@ -429,7 +429,7 @@ def test_time_constraint(ode_solver):
         raise ValueError("Test not implemented")
 
     ocp = time_constraint.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/models/pendulum.bioMod",
         final_time=ft,
         n_shooting=ns,
         time_min=0.2,
@@ -508,7 +508,7 @@ def test_monophase_time_constraint(ode_solver):
     time_constraint = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/multiphase_time_constraint.py")
 
     ocp = time_constraint.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/models/cube.bioMod",
         final_time=(2, 5, 4),
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
@@ -564,7 +564,7 @@ def test_multiphase_time_constraint(ode_solver):
     time_constraint = TestUtils.load_module(bioptim_folder + "/examples/optimal_time_ocp/multiphase_time_constraint.py")
 
     ocp = time_constraint.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/optimal_time_ocp/models/cube.bioMod",
         final_time=(2, 5, 4),
         time_min=[1, 3, 0.1],
         time_max=[2, 4, 0.8],
@@ -625,7 +625,7 @@ def partial_ocp_parameters(n_phases):
     if n_phases != 1 and n_phases != 3:
         raise RuntimeError("n_phases should be 1 or 3")
 
-    biorbd_model_path = TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/cube.bioMod"
+    biorbd_model_path = TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/cube.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path)
     n_shooting = (2, 2, 2)
     final_time = (2, 5, 4)

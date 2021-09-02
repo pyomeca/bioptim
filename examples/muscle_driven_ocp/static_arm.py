@@ -104,7 +104,7 @@ def main():
     Prepare and solve and animate a reaching task ocp
     """
 
-    ocp = prepare_ocp(biorbd_model_path="arm26.bioMod", final_time=0.5, n_shooting=50, weight=1000)
+    ocp = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=0.5, n_shooting=50, weight=1000)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

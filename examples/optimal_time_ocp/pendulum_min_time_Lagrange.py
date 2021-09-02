@@ -106,7 +106,7 @@ def main():
     Prepare, solve and animate a time minimizer ocp using a Lagrange criteria
     """
 
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=2, n_shooting=50)
 
     # Let's show the objectives
     ocp.add_plot_penalty(CostType.OBJECTIVES)

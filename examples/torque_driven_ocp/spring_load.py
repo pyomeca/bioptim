@@ -72,7 +72,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic)
 
 
-def prepare_ocp(biorbd_model_path: str = "mass_point.bioMod"):
+def prepare_ocp(biorbd_model_path: str = "models/mass_point.bioMod"):
     # Model path
     m = biorbd.Model(biorbd_model_path)
     m.setGravity(np.array((0, 0, 0)))

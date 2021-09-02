@@ -93,7 +93,7 @@ def prepare_ocp(
 
 def main():
     # Define the problem
-    model_path = "2segments_4dof_2contacts_1muscle.bioMod"
+    model_path = "models/2segments_4dof_2contacts_1muscle.bioMod"
     final_time = 0.7
     ns = 20
 

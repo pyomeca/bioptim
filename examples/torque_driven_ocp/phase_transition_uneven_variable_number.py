@@ -20,8 +20,8 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "double_pendulum.bioMod",
-    biorbd_model_path_withTranslations: str = "double_pendulum_with_translations.bioMod",
+    biorbd_model_path: str = "models/double_pendulum.bioMod",
+    biorbd_model_path_withTranslations: str = "models/double_pendulum_with_translations.bioMod",
 ) -> OptimalControlProgram:
 
     biorbd_model = (biorbd.Model(biorbd_model_path), biorbd.Model(biorbd_model_path_withTranslations))
@@ -112,7 +112,7 @@ def main():
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
 
-    sol = ocp.solve(show_online_optim=True, show_options={'show_bounds': True})
+    sol = ocp.solve()
 
     sol.print()
     sol.animate()

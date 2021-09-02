@@ -8,7 +8,7 @@ def test_fatigable_muscles():
     bioptim_folder = TestUtils.bioptim_folder()
     fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/static_arm_with_fatigue.py")
 
-    model_path = f"{bioptim_folder}/examples/fatigue/arm26_constant.bioMod"
+    model_path = f"{bioptim_folder}/examples/fatigue/models/arm26_constant.bioMod"
     ocp = fatigue.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
@@ -85,7 +85,7 @@ def test_fatigable_torque():
     bioptim_folder = TestUtils.bioptim_folder()
     fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
 
-    model_path = f"{bioptim_folder}/examples/fatigue/pendulum.bioMod"
+    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
     ocp = fatigue.prepare_ocp(biorbd_model_path=model_path, final_time=1, n_shooting=30, use_sx=False)
     sol = ocp.solve()
 

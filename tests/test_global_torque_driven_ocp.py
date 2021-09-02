@@ -18,7 +18,7 @@ def test_track_markers(ode_solver, actuator_type):
     ode_solver = ode_solver()
 
     ocp = track.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         actuator_type=actuator_type,
@@ -67,7 +67,7 @@ def test_track_markers_changing_constraints(ode_solver):
     ode_solver = ode_solver()
 
     ocp = track.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         ode_solver=ode_solver,
@@ -160,7 +160,7 @@ def test_track_markers_with_actuators(ode_solver):
     ode_solver = ode_solver()
 
     ocp = track.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         actuator_type=1,
@@ -206,7 +206,7 @@ def test_track_marker_2D_pendulum(ode_solver):
     ode_solver = ode_solver()
 
     # Define the problem
-    model_path = bioptim_folder + "/examples/getting_started/pendulum.bioMod"
+    model_path = bioptim_folder + "/examples/getting_started/models/pendulum.bioMod"
     biorbd_model = biorbd.Model(model_path)
 
     final_time = 2
@@ -298,7 +298,7 @@ def test_trampo_quaternions():
     trampo = TestUtils.load_module(bioptim_folder + "/examples/torque_driven_ocp/trampo_quaternions.py")
 
     # Define the problem
-    model_path = bioptim_folder + "/examples/torque_driven_ocp/TruncAnd2Arm_Quaternion.bioMod"
+    model_path = bioptim_folder + "/examples/torque_driven_ocp/models/TruncAnd2Arm_Quaternion.bioMod"
     final_time = 0.25
     n_shooting = 5
 

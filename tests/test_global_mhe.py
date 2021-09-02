@@ -17,7 +17,7 @@ def test_cyclic_nmpc():
     n_cycles = 3
     window_len = 20
     nmpc = nmpc_module.prepare_nmpc(
-        model_path=bioptim_folder + "/examples/moving_horizon_estimation/arm2.bioMod",
+        model_path=bioptim_folder + "/examples/moving_horizon_estimation/models/arm2.bioMod",
         window_len=window_len,
         window_duration=1,
         max_torque=50,

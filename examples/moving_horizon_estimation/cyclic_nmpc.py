@@ -79,7 +79,7 @@ def prepare_nmpc(model_path, window_len, window_duration, max_torque):
 
 
 def main():
-    model_path = "./arm2.bioMod"
+    model_path = "models/arm2.bioMod"
     torque_max = 50
 
     window_duration = 1

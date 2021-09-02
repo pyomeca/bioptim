@@ -113,7 +113,7 @@ def main():
     Prepare, solve and animate a time minimizer ocp using a Mayer criteria
     """
 
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=2, n_shooting=50,
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=2, n_shooting=50,
                       ode_solver=OdeSolver.RK4())
 
     # Let's show the objectives
@@ -125,7 +125,7 @@ def main():
     # --- Show results --- #
     print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}, good job Mayer!")
     sol.print()
-    # sol.animate()
+    sol.animate()
 
 
 if __name__ == "__main__":

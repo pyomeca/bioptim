@@ -29,27 +29,27 @@ def prepare_test_ocp(with_muscles=False, with_contact=False, with_actuator=False
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
     elif with_muscles:
-        biorbd_model = biorbd.Model(bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod")
+        biorbd_model = biorbd.Model(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_torque=True)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque() + biorbd_model.nbMuscles()
     elif with_contact:
         biorbd_model = biorbd.Model(
-            bioptim_folder + "/examples/muscle_driven_with_contact/2segments_4dof_2contacts_1muscle.bioMod"
+            bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
         )
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand=False)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     elif with_actuator:
-        biorbd_model = biorbd.Model(bioptim_folder + "/examples/torque_driven_ocp/cube.bioMod")
+        biorbd_model = biorbd.Model(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()
         nu = biorbd_model.nbGeneralizedTorque()
     else:
-        biorbd_model = biorbd.Model(bioptim_folder + "/examples/track/cube_and_line.bioMod")
+        biorbd_model = biorbd.Model(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
         nx = biorbd_model.nbQ() + biorbd_model.nbQdot()

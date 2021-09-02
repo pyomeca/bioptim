@@ -149,7 +149,7 @@ def main():
     torque from the solution and uses them to track. It then creates and solves this ocp and show the results
     """
 
-    biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/pendulum.bioMod"
+    biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/models/pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_path)
     final_time = 1
     n_shooting = 20

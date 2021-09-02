@@ -250,7 +250,7 @@ def main():
     """
 
     # Define the problem
-    biorbd_model = biorbd.Model("arm26.bioMod")
+    biorbd_model = biorbd.Model("models/arm26.bioMod")
     final_time = 0.5
     n_shooting_points = 30
     use_residual_torque = True
@@ -259,7 +259,7 @@ def main():
     t, markers_ref, x_ref, muscle_excitations_ref = generate_data(biorbd_model, final_time, n_shooting_points)
 
     # Track these data
-    biorbd_model = biorbd.Model("arm26.bioMod")  # To allow for non free variable, the model must be reloaded
+    biorbd_model = biorbd.Model("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
         biorbd_model,
         final_time,
@@ -270,9 +270,6 @@ def main():
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
     )
-
-    # Add the objective plot for more fun!
-    ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)
