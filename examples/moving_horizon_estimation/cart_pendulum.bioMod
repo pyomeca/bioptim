@@ -1,21 +1,27 @@
 version  4
 
+segment base
+endsegment
+
 // Segment #1
 segment    Char
+    parent base
+    RTinMatrix    1
+        RT
+            1.00000    0.00000    0.00000    0
+            0.00000    1.00000    0.00000    0
+            0.00000    0.00000    1.00000    1.1
+            0.00000    0.00000    0.00000    1.00000
     translations y
     ranges
-        -5 5
-    mass    10
+        -20 20
+    mass 1
     inertia
-        0.1    0.00000    0.00000
-        0.00000    0.0    0.00000
-        0.00000    0.00000    0.1
-    com     0         0    0
-    mesh   -0.1000   0    0.1
-    mesh    0.1000   0    0.1
-    mesh    0.1000   0   -0.1
-    mesh   -0.1000   0   -0.1
-    mesh   -0.1000   0    0.1
+        0.0391  0.0000	0.0000
+	    0.0000	0.0335	-0.0032
+	    0.0000	-0.0032	0.0090
+    com  -0.0005 0.0688 -0.9542
+    meshfile pendulum.vtp
 endsegment
 
     // Markers
@@ -30,27 +36,23 @@ endsegment
 
 
 segment    Arm
-        parent    Char
-        RTinMatrix    1
-        RT
+    parent    Char
+    RTinMatrix    1
+    RT
             1.00000    0.00000    0.00000    0
             0.00000    1.00000    0.00000    0
-            0.00000    0.00000    1.00000    0
+            0.00000    0.00000    1.00000    -1.1
             0.00000    0.00000    0.00000    1.00000
-        rotations    x
-        ranges
+    rotations    x
+    ranges
             -pi pi
-        mass    1
-        inertia
-            0.50000    0.00000     0.00000
-            0.00000    0.0        0.00000
-            0.00000    0.00000    0.5
-        com        0.00000        0       -1
-        mesh    -0.05   0 0.05
-        mesh    0.05   0   0.05
-        mesh    0.05   0   -1
-        mesh     -0.05  0 -1
-        mesh    -0.05   0 0.05
+    mass 1
+    inertia
+        0.0391  0.0000	0.0000
+	    0.0000	0.0335	-0.0032
+	    0.0000	-0.0032	0.0090
+    com  -0.0005 0.0688 -0.9542
+    meshfile pendulum.vtp
 endsegment
 
     // Markers
@@ -60,7 +62,7 @@ endsegment
     endmarker
     marker  arm1
         parent Arm
-        position    0.05   0   0.05
+        position    0.05   0.05   -0.5
     endmarker
     marker  arm2
         parent Arm

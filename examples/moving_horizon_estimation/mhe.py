@@ -136,26 +136,26 @@ def get_solver_options(solver):
 
 
 def main():
-    biorbd_model_path = "./cart_pendulum.bioMod"
+    biorbd_model_path = "cart_pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     solver = Solver.ACADOS  # or Solver.IPOPT
-    final_time = 5
+    final_time = 4
     n_shoot_per_second = 100
-    window_len = 10
+    window_len = 20
     window_duration = 1 / n_shoot_per_second * window_len
     n_frames_total = final_time * n_shoot_per_second - window_len - 1
 
-    x0 = np.array([0, np.pi / 2, 0, 0])
-    noise_std = 0.05  # STD of noise added to measurements
-    torque_max = 2  # Max torque applied to the model
+    x0 = np.array([0, np.pi / 4, 0, 0])
+    noise_std = 0.0005  # STD of noise added to measurements
+    torque_max = 0.5  # Max torque applied to the model
     states, markers, markers_noised, controls = generate_data(
         biorbd_model, final_time, x0, torque_max, n_shoot_per_second * final_time, noise_std, show_plots=False
     )
 
     x_init = np.zeros((biorbd_model.nbQ() * 2, window_len + 1))
     u_init = np.zeros((biorbd_model.nbQ(), window_len))
-    torque_max = 5  # Give a bit of slack on the max torque
+    torque_max = 15  # Give a bit of slack on the max torque
 
     biorbd_model = biorbd.Model(biorbd_model_path)
     mhe = prepare_mhe(
