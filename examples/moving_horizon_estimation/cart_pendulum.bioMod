@@ -1,27 +1,16 @@
 version  4
 
-segment base
-endsegment
-
 // Segment #1
 segment    Char
-    parent base
-    RTinMatrix    1
-        RT
-            1.00000    0.00000    0.00000    0
-            0.00000    1.00000    0.00000    0
-            0.00000    0.00000    1.00000    1.1
-            0.00000    0.00000    0.00000    1.00000
     translations y
     ranges
-        -20 20
-    mass 1
-    inertia
-        0.0391  0.0000	0.0000
-	    0.0000	0.0335	-0.0032
-	    0.0000	-0.0032	0.0090
-    com  -0.0005 0.0688 -0.9542
-    meshfile pendulum.vtp
+        -5 5
+    mass    10
+    mesh   -0.1000   0    0.1
+    mesh    0.1000   0    0.1
+    mesh    0.1000   0   -0.1
+    mesh   -0.1000   0   -0.1
+    mesh   -0.1000   0    0.1
 endsegment
 
     // Markers
@@ -41,7 +30,7 @@ segment    Arm
     RT
             1.00000    0.00000    0.00000    0
             0.00000    1.00000    0.00000    0
-            0.00000    0.00000    1.00000    -1.1
+            0.00000    0.00000    1.00000    0
             0.00000    0.00000    0.00000    1.00000
     rotations    x
     ranges
