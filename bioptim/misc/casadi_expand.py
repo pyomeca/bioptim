@@ -19,7 +19,12 @@ def ge(x: Union[MX, SX, DM, float], y: Union[MX, SX, DM, float]):
     return le(y, x)
 
 
-def if_else(cond: Union[MX, SX, DM, float], if_true: Union[MX, SX, DM, float], if_false: Union[MX, SX, DM, float], b: int = 10000):
+def if_else(
+    cond: Union[MX, SX, DM, float],
+    if_true: Union[MX, SX, DM, float],
+    if_false: Union[MX, SX, DM, float],
+    b: int = 10000,
+):
     return if_true + (if_false - if_true) * (0.5 + 0.5 * tanh(b * cond))
 
 
