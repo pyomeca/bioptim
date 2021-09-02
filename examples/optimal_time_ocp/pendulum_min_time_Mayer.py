@@ -117,7 +117,7 @@ def main():
                       ode_solver=OdeSolver.RK4())
 
     # Let's show the objectives
-    # ocp.add_plot_penalty(CostType.OBJECTIVES)
+    ocp.add_plot_penalty(CostType.OBJECTIVES)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

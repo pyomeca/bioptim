@@ -25,7 +25,6 @@ from .utils import TestUtils
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-# @pytest.mark.parametrize("ode_solver", [OdeSolver.IRK])
 def test_pendulum_min_time_mayer(ode_solver):
     # Load pendulum_min_time_Mayer
     bioptim_folder = TestUtils.bioptim_folder()

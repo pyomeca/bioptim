@@ -112,7 +112,7 @@ def main():
     # --- Prepare the ocp --- #
     ocp = prepare_ocp()
 
-    sol = ocp.solve(show_online_optim=True, show_options=dict(show_bounds=True))
+    sol = ocp.solve(show_online_optim=True, show_options={'show_bounds': True})
 
     sol.print()
     sol.animate()
