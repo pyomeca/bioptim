@@ -126,8 +126,8 @@ def test_fatigable_torque():
     np.testing.assert_almost_equal(mf_plus[:, 0], np.array((1.66068159e-01, 0)))
     np.testing.assert_almost_equal(mf_plus[:, -1], np.array((1.02023908e-02, 0)))
 
-    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-1.21286654e+00, 0)))
-    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-9.80300169e+00, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-1.21286654e00, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-9.80300169e00, 0)))
     np.testing.assert_almost_equal(tau_plus[:, 0], np.array((1.11431088e-06, 0)))
     np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
 

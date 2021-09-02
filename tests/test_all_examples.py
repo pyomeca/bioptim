@@ -98,7 +98,9 @@ def test__getting_started__custom_plotting():
     bioptim_folder = TestUtils.bioptim_folder()
     module = TestUtils.load_module(bioptim_folder + "/examples/getting_started/custom_plotting.py")
     module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod", final_time=2, n_shooting=50
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+        final_time=2,
+        n_shooting=50,
     )
 
 
@@ -140,7 +142,9 @@ def test__getting_started__example_mapping():
 def test__getting_started__example_multiphase():
     bioptim_folder = TestUtils.bioptim_folder()
     module = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_multiphase.py")
-    module.prepare_ocp(biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod", long_optim=True)
+    module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/cube.bioMod", long_optim=True
+    )
 
 
 def test__getting_started__example_optimal_time():
@@ -168,7 +172,9 @@ def test__getting_started__pendulum():
     bioptim_folder = TestUtils.bioptim_folder()
     module = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
     module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod", final_time=3, n_shooting=100
+        biorbd_model_path=bioptim_folder + "/examples/getting_started/models/pendulum.bioMod",
+        final_time=3,
+        n_shooting=100,
     )
 
 

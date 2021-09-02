@@ -154,8 +154,9 @@ def main():
     final_time = 1
     n_shooting = 20
 
-    ocp_to_track = data_to_track.prepare_ocp(biorbd_model_path=biorbd_path, final_time=final_time,
-                                             n_shooting=n_shooting-1)
+    ocp_to_track = data_to_track.prepare_ocp(
+        biorbd_model_path=biorbd_path, final_time=final_time, n_shooting=n_shooting - 1
+    )
     sol = ocp_to_track.solve()
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
     n_q = n_qdot = n_tau = biorbd_model.nbQ()
@@ -164,10 +165,10 @@ def main():
 
     symbolic_states = MX.sym("q", n_q, 1)
     markers_fun = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_states)
-    markers_ref = np.zeros((3, n_marker, n_shooting+1))
+    markers_ref = np.zeros((3, n_marker, n_shooting + 1))
     for i in range(n_shooting):
         markers_ref[:, :, i] = markers_fun(x[:n_q, i])
-    tau_ref =tau
+    tau_ref = tau
 
     ocp = prepare_ocp(
         biorbd_model,

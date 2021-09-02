@@ -462,12 +462,12 @@ def test_phase_transitions(ode_solver):
 
     # simulate
     with pytest.raises(
-            RuntimeError,
-            match=re.escape(
-                "Phase transition must have the same number of states (3) "
-                "when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
-                "please integrate with Shooting.SINGLE"
-            ),
+        RuntimeError,
+        match=re.escape(
+            "Phase transition must have the same number of states (3) "
+            "when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
+            "please integrate with Shooting.SINGLE"
+        ),
     ):
         TestUtils.simulate(sol)
 
@@ -520,7 +520,7 @@ def test_parameter_optimization(ode_solver):
         np.testing.assert_almost_equal(tau[:, -2], np.array((-10.24782316, 0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0, 0.05059018, -9.8065527 ]]).T)
+        np.testing.assert_almost_equal(gravity, np.array([[0, 0.05059018, -9.8065527]]).T)
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
@@ -533,7 +533,7 @@ def test_parameter_optimization(ode_solver):
         np.testing.assert_almost_equal(tau[:, -2], np.array((-10.24782316, 0)))
 
         # gravity parameter
-        np.testing.assert_almost_equal(gravity, np.array([[0., 0.05059018, -9.8065527]]).T)
+        np.testing.assert_almost_equal(gravity, np.array([[0.0, 0.05059018, -9.8065527]]).T)
 
     else:
         # Check objective function value

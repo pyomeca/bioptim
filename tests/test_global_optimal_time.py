@@ -181,7 +181,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver):
 
     elif ode_solver == OdeSolver.COLLOCATION:
         np.testing.assert_almost_equal(tau[:, 0], np.array((10.08290371, 0)), decimal=3)
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.25180307 , 0)), decimal=3)
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.25180307, 0)), decimal=3)
 
     elif ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(tau[:, 0], np.array((22.99666272, 0)), decimal=3)
@@ -470,7 +470,7 @@ def test_time_constraint(ode_solver):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.33802896, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-23.69200381 , 0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-23.69200381, 0)))
 
     elif ode_solver == OdeSolver.COLLOCATION:
         # Check objective function value
