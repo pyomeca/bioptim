@@ -708,7 +708,7 @@ def test_example_multiphase(ode_solver):
         TestUtils.assert_warm_start(ocp, sol)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
 def test_contact_forces_inequality_greater_than_constraint(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     contact = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_inequality_constraint.py")
@@ -717,7 +717,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver):
 
     ocp = contact.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
-        phase_time=0.3,
+        phase_time=0.1,
         n_shooting=10,
         min_bound=min_bound,
         max_bound=np.inf,
@@ -729,7 +729,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.15132909609835643)
+    np.testing.assert_almost_equal(f[0, 0], 0.19216241950659246)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -742,13 +742,13 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver):
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.2142318, 0.11786579, -0.25596094, 0.25596094)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.027221  ,  0.02358599, -0.67794882,  0.67794882)))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-1.28034999, 0.3350692, 2.64693595, -2.64693595)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.53979971,  0.43468705,  1.38612634, -1.38612634)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-33.50426941)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-15.61654842)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-33.50557304)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-29.43209257)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
@@ -757,7 +757,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
 def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
     contact = TestUtils.load_module(bioptim_folder + "/examples/getting_started/example_inequality_constraint.py")
@@ -766,7 +766,7 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
 
     ocp = contact.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
-        phase_time=0.3,
+        phase_time=0.1,
         n_shooting=10,
         min_bound=-np.inf,
         max_bound=max_bound,
@@ -778,7 +778,7 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.16913696624413754)
+    np.testing.assert_almost_equal(f[0, 0], 0.2005516965424669)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -790,14 +790,14 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.10473449, 0.07490939, -0.4917506, 0.4917506)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.00902682,  0.00820596, -0.72560094,  0.72560094)))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.89054233, 0.47700932, 2.02049847, -2.02049847)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.18616011,  0.16512913,  0.49768751, -0.49768751)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-24.36641199)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-23.53987687)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((-24.36593641)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-24.36125297)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

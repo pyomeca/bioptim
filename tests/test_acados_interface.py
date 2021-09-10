@@ -228,20 +228,20 @@ def test_acados_options(cost_type):
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/acados/pendulum.py")
     ocp = pendulum.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/acados/models/pendulum.bioMod",
-        final_time=1,
+        final_time=0.6,
         n_shooting=200,
     )
 
-    tol = [1e-1, 1e-0, 1e1]
+    tols = [1e-1, 1e1]
     iter = []
-    for i in range(3):
-        solver_options = {"nlp_solver_tol_stat": tol[i], "cost_type": cost_type}
+    for tol in tols:
+        solver_options = {"nlp_solver_tol_stat": tol, "cost_type": cost_type}
         sol = ocp.solve(solver=Solver.ACADOS, solver_options=solver_options)
         iter += [sol.iterations]
 
     # Check that tol impacted convergence
-    np.testing.assert_array_less(iter[1], iter[0])
-    np.testing.assert_array_less(iter[2], iter[1])
+    for i in range(len(tols) - 1):
+        np.testing.assert_array_less(iter[i + 1], iter[i])
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
