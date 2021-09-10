@@ -217,8 +217,7 @@ def test_integrate(use_scipy, ode_solver):
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("keep_intermediate_points", [False, True])
-@pytest.mark.parametrize("use_scipy", [False])
-def test_integrate_single_shoot(keep_intermediate_points, use_scipy, ode_solver):
+def test_integrate_single_shoot(keep_intermediate_points, ode_solver):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
@@ -233,8 +232,8 @@ def test_integrate_single_shoot(keep_intermediate_points, use_scipy, ode_solver)
 
     sol = ocp.solve()
 
-    opts = {"keep_intermediate_points": keep_intermediate_points, "use_scipy_integrator": use_scipy}
-    if ode_solver == OdeSolver.COLLOCATION and not use_scipy:
+    opts = {"keep_intermediate_points": keep_intermediate_points, "use_scipy_integrator": False}
+    if ode_solver == OdeSolver.COLLOCATION:
         with pytest.raises(RuntimeError, match="Integration with direct collocation must be not continuous"):
             sol.integrate(**opts)
         return
@@ -242,23 +241,19 @@ def test_integrate_single_shoot(keep_intermediate_points, use_scipy, ode_solver)
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
 
-    decimal = 1 if use_scipy else 8
+    decimal = 8
     for i, key in enumerate(sol.states):
         np.testing.assert_almost_equal(
             sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal
         )
 
-        if keep_intermediate_points or (ode_solver == OdeSolver.COLLOCATION and not use_scipy):
+        if keep_intermediate_points or ode_solver == OdeSolver.COLLOCATION:
             assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
         else:
-            if not (ode_solver == OdeSolver.COLLOCATION and use_scipy):
-                np.testing.assert_almost_equal(sol_integrated.states[key], sol.states[key], decimal=decimal)
+            np.testing.assert_almost_equal(sol_integrated.states[key], sol.states[key], decimal=decimal)
             assert sol_integrated.states[key].shape == (shapes[i], n_shooting + 1)
 
-        if ode_solver == OdeSolver.COLLOCATION and use_scipy:
-            assert sol.states[key].shape == (shapes[i], n_shooting * 5 + 1)
-        else:
-            assert sol.states[key].shape == (shapes[i], n_shooting + 1)
+        assert sol.states[key].shape == (shapes[i], n_shooting + 1)
 
     with pytest.raises(
         RuntimeError,
@@ -270,8 +265,7 @@ def test_integrate_single_shoot(keep_intermediate_points, use_scipy, ode_solver)
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("keep_intermediate_points", [False, True])
-@pytest.mark.parametrize("use_scipy", [True])
-def test_integrate_single_shoot_use_scipy(keep_intermediate_points, use_scipy, ode_solver):
+def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver):
     # Load pendulum
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/getting_started/pendulum.py")
@@ -286,7 +280,7 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, use_scipy, o
 
     sol = ocp.solve()
 
-    opts = {"keep_intermediate_points": keep_intermediate_points, "use_scipy_integrator": use_scipy}
+    opts = {"keep_intermediate_points": keep_intermediate_points, "use_scipy_integrator": True}
 
     sol_integrated = sol.integrate(**opts)
     shapes = (4, 2, 2)
@@ -294,51 +288,27 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, use_scipy, o
     decimal = 1  # scipy_use
 
     if ode_solver == OdeSolver.RK4:
-        if keep_intermediate_points:
-            np.testing.assert_almost_equal(
-                sol_integrated.states["q"][:, [0, -1]],
-                np.array([[0.0, -0.40229917], [0.0, 2.66577734]]),
-                decimal=decimal,
-            )
-            np.testing.assert_almost_equal(
-                sol_integrated.states["qdot"][:, [0, -1]],
-                np.array([[0.0, 4.09704146], [0.0, 4.54449186]]),
-                decimal=decimal,
-            )
-        else:
-            np.testing.assert_almost_equal(
-                sol_integrated.states["q"][:, [0, -1]],
-                np.array([[0.0, -0.40229917], [0.0, 2.66577734]]),
-                decimal=decimal,
-            )
-            np.testing.assert_almost_equal(
-                sol_integrated.states["qdot"][:, [0, -1]],
-                np.array([[0.0, 4.09704146], [0.0, 4.54449186]]),
-                decimal=decimal,
-            )
+        np.testing.assert_almost_equal(
+            sol_integrated.states["q"][:, [0, -1]],
+            np.array([[0.0, -0.40229917], [0.0, 2.66577734]]),
+            decimal=decimal,
+        )
+        np.testing.assert_almost_equal(
+            sol_integrated.states["qdot"][:, [0, -1]],
+            np.array([[0.0, 4.09704146], [0.0, 4.54449186]]),
+            decimal=decimal,
+        )
     else:
-        if keep_intermediate_points:
-            np.testing.assert_almost_equal(
-                sol_integrated.states["q"][:, [0, -1]],
-                np.array([[0.0, -0.93010486], [0.0, 1.25096783]]),
-                decimal=decimal,
-            )
-            np.testing.assert_almost_equal(
-                sol_integrated.states["qdot"][:, [0, -1]],
-                np.array([[0.0, -0.78079849], [0.0, 1.89447328]]),
-                decimal=decimal,
-            )
-        else:
-            np.testing.assert_almost_equal(
-                sol_integrated.states["q"][:, [0, -1]],
-                np.array([[0.0, -0.93010486], [0.0, 1.25096783]]),
-                decimal=decimal,
-            )
-            np.testing.assert_almost_equal(
-                sol_integrated.states["qdot"][:, [0, -1]],
-                np.array([[0.0, -0.78079849], [0.0, 1.89447328]]),
-                decimal=decimal,
-            )
+        np.testing.assert_almost_equal(
+            sol_integrated.states["q"][:, [0, -1]],
+            np.array([[0.0, -0.93010486], [0.0, 1.25096783]]),
+            decimal=decimal,
+        )
+        np.testing.assert_almost_equal(
+            sol_integrated.states["qdot"][:, [0, -1]],
+            np.array([[0.0, -0.78079849], [0.0, 1.89447328]]),
+            decimal=decimal,
+        )
 
     if keep_intermediate_points:
         assert sol_integrated.states["all"].shape == (shapes[0], n_shooting * 5 + 1)
