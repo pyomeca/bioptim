@@ -742,10 +742,10 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver):
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.027221  ,  0.02358599, -0.67794882,  0.67794882)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.027221, 0.02358599, -0.67794882, 0.67794882)))
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.53979971,  0.43468705,  1.38612634, -1.38612634)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.53979971, 0.43468705, 1.38612634, -1.38612634)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-33.50557304)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((-29.43209257)))
@@ -790,11 +790,11 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
 
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.00902682,  0.00820596, -0.72560094,  0.72560094)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((-0.00902682, 0.00820596, -0.72560094, 0.72560094)))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.18616011,  0.16512913,  0.49768751, -0.49768751)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.18616011, 0.16512913, 0.49768751, -0.49768751)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-24.36593641)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((-24.36125297)))
