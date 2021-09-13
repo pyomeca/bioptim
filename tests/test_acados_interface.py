@@ -221,8 +221,8 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
 
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_options(cost_type):
-    if platform == "win32":
-        print("Test for ACADOS on Windows is skipped")
+    if platform == "win32" or platform == "darwin":
+        print("Tests for ACADOS options on Windows and Mac are skipped")
         return
     bioptim_folder = TestUtils.bioptim_folder()
     pendulum = TestUtils.load_module(bioptim_folder + "/examples/acados/pendulum.py")
