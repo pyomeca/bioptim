@@ -136,7 +136,7 @@ def get_solver_options(solver):
 
 
 def main():
-    biorbd_model_path = "./cart_pendulum.bioMod"
+    biorbd_model_path = "models/cart_pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_model_path)
 
     solver = Solver.ACADOS  # or Solver.IPOPT

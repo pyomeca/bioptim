@@ -1,20 +1,17 @@
-version 4
+version 3
 gravity 0 -9.81 0
-
-variables
-$pendulum_mass 3
-$pendulum_height 0.05
-$pendulum_radius 0.01
-$pendulum_com 0.05
-endvariables
-
 
 // SEGMENT DEFINITION
 
 segment base
-    meshfile mesh_arm26/ground_ribs.vtp
+    meshfile mesh/ground_ribs.vtp
+    translations z
 endsegment
 
+    contact
+        parent base
+        axis z
+    endcontact
 
     // Markers
     marker    target
@@ -81,7 +78,7 @@ segment r_humerus
         0.0    0.004551    0.0
         0.0    0.0    0.013193
     com    0 -0.18049599999999999 0
-    meshfile mesh_arm26/arm_r_humerus.vtp
+    meshfile mesh/arm_r_humerus.vtp
 endsegment
 
     // Markers
@@ -93,6 +90,7 @@ endsegment
         parent    r_humerus
         position    0 -0.18049599999999999 0
     endmarker
+
 
 segment r_ulna_radius_hand_translation
     parent r_humerus
@@ -148,37 +146,8 @@ segment r_ulna_radius_hand
         0.0    0.001571    0.0
         0.0    0.0    0.020062
     com    0 -0.181479 0
-    meshfile mesh_arm26/arm_r_ulna.vtp
+    meshfile mesh/arm_r_ulna.vtp
 endsegment
-
-
-segment Weight
-    parent r_ulna_radius_hand
-    rt 0 0 0 xyz 0 -0.3  0.045
-    mass $pendulum_mass
-    inertia
-        $pendulum_mass*$pendulum_radius*$pendulum_radius/4  0 0
-        0 $pendulum_mass*$pendulum_height*$pendulum_height/12+$pendulum_mass*$pendulum_radius*$pendulum_radius/4 0
-        0 0 $pendulum_mass*$pendulum_height*$pendulum_height/12+$pendulum_mass*$pendulum_radius*$pendulum_radius/4
-    com  -$pendulum_com 0 0
-    mesh -$pendulum_com-$pendulum_height  -$pendulum_radius  -$pendulum_radius
-    mesh -$pendulum_com-$pendulum_height   $pendulum_radius  -$pendulum_radius
-    mesh -$pendulum_com+$pendulum_height   $pendulum_radius  -$pendulum_radius
-    mesh -$pendulum_com+$pendulum_height  -$pendulum_radius  -$pendulum_radius
-    mesh -$pendulum_com-$pendulum_height  -$pendulum_radius  -$pendulum_radius
-    mesh -$pendulum_com-$pendulum_height  -$pendulum_radius   $pendulum_radius
-    mesh -$pendulum_com-$pendulum_height   $pendulum_radius   $pendulum_radius
-    mesh -$pendulum_com-$pendulum_height   $pendulum_radius  -$pendulum_radius
-    mesh -$pendulum_com-$pendulum_height   $pendulum_radius   $pendulum_radius
-    mesh -$pendulum_com+$pendulum_height   $pendulum_radius   $pendulum_radius
-    mesh -$pendulum_com+$pendulum_height   $pendulum_radius  -$pendulum_radius
-    mesh -$pendulum_com+$pendulum_height   $pendulum_radius   $pendulum_radius
-    mesh -$pendulum_com+$pendulum_height  -$pendulum_radius   $pendulum_radius
-    mesh -$pendulum_com+$pendulum_height  -$pendulum_radius  -$pendulum_radius
-    mesh -$pendulum_com+$pendulum_height  -$pendulum_radius   $pendulum_radius
-    mesh -$pendulum_com-$pendulum_height  -$pendulum_radius   $pendulum_radius
-endsegment
-
 
     // Markers
     marker    r_radius_styloid
@@ -191,6 +160,7 @@ endsegment
     endmarker
 
 
+
 // MUSCLE DEFINITION
 
 // base > r_ulna_radius_hand
@@ -200,7 +170,7 @@ musclegroup base_to_r_ulna_radius_hand
 endmusclegroup
 
     muscle    TRIlong
-        Type    idealizedactuator
+        Type    hillthelenfatigable
         musclegroup    base_to_r_ulna_radius_hand
         OriginPosition    -0.053650000000000003 -0.013729999999999999 0.14723
         InsertionPosition    -0.021899999999999999 0.010460000000000001 -0.00077999999999999999
@@ -238,7 +208,7 @@ endmusclegroup
         endviapoint
 
     muscle    BIClong
-        Type    idealizedactuator
+        Type    hillthelen
         musclegroup    base_to_r_ulna_radius_hand
         OriginPosition    -0.039234999999999999 0.00347 0.14795
         InsertionPosition    0.0075100000000000002 -0.048390000000000002 0.02179
@@ -293,7 +263,7 @@ endmusclegroup
         endviapoint
 
     muscle    BICshort
-        Type    idealizedactuator
+        Type    hillthelen
         musclegroup    base_to_r_ulna_radius_hand
         OriginPosition    0.0046750000000000003 -0.01231 0.13475000000000001
         InsertionPosition    0.0075100000000000002 -0.048390000000000002 0.02179
@@ -336,7 +306,7 @@ musclegroup r_humerus_to_r_ulna_radius_hand
 endmusclegroup
 
     muscle    TRIlat
-        Type    idealizedactuator
+        Type    hillthelen
         musclegroup    r_humerus_to_r_ulna_radius_hand
         OriginPosition    -0.0059899999999999997 -0.12645999999999999 0.00428
         InsertionPosition    -0.021899999999999999 0.010460000000000001 -0.00077999999999999999
@@ -367,7 +337,7 @@ endmusclegroup
         endviapoint
 
     muscle    TRImed
-        Type    idealizedactuator
+        Type    hillthelen
         musclegroup    r_humerus_to_r_ulna_radius_hand
         OriginPosition    -0.0083800000000000003 -0.13694999999999999 -0.0090600000000000003
         InsertionPosition    -0.021899999999999999 0.010460000000000001 -0.00077999999999999999
@@ -398,7 +368,7 @@ endmusclegroup
         endviapoint
 
     muscle    BRA
-        Type    idealizedactuator
+        Type    hillthelen
         musclegroup    r_humerus_to_r_ulna_radius_hand
         OriginPosition    0.0067999999999999996 -0.1739 -0.0035999999999999999
         InsertionPosition    -0.0032000000000000002 -0.023900000000000001 0.00089999999999999998

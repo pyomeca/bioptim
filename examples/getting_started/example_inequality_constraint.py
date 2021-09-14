@@ -108,7 +108,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
 
 
 def main():
-    model_path = "../torque_driven_ocp/2segments_4dof_2contacts.bioMod"
+    model_path = "../torque_driven_ocp/models/2segments_4dof_2contacts.bioMod"
     t = 0.3
     ns = 10
     mu = 0.2

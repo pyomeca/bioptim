@@ -248,7 +248,7 @@ def main():
     print(f"Show the bounds")
     for interpolation_type in InterpolationType:
         print(f"Solving problem using {interpolation_type} bounds")
-        ocp = prepare_ocp("cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type)
+        ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type)
         sol = ocp.solve()
         print("\n")
 
@@ -257,7 +257,7 @@ def main():
 
     for interpolation_type in InterpolationType:
         print(f"Solving problem using {interpolation_type} bounds")
-        ocp = prepare_ocp("cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type)
+        ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type)
         sol = ocp.solve()
         print("\n")
 

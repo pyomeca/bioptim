@@ -133,7 +133,7 @@ def main():
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path="arm26_constant.bioMod",
+        biorbd_model_path="models/arm26_constant.bioMod",
         final_time=0.8,
         n_shooting=50,
         torque_level=1,

@@ -149,26 +149,26 @@ def main():
     torque from the solution and uses them to track. It then creates and solves this ocp and show the results
     """
 
-    biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/pendulum.bioMod"
+    biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/models/pendulum.bioMod"
     biorbd_model = biorbd.Model(biorbd_path)
-    final_time = 3
+    final_time = 1
     n_shooting = 20
 
-    ocp_to_track = data_to_track.prepare_ocp(biorbd_model_path=biorbd_path, final_time=3, n_shooting=19)
+    ocp_to_track = data_to_track.prepare_ocp(
+        biorbd_model_path=biorbd_path, final_time=final_time, n_shooting=n_shooting
+    )
     sol = ocp_to_track.solve()
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    n_q = n_qdot = n_tau = biorbd_model.nbQ()
+    n_q = biorbd_model.nbQ()
     n_marker = biorbd_model.nbMarkers()
     x = np.concatenate((q, qdot))
-    u = tau
 
     symbolic_states = MX.sym("q", n_q, 1)
-    symbolic_controls = MX.sym("u", n_tau, 1)
     markers_fun = biorbd.to_casadi_func("ForwardKin", biorbd_model.markers, symbolic_states)
     markers_ref = np.zeros((3, n_marker, n_shooting + 1))
-    for i in range(n_shooting):
+    for i in range(n_shooting + 1):
         markers_ref[:, :, i] = markers_fun(x[:n_q, i])
-    tau_ref = tau
+    tau_ref = tau[:, :-1]
 
     ocp = prepare_ocp(
         biorbd_model,
@@ -216,7 +216,7 @@ def main():
     sol = ocp.solve(show_online_optim=True)
 
     # --- Show results --- #
-    sol.animate()
+    sol.animate(n_frames=100)
 
 
 if __name__ == "__main__":

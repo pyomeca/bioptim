@@ -127,7 +127,7 @@ def main():
     Create and solve a program. Then it saves it using the .bo method, and then using te stand_alone option.
     """
 
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=100, n_threads=4)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=100, n_threads=4)
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=False)

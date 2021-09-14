@@ -14,7 +14,7 @@ def test_symmetry_by_mapping(ode_solver):
     sym = TestUtils.load_module(bioptim_folder + "/examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py")
 
     ocp = sym.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/symmetrical_torque_driven_ocp/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
     )
     sol = ocp.solve()
@@ -59,7 +59,7 @@ def test_symmetry_by_constraint(ode_solver):
     sym = TestUtils.load_module(bioptim_folder + "/examples/symmetrical_torque_driven_ocp/symmetry_by_constraint.py")
 
     ocp = sym.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/symmetrical_torque_driven_ocp/cubeSym.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/symmetrical_torque_driven_ocp/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
     )
     sol = ocp.solve()

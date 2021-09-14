@@ -8,7 +8,7 @@ def test_fatigable_muscles():
     bioptim_folder = TestUtils.bioptim_folder()
     fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/static_arm_with_fatigue.py")
 
-    model_path = f"{bioptim_folder}/examples/fatigue/arm26_constant.bioMod"
+    model_path = f"{bioptim_folder}/examples/fatigue/models/arm26_constant.bioMod"
     ocp = fatigue.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
@@ -85,14 +85,14 @@ def test_fatigable_torque():
     bioptim_folder = TestUtils.bioptim_folder()
     fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
 
-    model_path = f"{bioptim_folder}/examples/fatigue/pendulum.bioMod"
-    ocp = fatigue.prepare_ocp(biorbd_model_path=model_path, final_time=3, n_shooting=30, use_sx=False)
+    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
+    ocp = fatigue.prepare_ocp(biorbd_model_path=model_path, final_time=1, n_shooting=30, use_sx=False)
     sol = ocp.solve()
 
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 78.93205116298246)
+    np.testing.assert_almost_equal(f[0, 0], 42.36278033654877)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -113,22 +113,22 @@ def test_fatigable_torque():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((6.43184345e-02, 0)))
-    np.testing.assert_almost_equal(mr_minus[:, 0], np.array((0.09384976, 1)))
-    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.9117385, 1)))
-    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((3.87370845e-01, 0)))
-    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((2.39430682e-02, 0)))
-    np.testing.assert_almost_equal(ma_plus[:, 0], np.array((1, 0)))
-    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((0, 0)))
-    np.testing.assert_almost_equal(mr_plus[:, 0], np.array((0.01424636, 1)))
-    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.99951522, 1)))
-    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((1.26659198e-01, 0)))
-    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((4.84779734e-04, 0)))
+    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((2.7617393e-02, 0)))
+    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((9.2887246e-02, 0)))
+    np.testing.assert_almost_equal(mr_minus[:, 0], np.array((0.05456142, 1)))
+    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.88806261, 1)))
+    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((3.09189806e-01, 8.33651471e-08)))
+    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((1.90501432e-02, 2.08896043e-12)))
+    np.testing.assert_almost_equal(ma_plus[:, 0], np.array((4.42636375e-01, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((2.9294882e-06, 0)))
+    np.testing.assert_almost_equal(mr_plus[:, 0], np.array((0.02011347, 1)))
+    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.98979468, 1)))
+    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((1.66068159e-01, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((1.02023908e-02, 0)))
 
-    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-6.77598216, 0)))
-    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((5.66844956, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-1.21286654e00, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-9.80300169e00, 0)))
+    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((1.11431088e-06, 0)))
     np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
 
     # save and load

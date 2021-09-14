@@ -31,7 +31,7 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "cubeSym.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()
+    biorbd_model_path: str = "models/cubeSym.bioMod", ode_solver: OdeSolver = OdeSolver.RK4()
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -115,8 +115,7 @@ def main():
     ocp = prepare_ocp()
 
     # Objective and constraints plots
-    ocp.add_plot_penalty("objectives")
-    ocp.add_plot_penalty("constraints")
+    ocp.add_plot_penalty()
 
     # --- Solve the program --- #
     sol = ocp.solve(show_online_optim=True)

@@ -228,7 +228,7 @@ def main():
     """
 
     # Define the problem
-    biorbd_model = biorbd.Model("arm26.bioMod")
+    biorbd_model = biorbd.Model("models/arm26.bioMod")
     final_time = 0.5
     n_shooting_points = 50
     use_residual_torque = True
@@ -239,7 +239,7 @@ def main():
     )
 
     # Track these data
-    biorbd_model = biorbd.Model("arm26.bioMod")  # To allow for non free variable, the model must be reloaded
+    biorbd_model = biorbd.Model("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
         biorbd_model,
         final_time,

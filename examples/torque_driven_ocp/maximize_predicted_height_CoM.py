@@ -145,7 +145,7 @@ def main():
     Prepares and solves a maximal velocity at center of mass program and animates it
     """
 
-    model_path = "2segments_4dof_2contacts.bioMod"
+    model_path = "models/2segments_4dof_2contacts.bioMod"
     t = 0.5
     ns = 20
     ocp = prepare_ocp(

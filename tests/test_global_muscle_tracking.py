@@ -16,7 +16,7 @@ def test_muscle_activations_and_states_tracking(ode_solver):
     tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_activations_tracker.py")
 
     # Define the problem
-    model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.1
     n_shooting = 5
@@ -132,7 +132,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver):
     tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_activations_tracker.py")
 
     # Define the problem
-    model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.1
     n_shooting = 5
@@ -235,7 +235,7 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
     tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py")
 
     # Define the problem
-    model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.1
     n_shooting = 5
@@ -374,7 +374,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     tracker = TestUtils.load_module(bioptim_folder + "/examples/muscle_driven_ocp/muscle_excitations_tracker.py")
 
     # Define the problem
-    model_path = bioptim_folder + "/examples/muscle_driven_ocp/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod"
     biorbd_model = biorbd.Model(model_path)
     final_time = 0.1
     n_shooting = 5

@@ -108,14 +108,16 @@ def main():
     If pendulum is run as a script, it will perform the optimization using ACADOS and animates it
     """
 
-    ocp = prepare_ocp(biorbd_model_path="pendulum.bioMod", final_time=3, n_shooting=41)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=100)
 
     # --- Solve the program --- #
     sol = ocp.solve(solver=Solver.ACADOS)
     sol.print()
 
     # --- Show results --- #
+    sol.print()
     sol.graphs()
+    sol.animate()
 
 
 if __name__ == "__main__":

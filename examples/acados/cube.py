@@ -52,7 +52,7 @@ def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), u
 
 
 def main():
-    model_path = "cube.bioMod"
+    model_path = "models/cube.bioMod"
     ns = 30
     tf = 2
     ocp = prepare_ocp(biorbd_model_path=model_path, n_shooting=ns, tf=tf)

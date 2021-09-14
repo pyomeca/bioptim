@@ -4,23 +4,13 @@ gravity 0 -9.81 0
 // SEGMENT DEFINITION
 
 segment base
-    meshfile vtp/ground_ribs.vtp
-    translations z
+    // meshfile mesh/ground_ribs.vtp
 endsegment
-
-    contact
-        parent base
-        axis z
-    endcontact
 
     // Markers
     marker    target
         parent    base
         position    0.15 0.15 0.17
-    endmarker
-    marker    r_acromion
-        parent    base
-        position    -0.01256 0.04 0.17
     endmarker
 
 
@@ -44,7 +34,7 @@ segment r_humerus_rotation1
         0.05894291073968768    0.0    0.9982613551938856    0.0
         0.0    0.0    0.0    1.0
     rotations z
-    rangesQ	-1 pi
+    rangesQ	-2*pi 2*pi
 endsegment
 
 
@@ -52,7 +42,7 @@ segment r_humerus_rotation2
     parent r_humerus_rotation1
 endsegment
 
-
+// Segment
 segment r_humerus_rotation3
     parent r_humerus_rotation2
     RTinMatrix    1
@@ -78,18 +68,8 @@ segment r_humerus
         0.0    0.004551    0.0
         0.0    0.0    0.013193
     com    0 -0.18049599999999999 0
-    meshfile vtp/arm_r_humerus.vtp
+    meshfile mesh/arm_r_humerus.vtp
 endsegment
-
-    // Markers
-    marker    r_humerus_epicondyle
-        parent    r_humerus
-        position    0.0050000000000000001 -0.29039999999999999 0.029999999999999999
-    endmarker
-    marker    COM_arm
-        parent    r_humerus
-        position    0 -0.18049599999999999 0
-    endmarker
 
 
 segment r_ulna_radius_hand_translation
@@ -146,14 +126,9 @@ segment r_ulna_radius_hand
         0.0    0.001571    0.0
         0.0    0.0    0.020062
     com    0 -0.181479 0
-    meshfile vtp/arm_r_ulna.vtp
+    meshfile mesh/arm_r_ulna.vtp
 endsegment
 
-    // Markers
-    marker    r_radius_styloid
-        parent    r_ulna_radius_hand
-        position    -0.0011000000000000001 -0.23558999999999999 0.094299999999999995
-    endmarker
     marker    COM_hand
         parent    r_ulna_radius_hand
         position    0 -0.181479 0
@@ -163,7 +138,6 @@ endsegment
 
 // MUSCLE DEFINITION
 
-// base > r_ulna_radius_hand
 musclegroup base_to_r_ulna_radius_hand
     OriginParent        base
     InsertionParent        r_ulna_radius_hand
@@ -179,6 +153,7 @@ endmusclegroup
         tendonSlackLength    0.14299999999999999
         pennationAngle    0.20943951
         maxVelocity    10
+	
         fatigueParameters
             Type Xia
             fatiguerate 0.01

@@ -101,7 +101,7 @@ def main():
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path="cube_and_line.bioMod",
+        biorbd_model_path="models/cube_and_line.bioMod",
         n_shooting=30,
         final_time=1,
     )
