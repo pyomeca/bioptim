@@ -24,6 +24,8 @@ from bioptim import (
     FatigueList,
     XiaFatigue,
     XiaTauFatigue,
+    MichaudFatigue,
+    MichaudTauFatigue,
     ObjectiveFcn,
     VariableType,
 )
@@ -33,6 +35,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
+    fatigue_type: str,
     use_sx: bool = True,
 ) -> OptimalControlProgram:
     """
@@ -46,6 +49,8 @@ def prepare_ocp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
+    fatigue_type: str
+        The type of dynamics to apply ("xia" or "michaud")
     use_sx: bool
         If the program should be built from SX (True) or MX (False)
 
@@ -64,13 +69,24 @@ def prepare_ocp(
     # Fatigue parameters
     fatigue_dynamics = FatigueList()
     for i in range(n_tau):
-        fatigue_dynamics.add(
-            XiaTauFatigue(
-                XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_min),
-                XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_max),
-            ),
-            state_only=False,
-        )
+        if fatigue_type == "xia":
+            fatigue_dynamics.add(
+                XiaTauFatigue(
+                    XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_min),
+                    XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_max),
+                ),
+                state_only=False,
+            )
+        elif fatigue_type == "michaud":
+            fatigue_dynamics.add(
+                MichaudTauFatigue(
+                    MichaudFatigue(LD=100, LR=100, F=5, R=10, fatigue_threshold=0.15, L=0.07, scale=tau_min),
+                    MichaudFatigue(LD=100, LR=100, F=5, R=10, fatigue_threshold=0.15, L=0.07, scale=tau_max),
+                ),
+                state_only=False,
+            )
+        else:
+            raise ValueError("fatigue_type not implemented")
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=fatigue_dynamics, expand=True)
@@ -114,7 +130,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30, fatigue_type="xia")
 
     # --- Print ocp structure --- #
     ocp.add_plot_penalty()

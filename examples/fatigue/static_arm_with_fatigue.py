@@ -25,6 +25,8 @@ from bioptim import (
     Bounds,
     XiaFatigue,
     XiaTauFatigue,
+    MichaudFatigue,
+    MichaudTauFatigue,
     Node,
     Axis,
     VariableType,
@@ -35,6 +37,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
+    fatigue_type: str,
     ode_solver: OdeSolver = OdeSolver.COLLOCATION(),
     torque_level: int = 0,
 ) -> OptimalControlProgram:
@@ -48,6 +51,8 @@ def prepare_ocp(
         The time at the final node
     n_shooting: int
         The number of shooting points
+    fatigue_type: str
+        The type of dynamics to apply ("xia" or "michaud")
     ode_solver: OdeSolver
         The ode solver to use
     torque_level: int
@@ -66,16 +71,32 @@ def prepare_ocp(
     # Define fatigue parameters for each muscle and residual torque
     fatigue_dynamics = FatigueList()
     for i in range(n_muscles):
-        fatigue_dynamics.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
+        if fatigue_type == "xia":
+            fatigue_dynamics.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
+        elif fatigue_type == "michaud":
+            fatigue_dynamics.add(MichaudFatigue(LD=10, LR=10, F=0.01, R=0.002, fatigue_threshold=0.15, L=0.07), state_only=False)
+        else:
+            raise ValueError("fatigue_type not implemented")
     if torque_level >= 2:
         for i in range(n_tau):
-            fatigue_dynamics.add(
-                XiaTauFatigue(
-                    XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_min),
-                    XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_max),
-                ),
-                state_only=False,
-            )
+            if fatigue_type == "xia":
+                fatigue_dynamics.add(
+                    XiaTauFatigue(
+                        XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_min),
+                        XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_max),
+                    ),
+                    state_only=False,
+                )
+            elif fatigue_type == "michaud":
+                fatigue_dynamics.add(
+                    MichaudTauFatigue(
+                        MichaudFatigue(LD=10, LR=10, F=5, R=10, fatigue_threshold=0.15, L=0.07, scale=tau_min),
+                        MichaudFatigue(LD=10, LR=10, F=5, R=10, fatigue_threshold=0.15, L=0.07, scale=tau_max),
+                    ),
+                    state_only=False,
+                )
+            else:
+                raise ValueError("fatigue_type not implemented")
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue_dynamics, with_torque=torque_level > 0)
@@ -137,6 +158,7 @@ def main():
         biorbd_model_path="models/arm26_constant.bioMod",
         final_time=0.8,
         n_shooting=50,
+        fatigue_type="michaud",
         torque_level=1,
     )
 
