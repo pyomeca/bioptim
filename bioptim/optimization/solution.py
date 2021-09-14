@@ -684,7 +684,7 @@ class Solution:
 
         if isinstance(n_frames, int):
             data_states, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
-            t_all = [np.concatenate(t_all)]
+            t_all = [np.concatenate((np.concatenate([_t[:-1] for _t in t_all]), [t_all[-1][-1]]))]
 
             n_frames = [n_frames]
             out.is_merged = True

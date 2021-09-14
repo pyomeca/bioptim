@@ -8,7 +8,17 @@ class MichaudFatigue(XiaFatigue):
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, LD: float, LR: float, F: float, R: float, fatigue_threshold: float, L: float, S: float = 100, scale: float = 1):
+    def __init__(
+        self,
+        LD: float,
+        LR: float,
+        F: float,
+        R: float,
+        fatigue_threshold: float,
+        L: float,
+        S: float = 100,
+        scale: float = 1,
+    ):
         """
         Parameters
         ----------
