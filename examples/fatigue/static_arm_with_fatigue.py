@@ -74,7 +74,7 @@ def prepare_ocp(
                     XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_min),
                     XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_max),
                 ),
-                state_only=True,
+                state_only=False,
             )
 
     # Dynamics
@@ -82,6 +82,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles")
     objective_functions.add(
         ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, first_marker="target", second_marker="COM_hand", weight=0.01

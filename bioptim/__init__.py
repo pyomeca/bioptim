@@ -167,6 +167,7 @@ from .optimization.receding_horizon_optimization import MovingHorizonEstimator, 
 from .optimization.receding_horizon_optimization import (
     CyclicNonlinearModelPredictiveControl,
     CyclicMovingHorizonEstimator,
+    MultiCyclicNonlinearModelPredictiveControl,
 )
 from .optimization.parameters import ParameterList
 from .optimization.solution import Solution

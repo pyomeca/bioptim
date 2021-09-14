@@ -369,7 +369,10 @@ class OptimizationVector:
             for k in range(nlp.ns + 1):
                 for p in range(repeat if k != nlp.ns else 1):
                     span = slice(k * outer_offset + p * nx, k * outer_offset + (p + 1) * nx)
-                    point = k if k != 0 else 0 if p == 0 else 1
+                    if nlp.x_init.type == InterpolationType.EACH_FRAME:
+                        point = k * repeat + p
+                    else:
+                        point = k if k != 0 else 0 if p == 0 else 1
                     x_init.init[span, 0] = nlp.x_init.init.evaluate_at(shooting_point=point)
 
             # For controls
