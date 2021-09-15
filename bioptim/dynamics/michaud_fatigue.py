@@ -1,4 +1,4 @@
-from casadi import vertcat, lt, gt, if_else
+from casadi import vertcat, lt, gt, if_else, logic_and
 
 from .xia_fatigue import XiaFatigue, XiaTauFatigue
 
@@ -16,7 +16,7 @@ class MichaudFatigue(XiaFatigue):
         R: float,
         fatigue_threshold: float,
         L: float,
-        S: float = 100,
+        S: float = 1,
         scale: float = 1,
     ):
         """
@@ -40,7 +40,8 @@ class MichaudFatigue(XiaFatigue):
             The scaling factor to convert so input / scale => TL
         """
 
-        super(MichaudFatigue, self).__init__(LD, LR, F, R, S, scale)
+        super(MichaudFatigue, self).__init__(LD, LR, F, R, scale)
+        self.S = S
         self.L = L
         self.fatigue_threshold = fatigue_threshold
 
@@ -52,11 +53,12 @@ class MichaudFatigue(XiaFatigue):
             self.LR * (target_load - ma),
         )
 
-        fatigue_load = if_else(lt(mf, 0), 0, if_else(gt(mf, 1), 0, self.L * (target_load - self.fatigue_threshold)))
+        fatigue_level = target_load - self.fatigue_threshold
+        target_load_fatigue = if_else(logic_and(gt(mf, 0), lt(mf, 1)), self.L * fatigue_level, 0)
 
-        ma_dot = c - self.F * ma
-        mr_dot = -c + self.R * mf - fatigue_load
-        mf_dot = self.S * (1 - (ma + mr + mf))
+        ma_dot = c - self.F * ma - target_load_fatigue  # * (1 - mf)
+        mr_dot = -c + self.R * mf
+        mf_dot = self.F * ma + target_load_fatigue - self.R * mf + self.S * (1 - (ma + mr + mf))
         return vertcat(ma_dot, mr_dot, mf_dot)
 
 

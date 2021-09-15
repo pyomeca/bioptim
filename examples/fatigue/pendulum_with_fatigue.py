@@ -80,8 +80,12 @@ def prepare_ocp(
         elif fatigue_type == "michaud":
             fatigue_dynamics.add(
                 MichaudTauFatigue(
-                    MichaudFatigue(LD=100, LR=100, F=5, R=10, fatigue_threshold=0.15, L=0.07, scale=tau_min),
-                    MichaudFatigue(LD=100, LR=100, F=5, R=10, fatigue_threshold=0.15, L=0.07, scale=tau_max),
+                    MichaudFatigue(
+                        LD=400, LR=400, F=0.008, R=0.002, fatigue_threshold=0.2, L=0.07, S=10, scale=tau_min
+                    ),
+                    MichaudFatigue(
+                        LD=400, LR=400, F=0.008, R=0.002, fatigue_threshold=0.2, L=0.07, S=10, scale=tau_max
+                    ),
                 ),
                 state_only=False,
             )
@@ -96,8 +100,9 @@ def prepare_ocp(
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics))
-    x_bounds[[5, 11], :] = 0  # The rotation dof is passive (fatigue_ma = 0)
-    x_bounds[[7, 13], :] = 1  # The rotation dof is passive (fatigue_mr = 1)
+    x_bounds[[5, 11], 0] = 0  # The rotation dof is passive (fatigue_ma = 0)
+    if fatigue_type == "xia":
+        x_bounds[[7, 13], 0] = 1  # The rotation dof is passive (fatigue_mr = 1)
 
     # Initial guess
     n_q = biorbd_model.nbQ()
@@ -130,7 +135,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30, fatigue_type="xia")
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30, fatigue_type="michaud")
 
     # --- Print ocp structure --- #
     ocp.add_plot_penalty()

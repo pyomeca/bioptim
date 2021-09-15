@@ -74,7 +74,9 @@ def prepare_ocp(
         if fatigue_type == "xia":
             fatigue_dynamics.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
         elif fatigue_type == "michaud":
-            fatigue_dynamics.add(MichaudFatigue(LD=10, LR=10, F=0.01, R=0.002, fatigue_threshold=0.15, L=0.07), state_only=False)
+            fatigue_dynamics.add(
+                MichaudFatigue(LD=10, LR=10, F=0.01, R=0.002, fatigue_threshold=0.15, L=0.07), state_only=False
+            )
         else:
             raise ValueError("fatigue_type not implemented")
     if torque_level >= 2:

@@ -9,7 +9,7 @@ class XiaFatigue(FatigueModel):
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, LD: float, LR: float, F: float, R: float, S: float = 100, scale: float = 1):
+    def __init__(self, LD: float, LR: float, F: float, R: float, scale: float = 1):
         """
         Parameters
         ----------
@@ -21,8 +21,6 @@ class XiaFatigue(FatigueModel):
             Joint fibers recovery rate
         R: float
             Joint fibers relaxation rate
-        S: float
-            Stabilization factor so: ma + mr + mf => 1
         scale: float
             The scaling factor to convert so input / scale => TL
         """
@@ -32,7 +30,6 @@ class XiaFatigue(FatigueModel):
         self.LD = LD
         self.F = F
         self.R = R
-        self.S = S
         self.scale = scale
 
     @staticmethod
@@ -64,7 +61,7 @@ class XiaFatigue(FatigueModel):
         )
         ma_dot = c - self.F * ma
         mr_dot = -c + self.R * mf
-        mf_dot = self.F * ma - self.R * mf + self.S * (1 - (ma + mr + mf))
+        mf_dot = self.F * ma - self.R * mf
         return vertcat(ma_dot, mr_dot, mf_dot)
 
     def _get_target_load(self, nlp, controls, index):
