@@ -1,9 +1,5 @@
-from typing import Union, Any
-
-import biorbd_casadi as biorbd
-
 from .path_conditions import Bounds, InitialGuess
-from ..dynamics.fatigue_dynamics import FatigueList
+from ..dynamics.fatigue.fatigue_dynamics import FatigueList
 from ..misc.enums import VariableType
 
 

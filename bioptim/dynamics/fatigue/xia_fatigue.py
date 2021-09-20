@@ -1,6 +1,6 @@
 from casadi import vertcat, lt, gt, if_else
 
-from .dynamics_functions import DynamicsFunctions
+from ..dynamics_functions import DynamicsFunctions
 from .fatigue_dynamics import FatigueModel, TauFatigue
 
 
@@ -52,7 +52,8 @@ class XiaFatigue(FatigueModel):
     def dynamics_suffix() -> str:
         return "ma"
 
-    def apply_dynamics(self, target_load, ma, mr, mf):
+    def apply_dynamics(self, target_load, *states):
+        ma, mr, mf = states
         # Implementation of Xia dynamics
         c = if_else(
             lt(ma, target_load),

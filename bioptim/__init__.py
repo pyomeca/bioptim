@@ -148,9 +148,9 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 from .misc.__version__ import __version__
 from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
 from .dynamics.dynamics_functions import DynamicsFunctions
-from .dynamics.fatigue_dynamics import FatigueList
-from .dynamics.xia_fatigue import XiaFatigue, XiaTauFatigue
-from .dynamics.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
+from .dynamics.fatigue.fatigue_dynamics import FatigueList
+from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue
+from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.ode_solver import OdeSolver
 from .interfaces.biorbd_interface import BiorbdInterface
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint

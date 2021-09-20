@@ -5,7 +5,7 @@ from casadi import MX, vertcat, Function
 import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
-from .fatigue_dynamics import FatigueList
+from .fatigue.fatigue_dynamics import FatigueList
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds

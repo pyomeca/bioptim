@@ -2,7 +2,7 @@ from typing import Union
 
 from casadi import horzcat, vertcat, MX, SX
 
-from .fatigue_dynamics import FatigueList
+from .fatigue.fatigue_dynamics import FatigueList
 from ..optimization.optimization_variable import OptimizationVariable
 from ..optimization.non_linear_program import NonLinearProgram
 
