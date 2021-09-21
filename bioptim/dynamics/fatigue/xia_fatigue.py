@@ -41,6 +41,10 @@ class XiaFatigue(FatigueModel):
         return ["ma", "mr", "mf"]
 
     @staticmethod
+    def color() -> list:
+        return ["tab:green", "tab:orange", "tab:red"]
+
+    @staticmethod
     def default_initial_guess() -> list:
         return [0, 1, 0]
 

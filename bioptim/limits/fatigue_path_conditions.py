@@ -8,7 +8,7 @@ class FatigueBounds(Bounds):
     Specialized Bounds that reads a model to automatically extract fatigue state bounds
     """
 
-    def __init__(self, fatigue: FatigueList, variable_type=VariableType.STATES):
+    def __init__(self, fatigue: FatigueList, variable_type=VariableType.STATES, fix_first_frame=False):
         """
         Parameters
         ----------
@@ -53,6 +53,9 @@ class FatigueBounds(Bounds):
                         x_max += [1]
 
         super(FatigueBounds, self).__init__(min_bound=x_min, max_bound=x_max)
+
+        if fix_first_frame:
+            self[:, 0] = FatigueInitialGuess(fatigue, variable_type).init[:, 0]
 
 
 class FatigueInitialGuess(InitialGuess):

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from casadi import MX
 
-from ..misc.options import UniquePerPhaseOptionList, OptionDict, OptionGeneric
+from ...misc.options import UniquePerPhaseOptionList, OptionDict, OptionGeneric
 
 
 class FatigueModel(ABC):
@@ -20,6 +20,13 @@ class FatigueModel(ABC):
     def suffix() -> list:
         """
         The type of Fatigue
+        """
+        pass
+
+    @staticmethod
+    def color() -> list:
+        """
+        The coloring when drawn
         """
         pass
 
@@ -87,6 +94,13 @@ class TauFatigue(FatigueModel, ABC):
     @staticmethod
     def type() -> str:
         return "tau"
+
+    @staticmethod
+    def color() -> list:
+        """
+        The color to be draw
+        """
+        return ["tab:orange", "tab:green"]
 
     def dynamics(self, dxdt, nlp, index, states, controls):
         for suffix in self.suffix():

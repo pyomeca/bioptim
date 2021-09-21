@@ -75,7 +75,8 @@ def prepare_ocp(
             fatigue_dynamics.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
         elif fatigue_type == "michaud":
             fatigue_dynamics.add(
-                MichaudFatigue(LD=10, LR=10, F=0.01, R=0.002, fatigue_threshold=0.15, L=0.07), state_only=False
+                MichaudFatigue(
+                    LD=100, LR=100, F=0.005, R=0.005, fatigue_threshold=0.2, L=0.001, S=10), state_only=True
             )
         else:
             raise ValueError("fatigue_type not implemented")
@@ -123,7 +124,7 @@ def prepare_ocp(
 
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, 0] = (0.07, 1.4, 0, 0)
-    x_bounds.concatenate(FatigueBounds(fatigue_dynamics))
+    x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
 
     x_init = InitialGuess([1.57] * biorbd_model.nbQ() + [0] * biorbd_model.nbQdot())
     x_init.concatenate(FatigueInitialGuess(fatigue_dynamics))

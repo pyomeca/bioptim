@@ -473,8 +473,8 @@ class ConfigureProblem:
             # Prepare the plot that will combine everything
             n_tau = len(name_tau)
             tau_legend = [f"tau_{i}" for i in name_tau]
-            tau_color = ["tab:orange", "tab:green"]
-            fatigue_tau_color = ["tab:green", "tab:orange", "tab:red"]
+            tau_color = fatigue_tau[0].model.color()
+            fatigue_tau_color = getattr(fatigue_tau[0].model, fatigue_tau.suffix[0]).color()
             fatigue_mod = [-1, 1]
             nlp.plot[f"tau_controls"] = CustomPlot(
                 lambda t, x, u, p: u[:n_tau, :] * np.nan, plot_type=PlotType.STEP, legend=tau_legend
@@ -590,13 +590,13 @@ class ConfigureProblem:
 
             # Prepare the plot that will combine everything
             n_mus = len(muscle_names)
-            fatigue_color = ["tab:green", "tab:orange", "tab:red"]
             nlp.plot[f"fatigue_muscles"] = CustomPlot(
                 lambda t, x, u, p: x[:n_mus, :] * np.nan,
                 plot_type=PlotType.INTEGRATED,
                 legend=muscle_names,
                 bounds=Bounds(0, 1),
             )
+            fatigue_color = fatigue["muscles"][0].model.color()
 
             if len(fatigue["muscles"]) != len(muscle_names):
                 raise NotImplementedError("Fatiguing a subset of muscles is not supported yet")

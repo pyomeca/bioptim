@@ -50,8 +50,12 @@ class MichaudFatigue(XiaFatigue):
         return ["ma", "mr", "mf", "mf_long"]
 
     @staticmethod
+    def color() -> list:
+        return ["tab:green", "tab:orange", "tab:red", "tab:brown"]
+
+    @staticmethod
     def default_initial_guess() -> list:
-        return [0, 0.5, 0, 0.5]
+        return [0, 1, 0, 0]
 
     @staticmethod
     def default_bounds() -> list:
@@ -67,8 +71,7 @@ class MichaudFatigue(XiaFatigue):
             self.LR * (target_load - ma),
         )
 
-        fatigue_load = target_load - self.fatigue_threshold
-        fatigue_dyn = self.L * if_else(gt(fatigue_load, 0), 1 - mf_long, -mf_long)
+        fatigue_dyn = self.L * if_else(gt(target_load - self.fatigue_threshold, 0), 1 - mf_long, -mf_long)
 
         # The fatigue_load should be separated between ma/mr (if >0 or <0),
         # but since LD >> L, we can save 2 if_else by putting everything on ma

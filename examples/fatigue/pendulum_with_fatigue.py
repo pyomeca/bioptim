@@ -81,10 +81,10 @@ def prepare_ocp(
             fatigue_dynamics.add(
                 MichaudTauFatigue(
                     MichaudFatigue(
-                        LD=400, LR=400, F=0.008, R=0.002, fatigue_threshold=0.2, L=0.07, S=10, scale=tau_min
+                        LD=100, LR=100, F=0.005, R=0.005, fatigue_threshold=0.2, L=0.001, S=10, scale=tau_min
                     ),
                     MichaudFatigue(
-                        LD=400, LR=400, F=0.008, R=0.002, fatigue_threshold=0.2, L=0.07, S=10, scale=tau_max
+                        LD=100, LR=100, F=0.005, R=0.005, fatigue_threshold=0.2, L=0.001, S=10, scale=tau_max
                     ),
                 ),
                 state_only=False,
@@ -99,7 +99,7 @@ def prepare_ocp(
     x_bounds = QAndQDotBounds(biorbd_model)
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
-    x_bounds.concatenate(FatigueBounds(fatigue_dynamics))
+    x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
     x_bounds[[5, 11], 0] = 0  # The rotation dof is passive (fatigue_ma = 0)
     if fatigue_type == "xia":
         x_bounds[[7, 13], 0] = 1  # The rotation dof is passive (fatigue_mr = 1)
@@ -133,7 +133,7 @@ def main():
     """
     If pendulum is run as a script, it will perform the optimization and animates it
     """
-
+    bioviz.Viz("/home/pariterre/Programmation/JumperOCP/models/jumper1contacts.bioMod").exec()
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30, fatigue_type="michaud")
 
