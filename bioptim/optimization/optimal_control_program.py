@@ -329,6 +329,7 @@ class OptimalControlProgram:
             self.cx = MX
 
         # Declare optimization variables
+        self.program_changed = True
         self.J = []
         self.J_internal = []
         self.g = []
@@ -1089,3 +1090,5 @@ class OptimalControlProgram:
         pen = new_penalty.type.get_type()
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
+
+        self.program_changed = True

@@ -100,8 +100,10 @@ examples/sandbox
 *.bob
 *.ogv
 
-# Remove ACADOS compilation folder
+# Remove ACADOS and ipopt compilation folder
 c_generated_code
+*.c
+*.o
 *.json
 
 # Remove graphviz files
