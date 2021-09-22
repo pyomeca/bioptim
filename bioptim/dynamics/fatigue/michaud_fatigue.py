@@ -71,12 +71,11 @@ class MichaudFatigue(XiaFatigue):
             self.LR * (target_load - ma),
         )
 
-        fatigue_dyn = self.L * if_else(gt(target_load - self.fatigue_threshold, 0), 1 - mf_long, -mf_long)
+        fatigue_load = target_load - self.fatigue_threshold
+        fatigue_dyn = self.L * if_else(gt(fatigue_load, 0), 1 - mf_long, -mf_long)
 
-        # The fatigue_load should be separated between ma/mr (if >0 or <0),
-        # but since LD >> L, we can save 2 if_else by putting everything on ma
-        ma_dot = c - self.F * ma - fatigue_dyn  # - if_else(gt(fatigue_load, 0), fatigue_dyn, 0)
-        mr_dot = -c + self.R * mf               # - if_else(lt(fatigue_load, 0), fatigue_dyn, 0)
+        ma_dot = c - self.F * ma - if_else(gt(fatigue_load, 0), fatigue_dyn, 0)
+        mr_dot = -c + self.R * mf - if_else(lt(fatigue_load, 0), fatigue_dyn, 0)
         mf_dot = self.F * ma - self.R * mf
         mf_long_dot = fatigue_dyn + self.S * (1 - ma - mr - mf - mf_long)
 

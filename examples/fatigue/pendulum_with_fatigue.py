@@ -133,7 +133,7 @@ def main():
     """
     If pendulum is run as a script, it will perform the optimization and animates it
     """
-    bioviz.Viz("/home/pariterre/Programmation/JumperOCP/models/jumper1contacts.bioMod").exec()
+
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30, fatigue_type="michaud")
 
