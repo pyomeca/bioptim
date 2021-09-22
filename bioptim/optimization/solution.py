@@ -1,3 +1,4 @@
+import time
 from typing import Any, Union
 from copy import deepcopy
 
@@ -8,6 +9,7 @@ from scipy.integrate import solve_ivp
 from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
+from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, Solver
 from ..misc.utils import check_version
@@ -624,13 +626,22 @@ class Solution:
 
                     else:
                         if keep_intermediate_points:
-                            integrated = np.array(nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xall"])
+                            if isinstance(nlp.ode_solver, OdeSolver.CVODES):
+                                raise NotImplementedError("keep_intermediate_points is not implemented with CVODES")
+                            else:
+                                integrated = np.array(nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xall"])
                             cols_in_out = [s * n_steps, (s + 1) * n_steps]
                         else:
-                            integrated = np.concatenate(
-                                (x0[:, np.newaxis], nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xf"]),
-                                axis=1,
-                            )
+                            if isinstance(nlp.ode_solver, OdeSolver.CVODES):
+                                integrated = np.concatenate(
+                                    (x0[:, np.newaxis], nlp.dynamics[s](x0=x0, p=u)["xf"]),
+                                    axis=1,
+                                )
+                            else:
+                                integrated = np.concatenate(
+                                    (x0[:, np.newaxis], nlp.dynamics[s](x0=x0, p=u, params=params / param_scaling)["xf"]),
+                                    axis=1,
+                                )
                             cols_in_out = [s, s + 2]
                         next_state_col = s + 1
 

@@ -7,6 +7,7 @@ from casadi import horzcat, vertcat
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
+from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, Axis, ControlType
 
@@ -536,7 +537,10 @@ class PenaltyFunctionAbstract:
                 continuity = vertcat(continuity, nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["defects"])
                 penalty.integrate = True
             else:
-                continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
+                if isinstance(nlp.ode_solver, OdeSolver.CVODES):
+                    continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u)["xf"]
+                else:
+                    continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True

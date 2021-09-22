@@ -318,18 +318,14 @@ class OdeSolver:
             A list of integrators
             """
 
-            if not isinstance(ocp.cx(), MX):
-                raise RuntimeError("CVODES integrator can only be used with MX graphs")
-            if len(ocp.v.params.size) != 0:
+            if ocp.v.parameters_in_list.shape != 0:
                 raise RuntimeError("CVODES cannot be used while optimizing parameters")
             if nlp.external_forces:
                 raise RuntimeError("CVODES cannot be used with external_forces")
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
-            if not isinstance(nlp.ode_solver, OdeSolver.RK4):
-                raise RuntimeError("CVODES is only implemented with RK4")
 
-            ode = {"x": nlp.x, "p": nlp.u, "ode": nlp.dynamics_func(nlp.x, nlp.u, nlp.p)}
-            ode_opt = {"t0": 0, "tf": nlp.dt, "number_of_finite_elements": nlp.ode_solver.steps}
+            ode = {"x": nlp.states.cx, "p": nlp.controls.cx, "ode": nlp.dynamics_func(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx)}
+            ode_opt = {"t0": 0, "tf": nlp.dt}
 
             return [casadi_integrator("integrator", "cvodes", ode, ode_opt)]
