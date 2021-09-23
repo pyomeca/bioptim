@@ -537,10 +537,7 @@ class PenaltyFunctionAbstract:
                 continuity = vertcat(continuity, nlp.dynamics[0](x0=cx, p=u, params=nlp.parameters.cx)["defects"])
                 penalty.integrate = True
             else:
-                if isinstance(nlp.ode_solver, OdeSolver.CVODES):
-                    continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u)["xf"]
-                else:
-                    continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
+                continuity -= nlp.dynamics[0](x0=nlp.states.cx, p=u, params=nlp.parameters.cx)["xf"]
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True

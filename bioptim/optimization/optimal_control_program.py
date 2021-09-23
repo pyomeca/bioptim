@@ -727,9 +727,6 @@ class OptimalControlProgram:
 
         color = penalty_color()
         for i_phase, nlp in enumerate(self.nlp):
-            if not isinstance(nlp.ode_solver, OdeSolverRK):
-                raise NotImplementedError("add_plot_penalty is only available for RK based integration yet")
-
             if cost_type == CostType.OBJECTIVES:
                 penalties = nlp.J
                 penalties_internal = nlp.J_internal
