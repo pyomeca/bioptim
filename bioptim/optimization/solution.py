@@ -556,10 +556,6 @@ class Solution:
             if shooting_type != Shooting.MULTIPLE:
                 raise RuntimeError("Integration with direct collocation must using shooting_type=Shooting.MULTIPLE")
 
-        # if keep_intermediate_points:
-        #     if isinstance(self.ocp.nlp[0].ode_solver, OdeSolver.CVODES):
-        #         raise NotImplementedError("keep_intermediate_points is not implemented with CVODES")
-
         # Copy the data
         out = self.copy(skip_data=True)
         out.recomputed_time_steps = use_scipy_integrator
