@@ -29,6 +29,9 @@ Anyone can play with bioptim with a working (but slightly limited in terms of gr
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/pyomeca/bioptim-tutorial/HEAD?urlpath=lab)
 
+As a tour guide that uses this binder, you can watch the `bioptim` workshop that we gave at the CMBBE conference on September 2021 by following this link:
+[https://youtu.be/z7fhKoW1y60](https://youtu.be/z7fhKoW1y60)
+
 # Table of Contents  
 [Testing bioptim](#try-bioptim)
 
