@@ -235,6 +235,9 @@ class MultiFatigueInterface(MultiFatigueModel, ABC):
     def default_initial_guess(self, index: int, variable_type: VariableType):
         return self.models["fatigue"].default_initial_guess()
 
+    def _dynamics_per_suffix(self, dxdt, suffix, nlp, index, states, controls):
+        return self.models["fatigue"].dynamics(dxdt, nlp, index, states, controls)
+
 
 class FatigueUniqueList(UniquePerPhaseOptionList):
     def __init__(self, suffix: Union[list, tuple]):
