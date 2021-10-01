@@ -9,7 +9,7 @@ from .fatigue.fatigue_dynamics import FatigueList
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
-from ..misc.enums import PlotType, ControlType
+from ..misc.enums import PlotType, ControlType, VariableType
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 
@@ -458,23 +458,22 @@ class ConfigureProblem:
 
         if fatigue is not None and "tau" in fatigue:
             fatigue_tau = fatigue["tau"]
+            suffix = fatigue_tau[0].models.suffix()
 
             # Only homogeneous fatigue model are implement
-            fatigue_suffix = getattr(fatigue_tau[0].model, fatigue_tau.suffix[0]).suffix()
+            fatigue_suffix = fatigue_tau[0].models.models[suffix[0]].suffix(VariableType.STATES)
             for dof in fatigue_tau:
-                if (
-                    getattr(dof.model, fatigue_tau.suffix[0]).suffix() != fatigue_suffix
-                    or getattr(dof.model, fatigue_tau.suffix[1]).suffix() != fatigue_suffix
-                ):
-                    raise ValueError("Fatigue for tau must be of all same types")
+                for key in dof.models.models:
+                    if dof.models.models[key].suffix(VariableType.STATES) != fatigue_suffix:
+                        raise ValueError("Fatigue for tau must be of all same types")
 
             tau_keys = []
 
             # Prepare the plot that will combine everything
             n_tau = len(name_tau)
             tau_legend = [f"tau_{i}" for i in name_tau]
-            tau_color = fatigue_tau[0].model.color()
-            fatigue_tau_color = getattr(fatigue_tau[0].model, fatigue_tau.suffix[0]).color()
+            tau_color = fatigue_tau[0].models.color()
+            fatigue_tau_color = [fatigue_tau[0].models.models[m].color() for m in fatigue_tau[0].models.models]
             fatigue_mod = [-1, 1]
             nlp.plot[f"tau_controls"] = CustomPlot(
                 lambda t, x, u, p: u[:n_tau, :] * np.nan, plot_type=PlotType.STEP, legend=tau_legend
@@ -510,7 +509,7 @@ class ConfigureProblem:
                         plot_type=PlotType.INTEGRATED,
                         combine_to="fatigue_tau",
                         key=name,
-                        color=fatigue_tau_color[p],
+                        color=fatigue_tau_color[i][p],
                         mod=fatigue_mod[i],
                     )
 
@@ -596,7 +595,7 @@ class ConfigureProblem:
                 legend=muscle_names,
                 bounds=Bounds(0, 1),
             )
-            fatigue_color = fatigue["muscles"][0].model.color()
+            fatigue_color = [fatigue["muscles"][0].models.models[m].color() for m in fatigue["muscles"][0].models.models]
 
             if len(fatigue["muscles"]) != len(muscle_names):
                 raise NotImplementedError("Fatiguing a subset of muscles is not supported yet")
@@ -609,7 +608,7 @@ class ConfigureProblem:
                     plot_type=PlotType.INTEGRATED,
                     combine_to="fatigue_muscles",
                     key=f"muscles_{suffix}",
-                    color=fatigue_color[s],
+                    color=fatigue_color[0][s],
                 )
 
     @staticmethod

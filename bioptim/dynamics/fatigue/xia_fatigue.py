@@ -1,7 +1,17 @@
 from casadi import vertcat, lt, gt, if_else
 
 from ..dynamics_functions import DynamicsFunctions
-from .fatigue_dynamics import FatigueModel, TauFatigue
+from .fatigue_dynamics import FatigueModel, MultiFatigueModel, MultiFatigueInterface
+from ...misc.enums import VariableType
+
+
+class MultiFatigueInterfaceMuscle(MultiFatigueInterface):
+    @staticmethod
+    def model_type() -> str:
+        """
+        The type of Fatigue
+        """
+        return "muscles"
 
 
 class XiaFatigue(FatigueModel):
@@ -37,20 +47,21 @@ class XiaFatigue(FatigueModel):
         return "muscles"
 
     @staticmethod
-    def suffix() -> list:
-        return ["ma", "mr", "mf"]
+    def suffix(variable_type: VariableType) -> tuple:
+        if variable_type == VariableType.STATES:
+            return "ma", "mr", "mf"
+        else:
+            return "",
 
     @staticmethod
-    def color() -> list:
-        return ["tab:green", "tab:orange", "tab:red"]
+    def color() -> tuple:
+        return "tab:green", "tab:orange", "tab:red"
 
-    @staticmethod
-    def default_initial_guess() -> list:
-        return [0, 1, 0]
+    def default_initial_guess(self) -> tuple:
+        return 0, 1, 0
 
-    @staticmethod
-    def default_bounds() -> list:
-        return [[0, 1], [0, 1], [0, 1]]
+    def default_bounds(self, variable_type: VariableType) -> tuple:
+        return (0, 0, 0), (1, 1, 1)
 
     @staticmethod
     def dynamics_suffix() -> str:
@@ -86,12 +97,12 @@ class XiaFatigue(FatigueModel):
         return dxdt
 
 
-class XiaTauFatigue(TauFatigue):
+class XiaTauFatigue(MultiFatigueModel):
     """
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, minus: XiaFatigue, plus: XiaFatigue):
+    def __init__(self, minus: XiaFatigue, plus: XiaFatigue, state_only: bool = True, **kwargs):
         """
         Parameters
         ----------
@@ -101,34 +112,36 @@ class XiaTauFatigue(TauFatigue):
             The Xia model for the positive tau
         """
 
-        super(XiaTauFatigue, self).__init__(minus, plus)
+        super(XiaTauFatigue, self).__init__([minus, plus], state_only=state_only, **kwargs)
 
-    @staticmethod
-    def suffix() -> list:
+    def suffix(self) -> list:
         return ["minus", "plus"]
 
     @staticmethod
-    def default_initial_guess() -> list:
-        raise RuntimeError("default_initial_guess cannot by called at XiaTauFatigue level")
+    def model_type() -> str:
+        return "tau"
 
     @staticmethod
-    def default_bounds() -> list:
-        raise RuntimeError("default_bounds cannot by called at XiaTauFatigue level")
+    def color() -> list:
+        """
+        The color to be draw
+        """
+        return ["tab:orange", "tab:green"]
 
     @staticmethod
     def dynamics_suffix() -> str:
         return "ma"
 
     def _dynamics_per_suffix(self, dxdt, suffix, nlp, index, states, controls):
-        var = getattr(self, suffix)
+        var = self.models[suffix]
         target_load = self._get_target_load(var, suffix, nlp, controls, index)
         fatigue = [
             DynamicsFunctions.get(nlp.states[f"tau_{suffix}_{dyn_suffix}"], states)[index, :]
-            for dyn_suffix in var.suffix()
+            for dyn_suffix in var.suffix(variable_type=VariableType.STATES)
         ]
         current_dxdt = var.apply_dynamics(target_load, *fatigue)
 
-        for i, dyn_suffix in enumerate(var.suffix()):
+        for i, dyn_suffix in enumerate(var.suffix(variable_type=VariableType.STATES)):
             dxdt[nlp.states[f"tau_{suffix}_{dyn_suffix}"].index[index], :] = current_dxdt[i]
 
         return dxdt
@@ -138,3 +151,16 @@ class XiaTauFatigue(TauFatigue):
             raise NotImplementedError("Fatigue dynamics without tau controls is not implemented yet")
 
         return DynamicsFunctions.get(nlp.controls[f"tau_{suffix}"], controls)[index, :] / var.scale
+
+    def default_bounds(self, index: int, variable_type: VariableType) -> tuple:
+        key = self._convert_to_models_key(index)
+
+        if variable_type == VariableType.STATES:
+            return self.models[key].default_bounds(variable_type)
+        else:
+            scale = self.models[key].scale
+            return ((scale if index == 0 else 0),), ((scale if index == 1 else 0),)
+
+    def default_initial_guess(self, index: int, variable_type: VariableType):
+        key = self._convert_to_models_key(index)
+        return self.models[key].default_initial_guess()

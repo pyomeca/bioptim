@@ -26,6 +26,8 @@ from bioptim import (
     XiaTauFatigue,
     MichaudFatigue,
     MichaudTauFatigue,
+    MichaudFatigueSimple,
+    MichaudTauFatigueSimple,
     ObjectiveFcn,
     VariableType,
 )
@@ -74,8 +76,8 @@ def prepare_ocp(
                 XiaTauFatigue(
                     XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_min),
                     XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_max),
+                    state_only=False,
                 ),
-                state_only=False,
             )
         elif fatigue_type == "michaud":
             fatigue_dynamics.add(
@@ -86,8 +88,15 @@ def prepare_ocp(
                     MichaudFatigue(
                         LD=100, LR=100, F=0.005, R=0.005, fatigue_threshold=0.2, L=0.001, S=10, scale=tau_max
                     ),
+                    state_only=False,
                 ),
-                state_only=False,
+            )
+        elif fatigue_type == "michaud_simple":
+            fatigue_dynamics.add(
+                MichaudTauFatigueSimple(
+                    MichaudFatigueSimple(fatigue_threshold=0.2, L=0.001, scale=tau_min),
+                    MichaudFatigueSimple(fatigue_threshold=0.2, L=0.001, scale=tau_max),
+                )
             )
         else:
             raise ValueError("fatigue_type not implemented")
@@ -100,9 +109,10 @@ def prepare_ocp(
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
-    x_bounds[[5, 11], 0] = 0  # The rotation dof is passive (fatigue_ma = 0)
-    if fatigue_type == "xia":
-        x_bounds[[7, 13], 0] = 1  # The rotation dof is passive (fatigue_mr = 1)
+    if fatigue_type != "michaud_simple":
+        x_bounds[[5, 11], 0] = 0  # The rotation dof is passive (fatigue_ma = 0)
+        if fatigue_type == "xia":
+            x_bounds[[7, 13], 0] = 1  # The rotation dof is passive (fatigue_mr = 1)
 
     # Initial guess
     n_q = biorbd_model.nbQ()

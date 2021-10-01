@@ -20,37 +20,24 @@ class FatigueBounds(Bounds):
 
         x_min = []
         x_max = []
-        if "tau" in fatigue and len(fatigue["tau"]) > 0:
-            sides = fatigue["tau"].suffix
-            if len(sides) != 2:
-                raise NotImplementedError("The required suffix for tau fatigue is not implemented yet")
+        for key in fatigue.keys():
+            # for to make sure the model is homogenous
+            if fatigue[key][0].models.suffix() is not None:
+                suffix = fatigue[key][0].models.models[fatigue[key][0].models.suffix()[0]].suffix(variable_type)
+            else:
+                suffix = []
 
-            suffix = (
-                getattr(fatigue["tau"][0].model, sides[0]).suffix() if variable_type == VariableType.STATES else [0]
-            )
-            for i, side in enumerate(sides):
-                for s in range(len(suffix)):
-                    for f in fatigue["tau"]:
-                        f_side = getattr(f.model, side)
-                        bound = f_side.default_bounds()[s]
-                        if variable_type == VariableType.STATES:
-                            x_min += [bound[0]]
-                            x_max += [bound[1]]
-                        else:
-                            x_min += [f_side.scale if i == 0 else 0]
-                            x_max += [f_side.scale if i == 1 else 0]
+            for multi in fatigue[key]:
+                for m in multi.models.models:
+                    if multi.models.models[m].suffix(variable_type) != suffix:
+                        raise NotImplementedError("Fatigue models cannot be mixed")
 
-        if "muscles" in fatigue and len(fatigue["muscles"]) > 0:
-            suffix = fatigue["muscles"].suffix if variable_type == VariableType.STATES else [0]
-            for s in range(len(suffix)):
-                for f in fatigue["muscles"]:
-                    bound = f.model.default_bounds()[s]
-                    if variable_type == VariableType.STATES:
-                        x_min += [bound[0]]
-                        x_max += [bound[1]]
-                    else:
-                        x_min += [0]
-                        x_max += [1]
+            for index in range(len(fatigue[key][0].models.models)):
+                for i, _ in enumerate(suffix):
+                    for multi in fatigue[key]:
+                        bound = multi.models.default_bounds(index, variable_type)
+                        x_min += [bound[0][i]]
+                        x_max += [bound[1][i]]
 
         super(FatigueBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
@@ -74,20 +61,17 @@ class FatigueInitialGuess(InitialGuess):
         """
 
         x_init = []
-        if "tau" in fatigue and len(fatigue["tau"]) > 0:
-            sides = fatigue["tau"][0].model.suffix()
-            suffix = (
-                getattr(fatigue["tau"][0].model, sides[0]).suffix() if variable_type == VariableType.STATES else [0]
-            )
-            for side in sides:
-                for s in range(len(suffix)):
-                    for f in fatigue["tau"]:
-                        x_init += [getattr(f.model, side).default_initial_guess()[s]]
+        for key in fatigue.keys():
+            # for to make sure the model is homogenous
+            suffix = fatigue[key][0].models.models[fatigue[key][0].models.suffix()[0]].suffix(variable_type)
+            for dof in fatigue[key]:
+                for m in dof.models.models:
+                    if dof.models.models[m].suffix(variable_type) != suffix:
+                        raise NotImplementedError("Fatigue models cannot be mixed")
 
-        if "muscles" in fatigue and len(fatigue["muscles"]) > 0:
-            suffix = fatigue["muscles"].suffix if variable_type == VariableType.STATES else [0]
-            for s in range(len(suffix)):
-                for f in fatigue["muscles"]:
-                    x_init += [f.model.default_initial_guess()[s]]
+            for index in range(len(fatigue[key][0].models.models)):
+                for i, _ in enumerate(suffix):
+                    for multi in fatigue[key]:
+                        x_init += [multi.models.default_initial_guess(index, variable_type)[i]]
 
         super(FatigueInitialGuess, self).__init__(initial_guess=x_init)

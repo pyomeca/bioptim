@@ -1,6 +1,7 @@
 from casadi import vertcat, lt, gt, if_else
 
-from .xia_fatigue import XiaFatigue, XiaTauFatigue
+from .xia_fatigue import XiaFatigue, XiaTauFatigue, MultiFatigueInterfaceMuscle
+from ...misc.enums import VariableType
 
 
 class MichaudFatigue(XiaFatigue):
@@ -46,24 +47,25 @@ class MichaudFatigue(XiaFatigue):
         self.fatigue_threshold = fatigue_threshold
 
     @staticmethod
-    def suffix() -> list:
-        return ["ma", "mr", "mf", "mf_long"]
+    def suffix(variable_type: VariableType) -> tuple:
+        if variable_type == VariableType.STATES:
+            return "ma", "mr", "mf_xia", "mf"
+        else:
+            return "",
 
     @staticmethod
-    def color() -> list:
-        return ["tab:green", "tab:orange", "tab:red", "tab:brown"]
+    def color() -> tuple:
+        return "tab:green", "tab:orange", "tab:red", "tab:brown"
 
-    @staticmethod
-    def default_initial_guess() -> list:
-        return [0, 1, 0, 0]
+    def default_initial_guess(self) -> tuple:
+        return 0, 1, 0, 0
 
-    @staticmethod
-    def default_bounds() -> list:
-        return [[0, 1], [0, 1], [0, 1], [0, 1]]
+    def default_bounds(self, variable_type: VariableType) -> tuple:
+        return (0, 0, 0, 0), (1, 1, 1, 1)
 
     def apply_dynamics(self, target_load, *states):
         # Implementation of modified Xia dynamics
-        ma, mr, mf, mf_long = states
+        ma, mr, mf_xia, mf_long = states
 
         c = if_else(
             lt(ma, target_load),
@@ -75,11 +77,15 @@ class MichaudFatigue(XiaFatigue):
         fatigue_dyn = self.L * if_else(gt(fatigue_load, 0), 1 - mf_long, -mf_long)
 
         ma_dot = c - self.F * ma - if_else(gt(fatigue_load, 0), fatigue_dyn, 0)
-        mr_dot = -c + self.R * mf - if_else(lt(fatigue_load, 0), fatigue_dyn, 0)
-        mf_dot = self.F * ma - self.R * mf
-        mf_long_dot = fatigue_dyn + self.S * (1 - ma - mr - mf - mf_long)
+        mr_dot = -c + self.R * mf_xia - if_else(lt(fatigue_load, 0), fatigue_dyn, 0)
+        mf_dot = self.F * ma - self.R * mf_xia
+        mf_long_dot = fatigue_dyn + self.S * (1 - ma - mr - mf_xia - mf_long)
 
         return vertcat(ma_dot, mr_dot, mf_dot, mf_long_dot)
+
+    @property
+    def multi_type(self):
+        return MultiFatigueInterfaceMuscle
 
 
 class MichaudTauFatigue(XiaTauFatigue):
@@ -87,14 +93,93 @@ class MichaudTauFatigue(XiaTauFatigue):
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, minus: MichaudFatigue, plus: MichaudFatigue):
+    def __init__(self, minus: MichaudFatigue, plus: MichaudFatigue, state_only: bool = False, **kwargs):
         """
         Parameters
         ----------
-        minus: XiaFatigue
-            The Xia model for the negative tau
-        plus: XiaFatigue
-            The Xia model for the positive tau
+        minus: MichaudFatigue
+            The Michaud model for the negative tau
+        plus: MichaudFatigue
+            The Michaud model for the positive tau
         """
 
-        super(MichaudTauFatigue, self).__init__(minus, plus)
+        super(MichaudTauFatigue, self).__init__(minus, plus, state_only=state_only, **kwargs)
+
+
+class MichaudFatigueSimple(MichaudFatigue):
+    """
+    A placeholder for fatigue dynamics.
+    """
+
+    def __init__(
+            self,
+            fatigue_threshold: float,
+            L: float,
+            scale: float = 1,
+    ):
+        """
+        Parameters
+        ----------
+        fatigue_threshold: float
+            The activation level at which the structure starts to build long-term fatigue
+        L: float
+            Long-term fatigable rate
+        scale: float
+            The scaling factor to convert so input / scale => TL
+        """
+
+        super(MichaudFatigueSimple, self).__init__(LD=0, LR=0, F=0, R=0, fatigue_threshold=fatigue_threshold, L=L, S=0,
+                                                   scale=scale)
+
+    @staticmethod
+    def suffix(variable_type: VariableType) -> tuple:
+        if variable_type == VariableType.STATES:
+            return "mf",
+        else:
+            return "",
+
+    @staticmethod
+    def color() -> tuple:
+        return "tab:brown",
+
+    def default_initial_guess(self) -> tuple:
+        return 0,
+
+    def default_bounds(self, variable_type: VariableType) -> tuple:
+        if variable_type == VariableType.STATES:
+            return (0,), (1,)
+        elif variable_type == VariableType.CONTROLS:
+            raise RuntimeError("default_bounds for CONTROLS cannot be called for this model")
+
+    def apply_dynamics(self, target_load, *states):
+        # Implementation of modified Xia dynamics
+        mf_long = states[0]
+        fatigue_load = target_load - self.fatigue_threshold
+        mf_long_dot = self.L * if_else(gt(fatigue_load, 0), 1 - mf_long, -mf_long)
+        return mf_long_dot
+
+    @staticmethod
+    def dynamics_suffix() -> str:
+        raise RuntimeError("MichaudSimple cannot be used with state_only=False")
+
+    @property
+    def multi_type(self):
+        return MichaudTauFatigueSimple
+
+
+class MichaudTauFatigueSimple(MichaudTauFatigue):
+    """
+    A placeholder for fatigue dynamics.
+    """
+
+    def __init__(self, minus: MichaudFatigueSimple, plus: MichaudFatigueSimple, state_only: bool = True, **kwargs):
+        """
+        Parameters
+        ----------
+        minus: MichaudFatigueSimple
+            The Michaud model for the negative tau
+        plus: MichaudFatigueSimple
+            The Michaud model for the positive tau
+        """
+
+        super(MichaudTauFatigueSimple, self).__init__(minus, plus, state_only=state_only, **kwargs)

@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from casadi import MX
 
 from ...misc.options import UniquePerPhaseOptionList, OptionDict, OptionGeneric
+from ...misc.enums import VariableType
 
 
 class FatigueModel(ABC):
@@ -13,36 +14,32 @@ class FatigueModel(ABC):
         """
         The type of Fatigue
         """
-        pass
 
     @staticmethod
     @abstractmethod
-    def suffix() -> list:
+    def suffix(variable_type: VariableType) -> tuple:
         """
         The type of Fatigue
         """
-        pass
 
     @staticmethod
-    def color() -> list:
+    @abstractmethod
+    def color() -> tuple:
         """
         The coloring when drawn
         """
-        pass
 
-    @staticmethod
-    def default_initial_guess() -> list:
+    @abstractmethod
+    def default_initial_guess(self) -> tuple:
         """
         The initial guess the fatigue parameters are expected to have
         """
-        pass
 
-    @staticmethod
-    def default_bounds() -> list:
+    @abstractmethod
+    def default_bounds(self, variable_type: VariableType) -> tuple:
         """
         The bounds the fatigue parameters are expected to have
         """
-        pass
 
     @staticmethod
     @abstractmethod
@@ -50,7 +47,6 @@ class FatigueModel(ABC):
         """
         The type of Fatigue
         """
-        pass
 
     @abstractmethod
     def dynamics(self, dxdt, nlp, index, states, controls) -> MX:
@@ -74,33 +70,77 @@ class FatigueModel(ABC):
         -------
         dxdt augmented
         """
-        pass
 
-
-class TauFatigue(FatigueModel, ABC):
-    def __init__(self, minus: FatigueModel, plus: FatigueModel):
+    @property
+    @abstractmethod
+    def multi_type(self):
         """
+        The associate MultiFatigueModel to the model
+
+        Returns
+        -------
+        The associate MultiFatigueModel to the model
+        """
+
+
+class MultiFatigueModel(OptionGeneric):
+    def __init__(self, model: Union[FatigueModel, list], state_only: bool, **params):
+        """
+        model: FatigueModel
+            The actual fatigue model
+        state_only: bool
+            If the added fatigue should be used in the dynamics or only computed
+        suffix_default: str
+            The replacement of suffix if any, for internal purpose
+        params: Any
+            Any other parameters to pass to OptionGeneric
+        """
+
+        super(MultiFatigueModel, self).__init__(**params)
+        if isinstance(model, FatigueModel):
+            model = [model]
+
+        if self.suffix():
+            # If there is suffix, convert to dictionary
+            model_tp = {}
+            for i, key in enumerate(self.suffix()):
+                if key:
+                    model_tp[key] = model[i]
+                else:
+                    model_tp[key] = model
+        else:
+            model_tp = model
+
+        self.models = model_tp
+        self.state_only = state_only
+
+    @property
+    def shape(self):
+        return len(self.models)
+
+    @staticmethod
+    @abstractmethod
+    def model_type() -> str:
+        """
+        The type of Fatigue
+        """
+
+    @abstractmethod
+    def suffix(self) -> tuple:
+        """
+        The type of Fatigue
+        """
+
+    def add(self, fatigue: FatigueModel):
+        """
+        Add a new element to the fatigue list
+
         Parameters
         ----------
-        minus: FatigueModel
-            The model for the negative tau
-        plus: FatigueModel
-            The model for the positive tau
+        fatigue: FatigueModel
+            The model to add
         """
-        super(TauFatigue, self).__init__()
-        self.minus = minus
-        self.plus = plus
-
-    @staticmethod
-    def type() -> str:
-        return "tau"
-
-    @staticmethod
-    def color() -> list:
-        """
-        The color to be draw
-        """
-        return ["tab:orange", "tab:green"]
+        self.models.append(fatigue)
 
     def dynamics(self, dxdt, nlp, index, states, controls):
         for suffix in self.suffix():
@@ -131,30 +171,73 @@ class TauFatigue(FatigueModel, ABC):
         -------
 
         """
-        pass
 
-
-class FatigueOption(OptionGeneric):
-    def __init__(self, model: FatigueModel, state_only: bool, **params):
+    @abstractmethod
+    def default_bounds(self, index: int, variable_type: VariableType) -> tuple:
         """
-        model: FatigueModel
-            The actual fatigue model
-        state_only: bool
-            If the added fatigue should be used in the dynamics or only computed
-        params: Any
-            Any other parameters to pass to OptionGeneric
+        The default bounds for the index element in models
+
+        Parameters
+        ----------
+        index: int
+            The index of the element
+        variable_type: VariableType
+            The type of variable
+
+        Returns
+        -------
+        The default bounds
         """
 
-        super(FatigueOption, self).__init__(**params)
-        self.model = model
-        self.state_only = state_only
+    @abstractmethod
+    def default_initial_guess(self, index: int, variable_type: VariableType):
+        """
+        The default initial guess for the index element in models
+
+        Parameters
+        ----------
+        index: int
+            The index of the element
+        variable_type: VariableType
+            The type of variable
+
+        Returns
+        -------
+        The default initial guess
+        """
+
+    def _convert_to_models_key(self, item: Union[int, str]):
+        """
+        Convert the item to a key if self.models is a dictionary, based on suffix() order
+
+        Parameters
+        ----------
+        item: Union[int, str]
+            The item to convert
+
+        Returns
+        -------
+        The usable key
+        """
+        if isinstance(self.models, dict):
+            return list(self.models.keys())[item]
+        else:
+            return item
+
+
+class MultiFatigueInterface(MultiFatigueModel, ABC):
+    def suffix(self) -> tuple:
+        return "fatigue",
+
+    def default_bounds(self, index: int, variable_type: VariableType) -> tuple:
+        return self.models["fatigue"].default_bounds(variable_type)
+
+    def default_initial_guess(self, index: int, variable_type: VariableType):
+        return self.models["fatigue"].default_initial_guess()
 
 
 class FatigueUniqueList(UniquePerPhaseOptionList):
-    def add(self, **extra_arguments: Any):
-        self._add(option_type=FatigueOption, **extra_arguments)
-
-    def __init__(self, suffix: list):
+    def __init__(self, suffix: Union[list, tuple]):
         """
         Parameters
         ----------
@@ -164,6 +247,9 @@ class FatigueUniqueList(UniquePerPhaseOptionList):
 
         super(FatigueUniqueList, self).__init__()
         self.suffix = suffix
+
+    def add(self, **extra_arguments: Any):
+        self._add(option_type=MultiFatigueModel, state_only=None, **extra_arguments)
 
     def __next__(self) -> Any:
         """
@@ -180,18 +266,18 @@ class FatigueUniqueList(UniquePerPhaseOptionList):
 
     def dynamics(self, dxdt, nlp, states, controls):
         for i, elt in enumerate(self):
-            dxdt = elt.model.dynamics(dxdt, nlp, i, states, controls)
+            dxdt = elt.models.dynamics(dxdt, nlp, i, states, controls)
         return dxdt
 
 
 class FatigueList(OptionDict):
-    def add(self, model: FatigueModel, index: int = -1, state_only: bool = False):
+    def add(self, model: Union[FatigueModel, MultiFatigueModel], index: int = -1, state_only: bool = None):
         """
         Add a muscle to the dynamic list
 
         Parameters
         ----------
-        model: FatigueModel
+        model: Union[FatigueModel, MultiFatigueModel]
             The dynamics to add, if more than one dynamics is required, a list can be sent
         index: int
             The index of the muscle, referring to the muscles order in the bioMod
@@ -199,10 +285,13 @@ class FatigueList(OptionDict):
             If the added fatigue should be used in the dynamics or only computed
         """
 
-        if model.type() not in self.options[0]:
-            self.options[0][model.type()] = FatigueUniqueList(model.suffix())
+        if isinstance(model, FatigueModel):
+            model = model.multi_type(model, state_only=state_only)
 
-        self.options[0][model.type()].add(model=model, phase=index, state_only=state_only)
+        if model.model_type() not in self.options[0]:
+            self.options[0][model.model_type()] = FatigueUniqueList(model.suffix())
+
+        self.options[0][model.model_type()].add(model=model, phase=index)
 
     def dynamics(self, dxdt, nlp, index, states, controls):
         raise NotImplementedError("FatigueDynamics is abstract")

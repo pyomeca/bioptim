@@ -146,18 +146,18 @@ class DynamicsFunctions:
             tau_suffix = fatigue["tau"].suffix
 
             # Only homogeneous state_only is implemented yet
-            n_state_only = sum([t.state_only for t in tau_fatigue])
+            n_state_only = sum([t.models.state_only for t in tau_fatigue])
             if 0 < n_state_only < len(fatigue["tau"]):
                 raise NotImplementedError("fatigue list without homogeneous state_only flag is not supported yet")
 
-            if n_state_only > 0:
+            if tau_fatigue[0].models.state_only:
                 tau = sum([DynamicsFunctions.get(tau_var[f"tau_{suffix}"], tau_mx) for suffix in tau_suffix])
             else:
                 tau = MX()
                 for i, t in enumerate(tau_fatigue):
                     tau_tp = MX(1, 1)
                     for suffix in tau_suffix:
-                        model = getattr(t.model, suffix)
+                        model = t.models.models[suffix]
                         tau_tp += (
                             DynamicsFunctions.get(nlp.states[f"tau_{suffix}_{model.dynamics_suffix()}"], states)[i]
                             * model.scale
@@ -356,14 +356,15 @@ class DynamicsFunctions:
             mus_fatigue = fatigue["muscles"]
 
             # Sanity check
-            n_state_only = sum([m.state_only for m in mus_fatigue])
+            n_state_only = sum([m.models.state_only for m in mus_fatigue])
             if 0 < n_state_only < len(fatigue["muscles"]):
                 raise NotImplementedError("fatigue list without homogeneous state_only flag is not supported yet")
 
-            dyn_suffix = mus_fatigue[0].model.dynamics_suffix()
+            dyn_suffix = mus_fatigue[0].models.models["fatigue"].dynamics_suffix()
             for m in mus_fatigue:
-                if m.model.dynamics_suffix() != dyn_suffix:
-                    raise ValueError("fatigue must be of all same types")
+                for key in m.models.models:
+                    if m.models.models[key].dynamics_suffix() != dyn_suffix:
+                        raise ValueError("fatigue must be of all same types")
 
             if n_state_only == 0:
                 mus_activations = DynamicsFunctions.get(nlp.states[f"muscles_{dyn_suffix}"], states)
