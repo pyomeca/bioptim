@@ -95,7 +95,7 @@ class XiaFatigue(FatigueModel):
         fatigue = [DynamicsFunctions.get(nlp.states[f"muscles_{s}"], states)[index, :] for s in self.suffix(VariableType.STATES)]
         current_dxdt = self.apply_dynamics(target_load, *fatigue)
 
-        for i, s in enumerate(self.suffix()):
+        for i, s in enumerate(self.suffix(variable_type=VariableType.STATES)):
             dxdt[nlp.states[f"muscles_{s}"].index[index], :] = current_dxdt[i]
 
         return dxdt
