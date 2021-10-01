@@ -84,7 +84,7 @@ class FatigueModel(ABC):
 
 
 class MultiFatigueModel(OptionGeneric):
-    def __init__(self, model: Union[FatigueModel, list], state_only: bool, **params):
+    def __init__(self, model: Union[FatigueModel, list], state_only: bool, split_controls: bool = True, **params):
         """
         model: FatigueModel
             The actual fatigue model
@@ -92,6 +92,8 @@ class MultiFatigueModel(OptionGeneric):
             If the added fatigue should be used in the dynamics or only computed
         suffix_default: str
             The replacement of suffix if any, for internal purpose
+        split_controls: bool
+            If the tau should be separated into minus and plus part or use an if_else case
         params: Any
             Any other parameters to pass to OptionGeneric
         """
@@ -113,6 +115,7 @@ class MultiFatigueModel(OptionGeneric):
 
         self.models = model_tp
         self.state_only = state_only
+        self.split_controls = split_controls
 
     @property
     def shape(self):

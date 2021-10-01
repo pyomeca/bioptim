@@ -114,6 +114,8 @@ class XiaTauFatigue(MultiFatigueModel):
             The Xia model for the negative tau
         plus: XiaFatigue
             The Xia model for the positive tau
+        state_only: bool
+            If the dynamics should be passed to tau or only computed
         """
 
         super(XiaTauFatigue, self).__init__([minus, plus], state_only=state_only, **kwargs)
@@ -155,7 +157,13 @@ class XiaTauFatigue(MultiFatigueModel):
         if "tau" not in nlp.controls:
             raise NotImplementedError("Fatigue dynamics without tau controls is not implemented yet")
 
-        return DynamicsFunctions.get(nlp.controls[f"tau_{suffix}"], controls)[index, :] / var.scale
+        val = DynamicsFunctions.get(nlp.controls[f"tau_{suffix}"], controls)[index, :]
+        if not self.split_controls:
+            if var.scale < 0:
+                val = if_else(lt(val, 0), val, 0)
+            else:
+                val = if_else(gt(val, 0), val, 0)
+        return val / var.scale
 
     def default_bounds(self, index: int, variable_type: VariableType) -> tuple:
         key = self._convert_to_models_key(index)
@@ -163,8 +171,13 @@ class XiaTauFatigue(MultiFatigueModel):
         if variable_type == VariableType.STATES:
             return self.models[key].default_bounds(variable_type)
         else:
-            scale = self.models[key].scale
-            return ((scale if index == 0 else 0),), ((scale if index == 1 else 0),)
+            if self.split_controls:
+                scale = self.models[key].scale
+                return ((scale if index == 0 else 0),), ((scale if index == 1 else 0),)
+            else:
+                scale_minus = self.models["minus"].scale,
+                scale_plus = self.models["plus"].scale,
+                return scale_minus, scale_plus
 
     def default_initial_guess(self, index: int, variable_type: VariableType):
         key = self._convert_to_models_key(index)

@@ -329,14 +329,19 @@ class ConfigureProblem:
 
         fatigue_var = fatigue[name]
         meta_suffixes = fatigue_var.suffix
-        multi_interface = isinstance(fatigue_var[0].models, MultiFatigueInterface)
 
         # Only homogeneous fatigue model are implement
         fatigue_suffix = fatigue_var[0].models.models[meta_suffixes[0]].suffix(VariableType.STATES)
+        multi_interface = isinstance(fatigue_var[0].models, MultiFatigueInterface)
+        split_controls = fatigue_var[0].models.split_controls
         for dof in fatigue_var:
             for key in dof.models.models:
                 if dof.models.models[key].suffix(VariableType.STATES) != fatigue_suffix:
                     raise ValueError(f"Fatigue for {name} must be of all same types")
+                if isinstance(dof.models, MultiFatigueInterface) != multi_interface:
+                    raise ValueError("multi_interface must be the same for all the elements")
+                if dof.models.split_controls != split_controls:
+                    raise ValueError("split_controls must be the same for all the elements")
 
         # Prepare the plot that will combine everything
         n_elements = len(name_elements)
@@ -349,7 +354,7 @@ class ConfigureProblem:
             legend=legend,
             bounds=Bounds(-1, 1),
         )
-        control_plot_name = f"{name}_controls" if not multi_interface else f"{name}"
+        control_plot_name = f"{name}_controls" if not multi_interface and split_controls else f"{name}"
         nlp.plot[control_plot_name] = CustomPlot(
             lambda t, x, u, p: u[:n_elements, :] * np.nan, plot_type=PlotType.STEP, legend=legend
         )
@@ -367,16 +372,28 @@ class ConfigureProblem:
                 if message.args[0] != "Could not adjust mapping with the reference_keys provided":
                     raise RuntimeError(message)
 
-            ConfigureProblem.configure_new_variable(
-                var_names_with_suffix[-1], name_elements, nlp, as_states, as_controls, skip_plot=True
-            )
-            nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
-                lambda t, x, u, p, key: u[nlp.controls[key].index, :],
-                plot_type=PlotType.STEP,
-                combine_to=control_plot_name,
-                key=var_names_with_suffix[-1],
-                color=color[i],
-            )
+            if split_controls:
+                ConfigureProblem.configure_new_variable(
+                    var_names_with_suffix[-1], name_elements, nlp, as_states, as_controls, skip_plot=True
+                )
+                nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
+                    lambda t, x, u, p, key: u[nlp.controls[key].index, :],
+                    plot_type=PlotType.STEP,
+                    combine_to=control_plot_name,
+                    key=var_names_with_suffix[-1],
+                    color=color[i],
+                )
+            elif i == 0:
+                ConfigureProblem.configure_new_variable(
+                    f"{name}", name_elements, nlp, as_states, as_controls, skip_plot=True
+                )
+                nlp.plot[f"{name}_controls"] = CustomPlot(
+                    lambda t, x, u, p, key: u[nlp.controls[key].index, :],
+                    plot_type=PlotType.STEP,
+                    combine_to=control_plot_name,
+                    key=f"{name}",
+                    color=color[i],
+                )
 
             for p, params in enumerate(fatigue_suffix):
                 name_tp = f"{var_names_with_suffix[-1]}_{params}"
@@ -391,8 +408,12 @@ class ConfigureProblem:
                     mod=plot_factor[i],
                 )
 
-        # Create a fake accessor for the name so it can be directly called in nlp.controls
-        ConfigureProblem.append_faked_optim_var(name, nlp.controls if as_controls else nlp.states, var_names_with_suffix)
+        # Create a fake accessor for the name of the controls so it can be directly called in nlp.controls
+        if split_controls:
+            ConfigureProblem.append_faked_optim_var(name, nlp.controlss, var_names_with_suffix)
+        else:
+            for meta_suffix in var_names_with_suffix:
+                ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls, [name])
 
         return True
 

@@ -150,7 +150,9 @@ class DynamicsFunctions:
             if 0 < n_state_only < len(fatigue["tau"]):
                 raise NotImplementedError("fatigue list without homogeneous state_only flag is not supported yet")
 
-            if tau_fatigue[0].models.state_only:
+            if not tau_fatigue[0].models.split_controls and "tau" in nlp.controls:
+                pass
+            elif tau_fatigue[0].models.state_only:
                 tau = sum([DynamicsFunctions.get(tau_var[f"tau_{suffix}"], tau_mx) for suffix in tau_suffix])
             else:
                 tau = MX()

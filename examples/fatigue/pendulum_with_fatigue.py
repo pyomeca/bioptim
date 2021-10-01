@@ -38,6 +38,7 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     fatigue_type: str,
+    split_controls: bool,
     use_sx: bool = True,
 ) -> OptimalControlProgram:
     """
@@ -53,6 +54,8 @@ def prepare_ocp(
         The number of shooting points to define int the direct multiple shooting program
     fatigue_type: str
         The type of dynamics to apply ("xia" or "michaud")
+    split_controls: bool
+        If the tau should be split into minus and plus or a if_else should be used
     use_sx: bool
         If the program should be built from SX (True) or MX (False)
 
@@ -77,6 +80,7 @@ def prepare_ocp(
                     XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_min),
                     XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_max),
                     state_only=False,
+                    split_controls=split_controls,
                 ),
             )
         elif fatigue_type == "michaud":
@@ -89,6 +93,7 @@ def prepare_ocp(
                         LD=100, LR=100, F=0.005, R=0.005, fatigue_threshold=0.2, L=0.001, S=10, scale=tau_max
                     ),
                     state_only=False,
+                    split_controls=split_controls
                 ),
             )
         elif fatigue_type == "michaud_simple":
@@ -96,6 +101,7 @@ def prepare_ocp(
                 MichaudTauFatigueSimple(
                     MichaudFatigueSimple(fatigue_threshold=0.2, L=0.001, scale=tau_min),
                     MichaudFatigueSimple(fatigue_threshold=0.2, L=0.001, scale=tau_max),
+                    split_controls=split_controls
                 )
             )
         else:
@@ -122,7 +128,10 @@ def prepare_ocp(
 
     # Define control path constraint
     u_bounds = FatigueBounds(fatigue_dynamics, variable_type=VariableType.CONTROLS)
-    u_bounds[[1, 3], :] = 0  # The rotation dof is passive
+    if split_controls:
+        u_bounds[[1, 3], :] = 0  # The rotation dof is passive
+    else:
+        u_bounds[1, :] = 0  # The rotation dof is passive
     u_init = FatigueInitialGuess(fatigue_dynamics, variable_type=VariableType.CONTROLS)
 
     return OptimalControlProgram(
@@ -145,7 +154,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30, fatigue_type="michaud")
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, split_controls=False, n_shooting=30, fatigue_type="michaud")
 
     # --- Print ocp structure --- #
     ocp.add_plot_penalty()

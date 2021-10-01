@@ -38,6 +38,8 @@ class FatigueBounds(Bounds):
                         bound = multi.models.default_bounds(index, variable_type)
                         x_min += [bound[0][i]]
                         x_max += [bound[1][i]]
+                if variable_type == VariableType.CONTROLS and not fatigue[key][0].models.split_controls:
+                    break
 
         super(FatigueBounds, self).__init__(min_bound=x_min, max_bound=x_max)
 
@@ -73,5 +75,7 @@ class FatigueInitialGuess(InitialGuess):
                 for i, _ in enumerate(suffix):
                     for multi in fatigue[key]:
                         x_init += [multi.models.default_initial_guess(index, variable_type)[i]]
+                if variable_type == VariableType.CONTROLS and not fatigue[key][0].models.split_controls:
+                    break
 
         super(FatigueInitialGuess, self).__init__(initial_guess=x_init)
