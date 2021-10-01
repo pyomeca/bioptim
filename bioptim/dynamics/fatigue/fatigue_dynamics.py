@@ -125,6 +125,20 @@ class MultiFatigueModel(OptionGeneric):
         The type of Fatigue
         """
 
+    @staticmethod
+    @abstractmethod
+    def color() -> tuple:
+        """
+        The color to be draw
+        """
+
+    @staticmethod
+    @abstractmethod
+    def plot_factor() -> tuple:
+        """
+        The factor to multiply the plots so it is not one over another
+        """
+
     @abstractmethod
     def suffix(self) -> tuple:
         """
@@ -237,6 +251,14 @@ class MultiFatigueInterface(MultiFatigueModel, ABC):
 
     def _dynamics_per_suffix(self, dxdt, suffix, nlp, index, states, controls):
         return self.models["fatigue"].dynamics(dxdt, nlp, index, states, controls)
+
+    @staticmethod
+    def color() -> tuple:
+        return "tab:orange",
+
+    @staticmethod
+    def plot_factor() -> tuple:
+        return 1,
 
 
 class FatigueUniqueList(UniquePerPhaseOptionList):

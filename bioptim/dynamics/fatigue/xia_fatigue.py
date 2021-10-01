@@ -46,6 +46,10 @@ class XiaFatigue(FatigueModel):
     def type() -> str:
         return "muscles"
 
+    @property
+    def multi_type(self):
+        return MultiFatigueInterfaceMuscle
+
     @staticmethod
     def suffix(variable_type: VariableType) -> tuple:
         if variable_type == VariableType.STATES:
@@ -114,19 +118,20 @@ class XiaTauFatigue(MultiFatigueModel):
 
         super(XiaTauFatigue, self).__init__([minus, plus], state_only=state_only, **kwargs)
 
-    def suffix(self) -> list:
-        return ["minus", "plus"]
+    def suffix(self) -> tuple:
+        return "minus", "plus"
 
     @staticmethod
     def model_type() -> str:
         return "tau"
 
     @staticmethod
-    def color() -> list:
-        """
-        The color to be draw
-        """
-        return ["tab:orange", "tab:green"]
+    def color() -> tuple:
+        return "tab:orange", "tab:green"
+
+    @staticmethod
+    def plot_factor() -> tuple:
+        return -1, 1
 
     @staticmethod
     def dynamics_suffix() -> str:
