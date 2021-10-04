@@ -26,8 +26,8 @@ from bioptim import (
     XiaTauFatigue,
     MichaudFatigue,
     MichaudTauFatigue,
-    MichaudFatigueSimple,
-    MichaudTauFatigueSimple,
+    EffortPerception,
+    TauEffortPerception,
     ObjectiveFcn,
     VariableType,
 )
@@ -77,8 +77,8 @@ def prepare_ocp(
         if fatigue_type == "xia":
             fatigue_dynamics.add(
                 XiaTauFatigue(
-                    XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_min),
-                    XiaFatigue(LD=100, LR=100, F=5, R=10, scale=tau_max),
+                    XiaFatigue(LD=100, LR=100, F=5, R=10, scaling=tau_min),
+                    XiaFatigue(LD=100, LR=100, F=5, R=10, scaling=tau_max),
                     state_only=False,
                     split_controls=split_controls,
                 ),
@@ -87,20 +87,20 @@ def prepare_ocp(
             fatigue_dynamics.add(
                 MichaudTauFatigue(
                     MichaudFatigue(
-                        LD=100, LR=100, F=0.005, R=0.005, fatigue_threshold=0.2, L=0.001, S=10, scale=tau_min
+                        LD=100, LR=100, F=0.005, R=0.005, effort_threshold=0.2, effort_factor=0.001, stabilization_factor=10, scaling=tau_min
                     ),
                     MichaudFatigue(
-                        LD=100, LR=100, F=0.005, R=0.005, fatigue_threshold=0.2, L=0.001, S=10, scale=tau_max
+                        LD=100, LR=100, F=0.005, R=0.005, effort_threshold=0.2, effort_factor=0.001, stabilization_factor=10, scaling=tau_max
                     ),
                     state_only=False,
                     split_controls=split_controls
                 ),
             )
-        elif fatigue_type == "michaud_simple":
+        elif fatigue_type == "effort":
             fatigue_dynamics.add(
-                MichaudTauFatigueSimple(
-                    MichaudFatigueSimple(fatigue_threshold=0.2, L=0.001, scale=tau_min),
-                    MichaudFatigueSimple(fatigue_threshold=0.2, L=0.001, scale=tau_max),
+                TauEffortPerception(
+                    EffortPerception(effort_threshold=0.2, effort_factor=0.001, scaling=tau_min),
+                    EffortPerception(effort_threshold=0.2, effort_factor=0.001, scaling=tau_max),
                     split_controls=split_controls
                 )
             )
@@ -115,7 +115,7 @@ def prepare_ocp(
     x_bounds[:, [0, -1]] = 0
     x_bounds[1, -1] = 3.14
     x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))
-    if fatigue_type != "michaud_simple":
+    if fatigue_type != "effort":
         x_bounds[[5, 11], 0] = 0  # The rotation dof is passive (fatigue_ma = 0)
         if fatigue_type == "xia":
             x_bounds[[7, 13], 0] = 1  # The rotation dof is passive (fatigue_mr = 1)
@@ -154,7 +154,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, split_controls=False, n_shooting=30, fatigue_type="michaud")
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, split_controls=False, n_shooting=30, fatigue_type="effort")
 
     # --- Print ocp structure --- #
     ocp.add_plot_penalty()

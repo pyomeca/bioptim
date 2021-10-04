@@ -162,7 +162,7 @@ class DynamicsFunctions:
                         model = t.models.models[suffix]
                         tau_tp += (
                             DynamicsFunctions.get(nlp.states[f"tau_{suffix}_{model.dynamics_suffix()}"], states)[i]
-                            * model.scale
+                            * model.scaling
                         )
                     tau = vertcat(tau, tau_tp)
         return tau
@@ -356,17 +356,18 @@ class DynamicsFunctions:
         mus_activations = DynamicsFunctions.get(mus_act_nlp["muscles"], mus_act)
         if fatigue is not None and "muscles" in fatigue:
             mus_fatigue = fatigue["muscles"]
+            fatigue_name = mus_fatigue.suffix[0]
 
             # Sanity check
             n_state_only = sum([m.models.state_only for m in mus_fatigue])
             if 0 < n_state_only < len(fatigue["muscles"]):
-                raise NotImplementedError("fatigue list without homogeneous state_only flag is not supported yet")
+                raise NotImplementedError(f"{fatigue_name} list without homogeneous state_only flag is not supported yet")
 
-            dyn_suffix = mus_fatigue[0].models.models["fatigue"].dynamics_suffix()
+            dyn_suffix = mus_fatigue[0].models.models[fatigue_name].dynamics_suffix()
             for m in mus_fatigue:
                 for key in m.models.models:
                     if m.models.models[key].dynamics_suffix() != dyn_suffix:
-                        raise ValueError("fatigue must be of all same types")
+                        raise ValueError(f"{fatigue_name} must be of all same types")
 
             if n_state_only == 0:
                 mus_activations = DynamicsFunctions.get(nlp.states[f"muscles_{dyn_suffix}"], states)

@@ -8,6 +8,13 @@ from ...misc.enums import VariableType
 
 
 class FatigueModel(ABC):
+    def __init__(self, scaling: float = 1):
+        """
+        scaling: float
+            A scaling factor to apply
+        """
+        self.scaling = scaling
+
     @staticmethod
     @abstractmethod
     def type() -> str:
@@ -27,6 +34,12 @@ class FatigueModel(ABC):
     def color() -> tuple:
         """
         The coloring when drawn
+        """
+
+    @abstractmethod
+    def default_state_only(self) -> bool:
+        """
+        What is the default value for state_only
         """
 
     @abstractmethod
@@ -189,6 +202,13 @@ class MultiFatigueModel(OptionGeneric):
 
         """
 
+    @staticmethod
+    @abstractmethod
+    def default_state_only():
+        """
+        What is the default value for state_only
+        """
+
     @abstractmethod
     def default_bounds(self, index: int, variable_type: VariableType) -> tuple:
         """
@@ -313,6 +333,9 @@ class FatigueList(OptionDict):
             If the added fatigue should be used in the dynamics or only computed
         """
 
+        if state_only is None:
+            state_only = model.default_state_only()
+
         if isinstance(model, FatigueModel):
             model = model.multi_type(model, state_only=state_only)
 
@@ -329,3 +352,6 @@ class FatigueList(OptionDict):
 
     def __getitem__(self, item: Union[int, str, list, tuple]) -> FatigueUniqueList:
         return super(FatigueList, self).__getitem__(item)
+
+    def print(self):
+        raise NotImplementedError("Printing is not implemented yet for FatigueList")

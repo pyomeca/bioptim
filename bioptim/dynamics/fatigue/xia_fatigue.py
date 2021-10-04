@@ -1,25 +1,16 @@
 from casadi import vertcat, lt, gt, if_else
 
-from ..dynamics_functions import DynamicsFunctions
-from .fatigue_dynamics import FatigueModel, MultiFatigueModel, MultiFatigueInterface
+from .muscle_fatigue import MuscleFatigue
+from .tau_fatigue import TauFatigue
 from ...misc.enums import VariableType
 
 
-class MultiFatigueInterfaceMuscle(MultiFatigueInterface):
-    @staticmethod
-    def model_type() -> str:
-        """
-        The type of Fatigue
-        """
-        return "muscles"
-
-
-class XiaFatigue(FatigueModel):
+class XiaFatigue(MuscleFatigue):
     """
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, LD: float, LR: float, F: float, R: float, scale: float = 1):
+    def __init__(self, LD: float, LR: float, F: float, R: float, **kwargs):
         """
         Parameters
         ----------
@@ -31,24 +22,13 @@ class XiaFatigue(FatigueModel):
             Joint fibers recovery rate
         R: float
             Joint fibers relaxation rate
-        scale: float
-            The scaling factor to convert so input / scale => TL
         """
 
-        super(XiaFatigue, self).__init__()
+        super(XiaFatigue, self).__init__(**kwargs)
         self.LR = LR
         self.LD = LD
         self.F = F
         self.R = R
-        self.scale = scale
-
-    @staticmethod
-    def type() -> str:
-        return "muscles"
-
-    @property
-    def multi_type(self):
-        return MultiFatigueInterfaceMuscle
 
     @staticmethod
     def suffix(variable_type: VariableType) -> tuple:
@@ -84,101 +64,12 @@ class XiaFatigue(FatigueModel):
         mf_dot = self.F * ma - self.R * mf
         return vertcat(ma_dot, mr_dot, mf_dot)
 
-    def _get_target_load(self, nlp, controls, index):
-        if "muscles" not in nlp.controls:
-            raise NotImplementedError("Fatigue dynamics without muscle controls is not implemented yet")
 
-        return DynamicsFunctions.get(nlp.controls["muscles"], controls)[index, :]
-
-    def dynamics(self, dxdt, nlp, index, states, controls):
-        target_load = self._get_target_load(nlp, controls, index)
-        fatigue = [DynamicsFunctions.get(nlp.states[f"muscles_{s}"], states)[index, :] for s in self.suffix(VariableType.STATES)]
-        current_dxdt = self.apply_dynamics(target_load, *fatigue)
-
-        for i, s in enumerate(self.suffix(variable_type=VariableType.STATES)):
-            dxdt[nlp.states[f"muscles_{s}"].index[index], :] = current_dxdt[i]
-
-        return dxdt
-
-
-class XiaTauFatigue(MultiFatigueModel):
+class XiaTauFatigue(TauFatigue):
     """
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, minus: XiaFatigue, plus: XiaFatigue, state_only: bool = True, **kwargs):
-        """
-        Parameters
-        ----------
-        minus: XiaFatigue
-            The Xia model for the negative tau
-        plus: XiaFatigue
-            The Xia model for the positive tau
-        state_only: bool
-            If the dynamics should be passed to tau or only computed
-        """
-
-        super(XiaTauFatigue, self).__init__([minus, plus], state_only=state_only, **kwargs)
-
-    def suffix(self) -> tuple:
-        return "minus", "plus"
-
-    @staticmethod
-    def model_type() -> str:
-        return "tau"
-
-    @staticmethod
-    def color() -> tuple:
-        return "tab:orange", "tab:green"
-
-    @staticmethod
-    def plot_factor() -> tuple:
-        return -1, 1
-
     @staticmethod
     def dynamics_suffix() -> str:
         return "ma"
-
-    def _dynamics_per_suffix(self, dxdt, suffix, nlp, index, states, controls):
-        var = self.models[suffix]
-        target_load = self._get_target_load(var, suffix, nlp, controls, index)
-        fatigue = [
-            DynamicsFunctions.get(nlp.states[f"tau_{suffix}_{dyn_suffix}"], states)[index, :]
-            for dyn_suffix in var.suffix(variable_type=VariableType.STATES)
-        ]
-        current_dxdt = var.apply_dynamics(target_load, *fatigue)
-
-        for i, dyn_suffix in enumerate(var.suffix(variable_type=VariableType.STATES)):
-            dxdt[nlp.states[f"tau_{suffix}_{dyn_suffix}"].index[index], :] = current_dxdt[i]
-
-        return dxdt
-
-    def _get_target_load(self, var: XiaFatigue, suffix: str, nlp, controls, index: int):
-        if "tau" not in nlp.controls:
-            raise NotImplementedError("Fatigue dynamics without tau controls is not implemented yet")
-
-        val = DynamicsFunctions.get(nlp.controls[f"tau_{suffix}"], controls)[index, :]
-        if not self.split_controls:
-            if var.scale < 0:
-                val = if_else(lt(val, 0), val, 0)
-            else:
-                val = if_else(gt(val, 0), val, 0)
-        return val / var.scale
-
-    def default_bounds(self, index: int, variable_type: VariableType) -> tuple:
-        key = self._convert_to_models_key(index)
-
-        if variable_type == VariableType.STATES:
-            return self.models[key].default_bounds(variable_type)
-        else:
-            if self.split_controls:
-                scale = self.models[key].scale
-                return ((scale if index == 0 else 0),), ((scale if index == 1 else 0),)
-            else:
-                scale_minus = self.models["minus"].scale,
-                scale_plus = self.models["plus"].scale,
-                return scale_minus, scale_plus
-
-    def default_initial_guess(self, index: int, variable_type: VariableType):
-        key = self._convert_to_models_key(index)
-        return self.models[key].default_initial_guess()

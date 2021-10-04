@@ -27,6 +27,8 @@ from bioptim import (
     XiaTauFatigue,
     MichaudFatigue,
     MichaudTauFatigue,
+    EffortPerception,
+    TauEffortPerception,
     Node,
     Axis,
     VariableType,
@@ -76,8 +78,10 @@ def prepare_ocp(
         elif fatigue_type == "michaud":
             fatigue_dynamics.add(
                 MichaudFatigue(
-                    LD=100, LR=100, F=0.005, R=0.005, fatigue_threshold=0.2, L=0.001, S=10), state_only=True
+                    LD=100, LR=100, F=0.005, R=0.005, effort_threshold=0.2, effort_factor=0.001, stabilization_factor=10), state_only=True
             )
+        elif fatigue_type == "effort":
+            fatigue_dynamics.add(EffortPerception(effort_threshold=0.2, effort_factor=0.001))
         else:
             raise ValueError("fatigue_type not implemented")
     if torque_level >= 2:
@@ -85,16 +89,24 @@ def prepare_ocp(
             if fatigue_type == "xia":
                 fatigue_dynamics.add(
                     XiaTauFatigue(
-                        XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_min),
-                        XiaFatigue(LD=10, LR=10, F=5, R=10, scale=tau_max),
+                        XiaFatigue(LD=10, LR=10, F=5, R=10, scaling=tau_min),
+                        XiaFatigue(LD=10, LR=10, F=5, R=10, scaling=tau_max),
                     ),
                     state_only=False,
                 )
             elif fatigue_type == "michaud":
                 fatigue_dynamics.add(
                     MichaudTauFatigue(
-                        MichaudFatigue(LD=10, LR=10, F=5, R=10, fatigue_threshold=0.15, L=0.07, scale=tau_min),
-                        MichaudFatigue(LD=10, LR=10, F=5, R=10, fatigue_threshold=0.15, L=0.07, scale=tau_max),
+                        MichaudFatigue(LD=10, LR=10, F=5, R=10, effort_threshold=0.15, effort_factor=0.07, scaling=tau_min),
+                        MichaudFatigue(LD=10, LR=10, F=5, R=10, effort_threshold=0.15, effort_factor=0.07, scaling=tau_max),
+                    ),
+                    state_only=False,
+                )
+            elif fatigue_type == "effort":
+                fatigue_dynamics.add(
+                    TauEffortPerception(
+                        EffortPerception(effort_threshold=0.15, effort_factor=0.001, scaling=tau_min),
+                        EffortPerception(effort_threshold=0.15, effort_factor=0.001, scaling=tau_max),
                     ),
                     state_only=False,
                 )
@@ -106,7 +118,8 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    if torque_level > 0:
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=100)
     objective_functions.add(
         ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, first_marker="target", second_marker="COM_hand", weight=0.01
@@ -161,7 +174,7 @@ def main():
         biorbd_model_path="models/arm26_constant.bioMod",
         final_time=0.8,
         n_shooting=50,
-        fatigue_type="michaud",
+        fatigue_type="effort",
         torque_level=1,
     )
 

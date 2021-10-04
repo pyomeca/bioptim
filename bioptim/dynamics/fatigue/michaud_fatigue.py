@@ -1,13 +1,18 @@
 from casadi import vertcat, lt, gt, if_else
 
-from .xia_fatigue import XiaFatigue, XiaTauFatigue, MultiFatigueInterfaceMuscle
+from .muscle_fatigue import MuscleFatigue, MultiFatigueInterfaceMuscle
+from .tau_fatigue import TauFatigue
 from ...misc.enums import VariableType
 
 
-class MichaudFatigue(XiaFatigue):
+class MichaudFatigue(MuscleFatigue):
     """
     A placeholder for fatigue dynamics.
     """
+
+    @staticmethod
+    def dynamics_suffix() -> str:
+        return "ma"
 
     def __init__(
         self,
@@ -15,10 +20,10 @@ class MichaudFatigue(XiaFatigue):
         LR: float,
         F: float,
         R: float,
-        fatigue_threshold: float,
-        L: float,
-        S: float = 1,
-        scale: float = 1,
+        effort_threshold: float,
+        effort_factor: float,
+        stabilization_factor: float = 1,
+        scaling: float = 1,
     ):
         """
         Parameters
@@ -31,20 +36,27 @@ class MichaudFatigue(XiaFatigue):
             Recovery rate
         R: float
             Relaxation rate
-        fatigue_threshold: float
-            The activation level at which the structure starts to build long-term fatigue
-        L: float
-            Long-term fatigable rate
-        S: float
+        effort_threshold: float
+            The activation level at which the structure starts to build/relax the effort perception
+        effort_factor: float
+            Effort perception build up rate
+        stabilization_factor: float
             Stabilization factor so: ma + mr + mf => 1
-        scale: float
+        scaling: float
             The scaling factor to convert so input / scale => TL
         """
 
-        super(MichaudFatigue, self).__init__(LD, LR, F, R, scale)
-        self.S = S
-        self.L = L
-        self.fatigue_threshold = fatigue_threshold
+        super(MichaudFatigue, self).__init__(scaling=scaling)
+        # Xia parameters
+        self.LD = LD
+        self.LR = LR
+        self.F = F
+        self.R = R
+
+        # Stabilisation factor and effort factor
+        self.stabilization_factor = stabilization_factor
+        self.effort_factor = effort_factor
+        self.effort_threshold = effort_threshold
 
     @staticmethod
     def suffix(variable_type: VariableType) -> tuple:
@@ -73,13 +85,13 @@ class MichaudFatigue(XiaFatigue):
             self.LR * (target_load - ma),
         )
 
-        fatigue_load = target_load - self.fatigue_threshold
-        fatigue_dyn = self.L * if_else(gt(fatigue_load, 0), 1 - mf_long, -mf_long)
+        fatigue_load = target_load - self.effort_threshold
+        fatigue_dyn = self.effort_factor * if_else(gt(fatigue_load, 0), 1 - mf_long, -mf_long)
 
         ma_dot = c - self.F * ma - if_else(gt(fatigue_load, 0), fatigue_dyn, 0)
         mr_dot = -c + self.R * mf_xia - if_else(lt(fatigue_load, 0), fatigue_dyn, 0)
         mf_dot = self.F * ma - self.R * mf_xia
-        mf_long_dot = fatigue_dyn + self.S * (1 - ma - mr - mf_xia - mf_long)
+        mf_long_dot = fatigue_dyn + self.stabilization_factor * (1 - ma - mr - mf_xia - mf_long)
 
         return vertcat(ma_dot, mr_dot, mf_dot, mf_long_dot)
 
@@ -88,10 +100,14 @@ class MichaudFatigue(XiaFatigue):
         return MultiFatigueInterfaceMuscle
 
 
-class MichaudTauFatigue(XiaTauFatigue):
+class MichaudTauFatigue(TauFatigue):
     """
     A placeholder for fatigue dynamics.
     """
+
+    @staticmethod
+    def dynamics_suffix() -> str:
+        return "ma"
 
     def __init__(self, minus: MichaudFatigue, plus: MichaudFatigue, state_only: bool = False, **kwargs):
         """
@@ -104,82 +120,3 @@ class MichaudTauFatigue(XiaTauFatigue):
         """
 
         super(MichaudTauFatigue, self).__init__(minus, plus, state_only=state_only, **kwargs)
-
-
-class MichaudFatigueSimple(MichaudFatigue):
-    """
-    A placeholder for fatigue dynamics.
-    """
-
-    def __init__(
-            self,
-            fatigue_threshold: float,
-            L: float,
-            scale: float = 1,
-    ):
-        """
-        Parameters
-        ----------
-        fatigue_threshold: float
-            The activation level at which the structure starts to build long-term fatigue
-        L: float
-            Long-term fatigable rate
-        scale: float
-            The scaling factor to convert so input / scale => TL
-        """
-
-        super(MichaudFatigueSimple, self).__init__(LD=0, LR=0, F=0, R=0, fatigue_threshold=fatigue_threshold, L=L, S=0,
-                                                   scale=scale)
-
-    @staticmethod
-    def suffix(variable_type: VariableType) -> tuple:
-        if variable_type == VariableType.STATES:
-            return "mf",
-        else:
-            return "",
-
-    @staticmethod
-    def color() -> tuple:
-        return "tab:brown",
-
-    def default_initial_guess(self) -> tuple:
-        return 0,
-
-    def default_bounds(self, variable_type: VariableType) -> tuple:
-        if variable_type == VariableType.STATES:
-            return (0,), (1,)
-        elif variable_type == VariableType.CONTROLS:
-            raise RuntimeError("default_bounds for CONTROLS cannot be called for this model")
-
-    def apply_dynamics(self, target_load, *states):
-        # Implementation of modified Xia dynamics
-        mf_long = states[0]
-        fatigue_load = target_load - self.fatigue_threshold
-        mf_long_dot = self.L * if_else(gt(fatigue_load, 0), 1 - mf_long, -mf_long)
-        return mf_long_dot
-
-    @staticmethod
-    def dynamics_suffix() -> str:
-        raise RuntimeError("MichaudSimple cannot be used with state_only=False")
-
-    @property
-    def multi_type(self):
-        return MichaudTauFatigueSimple
-
-
-class MichaudTauFatigueSimple(MichaudTauFatigue):
-    """
-    A placeholder for fatigue dynamics.
-    """
-
-    def __init__(self, minus: MichaudFatigueSimple, plus: MichaudFatigueSimple, state_only: bool = True, **kwargs):
-        """
-        Parameters
-        ----------
-        minus: MichaudFatigueSimple
-            The Michaud model for the negative tau
-        plus: MichaudFatigueSimple
-            The Michaud model for the positive tau
-        """
-
-        super(MichaudTauFatigueSimple, self).__init__(minus, plus, state_only=state_only, **kwargs)
