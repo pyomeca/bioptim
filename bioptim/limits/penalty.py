@@ -7,6 +7,7 @@ from casadi import horzcat, vertcat
 
 from .penalty_option import PenaltyOption
 from .penalty_node import PenaltyNodeList
+from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.biorbd_interface import BiorbdInterface
 from ..misc.enums import Node, Axis, ControlType
 
