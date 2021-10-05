@@ -347,7 +347,7 @@ class ConfigureProblem:
         n_elements = len(name_elements)
 
         legend = [f"{name}_{i}" for i in name_elements]
-        fatigue_plot_name = f"{fatigue_var.suffix[0]}_{name}"
+        fatigue_plot_name = f"fatigue_{name}"
         nlp.plot[fatigue_plot_name] = CustomPlot(
             lambda t, x, u, p: x[:n_elements, :] * np.nan,
             plot_type=PlotType.INTEGRATED,

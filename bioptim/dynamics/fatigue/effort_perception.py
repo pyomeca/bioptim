@@ -14,7 +14,7 @@ class EffortPerception(MuscleFatigue):
             self,
             effort_threshold: float,
             effort_factor: float,
-            scaling: float = 1,
+            **kwargs
     ):
         """
         Parameters
@@ -27,10 +27,9 @@ class EffortPerception(MuscleFatigue):
             The scaling factor to convert so input / scale => TL
         """
 
-        super(EffortPerception, self).__init__()
+        super(EffortPerception, self).__init__(**kwargs)
         self.effort_threshold = effort_threshold
         self.effort_factor = effort_factor
-        self.scaling = scaling
 
     @staticmethod
     def suffix(variable_type: VariableType) -> tuple:

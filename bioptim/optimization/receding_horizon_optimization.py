@@ -58,6 +58,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         self,
         update_function: Callable,
         solver: Solver = Solver.ACADOS,
+        warm_start: Solution = None,
         solver_options: dict = None,
         solver_options_first_iter: dict = None,
         export_options: dict = None,
@@ -83,6 +84,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             bounds.
         solver: Solver
             The Solver to use (default being ACADOS)
+        warm_start: Solution
+            A Solution to initiate the first iteration from
         solver_options: dict
             The options to pass to the solver.
         solver_options_first_iter: dict
@@ -118,14 +121,6 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             if solver_options is None:
                 solver_options = solver_options_first_iter if solver_options_first_iter else {}
 
-            solver_options["warm_start_init_point"] = "yes"
-            if "warm_start_mult_bound_push" not in solver_options:
-                solver_options["warm_start_mult_bound_push"] = 1e-10
-            if "warm_start_slack_bound_push" not in solver_options:
-                solver_options["warm_start_slack_bound_push"] = 1e-10
-            if "warm_start_bound_push" not in solver_options:
-                solver_options["warm_start_bound_push"] = 1e-10
-
         self._initialize_frame_to_export(export_options)
 
         total_time = 0
@@ -135,6 +130,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         while update_function(self, self.total_optimization_run, sol):
             sol = super(RecedingHorizonOptimization, self).solve(
                 solver=solver,
+                warm_start=warm_start,
                 solver_options=solver_option_current,
                 show_online_optim=show_online_optim,
                 show_options=show_options,
@@ -335,10 +331,10 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 
         export_options = {"frame_to_export": slice(0, self.time_idx_to_cycle)}
         return super(CyclicRecedingHorizonOptimization, self).solve(
-            update_function,
-            solver,
-            solver_options,
-            solver_options_first_iter,
+            update_function=update_function,
+            solver=solver,
+            solver_options=solver_options,
+            solver_options_first_iter=solver_options_first_iter,
             export_options=export_options,
             **extra_options,
         )

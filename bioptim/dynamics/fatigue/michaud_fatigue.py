@@ -23,7 +23,7 @@ class MichaudFatigue(MuscleFatigue):
         effort_threshold: float,
         effort_factor: float,
         stabilization_factor: float = 1,
-        scaling: float = 1,
+        **kwargs
     ):
         """
         Parameters
@@ -46,7 +46,7 @@ class MichaudFatigue(MuscleFatigue):
             The scaling factor to convert so input / scale => TL
         """
 
-        super(MichaudFatigue, self).__init__(scaling=scaling)
+        super(MichaudFatigue, self).__init__(**kwargs)
         # Xia parameters
         self.LD = LD
         self.LR = LR
