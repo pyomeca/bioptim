@@ -53,11 +53,18 @@ class MuscleFatigue(FatigueModel):
 
         return dxdt
 
+    def default_state_only(self) -> bool:
+        return False
+
 
 class MultiFatigueInterfaceMuscle(MultiFatigueInterface):
+
     @staticmethod
     def model_type() -> str:
         """
         The type of Fatigue
         """
         return "muscles"
+
+    def default_state_only(self) -> bool:
+        return False
