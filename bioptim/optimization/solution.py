@@ -1,3 +1,4 @@
+import time
 from typing import Any, Union
 from copy import deepcopy
 
@@ -8,6 +9,7 @@ from scipy.integrate import solve_ivp
 from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
+from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import ControlType, CostType, Shooting, InterpolationType, Solver
 from ..misc.utils import check_version
