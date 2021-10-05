@@ -215,32 +215,32 @@ def test_effort_fatigable_muscles():
     TestUtils.simulate(sol)
 
 
-def test_fatigable_xia_torque():
+def test_fatigable_xia_torque_non_split():
     bioptim_folder = TestUtils.bioptim_folder()
     fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
 
     model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
     ocp = fatigue.prepare_ocp(
-        biorbd_model_path=model_path, final_time=1, n_shooting=30, fatigue_type="xia", use_sx=False
+        biorbd_model_path=model_path, final_time=1, n_shooting=10, fatigue_type="xia", split_controls=False, use_sx=False
     )
     sol = ocp.solve()
 
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 40.95718478849265)
+    np.testing.assert_almost_equal(f[0, 0], 681.4936347682981)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (480, 1))
-    np.testing.assert_almost_equal(g, np.zeros((480, 1)))
+    np.testing.assert_equal(g.shape, (160, 1))
+    np.testing.assert_almost_equal(g, np.zeros((160, 1)))
 
     # Check some of the results
     states, controls = sol.states, sol.controls
     q, qdot = states["q"], states["qdot"]
     ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
     ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
-    tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
+    tau = controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -249,23 +249,21 @@ def test_fatigable_xia_torque():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0.01985313, 0)))
-    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((7.37767532e-02, 0)))
-    np.testing.assert_almost_equal(mr_minus[:, 0], np.array((0.06325867, 1)))
-    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.55150842, 1)))
-    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((5.5779170e-01, 0)))
-    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((1.56183245e-02, 0)))
-    np.testing.assert_almost_equal(ma_plus[:, 0], np.array((0.40909385, 0)))
-    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((6.85653498e-07, 0)))
-    np.testing.assert_almost_equal(mr_plus[:, 0], np.array((0.02136454, 1)))
-    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.71084984, 1)))
-    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((2.87872267e-01, 0)))
-    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((7.48012913e-03, 0)))
+    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0., 0)))
+    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((2.05715389e-01, 0)))
+    np.testing.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
+    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.71681593, 1)))
+    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((7.74686771e-02, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((4.54576950e-03, 0)))
+    np.testing.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
+    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.91265673, 1)))
+    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((8.27975034e-02, 0)))
 
-    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-2.05780708, 0)))
-    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-7.78768695, 0)))
-    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((6.52663587e-07, 0)))
-    np.testing.assert_almost_equal(tau_plus[:, -2], np.array((1.64880042e-07, 0)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((4.65387493, 0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-21.7531631, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -274,20 +272,20 @@ def test_fatigable_xia_torque():
     TestUtils.simulate(sol)
 
 
-def test_fatigable_michaud_torque():
+def test_fatigable_xia_torque_split():
     bioptim_folder = TestUtils.bioptim_folder()
     fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
 
     model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
     ocp = fatigue.prepare_ocp(
-        biorbd_model_path=model_path, final_time=1, n_shooting=30, fatigue_type="michaud", use_sx=False
+        biorbd_model_path=model_path, final_time=1, n_shooting=30, fatigue_type="xia", split_controls=True, use_sx=False
     )
     sol = ocp.solve()
 
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 39.148770270880526)
+    np.testing.assert_almost_equal(f[0, 0], 46.97293026598778)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -308,23 +306,237 @@ def test_fatigable_michaud_torque():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((3.17363764e-08, 0)))
-    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((8.57856948e-02, 3.49993000e-05)))
-    np.testing.assert_almost_equal(mr_minus[:, 0], np.array((0.50501489, 0.49184462)))
-    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.43233508, 0.50680829)))
-    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0.50572158, 0.49632324)))
-    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((0.48187971, 0.49315618)))
-    np.testing.assert_almost_equal(ma_plus[:, 0], np.array((0.98767835, 0)))
-    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((6.90717846e-03, 3.49993000e-05)))
-    np.testing.assert_almost_equal(mr_plus[:, 0], np.array((3.16861572e-08, 4.91844622e-01)))
-    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.99309224, 0.50680829)))
-    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((3.10122002e-04, 4.96323238e-01)))
-    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((3.16294492e-08, 4.93156177e-01)))
+    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0., 0)))
+    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((9.74835527e-02, 0)))
+    np.testing.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
+    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.88266826, 1)))
+    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((1.98481921e-02, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((5.69110401e-06, 0)))
+    np.testing.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
+    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.9891588, 1)))
+    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array(( 1.08355110e-02, 0)))
 
-    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-3.2944767e-07, 0)))
-    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-12.86030016, 0)))
-    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((4.0186369, 0)))
-    np.testing.assert_almost_equal(tau_plus[:, -2], np.array((9.60415772e-08, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-10.29111867, 0)))
+    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((7.0546191, 0)))
+    np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol)
+
+
+def test_fatigable_michaud_torque_non_split():
+    bioptim_folder = TestUtils.bioptim_folder()
+    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
+
+    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
+    ocp = fatigue.prepare_ocp(
+        biorbd_model_path=model_path, final_time=1, n_shooting=10, fatigue_type="michaud", split_controls=False, use_sx=False
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 752.2660291516361)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (200, 1))
+    np.testing.assert_almost_equal(g, np.zeros((200, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls = sol.states, sol.controls
+    q, qdot = states["q"], states["qdot"]
+    ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
+    ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
+    tau = controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((2.27726849e-01, 0)))
+    np.testing.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
+    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.77154438, 1)))
+    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((2.99934839e-04, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((2.94965705e-03, 0)))
+    np.testing.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
+    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.99650902, 1)))
+    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((9.99805014e-05, 0)))
+
+    np.testing.assert_almost_equal(tau[:, 0], np.array((4.59966318, 0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-22.86838109, 0)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol, decimal_value=5)
+
+
+def test_fatigable_michaud_torque_split():
+    bioptim_folder = TestUtils.bioptim_folder()
+    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
+
+    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
+    ocp = fatigue.prepare_ocp(
+        biorbd_model_path=model_path, final_time=1, n_shooting=10, fatigue_type="michaud", split_controls=True, use_sx=False
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 66.4869989782804)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (200, 1))
+    np.testing.assert_almost_equal(g, np.zeros((200, 1)))
+
+    # Check some of the results
+    states, controls = sol.states, sol.controls
+    q, qdot = states["q"], states["qdot"]
+    ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
+    ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
+    tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(ma_minus[:, -1], np.array((1.14840287e-01, 0)))
+    np.testing.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
+    np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.88501154, 1)))
+    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((0, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(ma_plus[:, -1], np.array((6.06085673e-04, 0)))
+    np.testing.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
+    np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.99924023, 1)))
+    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((0, 0)))
+
+    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-2.39672721e-07, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-11.53208375, 0)))
+    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((5.03417941, 0)))
+    np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol, decimal_value=6)
+
+
+def test_fatigable_effort_torque_non_split():
+    bioptim_folder = TestUtils.bioptim_folder()
+    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
+
+    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
+    ocp = fatigue.prepare_ocp(
+        biorbd_model_path=model_path, final_time=1, n_shooting=10, fatigue_type="effort", split_controls=False, use_sx=False
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 124.09811189707075)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (80, 1))
+    np.testing.assert_almost_equal(g, np.zeros((80, 1)))
+
+    # Check some of the results
+    states, controls = sol.states, sol.controls
+    q, qdot = states["q"], states["qdot"]
+    mf_minus, mf_plus = states["tau_minus_mf"], states["tau_plus_mf"]
+    tau = controls["tau"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((9.99850012e-05, 0)))
+
+    np.testing.assert_almost_equal(tau[:, 0], np.array((5.85068584, 0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-12.03087216, 0)))
+
+    # save and load
+    TestUtils.save_and_load(sol, ocp, True)
+
+    # simulate
+    TestUtils.simulate(sol)
+
+
+def test_fatigable_effort_torque_split():
+    bioptim_folder = TestUtils.bioptim_folder()
+    fatigue = TestUtils.load_module(f"{bioptim_folder}/examples/fatigue/pendulum_with_fatigue.py")
+
+    model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
+    ocp = fatigue.prepare_ocp(
+        biorbd_model_path=model_path, final_time=1, n_shooting=10, fatigue_type="effort", split_controls=True, use_sx=False
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 946.1348332835429)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (80, 1))
+    np.testing.assert_almost_equal(g, np.zeros((80, 1)))
+
+    # Check some of the results
+    states, controls = sol.states, sol.controls
+    q, qdot = states["q"], states["qdot"]
+    mf_minus, mf_plus = states["tau_minus_mf"], states["tau_plus_mf"]
+    tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    np.testing.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_minus[:, -1], np.array((2.99925013e-04, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((9.99850012e-05, 0)))
+
+    np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-8.39473327e-08, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-25.58603374, 0)))
+    np.testing.assert_almost_equal(tau_plus[:, 0], np.array((4.83833953, 0)))
+    np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
