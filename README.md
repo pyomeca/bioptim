@@ -248,8 +248,15 @@ QAndQDotBounds waits for a biorbd model and returns a structure with the minimal
 How convenient!
 ```python
 x_bounds = QAndQDotBounds(biorbd_model)
-```
-Then, override the first and last column to be 0, that is the sideways and rotation to be null for both the position and the velocities
+
+
+The first element of x_bounds is the degree of freedom declared in order in the bio.Mod file.
+In this case, the degree of freedom with index 0 is translation y, and the index 1 refers to rotation x. 
+Finally, the index 2 and 3 are respectively the velocity of translation y and rotation x 
+
+The time is discretized in nodes wich is the second element declared in x_bounds
+
+We want the first and last column(which is equivalent to nodes 0 and -1) to be 0, that is the translations and rotations to be null for both the position and so the velocities, wich finally means that all the degrees of freedom are null.
 ```python
 x_bounds[:, [0, -1]] = 0
 ```
@@ -280,8 +287,13 @@ Still, helping the solver is usually a good idea, so let's give ̀`Ipopt` a star
 The initial guess that we can provide are those for the states (`x_init`, here *q* and *qdot*) and for the controls (`u_init`, here *tau*). 
 So let's define both of them quickly
 ```python
-x_init = InitialGuess([0, 0, 0, 0])
+x_init = InitialGuess([0, 0, 0, 0]) 
 u_init = InitialGuess([0, 0])
+
+Each element declared in x_init is the value of the degree of freedom in the bio.Mod file : 
+for example x_init = InitialGuess([q1, q2, qdot1, qdot2]) with q1,q2 the positions and qdot1,qdot2 the velocities of q1 and q2 
+We have both the positions and their velocities to be 0 :
+
 ```
 Please note that `x_init` is twice the size of `u_init` because it contains the two degrees of freedom from the generalized coordinates (*q*) and the two from the generalized velocities (*qdot*), while `u_init` only contains the generalized forces (*tau*)
 
@@ -488,7 +500,7 @@ Of these, only the first 4 are mandatory.
 `biorbd_model` is the `biorbd` model to use. If the model is not loaded, a string can be passed. 
 In the case of a multiphase optimization, one model per phase should be passed in a list.
 `dynamics` is the dynamics of the system during each phase (see The dynamics section).
-`n_shooting` is the number of shooting point of the direct multiple shooting for each phase.
+`n_shooting` is the number of shooting point of the direct multiple shooting (method) for each phase.
 `phase_time` is the final time of each phase. If the time is free, this is the initial guess.
 `x_init` is the initial guess for the states variables (see The initial conditions section)
 `u_init` is the initial guess for the controls variables (see The initial conditions section)
@@ -650,7 +662,7 @@ Since this is an Enum, it is possible to use tab key on the keyboard to dynamica
 Please note that one can change the dynamic function associated to any of the configuration by providing a custom dynamics_function. 
 For more information on this, please refer to the Dynamics and DynamicsList section right before. 
 
-#### TORQUE_DRIVEN
+#### TORQUE_DRIVEN 
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = biorbd_model.ForwardDynamics(q, qdot, tau)`. 
@@ -880,7 +892,7 @@ constraint_list = ConstraintList()
 constraint_list.add(constraint)
 ```
 
-### Class: ConstraintFcn
+### Class: ConstraintFcn (pour TRACK_STATE, TRACK_MARKERS ect donner quelques exemples de parametres, expliciter)
 The `ConstraintFcn` class is the declaration of all the already available constraints in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. 
 
