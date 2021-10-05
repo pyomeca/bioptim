@@ -156,7 +156,7 @@ and optionally:
 #### Linux - Installing dependencies with conda
 All these (except for ̀`Acados` and the HSL lib) can easily be installed using (assuming the anaconda3 environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
 ```bash
-conda install casadi rbdl=*=*casadi* biorbd=*=*casadi* bioviz=*=*casadi* python-graphviz -cconda-forge
+conda install biorbd bioviz python-graphviz -cconda-forge
 ```
 Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`. 
 The installer can be found and run at `[ROOT_BIOPTIM]/external/acados_install_linux.sh`.
