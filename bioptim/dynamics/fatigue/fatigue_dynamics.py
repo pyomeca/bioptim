@@ -264,7 +264,7 @@ class MultiFatigueModel(OptionGeneric):
 
 class MultiFatigueInterface(MultiFatigueModel, ABC):
     def suffix(self) -> tuple:
-        return "fatigue",
+        return ("fatigue",)
 
     def default_bounds(self, index: int, variable_type: VariableType) -> tuple:
         return self.models["fatigue"].default_bounds(variable_type)
@@ -277,11 +277,11 @@ class MultiFatigueInterface(MultiFatigueModel, ABC):
 
     @staticmethod
     def color() -> tuple:
-        return "tab:orange",
+        return ("tab:orange",)
 
     @staticmethod
     def plot_factor() -> tuple:
-        return 1,
+        return (1,)
 
 
 class FatigueUniqueList(UniquePerPhaseOptionList):

@@ -635,7 +635,13 @@ class ConfigureProblem:
 
         muscle_names = [names.to_string() for names in nlp.model.muscleNames()]
         ConfigureProblem.configure_new_variable(
-            "muscles", muscle_names, nlp, as_states, as_controls, combine_state_control_plot=True, fatigue=fatigue,
+            "muscles",
+            muscle_names,
+            nlp,
+            as_states,
+            as_controls,
+            combine_state_control_plot=True,
+            fatigue=fatigue,
         )
 
     @staticmethod

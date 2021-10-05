@@ -35,7 +35,7 @@ class XiaFatigue(MuscleFatigue):
         if variable_type == VariableType.STATES:
             return "ma", "mr", "mf"
         else:
-            return "",
+            return ("",)
 
     @staticmethod
     def color() -> tuple:

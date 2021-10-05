@@ -156,8 +156,12 @@ class IpoptInterface(SolverInterface):
         self.out["sol"]["solver_time_to_optimize"] = self.ocp_solver.stats()["t_wall_total"]
         self.out["sol"]["real_time_to_optimize"] = time() - tic
         self.out["sol"]["iter"] = self.ocp_solver.stats()["iter_count"]
-        self.out["sol"]["inf_du"] = self.ocp_solver.stats()["iterations"]["inf_du"] if "iteration" in self.ocp_solver.stats() else None
-        self.out["sol"]["inf_pr"] = self.ocp_solver.stats()["iterations"]["inf_pr"] if "iteration" in self.ocp_solver.stats() else None
+        self.out["sol"]["inf_du"] = (
+            self.ocp_solver.stats()["iterations"]["inf_du"] if "iteration" in self.ocp_solver.stats() else None
+        )
+        self.out["sol"]["inf_pr"] = (
+            self.ocp_solver.stats()["iterations"]["inf_pr"] if "iteration" in self.ocp_solver.stats() else None
+        )
         # To match acados convention (0 = success, 1 = error)
         self.out["sol"]["status"] = int(not self.ocp_solver.stats()["success"])
         self.out["sol"]["solver"] = Solver.IPOPT

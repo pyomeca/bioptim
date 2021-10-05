@@ -12,6 +12,7 @@ class MuscleFatigue(FatigueModel):
     """
     A placeholder for fatigue dynamics.
     """
+
     @abstractmethod
     def apply_dynamics(self, target_load: Union[float, MX, SX], *states: Any):
         """
@@ -45,7 +46,10 @@ class MuscleFatigue(FatigueModel):
 
     def dynamics(self, dxdt, nlp, index, states, controls):
         target_load = self._get_target_load(nlp, controls, index)
-        fatigue = [DynamicsFunctions.get(nlp.states[f"{self.type()}_{s}"], states)[index, :] for s in self.suffix(VariableType.STATES)]
+        fatigue = [
+            DynamicsFunctions.get(nlp.states[f"{self.type()}_{s}"], states)[index, :]
+            for s in self.suffix(VariableType.STATES)
+        ]
         current_dxdt = self.apply_dynamics(target_load, *fatigue)
 
         for i, s in enumerate(self.suffix(variable_type=VariableType.STATES)):
@@ -58,7 +62,6 @@ class MuscleFatigue(FatigueModel):
 
 
 class MultiFatigueInterfaceMuscle(MultiFatigueInterface):
-
     @staticmethod
     def model_type() -> str:
         """

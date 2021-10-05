@@ -90,7 +90,7 @@ class TauFatigue(MultiFatigueModel):
                 scaling = self.models[key].scaling
                 return ((scaling if index == 0 else 0),), ((scaling if index == 1 else 0),)
             else:
-                return tuple((self.models[s].scaling, ) for s in self.suffix())
+                return tuple((self.models[s].scaling,) for s in self.suffix())
 
     def default_initial_guess(self, index: int, variable_type: VariableType):
         key = self._convert_to_models_key(index)

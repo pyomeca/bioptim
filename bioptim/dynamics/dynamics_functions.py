@@ -361,7 +361,9 @@ class DynamicsFunctions:
             # Sanity check
             n_state_only = sum([m.models.state_only for m in mus_fatigue])
             if 0 < n_state_only < len(fatigue["muscles"]):
-                raise NotImplementedError(f"{fatigue_name} list without homogeneous state_only flag is not supported yet")
+                raise NotImplementedError(
+                    f"{fatigue_name} list without homogeneous state_only flag is not supported yet"
+                )
 
             dyn_suffix = mus_fatigue[0].models.models[fatigue_name].dynamics_suffix()
             for m in mus_fatigue:

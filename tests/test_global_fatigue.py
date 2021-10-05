@@ -40,7 +40,7 @@ def test_xia_fatigable_muscles():
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-2.93853331,  3.00564551)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-2.93853331, 3.00564551)))
 
     # fatigue parameters
     np.testing.assert_almost_equal(ma[:, 0], np.array((0, 0, 0, 0, 0, 0)))
@@ -122,11 +122,12 @@ def test_michaud_fatigable_muscles():
     )
     np.testing.assert_almost_equal(mr[:, 0], np.array((1, 1, 1, 1, 1, 1)))
     np.testing.assert_almost_equal(
-        mr[:, -1], np.array((0.96071394, 0.98795266, 0.99699829, 0.9496845 , 0.9496845 , 0.99917771))
+        mr[:, -1], np.array((0.96071394, 0.98795266, 0.99699829, 0.9496845, 0.9496845, 0.99917771))
     )
     np.testing.assert_almost_equal(mf[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     np.testing.assert_almost_equal(
-        mf[:, -1], np.array((0,  3.59773278e-04,  3.59740895e-04, 0, 0, 0)),
+        mf[:, -1],
+        np.array((0, 3.59773278e-04, 3.59740895e-04, 0, 0, 0)),
     )
 
     # initial and final controls
@@ -139,7 +140,7 @@ def test_michaud_fatigable_muscles():
     )
     np.testing.assert_almost_equal(
         muscles[:, -2],
-        np.array((0.0441982 , 0.00474236, 0.0009076 , 0.04843388, 0.04843388, 0.00025345)),
+        np.array((0.0441982, 0.00474236, 0.0009076, 0.04843388, 0.04843388, 0.00025345)),
     )
 
     # save and load
@@ -185,27 +186,26 @@ def test_effort_fatigable_muscles():
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-3.88775204,  3.6333437)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((-3.88775204, 3.6333437)))
 
     # fatigue parameters
     np.testing.assert_almost_equal(mf[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     np.testing.assert_almost_equal(
-        mf[:, -1], np.array((0,  3.59773278e-04,  3.59740895e-04, 0, 0, 0)),
+        mf[:, -1],
+        np.array((0, 3.59773278e-04, 3.59740895e-04, 0, 0, 0)),
     )
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.00151725, 0.75680955)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.5258675 , -0.65113292)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((0.5258675, -0.65113292)))
 
     np.testing.assert_almost_equal(
         muscles[:, 0],
-        np.array((-3.28714919e-09,  3.22449026e-01,  2.29706846e-01,  2.48558352e-08,
-        2.48558352e-08,  1.68035357e-01)),
+        np.array((-3.28714919e-09, 3.22449026e-01, 2.29706846e-01, 2.48558352e-08, 2.48558352e-08, 1.68035357e-01)),
     )
     np.testing.assert_almost_equal(
         muscles[:, -2],
-        np.array((3.86483779e-02, 1.10050544e-09, 2.74222976e-09, 4.25097691e-02,
-       4.25097691e-02, 6.56233979e-09)),
+        np.array((3.86483779e-02, 1.10050544e-09, 2.74222976e-09, 4.25097691e-02, 4.25097691e-02, 6.56233979e-09)),
     )
 
     # save and load
@@ -221,7 +221,12 @@ def test_fatigable_xia_torque_non_split():
 
     model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
     ocp = fatigue.prepare_ocp(
-        biorbd_model_path=model_path, final_time=1, n_shooting=10, fatigue_type="xia", split_controls=False, use_sx=False
+        biorbd_model_path=model_path,
+        final_time=1,
+        n_shooting=10,
+        fatigue_type="xia",
+        split_controls=False,
+        use_sx=False,
     )
     sol = ocp.solve()
 
@@ -249,7 +254,7 @@ def test_fatigable_xia_torque_non_split():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0., 0)))
+    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0.0, 0)))
     np.testing.assert_almost_equal(ma_minus[:, -1], np.array((2.05715389e-01, 0)))
     np.testing.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
     np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.71681593, 1)))
@@ -306,7 +311,7 @@ def test_fatigable_xia_torque_split():
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
-    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0., 0)))
+    np.testing.assert_almost_equal(ma_minus[:, 0], np.array((0.0, 0)))
     np.testing.assert_almost_equal(ma_minus[:, -1], np.array((9.74835527e-02, 0)))
     np.testing.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
     np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.88266826, 1)))
@@ -317,7 +322,7 @@ def test_fatigable_xia_torque_split():
     np.testing.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
     np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.9891588, 1)))
     np.testing.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(mf_plus[:, -1], np.array(( 1.08355110e-02, 0)))
+    np.testing.assert_almost_equal(mf_plus[:, -1], np.array((1.08355110e-02, 0)))
 
     np.testing.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-10.29111867, 0)))
@@ -337,7 +342,12 @@ def test_fatigable_michaud_torque_non_split():
 
     model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
     ocp = fatigue.prepare_ocp(
-        biorbd_model_path=model_path, final_time=1, n_shooting=10, fatigue_type="michaud", split_controls=False, use_sx=False
+        biorbd_model_path=model_path,
+        final_time=1,
+        n_shooting=10,
+        fatigue_type="michaud",
+        split_controls=False,
+        use_sx=False,
     )
     sol = ocp.solve()
 
@@ -394,7 +404,12 @@ def test_fatigable_michaud_torque_split():
 
     model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
     ocp = fatigue.prepare_ocp(
-        biorbd_model_path=model_path, final_time=1, n_shooting=10, fatigue_type="michaud", split_controls=True, use_sx=False
+        biorbd_model_path=model_path,
+        final_time=1,
+        n_shooting=10,
+        fatigue_type="michaud",
+        split_controls=True,
+        use_sx=False,
     )
     sol = ocp.solve()
 
@@ -453,7 +468,12 @@ def test_fatigable_effort_torque_non_split():
 
     model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
     ocp = fatigue.prepare_ocp(
-        biorbd_model_path=model_path, final_time=1, n_shooting=10, fatigue_type="effort", split_controls=False, use_sx=False
+        biorbd_model_path=model_path,
+        final_time=1,
+        n_shooting=10,
+        fatigue_type="effort",
+        split_controls=False,
+        use_sx=False,
     )
     sol = ocp.solve()
 
@@ -501,7 +521,12 @@ def test_fatigable_effort_torque_split():
 
     model_path = f"{bioptim_folder}/examples/fatigue/models/pendulum.bioMod"
     ocp = fatigue.prepare_ocp(
-        biorbd_model_path=model_path, final_time=1, n_shooting=10, fatigue_type="effort", split_controls=True, use_sx=False
+        biorbd_model_path=model_path,
+        final_time=1,
+        n_shooting=10,
+        fatigue_type="effort",
+        split_controls=True,
+        use_sx=False,
     )
     sol = ocp.solve()
 

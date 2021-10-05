@@ -78,7 +78,9 @@ def prepare_ocp(
         elif fatigue_type == "michaud":
             fatigue_dynamics.add(
                 MichaudFatigue(
-                    LD=100, LR=100, F=0.005, R=0.005, effort_threshold=0.2, effort_factor=0.001, stabilization_factor=10), state_only=True
+                    LD=100, LR=100, F=0.005, R=0.005, effort_threshold=0.2, effort_factor=0.001, stabilization_factor=10
+                ),
+                state_only=True,
             )
         elif fatigue_type == "effort":
             fatigue_dynamics.add(EffortPerception(effort_threshold=0.2, effort_factor=0.001))
@@ -97,8 +99,12 @@ def prepare_ocp(
             elif fatigue_type == "michaud":
                 fatigue_dynamics.add(
                     MichaudTauFatigue(
-                        MichaudFatigue(LD=10, LR=10, F=5, R=10, effort_threshold=0.15, effort_factor=0.07, scaling=tau_min),
-                        MichaudFatigue(LD=10, LR=10, F=5, R=10, effort_threshold=0.15, effort_factor=0.07, scaling=tau_max),
+                        MichaudFatigue(
+                            LD=10, LR=10, F=5, R=10, effort_threshold=0.15, effort_factor=0.07, scaling=tau_min
+                        ),
+                        MichaudFatigue(
+                            LD=10, LR=10, F=5, R=10, effort_threshold=0.15, effort_factor=0.07, scaling=tau_max
+                        ),
                     ),
                     state_only=False,
                 )

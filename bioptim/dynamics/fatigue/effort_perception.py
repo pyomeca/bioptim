@@ -10,12 +10,7 @@ class EffortPerception(MuscleFatigue):
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(
-            self,
-            effort_threshold: float,
-            effort_factor: float,
-            **kwargs
-    ):
+    def __init__(self, effort_threshold: float, effort_factor: float, **kwargs):
         """
         Parameters
         ----------
@@ -34,19 +29,19 @@ class EffortPerception(MuscleFatigue):
     @staticmethod
     def suffix(variable_type: VariableType) -> tuple:
         if variable_type == VariableType.STATES:
-            return "mf",
+            return ("mf",)
         else:
-            return "",
+            return ("",)
 
     @staticmethod
     def color() -> tuple:
-        return "tab:brown",
+        return ("tab:brown",)
 
     def default_state_only(self) -> bool:
         return True
 
     def default_initial_guess(self) -> tuple:
-        return 0,
+        return (0,)
 
     def default_bounds(self, variable_type: VariableType) -> tuple:
         return (0,), (1,)

@@ -87,13 +87,27 @@ def prepare_ocp(
             fatigue_dynamics.add(
                 MichaudTauFatigue(
                     MichaudFatigue(
-                        LD=100, LR=100, F=0.005, R=0.005, effort_threshold=0.2, effort_factor=0.001, stabilization_factor=10, scaling=tau_min
+                        LD=100,
+                        LR=100,
+                        F=0.005,
+                        R=0.005,
+                        effort_threshold=0.2,
+                        effort_factor=0.001,
+                        stabilization_factor=10,
+                        scaling=tau_min,
                     ),
                     MichaudFatigue(
-                        LD=100, LR=100, F=0.005, R=0.005, effort_threshold=0.2, effort_factor=0.001, stabilization_factor=10, scaling=tau_max
+                        LD=100,
+                        LR=100,
+                        F=0.005,
+                        R=0.005,
+                        effort_threshold=0.2,
+                        effort_factor=0.001,
+                        stabilization_factor=10,
+                        scaling=tau_max,
                     ),
                     state_only=False,
-                    split_controls=split_controls
+                    split_controls=split_controls,
                 ),
             )
         elif fatigue_type == "effort":
@@ -101,7 +115,7 @@ def prepare_ocp(
                 TauEffortPerception(
                     EffortPerception(effort_threshold=0.2, effort_factor=0.001, scaling=tau_min),
                     EffortPerception(effort_threshold=0.2, effort_factor=0.001, scaling=tau_max),
-                    split_controls=split_controls
+                    split_controls=split_controls,
                 )
             )
         else:
@@ -154,7 +168,13 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, split_controls=False, n_shooting=30, fatigue_type="effort")
+    ocp = prepare_ocp(
+        biorbd_model_path="models/pendulum.bioMod",
+        final_time=1,
+        split_controls=False,
+        n_shooting=30,
+        fatigue_type="effort",
+    )
 
     # --- Print ocp structure --- #
     ocp.add_plot_penalty()
