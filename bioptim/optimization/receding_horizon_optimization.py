@@ -136,6 +136,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 show_options=show_options,
             )
             solver_option_current = solver_options if self.total_optimization_run == 0 else None
+            warm_start = None
 
             total_time += sol.real_time_to_optimize
             if self.total_optimization_run == 0:
