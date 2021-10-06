@@ -686,7 +686,8 @@ class Solution:
 
         if isinstance(n_frames, int):
             data_states, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
-            t_all = [np.unique(np.concatenate(t_all))]
+            t_all = [np.concatenate((np.concatenate([_t[:-1] for _t in t_all]), [t_all[-1][-1]]))]
+
             n_frames = [n_frames]
             out.is_merged = True
         elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states):
@@ -710,7 +711,7 @@ class Solution:
 
             x_interpolate = np.ndarray((n_elements, n_frames[p]))
             for j in range(n_elements):
-                s = sci_interp.splrep(t_phase, x_phase[j, time_index])
+                s = sci_interp.splrep(t_phase, x_phase[j, time_index], k=1)
                 x_interpolate[j, :] = sci_interp.splev(t_int, s)
             out._states[p]["all"] = x_interpolate
 

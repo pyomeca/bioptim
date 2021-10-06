@@ -14,6 +14,7 @@ setup(
     packages=[
         "bioptim",
         "bioptim/dynamics",
+        "bioptim/dynamics/fatigue",
         "bioptim/gui",
         "bioptim/interfaces",
         "bioptim/limits",

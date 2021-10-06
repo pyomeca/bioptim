@@ -34,7 +34,7 @@ from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution import Solution
 
-check_version(biorbd, "1.7.2", "1.8.0")
+check_version(biorbd, "1.8.0", "1.9.0")
 
 
 class OptimalControlProgram:
@@ -330,6 +330,7 @@ class OptimalControlProgram:
             self.cx = MX
 
         # Declare optimization variables
+        self.program_changed = True
         self.J = []
         self.J_internal = []
         self.g = []
@@ -351,6 +352,7 @@ class OptimalControlProgram:
         NLP.add(self, "n_threads", n_threads, True)
         self.solver_type = Solver.NONE
         self.solver = None
+        self.is_warm_starting = False
 
         # External forces
         if external_forces is not None:
@@ -831,10 +833,23 @@ class OptimalControlProgram:
         if show_online_optim:
             self.solver.online_optim(self, show_options)
 
-        self.solver.configure(solver_options)
         if warm_start is not None:
             self.set_warm_start(sol=warm_start)
+
+        if self.is_warm_starting:
+            if self.solver_type == Solver.IPOPT:
+                solver_options = {} if solver_options is None else solver_options
+                solver_options["warm_start_init_point"] = "yes"
+                solver_options["mu_init"] = 1e-10
+                solver_options["warm_start_mult_bound_push"] = 1e-10
+                solver_options["warm_start_slack_bound_push"] = 1e-10
+                solver_options["warm_start_bound_push"] = 1e-10
+                solver_options["warm_start_slack_bound_frac"] = 1e-10
+                solver_options["warm_start_bound_frac"] = 1e-10
+
+        self.solver.configure(solver_options)
         self.solver.solve()
+        self.is_warm_starting = False
 
         return Solution(self, self.solver.get_optimized_value())
 
@@ -870,8 +885,11 @@ class OptimalControlProgram:
             if key != "all":
                 param_init_guess.add(param[key], name=key)
         self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, param_init=param_init_guess)
+
         if self.solver:
             self.solver.set_lagrange_multiplier(sol)
+
+        self.is_warm_starting = True
 
     def save(self, sol: Solution, file_path: str, stand_alone: bool = False):
         """
@@ -1089,3 +1107,5 @@ class OptimalControlProgram:
         pen = new_penalty.type.get_type()
         self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
+
+        self.program_changed = True
