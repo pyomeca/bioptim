@@ -622,22 +622,24 @@ class AcadosInterface(SolverInterface):
             del options["acados_dir"]
         if "cost_type" in options:
             del options["cost_type"]
+        if "constr_type" in options:
+            del options["constr_type"]
 
         if self.ocp_solver is None:
-            self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
-            self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
-            self.acados_ocp.solver_options.integrator_type = "IRK"
-            self.acados_ocp.solver_options.nlp_solver_type = "SQP"
-
-            self.acados_ocp.solver_options.nlp_solver_tol_comp = 1e-06
-            self.acados_ocp.solver_options.nlp_solver_tol_eq = 1e-06
-            self.acados_ocp.solver_options.nlp_solver_tol_ineq = 1e-06
-            self.acados_ocp.solver_options.nlp_solver_tol_stat = 1e-06
-            self.acados_ocp.solver_options.nlp_solver_max_iter = 200
-            self.acados_ocp.solver_options.sim_method_newton_iter = 5
-            self.acados_ocp.solver_options.sim_method_num_stages = 4
-            self.acados_ocp.solver_options.sim_method_num_steps = 1
-            self.acados_ocp.solver_options.print_level = 1
+            # self.acados_ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
+            # self.acados_ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
+            # self.acados_ocp.solver_options.integrator_type = "IRK"
+            # self.acados_ocp.solver_options.nlp_solver_type = "SQP"
+            #
+            # self.acados_ocp.solver_options.nlp_solver_tol_comp = 1e-06
+            # self.acados_ocp.solver_options.nlp_solver_tol_eq = 1e-06
+            # self.acados_ocp.solver_options.nlp_solver_tol_ineq = 1e-06
+            # self.acados_ocp.solver_options.nlp_solver_tol_stat = 1e-06
+            # self.acados_ocp.solver_options.nlp_solver_max_iter = 200
+            # self.acados_ocp.solver_options.sim_method_newton_iter = 5
+            # self.acados_ocp.solver_options.sim_method_num_stages = 4
+            # self.acados_ocp.solver_options.sim_method_num_steps = 1
+            # self.acados_ocp.solver_options.print_level = 1
             for key in options:
                 setattr(self.acados_ocp.solver_options, key, options[key])
         else:

@@ -18,6 +18,7 @@ from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biorbd_interface import BiorbdInterface
+from ..interfaces.SolverOptions import SolverOptions, SolverOptionsIPOPT, SolverOptionsACADOS
 from ..limits.constraints import ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ContinuityFunctions
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
@@ -784,7 +785,7 @@ class OptimalControlProgram:
         warm_start: Solution = None,
         show_online_optim: bool = False,
         show_options: dict = None,
-        solver_options: dict = None,
+        solver_options: SolverOptions = None,
     ) -> Solution:
         """
         Call the solver to actually solve the ocp
@@ -800,7 +801,7 @@ class OptimalControlProgram:
             available with Solver.IPOPT
         show_options: dict
             The graphs option to pass to PlotOcp
-        solver_options: dict
+        solver_options: SolverOptions
             Any options to change the behavior of the solver. To know which options are available, you can refer to the
             manual of the corresponding solver
 
@@ -818,7 +819,9 @@ class OptimalControlProgram:
             from ..interfaces.acados_interface import AcadosInterface
 
             if solver_options is None:
-                solver_options = {}
+                solver_options = SolverOptionsACADOS().__dict__
+            else:
+                solver_options = solver_options.__dict__
             self.solver = AcadosInterface(self, **solver_options)
 
         elif self.solver_type == Solver.NONE:

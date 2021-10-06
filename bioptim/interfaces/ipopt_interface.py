@@ -6,6 +6,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
+from ..interfaces.SolverOptions import SolverOptionsIPOPT
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType, ControlType, Node, Solver
 from ..optimization.solution import Solution
@@ -82,7 +83,7 @@ class IpoptInterface(SolverInterface):
             raise RuntimeError("Online graphics are not available on Windows")
         self.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
 
-    def configure(self, solver_options: dict):
+    def configure(self, solver_options: SolverOptionsIPOPT):
         """
         Set some Ipopt options
 
@@ -98,24 +99,18 @@ class IpoptInterface(SolverInterface):
                 solver_options = {}
 
         options = {
-            "ipopt.tol": 1e-6,  # default in ipopt 1e-8
-            "ipopt.dual_inf_tol": 1,  # default in ipotpt 1
-            "ipopt.constr_viol_tol": 0.0001,  # default in ipotpt 0.0001
-            "ipopt.compl_inf_tol": 0.0001,  # default in ipotpt 0.0001
-            "ipopt.acceptable_tol": 1e-6,  # in ipotpt default 1e-6
-            "ipopt.acceptable_dual_inf_tol": 1e-2,  # in ipotpt default 1e-2
-            "ipopt.acceptable_constr_viol_tol": 1e-2,  # in ipotpt default 1e-2
-            "ipopt.acceptable_compl_inf_tol": 1e-2,  # in ipotpt default 1e-2
+            "ipopt.tol": 1e-6,
             "ipopt.max_iter": 1000,
             "ipopt.hessian_approximation": "exact",  # "exact", "limited-memory"
             "ipopt.limited_memory_max_history": 50,
             "ipopt.linear_solver": "mumps",  # "ma57", "ma86", "mumps"
         }
-        for key in solver_options:
+
+        for key in solver_options.__dict__:
             ipopt_key = key
             if key[:6] != "ipopt.":
                 ipopt_key = "ipopt." + key
-            options[ipopt_key] = solver_options[key]
+            options[ipopt_key] = solver_options.__dict__[key]
         self.opts = {**options, **self.options_common}
 
     def solve(self) -> dict:
@@ -292,31 +287,3 @@ class IpoptInterface(SolverInterface):
                     p = vertcat(p, penalty.weighted_function(x, u, param, penalty.weight, target, penalty.dt))
             out = vertcat(out, sum2(p))
         return out
-
-
-def set_ipopt_options(converge_tol: float = 1e-6, constraint_tol: float = 1e-4):
-    """
-        Set the convergence tolerance and constraint tolerance of IPOPT
-
-        Parameters
-        ----------
-        converge_tol: float
-            tolerance on the convergence of IPOPT
-        constraint_tol: float
-            tolerance on the constraint of IPOPT
-        Returns
-        -------
-        A options dictionnary of IPOPT with the convergence and contraint tolerance is set
-        """
-    options = {
-        "ipopt.tol": converge_tol,  # default in ipopt 1e-8
-        "ipopt.dual_inf_tol": 1,  # default in ipotpt 1
-        "ipopt.constr_viol_tol": constraint_tol,  # default in ipotpt 0.0001
-        "ipopt.compl_inf_tol": converge_tol,  # default in ipotpt 0.0001
-        "ipopt.acceptable_tol": converge_tol,  # in ipotpt default 1e-6
-        "ipopt.acceptable_dual_inf_tol": 1e-2,  # in ipotpt default 1e-2
-        "ipopt.acceptable_constr_viol_tol": constraint_tol,  # in ipotpt default 1e-2
-        "ipopt.acceptable_compl_inf_tol": converge_tol,  # in ipotpt default 1e-2
-    }
-
-    return options

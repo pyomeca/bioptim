@@ -21,6 +21,8 @@ from bioptim import (
     InitialGuess,
     Solver,
     InterpolationType,
+    SolverOptionsACADOS,
+    SolverOptionsIPOPT,
 )
 
 
@@ -89,14 +91,15 @@ def main():
     # --- Solve the program using ACADOS --- #
     ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
 
+    opts = SolverOptionsACADOS()
+    opts.nlp_solver_tol_comp = 1e-3
+    opts.nlp_solver_tol_eq = 1e-3
+    opts.nlp_solver_tol_stat = 1e-3
+
     sol_acados = ocp_acados.solve(
         solver=Solver.ACADOS,
         show_online_optim=False,
-        solver_options={
-            "nlp_solver_tol_comp": 1e-3,
-            "nlp_solver_tol_eq": 1e-3,
-            "nlp_solver_tol_stat": 1e-3,
-        },
+        solver_options=opts,
     )
 
     # --- Solve the program using IPOPT --- #
@@ -110,18 +113,18 @@ def main():
         n_threads=6,
     )
 
+    opts_ipopt = SolverOptionsIPOPT()
+    opts_ipopt.set_solver('ma57')
+    opts_ipopt.dual_inf_tol = 1e-3
+    opts_ipopt.constr_viol_tol =  1e-3
+    opts_ipopt.compl_inf_tol = 1e-3
+    opts_ipopt.max_iter = 100
+    opts_ipopt.hessian_approximation = "exact"
+
     sol_ipopt = ocp_ipopt.solve(
         solver=Solver.IPOPT,
         show_online_optim=False,
-        solver_options={
-            "tol": 1e-3,
-            "dual_inf_tol": 1e-3,
-            "constr_viol_tol": 1e-3,
-            "compl_inf_tol": 1e-3,
-            "linear_solver": "ma57",
-            "max_iter": 100,
-            "hessian_approximation": "exact",
-        },
+        solver_options=opts_ipopt,
     )
 
     # --- Show results --- #

@@ -152,6 +152,7 @@ from .dynamics.fatigue_dynamics import FatigueList
 from .dynamics.xia_fatigue import XiaFatigue, XiaTauFatigue
 from .dynamics.ode_solver import OdeSolver
 from .interfaces.biorbd_interface import BiorbdInterface
+from .interfaces.SolverOptions import SolverOptionsIPOPT, SolverOptionsACADOS
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
