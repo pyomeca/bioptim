@@ -1,6 +1,7 @@
 from time import time
 from sys import platform
 
+from casadi import Importer
 import numpy as np
 from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
@@ -62,6 +63,7 @@ class IpoptInterface(SolverInterface):
         self.ipopt_nlp = {}
         self.ipopt_limits = {}
         self.ocp_solver = None
+        self.c_compile = False
 
         self.lam_g = None
         self.lam_x = None
@@ -124,6 +126,15 @@ class IpoptInterface(SolverInterface):
         all_g, all_g_bounds = self.__dispatch_bounds()
 
         self.ipopt_nlp = {"x": self.ocp.v.vector, "f": sum1(all_objectives), "g": all_g}
+        self.c_compile = self.c_compile if "ipopt.c_compile" not in self.opts else self.opts.pop("ipopt.c_compile")
+        if self.c_compile:
+            if not self.ocp_solver or self.ocp.program_changed:
+                nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts).generate_dependencies("nlp.c")
+                self.ocp_solver = nlpsol("nlpsol", "ipopt", Importer("nlp.c", "shell"), self.opts)
+                self.ocp.program_changed = False
+        else:
+            self.ocp_solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts)
+
         v_bounds = self.ocp.v.bounds
         v_init = self.ocp.v.init
         self.ipopt_limits = {
@@ -139,18 +150,20 @@ class IpoptInterface(SolverInterface):
         if self.lam_x is not None:
             self.ipopt_limits["lam_x0"] = self.lam_x
 
-        solver = nlpsol("nlpsol", "ipopt", self.ipopt_nlp, self.opts)
-
         # Solve the problem
         tic = time()
-        self.out = {"sol": solver.call(self.ipopt_limits)}
-        self.out["sol"]["solver_time_to_optimize"] = solver.stats()["t_wall_total"]
+        self.out = {"sol": self.ocp_solver.call(self.ipopt_limits)}
+        self.out["sol"]["solver_time_to_optimize"] = self.ocp_solver.stats()["t_wall_total"]
         self.out["sol"]["real_time_to_optimize"] = time() - tic
-        self.out["sol"]["iter"] = solver.stats()["iter_count"]
-        self.out["sol"]["inf_du"] = solver.stats()["iterations"]["inf_du"] if "iteration" in solver.stats() else None
-        self.out["sol"]["inf_pr"] = solver.stats()["iterations"]["inf_pr"] if "iteration" in solver.stats() else None
+        self.out["sol"]["iter"] = self.ocp_solver.stats()["iter_count"]
+        self.out["sol"]["inf_du"] = (
+            self.ocp_solver.stats()["iterations"]["inf_du"] if "iteration" in self.ocp_solver.stats() else None
+        )
+        self.out["sol"]["inf_pr"] = (
+            self.ocp_solver.stats()["iterations"]["inf_pr"] if "iteration" in self.ocp_solver.stats() else None
+        )
         # To match acados convention (0 = success, 1 = error)
-        self.out["sol"]["status"] = int(not solver.stats()["success"])
+        self.out["sol"]["status"] = int(not self.ocp_solver.stats()["success"])
         self.out["sol"]["solver"] = Solver.IPOPT
 
         return self.out
