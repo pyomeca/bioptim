@@ -98,7 +98,7 @@ def test_michaud_fatigable_muscles():
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     if platform.system() == "Linux":
-        np.testing.assert_almost_equal(f[0, 0], 16.324)
+        np.testing.assert_almost_equal(f[0, 0], 16.32400654587575)
 
     # Check constraints
     g = np.array(sol.constraints)
