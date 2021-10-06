@@ -254,8 +254,6 @@ def test_fatigable_xia_torque_non_split():
     np.testing.assert_equal(f.shape, (1, 1))
     if platform.system() == "Linux":
         np.testing.assert_almost_equal(f[0, 0], 681.4936347682981)
-    else:
-        np.testing.assert_almost_equal(f[0, 0], 74.07242740640974)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -290,15 +288,6 @@ def test_fatigable_xia_torque_non_split():
         np.testing.assert_almost_equal(mf_plus[:, -1], np.array((8.27975034e-02, 0)))
         np.testing.assert_almost_equal(tau[:, 0], np.array((4.65387493, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-21.7531631, 0)))
-    else:
-        np.testing.assert_almost_equal(ma_minus[:, -1], np.array((0.1014571, 0)))
-        np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.8674655, 1)))
-        np.testing.assert_almost_equal(mf_minus[:, -1], np.array((3.1077414e-02, 0)))
-        np.testing.assert_almost_equal(ma_plus[:, -1], np.array((0.001118, 0)))
-        np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.9744507, 1)))
-        np.testing.assert_almost_equal(mf_plus[:, -1], np.array((2.4431231e-02, 0)))
-        np.testing.assert_almost_equal(tau[:, 0], np.array((4.8272672, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-10.7292605, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -386,8 +375,6 @@ def test_fatigable_michaud_torque_non_split():
     np.testing.assert_equal(f.shape, (1, 1))
     if platform.system() == "Linux":
         np.testing.assert_almost_equal(f[0, 0], 752.2660291516361)
-    else:
-        np.testing.assert_almost_equal(f[0, 0], 681.4936347682664)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -424,13 +411,6 @@ def test_fatigable_michaud_torque_non_split():
         np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.99650902, 1)))
         np.testing.assert_almost_equal(tau[:, 0], np.array((4.59966318, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-22.86838109, 0)))
-    else:
-        np.testing.assert_almost_equal(ma_minus[:, -1], np.array((2.1662052e-01, 0)))
-        np.testing.assert_almost_equal(mr_minus[:, -1], np.array((0.782656, 1)))
-        np.testing.assert_almost_equal(ma_plus[:, -1], np.array((2.7728064e-03, 0)))
-        np.testing.assert_almost_equal(mr_plus[:, -1], np.array((0.9967168, 1)))
-        np.testing.assert_almost_equal(tau[:, 0], np.array((4.6538749, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-21.75316319, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
@@ -495,8 +475,6 @@ def test_fatigable_michaud_torque_split():
     np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-11.53208375, 0)))
     if platform.system() == "Linux":
         np.testing.assert_almost_equal(tau_plus[:, 0], np.array((5.03417941, 0)))
-    else:
-        np.testing.assert_almost_equal(tau_plus[:, 0], np.array((5.0341792, 0)))
     np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
 
     # save and load
@@ -526,8 +504,6 @@ def test_fatigable_effort_torque_non_split():
     np.testing.assert_equal(f.shape, (1, 1))
     if platform.system() == "Linux":
         np.testing.assert_almost_equal(f[0, 0], 124.09811189707075)
-    else:
-        np.testing.assert_almost_equal(f[0, 0], 681.4936347544128)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -555,10 +531,6 @@ def test_fatigable_effort_torque_non_split():
         np.testing.assert_almost_equal(mf_minus[:, -1], np.array((0, 0)))
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.85068584, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-12.03087216, 0)))
-    else:
-        np.testing.assert_almost_equal(mf_minus[:, -1], np.array((2.9992501e-04, 0)))
-        np.testing.assert_almost_equal(tau[:, 0], np.array((4.6538749, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-21.7531632, 0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, True)
