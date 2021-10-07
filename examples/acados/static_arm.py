@@ -5,7 +5,6 @@ The arm must reach a marker while minimizing the muscles activity and the states
 ACADOS and Ipopt.
 """
 
-
 import biorbd_casadi as biorbd
 from time import time
 import numpy as np
@@ -21,8 +20,8 @@ from bioptim import (
     InitialGuess,
     Solver,
     InterpolationType,
-    SolverOptionsACADOS,
-    SolverOptionsIPOPT,
+    SolverOptionsAcados,
+    SolverOptionsIpopt,
 )
 
 
@@ -91,10 +90,8 @@ def main():
     # --- Solve the program using ACADOS --- #
     ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=2, n_shooting=51, use_sx=True)
 
-    opts = SolverOptionsACADOS()
-    opts.nlp_solver_tol_comp = 1e-3
-    opts.nlp_solver_tol_eq = 1e-3
-    opts.nlp_solver_tol_stat = 1e-3
+    opts = SolverOptionsAcados()
+    opts.set_convergence_tolerance(1e-3)
 
     sol_acados = ocp_acados.solve(
         solver=Solver.ACADOS,
@@ -113,12 +110,12 @@ def main():
         n_threads=6,
     )
 
-    opts_ipopt = SolverOptionsIPOPT()
-    opts_ipopt.set_solver('ma57')
+    opts_ipopt = SolverOptionsIpopt()
+    opts_ipopt.linear_solver = 'ma57'
     opts_ipopt.dual_inf_tol = 1e-3
-    opts_ipopt.constr_viol_tol =  1e-3
-    opts_ipopt.compl_inf_tol = 1e-3
-    opts_ipopt.max_iter = 100
+    opts_ipopt.set_constraint_tolerance(1e-3)
+    opts_ipopt.set_convergence_tolerance(1e-3)
+    opts_ipopt.set_maximum_iterations(100)
     opts_ipopt.hessian_approximation = "exact"
 
     sol_ipopt = ocp_ipopt.solve(

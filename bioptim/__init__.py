@@ -46,6 +46,10 @@ ControlType
     Selection of valid controls
 CostType
     Selection of valid penalty type
+SolverOptionsIpopt
+    Selection of IPOPT options
+SolverOptionsAcados
+    Selection of ACADOS options
 
 # --- Managing the dynamics --- #
 ConfigureProblem
@@ -154,7 +158,7 @@ from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver
 from .interfaces.biorbd_interface import BiorbdInterface
-from .interfaces.SolverOptions import SolverOptionsIPOPT, SolverOptionsACADOS
+from .interfaces.SolverOptions import SolverOptionsIpopt, SolverOptionsAcados
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective

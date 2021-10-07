@@ -20,7 +20,7 @@ from bioptim import (
     InitialGuessList,
     Node,
     Solver,
-    SolverOptionsACADOS,
+    SolverOptionsAcados,
 )
 
 
@@ -112,8 +112,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=100)
 
     # --- Solve the program --- #
-    opts = SolverOptionsACADOS()
-    sol = ocp.solve(solver=Solver.ACADOS, solver_options=opts)
+    sol = ocp.solve(solver=Solver.ACADOS)
     sol.print()
 
     # --- Show results --- #

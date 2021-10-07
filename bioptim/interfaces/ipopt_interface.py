@@ -7,7 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from .solver_interface import SolverInterface
 from ..gui.plot import OnlineCallback
-from ..interfaces.SolverOptions import SolverOptionsIPOPT
+from ..interfaces.SolverOptions import SolverOptionsIpopt
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType, ControlType, Node, Solver
 from ..optimization.solution import Solution
@@ -85,7 +85,7 @@ class IpoptInterface(SolverInterface):
             raise RuntimeError("Online graphics are not available on Windows")
         self.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
 
-    def configure(self, solver_options: SolverOptionsIPOPT):
+    def configure(self, solver_options: SolverOptionsIpopt):
         """
         Set some Ipopt options
 
@@ -98,7 +98,7 @@ class IpoptInterface(SolverInterface):
             if self.opts:
                 return
             else:
-                solver_options = SolverOptionsIPOPT()
+                solver_options = SolverOptionsIpopt()
 
         options = {
             "ipopt.tol": 1e-6,

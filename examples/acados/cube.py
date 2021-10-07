@@ -18,7 +18,7 @@ from bioptim import (
     InitialGuess,
     OdeSolver,
     Solver,
-    SolverOptionsACADOS,
+    SolverOptionsAcados,
 )
 
 
@@ -103,7 +103,7 @@ def main():
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10, multi_thread=False)
     ocp.update_objectives(objective_functions)
 
-    solver_options = SolverOptionsACADOS()
+    solver_options = SolverOptionsAcados()
     solver_options.nlp_solver_tol_stat = 1e-2
 
     sol = ocp.solve(solver=Solver.ACADOS, show_online_optim=False, solver_options=solver_options)
