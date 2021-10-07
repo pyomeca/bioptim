@@ -791,7 +791,11 @@ class Solution:
             for p in range(len(data)):
                 d = data[p]
                 for key in d:
-                    data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, : self.ns[p]]), axis=1)
+                    if self.ocp.nlp[p].ode_solver.is_direct_collocation:
+                        steps = self.ocp.nlp[p].ode_solver.steps + 1
+                        data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, : self.ns[p] * steps]), axis=1)
+                    else:
+                        data_out[0][key] = np.concatenate((data_out[0][key], d[key][:, : self.ns[p]]), axis=1)
             for key in data[-1]:
                 data_out[0][key] = np.concatenate((data_out[0][key], data[-1][key][:, -1][:, np.newaxis]), axis=1)
 
