@@ -98,7 +98,7 @@ class IpoptInterface(SolverInterface):
             if self.opts:
                 return
             else:
-                solver_options = {}
+                solver_options = SolverOptionsIPOPT()
 
         options = {
             "ipopt.tol": 1e-6,
