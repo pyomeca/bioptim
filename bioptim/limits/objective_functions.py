@@ -317,6 +317,7 @@ class ObjectiveFcn:
         MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
         MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+        MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
         MINIMIZE_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
         TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
         MINIMIZE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
