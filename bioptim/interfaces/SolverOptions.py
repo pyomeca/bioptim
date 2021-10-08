@@ -44,7 +44,7 @@ class SolverOptions(ABC):
 
         Parameters
         ----------
-        tol: int
+        num: int
             Number of iterations
         """
 
@@ -97,12 +97,16 @@ class SolverOptionsIpopt(SolverOptions):
         Warm-start for initial point
     warm_start_mult_bound_push: float
         same as mult_bound_push for the regular initializer
-     warm_start_slack_bound_push: float
+    warm_start_slack_bound_push: float
         same as slack_bound_push for the regular initializer
-     warm_start_slack_bound_frac: float
+    warm_start_slack_bound_frac: float
         same as slack_bound_frac for the regular initializer
-     warm_start_bound_frac: float
+    warm_start_bound_frac: float
         same as bound_frac for the regular initializer
+    bound_push: float
+        Desired minimum absolute distance from the initial point to bound.
+    bound_frac: float
+        Desired minimum relative distance from the initial point to bound.
     """
 
     tol: float = 1e-6  # default in ipopt 1e-8
@@ -124,6 +128,8 @@ class SolverOptionsIpopt(SolverOptions):
     warm_start_bound_push: float = 0.001
     warm_start_slack_bound_frac: float = 0.001
     warm_start_bound_frac: float = 0.001
+    bound_push: float = 0.01
+    bound_frac: float = 0.01
 
     def set_convergence_tolerance(self, val: float):
         self.tol = val
@@ -157,7 +163,6 @@ class SolverOptionsIpopt(SolverOptions):
         self.warm_start_bound_frac = val
 
     def finalize_options(self, solver):
-
         solver_options = self.__dict__
         options = {}
         for key in solver_options:
@@ -264,3 +269,4 @@ class SolverOptionsAcados(SolverOptions):
                     raise RuntimeError(
                         f"[ACADOS] Only editable solver options after solver creation are :\n {available_options}"
                     )
+        return solver
