@@ -202,7 +202,7 @@ class SolverOptionsAcados(SolverOptions):
 
     def set_constraint_tolerance(self, val: float):
         self.nlp_solver_tol_eq = val
-        nlp_solver_tol_ineq = val
+        self.nlp_solver_tol_ineq = val
 
     def set_maximum_iterations(self, num):
         self.nlp_solver_max_iter = num

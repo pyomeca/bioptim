@@ -836,7 +836,7 @@ class OptimalControlProgram:
 
         if self.is_warm_starting:
             if self.solver_type == Solver.IPOPT:
-                solver_options = SolverOptionsIpopt if solver_options is None else solver_options
+                solver_options = SolverOptionsIpopt() if solver_options is None else solver_options
                 solver_options.set_warm_start_options(1e-10)
 
         self.solver.configure(solver_options)
