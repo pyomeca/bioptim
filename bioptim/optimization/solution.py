@@ -551,10 +551,15 @@ class Solution:
         n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
         if n_direct_collocation > 0 and not use_scipy_integrator:
             if continuous:
-                raise RuntimeError("Integration with direct collocation must be not continuous")
+                raise RuntimeError(
+                    "Integration with direct collocation must be not continuous if not use_scipy_integrator"
+                )
 
             if shooting_type != Shooting.MULTIPLE:
-                raise RuntimeError("Integration with direct collocation must using shooting_type=Shooting.MULTIPLE")
+                raise RuntimeError(
+                    "Integration with direct collocation must using shooting_type=Shooting.MULTIPLE "
+                    "if not use_scipy_integrator"
+                )
 
         # Copy the data
         out = self.copy(skip_data=True)
