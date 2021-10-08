@@ -18,9 +18,9 @@ class SolverOptions(ABC):
     @abstractmethod
     def set_convergence_tolerance(self, tol: float):
         """
-         This function set the convergence tolerance
+        This function set the convergence tolerance
 
-         Parameters
+        Parameters
         ----------
         tol: float
             Global converge tolerance value
@@ -29,9 +29,9 @@ class SolverOptions(ABC):
     @abstractmethod
     def set_constraint_tolerance(self, tol: float):
         """
-         This function set the constraint tolerance.
+        This function set the constraint tolerance.
 
-          Parameters
+        Parameters
         ----------
         tol: float
             Global constraint tolerance value
@@ -40,9 +40,9 @@ class SolverOptions(ABC):
     @abstractmethod
     def set_maximum_iterations(self, num: int):
         """
-         This function set the number of maximal iterations.
+        This function set the number of maximal iterations.
 
-          Parameters
+        Parameters
         ----------
         tol: int
             Number of iterations
@@ -52,7 +52,7 @@ class SolverOptions(ABC):
 @dataclass
 class SolverOptionsIpopt(SolverOptions):
     """
-        Class for Solver Options of IPOPT
+    Class for Solver Options of IPOPT
 
     Attributes
     ----------
@@ -128,6 +128,15 @@ class SolverOptionsIpopt(SolverOptions):
         self.max_iter = num
 
     def set_warm_start_options(self, val: float = 1e-10):
+        """
+        This function global set warm start options
+
+        Parameters
+        ----------
+        val: float
+            warm start value
+        """
+
         self.warm_start_init_point = "yes"
         self.mu_init = val
         self.warm_start_mult_bound_push = val
@@ -140,43 +149,43 @@ class SolverOptionsIpopt(SolverOptions):
 @dataclass
 class SolverOptionsAcados(SolverOptions):
     """
-            Class for Solver Options of ACADOS
+    Class for Solver Options of ACADOS
 
-        Attributes
-        ----------
-        qp_solver: str
-            QP solver to be used in the NLP solver. String in (‘PARTIAL_CONDENSING_HPIPM’, ‘FULL_CONDENSING_QPOASES’,
-            ‘FULL_CONDENSING_HPIPM’, ‘PARTIAL_CONDENSING_QPDUNES’, ‘PARTIAL_CONDENSING_OSQP’).
-            Default: ‘PARTIAL_CONDENSING_HPIPM’.
-        hessian_approx: str
-            Hessian approximation.
-        integrator_type: str
-            Integrator type.
-        nlp_solver_type: str
-            Desired threshold for the complementarity conditions.
-        nlp_solver_tol_comp: float
-            NLP solver complementarity tolerance
-        nlp_solver_tol_eq: float
-            NLP solver equality tolerance
-        nlp_solver_tol_ineq: float
-            NLP solver inequality tolerance
-        nlp_solver_tol_stat: float
-            NLP solver stationarity tolerance. Type: float > 0 Default: 1e-6
-        nlp_solver_max_iter: int
-            NLP solver maximum number of iterations.
-        sim_method_newton_iter: int
-            Number of Newton iterations in simulation method. Type: int > 0 Default: 3
-        sim_method_num_stages: int
-            Number of stages in the integrator. Type: int > 0 or ndarray of ints > 0 of shape (N,). Default: 4
-        sim_method_num_steps: int
-            Number of steps in the integrator. Type: int > 0 or ndarray of ints > 0 of shape (N,). Default: 1
-        print_level: int
-            Verbosity of printing.
-        cost_type: int
-            type of cost functions for cost.cost_type and cost.cost_type_e
-        constr_type: int
-            type of constraint functions for constraints.constr_type and constraints.constr_type_e
-        """
+    Attributes
+    ----------
+    qp_solver: str
+        QP solver to be used in the NLP solver. String in (‘PARTIAL_CONDENSING_HPIPM’, ‘FULL_CONDENSING_QPOASES’,
+        ‘FULL_CONDENSING_HPIPM’, ‘PARTIAL_CONDENSING_QPDUNES’, ‘PARTIAL_CONDENSING_OSQP’).
+        Default: ‘PARTIAL_CONDENSING_HPIPM’
+    hessian_approx: str
+        Hessian approximation.
+    integrator_type: str
+        Integrator type.
+    nlp_solver_type: str
+        Desired threshold for the complementarity conditions.
+    nlp_solver_tol_comp: float
+        NLP solver complementarity tolerance
+    nlp_solver_tol_eq: float
+        NLP solver equality tolerance
+    nlp_solver_tol_ineq: float
+        NLP solver inequality tolerance
+    nlp_solver_tol_stat: float
+        NLP solver stationarity tolerance. Type: float > 0 Default: 1e-6
+    nlp_solver_max_iter: int
+        NLP solver maximum number of iterations.
+    sim_method_newton_iter: int
+        Number of Newton iterations in simulation method. Type: int > 0 Default: 3
+    sim_method_num_stages: int
+        Number of stages in the integrator. Type: int > 0 or ndarray of ints > 0 of shape (N,). Default: 4
+    sim_method_num_steps: int
+        Number of steps in the integrator. Type: int > 0 or ndarray of ints > 0 of shape (N,). Default: 1
+    print_level: int
+        Verbosity of printing.
+    cost_type: int
+        type of cost functions for cost.cost_type and cost.cost_type_e
+    constr_type: int
+        type of constraint functions for constraints.constr_type and constraints.constr_type_e
+    """
 
     qp_solver: str = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
     hessian_approx: str = "GAUSS_NEWTON"
